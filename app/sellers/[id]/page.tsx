@@ -1,0 +1,361 @@
+import Link from "next/link"
+import { notFound } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
+import {
+  MapPin,
+  Phone,
+  Globe,
+  CheckCircle2,
+  Star,
+  MessageSquare,
+  Calendar,
+  Package,
+  ArrowLeft,
+} from "lucide-react"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: shop } = await supabase
+    .from("profiles")
+    .select("shop_name, display_name, shop_description")
+    .eq("id", id)
+    .single()
+
+  return {
+    title: shop
+      ? `${shop.shop_name || shop.display_name} - reswell`
+      : "Seller - reswell",
+    description: shop?.shop_description || "View this seller on reswell.",
+  }
+}
+
+export default async function SellerProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  const supabase = await createClient()
+
+  // Fetch the shop profile
+  const { data: shop, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  if (error || !shop) {
+    notFound()
+  }
+
+  // Fetch the seller's listings grouped by section
+  const { data: listings } = await supabase
+    .from("listings")
+    .select(
+      `
+      *,
+      listing_images (url, is_primary),
+      categories (name, slug)
+    `
+    )
+    .eq("user_id", id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+
+  // Fetch review stats
+  const { data: reviews } = await supabase
+    .from("reviews")
+    .select("rating")
+    .eq("reviewed_id", id)
+
+  const avgRating =
+    reviews && reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0
+  const reviewCount = reviews?.length || 0
+
+  const usedListings = listings?.filter((l) => l.section === "used") || []
+  const newListings = listings?.filter((l) => l.section === "new") || []
+  const boardListings =
+    listings?.filter((l) => l.section === "surfboards") || []
+  const totalListings = listings?.length || 0
+
+  const isShop = shop.is_shop
+  const displayName = isShop
+    ? shop.shop_name || shop.display_name
+    : shop.display_name
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="flex-1">
+        {/* Banner */}
+        <div className="relative h-40 sm:h-56 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+          {shop.shop_banner_url && (
+            <img
+              src={shop.shop_banner_url || "/placeholder.svg"}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+        </div>
+
+        {/* Profile Header */}
+        <div className="container mx-auto px-4">
+          <div className="relative -mt-12 mb-8">
+            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+              <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                <AvatarImage
+                  src={
+                    (isShop ? shop.shop_logo_url : shop.avatar_url) || ""
+                  }
+                />
+                <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                  {displayName?.charAt(0).toUpperCase() || "S"}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="flex-1 pt-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {displayName}
+                  </h1>
+                  {shop.shop_verified && (
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/15">
+                      <CheckCircle2 className="mr-1 h-3 w-3" />
+                      Verified Seller
+                    </Badge>
+                  )}
+                  {isShop && !shop.shop_verified && (
+                    <Badge variant="secondary">Seller</Badge>
+                  )}
+                </div>
+
+                {/* Stats row */}
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                  {(shop.city || shop.shop_address) && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {shop.shop_address || shop.city}
+                    </span>
+                  )}
+                  {reviewCount > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+                      {avgRating.toFixed(1)} ({reviewCount} review
+                      {reviewCount !== 1 ? "s" : ""})
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <Package className="h-3.5 w-3.5" />
+                    {totalListings} listing{totalListings !== 1 ? "s" : ""}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Joined{" "}
+                    {new Date(shop.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+
+                {/* Description */}
+                {(shop.shop_description || shop.bio) && (
+                  <p className="mt-3 text-sm text-muted-foreground max-w-2xl">
+                    {shop.shop_description || shop.bio}
+                  </p>
+                )}
+
+                {/* Contact info */}
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  {shop.shop_website && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={shop.shop_website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Globe className="mr-1.5 h-3.5 w-3.5" />
+                        Website
+                      </a>
+                    </Button>
+                  )}
+                  {shop.shop_phone && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`tel:${shop.shop_phone}`}>
+                        <Phone className="mr-1.5 h-3.5 w-3.5" />
+                        {shop.shop_phone}
+                      </a>
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/messages?seller=${shop.id}`}>
+                      <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+                      Contact
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Listings tabs */}
+          <div className="py-8">
+            <Tabs defaultValue="all">
+              <TabsList>
+                <TabsTrigger value="all">
+                  All ({totalListings})
+                </TabsTrigger>
+                {usedListings.length > 0 && (
+                  <TabsTrigger value="used">
+                    Used ({usedListings.length})
+                  </TabsTrigger>
+                )}
+                {newListings.length > 0 && (
+                  <TabsTrigger value="new">
+                    New ({newListings.length})
+                  </TabsTrigger>
+                )}
+                {boardListings.length > 0 && (
+                  <TabsTrigger value="boards">
+                    Boards ({boardListings.length})
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              <TabsContent value="all" className="mt-6">
+                <ListingGrid listings={listings || []} />
+              </TabsContent>
+              <TabsContent value="used" className="mt-6">
+                <ListingGrid listings={usedListings} />
+              </TabsContent>
+              <TabsContent value="new" className="mt-6">
+                <ListingGrid listings={newListings} />
+              </TabsContent>
+              <TabsContent value="boards" className="mt-6">
+                <ListingGrid listings={boardListings} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+
+function ListingGrid({ listings }: { listings: any[] }) {
+  if (listings.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Package className="mx-auto h-10 w-10 text-muted-foreground" />
+        <p className="mt-2 text-muted-foreground">No listings in this category</p>
+      </div>
+    )
+  }
+
+  function getListingHref(listing: any) {
+    switch (listing.section) {
+      case "used":
+        return `/used/${listing.id}`
+      case "new":
+        return `/shop/${listing.id}`
+      case "surfboards":
+        return `/boards/${listing.id}`
+      default:
+        return `/used/${listing.id}`
+    }
+  }
+
+  function getConditionLabel(condition: string) {
+    const labels: Record<string, string> = {
+      new: "New",
+      like_new: "Like New",
+      good: "Good",
+      fair: "Fair",
+    }
+    return labels[condition] || condition
+  }
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {listings.map((listing) => {
+        const primaryImage = listing.listing_images?.find(
+          (img: any) => img.is_primary
+        )
+        const firstImage =
+          primaryImage || listing.listing_images?.[0]
+
+        return (
+          <Link key={listing.id} href={getListingHref(listing)}>
+            <Card className="group h-full overflow-hidden hover:shadow-md transition-all">
+              <div className="aspect-square relative bg-muted">
+                {firstImage?.url ? (
+                  <img
+                    src={firstImage.url || "/placeholder.svg"}
+                    alt={listing.title}
+                    className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <Package className="h-10 w-10" />
+                  </div>
+                )}
+                <div className="absolute top-2 left-2 flex gap-1.5">
+                  {listing.condition && (
+                    <Badge variant="secondary" className="text-xs">
+                      {getConditionLabel(listing.condition)}
+                    </Badge>
+                  )}
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-background/80 backdrop-blur-sm"
+                  >
+                    {listing.section === "surfboards"
+                      ? "Board"
+                      : listing.section === "new"
+                        ? "New"
+                        : "Used"}
+                  </Badge>
+                </div>
+              </div>
+              <CardContent className="p-3">
+                <h3 className="font-medium text-sm line-clamp-1 text-foreground">
+                  {listing.title}
+                </h3>
+                <p className="text-base font-bold text-primary mt-0.5">
+                  ${Number(listing.price).toFixed(2)}
+                </p>
+                {listing.city && (
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    {listing.city}
+                    {listing.state ? `, ${listing.state}` : ""}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
+        )
+      })}
+    </div>
+  )
+}

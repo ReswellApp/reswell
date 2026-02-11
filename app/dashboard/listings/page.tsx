@@ -1,0 +1,290 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Plus, MoreVertical, Eye, Edit, Trash2, Package } from 'lucide-react'
+import { toast } from 'sonner'
+import { formatDistanceToNow } from 'date-fns'
+
+interface Listing {
+  id: string
+  title: string
+  price: number
+  status: string
+  section: string
+  views: number
+  created_at: string
+  listing_images: { url: string; is_primary: boolean }[]
+}
+
+export default function MyListingsPage() {
+  const [listings, setListings] = useState<Listing[]>([])
+  const [loading, setLoading] = useState(true)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    fetchListings()
+  }, [])
+
+  async function fetchListings() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('listings')
+      .select('id, title, price, status, section, views, created_at, listing_images(url, is_primary)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (!error && data) {
+      setListings(data as Listing[])
+    }
+    setLoading(false)
+  }
+
+  async function handleStatusChange(id: string, newStatus: string) {
+    const { error } = await supabase
+      .from('listings')
+      .update({ status: newStatus })
+      .eq('id', id)
+
+    if (!error) {
+      setListings(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l))
+      toast.success(`Listing marked as ${newStatus}`)
+    } else {
+      toast.error('Failed to update listing')
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return
+
+    const { error } = await supabase
+      .from('listings')
+      .delete()
+      .eq('id', deleteId)
+
+    if (!error) {
+      setListings(prev => prev.filter(l => l.id !== deleteId))
+      toast.success('Listing deleted')
+    } else {
+      toast.error('Failed to delete listing')
+    }
+    setDeleteId(null)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      case 'sold': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      default: return 'bg-muted text-muted-foreground'
+    }
+  }
+
+  const getSectionLabel = (section: string) => {
+    switch (section) {
+      case 'used': return 'Used Gear'
+      case 'new': return 'New Items'
+      case 'surfboards': return 'Surfboards'
+      default: return section
+    }
+  }
+
+  const filterByStatus = (status: string) => {
+    if (status === 'all') return listings
+    return listings.filter(l => l.status === status)
+  }
+
+  const ListingCard = ({ listing }: { listing: Listing }) => {
+    const primaryImage = listing.listing_images?.find(img => img.is_primary) || listing.listing_images?.[0]
+
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex gap-4">
+            <Link href={`/${listing.section}/${listing.id}`} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+              {primaryImage?.url ? (
+                <Image
+                  src={primaryImage.url || "/placeholder.svg"}
+                  alt={listing.title}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+            </Link>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <Link href={`/${listing.section}/${listing.id}`} className="font-semibold text-foreground hover:text-primary truncate block">
+                    {listing.title}
+                  </Link>
+                  <p className="text-lg font-bold text-primary">${listing.price}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${listing.section}/${listing.id}`}>
+                        <Eye className="h-4 w-4 mr-2" /> View
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/sell/edit/${listing.id}`}>
+                        <Edit className="h-4 w-4 mr-2" /> Edit
+                      </Link>
+                    </DropdownMenuItem>
+                    {listing.status === 'active' && (
+                      <DropdownMenuItem onClick={() => handleStatusChange(listing.id, 'sold')}>
+                        Mark as Sold
+                      </DropdownMenuItem>
+                    )}
+                    {listing.status === 'sold' && (
+                      <DropdownMenuItem onClick={() => handleStatusChange(listing.id, 'active')}>
+                        Relist
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setDeleteId(listing.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <Badge variant="secondary" className={getStatusColor(listing.status)}>
+                  {listing.status}
+                </Badge>
+                <Badge variant="outline">{getSectionLabel(listing.section)}</Badge>
+              </div>
+              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Eye className="h-3 w-3" /> {listing.views} views
+                </span>
+                <span>{formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-foreground">My Listings</h1>
+        <Link href="/sell">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" /> New Listing
+          </Button>
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-4">
+                <div className="flex gap-4">
+                  <div className="w-24 h-24 bg-muted rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                    <div className="h-5 bg-muted rounded w-1/4" />
+                    <div className="h-3 bg-muted rounded w-1/3" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : listings.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No listings yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Start selling by creating your first listing
+            </p>
+            <Link href="/sell">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" /> Create Listing
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <Tabs defaultValue="all">
+          <TabsList className="mb-4">
+            <TabsTrigger value="all">All ({listings.length})</TabsTrigger>
+            <TabsTrigger value="active">Active ({filterByStatus('active').length})</TabsTrigger>
+            <TabsTrigger value="sold">Sold ({filterByStatus('sold').length})</TabsTrigger>
+            <TabsTrigger value="pending">Pending ({filterByStatus('pending').length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="space-y-4">
+            {listings.map(listing => <ListingCard key={listing.id} listing={listing} />)}
+          </TabsContent>
+          <TabsContent value="active" className="space-y-4">
+            {filterByStatus('active').map(listing => <ListingCard key={listing.id} listing={listing} />)}
+          </TabsContent>
+          <TabsContent value="sold" className="space-y-4">
+            {filterByStatus('sold').map(listing => <ListingCard key={listing.id} listing={listing} />)}
+          </TabsContent>
+          <TabsContent value="pending" className="space-y-4">
+            {filterByStatus('pending').map(listing => <ListingCard key={listing.id} listing={listing} />)}
+          </TabsContent>
+        </Tabs>
+      )}
+
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Listing</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this listing? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
