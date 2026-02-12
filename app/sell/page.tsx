@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { Suspense } from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -71,7 +71,7 @@ type EditableImage = {
   file?: File
 }
 
-export default function SellPage() {
+function SellPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -724,5 +724,19 @@ export default function SellPage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function SellPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    }>
+      <SellPageContent />
+    </Suspense>
   )
 }
