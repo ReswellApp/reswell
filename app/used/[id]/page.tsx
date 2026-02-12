@@ -6,9 +6,12 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatCondition, formatCategory } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
+import { ShareButton } from "@/components/share-button"
+import { EndListingButton } from "@/components/end-listing-button"
 import {
   ArrowLeft,
   Heart,
@@ -22,7 +25,7 @@ import {
 import { ImageGallery } from "@/components/image-gallery"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { BuyWithBucks } from "@/components/buy-with-bucks"
+import { PurchaseOptions } from "@/components/purchase-options"
 
 export default async function UsedListingPage(props: {
   params: Promise<{ id: string }>
@@ -100,7 +103,7 @@ export default async function UsedListingPage(props: {
                   href={`/used?category=${listing.categories.slug}`}
                   className="hover:text-foreground"
                 >
-                  {listing.categories.name}
+                  {formatCategory(listing.categories.name)}
                 </Link>
               </>
             )}
@@ -123,10 +126,7 @@ export default async function UsedListingPage(props: {
                       initialFavorited={isFavorited}
                       isLoggedIn={!!user}
                     />
-                    <Button variant="outline" size="icon">
-                      <Share2 className="h-4 w-4" />
-                      <span className="sr-only">Share</span>
-                    </Button>
+                    <ShareButton title={listing.title} />
                   </div>
                 </div>
                 <p className="text-3xl font-bold text-primary mt-2">
@@ -134,9 +134,9 @@ export default async function UsedListingPage(props: {
                 </p>
               </div>
 
-              {/* Buy with reswell Bucks */}
+              {/* Pay with card, Apple Pay, or ReSwell Bucks */}
               {!isOwnListing && listing.status === "active" && (
-                <BuyWithBucks
+                <PurchaseOptions
                   listingId={listing.id}
                   listingTitle={listing.title}
                   price={listing.price}
@@ -145,9 +145,9 @@ export default async function UsedListingPage(props: {
               )}
 
               <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{listing.condition}</Badge>
+                <Badge variant="secondary">{formatCondition(listing.condition)}</Badge>
                 {listing.categories && (
-                  <Badge variant="outline">{listing.categories.name}</Badge>
+                  <Badge variant="outline">{formatCategory(listing.categories.name)}</Badge>
                 )}
                 {listing.allows_shipping && (
                   <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
@@ -229,11 +229,14 @@ export default async function UsedListingPage(props: {
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="p-4 text-center">
                     <p className="text-sm text-muted-foreground mb-2">This is your listing</p>
-                    <Button asChild>
-                      <Link href={`/dashboard/listings/${listing.id}/edit`}>
-                        Edit Listing
-                      </Link>
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Button asChild>
+                        <Link href={`/dashboard/listings/${listing.id}/edit`}>
+                          Edit listing
+                        </Link>
+                      </Button>
+                      <EndListingButton listingId={listing.id} />
+                    </div>
                   </CardContent>
                 </Card>
               )}

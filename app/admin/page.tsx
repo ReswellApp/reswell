@@ -33,17 +33,17 @@ export default async function AdminDashboard() {
     .limit(5)
 
   // Fetch section breakdown
-  const { data: usedCount } = await supabase
+  const { count: usedCount } = await supabase
     .from('listings')
     .select('*', { count: 'exact', head: true })
     .eq('section', 'used')
-  
-  const { data: newCount } = await supabase
+
+  const { count: newCount } = await supabase
     .from('listings')
     .select('*', { count: 'exact', head: true })
     .eq('section', 'new')
-  
-  const { data: boardsCount } = await supabase
+
+  const { count: boardsCount } = await supabase
     .from('listings')
     .select('*', { count: 'exact', head: true })
     .eq('section', 'surfboards')
@@ -76,16 +76,16 @@ export default async function AdminDashboard() {
   ]
 
   const sectionStats = [
-    { label: 'Used Gear', count: usedCount?.length || 0, color: 'bg-blue-500' },
-    { label: 'New Items', count: newCount?.length || 0, color: 'bg-green-500' },
-    { label: 'Surfboards', count: boardsCount?.length || 0, color: 'bg-amber-500' },
+    { label: 'Used Gear', count: usedCount ?? 0, color: 'bg-blue-500' },
+    { label: 'New Items', count: newCount ?? 0, color: 'bg-green-500' },
+    { label: 'Surfboards', count: boardsCount ?? 0, color: 'bg-amber-500' },
   ]
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here&apos;s an overview of reswell.</p>
+        <p className="text-muted-foreground">Welcome back! Here&apos;s an overview of ReSwell Surf.</p>
       </div>
 
       {/* Stats Grid */}

@@ -8,20 +8,26 @@ import { Button } from "@/components/ui/button"
 import {
   LayoutDashboard,
   Package,
+  Archive,
   Heart,
   Settings,
   ShoppingBag,
   Plus,
   Store,
+  UserCircle,
   Wallet,
+  Flag,
 } from "lucide-react"
 
 const sidebarLinks = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
-  { name: "reswell Bucks", href: "/dashboard/wallet", icon: Wallet },
+  { name: "Archived", href: "/dashboard/listings/archived", icon: Archive },
+  { name: "ReSwell Bucks", href: "/dashboard/wallet", icon: Wallet },
   { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+  { name: "Reports", href: "/dashboard/reports", icon: Flag },
+  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 

@@ -63,7 +63,7 @@ export default function Page() {
             <CardHeader>
               <CardTitle className="text-2xl">Welcome back</CardTitle>
               <CardDescription>
-                Sign in to your reswell account
+                Sign in to your ReSwell Surf account
               </CardDescription>
             </CardHeader>
             <CardContent>

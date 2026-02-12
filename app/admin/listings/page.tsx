@@ -97,6 +97,7 @@ export default function AdminListingsPage() {
   }
 
   async function deleteListing(id: string) {
+    if (!confirm('Permanently delete this listing? This cannot be undone.')) return
     const { error } = await supabase
       .from('listings')
       .delete()
@@ -125,11 +126,26 @@ export default function AdminListingsPage() {
     }
   }
 
+  /** Public URL for a listing by section (used → /used, new → /shop, surfboards → /boards). */
+  function getListingViewHref(section: string, id: string) {
+    if (section === 'surfboards') return `/boards/${id}`
+    if (section === 'new') return `/shop/${id}`
+    return `/used/${id}`
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Manage Listings</h1>
-        <p className="text-muted-foreground">View and moderate all marketplace listings</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Manage Listings</h1>
+          <p className="text-muted-foreground">View and moderate all marketplace listings</p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/listings/add">
+            <Package className="h-4 w-4 mr-2" />
+            Add listing (for user)
+          </Link>
+        </Button>
       </div>
 
       {/* Filters */}
@@ -250,7 +266,7 @@ export default function AdminListingsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/${listing.section}/${listing.id}`}>
+                            <Link href={getListingViewHref(listing.section, listing.id)}>
                               <Eye className="h-4 w-4 mr-2" /> View
                             </Link>
                           </DropdownMenuItem>

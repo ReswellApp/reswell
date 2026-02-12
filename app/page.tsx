@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatCondition } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -20,12 +21,12 @@ import {
 } from "lucide-react"
 
 const categories = [
-  { name: "Surfboards", slug: "surfboards", icon: "🏄" },
-  { name: "Wetsuits", slug: "wetsuits", icon: "🦭" },
-  { name: "Fins", slug: "fins", icon: "🦈" },
-  { name: "Leashes", slug: "leashes", icon: "🔗" },
-  { name: "Traction Pads", slug: "traction-pads", icon: "👣" },
-  { name: "Board Bags", slug: "board-bags", icon: "🎒" },
+  { name: "Surfboards", href: "/boards" },
+  { name: "Wetsuits", href: "/used?category=wetsuits" },
+  { name: "Fins", href: "/used?category=fins" },
+  { name: "Leashes", href: "/used?category=leashes" },
+  { name: "Traction Pads", href: "/used?category=traction-pads-used" },
+  { name: "Board Bags", href: "/used?category=board-bags" },
 ]
 
 const features = [
@@ -107,7 +108,7 @@ export default async function HomePage() {
       profiles (display_name, avatar_url, location, sales_count)
     `)
     .eq("status", "active")
-    .eq("section", "board")
+    .eq("section", "surfboards")
     .order("created_at", { ascending: false })
     .limit(20)
 
@@ -269,11 +270,10 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
               {categories.map((category) => (
                 <Link
-                  key={category.slug}
-                  href={`/used?category=${category.slug}`}
-                  className="group flex flex-col items-center rounded-xl bg-card p-4 text-center transition-all hover:bg-primary/5 hover:shadow-md"
+                  key={category.href}
+                  href={category.href}
+                  className="group flex flex-col items-center justify-center rounded-xl bg-card p-4 text-center transition-all hover:bg-primary/5 hover:shadow-md min-h-[80px]"
                 >
-                  <span className="text-3xl mb-2">{category.icon}</span>
                   <span className="text-sm font-medium">{category.name}</span>
                 </Link>
               ))}
@@ -379,7 +379,7 @@ export default async function HomePage() {
                           </div>
                         )}
                         <Badge className="absolute top-2 left-2" variant="secondary">
-                          {listing.condition}
+                          {formatCondition(listing.condition)}
                         </Badge>
                       </div>
                       <CardContent className="p-4">
@@ -493,7 +493,7 @@ export default async function HomePage() {
                           </div>
                         )}
                         <Badge className="absolute top-2 left-2" variant="secondary">
-                          {board.condition}
+                          {formatCondition(board.condition)}
                         </Badge>
                       </div>
                       <CardContent className="p-4">
@@ -517,7 +517,7 @@ export default async function HomePage() {
         {/* Features */}
         <section className="py-16 bg-primary/5">
           <div className="container mx-auto px-4">
-            <h2 className="text-2xl font-bold text-center mb-12">Why Choose reswell?</h2>
+            <h2 className="text-2xl font-bold text-center mb-12">Why Choose ReSwell Surf?</h2>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((feature) => (
                 <div key={feature.title} className="text-center">

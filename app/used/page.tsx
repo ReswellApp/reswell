@@ -6,41 +6,9 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { formatCondition, formatCategory } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
-import { Search, SlidersHorizontal } from "lucide-react"
-
-const categories = [
-  { value: "all", label: "All Categories" },
-  { value: "surfboards", label: "Surfboards" },
-  { value: "wetsuits", label: "Wetsuits" },
-  { value: "fins", label: "Fins" },
-  { value: "leashes", label: "Leashes" },
-  { value: "traction-pads", label: "Traction Pads" },
-  { value: "board-bags", label: "Board Bags" },
-  { value: "accessories", label: "Other Accessories" },
-]
-
-const conditions = [
-  { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like-new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
-]
-
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-]
+import { UsedListingsFilters } from "@/components/used-listings-filters"
 
 interface SearchParams {
   category?: string
@@ -73,7 +41,17 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
     .eq("section", "used")
 
   if (category !== "all") {
-    dbQuery = dbQuery.eq("categories.slug", category)
+    const { data: catRow } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", category)
+      .eq("section", "used")
+      .single()
+    if (catRow?.id) {
+      dbQuery = dbQuery.eq("category_id", catRow.id)
+    } else {
+      dbQuery = dbQuery.eq("category_id", "00000000-0000-0000-0000-000000000000")
+    }
   }
 
   if (condition !== "all") {
@@ -112,6 +90,16 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
 
   const totalPages = Math.ceil((count || 0) / limit)
 
+  function pageUrl(pageNum: number) {
+    const params = new URLSearchParams()
+    if (searchParams.q) params.set("q", searchParams.q)
+    if (searchParams.category && searchParams.category !== "all") params.set("category", searchParams.category)
+    if (searchParams.condition && searchParams.condition !== "all") params.set("condition", searchParams.condition)
+    if (searchParams.sort && searchParams.sort !== "newest") params.set("sort", searchParams.sort)
+    params.set("page", String(pageNum))
+    return `/used?${params.toString()}`
+  }
+
   if (!listings || listings.length === 0) {
     return (
       <div className="text-center py-16">
@@ -145,7 +133,7 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
                     </div>
                   )}
                   <Badge className="absolute top-2 left-2" variant="secondary">
-                    {listing.condition}
+                    {formatCondition(listing.condition)}
                   </Badge>
                   {listing.allows_shipping && (
                     <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
@@ -164,7 +152,7 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
                     </p>
                     {listing.categories?.name && (
                       <Badge variant="outline" className="text-xs">
-                        {listing.categories.name}
+                        {formatCategory(listing.categories.name)}
                       </Badge>
                     )}
                   </div>
@@ -180,14 +168,7 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <Button variant="outline" asChild>
-              <Link
-                href={{
-                  pathname: "/used",
-                  query: { ...searchParams, page: page - 1 },
-                }}
-              >
-                Previous
-              </Link>
+              <Link href={pageUrl(page - 1)}>Previous</Link>
             </Button>
           )}
           <span className="flex items-center px-4 text-sm text-muted-foreground">
@@ -195,14 +176,7 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
           </span>
           {page < totalPages && (
             <Button variant="outline" asChild>
-              <Link
-                href={{
-                  pathname: "/used",
-                  query: { ...searchParams, page: page + 1 },
-                }}
-              >
-                Next
-              </Link>
+              <Link href={pageUrl(page + 1)}>Next</Link>
             </Button>
           )}
         </div>
@@ -215,7 +189,31 @@ export default async function UsedGearPage(props: {
   searchParams: Promise<SearchParams>
 }) {
   const searchParams = await props.searchParams
-  
+  const supabase = await createClient()
+  const { data: usedCategories } = await supabase
+    .from("categories")
+    .select("id, name, slug")
+    .eq("section", "used")
+    .order("name")
+
+  // Exclude Hardware & Accessories and Travel & Storage from used section
+  const excludedSlugs = ["hardware-accessories", "travel-storage"]
+  const filtered = usedCategories?.filter((c) => !excludedSlugs.includes(c.slug)) ?? []
+  const slugsAtBottom = ["apparel-lifestyle", "collectibles-vintage"]
+  const sorted = filtered.slice().sort((a, b) => {
+    const aAtBottom = slugsAtBottom.indexOf(a.slug)
+    const bAtBottom = slugsAtBottom.indexOf(b.slug)
+    if (aAtBottom === -1 && bAtBottom === -1) return 0
+    if (aAtBottom === -1) return -1
+    if (bAtBottom === -1) return 1
+    return aAtBottom - bAtBottom
+  })
+
+  const categoryOptions = [
+    { value: "all", label: "All Categories" },
+    ...sorted.map((c) => ({ value: c.slug, label: c.name })),
+  ]
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -234,61 +232,13 @@ export default async function UsedGearPage(props: {
         {/* Filters */}
         <section className="border-b py-4 sticky top-16 bg-background z-40">
           <div className="container mx-auto px-4">
-            <form className="flex flex-wrap gap-4 items-center">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  name="q"
-                  placeholder="Search listings..."
-                  defaultValue={searchParams.q}
-                  className="pl-10"
-                />
-              </div>
-              
-              <Select name="category" defaultValue={searchParams.category || "all"}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select name="condition" defaultValue={searchParams.condition || "all"}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Condition" />
-                </SelectTrigger>
-                <SelectContent>
-                  {conditions.map((cond) => (
-                    <SelectItem key={cond.value} value={cond.value}>
-                      {cond.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select name="sort" defaultValue={searchParams.sort || "newest"}>
-                <SelectTrigger className="w-[170px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button type="submit">
-                <SlidersHorizontal className="h-4 w-4 mr-2" />
-                Apply
-              </Button>
-            </form>
+            <UsedListingsFilters
+              categoryOptions={categoryOptions}
+              initialQ={searchParams.q ?? ""}
+              initialCategory={searchParams.category ?? "all"}
+              initialCondition={searchParams.condition ?? "all"}
+              initialSort={searchParams.sort ?? "newest"}
+            />
           </div>
         </section>
 

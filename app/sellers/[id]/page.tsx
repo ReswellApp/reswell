@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatCondition, formatCategory } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
@@ -36,9 +37,9 @@ export async function generateMetadata({
 
   return {
     title: shop
-      ? `${shop.shop_name || shop.display_name} - reswell`
-      : "Seller - reswell",
-    description: shop?.shop_description || "View this seller on reswell.",
+? `${shop.shop_name || shop.display_name} - ReSwell Surf`
+  : "Seller - ReSwell Surf",
+    description: shop?.shop_description || "View this seller on ReSwell Surf.",
   }
 }
 
@@ -285,16 +286,6 @@ function ListingGrid({ listings }: { listings: any[] }) {
     }
   }
 
-  function getConditionLabel(condition: string) {
-    const labels: Record<string, string> = {
-      new: "New",
-      like_new: "Like New",
-      good: "Good",
-      fair: "Fair",
-    }
-    return labels[condition] || condition
-  }
-
   return (
     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {listings.map((listing) => {
@@ -322,7 +313,7 @@ function ListingGrid({ listings }: { listings: any[] }) {
                 <div className="absolute top-2 left-2 flex gap-1.5">
                   {listing.condition && (
                     <Badge variant="secondary" className="text-xs">
-                      {getConditionLabel(listing.condition)}
+                      {formatCondition(listing.condition)}
                     </Badge>
                   )}
                   <Badge

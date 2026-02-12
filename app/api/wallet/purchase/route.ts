@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
   if (!buyerWallet || parseFloat(buyerWallet.balance) < price) {
     return NextResponse.json(
-      { error: "Insufficient reswell bucks", balance: buyerWallet?.balance || 0 },
+      { error: "Insufficient ReSwell bucks", balance: buyerWallet?.balance || 0 },
       { status: 400 }
     )
   }

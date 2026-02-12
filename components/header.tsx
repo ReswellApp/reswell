@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -37,11 +38,13 @@ const navigation = [
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [cartCount, setCartCount] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
   const supabase = createClient()
 
   useEffect(() => {
@@ -54,13 +57,14 @@ export function Header() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_admin")
+          .select("is_admin, avatar_url")
           .eq("id", user.id)
           .single()
         setIsAdmin(profile?.is_admin || false)
+        setProfileAvatarUrl(profile?.avatar_url || null)
 
         const cart = JSON.parse(localStorage.getItem("cart") || "[]")
-        setCartCount(cart.length)
+        setCartCount(cart.reduce((sum: number, i: { quantity?: number }) => sum + (i.quantity ?? 1), 0))
 
         const { count } = await supabase
           .from("messages")
@@ -80,14 +84,23 @@ export function Header() {
 
     getUser()
 
+    function updateCartCount() {
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]")
+      setCartCount(cart.reduce((sum: number, i: { quantity?: number }) => sum + (i.quantity ?? 1), 0))
+    }
+    window.addEventListener("cartUpdated", updateCartCount)
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
 
-    return () => subscription.unsubscribe()
-  }, [supabase])
+    return () => {
+      window.removeEventListener("cartUpdated", updateCartCount)
+      subscription.unsubscribe()
+    }
+  }, [supabase, pathname])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -117,7 +130,7 @@ export function Header() {
                 <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-foreground">reswell</span>
+            <span className="text-xl font-bold text-foreground">ReSwell Surf</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -175,7 +188,7 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} />
+                        <AvatarImage src={profileAvatarUrl || user.user_metadata?.avatar_url || "/placeholder.svg"} alt="Profile" />
                         <AvatarFallback>{user.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                       </Avatar>
                     </Button>
@@ -196,7 +209,7 @@ export function Header() {
                       <Link href="/dashboard/wallet" className="flex items-center justify-between">
                         <span className="flex items-center">
                           <Wallet className="mr-2 h-4 w-4" />
-                          reswell Bucks
+                          ReSwell Bucks
                         </span>
                         {walletBalance !== null && (
                           <span className="text-xs font-medium text-primary ml-2">

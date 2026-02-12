@@ -82,7 +82,7 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
       <DialogTrigger asChild>
         <Button size="lg" className="w-full gap-2">
           <Wallet className="h-4 w-4" />
-          Buy with reswell Bucks - R${price.toFixed(2)}
+          Buy with ReSwell Bucks - R${price.toFixed(2)}
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -126,7 +126,7 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
             <DialogHeader>
               <DialogTitle>Confirm Purchase</DialogTitle>
               <DialogDescription>
-                Buy &quot;{listingTitle}&quot; with reswell Bucks
+                Buy &quot;{listingTitle}&quot; with ReSwell Bucks
               </DialogDescription>
             </DialogHeader>
 
@@ -140,7 +140,7 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
                   <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
                   <p className="font-medium">Sign in required</p>
                   <p className="text-sm text-muted-foreground">
-                    You need to sign in to purchase items with reswell Bucks.
+                    You need to sign in to purchase items with ReSwell Bucks.
                   </p>
                   <Button asChild>
                     <Link href="/auth/login">Sign In</Link>
@@ -185,7 +185,7 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
                     <div className="flex items-start gap-2 text-sm text-destructive">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <p>
-                        You need R${(price - (balance ?? 0)).toFixed(2)} more. Earn reswell Bucks by selling items on the marketplace.
+                        You need R${(price - (balance ?? 0)).toFixed(2)} more. Earn ReSwell Bucks by selling items on the marketplace.
                       </p>
                     </div>
                   )}

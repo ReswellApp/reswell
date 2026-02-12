@@ -12,6 +12,7 @@ import {
   TrendingUp,
   ArrowRight,
   Wallet,
+  Flag,
 } from "lucide-react"
 
 export default async function DashboardPage() {
@@ -52,6 +53,12 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(4)
 
+  // Get my reports count
+  const { count: reportsCount } = await supabase
+    .from("reports")
+    .select("*", { count: "exact", head: true })
+    .eq("reporter_id", user.id)
+
   // Get wallet balance
   const { data: wallet } = await supabase
     .from("wallets")
@@ -70,7 +77,7 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      name: "reswell Bucks",
+      name: "ReSwell Bucks",
       value: `R$${walletBalance.toFixed(2)}`,
       icon: Wallet,
       href: "/dashboard/wallet",
@@ -94,6 +101,12 @@ export default async function DashboardPage() {
       value: unreadCount || 0,
       icon: MessageSquare,
       href: "/messages",
+    },
+    {
+      name: "My Reports",
+      value: reportsCount || 0,
+      icon: Flag,
+      href: "/dashboard/reports",
     },
   ]
 
@@ -229,7 +242,13 @@ export default async function DashboardPage() {
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
               <Link href="/dashboard/wallet">
                 <Wallet className="h-6 w-6 mb-2" />
-                reswell Bucks
+                ReSwell Bucks
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
+              <Link href="/dashboard/reports">
+                <Flag className="h-6 w-6 mb-2" />
+                Reports
               </Link>
             </Button>
           </div>

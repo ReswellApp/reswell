@@ -8,6 +8,13 @@ import { Minus, Plus, ShoppingCart, Check, Loader2 } from "lucide-react"
 interface QuantitySelectorProps {
   productId: string
   maxQuantity: number
+  /** When provided (e.g. from listing page), skip API fetch and use this for cart */
+  item?: {
+    id: string
+    name: string
+    price: number
+    image_url: string | null
+  }
 }
 
 interface InventoryItem {
@@ -17,14 +24,17 @@ interface InventoryItem {
   image_url: string | null
 }
 
-export function QuantitySelector({ productId, maxQuantity }: QuantitySelectorProps) {
+export function QuantitySelector({ productId, maxQuantity, item: itemProp }: QuantitySelectorProps) {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
-  const [product, setProduct] = useState<InventoryItem | null>(null)
+  const [product, setProduct] = useState<InventoryItem | null>(itemProp ?? null)
 
   useEffect(() => {
-    // Fetch product details for cart
+    if (itemProp) {
+      setProduct(itemProp)
+      return
+    }
     async function fetchProduct() {
       try {
         const response = await fetch(`/api/products/${productId}`)
@@ -37,7 +47,7 @@ export function QuantitySelector({ productId, maxQuantity }: QuantitySelectorPro
       }
     }
     fetchProduct()
-  }, [productId])
+  }, [productId, itemProp])
 
   function incrementQuantity() {
     if (quantity < maxQuantity) {

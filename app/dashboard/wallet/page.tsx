@@ -193,7 +193,7 @@ export default function WalletPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">reswell Bucks</h1>
+        <h1 className="text-2xl font-bold tracking-tight">ReSwell Bucks</h1>
         <p className="text-muted-foreground">
           Your internal currency for buying and selling on the marketplace
         </p>
@@ -261,9 +261,9 @@ export default function WalletPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Cash Out reswell Bucks</DialogTitle>
+              <DialogTitle>Cash Out ReSwell Bucks</DialogTitle>
               <DialogDescription>
-                Convert your reswell bucks to real currency. A {CASHOUT_FEE_PERCENT}% processing fee applies. 
+                Convert your ReSwell bucks to real currency. A {CASHOUT_FEE_PERCENT}% processing fee applies. 
                 Minimum cash-out is R${MIN_CASHOUT}.00.
               </DialogDescription>
             </DialogHeader>
@@ -456,8 +456,8 @@ export default function WalletPage() {
       {/* How It Works */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">How reswell Bucks Work</CardTitle>
-          <CardDescription>Your guide to the reswell marketplace currency</CardDescription>
+          <CardTitle className="text-lg">How ReSwell Bucks Work</CardTitle>
+          <CardDescription>Your guide to the ReSwell Surf marketplace currency</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 sm:grid-cols-3">
@@ -469,7 +469,7 @@ export default function WalletPage() {
                 Earn
               </div>
               <p className="text-sm text-muted-foreground">
-                When you sell items on reswell, the buyer pays in reswell bucks and the funds go straight to your wallet (minus a 5% platform fee).
+                When you sell items on ReSwell Surf, the buyer pays in ReSwell bucks and the funds go straight to your wallet (minus a 5% platform fee).
               </p>
             </div>
             <div className="space-y-2">
@@ -480,7 +480,7 @@ export default function WalletPage() {
                 Spend
               </div>
               <p className="text-sm text-muted-foreground">
-                Use your reswell bucks to purchase used gear, surfboards, and more from other sellers on the marketplace.
+                Use your ReSwell bucks to purchase used gear, surfboards, and more from other sellers on the marketplace.
               </p>
             </div>
             <div className="space-y-2">
@@ -491,7 +491,7 @@ export default function WalletPage() {
                 Cash Out
               </div>
               <p className="text-sm text-muted-foreground">
-                Cash out your reswell bucks to real currency via PayPal, Venmo, or bank transfer. A 3% processing fee applies. Minimum R$10.00.
+                Cash out your ReSwell bucks to real currency via PayPal, Venmo, or bank transfer. A 3% processing fee applies. Minimum R$10.00.
               </p>
             </div>
           </div>

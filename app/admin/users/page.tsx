@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -135,7 +136,10 @@ export default function AdminUsersPage() {
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
-                      <div className="flex items-center gap-3">
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className="flex items-center gap-3 hover:opacity-90"
+                      >
                         <div className="relative w-8 h-8 rounded-full bg-muted overflow-hidden flex-shrink-0">
                           {user.avatar_url ? (
                             <Image
@@ -150,10 +154,10 @@ export default function AdminUsersPage() {
                             </div>
                           )}
                         </div>
-                        <span className="font-medium text-foreground">
+                        <span className="font-medium text-foreground hover:text-primary">
                           {user.display_name || 'Unknown'}
                         </span>
-                      </div>
+                      </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell className="text-muted-foreground">

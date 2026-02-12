@@ -6,44 +6,12 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { formatCondition, formatBoardType } from "@/lib/listing-labels"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
-import { Search, MapPin, SlidersHorizontal, Users, Store } from "lucide-react"
+import { BoardsListingsFilters } from "@/components/boards-listings-filters"
+import { MapPin, Users, Store } from "lucide-react"
 import { ShopifyBoardsGrid } from "@/components/shopify-boards"
-
-const boardTypes = [
-  { value: "all", label: "All Board Types" },
-  { value: "shortboard", label: "Shortboard" },
-  { value: "longboard", label: "Longboard" },
-  { value: "funboard", label: "Funboard / Mid-length" },
-  { value: "fish", label: "Fish" },
-  { value: "gun", label: "Gun" },
-  { value: "foamie", label: "Foam / Soft Top" },
-  { value: "other", label: "Other" },
-]
-
-const conditions = [
-  { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like-new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
-]
-
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-  { value: "nearest", label: "Nearest First" },
-]
 
 interface SearchParams {
   type?: string
@@ -74,7 +42,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
       profiles (display_name, avatar_url, location, sales_count)
     `, { count: "exact" })
     .eq("status", "active")
-    .eq("section", "board")
+    .eq("section", "surfboards")
 
   if (boardType !== "all") {
     dbQuery = dbQuery.eq("board_type", boardType)
@@ -89,7 +57,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
   }
 
   if (location) {
-    dbQuery = dbQuery.ilike("profiles.location", `%${location}%`)
+    dbQuery = dbQuery.or(`city.ilike.%${location}%,state.ilike.%${location}%`)
   }
 
   const isDefaultSort = sort === "newest"
@@ -118,6 +86,17 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     : rawBoards
 
   const totalPages = Math.ceil((count || 0) / limit)
+
+  function pageUrl(pageNum: number) {
+    const params = new URLSearchParams()
+    if (searchParams.q) params.set("q", searchParams.q)
+    if (searchParams.location) params.set("location", searchParams.location)
+    if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
+    if (searchParams.condition && searchParams.condition !== "all") params.set("condition", searchParams.condition)
+    if (searchParams.sort && searchParams.sort !== "newest") params.set("sort", searchParams.sort)
+    params.set("page", String(pageNum))
+    return `/boards?${params.toString()}`
+  }
 
   if (!boards || boards.length === 0) {
     return (
@@ -154,10 +133,10 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                     </div>
                   )}
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    <Badge variant="secondary">{board.condition}</Badge>
+                    <Badge variant="secondary">{formatCondition(board.condition)}</Badge>
                     {board.board_type && (
-                      <Badge variant="outline" className="bg-background/80 capitalize">
-                        {board.board_type}
+                      <Badge variant="outline" className="bg-background/80">
+                        {formatBoardType(board.board_type)}
                       </Badge>
                     )}
                   </div>
@@ -194,14 +173,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <Button variant="outline" asChild>
-              <Link
-                href={{
-                  pathname: "/boards",
-                  query: { ...searchParams, page: page - 1 },
-                }}
-              >
-                Previous
-              </Link>
+              <Link href={pageUrl(page - 1)}>Previous</Link>
             </Button>
           )}
           <span className="flex items-center px-4 text-sm text-muted-foreground">
@@ -209,14 +181,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
           </span>
           {page < totalPages && (
             <Button variant="outline" asChild>
-              <Link
-                href={{
-                  pathname: "/boards",
-                  query: { ...searchParams, page: page + 1 },
-                }}
-              >
-                Next
-              </Link>
+              <Link href={pageUrl(page + 1)}>Next</Link>
             </Button>
           )}
         </div>
@@ -274,71 +239,13 @@ export default async function BoardsPage(props: {
               <TabsContent value="local">
                 {/* Filters */}
                 <div className="border rounded-lg p-4 mb-6 bg-card">
-                  <form className="flex flex-wrap gap-4 items-center">
-                    <div className="relative flex-1 min-w-[200px]">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        name="q"
-                        placeholder="Search surfboards..."
-                        defaultValue={searchParams.q}
-                        className="pl-10"
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        name="location"
-                        placeholder="City or ZIP..."
-                        defaultValue={searchParams.location}
-                        className="pl-10 w-[150px]"
-                      />
-                    </div>
-                    
-                    <Select name="type" defaultValue={searchParams.type || "all"}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Board Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {boardTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select name="condition" defaultValue={searchParams.condition || "all"}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {conditions.map((cond) => (
-                          <SelectItem key={cond.value} value={cond.value}>
-                            {cond.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select name="sort" defaultValue={searchParams.sort || "newest"}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Sort by" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sortOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Button type="submit">
-                      <SlidersHorizontal className="h-4 w-4 mr-2" />
-                      Apply
-                    </Button>
-                  </form>
+                  <BoardsListingsFilters
+                    initialQ={searchParams.q ?? ""}
+                    initialLocation={searchParams.location ?? ""}
+                    initialType={searchParams.type ?? "all"}
+                    initialCondition={searchParams.condition ?? "all"}
+                    initialSort={searchParams.sort ?? "newest"}
+                  />
                 </div>
 
                 <Suspense

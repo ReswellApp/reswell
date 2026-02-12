@@ -51,7 +51,7 @@ export function Footer() {
                   <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
                 </svg>
               </div>
-              <span className="text-xl font-bold">reswell</span>
+              <span className="text-xl font-bold">ReSwell Surf</span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
               The peer-to-peer marketplace for surfing enthusiasts. Buy, sell, and discover amazing surf gear.
@@ -129,7 +129,7 @@ export function Footer() {
 
         <div className="mt-12 border-t pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            {new Date().getFullYear()} reswell. All rights reserved.
+            {new Date().getFullYear()} ReSwell Surf. All rights reserved.
           </p>
         </div>
       </div>

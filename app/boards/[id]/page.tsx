@@ -6,9 +6,12 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatCondition, formatBoardType } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
+import { ShareButton } from "@/components/share-button"
+import { EndListingButton } from "@/components/end-listing-button"
 import {
   ArrowLeft,
   MapPin,
@@ -23,7 +26,7 @@ import { ImageGallery } from "@/components/image-gallery"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { LocationMap } from "@/components/location-map"
-import { BuyWithBucks } from "@/components/buy-with-bucks"
+import { PurchaseOptions } from "@/components/purchase-options"
 
 export default async function BoardDetailPage(props: {
   params: Promise<{ id: string }>
@@ -39,7 +42,7 @@ export default async function BoardDetailPage(props: {
       profiles (id, display_name, avatar_url, location, created_at)
     `)
     .eq("id", params.id)
-    .eq("section", "board")
+    .eq("section", "surfboards")
     .single()
 
   if (!board) {
@@ -58,7 +61,7 @@ export default async function BoardDetailPage(props: {
     `)
     .eq("user_id", board.user_id)
     .eq("status", "active")
-    .eq("section", "board")
+    .eq("section", "surfboards")
     .neq("id", board.id)
     .limit(4)
 
@@ -108,19 +111,6 @@ export default async function BoardDetailPage(props: {
             )}
           </div>
 
-          {/* In-Person Only Banner */}
-          <Card className="mb-6 bg-amber-50 border-amber-200">
-            <CardContent className="p-4 flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-amber-800">In-Person Pickup Only</p>
-                <p className="text-sm text-amber-700">
-                  This surfboard is available for local pickup only. Meet the seller to inspect before purchasing.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Images */}
             <div>
@@ -138,10 +128,7 @@ export default async function BoardDetailPage(props: {
                       initialFavorited={isFavorited}
                       isLoggedIn={!!user}
                     />
-                    <Button variant="outline" size="icon">
-                      <Share2 className="h-4 w-4" />
-                      <span className="sr-only">Share</span>
-                    </Button>
+                    <ShareButton title={board.title} />
                   </div>
                 </div>
                 <p className="text-3xl font-bold text-primary mt-2">
@@ -149,9 +136,9 @@ export default async function BoardDetailPage(props: {
                 </p>
               </div>
 
-              {/* Buy with reswell Bucks */}
+              {/* Pay with card, Apple Pay, or ReSwell Bucks */}
               {!isOwnListing && board.status === "active" && (
-                <BuyWithBucks
+                <PurchaseOptions
                   listingId={board.id}
                   listingTitle={board.title}
                   price={board.price}
@@ -161,9 +148,9 @@ export default async function BoardDetailPage(props: {
 
               {/* Board Specs */}
               <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{board.condition}</Badge>
+                <Badge variant="secondary">{formatCondition(board.condition)}</Badge>
                 {board.board_type && (
-                  <Badge variant="outline" className="capitalize">{board.board_type}</Badge>
+                  <Badge variant="outline">{formatBoardType(board.board_type)}</Badge>
                 )}
                 {board.board_length && (
                   <Badge variant="outline">
@@ -185,7 +172,7 @@ export default async function BoardDetailPage(props: {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 mb-3">
-                    Approximate pickup area (exact location shared after contact)
+                    Approximate pickup area for meeting the seller. This surfboard is available for local pickup only.
                   </p>
                   {board.latitude && board.longitude ? (
                     <LocationMap
@@ -196,6 +183,8 @@ export default async function BoardDetailPage(props: {
                           ? `${board.city}, ${board.state}`
                           : "Pickup Location"
                       }
+                      showDirections
+                      height={280}
                     />
                   ) : board.profiles?.location ? (
                     <div className="h-[200px] rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-sm">
@@ -271,11 +260,14 @@ export default async function BoardDetailPage(props: {
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="p-4 text-center">
                     <p className="text-sm text-muted-foreground mb-2">This is your listing</p>
-                    <Button asChild>
-                      <Link href={`/dashboard/listings/${board.id}/edit`}>
-                        Edit Listing
-                      </Link>
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Button asChild>
+                        <Link href={`/dashboard/listings/${board.id}/edit`}>
+                          Edit listing
+                        </Link>
+                      </Button>
+                      <EndListingButton listingId={board.id} />
+                    </div>
                   </CardContent>
                 </Card>
               )}

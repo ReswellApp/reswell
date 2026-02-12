@@ -16,7 +16,7 @@ export default function Page() {
               <CardTitle className="text-2xl">
                 Thank you for signing up!
               </CardTitle>
-              <CardDescription>Check your email to confirm your reswell account</CardDescription>
+              <CardDescription>Check your email to confirm your ReSwell Surf account</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">

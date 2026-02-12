@@ -39,7 +39,11 @@ export default async function AdminLayout({
     .eq('id', user.id)
     .single()
 
-  if (!profile?.is_admin) {
+  // Only the designated super-admin email can access the admin area
+  const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
+  const isSuperAdmin = user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
+
+  if (!profile?.is_admin || !isSuperAdmin) {
     redirect('/')
   }
 

@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, MoreVertical, Eye, Edit, Trash2, Package } from 'lucide-react'
+import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -36,13 +36,15 @@ interface Listing {
   section: string
   views: number
   created_at: string
+  archived_at?: string | null
   listing_images: { url: string; is_primary: boolean }[]
 }
 
 export default function MyListingsPage() {
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [endListingId, setEndListingId] = useState<string | null>(null)
+  const [endChoice, setEndChoice] = useState<'sold' | 'removed' | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -53,14 +55,32 @@ export default function MyListingsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data, error } = await supabase
+    // Prefer filtering out archived so ended listings only show in Archived page.
+    // If archived_at column doesn't exist (migration not run), fall back to fetching all.
+    let data: Listing[] | null = null
+
+    const res = await supabase
       .from('listings')
-      .select('id, title, price, status, section, views, created_at, listing_images(url, is_primary)')
+      .select('id, title, price, status, section, views, created_at, archived_at, listing_images(url, is_primary)')
       .eq('user_id', user.id)
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
 
-    if (!error && data) {
-      setListings(data as Listing[])
+    if (res.error) {
+      const fallback = await supabase
+        .from('listings')
+        .select('id, title, price, status, section, views, created_at, listing_images(url, is_primary)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      if (!fallback.error && fallback.data) {
+        data = fallback.data as Listing[]
+      }
+    } else {
+      data = res.data as Listing[]
+    }
+
+    if (data) {
+      setListings(data)
     }
     setLoading(false)
   }
@@ -79,21 +99,31 @@ export default function MyListingsPage() {
     }
   }
 
-  async function handleDelete() {
-    if (!deleteId) return
+  async function handleEndListing() {
+    if (!endListingId || !endChoice) return
+    const newStatus = endChoice
 
     const { error } = await supabase
       .from('listings')
-      .delete()
-      .eq('id', deleteId)
+      .update({
+        status: newStatus,
+        archived_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', endListingId)
 
     if (!error) {
-      setListings(prev => prev.filter(l => l.id !== deleteId))
-      toast.success('Listing deleted')
+      setListings(prev => prev.filter(l => l.id !== endListingId))
+      toast.success(
+        newStatus === 'sold'
+          ? 'Listing marked as sold and archived'
+          : 'Listing removed and archived. It will be deleted after 30 days.'
+      )
     } else {
-      toast.error('Failed to delete listing')
+      toast.error('Failed to end listing')
     }
-    setDeleteId(null)
+    setEndListingId(null)
+    setEndChoice(null)
   }
 
   const getStatusColor = (status: string) => {
@@ -114,6 +144,12 @@ export default function MyListingsPage() {
     }
   }
 
+  const getListingHref = (section: string, id: string) => {
+    if (section === 'surfboards') return `/boards/${id}`
+    if (section === 'new') return `/shop/${id}`
+    return `/used/${id}`
+  }
+
   const filterByStatus = (status: string) => {
     if (status === 'all') return listings
     return listings.filter(l => l.status === status)
@@ -126,7 +162,7 @@ export default function MyListingsPage() {
       <Card>
         <CardContent className="p-4">
           <div className="flex gap-4">
-            <Link href={`/${listing.section}/${listing.id}`} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+            <Link href={getListingHref(listing.section, listing.id)} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {primaryImage?.url ? (
                 <Image
                   src={primaryImage.url || "/placeholder.svg"}
@@ -143,7 +179,7 @@ export default function MyListingsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <Link href={`/${listing.section}/${listing.id}`} className="font-semibold text-foreground hover:text-primary truncate block">
+                  <Link href={getListingHref(listing.section, listing.id)} className="font-semibold text-foreground hover:text-primary truncate block">
                     {listing.title}
                   </Link>
                   <p className="text-lg font-bold text-primary">${listing.price}</p>
@@ -156,7 +192,7 @@ export default function MyListingsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/${listing.section}/${listing.id}`}>
+                      <Link href={getListingHref(listing.section, listing.id)}>
                         <Eye className="h-4 w-4 mr-2" /> View
                       </Link>
                     </DropdownMenuItem>
@@ -175,11 +211,8 @@ export default function MyListingsPage() {
                         Relist
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => setDeleteId(listing.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    <DropdownMenuItem onClick={() => { setEndListingId(listing.id); setEndChoice(null); }}>
+                      <Archive className="h-4 w-4 mr-2" /> End listing
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -207,11 +240,18 @@ export default function MyListingsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">My Listings</h1>
-        <Link href="/sell">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" /> New Listing
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/listings/archived">
+            <Button variant="outline">
+              <Archive className="h-4 w-4 mr-2" /> Archived
+            </Button>
+          </Link>
+          <Link href="/sell">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" /> New Listing
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {loading ? (
@@ -269,18 +309,40 @@ export default function MyListingsPage() {
         </Tabs>
       )}
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog
+        open={!!endListingId}
+        onOpenChange={(open) => { if (!open) { setEndListingId(null); setEndChoice(null); } }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Listing</AlertDialogTitle>
+            <AlertDialogTitle>End listing</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this listing? This action cannot be undone.
+              The listing will be archived for 30 days, then permanently deleted. Choose how to end it:
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex flex-col gap-2 py-2">
+            <Button
+              variant={endChoice === 'sold' ? 'default' : 'outline'}
+              className="justify-start"
+              onClick={() => setEndChoice('sold')}
+            >
+              Mark as sold
+            </Button>
+            <Button
+              variant={endChoice === 'removed' ? 'default' : 'outline'}
+              className="justify-start"
+              onClick={() => setEndChoice('removed')}
+            >
+              Remove listing (not sold)
+            </Button>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+            <AlertDialogAction
+              onClick={handleEndListing}
+              disabled={!endChoice}
+            >
+              End listing
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
