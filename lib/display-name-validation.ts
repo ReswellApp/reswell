@@ -12,7 +12,7 @@ const BLOCKLIST = [
   "retard", "retarded", "fag", "faggot", "nigger", "nigga", "nazi",
 ]
 
-const MIN_LENGTH = 2
+const MIN_LENGTH = 5
 const MAX_LENGTH = 50
 
 /** Basic email pattern: something@something */

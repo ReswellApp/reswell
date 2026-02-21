@@ -110,12 +110,12 @@ export default function Page() {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       required
-                      minLength={2}
+                      minLength={5}
                       autoComplete="username"
                       aria-required="true"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Shown to other users instead of your email. At least 2 characters, no @.
+                      Shown to other users instead of your email. At least 5 characters, no @.
                     </p>
                   </div>
                   <div className="grid gap-2">
