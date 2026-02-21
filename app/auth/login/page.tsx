@@ -1,9 +1,6 @@
 'use client'
 
-import { useEffect } from "react"
-
-import React from "react"
-
+import React, { Suspense, useEffect, useState } from "react"
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,23 +13,31 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function Page() {
+function safeRedirect(path: string | null): string {
+  if (!path || typeof path !== 'string') return '/dashboard'
+  const p = path.trim()
+  if (!p.startsWith('/') || p.startsWith('//')) return '/dashboard'
+  return p
+}
+
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = safeRedirect(searchParams.get('redirect'))
 
   // Redirect if already logged in
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) router.push('/dashboard')
+      if (user) router.push(redirectTo)
     })
-  }, [router])
+  }, [router, redirectTo])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,7 +51,7 @@ export default function Page() {
         password,
       })
       if (error) throw error
-      router.push('/dashboard')
+      router.push(redirectTo)
       router.refresh()
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
@@ -110,5 +115,29 @@ export default function Page() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-sm">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Welcome back</CardTitle>
+              <CardDescription>Loading...</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-10 bg-lightgray animate-pulse rounded-md" />
+              <div className="mt-4 h-10 bg-lightgray animate-pulse rounded-md" />
+              <div className="mt-4 h-10 bg-black rounded-md" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

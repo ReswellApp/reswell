@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   Flag
 } from 'lucide-react'
+import { capitalizeWords } from '@/lib/listing-labels'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -164,7 +165,7 @@ export default async function AdminDashboard() {
                 }) => (
                   <div key={listing.id} className="flex items-center justify-between">
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">{listing.title}</p>
+                      <p className="font-medium text-foreground truncate">{capitalizeWords(listing.title)}</p>
                       <p className="text-xs text-muted-foreground">
                         by {listing.profiles?.display_name || 'Unknown'} &middot; {listing.section}
                       </p>

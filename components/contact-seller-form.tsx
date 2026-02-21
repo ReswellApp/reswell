@@ -14,6 +14,8 @@ interface ContactSellerFormProps {
   sellerId: string
   listingTitle: string
   isLoggedIn: boolean
+  /** Used for shipping-only; surfboards for pickup. Affects quick-message options. */
+  section?: "used" | "surfboards"
 }
 
 export function ContactSellerForm({
@@ -21,18 +23,27 @@ export function ContactSellerForm({
   sellerId,
   listingTitle,
   isLoggedIn,
+  section = "surfboards",
 }: ContactSellerFormProps) {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  const quickMessages = [
-    "Hi, is this still available?",
-    "What's the lowest you'll accept?",
-    "Can I see more photos?",
-    "Where can we meet for pickup?",
-  ]
+  const quickMessages =
+    section === "used"
+      ? [
+          "Hi, is this still available?",
+          "What's the lowest you'll accept?",
+          "Can I see more photos?",
+          "When can you ship?",
+        ]
+      : [
+          "Hi, is this still available?",
+          "What's the lowest you'll accept?",
+          "Can I see more photos?",
+          "Where can we meet for pickup?",
+        ]
 
   async function handleSend() {
     if (!message.trim()) {
@@ -50,11 +61,12 @@ export function ContactSellerForm({
         return
       }
 
-      // Find or create conversation
+      // Find or create conversation (buyer = current user, seller = listing owner)
       let { data: conversation } = await supabase
         .from("conversations")
         .select("id")
-        .or(`and(participant_1.eq.${user.id},participant_2.eq.${sellerId}),and(participant_1.eq.${sellerId},participant_2.eq.${user.id})`)
+        .eq("buyer_id", user.id)
+        .eq("seller_id", sellerId)
         .eq("listing_id", listingId)
         .single()
 
@@ -62,8 +74,8 @@ export function ContactSellerForm({
         const { data: newConversation, error: convError } = await supabase
           .from("conversations")
           .insert({
-            participant_1: user.id,
-            participant_2: sellerId,
+            buyer_id: user.id,
+            seller_id: sellerId,
             listing_id: listingId,
           })
           .select("id")
@@ -79,7 +91,6 @@ export function ContactSellerForm({
         .insert({
           conversation_id: conversation.id,
           sender_id: user.id,
-          receiver_id: sellerId,
           content: message,
         })
 
@@ -87,7 +98,7 @@ export function ContactSellerForm({
 
       toast.success("Message sent!")
       setMessage("")
-      router.push(`/messages?conversation=${conversation.id}`)
+      router.push(`/messages/${conversation.id}`)
     } catch {
       toast.error("Failed to send message")
     } finally {

@@ -5,45 +5,56 @@ const config: Config = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx,css}',
     '*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        /* White-dominant minimal — 90% white, accent used lightly */
+        white: '#FFFFFF',
+        softwhite: '#F8F9F7',
+        black: '#111111',
+        midgray: '#6E6E6E',
+        lightgray: '#E5E5E5',
+        cerulean: '#0F2143',
+        pacific: '#354E56',
+        olive: '#43572E',
+        gold: '#8B6212',
+        /* Semantic — accent only in buttons/hover/badges */
+        background: '#FFFFFF',
+        foreground: '#111111',
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
+          DEFAULT: '#FFFFFF',
+          foreground: '#111111',
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+          DEFAULT: '#FFFFFF',
+          foreground: '#111111',
         },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: '#0F2143',
+          foreground: '#FFFFFF',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: 'transparent',
+          foreground: '#0F2143',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: '#F8F9F7',
+          foreground: '#6E6E6E',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: '#354E56',
+          foreground: '#FFFFFF',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        border: '#E5E5E5',
+        input: '#E5E5E5',
+        ring: '#0F2143',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -66,6 +77,16 @@ const config: Config = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      transitionDuration: {
+        smooth: '250ms',
+      },
+      transitionTimingFunction: {
+        smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+      boxShadow: {
+        soft: '0 1px 3px rgba(0, 0, 0, 0.04)',
+        'soft-hover': '0 4px 12px rgba(0, 0, 0, 0.06)',
       },
       keyframes: {
         'accordion-down': {

@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Users, Shield, ShieldOff } from 'lucide-react'
+import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 
@@ -33,6 +33,7 @@ interface User {
   avatar_url: string | null
   city: string | null
   is_admin: boolean
+  is_employee: boolean
   created_at: string
   listings_count: number
 }
@@ -70,14 +71,30 @@ export default function AdminUsersPage() {
   }
 
   async function toggleAdmin(userId: string, currentStatus: boolean) {
+    const updates = currentStatus ? { is_admin: false } : { is_admin: true, is_employee: false }
     const { error } = await supabase
       .from('profiles')
-      .update({ is_admin: !currentStatus })
+      .update(updates)
       .eq('id', userId)
 
     if (!error) {
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: !currentStatus } : u))
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: !currentStatus, is_employee: currentStatus ? u.is_employee : false } : u))
       toast.success(currentStatus ? 'Admin access removed' : 'Admin access granted')
+    } else {
+      toast.error('Failed to update user')
+    }
+  }
+
+  async function toggleEmployee(userId: string, currentStatus: boolean) {
+    const updates = currentStatus ? { is_employee: false } : { is_employee: true, is_admin: false }
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+
+    if (!error) {
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_employee: !currentStatus, is_admin: currentStatus ? u.is_admin : false } : u))
+      toast.success(currentStatus ? 'Employee access removed' : 'Employee access granted')
     } else {
       toast.error('Failed to update user')
     }
@@ -167,6 +184,8 @@ export default function AdminUsersPage() {
                     <TableCell>
                       {user.is_admin ? (
                         <Badge className="bg-primary text-primary-foreground">Admin</Badge>
+                      ) : user.is_employee ? (
+                        <Badge variant="secondary">Employee</Badge>
                       ) : (
                         <Badge variant="outline">User</Badge>
                       )}
@@ -190,6 +209,17 @@ export default function AdminUsersPage() {
                             ) : (
                               <>
                                 <Shield className="h-4 w-4 mr-2" /> Make Admin
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleEmployee(user.id, user.is_employee)}>
+                            {user.is_employee ? (
+                              <>
+                                <UserCog className="h-4 w-4 mr-2" /> Remove Employee
+                              </>
+                            ) : (
+                              <>
+                                <UserCog className="h-4 w-4 mr-2" /> Make Employee
                               </>
                             )}
                           </DropdownMenuItem>

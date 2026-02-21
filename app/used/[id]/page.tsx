@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatCategory } from "@/lib/listing-labels"
+import { formatCondition, formatCategory, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
@@ -18,15 +18,13 @@ import {
   MessageSquare,
   Share2,
   MapPin,
-  Package,
   Clock,
   Shield,
 } from "lucide-react"
 import { ImageGallery } from "@/components/image-gallery"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { PurchaseOptions } from "@/components/purchase-options"
-
+import { TranslateableDescription } from "@/components/translateable-description"
 export default async function UsedListingPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -47,6 +45,18 @@ export default async function UsedListingPage(props: {
 
   if (!listing) {
     notFound()
+  }
+
+  // Ensure seller profile never contains private data (email, etc.) before sending to client
+  const p = listing.profiles as Record<string, unknown> | null
+  if (p && typeof p === "object") {
+    listing.profiles = {
+      id: p.id,
+      display_name: p.display_name,
+      avatar_url: p.avatar_url,
+      location: p.location,
+      created_at: p.created_at,
+    }
   }
 
   // Get seller's other listings
@@ -112,21 +122,21 @@ export default async function UsedListingPage(props: {
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Images */}
             <div>
-              <ImageGallery images={images} title={listing.title} />
+              <ImageGallery images={images} title={capitalizeWords(listing.title)} />
             </div>
 
             {/* Details */}
             <div className="space-y-6">
               <div>
                 <div className="flex items-start justify-between gap-4">
-                  <h1 className="text-2xl font-bold">{listing.title}</h1>
+                  <h1 className="text-2xl font-bold">{capitalizeWords(listing.title)}</h1>
                   <div className="flex items-center gap-2">
                     <FavoriteButton
                       listingId={listing.id}
                       initialFavorited={isFavorited}
                       isLoggedIn={!!user}
                     />
-                    <ShareButton title={listing.title} />
+                    <ShareButton title={capitalizeWords(listing.title)} />
                   </div>
                 </div>
                 <p className="text-3xl font-bold text-primary mt-2">
@@ -134,14 +144,21 @@ export default async function UsedListingPage(props: {
                 </p>
               </div>
 
-              {/* Pay with card, Apple Pay, or ReSwell Bucks */}
+              {/* Purchase item — requires login; checkout lets user choose card, Apple Pay, or ReSwell Bucks */}
               {!isOwnListing && listing.status === "active" && (
-                <PurchaseOptions
-                  listingId={listing.id}
-                  listingTitle={listing.title}
-                  price={listing.price}
-                  sellerId={listing.user_id}
-                />
+                user ? (
+                  <Button size="lg" className="w-full gap-2" asChild>
+                    <Link href={`/used/${listing.id}/checkout`}>
+                      Purchase item — ${listing.price.toFixed(2)}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button size="lg" className="w-full gap-2" asChild>
+                    <Link href={`/used/${listing.id}/checkout`}>
+                      Add to cart
+                    </Link>
+                  </Button>
+                )
               )}
 
               <div className="flex flex-wrap gap-2">
@@ -149,15 +166,15 @@ export default async function UsedListingPage(props: {
                 {listing.categories && (
                   <Badge variant="outline">{formatCategory(listing.categories.name)}</Badge>
                 )}
-                {listing.allows_shipping && (
-                  <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
-                    <Package className="h-3 w-3 mr-1" />
-                    Shipping Available
-                  </Badge>
-                )}
               </div>
 
               <Separator />
+
+              {/* Description */}
+              <div>
+                <h2 className="font-semibold mb-2">Description</h2>
+                <TranslateableDescription text={listing.description || ""} />
+              </div>
 
               {/* Seller Info */}
               <Card>
@@ -166,12 +183,12 @@ export default async function UsedListingPage(props: {
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={listing.profiles?.avatar_url || ""} />
                       <AvatarFallback>
-                        {listing.profiles?.display_name?.charAt(0).toUpperCase() || "U"}
+                        {getPublicSellerDisplayName(listing.profiles).charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-medium">
-                        {listing.profiles?.display_name || "Anonymous Seller"}
+                        {getPublicSellerDisplayName(listing.profiles)}
                       </p>
                       {listing.profiles?.location && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -185,11 +202,17 @@ export default async function UsedListingPage(props: {
                       </p>
                     </div>
                     <div className="flex flex-col gap-2">
-                      {!isOwnListing && user && (
+                      {!isOwnListing && (
                         <Button variant="outline" size="sm" asChild>
-                          <Link href={`/messages?user=${listing.user_id}&listing=${listing.id}`}>
+                          <Link
+                            href={
+                              user
+                                ? `/messages?user=${listing.user_id}&listing=${listing.id}`
+                                : `/auth/login?redirect=${encodeURIComponent(`/used/${listing.id}`)}`
+                            }
+                          >
                             <MessageSquare className="h-4 w-4 mr-2" />
-                            Message
+                            Message seller
                           </Link>
                         </Button>
                       )}
@@ -203,23 +226,16 @@ export default async function UsedListingPage(props: {
                 </CardContent>
               </Card>
 
-              {/* Description */}
-              <div>
-                <h2 className="font-semibold mb-2">Description</h2>
-                <p className="text-muted-foreground whitespace-pre-wrap">
-                  {listing.description || "No description provided."}
-                </p>
-              </div>
-
               {/* Contact Form */}
               {!isOwnListing && (
-                <Card className="bg-secondary/30">
+                <Card className="bg-offwhite">
                   <CardContent className="p-4">
                     <ContactSellerForm
                       listingId={listing.id}
                       sellerId={listing.user_id}
-                      listingTitle={listing.title}
+                      listingTitle={capitalizeWords(listing.title)}
                       isLoggedIn={!!user}
+                      section="used"
                     />
                   </CardContent>
                 </Card>
@@ -248,8 +264,7 @@ export default async function UsedListingPage(props: {
                   Safety Tips
                 </div>
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>Meet in a public place for local pickups</li>
-                  <li>Inspect items thoroughly before purchasing</li>
+                  <li>Coordinate shipping address and method in messages after purchase</li>
                   <li>Use secure payment methods</li>
                   <li>Report suspicious listings</li>
                 </ul>
@@ -273,7 +288,8 @@ export default async function UsedListingPage(props: {
                               src={primaryImage.url || "/placeholder.svg"}
                               alt={item.title}
                               fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="object-contain group-hover:scale-105 transition-transform duration-300"
+                              style={{ objectFit: "contain" }}
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

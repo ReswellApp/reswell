@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
+import { AdminGuard } from './AdminGuard'
 import { 
   LayoutDashboard, 
   Package, 
@@ -35,17 +36,19 @@ export default async function AdminLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('is_admin')
+    .select('is_admin, is_employee')
     .eq('id', user.id)
     .single()
 
-  // Only the designated super-admin email can access the admin area
-  const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
-  const isSuperAdmin = user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-
-  if (!profile?.is_admin || !isSuperAdmin) {
+  const isAdmin = profile?.is_admin === true
+  const isEmployee = profile?.is_employee === true
+  if (!isAdmin && !isEmployee) {
     redirect('/')
   }
+
+  const navItems = isAdmin
+    ? adminNavItems
+    : adminNavItems.filter((item) => item.href !== '/admin/users' && item.href !== '/admin/settings')
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -55,7 +58,7 @@ export default async function AdminLayout({
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0">
             <nav className="space-y-1">
-              {adminNavItems.map((item) => (
+              {navItems.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <Button
                     variant="ghost"
@@ -70,7 +73,11 @@ export default async function AdminLayout({
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 min-w-0">{children}</main>
+          <main className="flex-1 min-w-0">
+            <AdminGuard isAdmin={isAdmin} isEmployee={isEmployee}>
+              {children}
+            </AdminGuard>
+          </main>
         </div>
       </div>
       <Footer />

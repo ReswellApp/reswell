@@ -27,6 +27,7 @@ import {
 import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
+import { capitalizeWords } from '@/lib/listing-labels'
 
 interface Listing {
   id: string
@@ -166,9 +167,10 @@ export default function MyListingsPage() {
               {primaryImage?.url ? (
                 <Image
                   src={primaryImage.url || "/placeholder.svg"}
-                  alt={listing.title}
+                  alt={capitalizeWords(listing.title)}
                   fill
-                  className="object-cover"
+                  className="object-contain"
+                  style={{ objectFit: "contain" }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -180,7 +182,7 @@ export default function MyListingsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <Link href={getListingHref(listing.section, listing.id)} className="font-semibold text-foreground hover:text-primary truncate block">
-                    {listing.title}
+                    {capitalizeWords(listing.title)}
                   </Link>
                   <p className="text-lg font-bold text-primary">${listing.price}</p>
                 </div>

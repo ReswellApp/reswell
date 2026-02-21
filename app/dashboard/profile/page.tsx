@@ -205,7 +205,7 @@ export default function DashboardProfilePage() {
               <Separator />
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5 text-[#96bf48]" />
+                  <ShoppingBag className="h-5 w-5 text-accent" />
                   <h4 className="font-medium text-foreground">Shopify Integration</h4>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -227,8 +227,8 @@ export default function DashboardProfilePage() {
                   </p>
                 </div>
                 {profile.shopify_domain && (
-                  <div className="flex items-center gap-2 rounded-lg border border-[#96bf48]/30 bg-[#96bf48]/5 p-3 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-[#96bf48] flex-shrink-0" />
+                  <div className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 p-3 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0" />
                     <span className="text-foreground">
                       Shopify store connected: <span className="font-medium">{profile.shopify_domain}</span>
                     </span>

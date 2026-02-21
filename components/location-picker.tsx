@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { MapPin, Search, Crosshair, Loader2, AlertCircle } from "lucide-react"
+import { MapPin, Search, Crosshair, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
+import { toast } from "sonner"
 
 interface LocationPickerProps {
   onLocationSelect: (location: {
@@ -32,9 +33,12 @@ export function LocationPicker({
 }: LocationPickerProps) {
   const [lat, setLat] = useState(initialLat ?? 33.7701)
   const [lng, setLng] = useState(initialLng ?? -118.1937)
+  const [city, setCity] = useState(initialCity ?? "")
+  const [state, setState] = useState(initialState ?? "")
   const [displayName, setDisplayName] = useState(initialDisplay ?? "")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(initialDisplay ?? "")
   const [searching, setSearching] = useState(false)
+  const [appliedSuccess, setAppliedSuccess] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [locating, setLocating] = useState(false)
   const [mapReady, setMapReady] = useState(false)
@@ -51,31 +55,40 @@ export function LocationPicker({
         )
         const data = await res.json()
         const addr = data.address || {}
-        const city =
+        const resolvedCity =
           addr.city || addr.town || addr.village || addr.hamlet || initialCity || ""
-        const state = addr.state || initialState || ""
-        const display = [city, state].filter(Boolean).join(", ")
+        const resolvedState = addr.state || initialState || ""
+        const display = [resolvedCity, resolvedState].filter(Boolean).join(", ")
+        setCity(resolvedCity || addr.city || "")
+        setState(resolvedState || addr.state || "")
         setDisplayName(display || data.display_name || "Unknown location")
-        onLocationSelect({
-          lat: latitude,
-          lng: longitude,
-          city: city || addr.city || "",
-          state: state || addr.state || "",
-          displayName: display || data.display_name || "",
-        })
       } catch {
+        setCity("")
+        setState("")
         setDisplayName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`)
-        onLocationSelect({
-          lat: latitude,
-          lng: longitude,
-          city: "",
-          state: "",
-          displayName: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-        })
       }
     },
-    [onLocationSelect, initialCity, initialState]
+    [initialCity, initialState]
   )
+
+  function handleApplyLocation() {
+    const display = displayName.trim() || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    onLocationSelect({
+      lat,
+      lng,
+      city,
+      state,
+      displayName: display,
+    })
+    setSearchQuery(display)
+    if (!displayName.trim()) setDisplayName(display)
+    setAppliedSuccess(true)
+    toast.success("Location saved", {
+      description: display,
+      duration: 3000,
+    })
+    setTimeout(() => setAppliedSuccess(false), 2500)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -99,7 +112,7 @@ export function LocationPicker({
       }).addTo(map)
 
       const icon = L.divIcon({
-        html: `<div style="background:#0891b2;width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+        html: `<div style="background:#2E5E8C;width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         </div>`,
         className: "",
@@ -169,18 +182,13 @@ export function LocationPicker({
         }
 
         const addr = result.address || {}
-        const city =
+        const resolvedCity =
           addr.city || addr.town || addr.village || addr.hamlet || ""
-        const state = addr.state || ""
-        const display = [city, state].filter(Boolean).join(", ")
+        const resolvedState = addr.state || ""
+        const display = [resolvedCity, resolvedState].filter(Boolean).join(", ")
+        setCity(resolvedCity)
+        setState(resolvedState)
         setDisplayName(display || result.display_name || "")
-        onLocationSelect({
-          lat: newLat,
-          lng: newLng,
-          city,
-          state,
-          displayName: display || result.display_name || "",
-        })
       } else {
         setSearchError("No places found. Try a different search or use the map.")
       }
@@ -298,20 +306,42 @@ export function LocationPicker({
       </Card>
 
       {displayName && (
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className={`border transition-colors ${appliedSuccess ? "bg-primary/10 border-primary/30 ring-2 ring-primary/20" : "bg-primary/5 border-primary/20"}`}>
           <CardContent className="p-3 flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+            {appliedSuccess ? (
+              <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+            ) : (
+              <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
                 {displayName}
               </p>
               <p className="text-xs text-muted-foreground">
-                Click the map or drag the pin to change location
+                {appliedSuccess ? "This location is saved to your listing." : "Search or click the map, then click Apply location to save"}
               </p>
             </div>
           </CardContent>
         </Card>
       )}
+
+      <Button
+        type="button"
+        onClick={handleApplyLocation}
+        className={`w-full sm:w-auto transition-all ${appliedSuccess ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+      >
+        {appliedSuccess ? (
+          <>
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            Location saved
+          </>
+        ) : (
+          <>
+            <MapPin className="h-4 w-4 mr-2" />
+            Apply location
+          </>
+        )}
+      </Button>
     </div>
   )
 }

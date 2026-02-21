@@ -48,7 +48,7 @@ export default async function ShopPage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-b from-accent/10 to-background py-12">
+        <section className="bg-offwhite py-12">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-3xl font-bold text-balance">New Gear from Verified Brands</h1>
             <p className="text-muted-foreground mt-2 max-w-lg mx-auto text-pretty">

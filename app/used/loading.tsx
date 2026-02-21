@@ -10,7 +10,7 @@ export default function UsedGearLoading() {
       
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-b from-primary/5 to-background py-12">
+        <section className="bg-offwhite py-12">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl font-bold text-center">Used Surf Gear</h1>
             <p className="text-center text-muted-foreground mt-2">

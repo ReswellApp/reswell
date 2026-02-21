@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, SlidersHorizontal } from "lucide-react"
+import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 
 const conditions = [
   { value: "all", label: "Any Condition" },
@@ -32,6 +33,8 @@ interface UsedListingsFiltersProps {
   initialQ?: string
   initialCategory?: string
   initialCondition?: string
+  initialMinPrice?: string
+  initialMaxPrice?: string
   initialSort?: string
 }
 
@@ -40,6 +43,8 @@ export function UsedListingsFilters({
   initialQ = "",
   initialCategory = "all",
   initialCondition = "all",
+  initialMinPrice = "",
+  initialMaxPrice = "",
   initialSort = "newest",
 }: UsedListingsFiltersProps) {
   const router = useRouter()
@@ -48,6 +53,8 @@ export function UsedListingsFilters({
   const [q, setQ] = useState(initialQ)
   const [category, setCategory] = useState(initialCategory)
   const [condition, setCondition] = useState(initialCondition)
+  const [minPrice, setMinPrice] = useState(initialMinPrice)
+  const [maxPrice, setMaxPrice] = useState(initialMaxPrice)
   const [sort, setSort] = useState(initialSort)
 
   function handleSubmit(e: React.FormEvent) {
@@ -56,6 +63,8 @@ export function UsedListingsFilters({
     if (q.trim()) params.set("q", q.trim())
     if (category && category !== "all") params.set("category", category)
     if (condition && condition !== "all") params.set("condition", condition)
+    if (minPrice.trim()) params.set("minPrice", minPrice.trim())
+    if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim())
     if (sort && sort !== "newest") params.set("sort", sort)
     params.set("page", "1")
     startTransition(() => {
@@ -64,15 +73,16 @@ export function UsedListingsFilters({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-center">
-      <div className="relative flex-1 min-w-[200px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          name="q"
-          placeholder="Search listings..."
+    <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
+      <div className="flex-1 min-w-[200px]">
+        <SearchInputWithSuggest
           value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="pl-10"
+          onChange={setQ}
+          placeholder="Search listings..."
+          section="used"
+          leftIcon={<Search className="h-4 w-4" />}
+          name="q"
+          listboxId="used-search-suggestions"
         />
       </div>
 
@@ -101,6 +111,33 @@ export function UsedListingsFilters({
           ))}
         </SelectContent>
       </Select>
+
+      <div className="flex gap-2 items-end">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Min $</label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            placeholder="Min"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            className="w-[80px]"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Max $</label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            placeholder="Max"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            className="w-[80px]"
+          />
+        </div>
+      </div>
 
       <Select name="sort" value={sort} onValueChange={setSort}>
         <SelectTrigger className="w-[170px]">

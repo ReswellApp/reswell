@@ -14,6 +14,7 @@ import {
   Wallet,
   Flag,
 } from "lucide-react"
+import { capitalizeWords } from "@/lib/listing-labels"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -35,12 +36,14 @@ export default async function DashboardPage() {
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id)
 
-  // Get unread messages
-  const { count: unreadCount } = await supabase
-    .from("messages")
+  // Get unread messages + notifications
+  const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: user.id })
+  const { count: unreadNotifCount } = await supabase
+    .from("notifications")
     .select("*", { count: "exact", head: true })
-    .eq("receiver_id", user.id)
+    .eq("user_id", user.id)
     .eq("is_read", false)
+  const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
 
   // Get recent listings
   const { data: recentListings } = await supabase
@@ -115,7 +118,7 @@ export default async function DashboardPage() {
       {/* Welcome */}
       <div>
         <h1 className="text-2xl font-bold">
-          Welcome back, {profile?.display_name || user.email?.split("@")[0]}
+          Welcome back, {profile?.display_name || user.user_metadata?.full_name || "User"}
         </h1>
         <p className="text-muted-foreground">
           Here is what is happening with your listings
@@ -176,9 +179,10 @@ export default async function DashboardPage() {
                       {primaryImage?.url ? (
                         <Image
                           src={primaryImage.url || "/placeholder.svg"}
-                          alt={listing.title}
+                          alt={capitalizeWords(listing.title)}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform"
+                          className="object-contain group-hover:scale-105 transition-transform"
+                          style={{ objectFit: "contain" }}
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -193,7 +197,7 @@ export default async function DashboardPage() {
                       </Badge>
                     </div>
                     <h3 className="font-medium line-clamp-1 group-hover:text-primary transition-colors">
-                      {listing.title}
+                      {capitalizeWords(listing.title)}
                     </h3>
                     <p className="text-sm text-primary font-bold">
                       ${listing.price.toFixed(2)}

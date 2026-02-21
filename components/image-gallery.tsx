@@ -27,12 +27,13 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+      <div className="relative aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
         <Image
           src={selectedImage.url || "/placeholder.svg"}
           alt={`${title} - Image ${selectedIndex + 1}`}
           fill
-          className="object-cover"
+          className="object-contain"
+          style={{ objectFit: "contain" }}
           priority
         />
         
@@ -76,7 +77,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
               key={image.id}
               onClick={() => setSelectedIndex(index)}
               className={cn(
-                "relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors",
+                "relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors bg-muted",
                 index === selectedIndex
                   ? "border-primary"
                   : "border-transparent hover:border-muted-foreground/50"
@@ -86,7 +87,8 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
                 src={image.url || "/placeholder.svg"}
                 alt={`${title} - Thumbnail ${index + 1}`}
                 fill
-                className="object-cover"
+                className="object-contain"
+                style={{ objectFit: "contain" }}
               />
             </button>
           ))}

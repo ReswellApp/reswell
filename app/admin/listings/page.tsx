@@ -32,6 +32,7 @@ import {
 import { Search, MoreVertical, Eye, Trash2, Flag, Package } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { capitalizeWords } from '@/lib/listing-labels'
 
 interface Listing {
   id: string
@@ -226,7 +227,8 @@ export default function AdminListingsPage() {
                               src={listing.listing_images[0].url || "/placeholder.svg"}
                               alt=""
                               fill
-                              className="object-cover"
+                              className="object-contain"
+                              style={{ objectFit: "contain" }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -235,7 +237,7 @@ export default function AdminListingsPage() {
                           )}
                         </div>
                         <span className="font-medium text-foreground line-clamp-1 max-w-[200px]">
-                          {listing.title}
+                          {capitalizeWords(listing.title)}
                         </span>
                       </div>
                     </TableCell>

@@ -6,9 +6,10 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatCategory } from "@/lib/listing-labels"
+import { formatCondition, formatCategory, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { UsedListingsFilters } from "@/components/used-listings-filters"
+import { MessageListingButton } from "@/components/message-listing-button"
 
 interface SearchParams {
   category?: string
@@ -16,6 +17,8 @@ interface SearchParams {
   sort?: string
   q?: string
   page?: string
+  minPrice?: string
+  maxPrice?: string
 }
 
 async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
@@ -25,6 +28,8 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
   const condition = searchParams.condition || "all"
   const sort = searchParams.sort || "newest"
   const query = searchParams.q || ""
+  const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
+  const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
   const page = parseInt(searchParams.page || "1")
   const limit = 12
   const offset = (page - 1) * limit
@@ -58,8 +63,28 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
     dbQuery = dbQuery.eq("condition", condition)
   }
 
+  if (minPrice != null && !Number.isNaN(minPrice) && minPrice >= 0) {
+    dbQuery = dbQuery.gte("price", minPrice)
+  }
+  if (maxPrice != null && !Number.isNaN(maxPrice) && maxPrice >= 0) {
+    dbQuery = dbQuery.lte("price", maxPrice)
+  }
+
+  // Used gear is shipping only
+  dbQuery = dbQuery.eq("shipping_available", true)
+
   if (query) {
-    dbQuery = dbQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    const escaped = query.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+    const pattern = `"%${escaped}%"`
+    const { data: matchingCats } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("section", "used")
+      .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    const categoryIds = (matchingCats ?? []).map((c) => c.id)
+    const orParts = [`title.ilike.${pattern}`, `description.ilike.${pattern}`]
+    if (categoryIds.length > 0) orParts.push(`category_id.in.(${categoryIds.join(",")})`)
+    dbQuery = dbQuery.or(orParts.join(","))
   }
 
   const isDefaultSort = sort === "newest"
@@ -95,6 +120,8 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
     if (searchParams.q) params.set("q", searchParams.q)
     if (searchParams.category && searchParams.category !== "all") params.set("category", searchParams.category)
     if (searchParams.condition && searchParams.condition !== "all") params.set("condition", searchParams.condition)
+    if (searchParams.minPrice) params.set("minPrice", searchParams.minPrice)
+    if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice)
     if (searchParams.sort && searchParams.sort !== "newest") params.set("sort", searchParams.sort)
     params.set("page", String(pageNum))
     return `/used?${params.toString()}`
@@ -117,15 +144,16 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
         {listings.map((listing) => {
           const primaryImage = listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || listing.listing_images?.[0]
           return (
-            <Link key={listing.id} href={`/used/${listing.id}`}>
-              <Card className="group overflow-hidden hover:shadow-lg transition-shadow h-full">
+            <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+              <Link href={`/used/${listing.id}`} className="flex-1 flex flex-col">
                 <div className="aspect-square relative bg-muted">
                   {primaryImage?.url ? (
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}
-                      alt={listing.title}
+                      alt={capitalizeWords(listing.title)}
                       fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="object-contain group-hover:scale-105 transition-transform duration-300"
+                      style={{ objectFit: "contain" }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -135,20 +163,15 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
                   <Badge className="absolute top-2 left-2" variant="secondary">
                     {formatCondition(listing.condition)}
                   </Badge>
-                  {listing.allows_shipping && (
-                    <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
-                      Ships
-                    </Badge>
-                  )}
                 </div>
                 <CardContent className="p-4">
-                  <h3 className="font-medium line-clamp-2">{listing.title}</h3>
+                  <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
                   <p className="text-xl font-bold text-primary mt-2">
                     ${listing.price.toFixed(2)}
                   </p>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-sm text-muted-foreground">
-                      {listing.profiles?.display_name || "Anonymous"}
+                      {getPublicSellerDisplayName(listing.profiles)}
                     </p>
                     {listing.categories?.name && (
                       <Badge variant="outline" className="text-xs">
@@ -157,8 +180,15 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
                     )}
                   </div>
                 </CardContent>
-              </Card>
-            </Link>
+              </Link>
+              <div className="px-4 pb-4 pt-0">
+                <MessageListingButton
+                  listingId={listing.id}
+                  sellerId={listing.user_id}
+                  redirectPath={`/used/${listing.id}`}
+                />
+              </div>
+            </Card>
           )
         })}
       </div>
@@ -220,11 +250,11 @@ export default async function UsedGearPage(props: {
       
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-b from-primary/5 to-background py-12">
+        <section className="bg-offwhite py-12">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl font-bold text-center">Used Surf Gear</h1>
             <p className="text-center text-muted-foreground mt-2">
-              Find great deals on pre-loved surf accessories
+              Find great deals on pre-loved surf accessories — shipping only
             </p>
           </div>
         </section>
@@ -237,6 +267,8 @@ export default async function UsedGearPage(props: {
               initialQ={searchParams.q ?? ""}
               initialCategory={searchParams.category ?? "all"}
               initialCondition={searchParams.condition ?? "all"}
+              initialMinPrice={searchParams.minPrice ?? ""}
+              initialMaxPrice={searchParams.maxPrice ?? ""}
               initialSort={searchParams.sort ?? "newest"}
             />
           </div>

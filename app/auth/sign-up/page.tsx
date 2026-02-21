@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { validateDisplayName } from '@/lib/display-name-validation'
 
 export default function Page() {
   const [displayName, setDisplayName] = useState('')
@@ -54,21 +55,31 @@ export default function Page() {
       return
     }
 
+    const name = displayName?.trim()
+    const nameCheck = validateDisplayName(name, email)
+    if (!nameCheck.valid) {
+      setError(nameCheck.error)
+      setIsLoading(false)
+      return
+    }
+
     try {
+      const redirectTo =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+        window.location.origin
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-            `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${redirectTo}/auth/confirm`,
           data: {
-            display_name: displayName || email.split('@')[0],
+            display_name: name!,
           },
         },
       })
       if (error) throw error
-      router.push('/auth/sign-up-success')
+      router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`)
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
@@ -89,14 +100,23 @@ export default function Page() {
               <form onSubmit={handleSignUp}>
                 <div className="flex flex-col gap-6">
                   <div className="grid gap-2">
-                    <Label htmlFor="display-name">Display Name</Label>
+                    <Label htmlFor="display-name">
+                      Display Name <span className="text-destructive" aria-hidden="true">*</span>
+                    </Label>
                     <Input
                       id="display-name"
                       type="text"
-                      placeholder="Your name or username"
+                      placeholder="e.g. SurferJoe or Alex"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
+                      required
+                      minLength={2}
+                      autoComplete="username"
+                      aria-required="true"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Shown to other users instead of your email. At least 2 characters, no @.
+                    </p>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>

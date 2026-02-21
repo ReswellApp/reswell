@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
+import { capitalizeWords } from '@/lib/listing-labels'
 
 interface Message {
   id: string
@@ -196,7 +197,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                   href={`/${conversation.listing.section}/${conversation.listing.id}`}
                   className="text-sm text-primary hover:underline"
                 >
-                  {conversation.listing.title}
+                  {capitalizeWords(conversation.listing?.title)}
                 </Link>
               )}
             </div>
@@ -212,14 +213,15 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                   {conversation.listing.listing_images?.[0]?.url ? (
                     <Image
                       src={conversation.listing.listing_images[0].url || "/placeholder.svg"}
-                      alt={conversation.listing.title}
+                      alt={capitalizeWords(conversation.listing?.title)}
                       fill
-                      className="object-cover"
+                      className="object-contain"
+                      style={{ objectFit: "contain" }}
                     />
                   ) : null}
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{conversation.listing.title}</p>
+                  <p className="font-medium text-foreground">{capitalizeWords(conversation.listing?.title)}</p>
                   <p className="text-lg font-bold text-primary">${conversation.listing.price}</p>
                 </div>
               </CardContent>

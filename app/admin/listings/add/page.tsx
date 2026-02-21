@@ -193,7 +193,7 @@ export default function AdminAddListingPage() {
                 <SelectContent>
                   {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {u.display_name || u.email || u.id.slice(0, 8)}
+                      {u.display_name || `User ${u.id.slice(0, 8)}`}
                       {u.email && ` (${u.email})`}
                     </SelectItem>
                   ))}

@@ -136,7 +136,8 @@ export default function CartPage() {
                               src={item.image_url || "/placeholder.svg"}
                               alt={item.name}
                               fill
-                              className="object-cover"
+                              className="object-contain"
+                              style={{ objectFit: "contain" }}
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs">

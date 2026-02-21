@@ -19,6 +19,7 @@ import {
 import { Flag, Loader2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { capitalizeWords } from '@/lib/listing-labels'
 
 const REPORT_REASONS = [
   { value: 'spam', label: 'Spam' },
@@ -317,7 +318,7 @@ export default function DashboardReportsPage() {
                         href={`${getSectionHref(r.listing.section)}/${r.listing.id}`}
                         className="text-sm text-primary hover:underline"
                       >
-                        Listing: {r.listing.title}
+                        Listing: {capitalizeWords(r.listing?.title)}
                       </Link>
                     ) : r.reported_user ? (
                       <Link

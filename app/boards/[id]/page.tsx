@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatBoardType } from "@/lib/listing-labels"
+import { formatCondition, formatBoardType, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
@@ -26,8 +26,7 @@ import { ImageGallery } from "@/components/image-gallery"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { LocationMap } from "@/components/location-map"
-import { PurchaseOptions } from "@/components/purchase-options"
-
+import { TranslateableDescription } from "@/components/translateable-description"
 export default async function BoardDetailPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -47,6 +46,18 @@ export default async function BoardDetailPage(props: {
 
   if (!board) {
     notFound()
+  }
+
+  // Ensure seller profile never contains private data (email, etc.) before sending to client
+  const p = board.profiles as Record<string, unknown> | null
+  if (p && typeof p === "object") {
+    board.profiles = {
+      id: p.id,
+      display_name: p.display_name,
+      avatar_url: p.avatar_url,
+      location: p.location,
+      created_at: p.created_at,
+    }
   }
 
   // Get seller's other boards
@@ -114,37 +125,27 @@ export default async function BoardDetailPage(props: {
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Images */}
             <div>
-              <ImageGallery images={images} title={board.title} />
+              <ImageGallery images={images} title={capitalizeWords(board.title)} />
             </div>
 
             {/* Details */}
             <div className="space-y-6">
               <div>
                 <div className="flex items-start justify-between gap-4">
-                  <h1 className="text-2xl font-bold">{board.title}</h1>
+                  <h1 className="text-2xl font-bold">{capitalizeWords(board.title)}</h1>
                   <div className="flex items-center gap-2">
                     <FavoriteButton
                       listingId={board.id}
                       initialFavorited={isFavorited}
                       isLoggedIn={!!user}
                     />
-                    <ShareButton title={board.title} />
+                    <ShareButton title={capitalizeWords(board.title)} />
                   </div>
                 </div>
                 <p className="text-3xl font-bold text-primary mt-2">
                   ${board.price.toFixed(2)}
                 </p>
               </div>
-
-              {/* Pay with card, Apple Pay, or ReSwell Bucks */}
-              {!isOwnListing && board.status === "active" && (
-                <PurchaseOptions
-                  listingId={board.id}
-                  listingTitle={board.title}
-                  price={board.price}
-                  sellerId={board.user_id}
-                />
-              )}
 
               {/* Board Specs */}
               <div className="flex flex-wrap gap-2">
@@ -204,12 +205,12 @@ export default async function BoardDetailPage(props: {
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={board.profiles?.avatar_url || ""} />
                       <AvatarFallback>
-                        {board.profiles?.display_name?.charAt(0).toUpperCase() || "U"}
+                        {getPublicSellerDisplayName(board.profiles).charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-medium">
-                        {board.profiles?.display_name || "Anonymous Seller"}
+                        {getPublicSellerDisplayName(board.profiles)}
                       </p>
                       {board.profiles?.location && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -222,11 +223,17 @@ export default async function BoardDetailPage(props: {
                         Member since {new Date(board.profiles?.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                       </p>
                     </div>
-                    {!isOwnListing && user && (
+                    {!isOwnListing && (
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/messages?user=${board.user_id}&listing=${board.id}`}>
+                        <Link
+                          href={
+                            user
+                              ? `/messages?user=${board.user_id}&listing=${board.id}`
+                              : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}`)}`
+                          }
+                        >
                           <MessageSquare className="h-4 w-4 mr-2" />
-                          Message
+                          Message seller
                         </Link>
                       </Button>
                     )}
@@ -237,19 +244,17 @@ export default async function BoardDetailPage(props: {
               {/* Description */}
               <div>
                 <h2 className="font-semibold mb-2">Description</h2>
-                <p className="text-muted-foreground whitespace-pre-wrap">
-                  {board.description || "No description provided."}
-                </p>
+                <TranslateableDescription text={board.description || ""} />
               </div>
 
               {/* Contact Form */}
               {!isOwnListing && (
-                <Card className="bg-secondary/30">
+                <Card className="bg-offwhite">
                   <CardContent className="p-4">
                     <ContactSellerForm
                       listingId={board.id}
                       sellerId={board.user_id}
-                      listingTitle={board.title}
+                      listingTitle={capitalizeWords(board.title)}
                       isLoggedIn={!!user}
                     />
                   </CardContent>
@@ -305,7 +310,8 @@ export default async function BoardDetailPage(props: {
                               src={primaryImage.url || "/placeholder.svg"}
                               alt={item.title}
                               fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="object-contain group-hover:scale-105 transition-transform duration-300"
+                              style={{ objectFit: "contain" }}
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

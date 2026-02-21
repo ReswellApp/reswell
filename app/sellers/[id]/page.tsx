@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatCategory } from "@/lib/listing-labels"
+import { formatCondition, formatCategory, capitalizeWords } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
@@ -21,6 +21,7 @@ import {
   Package,
   ArrowLeft,
 } from "lucide-react"
+import { MessageListingButton } from "@/components/message-listing-button"
 
 export async function generateMetadata({
   params,
@@ -51,10 +52,12 @@ export default async function SellerProfilePage({
   const { id } = await params
   const supabase = await createClient()
 
-  // Fetch the shop profile
+  // Fetch the shop profile (public fields only; never expose email or role flags)
   const { data: shop, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(
+      "id, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+    )
     .eq("id", id)
     .single()
 
@@ -105,7 +108,7 @@ export default async function SellerProfilePage({
 
       <main className="flex-1">
         {/* Banner */}
-        <div className="relative h-40 sm:h-56 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+        <div className="relative h-40 sm:h-56 bg-offwhite">
           {shop.shop_banner_url && (
             <img
               src={shop.shop_banner_url || "/placeholder.svg"}
@@ -296,14 +299,15 @@ function ListingGrid({ listings }: { listings: any[] }) {
           primaryImage || listing.listing_images?.[0]
 
         return (
-          <Link key={listing.id} href={getListingHref(listing)}>
-            <Card className="group h-full overflow-hidden hover:shadow-md transition-all">
+          <Card key={listing.id} className="group h-full overflow-hidden hover:shadow-md transition-all flex flex-col">
+            <Link href={getListingHref(listing)} className="flex-1 flex flex-col">
               <div className="aspect-square relative bg-muted">
                 {firstImage?.url ? (
                   <img
                     src={firstImage.url || "/placeholder.svg"}
-                    alt={listing.title}
-                    className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    alt={capitalizeWords(listing.title)}
+                    className="absolute inset-0 h-full w-full group-hover:scale-105 transition-transform duration-300"
+                    style={{ objectFit: "contain" }}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -330,7 +334,7 @@ function ListingGrid({ listings }: { listings: any[] }) {
               </div>
               <CardContent className="p-3">
                 <h3 className="font-medium text-sm line-clamp-1 text-foreground">
-                  {listing.title}
+                  {capitalizeWords(listing.title)}
                 </h3>
                 <p className="text-base font-bold text-primary mt-0.5">
                   ${Number(listing.price).toFixed(2)}
@@ -343,8 +347,16 @@ function ListingGrid({ listings }: { listings: any[] }) {
                   </p>
                 )}
               </CardContent>
-            </Card>
-          </Link>
+            </Link>
+            <div className="px-3 pb-3 pt-0">
+              <MessageListingButton
+                listingId={listing.id}
+                sellerId={listing.user_id}
+                redirectPath={getListingHref(listing)}
+                size="sm"
+              />
+            </div>
+          </Card>
         )
       })}
     </div>

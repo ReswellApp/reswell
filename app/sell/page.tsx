@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { ArrowLeft, Upload, Loader2, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { LocationPicker } from "@/components/location-picker"
@@ -160,21 +159,51 @@ function SellPageContent() {
     return () => { mounted = false }
   }, [editId, supabase, router])
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  /** Get image dimensions from a file (vertical = height > width). */
+  function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file)
+      const img = new window.Image()
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        resolve({ width: img.naturalWidth, height: img.naturalHeight })
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error("Failed to load image"))
+      }
+      img.src = url
+    })
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files) return
     const newFiles = Array.from(e.target.files)
-    if (images.length + newFiles.length > 5) {
-      toast.error("Maximum 5 images allowed (including existing photos)")
+    if (images.length + newFiles.length > 12) {
+      toast.error("Maximum 12 photos allowed. You have " + images.length + ".")
+      e.target.value = ""
       return
     }
     const next: EditableImage[] = []
     for (const file of newFiles) {
-      next.push({
-        file,
-        url: URL.createObjectURL(file),
-      })
+      try {
+        const { width, height } = await getImageDimensions(file)
+        if (height <= width) {
+          toast.error(`"${file.name}" is not vertical. Please upload portrait (vertical) photos only — height must be greater than width.`)
+          continue
+        }
+        next.push({
+          file,
+          url: URL.createObjectURL(file),
+        })
+      } catch {
+        toast.error(`Could not read "${file.name}". Try a different image.`)
+      }
     }
-    setImages((prev) => [...prev, ...next])
+    if (next.length) {
+      setImages((prev) => [...prev, ...next])
+    }
+    e.target.value = ""
   }
 
   function removeImage(index: number) {
@@ -317,6 +346,14 @@ function SellPageContent() {
         return
       }
 
+      if (listingType === "used") {
+        if (!formData.description?.trim()) {
+          toast.error("Description is required for used items")
+          setLoading(false)
+          return
+        }
+      }
+
       if (listingType === "board") {
         if (!formData.boardLength?.trim()) {
           toast.error("Board length is required for surfboards")
@@ -328,6 +365,12 @@ function SellPageContent() {
           setLoading(false)
           return
         }
+      }
+
+      if ((listingType === "used" || listingType === "board") && images.length < 5) {
+        toast.error("At least 5 photos are required for this listing")
+        setLoading(false)
+        return
       }
 
       let listingId = editId
@@ -358,7 +401,8 @@ function SellPageContent() {
               listingType === "board" && formData.locationLng ? formData.locationLng : null,
             city: listingType === "board" ? formData.locationCity : null,
             state: listingType === "board" ? formData.locationState : null,
-            shipping_available: listingType === "used" ? formData.allowsShipping : false,
+            shipping_available: listingType === "used" ? true : false,
+            local_pickup: listingType === "used" ? false : true,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editId)
@@ -392,7 +436,8 @@ function SellPageContent() {
               listingType === "board" && formData.locationLng ? formData.locationLng : null,
             city: listingType === "board" ? formData.locationCity : null,
             state: listingType === "board" ? formData.locationState : null,
-            shipping_available: listingType === "used" ? formData.allowsShipping : false,
+            shipping_available: listingType === "used" ? true : false,
+            local_pickup: listingType === "used" ? false : true,
             status: "active",
           })
           .select()
@@ -485,7 +530,7 @@ function SellPageContent() {
                   <Label htmlFor="title">Title *</Label>
                   <Input
                     id="title"
-                    placeholder="e.g., O'Neill 3/2 Wetsuit - Size M"
+                    placeholder="e.g., Channel Islands Dumpster Diver - 5'6&quot;"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
@@ -558,6 +603,11 @@ function SellPageContent() {
                         locationDisplay: loc.displayName,
                       })
                     }}
+                    initialLat={formData.locationLat || undefined}
+                    initialLng={formData.locationLng || undefined}
+                    initialCity={formData.locationCity || undefined}
+                    initialState={formData.locationState || undefined}
+                    initialDisplay={formData.locationDisplay || undefined}
                   />
                 )}
 
@@ -599,7 +649,7 @@ function SellPageContent() {
                 {/* Description */}
                 <div className="space-y-2">
                   <Label htmlFor="description">
-                    Description{listingType === "board" ? " *" : ""}
+                    Description{(listingType === "used" || listingType === "board") ? " *" : ""}
                   </Label>
                   <Textarea
                     id="description"
@@ -607,35 +657,24 @@ function SellPageContent() {
                     rows={4}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required={listingType === "board"}
+                    required={listingType === "used" || listingType === "board"}
                   />
                 </div>
 
-                {/* Shipping (only for used items) */}
+                {/* Used items are shipping only — no toggle; always shipped */}
                 {listingType === "used" && (
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <Label htmlFor="shipping" className="font-medium">
-                        Offer Shipping
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Allow buyers to have this item shipped to them
-                      </p>
-                    </div>
-                    <Switch
-                      id="shipping"
-                      checked={formData.allowsShipping}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, allowsShipping: checked })
-                      }
-                    />
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                    <p className="text-sm font-medium text-foreground">Shipping only</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Used items are shipped to the buyer. Coordinate shipping details in messages after purchase.
+                    </p>
                   </div>
                 )}
 
                 {/* Images */}
                 <div className="space-y-2">
-                  <Label>Photos (up to 5)</Label>
-                  <div className="grid grid-cols-5 gap-2">
+                  <Label>Photos (5–12 required)</Label>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {images.map((image, index) => (
                       <div
                         key={image.id ?? index}
@@ -644,7 +683,8 @@ function SellPageContent() {
                         <img
                           src={image.url || "/placeholder.svg"}
                           alt={`Photo ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full"
+                          style={{ objectFit: "contain" }}
                         />
                         <button
                           type="button"
@@ -684,7 +724,7 @@ function SellPageContent() {
                         </div>
                       </div>
                     ))}
-                    {images.length < 5 && (
+                    {images.length < 12 && (
                       <label className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors">
                         <Upload className="h-6 w-6 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground mt-1">Add</span>
@@ -699,9 +739,15 @@ function SellPageContent() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    First image is used as the main photo. You can remove photos or change their order; new
-                    uploads will be saved in the order shown. JPG, PNG, WebP, and HEIC (iPhone) supported.
+                    {listingType === "used" || listingType === "board"
+                      ? "Minimum 5 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."
+                      : "Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."}
                   </p>
+                  {(listingType === "used" || listingType === "board") && images.length > 0 && images.length < 5 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Add {5 - images.length} more photo{5 - images.length !== 1 ? "s" : ""} to meet the minimum (5 required).
+                    </p>
+                  )}
                 </div>
 
                 {/* Submit */}

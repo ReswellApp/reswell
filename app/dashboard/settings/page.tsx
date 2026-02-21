@@ -11,9 +11,19 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Loader2, Save, LogOut, Camera, User } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Loader2, Save, LogOut, Camera, User, Languages } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
+import { validateDisplayName } from '@/lib/display-name-validation'
+import { useLocale } from '@/components/locale-provider'
+import type { Locale } from '@/lib/translations'
 
 interface Profile {
   id: string
@@ -26,6 +36,7 @@ interface Profile {
 }
 
 export default function SettingsPage() {
+  const { locale, setLocale, t, supportedLocales } = useLocale()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -55,6 +66,12 @@ export default function SettingsPage() {
 
   async function handleSave() {
     if (!profile) return
+
+    const nameCheck = validateDisplayName(profile.display_name, profile.email)
+    if (!nameCheck.valid) {
+      toast.error(nameCheck.error)
+      return
+    }
 
     setSaving(true)
     const { error } = await supabase
@@ -141,17 +158,22 @@ export default function SettingsPage() {
     )
   }
 
+  const s = t('settings')
+  const p = s.profile
+  const a = s.account
+  const lang = s.language
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and public profile</p>
+        <h1 className="text-2xl font-bold text-foreground">{s.title}</h1>
+        <p className="text-muted-foreground">{s.subtitle}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your public profile details</CardDescription>
+          <CardTitle>{p.title}</CardTitle>
+          <CardDescription>{p.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Profile Photo */}
@@ -183,15 +205,13 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">Profile Photo</p>
-              <p className="text-xs text-muted-foreground">
-                Click the avatar to upload. JPG, PNG, or WebP. Max 2MB.
-              </p>
+              <p className="text-sm font-medium text-foreground">{p.photo}</p>
+              <p className="text-xs text-muted-foreground">{p.photoHint}</p>
               <label
                 htmlFor="avatar-upload"
                 className="inline-flex cursor-pointer items-center text-xs font-medium text-primary hover:underline"
               >
-                {uploadingAvatar ? 'Uploading...' : 'Change photo'}
+                {uploadingAvatar ? p.uploading : p.changePhoto}
               </label>
             </div>
           </div>
@@ -199,7 +219,7 @@ export default function SettingsPage() {
           <Separator />
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{p.email}</Label>
             <Input
               id="email"
               type="email"
@@ -207,47 +227,51 @@ export default function SettingsPage() {
               disabled
               className="bg-muted"
             />
-            <p className="text-xs text-muted-foreground">Your email cannot be changed</p>
+            <p className="text-xs text-muted-foreground">{p.emailHint}</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="display_name">Display Name</Label>
+            <Label htmlFor="display_name">
+              {p.displayName} <span className="text-destructive" aria-hidden="true">*</span>
+            </Label>
             <Input
               id="display_name"
               value={profile.display_name || ''}
               onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
-              placeholder="Your display name"
+              placeholder={p.displayNamePlaceholder}
+              required
+              aria-required="true"
             />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">{p.location}</Label>
               <Input
                 id="location"
                 value={profile.location || ''}
                 onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                placeholder="e.g., California"
+                placeholder={p.locationPlaceholder}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">{p.city}</Label>
               <Input
                 id="city"
                 value={profile.city || ''}
                 onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                placeholder="e.g., San Diego"
+                placeholder={p.cityPlaceholder}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
+            <Label htmlFor="bio">{p.bio}</Label>
             <Textarea
               id="bio"
               value={profile.bio || ''}
               onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-              placeholder="Tell other surfers about yourself..."
+              placeholder={p.bioPlaceholder}
               rows={4}
             />
           </div>
@@ -256,12 +280,12 @@ export default function SettingsPage() {
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
+                {p.saving}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {p.save}
               </>
             )}
           </Button>
@@ -270,19 +294,52 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
-          <CardDescription>Manage your account settings</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Languages className="h-5 w-5" />
+            {lang.title}
+          </CardTitle>
+          <CardDescription>{lang.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label>{lang.label}</Label>
+            <Select
+              value={locale}
+              onValueChange={(value) => {
+                setLocale(value as Locale)
+                toast.success(locale === 'es' ? 'Idioma actualizado' : 'Language updated')
+              }}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {supportedLocales.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{a.title}</CardTitle>
+          <CardDescription>{a.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <Separator className="mb-4" />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-foreground">Sign Out</p>
-              <p className="text-sm text-muted-foreground">Sign out of your account on this device</p>
+              <p className="font-medium text-foreground">{a.signOut}</p>
+              <p className="text-sm text-muted-foreground">{a.signOutDescription}</p>
             </div>
             <Button variant="outline" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              {a.signOut}
             </Button>
           </div>
         </CardContent>

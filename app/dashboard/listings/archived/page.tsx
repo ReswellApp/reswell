@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Package, Archive, ArrowLeft } from 'lucide-react'
 import { formatDistanceToNow, format, addDays } from 'date-fns'
+import { capitalizeWords } from '@/lib/listing-labels'
 
 const ARCHIVE_DAYS = 30
 
@@ -130,9 +131,10 @@ export default function ArchivedListingsPage() {
                       {primaryImage?.url ? (
                         <Image
                           src={primaryImage.url}
-                          alt={listing.title}
+                          alt={capitalizeWords(listing.title)}
                           fill
-                          className="object-cover"
+                          className="object-contain"
+                          style={{ objectFit: "contain" }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -145,7 +147,7 @@ export default function ArchivedListingsPage() {
                         href={`/${listing.section === 'surfboards' ? 'boards' : listing.section}/${listing.id}`}
                         className="font-semibold text-foreground hover:text-primary block truncate"
                       >
-                        {listing.title}
+                        {capitalizeWords(listing.title)}
                       </Link>
                       <p className="text-lg font-bold text-primary mt-0.5">${listing.price}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-2">

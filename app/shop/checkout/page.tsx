@@ -152,7 +152,8 @@ export default function CheckoutPage() {
                       src={item.image_url}
                       alt={item.name}
                       fill
-                      className="object-cover"
+                      className="object-contain"
+                      style={{ objectFit: "contain" }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs">

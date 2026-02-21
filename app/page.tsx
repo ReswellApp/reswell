@@ -5,7 +5,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition } from "@/lib/listing-labels"
+import { formatCondition, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -19,6 +19,7 @@ import {
   Store,
   CheckCircle2,
 } from "lucide-react"
+import { MessageListingButton } from "@/components/message-listing-button"
 
 const categories = [
   { name: "Surfboards", href: "/boards" },
@@ -89,10 +90,12 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(4)
 
-  // Fetch featured shops - prioritize top sellers by sales count
+  // Fetch featured shops - public profile fields only; never expose email or role flags
+  const profilePublicFields =
+    "id, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
   const { data: featuredShops } = await supabase
     .from("profiles")
-    .select("*")
+    .select(profilePublicFields)
     .eq("is_shop", true)
     .order("sales_count", { ascending: false })
     .order("shop_verified", { ascending: false })
@@ -129,7 +132,7 @@ export default async function HomePage() {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background py-20 md:py-32">
+        <section className="relative overflow-hidden bg-offwhite py-20 md:py-32">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="secondary" className="mb-4">
@@ -217,7 +220,7 @@ export default async function HomePage() {
               {/* Surfboards */}
               <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
                 <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-black text-white">
                     <Users className="h-6 w-6" />
                   </div>
                   <h3 className="text-xl font-semibold">Surfboards</h3>
@@ -256,7 +259,7 @@ export default async function HomePage() {
         </section>
 
         {/* Categories */}
-        <section className="py-16 bg-secondary/30">
+        <section className="py-16 bg-offwhite">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold">Browse by Category</h2>
@@ -301,7 +304,7 @@ export default async function HomePage() {
                 {featuredShops.map((shop) => (
                   <Link key={shop.id} href={`/sellers/${shop.id}`}>
                     <Card className="group overflow-hidden hover:shadow-lg transition-shadow h-full">
-                      <div className="h-20 bg-gradient-to-br from-primary/20 to-primary/5 relative">
+                      <div className="h-20 bg-offwhite relative">
                         {shop.shop_banner_url && (
                           <img
                             src={shop.shop_banner_url || "/placeholder.svg"}
@@ -363,15 +366,16 @@ export default async function HomePage() {
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {featuredUsed.map((listing) => (
-                  <Link key={listing.id} href={`/used/${listing.id}`}>
-                    <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                    <Link href={`/used/${listing.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-square relative bg-muted">
                         {listing.listing_images?.[0]?.url ? (
                           <Image
                             src={listing.listing_images[0].url || "/placeholder.svg"}
-                            alt={listing.title}
+                            alt={capitalizeWords(listing.title)}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-contain group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "contain" }}
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -383,16 +387,23 @@ export default async function HomePage() {
                         </Badge>
                       </div>
                       <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-1">{listing.title}</h3>
+                        <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
                         <p className="text-lg font-bold text-primary mt-1">
                           ${listing.price.toFixed(2)}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {listing.profiles?.display_name || "Anonymous"}
+                          {getPublicSellerDisplayName(listing.profiles)}
                         </p>
                       </CardContent>
-                    </Card>
-                  </Link>
+                    </Link>
+                    <div className="px-4 pb-4 pt-0">
+                      <MessageListingButton
+                        listingId={listing.id}
+                        sellerId={listing.user_id}
+                        redirectPath={`/used/${listing.id}`}
+                      />
+                    </div>
+                  </Card>
                 ))}
               </div>
             </div>
@@ -401,7 +412,7 @@ export default async function HomePage() {
 
         {/* Featured New Gear */}
         {featuredNew && featuredNew.length > 0 && (
-          <section className="py-16 bg-secondary/30">
+          <section className="py-16 bg-offwhite">
             <div className="container mx-auto px-4">
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -425,7 +436,8 @@ export default async function HomePage() {
                             src={item.image_url || "/placeholder.svg"}
                             alt={item.name}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-contain group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "contain" }}
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -477,15 +489,16 @@ export default async function HomePage() {
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {featuredBoards.map((board) => (
-                  <Link key={board.id} href={`/boards/${board.id}`}>
-                    <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                    <Link href={`/boards/${board.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-square relative bg-muted">
                         {board.listing_images?.[0]?.url ? (
                           <Image
                             src={board.listing_images[0].url || "/placeholder.svg"}
-                            alt={board.title}
+                            alt={capitalizeWords(board.title)}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-contain group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "contain" }}
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -497,7 +510,7 @@ export default async function HomePage() {
                         </Badge>
                       </div>
                       <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-1">{board.title}</h3>
+                        <h3 className="font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
                         <p className="text-lg font-bold text-primary mt-1">
                           ${board.price.toFixed(2)}
                         </p>
@@ -506,8 +519,15 @@ export default async function HomePage() {
                           {board.profiles?.location || "Location not set"}
                         </div>
                       </CardContent>
-                    </Card>
-                  </Link>
+                    </Link>
+                    <div className="px-4 pb-4 pt-0">
+                      <MessageListingButton
+                        listingId={board.id}
+                        sellerId={board.user_id}
+                        redirectPath={`/boards/${board.id}`}
+                      />
+                    </div>
+                  </Card>
                 ))}
               </div>
             </div>

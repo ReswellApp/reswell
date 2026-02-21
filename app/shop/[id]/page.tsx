@@ -103,7 +103,8 @@ export default async function ProductPage(props: {
                   src={imageUrl}
                   alt={listing.title}
                   fill
-                  className="object-cover"
+                  className="object-contain"
+                  style={{ objectFit: "contain" }}
                   priority
                 />
               ) : (
@@ -145,7 +146,7 @@ export default async function ProductPage(props: {
               </div>
 
               {stockQuantity > 0 && (
-                <Card className="bg-secondary/30">
+                <Card className="bg-offwhite">
                   <CardContent className="p-4 space-y-4">
                     <QuantitySelector
                       productId={listing.id}

@@ -31,9 +31,12 @@ export default async function SellersPage({
   const { q } = await searchParams
   const supabase = await createClient()
 
+  // Public fields only; never expose email or role flags
+  const profilePublicFields =
+    "id, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
   let query = supabase
     .from("profiles")
-    .select("*")
+    .select(profilePublicFields)
     .eq("is_shop", true)
     .order("sales_count", { ascending: false })
     .order("shop_verified", { ascending: false })
@@ -53,7 +56,7 @@ export default async function SellersPage({
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-b from-primary/5 to-background py-12">
+        <section className="bg-offwhite py-12">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-2xl text-center">
               <div className="mb-4 flex items-center justify-center">
@@ -132,7 +135,7 @@ export default async function SellersPage({
                   <Link key={shop.id} href={`/sellers/${shop.id}`}>
                     <Card className="group h-full overflow-hidden hover:shadow-lg transition-all hover:border-primary/30">
                       {/* Banner */}
-                      <div className="relative h-28 bg-gradient-to-br from-primary/20 to-primary/5">
+                      <div className="relative h-28 bg-offwhite">
                         {shop.shop_banner_url && (
                           <img
                             src={shop.shop_banner_url || "/placeholder.svg"}
@@ -211,7 +214,7 @@ export default async function SellersPage({
         </section>
 
         {/* CTA for shop owners */}
-        <section className="py-16 bg-secondary/30">
+        <section className="py-16 bg-offwhite">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-2xl text-center">
               <Package className="mx-auto mb-4 h-10 w-10 text-primary" />

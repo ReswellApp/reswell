@@ -30,6 +30,7 @@ import {
 import { MoreVertical, Flag, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { capitalizeWords } from '@/lib/listing-labels'
 
 interface Report {
   id: string
@@ -166,7 +167,7 @@ export default function AdminReportsPage() {
                           href={`/${report.listing.section}/${report.listing.id}`}
                           className="text-primary hover:underline flex items-center gap-1"
                         >
-                          {report.listing.title}
+                          {capitalizeWords(report.listing?.title)}
                           <ExternalLink className="h-3 w-3" />
                         </Link>
                       ) : report.reported_user ? (

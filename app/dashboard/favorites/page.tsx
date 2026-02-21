@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Heart, Trash2, ExternalLink } from 'lucide-react'
+import { MessageListingButton } from '@/components/message-listing-button'
+import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -16,6 +18,7 @@ interface Favorite {
   created_at: string
   listing: {
     id: string
+    user_id: string
     title: string
     price: number
     status: string
@@ -46,6 +49,7 @@ export default function FavoritesPage() {
         created_at,
         listing:listings(
           id,
+          user_id,
           title,
           price,
           status,
@@ -84,6 +88,15 @@ export default function FavoritesPage() {
       case 'new': return 'New Items'
       case 'surfboards': return 'Surfboards'
       default: return section
+    }
+  }
+
+  const getListingHref = (listing: Favorite['listing']) => {
+    switch (listing.section) {
+      case 'used': return `/used/${listing.id}`
+      case 'new': return `/shop/${listing.id}`
+      case 'surfboards': return `/boards/${listing.id}`
+      default: return `/used/${listing.id}`
     }
   }
 
@@ -134,15 +147,16 @@ export default function FavoritesPage() {
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <Link 
-                      href={`/${listing.section}/${listing.id}`}
+                      href={getListingHref(listing)}
                       className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0"
                     >
                       {primaryImage?.url ? (
                         <Image
                           src={primaryImage.url || "/placeholder.svg"}
-                          alt={listing.title}
+                          alt={capitalizeWords(listing.title)}
                           fill
-                          className="object-cover"
+                          className="object-contain"
+                          style={{ objectFit: "contain" }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -157,10 +171,10 @@ export default function FavoritesPage() {
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link 
-                        href={`/${listing.section}/${listing.id}`}
+                        href={getListingHref(listing)}
                         className="font-semibold text-foreground hover:text-primary line-clamp-2"
                       >
-                        {listing.title}
+                        {capitalizeWords(listing.title)}
                       </Link>
                       <p className="text-lg font-bold text-primary mt-1">${listing.price}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -178,11 +192,18 @@ export default function FavoritesPage() {
                       </p>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Link href={`/${listing.section}/${listing.id}`}>
+                      <Link href={getListingHref(listing)}>
                         <Button variant="outline" size="icon" className="h-8 w-8 bg-transparent">
                           <ExternalLink className="h-4 w-4" />
                         </Button>
                       </Link>
+                      <MessageListingButton
+                        listingId={listing.id}
+                        sellerId={listing.user_id}
+                        redirectPath={getListingHref(listing)}
+                        size="sm"
+                        className="h-8 px-2"
+                      />
                       <Button 
                         variant="outline" 
                         size="icon" 

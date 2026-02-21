@@ -6,12 +6,33 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatBoardType } from "@/lib/listing-labels"
+import { formatCondition, formatBoardType, capitalizeWords } from "@/lib/listing-labels"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsListingsFilters } from "@/components/boards-listings-filters"
 import { MapPin, Users, Store } from "lucide-react"
 import { ShopifyBoardsGrid } from "@/components/shopify-boards"
+import { MessageListingButton } from "@/components/message-listing-button"
+
+function haversineMi(
+  lat1: number,
+  lon1: number,
+  lat2: number | null | undefined,
+  lon2: number | null | undefined
+): number {
+  if (lat2 == null || lon2 == null) return Infinity
+  const R = 3959
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
 
 interface SearchParams {
   type?: string
@@ -20,6 +41,12 @@ interface SearchParams {
   q?: string
   location?: string
   page?: string
+  brand?: string
+  minPrice?: string
+  maxPrice?: string
+  radius?: string
+  lat?: string
+  lng?: string
 }
 
 async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
@@ -30,6 +57,12 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
   const sort = searchParams.sort || "newest"
   const query = searchParams.q || ""
   const location = searchParams.location || ""
+  const brand = (searchParams.brand || "").trim()
+  const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
+  const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
+  const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
+  const lat = searchParams.lat ? Number(searchParams.lat) : undefined
+  const lng = searchParams.lng ? Number(searchParams.lng) : undefined
   const page = parseInt(searchParams.page || "1")
   const limit = 12
   const offset = (page - 1) * limit
@@ -52,40 +85,95 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     dbQuery = dbQuery.eq("condition", condition)
   }
 
+  if (brand) {
+    dbQuery = dbQuery.ilike("brand", `%${brand}%`)
+  }
+
+  if (minPrice != null && !Number.isNaN(minPrice) && minPrice >= 0) {
+    dbQuery = dbQuery.gte("price", minPrice)
+  }
+  if (maxPrice != null && !Number.isNaN(maxPrice) && maxPrice >= 0) {
+    dbQuery = dbQuery.lte("price", maxPrice)
+  }
+
   if (query) {
-    dbQuery = dbQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    const escaped = query.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+    const pattern = `"%${escaped}%"`
+    const { data: matchingCats } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("section", "surfboards")
+      .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    const categoryIds = (matchingCats ?? []).map((c) => c.id)
+    const orParts = [`title.ilike.${pattern}`, `description.ilike.${pattern}`]
+    if (categoryIds.length > 0) orParts.push(`category_id.in.(${categoryIds.join(",")})`)
+    dbQuery = dbQuery.or(orParts.join(","))
   }
 
   if (location) {
-    dbQuery = dbQuery.or(`city.ilike.%${location}%,state.ilike.%${location}%`)
+    const locEscaped = location.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+    dbQuery = dbQuery.or(`city.ilike."%${locEscaped}%",state.ilike."%${locEscaped}%"`)
   }
 
-  const isDefaultSort = sort === "newest"
+  const hasLatLng = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)
+  const hasRadius = radiusMi != null && !Number.isNaN(radiusMi) && radiusMi > 0
+  const filterByRadius = hasLatLng && hasRadius
+  const isNearestSort = sort === "nearest" && hasLatLng
 
-  switch (sort) {
-    case "price-low":
-      dbQuery = dbQuery.order("price", { ascending: true })
-      break
-    case "price-high":
-      dbQuery = dbQuery.order("price", { ascending: false })
-      break
-    default:
-      dbQuery = dbQuery.order("created_at", { ascending: false })
-  }
+  let boards: Awaited<ReturnType<ReturnType<typeof supabase.from>["select"]>>["data"]
+  let totalPages: number
 
-  const { data: rawBoards, count } = await dbQuery.range(offset, offset + limit - 1)
-
-  // When using default sort, prioritize listings from sellers with the most sales
-  const boards = isDefaultSort && rawBoards
-    ? [...rawBoards].sort((a, b) => {
+  if (filterByRadius || isNearestSort) {
+    dbQuery = dbQuery.order("created_at", { ascending: false })
+    const maxFetch = 500
+    const { data: rawBoards } = await dbQuery.range(0, maxFetch - 1)
+    let withDistance = (rawBoards || []).map((b) => ({
+      ...b,
+      _distance: haversineMi(lat!, lng!, b.latitude, b.longitude),
+    }))
+    if (filterByRadius) {
+      withDistance = withDistance.filter((b) => b._distance <= radiusMi!)
+    }
+    if (isNearestSort) {
+      withDistance.sort((a, b) => a._distance - b._distance)
+    } else {
+      withDistance.sort((a, b) => {
+        if (sort === "price-low") return (a.price ?? 0) - (b.price ?? 0)
+        if (sort === "price-high") return (b.price ?? 0) - (a.price ?? 0)
         const salesA = a.profiles?.sales_count ?? 0
         const salesB = b.profiles?.sales_count ?? 0
         if (salesB !== salesA) return salesB - salesA
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
-    : rawBoards
+    }
+    totalPages = Math.ceil(withDistance.length / limit)
+    boards = withDistance.slice(offset, offset + limit)
+  } else {
+    switch (sort) {
+      case "price-low":
+        dbQuery = dbQuery.order("price", { ascending: true })
+        break
+      case "price-high":
+        dbQuery = dbQuery.order("price", { ascending: false })
+        break
+      default:
+        dbQuery = dbQuery.order("created_at", { ascending: false })
+    }
 
-  const totalPages = Math.ceil((count || 0) / limit)
+    const { data: rawBoards, count } = await dbQuery.range(offset, offset + limit - 1)
+
+    const isDefaultSort = sort === "newest"
+    boards = isDefaultSort && rawBoards
+      ? [...rawBoards].sort((a, b) => {
+          const salesA = a.profiles?.sales_count ?? 0
+          const salesB = b.profiles?.sales_count ?? 0
+          if (salesB !== salesA) return salesB - salesA
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
+      : rawBoards
+
+    totalPages = Math.ceil((count || 0) / limit)
+  }
 
   function pageUrl(pageNum: number) {
     const params = new URLSearchParams()
@@ -93,6 +181,12 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     if (searchParams.location) params.set("location", searchParams.location)
     if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
     if (searchParams.condition && searchParams.condition !== "all") params.set("condition", searchParams.condition)
+    if (searchParams.brand) params.set("brand", searchParams.brand)
+    if (searchParams.minPrice) params.set("minPrice", searchParams.minPrice)
+    if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice)
+    if (searchParams.radius) params.set("radius", searchParams.radius)
+    if (searchParams.lat) params.set("lat", searchParams.lat)
+    if (searchParams.lng) params.set("lng", searchParams.lng)
     if (searchParams.sort && searchParams.sort !== "newest") params.set("sort", searchParams.sort)
     params.set("page", String(pageNum))
     return `/boards?${params.toString()}`
@@ -117,15 +211,16 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
         {boards.map((board) => {
           const primaryImage = board.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || board.listing_images?.[0]
           return (
-            <Link key={board.id} href={`/boards/${board.id}`}>
-              <Card className="group overflow-hidden hover:shadow-lg transition-shadow h-full">
+            <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+              <Link href={`/boards/${board.id}`} className="flex-1 flex flex-col">
                 <div className="aspect-[4/5] relative bg-muted">
                   {primaryImage?.url ? (
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}
-                      alt={board.title}
+                      alt={capitalizeWords(board.title)}
                       fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="object-contain group-hover:scale-105 transition-transform duration-300"
+                      style={{ objectFit: "contain" }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -146,7 +241,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                   </Badge>
                 </div>
                 <CardContent className="p-4">
-                  <h3 className="font-medium line-clamp-2">{board.title}</h3>
+                  <h3 className="font-medium line-clamp-2">{capitalizeWords(board.title)}</h3>
                   {board.board_length && (
                     <p className="text-sm text-muted-foreground mt-1">
                       {board.board_length}
@@ -162,8 +257,15 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                       : board.profiles?.location || "Location not set"}
                   </div>
                 </CardContent>
-              </Card>
-            </Link>
+              </Link>
+              <div className="px-4 pb-4 pt-0">
+                <MessageListingButton
+                  listingId={board.id}
+                  sellerId={board.user_id}
+                  redirectPath={`/boards/${board.id}`}
+                />
+              </div>
+            </Card>
           )
         })}
       </div>
@@ -201,7 +303,7 @@ export default async function BoardsPage(props: {
       
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-b from-secondary/50 to-background py-12">
+        <section className="bg-offwhite py-12">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl font-bold text-center">Surfboards</h1>
             <p className="text-center text-muted-foreground mt-2">
@@ -244,6 +346,10 @@ export default async function BoardsPage(props: {
                     initialLocation={searchParams.location ?? ""}
                     initialType={searchParams.type ?? "all"}
                     initialCondition={searchParams.condition ?? "all"}
+                    initialBrand={searchParams.brand ?? ""}
+                    initialMinPrice={searchParams.minPrice ?? ""}
+                    initialMaxPrice={searchParams.maxPrice ?? ""}
+                    initialRadius={searchParams.radius ?? ""}
                     initialSort={searchParams.sort ?? "newest"}
                   />
                 </div>
@@ -268,7 +374,7 @@ export default async function BoardsPage(props: {
                 </Suspense>
 
                 {/* Info Section */}
-                <div className="mt-12 rounded-lg bg-secondary/30 p-8">
+                <div className="mt-12 rounded-lg bg-offwhite p-8">
                   <div className="max-w-2xl mx-auto text-center">
                     <h2 className="text-xl font-bold mb-4">Why In-Person Only?</h2>
                     <p className="text-muted-foreground">

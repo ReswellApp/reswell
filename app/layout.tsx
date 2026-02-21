@@ -1,7 +1,11 @@
 import React from "react"
 import type { Metadata, Viewport } from 'next'
+import { cookies } from 'next/headers'
 import { Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { LocaleProvider } from '@/components/locale-provider'
+import { LOCALE_COOKIE_NAME } from '@/lib/translations'
+import type { Locale } from '@/lib/translations'
 
 import './globals.css'
 
@@ -14,21 +18,27 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0891b2',
+  themeColor: '#0F2143',
   width: 'device-width',
   initialScale: 1,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const cookieStore = await cookies()
+  const localeCookie = cookieStore.get(LOCALE_COOKIE_NAME)?.value
+  const locale: Locale = localeCookie === 'es' ? 'es' : 'en'
+
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
-        <Toaster />
+    <html lang={locale}>
+      <body className={`${inter.variable} font-sans antialiased bg-white text-midgray`}>
+        <LocaleProvider initialLocale={locale}>
+          {children}
+          <Toaster />
+        </LocaleProvider>
       </body>
     </html>
   )

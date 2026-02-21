@@ -180,7 +180,8 @@ export function ShopifyBoardsGrid() {
                           product.featuredImage.altText || product.title
                         }
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="object-contain group-hover:scale-105 transition-transform duration-300"
+                        style={{ objectFit: "contain" }}
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

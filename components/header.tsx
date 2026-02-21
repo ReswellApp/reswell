@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -27,7 +27,10 @@ import {
   Settings,
   LayoutDashboard,
   Wallet,
+  Clock,
 } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 const navigation = [
@@ -39,13 +42,22 @@ const navigation = [
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
+  const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [cartCount, setCartCount] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const mobileSearchRef = useRef<HTMLInputElement>(null)
   const pathname = usePathname()
+  const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    if (searchOpen) setSearchQuery("")
+  }, [searchOpen])
 
   useEffect(() => {
     async function getUser() {
@@ -57,21 +69,23 @@ export function Header() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_admin, avatar_url")
+          .select("is_admin, avatar_url, display_name")
           .eq("id", user.id)
           .single()
         setIsAdmin(profile?.is_admin || false)
         setProfileAvatarUrl(profile?.avatar_url || null)
+        setProfileDisplayName(profile?.display_name || null)
 
         const cart = JSON.parse(localStorage.getItem("cart") || "[]")
         setCartCount(cart.reduce((sum: number, i: { quantity?: number }) => sum + (i.quantity ?? 1), 0))
 
-        const { count } = await supabase
-          .from("messages")
+        const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: user.id })
+        const { count: unreadNotifCount } = await supabase
+          .from("notifications")
           .select("*", { count: "exact", head: true })
-          .eq("receiver_id", user.id)
+          .eq("user_id", user.id)
           .eq("is_read", false)
-        setUnreadMessages(count || 0)
+        setUnreadMessages(Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0))
 
         const { data: wallet } = await supabase
           .from("wallets")
@@ -110,11 +124,11 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cerulean text-white">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -130,7 +144,7 @@ export function Header() {
                 <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-foreground">ReSwell Surf</span>
+            <span className="text-xl font-bold text-black">ReSwell Surf</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -139,7 +153,7 @@ export function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm font-medium text-cerulean transition-colors duration-smooth hover:text-pacific"
               >
                 {item.name}
               </Link>
@@ -147,36 +161,87 @@ export function Header() {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
-            <Link href="/search">
-              <Button variant="ghost" size="icon" className="hidden sm:flex">
-                <Search className="h-5 w-5" />
-                <span className="sr-only">Search</span>
+          <div className="flex items-center gap-2 text-black">
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="hidden sm:flex text-black hover:bg-pacific/5" aria-label="Search">
+                  <Search className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[min(100vw-2rem,380px)] rounded-2xl border-border bg-card p-4 shadow-sm"
+                align="end"
+                sideOffset={8}
+              >
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const q = searchQuery.trim()
+                    if (q) {
+                      router.push(`/search?q=${encodeURIComponent(q)}`)
+                      setSearchOpen(false)
+                    }
+                  }}
+                  className="flex gap-3"
+                >
+                  <div className="relative min-w-0 flex-1">
+                    <SearchInputWithSuggest
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      onSelect={(text) => {
+                        setSearchQuery(text)
+                        router.push(`/search?q=${encodeURIComponent(text)}`)
+                        setSearchOpen(false)
+                      }}
+                      placeholder="Search gear, boards, wetsuits..."
+                      section=""
+                      listboxId="nav-search-suggestions"
+                      leftIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                      inputClassName="h-10 rounded-xl border-border bg-background text-foreground"
+                      className="w-full"
+                      autoFocus={searchOpen}
+                    />
+                  </div>
+                  <Button type="submit" size="sm" className="h-10 shrink-0 rounded-xl px-4">
+                    Search
+                  </Button>
+                </form>
+              </PopoverContent>
+            </Popover>
+
+            <Link href="/used/recent">
+              <Button variant="ghost" size="icon" className="hidden sm:flex text-black hover:bg-pacific/5" aria-label="Recently added used items">
+                <Clock className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            <Link href={user ? "/saved" : `/auth/login?redirect=${encodeURIComponent("/saved")}`}>
+              <Button variant="ghost" size="icon" className="text-black hover:bg-pacific/5">
+                <Heart className="h-5 w-5" />
+                <span className="sr-only">Saved</span>
               </Button>
             </Link>
 
             {user ? (
               <>
                 <Link href="/messages" className="relative">
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="text-black hover:bg-pacific/5">
                     <MessageSquare className="h-5 w-5" />
-                    {unreadMessages > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
-                      >
-                        {unreadMessages > 9 ? "9+" : unreadMessages}
-                      </Badge>
-                    )}
+                    <Badge
+                      variant={unreadMessages > 0 ? "destructive" : "secondary"}
+                      className="absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center"
+                    >
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </Badge>
                     <span className="sr-only">Messages</span>
                   </Button>
                 </Link>
 
                 <Link href="/shop/cart" className="relative">
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="text-black hover:bg-pacific/5">
                     <ShoppingCart className="h-5 w-5" />
                     {cartCount > 0 && (
-                      <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-accent text-accent-foreground">
+                      <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-cerulean text-white">
                         {cartCount > 9 ? "9+" : cartCount}
                       </Badge>
                     )}
@@ -186,16 +251,20 @@ export function Header() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full text-black hover:bg-pacific/5">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={profileAvatarUrl || user.user_metadata?.avatar_url || "/placeholder.svg"} alt="Profile" />
-                        <AvatarFallback>{user.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                        <AvatarFallback>
+                        {(profileDisplayName || user.user_metadata?.full_name || "User").charAt(0).toUpperCase()}
+                      </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium">{user.user_metadata?.full_name || user.email}</p>
+                      <p className="text-sm font-medium">
+                        {profileDisplayName || user.user_metadata?.full_name || "User"}
+                      </p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <DropdownMenuSeparator />
@@ -212,7 +281,7 @@ export function Header() {
                           ReSwell Bucks
                         </span>
                         {walletBalance !== null && (
-                          <span className="text-xs font-medium text-primary ml-2">
+                          <span className="text-xs font-medium text-cerulean ml-2">
                             R${walletBalance.toFixed(2)}
                           </span>
                         )}
@@ -240,7 +309,7 @@ export function Header() {
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href="/admin" className="flex items-center text-primary">
+                          <Link href="/admin" className="flex items-center text-cerulean">
                             <User className="mr-2 h-4 w-4" />
                             Admin Panel
                           </Link>
@@ -255,16 +324,16 @@ export function Header() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button asChild className="hidden sm:flex">
+                <Button asChild variant="outline" className="hidden sm:flex border-cerulean text-cerulean hover:bg-pacific/5">
                   <Link href="/sell">Sell</Link>
                 </Button>
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" asChild className="hidden sm:flex">
+                <Button variant="ghost" asChild className="hidden sm:flex text-black hover:bg-pacific/5">
                   <Link href="/auth/login">Sign In</Link>
                 </Button>
-                <Button asChild>
+                <Button asChild variant="outline" className="border-cerulean text-cerulean hover:bg-pacific/5">
                   <Link href="/auth/sign-up">Get Started</Link>
                 </Button>
               </div>
@@ -274,7 +343,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden text-black hover:bg-pacific/5"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -309,25 +378,65 @@ export function Header() {
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-lg font-medium text-foreground hover:text-primary transition-colors"
+                  className="text-lg font-medium text-foreground hover:text-cerulean transition-colors"
                 >
                   {item.name}
                 </Link>
               ))}
-              <hr className="my-2 border-border" />
               <Link
-                href="/search"
+                href="/used/recent"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-lg font-medium text-foreground hover:text-cerulean transition-colors"
+              >
+                <Clock className="h-5 w-5" />
+                Recently added
+              </Link>
+              <hr className="my-2 border-border" />
+              <div className="flex gap-2">
+                <Input
+                  ref={mobileSearchRef}
+                  type="search"
+                  placeholder="Search..."
+                  className="flex-1 rounded-lg border-border"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      const q = (e.currentTarget.value || "").trim()
+                      if (q) {
+                        router.push(`/search?q=${encodeURIComponent(q)}`)
+                        setMobileMenuOpen(false)
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => {
+                    const q = (mobileSearchRef.current?.value || "").trim()
+                    if (q) {
+                      router.push(`/search?q=${encodeURIComponent(q)}`)
+                      setMobileMenuOpen(false)
+                    }
+                  }}
+                >
+                  Search
+                </Button>
+              </div>
+              <Link
+                href={user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved")}
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 text-lg font-medium"
               >
-                <Search className="h-5 w-5" />
-                Search
+                <Heart className="h-5 w-5" />
+                Saved
               </Link>
               {user && (
                 <Link
                   href="/sell"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 text-lg font-medium text-primary"
+                  className="flex items-center gap-2 text-lg font-medium text-cerulean"
                 >
                   Sell Your Gear
                 </Link>
@@ -344,7 +453,7 @@ export function Header() {
                   <Link
                     href="/auth/sign-up"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium text-primary"
+                    className="text-lg font-medium text-cerulean"
                   >
                     Get Started
                   </Link>

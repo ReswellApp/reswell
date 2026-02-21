@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -9,8 +10,20 @@ import { Footer } from '@/components/footer'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { MessageCircle, Search } from 'lucide-react'
+import { MessageCircle, Search, Heart } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { capitalizeWords } from '@/lib/listing-labels'
+
+interface Notification {
+  id: string
+  type: string
+  listing_id: string | null
+  message: string | null
+  is_read: boolean
+  created_at: string
+  listing?: { id: string; title: string; section: string; listing_images?: { url: string }[] } | null
+  listings?: { id: string; title: string; section: string; listing_images?: { url: string }[] } | null
+}
 
 interface Conversation {
   id: string
@@ -40,40 +53,99 @@ interface Conversation {
   }[]
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
+  const searchParams = useSearchParams()
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const supabase = createClient()
 
+  const userParam = searchParams.get('user')
+  const listingParam = searchParams.get('listing')
+
   useEffect(() => {
     async function fetchConversations() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        setLoading(false)
+        return
+      }
 
       setCurrentUserId(user.id)
 
-      const { data, error } = await supabase
-        .from('conversations')
-        .select(`
-          *,
-          listing:listings(id, title, listing_images(url)),
-          buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url),
-          seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url),
-          messages(content, is_read, sender_id)
-        `)
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .order('last_message_at', { ascending: false })
+      // If we have user + listing params, find or create that conversation and redirect
+      if (userParam && listingParam && userParam !== user.id) {
+        let { data: conv } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('buyer_id', user.id)
+          .eq('seller_id', userParam)
+          .eq('listing_id', listingParam)
+          .single()
+
+        if (!conv) {
+          const { data: newConv, error: createErr } = await supabase
+            .from('conversations')
+            .insert({
+              buyer_id: user.id,
+              seller_id: userParam,
+              listing_id: listingParam,
+            })
+            .select('id')
+            .single()
+          if (!createErr && newConv) conv = newConv
+        }
+        if (conv) {
+          window.location.replace(`/messages/${conv.id}`)
+          return
+        }
+      }
+
+      const [{ data, error }, { data: notifData }] = await Promise.all([
+        supabase
+          .from('conversations')
+          .select(`
+            *,
+            listing:listings(id, title, listing_images(url)),
+            buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url),
+            seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url),
+            messages(content, is_read, sender_id)
+          `)
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order('last_message_at', { ascending: false }),
+        supabase
+          .from('notifications')
+          .select(`
+            id,
+            type,
+            listing_id,
+            message,
+            is_read,
+            created_at,
+            listings(id, title, section, listing_images(url))
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ])
 
       if (!error && data) {
         setConversations(data as Conversation[])
+      }
+      if (notifData) {
+        setNotifications(notifData as Notification[])
+        const unreadIds = (notifData as Notification[]).filter((n) => !n.is_read).map((n) => n.id)
+        if (unreadIds.length > 0) {
+          await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds)
+        }
       }
       setLoading(false)
     }
 
     fetchConversations()
-  }, [supabase])
+  }, [supabase, userParam, listingParam])
 
   const filteredConversations = conversations.filter(conv => {
     const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
@@ -121,7 +193,46 @@ export default function MessagesPage() {
                 </Card>
               ))}
             </div>
-          ) : filteredConversations.length === 0 ? (
+          ) : (
+            <>
+              {notifications.length > 0 && (
+                <div className="mb-6">
+                  <h2 className="text-sm font-medium text-muted-foreground mb-3">Notifications</h2>
+                  <div className="space-y-2">
+                    {notifications.map((n) => {
+                      const listing = n.listing ?? n.listings
+                      const href = n.listing_id && listing?.section
+                        ? listing.section === 'surfboards'
+                          ? `/boards/${n.listing_id}`
+                          : listing.section === 'used'
+                            ? `/used/${n.listing_id}`
+                            : `/shop/${n.listing_id}`
+                        : '/saved'
+                      return (
+                        <Link key={n.id} href={href}>
+                          <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                            <CardContent className="p-4 flex gap-4 items-center">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <Heart className="h-5 w-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-foreground">
+                                  {n.message || 'Someone saved your item'}
+                                </p>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {filteredConversations.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -131,7 +242,7 @@ export default function MessagesPage() {
                 </p>
               </CardContent>
             </Card>
-          ) : (
+              ) : (
             <div className="space-y-3">
               {filteredConversations.map((conv) => {
                 const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
@@ -147,9 +258,10 @@ export default function MessagesPage() {
                             {conv.listing?.listing_images?.[0]?.url ? (
                               <Image
                                 src={conv.listing.listing_images[0].url || "/placeholder.svg"}
-                                alt={conv.listing.title}
+                                alt={capitalizeWords(conv.listing?.title)}
                                 fill
-                                className="object-cover"
+                                className="object-contain"
+                                style={{ objectFit: "contain" }}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
@@ -164,7 +276,7 @@ export default function MessagesPage() {
                                   {otherUser?.display_name || 'Unknown User'}
                                 </p>
                                 <p className="text-sm text-muted-foreground truncate">
-                                  {conv.listing?.title || 'General inquiry'}
+                                  {capitalizeWords(conv.listing?.title) || 'General inquiry'}
                                 </p>
                               </div>
                               <div className="flex flex-col items-end gap-1">
@@ -192,10 +304,33 @@ export default function MessagesPage() {
                 )
               })}
             </div>
+              )}
+            </>
           )}
         </div>
       </main>
       <Footer />
     </div>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto animate-pulse space-y-4">
+            <div className="h-9 bg-muted rounded w-48" />
+            <div className="h-10 bg-muted rounded" />
+            <div className="h-24 bg-muted rounded" />
+            <div className="h-24 bg-muted rounded" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <MessagesContent />
+    </Suspense>
   )
 }

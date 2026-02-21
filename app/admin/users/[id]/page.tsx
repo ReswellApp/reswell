@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ArrowLeft, MoreVertical, Package, Flag, Mail, User } from 'lucide-react'
+import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 
@@ -319,7 +320,7 @@ export default function AdminUserDetailPage() {
                           href={`${getSectionHref(r.listing.section)}/${r.listing.id}`}
                           className="text-primary hover:underline"
                         >
-                          {r.listing.title}
+                          {capitalizeWords(r.listing?.title)}
                         </Link>
                       )}
                       <span className="text-muted-foreground">
@@ -345,7 +346,7 @@ export default function AdminUserDetailPage() {
                           href={`${getSectionHref(r.listing.section)}/${r.listing.id}`}
                           className="text-primary hover:underline"
                         >
-                          {r.listing.title}
+                          {capitalizeWords(r.listing?.title)}
                         </Link>
                       )}
                       <span className="text-muted-foreground">

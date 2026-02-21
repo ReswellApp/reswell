@@ -50,15 +50,15 @@ export function LocationMap({
       }).addTo(map)
 
       L.circle([lat, lng], {
-        color: "#0891b2",
-        fillColor: "#0891b2",
+        color: "#2E5E8C",
+        fillColor: "#2E5E8C",
         fillOpacity: 0.2,
         radius: 1500,
         weight: 2,
       }).addTo(map)
 
       const icon = L.divIcon({
-        html: `<div style="background:#0891b2;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+        html: `<div style="background:#2E5E8C;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
         className: "",
         iconSize: [28, 28],
         iconAnchor: [14, 14],

@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* White-dominant minimal — 90% white, refined coastal marketplace
+   Foundation: white, softwhite, black, midgray, lightgray
+   Accent (use lightly): cerulean, pacific, olive, gold
+   No large solid accent sections. Color as detail, not branding noise.
+*/
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -10,85 +15,102 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  /* Badges: olive 10–15% opacity; gold for premium/verified only */
+  .badge-olive {
+    background-color: rgba(67, 87, 46, 0.12);
+    color: #43572E;
+  }
+  .badge-gold {
+    background-color: rgba(139, 98, 18, 0.12);
+    color: #8B6212;
+  }
 }
 
 @layer base {
   :root {
-    --background: 200 20% 98%;
-    --foreground: 200 25% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 200 25% 10%;
+    /* B&W only — white, offwhite, black, darkgray, midgray, lightgray, bordergray */
+    --background: 0 0% 100%;         /* #FFFFFF white */
+    --foreground: 0 0% 7%;           /* #111111 black (headings) */
+    --card: 0 0% 100%;               /* #FFFFFF white */
+    --card-foreground: 0 0% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 200 25% 10%;
-    --primary: 195 85% 35%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 7%;              /* #111111 black */
     --primary-foreground: 0 0% 100%;
-    --secondary: 200 15% 94%;
-    --secondary-foreground: 200 25% 15%;
-    --muted: 200 15% 94%;
-    --muted-foreground: 200 10% 45%;
-    --accent: 38 92% 55%;
-    --accent-foreground: 200 25% 10%;
+    --secondary: 0 0% 96%;           /* lightgray for hover */
+    --secondary-foreground: 0 0% 7%;
+    --muted: 0 0% 97%;               /* offwhite */
+    --muted-foreground: 0 0% 42%;    /* #6B6B6B midgray (body) */
+    --accent: 0 0% 7%;               /* black (no blue links) */
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 200 15% 88%;
-    --input: 200 15% 88%;
-    --ring: 195 85% 35%;
-    --chart-1: 195 85% 35%;
-    --chart-2: 38 92% 55%;
-    --chart-3: 173 58% 39%;
-    --chart-4: 200 25% 60%;
+    --border: 0 0% 90%;              /* #E5E5E5 lightgray */
+    --input: 0 0% 85%;               /* #DADADA bordergray */
+    --ring: 0 0% 7%;
+    --chart-1: 0 0% 7%;
+    --chart-2: 0 0% 42%;
+    --chart-3: 0 0% 90%;
+    --chart-4: 0 0% 97%;
     --chart-5: 0 84% 60%;
-    --radius: 0.625rem;
+    --radius: 0.25rem;
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 200 25% 25%;
-    --sidebar-primary: 195 85% 35%;
+    --sidebar-foreground: 0 0% 7%;
+    --sidebar-primary: 0 0% 7%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 15% 96%;
-    --sidebar-accent-foreground: 200 25% 15%;
-    --sidebar-border: 200 15% 90%;
-    --sidebar-ring: 195 85% 35%;
+    --sidebar-accent: 0 0% 97%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 7%;
   }
   .dark {
-    --background: 200 25% 7%;
-    --foreground: 200 10% 95%;
-    --card: 200 20% 10%;
-    --card-foreground: 200 10% 95%;
-    --popover: 200 20% 10%;
-    --popover-foreground: 200 10% 95%;
-    --primary: 195 85% 45%;
-    --primary-foreground: 200 25% 5%;
-    --secondary: 200 15% 15%;
-    --secondary-foreground: 200 10% 95%;
-    --muted: 200 15% 15%;
-    --muted-foreground: 200 10% 60%;
-    --accent: 38 92% 55%;
-    --accent-foreground: 200 25% 5%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 7%;
+    --secondary: 0 0% 17%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 98%;
+    --accent-foreground: 0 0% 7%;
     --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 200 15% 18%;
-    --input: 200 15% 18%;
-    --ring: 195 85% 45%;
-    --chart-1: 195 85% 45%;
-    --chart-2: 38 92% 55%;
-    --chart-3: 173 58% 45%;
-    --chart-4: 200 25% 50%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 98%;
+    --chart-1: 0 0% 98%;
+    --chart-2: 0 0% 65%;
+    --chart-3: 0 0% 20%;
+    --chart-4: 0 0% 15%;
     --chart-5: 0 70% 50%;
-    --sidebar-background: 200 20% 8%;
-    --sidebar-foreground: 200 10% 90%;
-    --sidebar-primary: 195 85% 45%;
-    --sidebar-primary-foreground: 200 25% 5%;
-    --sidebar-accent: 200 15% 12%;
-    --sidebar-accent-foreground: 200 10% 90%;
-    --sidebar-border: 200 15% 15%;
-    --sidebar-ring: 195 85% 45%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 98%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: #E5E5E5;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #FFFFFF;
+    color: #6E6E6E;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: #111111;
+  }
+  a:not([class*="underline"]):hover {
+    text-decoration: underline;
   }
 }

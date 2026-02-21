@@ -141,7 +141,8 @@ export default function OrdersPage() {
                   src={primaryImage.url}
                   alt={listing?.title ?? 'Item'}
                   fill
-                  className="object-cover"
+                  className="object-contain"
+                  style={{ objectFit: "contain" }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

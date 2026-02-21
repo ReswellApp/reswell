@@ -17,6 +17,16 @@ export async function POST(request: NextRequest) {
     condition,
     section,
     category_id,
+  } = body
+
+  if (section === 'used' && (!description || typeof description !== 'string' || !description.trim())) {
+    return NextResponse.json(
+      { error: 'Description is required for used item listings' },
+      { status: 400 }
+    )
+  }
+
+  const {
     shipping_available,
     local_pickup,
     shipping_price,
