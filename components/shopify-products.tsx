@@ -177,12 +177,12 @@ export function ShopifyProducts() {
                       </div>
                     )}
                     {hasDiscount && (
-                      <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground">
+                      <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
                         -{discountPercent}%
                       </Badge>
                     )}
                     {!product.availableForSale && (
-                      <Badge variant="destructive" className="absolute top-2 right-2">
+                      <Badge className="absolute top-2 right-2 bg-black/70 text-white border-0">
                         Sold Out
                       </Badge>
                     )}

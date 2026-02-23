@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-
-const PLATFORM_FEE_PERCENT = 5 // 5% platform fee
+import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -36,8 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   const price = parseFloat(listing.price)
-  const platformFee = Math.round(price * PLATFORM_FEE_PERCENT) / 100
-  const sellerEarnings = price - platformFee
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, { cardPayment: false })
 
   // Fetch buyer wallet
   const { data: buyerWallet } = await supabase
@@ -134,7 +132,7 @@ export async function POST(request: NextRequest) {
     type: "sale",
     amount: sellerEarnings,
     balance_after: newSellerBalance,
-    description: `Sold "${listing.title}" (${PLATFORM_FEE_PERCENT}% fee: R$${platformFee.toFixed(2)})`,
+    description: `Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: R$${platformFee.toFixed(2)})`,
     reference_id: purchase?.id,
     reference_type: "listing",
   })

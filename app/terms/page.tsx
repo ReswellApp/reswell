@@ -63,7 +63,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">5. ReSwell Bucks and payments</h2>
               <p className="leading-relaxed">
-                ReSwell Bucks are an in-app currency used for purchases on the platform. They have no cash value outside the platform except when cashed out according to our wallet and cash-out rules. Fees (e.g. platform or cash-out fees) are disclosed in the app. You are responsible for any taxes that apply to your sales or income.
+                ReSwell Bucks are an in-app currency used for purchases on the platform. They have no cash value outside the platform except when cashed out according to our wallet and cash-out rules. For used gear sales, the platform charges a 5% marketplace fee; card payments also include payment processing (~2.9% + $0.30). Cash-out to real currency: 0% standard payout; 1% instant payout. Other details are in the app. You are responsible for any taxes that apply to your sales or income.
               </p>
             </section>
 

@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import { Inter } from 'next/font/google'
+import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
 import { LOCALE_COOKIE_NAME } from '@/lib/translations'
@@ -21,6 +22,8 @@ export const viewport: Viewport = {
   themeColor: '#0F2143',
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
 }
 
 export default async function RootLayout({
@@ -33,11 +36,12 @@ export default async function RootLayout({
   const locale: Locale = localeCookie === 'es' ? 'es' : 'en'
 
   return (
-    <html lang={locale}>
-      <body className={`${inter.variable} font-sans antialiased bg-white text-midgray`}>
+    <html lang={locale} className="overflow-x-hidden">
+      <body className={`${inter.variable} font-sans antialiased bg-white text-midgray min-h-dvh overflow-x-hidden`}>
         <LocaleProvider initialLocale={locale}>
           {children}
           <Toaster />
+          <Analytics />
         </LocaleProvider>
       </body>
     </html>

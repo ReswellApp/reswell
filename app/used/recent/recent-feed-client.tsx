@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatCondition, formatCategory, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { MessageListingButton } from "@/components/message-listing-button"
-import { RefreshCw, LayoutGrid, List, Package } from "lucide-react"
+import { FavoriteButton } from "@/components/favorite-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
+import { RefreshCw, LayoutGrid, List, Package, MapPin } from "lucide-react"
 
 function listingHref(listing: RecentListing): string {
   return listing.section === "surfboards" ? `/boards/${listing.id}` : `/used/${listing.id}`
@@ -23,17 +25,27 @@ export type RecentListing = {
   price: number
   condition: string | null
   section?: string
+  city: string | null
+  state: string | null
+  shipping_available: boolean | null
   listing_images: { url: string; is_primary: boolean }[] | null
-  profiles: { display_name: string | null; avatar_url: string | null; sales_count: number | null } | null
+  profiles: { display_name: string | null; avatar_url: string | null; location: string | null; sales_count: number | null } | null
   categories: { name: string; slug: string } | null
 }
 
 const LIMIT = 50
 
-export function RecentFeedClient({ listings }: { listings: RecentListing[] }) {
+type RecentFeedClientProps = {
+  listings: RecentListing[]
+  favoritedListingIds?: string[]
+  isLoggedIn?: boolean
+}
+
+export function RecentFeedClient({ listings, favoritedListingIds = [], isLoggedIn = false }: RecentFeedClientProps) {
   const router = useRouter()
   const [view, setView] = useState<"grid" | "list">("grid")
   const count = listings?.length ?? 0
+  const favoritedSet = new Set(favoritedListingIds)
 
   return (
     <>
@@ -88,7 +100,12 @@ export function RecentFeedClient({ listings }: { listings: RecentListing[] }) {
       {count > 0 && view === "grid" && (
         <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              isFavorited={favoritedSet.has(listing.id)}
+              isLoggedIn={isLoggedIn}
+            />
           ))}
         </div>
       )}
@@ -96,7 +113,12 @@ export function RecentFeedClient({ listings }: { listings: RecentListing[] }) {
       {count > 0 && view === "list" && (
         <ul className="mt-4 space-y-2">
           {listings.map((listing) => (
-            <ListingRow key={listing.id} listing={listing} />
+            <ListingRow
+              key={listing.id}
+              listing={listing}
+              isFavorited={favoritedSet.has(listing.id)}
+              isLoggedIn={isLoggedIn}
+            />
           ))}
         </ul>
       )}
@@ -104,41 +126,69 @@ export function RecentFeedClient({ listings }: { listings: RecentListing[] }) {
   )
 }
 
-function ListingCard({ listing }: { listing: RecentListing }) {
+function ListingCard({
+  listing,
+  isFavorited,
+  isLoggedIn,
+}: {
+  listing: RecentListing
+  isFavorited: boolean
+  isLoggedIn: boolean
+}) {
   const primaryImage = listing.listing_images?.find((img) => img.is_primary) ?? listing.listing_images?.[0]
   const href = listingHref(listing)
+  const showInPersonOnly =
+    listing.section === "surfboards" || listing.shipping_available === false
+  const locationLabel =
+    listing.city && listing.state
+      ? `${listing.city}, ${listing.state}`
+      : listing.profiles?.location ?? "Location not set"
 
   return (
-    <Card className="group h-full overflow-hidden rounded-xl border-border bg-card transition-shadow hover:shadow-md">
-      <Link href={href} className="flex h-full flex-col">
-        <div className="aspect-square relative bg-muted">
+    <Card className="group h-full overflow-hidden rounded-xl border-border bg-card transition-shadow hover:shadow-md flex flex-col">
+      <Link href={href} className="flex-1 flex flex-col">
+        <div className="aspect-[4/5] relative bg-muted overflow-hidden">
           {primaryImage?.url ? (
             <Image
               src={primaryImage.url}
               alt={capitalizeWords(listing.title)}
               fill
-              className="object-contain transition-transform duration-300 group-hover:scale-[1.02]"
-              style={{ objectFit: "contain" }}
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              style={{ objectFit: "cover" }}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
               <Package className="h-12 w-12" />
             </div>
           )}
-          <Badge className="absolute left-2 top-2 rounded-md" variant="secondary">
-            {listing.section === "surfboards" ? "Board" : formatCondition(listing.condition)}
-          </Badge>
-        </div>
-        <CardContent className="flex flex-1 flex-col p-4">
-          <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
-          <p className="mt-2 text-xl font-bold text-foreground">${listing.price.toFixed(2)}</p>
-          <div className="mt-auto flex items-center justify-between pt-2">
-            <p className="text-sm text-muted-foreground">{getPublicSellerDisplayName(listing.profiles)}</p>
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            <Badge className="w-fit rounded-md bg-black/70 text-white border-0">
+              {listing.section === "surfboards" ? "Board" : formatCondition(listing.condition)}
+            </Badge>
             {listing.categories?.name && (
-              <Badge variant="outline" className="text-xs">
+              <Badge className="w-fit text-xs bg-black/70 text-white border-0">
                 {formatCategory(listing.categories.name)}
               </Badge>
             )}
+          </div>
+          <FavoriteButtonCardOverlay
+            listingId={listing.id}
+            initialFavorited={isFavorited}
+            isLoggedIn={isLoggedIn}
+          />
+          {showInPersonOnly && (
+            <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
+              <MapPin className="h-3 w-3 mr-1" />
+              In-Person Only
+            </Badge>
+          )}
+        </div>
+        <CardContent className="p-4">
+          <h3 className="font-medium line-clamp-2 text-foreground">{capitalizeWords(listing.title)}</h3>
+          <p className="mt-2 text-xl font-bold text-primary">${listing.price.toFixed(2)}</p>
+          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+            <MapPin className="h-3 w-3 shrink-0" />
+            {locationLabel}
           </div>
         </CardContent>
       </Link>
@@ -153,45 +203,73 @@ function ListingCard({ listing }: { listing: RecentListing }) {
   )
 }
 
-function ListingRow({ listing }: { listing: RecentListing }) {
+function ListingRow({
+  listing,
+  isFavorited,
+  isLoggedIn,
+}: {
+  listing: RecentListing
+  isFavorited: boolean
+  isLoggedIn: boolean
+}) {
   const primaryImage = listing.listing_images?.find((img) => img.is_primary) ?? listing.listing_images?.[0]
   const href = listingHref(listing)
+  const locationLabel =
+    listing.city && listing.state
+      ? `${listing.city}, ${listing.state}`
+      : listing.profiles?.location ?? null
 
   return (
     <li>
       <Card className="overflow-hidden rounded-xl border-border bg-card transition-shadow hover:shadow-sm">
-        <Link href={href} className="flex flex-row gap-4 p-3 sm:gap-5">
-          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-24 sm:w-24">
-            {primaryImage?.url ? (
-              <Image
-                src={primaryImage.url}
-                alt={capitalizeWords(listing.title)}
-                fill
-                className="object-contain"
-                style={{ objectFit: "contain" }}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                <Package className="h-8 w-8" />
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1 py-0.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="rounded-md" variant="secondary">
-                {listing.section === "surfboards" ? "Board" : formatCondition(listing.condition)}
-              </Badge>
-              {listing.categories?.name && (
-                <Badge variant="outline" className="text-xs">
-                  {formatCategory(listing.categories.name)}
-                </Badge>
+        <div className="flex flex-row items-start gap-2 p-3 sm:gap-3 sm:p-4">
+          <Link href={href} className="flex min-w-0 flex-1 flex-row gap-4 sm:gap-5">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-24 sm:w-24">
+              {primaryImage?.url ? (
+                <Image
+                  src={primaryImage.url}
+                  alt={capitalizeWords(listing.title)}
+                  fill
+                  className="object-cover"
+                  style={{ objectFit: "cover" }}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                  <Package className="h-8 w-8" />
+                </div>
               )}
             </div>
-            <h3 className="mt-1 font-medium line-clamp-1 sm:line-clamp-2">{capitalizeWords(listing.title)}</h3>
-            <p className="mt-0.5 text-lg font-bold text-foreground">${listing.price.toFixed(2)}</p>
-            <p className="text-sm text-muted-foreground">{getPublicSellerDisplayName(listing.profiles)}</p>
+            <div className="min-w-0 flex-1 py-0.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="rounded-md bg-black/70 text-white border-0">
+                  {listing.section === "surfboards" ? "Board" : formatCondition(listing.condition)}
+                </Badge>
+                {listing.categories?.name && (
+                  <Badge className="text-xs bg-black/70 text-white border-0">
+                    {formatCategory(listing.categories.name)}
+                  </Badge>
+                )}
+              </div>
+              <h3 className="mt-1 font-medium line-clamp-1 sm:line-clamp-2">{capitalizeWords(listing.title)}</h3>
+              <p className="mt-0.5 text-lg font-bold text-primary">${listing.price.toFixed(2)}</p>
+              {locationLabel ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  {locationLabel}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">{getPublicSellerDisplayName(listing.profiles)}</p>
+              )}
+            </div>
+          </Link>
+          <div className="shrink-0 pt-0.5">
+            <FavoriteButton
+              listingId={listing.id}
+              initialFavorited={isFavorited}
+              isLoggedIn={isLoggedIn}
+            />
           </div>
-        </Link>
+        </div>
         <div className="border-t border-border px-3 py-2 sm:px-4">
           <MessageListingButton
             listingId={listing.id}

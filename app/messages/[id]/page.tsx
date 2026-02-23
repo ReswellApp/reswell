@@ -87,12 +87,24 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setMessages(msgData)
       }
 
-      // Mark messages as read
+      // Mark messages in this conversation as read
       await supabase
         .from('messages')
         .update({ is_read: true })
         .eq('conversation_id', id)
         .neq('sender_id', user.id)
+
+      // Mark notifications as read when viewing messages (badge includes notifications)
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+
+      // Notify header to refresh unread badge (delay so DB commit and listener are ready)
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+      }
     }
 
     fetchData()
@@ -109,7 +121,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           filter: `conversation_id=eq.${id}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message])
+          const msg = payload.new as Message
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev
+            const withoutPending = prev.filter(
+              (m) => !(String(m.id).startsWith('pending-') && m.content === msg.content && m.sender_id === msg.sender_id)
+            )
+            return [...withoutPending, msg]
+          })
         }
       )
       .subscribe()
@@ -126,20 +145,40 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUserId || !conversation) return
 
+    const content = newMessage.trim()
+    setNewMessage('')
     setSending(true)
-    const { error } = await supabase.from('messages').insert({
-      conversation_id: id,
-      sender_id: currentUserId,
-      content: newMessage.trim(),
-    })
 
-    if (!error) {
-      setNewMessage('')
-      // Update last_message_at
+    const tempId = `pending-${Date.now()}`
+    const optimisticMessage: Message = {
+      id: tempId,
+      content,
+      sender_id: currentUserId,
+      is_read: true,
+      created_at: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, optimisticMessage])
+
+    const { data: inserted, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: id,
+        sender_id: currentUserId,
+        content,
+      })
+      .select('*')
+      .single()
+
+    if (!error && inserted) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? (inserted as Message) : m))
+      )
       await supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', id)
+    } else {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId))
     }
     setSending(false)
   }

@@ -73,8 +73,8 @@ export function UsedListingsFilters({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
-      <div className="flex-1 min-w-[200px]">
+    <form onSubmit={handleSubmit} className="flex flex-nowrap gap-3 items-end">
+      <div className="flex-1 min-w-[180px] max-w-[360px] shrink">
         <SearchInputWithSuggest
           value={q}
           onChange={setQ}
@@ -83,36 +83,41 @@ export function UsedListingsFilters({
           leftIcon={<Search className="h-4 w-4" />}
           name="q"
           listboxId="used-search-suggestions"
+          showTypeLabels={false}
         />
       </div>
 
-      <Select name="category" value={category} onValueChange={setCategory}>
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Category" />
-        </SelectTrigger>
-        <SelectContent>
-          {categoryOptions.map((cat) => (
-            <SelectItem key={cat.value} value={cat.value}>
-              {cat.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="w-[180px] shrink-0">
+        <Select name="category" value={category} onValueChange={setCategory}>
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categoryOptions.map((cat) => (
+              <SelectItem key={cat.value} value={cat.value}>
+                {cat.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Select name="condition" value={condition} onValueChange={setCondition}>
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="Condition" />
-        </SelectTrigger>
-        <SelectContent>
-          {conditions.map((cond) => (
-            <SelectItem key={cond.value} value={cond.value}>
-              {cond.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="w-[150px] shrink-0">
+        <Select name="condition" value={condition} onValueChange={setCondition}>
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Condition" />
+          </SelectTrigger>
+          <SelectContent>
+            {conditions.map((cond) => (
+              <SelectItem key={cond.value} value={cond.value}>
+                {cond.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2 items-end shrink-0">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Min $</label>
           <Input
@@ -122,7 +127,7 @@ export function UsedListingsFilters({
             placeholder="Min"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            className="w-[80px]"
+            className="w-[80px] h-10"
           />
         </div>
         <div>
@@ -134,25 +139,27 @@ export function UsedListingsFilters({
             placeholder="Max"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-[80px]"
+            className="w-[80px] h-10"
           />
         </div>
       </div>
 
-      <Select name="sort" value={sort} onValueChange={setSort}>
-        <SelectTrigger className="w-[170px]">
-          <SelectValue placeholder="Sort by" />
-        </SelectTrigger>
-        <SelectContent>
-          {sortOptions.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="w-[170px] shrink-0">
+        <Select name="sort" value={sort} onValueChange={setSort}>
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Button type="submit" disabled={isPending}>
+      <Button type="submit" disabled={isPending} className="shrink-0 h-10">
         <SlidersHorizontal className="h-4 w-4 mr-2" />
         {isPending ? "Applying..." : "Apply"}
       </Button>

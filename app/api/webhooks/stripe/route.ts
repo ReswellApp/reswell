@@ -1,8 +1,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
-
-const PLATFORM_FEE_PERCENT = 5
+import { getSellerEarnings } from "@/lib/seller-fees"
 
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -94,8 +93,7 @@ export async function POST(request: NextRequest) {
 
   const amount = typeof session.amount_total === "number" ? session.amount_total / 100 : 0
   const price = amount
-  const platformFee = Math.round(price * PLATFORM_FEE_PERCENT) / 100
-  const sellerEarnings = price - platformFee
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, { cardPayment: true })
 
   const { error: purchaseError } = await supabase.from("purchases").insert({
     listing_id: listingId,

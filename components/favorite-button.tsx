@@ -68,12 +68,12 @@ export function FavoriteButton({
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
       onClick={toggleFavorite}
       disabled={loading}
       className={cn(
-        "transition-colors",
+        "transition-colors border-0 shadow-none",
         favorited && "text-red-500 hover:text-red-600"
       )}
     >

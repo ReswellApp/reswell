@@ -20,6 +20,7 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 
 const categories = [
   { name: "Surfboards", href: "/boards" },
@@ -117,14 +118,24 @@ export default async function HomePage() {
 
   const featuredBoards = rawFeaturedBoards
     ? [...rawFeaturedBoards]
-        .sort((a, b) => {
-          const salesA = a.profiles?.sales_count ?? 0
-          const salesB = b.profiles?.sales_count ?? 0
-          if (salesB !== salesA) return salesB - salesA
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        })
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 4)
     : null
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const featuredListingIds = [
+    ...(featuredUsed ?? []).map((l) => l.id),
+    ...(featuredBoards ?? []).map((b) => b.id),
+  ]
+  let favoritedIds: string[] = []
+  if (user && featuredListingIds.length > 0) {
+    const { data: favs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", featuredListingIds)
+    favoritedIds = (favs ?? []).map((f) => f.listing_id)
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -368,23 +379,28 @@ export default async function HomePage() {
                 {featuredUsed.map((listing) => (
                   <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/used/${listing.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-square relative bg-muted">
+                      <div className="aspect-square relative bg-muted overflow-hidden">
                         {listing.listing_images?.[0]?.url ? (
                           <Image
                             src={listing.listing_images[0].url || "/placeholder.svg"}
                             alt={capitalizeWords(listing.title)}
                             fill
-                            className="object-contain group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "contain" }}
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "cover" }}
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                             No Image
                           </div>
                         )}
-                        <Badge className="absolute top-2 left-2" variant="secondary">
+                        <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
                           {formatCondition(listing.condition)}
                         </Badge>
+                        <FavoriteButtonCardOverlay
+                          listingId={listing.id}
+                          initialFavorited={favoritedIds.includes(listing.id)}
+                          isLoggedIn={!!user}
+                        />
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
@@ -445,7 +461,7 @@ export default async function HomePage() {
                           </div>
                         )}
                         {item.compare_at_price && item.compare_at_price > item.price && (
-                          <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground">
+                          <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
                             Sale
                           </Badge>
                         )}
@@ -477,7 +493,7 @@ export default async function HomePage() {
             <div className="container mx-auto px-4">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-bold">Surfboards Near You</h2>
+                  <h2 className="text-2xl font-bold">Recently added surfboards</h2>
                   <p className="text-muted-foreground">In-person pickup only</p>
                 </div>
                 <Button variant="outline" asChild>
@@ -491,23 +507,28 @@ export default async function HomePage() {
                 {featuredBoards.map((board) => (
                   <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/boards/${board.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-square relative bg-muted">
+                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                         {board.listing_images?.[0]?.url ? (
                           <Image
                             src={board.listing_images[0].url || "/placeholder.svg"}
                             alt={capitalizeWords(board.title)}
                             fill
-                            className="object-contain group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "contain" }}
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "cover" }}
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                             No Image
                           </div>
                         )}
-                        <Badge className="absolute top-2 left-2" variant="secondary">
+                        <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
                           {formatCondition(board.condition)}
                         </Badge>
+                        <FavoriteButtonCardOverlay
+                          listingId={board.id}
+                          initialFavorited={favoritedIds.includes(board.id)}
+                          isLoggedIn={!!user}
+                        />
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
@@ -515,8 +536,8 @@ export default async function HomePage() {
                           ${board.price.toFixed(2)}
                         </p>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                          <MapPin className="h-3 w-3" />
-                          {board.profiles?.location || "Location not set"}
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {[board.city, board.state].filter(Boolean).join(", ") || "Location not set"}
                         </div>
                       </CardContent>
                     </Link>

@@ -13,6 +13,7 @@ import { BoardsListingsFilters } from "@/components/boards-listings-filters"
 import { MapPin, Users, Store } from "lucide-react"
 import { ShopifyBoardsGrid } from "@/components/shopify-boards"
 import { MessageListingButton } from "@/components/message-listing-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 
 function haversineMi(
   lat1: number,
@@ -57,7 +58,6 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
   const sort = searchParams.sort || "newest"
   const query = searchParams.q || ""
   const location = searchParams.location || ""
-  const brand = (searchParams.brand || "").trim()
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
   const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
   const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
@@ -83,10 +83,6 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
 
   if (condition !== "all") {
     dbQuery = dbQuery.eq("condition", condition)
-  }
-
-  if (brand) {
-    dbQuery = dbQuery.ilike("brand", `%${brand}%`)
   }
 
   if (minPrice != null && !Number.isNaN(minPrice) && minPrice >= 0) {
@@ -181,7 +177,6 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     if (searchParams.location) params.set("location", searchParams.location)
     if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
     if (searchParams.condition && searchParams.condition !== "all") params.set("condition", searchParams.condition)
-    if (searchParams.brand) params.set("brand", searchParams.brand)
     if (searchParams.minPrice) params.set("minPrice", searchParams.minPrice)
     if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice)
     if (searchParams.radius) params.set("radius", searchParams.radius)
@@ -205,6 +200,17 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     )
   }
 
+  const { data: { user } } = await supabase.auth.getUser()
+  let favoritedIds: string[] = []
+  if (user && boards.length > 0) {
+    const { data: favs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", boards.map((b) => b.id))
+    favoritedIds = (favs ?? []).map((f) => f.listing_id)
+  }
+
   return (
     <>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -213,14 +219,14 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
           return (
             <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
               <Link href={`/boards/${board.id}`} className="flex-1 flex flex-col">
-                <div className="aspect-[4/5] relative bg-muted">
+                <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}
                       alt={capitalizeWords(board.title)}
                       fill
-                      className="object-contain group-hover:scale-105 transition-transform duration-300"
-                      style={{ objectFit: "contain" }}
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      style={{ objectFit: "cover" }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -228,17 +234,22 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                     </div>
                   )}
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    <Badge variant="secondary">{formatCondition(board.condition)}</Badge>
+                    <Badge className="bg-black/70 text-white border-0">{formatCondition(board.condition)}</Badge>
                     {board.board_type && (
-                      <Badge variant="outline" className="bg-background/80">
+                      <Badge className="bg-black/70 text-white border-0">
                         {formatBoardType(board.board_type)}
                       </Badge>
                     )}
                   </div>
-                  <Badge className="absolute bottom-2 right-2 bg-background/80 text-foreground">
+                  <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
                     <MapPin className="h-3 w-3 mr-1" />
                     In-Person Only
                   </Badge>
+                  <FavoriteButtonCardOverlay
+                    listingId={board.id}
+                    initialFavorited={favoritedIds.includes(board.id)}
+                    isLoggedIn={!!user}
+                  />
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-medium line-clamp-2">{capitalizeWords(board.title)}</h3>
@@ -323,10 +334,10 @@ export default async function BoardsPage(props: {
         </section>
 
         {/* Tabs */}
-        <section className="py-4">
-          <div className="container mx-auto px-4">
-            <Tabs defaultValue="local" className="w-full">
-              <TabsList className="mb-6">
+        <section className="py-4 min-w-0">
+          <div className="container mx-auto px-4 min-w-0">
+            <Tabs defaultValue="local" className="w-full min-w-0">
+              <TabsList className="mb-6 flex-wrap sm:flex-nowrap gap-1">
                 <TabsTrigger value="local" className="gap-2">
                   <MapPin className="h-4 w-4" />
                   Local Boards
@@ -339,19 +350,20 @@ export default async function BoardsPage(props: {
 
               {/* Local Boards Tab */}
               <TabsContent value="local">
-                {/* Filters */}
-                <div className="border rounded-lg p-4 mb-6 bg-card">
-                  <BoardsListingsFilters
+                {/* Filters - same look as used section */}
+                <div className="border-b py-4 mb-6 min-w-0 overflow-x-auto">
+                  <div className="min-w-0">
+                    <BoardsListingsFilters
                     initialQ={searchParams.q ?? ""}
                     initialLocation={searchParams.location ?? ""}
                     initialType={searchParams.type ?? "all"}
                     initialCondition={searchParams.condition ?? "all"}
-                    initialBrand={searchParams.brand ?? ""}
                     initialMinPrice={searchParams.minPrice ?? ""}
                     initialMaxPrice={searchParams.maxPrice ?? ""}
                     initialRadius={searchParams.radius ?? ""}
                     initialSort={searchParams.sort ?? "newest"}
-                  />
+                    />
+                  </div>
                 </div>
 
                 <Suspense

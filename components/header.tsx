@@ -99,6 +99,19 @@ export function Header() {
 
     getUser()
 
+    async function refreshUnreadCount() {
+      const { data: { user: u } } = await supabase.auth.getUser()
+      if (!u) return
+      const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: u.id })
+      const { count: unreadNotifCount } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", u.id)
+        .eq("is_read", false)
+      setUnreadMessages(Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0))
+    }
+    window.addEventListener("unreadCountRefresh", refreshUnreadCount)
+
     function updateCartCount() {
       const cart = JSON.parse(localStorage.getItem("cart") || "[]")
       setCartCount(cart.reduce((sum: number, i: { quantity?: number }) => sum + (i.quantity ?? 1), 0))
@@ -112,6 +125,7 @@ export function Header() {
     })
 
     return () => {
+      window.removeEventListener("unreadCountRefresh", refreshUnreadCount)
       window.removeEventListener("cartUpdated", updateCartCount)
       subscription.unsubscribe()
     }
@@ -125,11 +139,11 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
+        <div className="container mx-auto flex h-14 sm:h-16 min-w-0 items-center justify-between gap-2 px-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cerulean text-white">
+          <Link href="/" className="flex min-w-0 shrink items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cerulean text-white">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -145,7 +159,7 @@ export function Header() {
                 <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-black">ReSwell Surf</span>
+            <span className="truncate text-xl font-bold text-black">ReSwell Surf</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -162,7 +176,7 @@ export function Header() {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 text-black">
+          <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2 text-black">
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="hidden sm:flex text-black hover:bg-pacific/5" aria-label="Search">
@@ -365,7 +379,7 @@ export function Header() {
             aria-label="Close menu"
           />
           {/* Panel */}
-          <div className="fixed inset-y-0 right-0 w-[300px] sm:w-[400px] bg-background border-l shadow-xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+          <div className="fixed inset-y-0 right-0 w-[min(400px,100vw)] max-w-full bg-background border-l shadow-xl p-4 sm:p-6 overflow-y-auto overflow-x-hidden animate-in slide-in-from-right duration-300 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] [padding-top:max(1rem,env(safe-area-inset-top))]">
             <div className="flex items-center justify-between mb-8">
               <span className="text-lg font-semibold text-foreground">Menu</span>
               <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
@@ -393,12 +407,12 @@ export function Header() {
                 Recently added
               </Link>
               <hr className="my-2 border-border" />
-              <div className="flex gap-2">
+              <div className="flex min-w-0 gap-2">
                 <Input
                   ref={mobileSearchRef}
                   type="search"
                   placeholder="Search..."
-                  className="flex-1 rounded-lg border-border"
+                  className="min-w-0 flex-1 rounded-lg border-border"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault()

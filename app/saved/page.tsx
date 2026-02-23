@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatCondition, formatCategory, formatBoardType, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { MessageListingButton } from "@/components/message-listing-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { Heart, MapPin, Package } from "lucide-react"
 
 interface SearchParams {
@@ -128,14 +129,14 @@ async function SavedListings({ searchParams }: { searchParams: SearchParams }) {
           return (
             <Card key={favorite.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
               <Link href={getListingHref(listing)} className="flex-1 flex flex-col">
-                <div className={`aspect-square relative bg-muted ${listing.section === "surfboards" ? "aspect-[4/5]" : ""}`}>
+                <div className={`relative bg-muted overflow-hidden ${listing.section === "surfboards" ? "aspect-[4/5]" : "aspect-square"}`}>
                   {primaryImage?.url ? (
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}
                       alt={capitalizeWords(listing.title)}
                       fill
-                      className="object-contain group-hover:scale-105 transition-transform duration-300"
-                      style={{ objectFit: "contain" }}
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      style={{ objectFit: "cover" }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -144,31 +145,36 @@ async function SavedListings({ searchParams }: { searchParams: SearchParams }) {
                   )}
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
                     {listing.condition && (
-                      <Badge variant="secondary">{formatCondition(listing.condition)}</Badge>
+                      <Badge className="bg-black/70 text-white border-0">{formatCondition(listing.condition)}</Badge>
                     )}
                     {listing.board_type && (
-                      <Badge variant="outline" className="bg-background/80">
+                      <Badge className="bg-black/70 text-white border-0">
                         {formatBoardType(listing.board_type)}
                       </Badge>
                     )}
                     {listing.categories?.name && !listing.board_type && (
-                      <Badge variant="outline" className="bg-background/80 text-xs">
+                      <Badge className="bg-black/70 text-white border-0 text-xs">
                         {formatCategory(listing.categories.name)}
                       </Badge>
                     )}
                   </div>
                   {listing.section === "surfboards" && (
-                    <Badge className="absolute bottom-2 right-2 bg-background/80 text-foreground">
+                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
                       <MapPin className="h-3 w-3 mr-1" />
                       In-Person Only
                     </Badge>
                   )}
                   {listing.section === "new" && (
-                    <Badge className="absolute bottom-2 right-2 bg-background/80 text-foreground">
+                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
                       <Package className="h-3 w-3 mr-1" />
                       New
                     </Badge>
                   )}
+                  <FavoriteButtonCardOverlay
+                    listingId={listing.id}
+                    initialFavorited={true}
+                    isLoggedIn={true}
+                  />
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>

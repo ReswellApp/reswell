@@ -33,6 +33,7 @@ import {
   Banknote,
   AlertCircle,
 } from "lucide-react"
+import { getPayoutFee, getPayoutNetAmount, type PayoutType } from "@/lib/payout-fees"
 
 interface WalletData {
   id: string
@@ -63,7 +64,6 @@ interface CashoutRequest {
   created_at: string
 }
 
-const CASHOUT_FEE_PERCENT = 3
 const MIN_CASHOUT = 10
 
 export default function WalletPage() {
@@ -73,6 +73,7 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(true)
   const [cashoutOpen, setCashoutOpen] = useState(false)
   const [cashoutAmount, setCashoutAmount] = useState("")
+  const [cashoutPayoutType, setCashoutPayoutType] = useState<PayoutType>("standard")
   const [cashoutMethod, setCashoutMethod] = useState("")
   const [cashoutEmail, setCashoutEmail] = useState("")
   const [cashoutLoading, setCashoutLoading] = useState(false)
@@ -106,6 +107,7 @@ export default function WalletPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: parseFloat(cashoutAmount),
+          payout_type: cashoutPayoutType,
           payment_method: cashoutMethod,
           payment_email: cashoutEmail,
         }),
@@ -120,6 +122,7 @@ export default function WalletPage() {
 
       setCashoutOpen(false)
       setCashoutAmount("")
+      setCashoutPayoutType("standard")
       setCashoutMethod("")
       setCashoutEmail("")
       fetchWallet()
@@ -135,8 +138,8 @@ export default function WalletPage() {
   const spent = wallet ? parseFloat(wallet.lifetime_spent) : 0
   const cashedOut = wallet ? parseFloat(wallet.lifetime_cashed_out) : 0
   const cashoutAmountNum = parseFloat(cashoutAmount) || 0
-  const cashoutFee = Math.round(cashoutAmountNum * CASHOUT_FEE_PERCENT) / 100
-  const cashoutNet = cashoutAmountNum - cashoutFee
+  const cashoutFee = getPayoutFee(cashoutAmountNum, cashoutPayoutType)
+  const cashoutNet = getPayoutNetAmount(cashoutAmountNum, cashoutPayoutType)
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -263,8 +266,7 @@ export default function WalletPage() {
             <DialogHeader>
               <DialogTitle>Cash Out ReSwell Bucks</DialogTitle>
               <DialogDescription>
-                Convert your ReSwell bucks to real currency. A {CASHOUT_FEE_PERCENT}% processing fee applies. 
-                Minimum cash-out is R${MIN_CASHOUT}.00.
+                0% standard payout; 1% instant payout. Minimum R${MIN_CASHOUT}.00.
               </DialogDescription>
             </DialogHeader>
 
@@ -272,6 +274,19 @@ export default function WalletPage() {
               <div className="rounded-lg bg-muted/50 p-4">
                 <p className="text-sm text-muted-foreground">Available Balance</p>
                 <p className="text-2xl font-bold text-primary">R${balance.toFixed(2)}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payout speed</Label>
+                <Select value={cashoutPayoutType} onValueChange={(v: PayoutType) => setCashoutPayoutType(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard — 0% fee</SelectItem>
+                    <SelectItem value="instant">Instant — 1% fee</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -335,10 +350,12 @@ export default function WalletPage() {
                     <span className="text-muted-foreground">Amount</span>
                     <span>R${cashoutAmountNum.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Fee ({CASHOUT_FEE_PERCENT}%)</span>
-                    <span className="text-red-500">-R${cashoutFee.toFixed(2)}</span>
-                  </div>
+                  {cashoutFee > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Fee (1% instant)</span>
+                      <span className="text-red-500">-R${cashoutFee.toFixed(2)}</span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-medium">
                     <span>You receive</span>
@@ -469,7 +486,7 @@ export default function WalletPage() {
                 Earn
               </div>
               <p className="text-sm text-muted-foreground">
-                When you sell items on ReSwell Surf, the buyer pays in ReSwell bucks and the funds go straight to your wallet (minus a 5% platform fee).
+                When you sell used gear on ReSwell Surf, the buyer pays and funds go to your wallet. Standard fees: 5% marketplace fee; card sales also include payment processing (~2.9% + $0.30).
               </p>
             </div>
             <div className="space-y-2">
@@ -491,7 +508,7 @@ export default function WalletPage() {
                 Cash Out
               </div>
               <p className="text-sm text-muted-foreground">
-                Cash out your ReSwell bucks to real currency via PayPal, Venmo, or bank transfer. A 3% processing fee applies. Minimum R$10.00.
+                Cash out to real currency via PayPal, Venmo, or bank transfer. 0% standard payout; 1% instant payout. Minimum R$10.00.
               </p>
             </div>
           </div>

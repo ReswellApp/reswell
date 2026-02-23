@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
-import { useState, useTransition, useEffect } from "react"
+import { useState, useTransition } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,14 +14,6 @@ import {
 import { Search, MapPin, SlidersHorizontal, LocateFixed } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { useToast } from "@/hooks/use-toast"
-
-const BOARDS_BRAND_OPTIONS = [
-  "JS Surfboards",
-  "Channel Islands Surfboards",
-  "Lost Surfboards",
-  "Ryan Lovelace",
-  "Album Surfboards",
-]
 
 const boardTypes = [
   { value: "all", label: "All Board Types" },
@@ -62,7 +54,6 @@ interface BoardsListingsFiltersProps {
   initialLocation?: string
   initialType?: string
   initialCondition?: string
-  initialBrand?: string
   initialMinPrice?: string
   initialMaxPrice?: string
   initialRadius?: string
@@ -74,7 +65,6 @@ export function BoardsListingsFilters({
   initialLocation = "",
   initialType = "all",
   initialCondition = "all",
-  initialBrand = "",
   initialMinPrice = "",
   initialMaxPrice = "",
   initialRadius = "",
@@ -91,27 +81,10 @@ export function BoardsListingsFilters({
   const [locationLoading, setLocationLoading] = useState(false)
   const [type, setType] = useState(initialType)
   const [condition, setCondition] = useState(initialCondition)
-  const [brand, setBrand] = useState(initialBrand)
   const [minPrice, setMinPrice] = useState(initialMinPrice)
   const [maxPrice, setMaxPrice] = useState(initialMaxPrice)
   const [radius, setRadius] = useState(initialRadius)
   const [sort, setSort] = useState(initialSort)
-  const [apiBrands, setApiBrands] = useState<string[]>([])
-
-  useEffect(() => {
-    fetch("/api/brands?section=surfboards")
-      .then((r) => r.json())
-      .then((list: string[]) => setApiBrands(list || []))
-      .catch(() => {})
-  }, [])
-
-  const curatedSet = new Set(BOARDS_BRAND_OPTIONS.map((b) => b.toLowerCase()))
-  const otherBrands = (apiBrands || []).filter((b) => !curatedSet.has(b.toLowerCase())).sort((a, b) => a.localeCompare(b))
-  const brandOptions = [
-    ...BOARDS_BRAND_OPTIONS,
-    ...otherBrands,
-    ...(initialBrand && !BOARDS_BRAND_OPTIONS.includes(initialBrand) && !otherBrands.includes(initialBrand) ? [initialBrand] : []),
-  ]
 
   async function handleUseMyLocation() {
     if (!navigator.geolocation) {
@@ -154,7 +127,6 @@ export function BoardsListingsFilters({
     if (location.trim()) params.set("location", location.trim())
     if (type && type !== "all") params.set("type", type)
     if (condition && condition !== "all") params.set("condition", condition)
-    if (brand.trim()) params.set("brand", brand.trim())
     if (minPrice.trim()) params.set("minPrice", minPrice.trim())
     if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim())
     if (radius.trim()) params.set("radius", radius.trim())
@@ -185,8 +157,8 @@ export function BoardsListingsFilters({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
-      <div className="flex-1 min-w-[200px]">
+    <form onSubmit={handleSubmit} className="flex flex-nowrap gap-3 items-end">
+      <div className="flex-1 min-w-[180px] max-w-[360px] shrink">
         <SearchInputWithSuggest
           value={q}
           onChange={setQ}
@@ -195,22 +167,22 @@ export function BoardsListingsFilters({
           leftIcon={<Search className="h-4 w-4" />}
           name="q"
           listboxId="boards-search-suggestions"
+          showTypeLabels={false}
         />
       </div>
-
-      <div className="flex items-center gap-1">
-        <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-1 shrink-0">
+        <div className="relative w-[130px]">
+          <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             name="location"
-            placeholder="City or ZIP..."
+            placeholder="City or ZIP"
             value={location}
             onChange={(e) => {
               setLocation(e.target.value)
               setUserLat(null)
               setUserLng(null)
             }}
-            className="pl-10 w-[150px]"
+            className="pl-9 w-full min-w-0 h-10"
           />
         </div>
         <Button
@@ -225,54 +197,35 @@ export function BoardsListingsFilters({
           <LocateFixed className={`h-4 w-4 ${userLat != null ? "text-primary" : ""}`} />
         </Button>
       </div>
-
-      <Select name="type" value={type} onValueChange={setType}>
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Board Type" />
-        </SelectTrigger>
-        <SelectContent>
-          {boardTypes.map((t) => (
-            <SelectItem key={t.value} value={t.value}>
-              {t.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <div className="w-[140px]">
-        <label className="text-xs text-muted-foreground mb-1 block">Brand</label>
-        <Select
-          value={brand || "all"}
-          onValueChange={(v) => setBrand(v === "all" ? "" : v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Any brand" />
+      <div className="w-[140px] shrink-0">
+        <Select name="type" value={type} onValueChange={setType}>
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Board Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Any brand</SelectItem>
-            {brandOptions.map((b) => (
-              <SelectItem key={b} value={b}>
-                {b}
+            {boardTypes.map((t) => (
+              <SelectItem key={t.value} value={t.value}>
+                {t.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-
-      <Select name="condition" value={condition} onValueChange={setCondition}>
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="Condition" />
-        </SelectTrigger>
-        <SelectContent>
-          {conditions.map((cond) => (
-            <SelectItem key={cond.value} value={cond.value}>
-              {cond.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <div className="flex gap-2 items-end">
+      <div className="w-[120px] shrink-0">
+        <Select name="condition" value={condition} onValueChange={setCondition}>
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Condition" />
+          </SelectTrigger>
+          <SelectContent>
+            {conditions.map((cond) => (
+              <SelectItem key={cond.value} value={cond.value}>
+                {cond.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex gap-2 items-end shrink-0">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Min $</label>
           <Input
@@ -282,7 +235,7 @@ export function BoardsListingsFilters({
             placeholder="Min"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            className="w-[80px]"
+            className="w-[80px] h-10"
           />
         </div>
         <div>
@@ -294,16 +247,14 @@ export function BoardsListingsFilters({
             placeholder="Max"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-[80px]"
+            className="w-[80px] h-10"
           />
         </div>
       </div>
-
-      <div className="w-[130px]">
-        <label className="text-xs text-muted-foreground mb-1 block">Radius</label>
+      <div className="w-[120px] shrink-0">
         <Select value={radius || "any"} onValueChange={(v) => setRadius(v === "any" ? "" : v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Any distance" />
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Distance" />
           </SelectTrigger>
           <SelectContent>
             {radiusOptions.map((opt) => (
@@ -314,23 +265,23 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-
-      <Select name="sort" value={sort} onValueChange={setSort}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Sort by" />
-        </SelectTrigger>
-        <SelectContent>
-          {sortOptions.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Button type="submit" disabled={isPending}>
+      <div className="w-[130px] shrink-0">
+        <Select name="sort" value={sort} onValueChange={setSort}>
+          <SelectTrigger className="w-full h-10">
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <Button type="submit" disabled={isPending} className="shrink-0 h-10">
         <SlidersHorizontal className="h-4 w-4 mr-2" />
-        {isPending ? "Applying..." : "Apply"}
+        {isPending ? "..." : "Apply"}
       </Button>
     </form>
   )

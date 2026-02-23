@@ -139,6 +139,9 @@ function MessagesContent() {
         const unreadIds = (notifData as Notification[]).filter((n) => !n.is_read).map((n) => n.id)
         if (unreadIds.length > 0) {
           await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds)
+          if (typeof window !== 'undefined') {
+            window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+          }
         }
       }
       setLoading(false)

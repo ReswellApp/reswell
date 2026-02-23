@@ -10,6 +10,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      container: {
+        center: true,
+      },
       colors: {
         /* White-dominant minimal — 90% white, accent used lightly */
         white: '#FFFFFF',

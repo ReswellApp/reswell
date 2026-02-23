@@ -10,6 +10,7 @@ import { formatCondition, formatCategory, capitalizeWords, getPublicSellerDispla
 import { createClient } from "@/lib/supabase/server"
 import { UsedListingsFilters } from "@/components/used-listings-filters"
 import { MessageListingButton } from "@/components/message-listing-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 
 interface SearchParams {
   category?: string
@@ -138,6 +139,17 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
     )
   }
 
+  const { data: { user } } = await supabase.auth.getUser()
+  let favoritedIds: string[] = []
+  if (user && listings.length > 0) {
+    const { data: favs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", listings.map((l) => l.id))
+    favoritedIds = (favs ?? []).map((f) => f.listing_id)
+  }
+
   return (
     <>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -146,23 +158,28 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
           return (
             <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
               <Link href={`/used/${listing.id}`} className="flex-1 flex flex-col">
-                <div className="aspect-square relative bg-muted">
+                <div className="aspect-square relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}
                       alt={capitalizeWords(listing.title)}
                       fill
-                      className="object-contain group-hover:scale-105 transition-transform duration-300"
-                      style={{ objectFit: "contain" }}
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      style={{ objectFit: "cover" }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                       No Image
                     </div>
                   )}
-                  <Badge className="absolute top-2 left-2" variant="secondary">
+                  <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
                     {formatCondition(listing.condition)}
                   </Badge>
+                  <FavoriteButtonCardOverlay
+                    listingId={listing.id}
+                    initialFavorited={favoritedIds.includes(listing.id)}
+                    isLoggedIn={!!user}
+                  />
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
@@ -260,8 +277,8 @@ export default async function UsedGearPage(props: {
         </section>
 
         {/* Filters */}
-        <section className="border-b py-4 sticky top-16 bg-background z-40">
-          <div className="container mx-auto px-4">
+        <section className="border-b py-4 sticky top-14 sm:top-16 bg-background z-40 min-w-0 overflow-x-auto">
+          <div className="container mx-auto px-4 min-w-0">
             <UsedListingsFilters
               categoryOptions={categoryOptions}
               initialQ={searchParams.q ?? ""}

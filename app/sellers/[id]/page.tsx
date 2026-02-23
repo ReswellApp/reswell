@@ -316,14 +316,11 @@ function ListingGrid({ listings }: { listings: any[] }) {
                 )}
                 <div className="absolute top-2 left-2 flex gap-1.5">
                   {listing.condition && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge className="text-xs bg-black/70 text-white border-0">
                       {formatCondition(listing.condition)}
                     </Badge>
                   )}
-                  <Badge
-                    variant="outline"
-                    className="text-xs bg-background/80 backdrop-blur-sm"
-                  >
+                  <Badge className="text-xs bg-black/70 text-white border-0">
                     {listing.section === "surfboards"
                       ? "Board"
                       : listing.section === "new"

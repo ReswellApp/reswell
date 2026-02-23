@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server"
 import { MapPin, Package } from "lucide-react"
 import { SearchResultsBar } from "./search-results-bar"
 import { MessageListingButton } from "@/components/message-listing-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 
 export const metadata = {
   title: "Search - ReSwell Surf",
@@ -96,6 +97,23 @@ export default async function SearchPage(props: SearchPageProps) {
   const showUsed = section === "all" || section === "used"
   const showBoards = section === "all" || section === "boards"
 
+  let user: { id: string } | null = null
+  let favoritedIds: string[] = []
+  if (hasResults) {
+    const supabaseAuth = await createClient()
+    const { data: { user: u } } = await supabaseAuth.auth.getUser()
+    user = u
+    const allListingIds = [...usedListings.map((l: any) => l.id), ...boardListings.map((l: any) => l.id)]
+    if (user && allListingIds.length > 0) {
+      const { data: favs } = await supabaseAuth
+        .from("favorites")
+        .select("listing_id")
+        .eq("user_id", user.id)
+        .in("listing_id", allListingIds)
+      favoritedIds = (favs ?? []).map((f) => f.listing_id)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -150,23 +168,28 @@ export default async function SearchPage(props: SearchPageProps) {
                       return (
                         <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                           <Link href={`/used/${listing.id}`} className="flex-1 flex flex-col">
-                            <div className="aspect-square relative bg-muted">
+                            <div className="aspect-square relative bg-muted overflow-hidden">
                               {primaryImage?.url ? (
                                 <Image
                                   src={primaryImage.url}
                                   alt={capitalizeWords(listing.title)}
                                   fill
-                                  className="object-contain group-hover:scale-105 transition-transform duration-300"
-                                  style={{ objectFit: "contain" }}
+                                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                  style={{ objectFit: "cover" }}
                                 />
                               ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                                   <Package className="h-10 w-10" />
                                 </div>
                               )}
-                              <Badge className="absolute top-2 left-2" variant="secondary">
+                              <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
                                 {formatCondition(listing.condition)}
                               </Badge>
+                              <FavoriteButtonCardOverlay
+                                listingId={listing.id}
+                                initialFavorited={favoritedIds.includes(listing.id)}
+                                isLoggedIn={!!user}
+                              />
                             </div>
                             <CardContent className="p-4">
                               <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
@@ -211,28 +234,35 @@ export default async function SearchPage(props: SearchPageProps) {
                       return (
                         <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                           <Link href={`/boards/${listing.id}`} className="flex-1 flex flex-col">
-                            <div className="aspect-[4/5] relative bg-muted">
+                            <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                               {primaryImage?.url ? (
                                 <Image
                                   src={primaryImage.url}
                                   alt={capitalizeWords(listing.title)}
                                   fill
-                                  className="object-contain group-hover:scale-105 transition-transform duration-300"
-                                  style={{ objectFit: "contain" }}
+                                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                  style={{ objectFit: "cover" }}
                                 />
                               ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                                   <Package className="h-10 w-10" />
                                 </div>
                               )}
-                              <Badge className="absolute top-2 left-2" variant="secondary">
-                                {formatCondition(listing.condition)}
-                              </Badge>
-                              {listing.board_type && (
-                                <Badge className="absolute top-2 right-2" variant="outline">
-                                  {formatBoardType(listing.board_type)}
+                              <div className="absolute top-2 left-2 flex flex-col gap-1">
+                                <Badge className="bg-black/70 text-white border-0">
+                                  {formatCondition(listing.condition)}
                                 </Badge>
-                              )}
+                                {listing.board_type && (
+                                  <Badge className="bg-black/70 text-white border-0">
+                                    {formatBoardType(listing.board_type)}
+                                  </Badge>
+                                )}
+                              </div>
+                              <FavoriteButtonCardOverlay
+                                listingId={listing.id}
+                                initialFavorited={favoritedIds.includes(listing.id)}
+                                isLoggedIn={!!user}
+                              />
                             </div>
                             <CardContent className="p-4">
                               <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import { getPayoutFee, getPayoutNetAmount, type PayoutType } from "@/lib/payout-fees"
 
-const CASHOUT_FEE_PERCENT = 3 // 3% cash-out fee
 const MIN_CASHOUT = 10 // Minimum $10 to cash out
 
 export async function POST(request: NextRequest) {
@@ -14,12 +14,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { amount, payment_method, payment_email } = await request.json()
+  const { amount, payment_method, payment_email, payout_type: rawPayoutType } = await request.json()
 
   if (!amount || !payment_method || !payment_email) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  const payout_type: PayoutType = rawPayoutType === "instant" ? "instant" : "standard"
   const cashoutAmount = parseFloat(amount)
 
   if (cashoutAmount < MIN_CASHOUT) {
@@ -43,8 +44,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const fee = Math.round(cashoutAmount * CASHOUT_FEE_PERCENT) / 100
-  const netAmount = cashoutAmount - fee
+  const fee = getPayoutFee(cashoutAmount, payout_type)
+  const netAmount = getPayoutNetAmount(cashoutAmount, payout_type)
   const newBalance = parseFloat(wallet.balance) - cashoutAmount
 
   // Deduct from wallet
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
     type: "cashout",
     amount: -cashoutAmount,
     balance_after: newBalance,
-    description: `Cash-out R$${cashoutAmount.toFixed(2)} via ${payment_method} (fee: R$${fee.toFixed(2)}, payout: $${netAmount.toFixed(2)})`,
+    description: `Cash-out R$${cashoutAmount.toFixed(2)} via ${payment_method} (${payout_type}, fee: R$${fee.toFixed(2)}, payout: $${netAmount.toFixed(2)})`,
     reference_id: cashout?.id,
     reference_type: "cashout_request",
     status: "pending",

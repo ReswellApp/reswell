@@ -189,10 +189,7 @@ export default async function DashboardPage() {
                           No Image
                         </div>
                       )}
-                      <Badge
-                        className="absolute top-2 left-2"
-                        variant={listing.status === "active" ? "default" : "secondary"}
-                      >
+                      <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
                         {listing.status}
                       </Badge>
                     </div>

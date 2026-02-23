@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { getSellerEarnings } from "@/lib/seller-fees"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -46,8 +47,7 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
     }
   }, [open])
 
-  const platformFee = Math.round(price * 5) / 100
-  const sellerGets = price - platformFee
+  const { marketplaceFee: platformFee, sellerEarnings: sellerGets } = getSellerEarnings(price, { cardPayment: false })
   const canAfford = balance !== null && balance >= price
 
   const handlePurchase = async () => {

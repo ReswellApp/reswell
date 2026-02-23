@@ -8,7 +8,8 @@ const LIMIT = 50
 export default async function RecentUsedPage() {
   const supabase = await createClient()
 
-  const [usedRes, boardsRes] = await Promise.all([
+  const [{ data: { user } }, usedRes, boardsRes] = await Promise.all([
+    supabase.auth.getUser(),
     supabase
       .from("listings")
       .select(`
@@ -19,8 +20,11 @@ export default async function RecentUsedPage() {
         condition,
         section,
         created_at,
+        city,
+        state,
+        shipping_available,
         listing_images (url, is_primary),
-        profiles (display_name, avatar_url, sales_count),
+        profiles (display_name, avatar_url, location, sales_count),
         categories (name, slug)
       `)
       .eq("status", "active")
@@ -38,8 +42,11 @@ export default async function RecentUsedPage() {
         condition,
         section,
         created_at,
+        city,
+        state,
+        shipping_available,
         listing_images (url, is_primary),
-        profiles (display_name, avatar_url, sales_count),
+        profiles (display_name, avatar_url, location, sales_count),
         categories (name, slug)
       `)
       .eq("status", "active")
@@ -47,6 +54,15 @@ export default async function RecentUsedPage() {
       .order("created_at", { ascending: false })
       .limit(LIMIT),
   ])
+
+  let favoritedListingIds: string[] = []
+  if (user) {
+    const { data: favs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+    favoritedListingIds = (favs ?? []).map((f) => f.listing_id)
+  }
 
   const withCreated = (res: any[], section: string) =>
     (res ?? []).map((row: any) => ({
@@ -57,6 +73,9 @@ export default async function RecentUsedPage() {
       condition: row.condition,
       section: row.section ?? section,
       created_at: row.created_at,
+      city: row.city,
+      state: row.state,
+      shipping_available: row.shipping_available,
       listing_images: row.listing_images,
       profiles: row.profiles,
       categories: row.categories,
@@ -88,7 +107,11 @@ export default async function RecentUsedPage() {
         </section>
 
         <section className="container mx-auto px-4 py-6">
-          <RecentFeedClient listings={feedListings} />
+          <RecentFeedClient
+            listings={feedListings}
+            favoritedListingIds={favoritedListingIds}
+            isLoggedIn={!!user}
+          />
         </section>
       </main>
 

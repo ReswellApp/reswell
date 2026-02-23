@@ -6,16 +6,35 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
 
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [message, setMessage] = useState("")
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitted(true)
+    setLoading(true)
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to send message")
+        return
+      }
+      setSubmitted(true)
+    } catch {
+      toast.error("Failed to send message")
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (submitted) {
@@ -74,7 +93,9 @@ export function ContactForm() {
               required
             />
           </div>
-          <Button type="submit">Send message</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Sending…" : "Send message"}
+          </Button>
         </form>
       </CardContent>
     </Card>

@@ -29,8 +29,8 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="border-t border-lightgray bg-softwhite transition-colors duration-smooth">
-      <div className="container mx-auto px-4 py-12">
+    <footer className="border-t border-lightgray bg-softwhite transition-colors duration-smooth pb-[env(safe-area-inset-bottom)]">
+      <div className="container mx-auto py-8 sm:py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
