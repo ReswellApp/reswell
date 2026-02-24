@@ -65,7 +65,7 @@ export default async function SellerProfilePage({
     notFound()
   }
 
-  // Fetch the seller's listings grouped by section
+  // Fetch ALL of the seller's listings (current + past)
   const { data: listings } = await supabase
     .from("listings")
     .select(
@@ -76,14 +76,14 @@ export default async function SellerProfilePage({
     `
     )
     .eq("user_id", id)
-    .eq("status", "active")
     .order("created_at", { ascending: false })
 
-  // Fetch review stats
+  // Fetch reviews (for stats + list)
   const { data: reviews } = await supabase
     .from("reviews")
-    .select("rating")
+    .select("id, rating, comment, created_at")
     .eq("reviewed_id", id)
+    .order("created_at", { ascending: false })
 
   const avgRating =
     reviews && reviews.length > 0
@@ -91,11 +91,20 @@ export default async function SellerProfilePage({
       : 0
   const reviewCount = reviews?.length || 0
 
-  const usedListings = listings?.filter((l) => l.section === "used") || []
-  const newListings = listings?.filter((l) => l.section === "new") || []
-  const boardListings =
-    listings?.filter((l) => l.section === "surfboards") || []
-  const totalListings = listings?.length || 0
+  const allListings = listings || []
+  const currentListings = allListings.filter(
+    (l) => l.status === "active" && !l.archived_at
+  )
+  const pastListings = allListings.filter(
+    (l) => l.status !== "active" || l.archived_at
+  )
+
+  const usedListings = currentListings.filter((l) => l.section === "used")
+  const newListings = currentListings.filter((l) => l.section === "new")
+  const boardListings = currentListings.filter(
+    (l) => l.section === "surfboards"
+  )
+  const totalListings = allListings.length
 
   const isShop = shop.is_shop
   const displayName = isShop
@@ -166,7 +175,7 @@ export default async function SellerProfilePage({
                   )}
                   <span className="flex items-center gap-1">
                     <Package className="h-3.5 w-3.5" />
-                    {totalListings} listing{totalListings !== 1 ? "s" : ""}
+                    {totalListings} listing{totalListings !== 1 ? "s" : ""} total
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />
@@ -218,14 +227,60 @@ export default async function SellerProfilePage({
             </div>
           </div>
 
+          {/* Buyer reviews (directly under contact) */}
+          <div className="py-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Star className="h-4 w-4 text-accent" />
+              Buyer reviews
+            </h2>
+            {reviews && reviews.length > 0 ? (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <Card key={review.id}>
+                    <CardContent className="py-3 px-4">
+                      <div className="flex items-center gap-2 text-sm mb-1">
+                        <span className="font-medium">Rating:</span>
+                        <span className="text-accent font-semibold">
+                          {review.rating}/5
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {review.created_at
+                            ? new Date(review.created_at).toLocaleDateString(
+                                "en-US",
+                                { month: "short", day: "numeric", year: "numeric" }
+                              )
+                            : null}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <p className="text-sm text-muted-foreground">
+                          {review.comment}
+                        </p>
+                      )}
+                      {!review.comment && (
+                        <p className="text-sm text-muted-foreground italic">
+                          No written comment provided.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No reviews yet.
+              </p>
+            )}
+          </div>
+
           <Separator />
 
-          {/* Listings tabs */}
+          {/* Current listings tabs */}
           <div className="py-8">
             <Tabs defaultValue="all">
               <TabsList>
                 <TabsTrigger value="all">
-                  All ({totalListings})
+                  Current ({currentListings.length})
                 </TabsTrigger>
                 {usedListings.length > 0 && (
                   <TabsTrigger value="used">
@@ -245,7 +300,7 @@ export default async function SellerProfilePage({
               </TabsList>
 
               <TabsContent value="all" className="mt-6">
-                <ListingGrid listings={listings || []} />
+                <ListingGrid listings={currentListings} />
               </TabsContent>
               <TabsContent value="used" className="mt-6">
                 <ListingGrid listings={usedListings} />
@@ -258,6 +313,20 @@ export default async function SellerProfilePage({
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Past / sold listings */}
+          {pastListings.length > 0 && (
+            <div className="py-4 border-t border-border">
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Previous &amp; sold listings
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({pastListings.length})
+                </span>
+              </h2>
+              <ListingGrid listings={pastListings} />
+            </div>
+          )}
         </div>
       </main>
 
@@ -336,6 +405,15 @@ function ListingGrid({ listings }: { listings: any[] }) {
                 <p className="text-base font-bold text-primary mt-0.5">
                   ${Number(listing.price).toFixed(2)}
                 </p>
+                {listing.status && listing.status !== "active" && (
+                  <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                    {listing.status === "sold"
+                      ? "Sold"
+                      : listing.status === "pending"
+                        ? "Pending"
+                        : "Ended"}
+                  </p>
+                )}
                 {listing.city && (
                   <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="h-3 w-3" />

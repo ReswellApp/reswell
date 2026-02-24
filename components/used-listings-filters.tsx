@@ -2,7 +2,6 @@
 
 import { useRouter, usePathname } from "next/navigation"
 import { useState, useTransition } from "react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -33,8 +32,6 @@ interface UsedListingsFiltersProps {
   initialQ?: string
   initialCategory?: string
   initialCondition?: string
-  initialMinPrice?: string
-  initialMaxPrice?: string
   initialSort?: string
 }
 
@@ -43,8 +40,6 @@ export function UsedListingsFilters({
   initialQ = "",
   initialCategory = "all",
   initialCondition = "all",
-  initialMinPrice = "",
-  initialMaxPrice = "",
   initialSort = "newest",
 }: UsedListingsFiltersProps) {
   const router = useRouter()
@@ -53,8 +48,6 @@ export function UsedListingsFilters({
   const [q, setQ] = useState(initialQ)
   const [category, setCategory] = useState(initialCategory)
   const [condition, setCondition] = useState(initialCondition)
-  const [minPrice, setMinPrice] = useState(initialMinPrice)
-  const [maxPrice, setMaxPrice] = useState(initialMaxPrice)
   const [sort, setSort] = useState(initialSort)
 
   function handleSubmit(e: React.FormEvent) {
@@ -63,8 +56,6 @@ export function UsedListingsFilters({
     if (q.trim()) params.set("q", q.trim())
     if (category && category !== "all") params.set("category", category)
     if (condition && condition !== "all") params.set("condition", condition)
-    if (minPrice.trim()) params.set("minPrice", minPrice.trim())
-    if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim())
     if (sort && sort !== "newest") params.set("sort", sort)
     params.set("page", "1")
     startTransition(() => {
@@ -73,8 +64,11 @@ export function UsedListingsFilters({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-nowrap gap-3 items-end">
-      <div className="flex-1 min-w-[180px] max-w-[360px] shrink">
+    <form
+      onSubmit={handleSubmit}
+      className="grid grid-cols-2 gap-2 items-end md:flex md:flex-nowrap md:gap-2 md:items-end"
+    >
+      <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[400px] md:min-w-[400px]">
         <SearchInputWithSuggest
           value={q}
           onChange={setQ}
@@ -84,13 +78,14 @@ export function UsedListingsFilters({
           name="q"
           listboxId="used-search-suggestions"
           showTypeLabels={false}
+          className="w-full"
+          inputClassName="w-full box-border"
         />
       </div>
-
-      <div className="w-[180px] shrink-0">
+      <div className="w-full min-w-0 md:w-[160px] md:shrink-0">
         <Select name="category" value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Category" />
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+            <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
             {categoryOptions.map((cat) => (
@@ -101,11 +96,10 @@ export function UsedListingsFilters({
           </SelectContent>
         </Select>
       </div>
-
-      <div className="w-[150px] shrink-0">
+      <div className="w-full min-w-0 md:w-[130px] md:shrink-0">
         <Select name="condition" value={condition} onValueChange={setCondition}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Condition" />
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+            <SelectValue placeholder="Any Condition" />
           </SelectTrigger>
           <SelectContent>
             {conditions.map((cond) => (
@@ -116,38 +110,10 @@ export function UsedListingsFilters({
           </SelectContent>
         </Select>
       </div>
-
-      <div className="flex gap-2 items-end shrink-0">
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Min $</label>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="Min"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            className="w-[80px] h-10"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Max $</label>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="Max"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-[80px] h-10"
-          />
-        </div>
-      </div>
-
-      <div className="w-[170px] shrink-0">
+      <div className="w-full min-w-0 md:w-[150px] md:shrink-0">
         <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Sort by" />
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+            <SelectValue placeholder="Newest First" />
           </SelectTrigger>
           <SelectContent>
             {sortOptions.map((opt) => (
@@ -158,8 +124,7 @@ export function UsedListingsFilters({
           </SelectContent>
         </Select>
       </div>
-
-      <Button type="submit" disabled={isPending} className="shrink-0 h-10">
+      <Button type="submit" disabled={isPending} className="col-span-2 h-10 px-4 md:col-auto md:shrink-0">
         <SlidersHorizontal className="h-4 w-4 mr-2" />
         {isPending ? "Applying..." : "Apply"}
       </Button>

@@ -28,7 +28,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
   const selectedImage = images[selectedIndex]
 
   return (
-    <div className="space-y-4 w-full min-w-0">
+    <div className="space-y-4 w-full min-w-0 max-w-[370px] md:max-w-[450px] mx-auto">
       {/* Main Image - 3:4 ratio, show full image without cropping */}
       <div
         className="relative w-full rounded-lg overflow-hidden bg-muted"

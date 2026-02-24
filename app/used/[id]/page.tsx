@@ -119,18 +119,18 @@ export default async function UsedListingPage(props: {
             )}
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Images */}
             <div>
               <ImageGallery images={images} title={capitalizeWords(listing.title)} />
             </div>
 
             {/* Details */}
-            <div className="space-y-6">
+            <div className="space-y-4 min-w-0">
               <div>
-                <div className="flex items-start justify-between gap-4">
-                  <h1 className="text-2xl font-bold">{capitalizeWords(listing.title)}</h1>
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <h1 className="text-xl font-bold sm:text-2xl break-words">{capitalizeWords(listing.title)}</h1>
+                  <div className="flex items-center gap-2 shrink-0">
                     <FavoriteButton
                       listingId={listing.id}
                       initialFavorited={isFavorited}
@@ -139,7 +139,7 @@ export default async function UsedListingPage(props: {
                     <ShareButton title={capitalizeWords(listing.title)} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-primary mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-primary mt-2">
                   ${listing.price.toFixed(2)}
                 </p>
               </div>
@@ -168,8 +168,6 @@ export default async function UsedListingPage(props: {
                 )}
               </div>
 
-              <Separator />
-
               {/* Description */}
               <div>
                 <h2 className="font-semibold mb-2">Description</h2>
@@ -179,31 +177,45 @@ export default async function UsedListingPage(props: {
               {/* Seller Info */}
               <Card>
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={listing.profiles?.avatar_url || ""} />
-                      <AvatarFallback>
-                        {getPublicSellerDisplayName(listing.profiles).charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        {getPublicSellerDisplayName(listing.profiles)}
-                      </p>
-                      {listing.profiles?.location && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {listing.profiles.location}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <Link
+                      href={`/sellers/${listing.profiles?.id}`}
+                      className="flex items-center gap-4 flex-1 min-w-0"
+                    >
+                      <Avatar className="h-12 w-12 shrink-0">
+                        <AvatarImage src={listing.profiles?.avatar_url || ""} />
+                        <AvatarFallback>
+                          {getPublicSellerDisplayName(listing.profiles).charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {getPublicSellerDisplayName(listing.profiles)}
                         </p>
-                      )}
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" />
-                        Member since {new Date(listing.profiles?.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2">
+                        {listing.profiles?.location && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 truncate mt-1">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            {listing.profiles.location}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          Member since{" "}
+                          {new Date(listing.profiles?.created_at).toLocaleDateString("en-US", {
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:shrink-0">
                       {!isOwnListing && (
-                        <Button variant="outline" size="sm" asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="min-h-touch w-full sm:w-40 justify-center"
+                        >
                           <Link
                             href={
                               user
@@ -216,7 +228,12 @@ export default async function UsedListingPage(props: {
                           </Link>
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="min-h-touch w-full sm:w-40 justify-center"
+                      >
                         <Link href={`/sellers/${listing.profiles?.id}`}>
                           View Profile
                         </Link>

@@ -41,22 +41,11 @@ const sortOptions = [
   { value: "nearest", label: "Distance (Nearest)" },
 ]
 
-const radiusOptions = [
-  { value: "", label: "Any distance" },
-  { value: "10", label: "Within 10 mi" },
-  { value: "25", label: "Within 25 mi" },
-  { value: "50", label: "Within 50 mi" },
-  { value: "100", label: "Within 100 mi" },
-]
-
 interface BoardsListingsFiltersProps {
   initialQ?: string
   initialLocation?: string
   initialType?: string
   initialCondition?: string
-  initialMinPrice?: string
-  initialMaxPrice?: string
-  initialRadius?: string
   initialSort?: string
 }
 
@@ -65,9 +54,6 @@ export function BoardsListingsFilters({
   initialLocation = "",
   initialType = "all",
   initialCondition = "all",
-  initialMinPrice = "",
-  initialMaxPrice = "",
-  initialRadius = "",
   initialSort = "newest",
 }: BoardsListingsFiltersProps) {
   const router = useRouter()
@@ -81,9 +67,6 @@ export function BoardsListingsFilters({
   const [locationLoading, setLocationLoading] = useState(false)
   const [type, setType] = useState(initialType)
   const [condition, setCondition] = useState(initialCondition)
-  const [minPrice, setMinPrice] = useState(initialMinPrice)
-  const [maxPrice, setMaxPrice] = useState(initialMaxPrice)
-  const [radius, setRadius] = useState(initialRadius)
   const [sort, setSort] = useState(initialSort)
 
   async function handleUseMyLocation() {
@@ -127,9 +110,6 @@ export function BoardsListingsFilters({
     if (location.trim()) params.set("location", location.trim())
     if (type && type !== "all") params.set("type", type)
     if (condition && condition !== "all") params.set("condition", condition)
-    if (minPrice.trim()) params.set("minPrice", minPrice.trim())
-    if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim())
-    if (radius.trim()) params.set("radius", radius.trim())
     if (sort && sort !== "newest") params.set("sort", sort)
     params.set("page", "1")
 
@@ -157,8 +137,11 @@ export function BoardsListingsFilters({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-nowrap gap-3 items-end">
-      <div className="flex-1 min-w-[180px] max-w-[360px] shrink">
+    <form
+      onSubmit={handleSubmit}
+      className="grid grid-cols-2 gap-2 items-end md:flex md:flex-nowrap md:gap-2 md:items-end"
+    >
+      <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[400px] md:min-w-[400px]">
         <SearchInputWithSuggest
           value={q}
           onChange={setQ}
@@ -168,11 +151,13 @@ export function BoardsListingsFilters({
           name="q"
           listboxId="boards-search-suggestions"
           showTypeLabels={false}
+          className="w-full"
+          inputClassName="w-full box-border"
         />
       </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <div className="relative w-[130px]">
-          <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="col-span-2 flex items-center gap-2 min-w-[200px] md:col-auto md:w-[360px] md:min-w-[360px] md:shrink-0">
+        <div className="relative flex-1 min-w-[180px] overflow-hidden">
+          <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             name="location"
             placeholder="City or ZIP"
@@ -182,7 +167,7 @@ export function BoardsListingsFilters({
               setUserLat(null)
               setUserLng(null)
             }}
-            className="pl-9 w-full min-w-0 h-10"
+            className="pl-9 w-full min-w-0 h-10 min-h-[2.5rem]"
           />
         </div>
         <Button
@@ -197,10 +182,10 @@ export function BoardsListingsFilters({
           <LocateFixed className={`h-4 w-4 ${userLat != null ? "text-primary" : ""}`} />
         </Button>
       </div>
-      <div className="w-[140px] shrink-0">
+      <div className="w-full min-w-0 md:w-[140px] md:shrink-0">
         <Select name="type" value={type} onValueChange={setType}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Board Type" />
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+            <SelectValue placeholder="All Board Types" />
           </SelectTrigger>
           <SelectContent>
             {boardTypes.map((t) => (
@@ -211,10 +196,10 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="w-[120px] shrink-0">
+      <div className="w-full min-w-0 md:w-[120px] md:shrink-0">
         <Select name="condition" value={condition} onValueChange={setCondition}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Condition" />
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+            <SelectValue placeholder="Any Condition" />
           </SelectTrigger>
           <SelectContent>
             {conditions.map((cond) => (
@@ -225,50 +210,10 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex gap-2 items-end shrink-0">
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Min $</label>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="Min"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            className="w-[80px] h-10"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Max $</label>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="Max"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-[80px] h-10"
-          />
-        </div>
-      </div>
-      <div className="w-[120px] shrink-0">
-        <Select value={radius || "any"} onValueChange={(v) => setRadius(v === "any" ? "" : v)}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Distance" />
-          </SelectTrigger>
-          <SelectContent>
-            {radiusOptions.map((opt) => (
-              <SelectItem key={opt.value || "any"} value={opt.value || "any"}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="w-[130px] shrink-0">
+      <div className="w-full min-w-0 md:w-[130px] md:shrink-0">
         <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Sort" />
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+            <SelectValue placeholder="Newest First" />
           </SelectTrigger>
           <SelectContent>
             {sortOptions.map((opt) => (
@@ -279,7 +224,7 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" disabled={isPending} className="shrink-0 h-10">
+      <Button type="submit" disabled={isPending} className="col-span-2 h-10 px-4 md:col-auto md:shrink-0">
         <SlidersHorizontal className="h-4 w-4 mr-2" />
         {isPending ? "..." : "Apply"}
       </Button>

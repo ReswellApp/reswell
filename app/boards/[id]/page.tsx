@@ -122,18 +122,54 @@ export default async function BoardDetailPage(props: {
             )}
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          {/* Mobile heading + actions above images */}
+          <div className="mb-2 lg:hidden flex items-start justify-between gap-3">
+            <h1 className="text-xl font-bold break-words flex-1">
+              {capitalizeWords(board.title)}
+            </h1>
+            <div className="flex items-center gap-2 shrink-0">
+              <FavoriteButton
+                listingId={board.id}
+                initialFavorited={isFavorited}
+                isLoggedIn={!!user}
+              />
+              <ShareButton title={capitalizeWords(board.title)} />
+            </div>
+          </div>
+
+          {/* Mobile price + tags above images */}
+          <div className="mb-4 lg:hidden">
+            <p className="text-2xl font-bold text-primary">
+              ${board.price.toFixed(2)}
+            </p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <Badge variant="secondary">{formatCondition(board.condition)}</Badge>
+              {board.board_type && (
+                <Badge variant="outline">{formatBoardType(board.board_type)}</Badge>
+              )}
+              {board.board_length && (
+                <Badge variant="outline">
+                  <Ruler className="h-3 w-3 mr-1" />
+                  {board.board_length}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Images */}
             <div>
               <ImageGallery images={images} title={capitalizeWords(board.title)} />
             </div>
 
             {/* Details */}
-            <div className="space-y-6">
+            <div className="space-y-4 min-w-0">
               <div>
-                <div className="flex items-start justify-between gap-4">
-                  <h1 className="text-2xl font-bold">{capitalizeWords(board.title)}</h1>
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <h1 className="hidden lg:block text-xl font-bold sm:text-2xl break-words">
+                    {capitalizeWords(board.title)}
+                  </h1>
+                  <div className="hidden lg:flex items-center gap-2 shrink-0">
                     <FavoriteButton
                       listingId={board.id}
                       initialFavorited={isFavorited}
@@ -142,13 +178,13 @@ export default async function BoardDetailPage(props: {
                     <ShareButton title={capitalizeWords(board.title)} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-primary mt-2">
+                <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-primary mt-2">
                   ${board.price.toFixed(2)}
                 </p>
               </div>
 
               {/* Board Specs */}
-              <div className="flex flex-wrap gap-2">
+              <div className="hidden lg:flex flex-wrap gap-2">
                 <Badge variant="secondary">{formatCondition(board.condition)}</Badge>
                 {board.board_type && (
                   <Badge variant="outline">{formatBoardType(board.board_type)}</Badge>
@@ -161,7 +197,13 @@ export default async function BoardDetailPage(props: {
                 )}
               </div>
 
-              {/* Location */}
+              {/* Description (above map) */}
+              <div>
+                <h2 className="font-semibold mb-2">Description</h2>
+                <TranslateableDescription text={board.description || ""} />
+              </div>
+
+              {/* Location (map above contact seller) */}
               <Card className="bg-primary/5 border-primary/20 overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 text-primary">
@@ -196,57 +238,6 @@ export default async function BoardDetailPage(props: {
                 </CardContent>
               </Card>
 
-              <Separator />
-
-              {/* Seller Info */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={board.profiles?.avatar_url || ""} />
-                      <AvatarFallback>
-                        {getPublicSellerDisplayName(board.profiles).charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        {getPublicSellerDisplayName(board.profiles)}
-                      </p>
-                      {board.profiles?.location && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {board.profiles.location}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" />
-                        Member since {new Date(board.profiles?.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-                      </p>
-                    </div>
-                    {!isOwnListing && (
-                      <Button variant="outline" size="sm" asChild>
-                        <Link
-                          href={
-                            user
-                              ? `/messages?user=${board.user_id}&listing=${board.id}`
-                              : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}`)}`
-                          }
-                        >
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Message seller
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Description */}
-              <div>
-                <h2 className="font-semibold mb-2">Description</h2>
-                <TranslateableDescription text={board.description || ""} />
-              </div>
-
               {/* Contact Form */}
               {!isOwnListing && (
                 <Card className="bg-offwhite">
@@ -260,6 +251,77 @@ export default async function BoardDetailPage(props: {
                   </CardContent>
                 </Card>
               )}
+
+              <Separator />
+
+              {/* Seller Info */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <Link
+                      href={`/sellers/${board.profiles?.id}`}
+                      className="flex items-center gap-4 flex-1 min-w-0"
+                    >
+                      <Avatar className="h-12 w-12 shrink-0">
+                        <AvatarImage src={board.profiles?.avatar_url || ""} />
+                        <AvatarFallback>
+                          {getPublicSellerDisplayName(board.profiles).charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {getPublicSellerDisplayName(board.profiles)}
+                        </p>
+                        {board.profiles?.location && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 truncate mt-1">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            {board.profiles.location}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          Member since{" "}
+                          {new Date(board.profiles?.created_at).toLocaleDateString("en-US", {
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </Link>
+                    {!isOwnListing && (
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="min-h-touch w-full sm:w-40 justify-center"
+                        >
+                          <Link
+                            href={
+                              user
+                                ? `/messages?user=${board.user_id}&listing=${board.id}`
+                                : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}`)}`
+                            }
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Message seller
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="min-h-touch w-full sm:w-40 justify-center"
+                        >
+                          <Link href={`/sellers/${board.profiles?.id}`}>
+                            View Profile
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
               {isOwnListing && (
                 <Card className="bg-primary/5 border-primary/20">

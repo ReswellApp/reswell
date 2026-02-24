@@ -16,7 +16,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
-  Menu,
   X,
   Search,
   ShoppingCart,
@@ -49,6 +48,7 @@ export function Header() {
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const mobileSearchRef = useRef<HTMLInputElement>(null)
@@ -141,9 +141,9 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto flex h-14 sm:h-16 min-w-0 items-center justify-between gap-2 px-4">
-          {/* Logo */}
-          <Link href="/" className="flex min-w-0 shrink items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cerulean text-white">
+          {/* Logo + home link (desktop: logo left of name; mobile: logo is in menu toggle) */}
+          <Link href="/" className="flex shrink-0 items-center gap-2">
+            <div className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cerulean text-white">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -159,7 +159,12 @@ export function Header() {
                 <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
               </svg>
             </div>
-            <span className="truncate text-xl font-bold text-black">ReSwell Surf</span>
+            <span
+              className="text-xl font-bold text-black whitespace-nowrap"
+              style={{ overflow: "visible", textOverflow: "clip" }}
+            >
+              ReSwell Surf
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -354,16 +359,38 @@ export function Header() {
               </div>
             )}
 
-            {/* Mobile menu toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-black hover:bg-pacific/5"
+            {/* Mobile menu toggle: logo when closed (white + black waves, hover blue + white waves), X when open */}
+            <button
+              type="button"
+              className={`md:hidden flex h-9 w-9 min-w-[2.25rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                mobileLogoHovered && !mobileMenuOpen
+                  ? "border-cerulean bg-cerulean text-white"
+                  : "border-border bg-white text-black"
+              }`}
+              onMouseEnter={() => setMobileLogoHovered(true)}
+              onMouseLeave={() => setMobileLogoHovered(false)}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5 pointer-events-none"
+                >
+                  <path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+                  <path d="M2 19c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+                  <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
       </header>
@@ -387,13 +414,13 @@ export function Header() {
                 <span className="sr-only">Close menu</span>
               </Button>
             </div>
-            <nav className="flex flex-col gap-4">
+            <nav className="flex flex-col gap-1">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-lg font-medium text-foreground hover:text-cerulean transition-colors"
+                  className="py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {item.name}
                 </Link>
@@ -401,9 +428,9 @@ export function Header() {
               <Link
                 href="/used/recent"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-lg font-medium text-foreground hover:text-cerulean transition-colors"
+                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
               >
-                <Clock className="h-5 w-5" />
+                <Clock className="h-5 w-5 shrink-0" />
                 Recently added
               </Link>
               <hr className="my-2 border-border" />
@@ -412,7 +439,7 @@ export function Header() {
                   ref={mobileSearchRef}
                   type="search"
                   placeholder="Search..."
-                  className="min-w-0 flex-1 rounded-lg border-border"
+                  className="min-w-0 flex-1 rounded-lg border-border min-h-touch"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault()
@@ -427,7 +454,7 @@ export function Header() {
                 <Button
                   type="button"
                   size="sm"
-                  className="rounded-lg"
+                  className="rounded-lg min-h-touch shrink-0"
                   onClick={() => {
                     const q = (mobileSearchRef.current?.value || "").trim()
                     if (q) {
@@ -442,16 +469,16 @@ export function Header() {
               <Link
                 href={user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved")}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-lg font-medium"
+                className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
               >
-                <Heart className="h-5 w-5" />
+                <Heart className="h-5 w-5 shrink-0" />
                 Saved
               </Link>
               {user && (
                 <Link
                   href="/sell"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 text-lg font-medium text-cerulean"
+                  className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch"
                 >
                   Sell Your Gear
                 </Link>
@@ -461,14 +488,14 @@ export function Header() {
                   <Link
                     href="/auth/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium"
+                    className="py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/auth/sign-up"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium text-cerulean"
+                    className="py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Get Started
                   </Link>
