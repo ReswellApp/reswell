@@ -29,7 +29,6 @@ export default async function RecentUsedPage() {
       `)
       .eq("status", "active")
       .eq("section", "used")
-      .eq("shipping_available", true)
       .order("created_at", { ascending: false })
       .limit(LIMIT),
     supabase
@@ -45,6 +44,9 @@ export default async function RecentUsedPage() {
         city,
         state,
         shipping_available,
+        board_type,
+        length_feet,
+        length_inches,
         listing_images (url, is_primary),
         profiles (display_name, avatar_url, location, sales_count),
         categories (name, slug)
@@ -65,21 +67,31 @@ export default async function RecentUsedPage() {
   }
 
   const withCreated = (res: any[], section: string) =>
-    (res ?? []).map((row: any) => ({
-      id: row.id,
-      user_id: row.user_id,
-      title: row.title,
-      price: row.price,
-      condition: row.condition,
-      section: row.section ?? section,
-      created_at: row.created_at,
-      city: row.city,
-      state: row.state,
-      shipping_available: row.shipping_available,
-      listing_images: row.listing_images,
-      profiles: row.profiles,
-      categories: row.categories,
-    }))
+    (res ?? []).map((row: any) => {
+      const boardLength =
+        row.length_feet != null && row.length_inches != null
+          ? `${row.length_feet}'${row.length_inches}"`
+          : row.length_feet != null
+            ? `${row.length_feet}'`
+            : null
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        title: row.title,
+        price: row.price,
+        condition: row.condition,
+        section: row.section ?? section,
+        created_at: row.created_at,
+        city: row.city,
+        state: row.state,
+        shipping_available: row.shipping_available,
+        board_type: row.board_type,
+        board_length: boardLength,
+        listing_images: row.listing_images,
+        profiles: row.profiles,
+        categories: row.categories,
+      }
+    })
   const merged = [
     ...withCreated(usedRes.data, "used"),
     ...withCreated(boardsRes.data, "surfboards"),

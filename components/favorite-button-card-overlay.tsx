@@ -6,6 +6,7 @@ interface FavoriteButtonCardOverlayProps {
   listingId: string
   initialFavorited: boolean
   isLoggedIn: boolean
+  onFavoritedChange?: (favorited: boolean) => void
 }
 
 /** Wrapper for using FavoriteButton on listing cards; stops click from navigating to listing. */
@@ -13,6 +14,7 @@ export function FavoriteButtonCardOverlay({
   listingId,
   initialFavorited,
   isLoggedIn,
+  onFavoritedChange,
 }: FavoriteButtonCardOverlayProps) {
   return (
     <div
@@ -26,6 +28,7 @@ export function FavoriteButtonCardOverlay({
         listingId={listingId}
         initialFavorited={initialFavorited}
         isLoggedIn={isLoggedIn}
+        onFavoritedChange={onFavoritedChange}
       />
     </div>
   )

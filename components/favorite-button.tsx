@@ -12,12 +12,14 @@ interface FavoriteButtonProps {
   listingId: string
   initialFavorited: boolean
   isLoggedIn: boolean
+  onFavoritedChange?: (favorited: boolean) => void
 }
 
 export function FavoriteButton({
   listingId,
   initialFavorited,
   isLoggedIn,
+  onFavoritedChange,
 }: FavoriteButtonProps) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
@@ -46,6 +48,7 @@ export function FavoriteButton({
 
         if (error) throw error
         setFavorited(false)
+        onFavoritedChange?.(false)
         toast.success("Removed from favorites")
       } else {
         const { error } = await supabase
@@ -57,6 +60,7 @@ export function FavoriteButton({
 
         if (error) throw error
         setFavorited(true)
+        onFavoritedChange?.(true)
         toast.success("Added to favorites")
       }
     } catch {

@@ -66,7 +66,7 @@ export function UsedListingsFilters({
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid grid-cols-2 gap-2 items-end md:flex md:flex-nowrap md:gap-2 md:items-end"
+      className="grid grid-cols-2 gap-2 items-end md:flex md:flex-nowrap md:gap-2 md:items-end md:justify-center w-full max-w-4xl mx-auto"
     >
       <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[400px] md:min-w-[400px]">
         <SearchInputWithSuggest

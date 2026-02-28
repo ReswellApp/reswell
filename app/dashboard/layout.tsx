@@ -69,16 +69,19 @@ export default async function DashboardLayout({
               </Button>
               
               <nav className="space-y-1">
-                {sidebarLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                  >
-                    <link.icon className="h-4 w-4" />
-                    {link.name}
-                  </Link>
-                ))}
+                {sidebarLinks.map((link) => {
+                  const Icon = link.icon
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {link.name}
+                    </Link>
+                  )
+                })}
                 {isShop && (
                   <Link
                     href={`/sellers/${user.id}`}

@@ -278,7 +278,7 @@ export default async function UsedGearPage(props: {
 
         {/* Filters */}
         <section className="border-b py-4 sticky top-14 sm:top-16 bg-background z-40 min-w-0 overflow-x-auto">
-          <div className="container mx-auto px-4 min-w-0">
+          <div className="container mx-auto px-4 min-w-0 flex justify-center">
             <UsedListingsFilters
               categoryOptions={categoryOptions}
               initialQ={searchParams.q ?? ""}

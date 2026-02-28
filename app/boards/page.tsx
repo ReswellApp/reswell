@@ -320,16 +320,6 @@ export default async function BoardsPage(props: {
             <p className="text-center text-muted-foreground mt-2">
               Find local boards for pickup or shop brand new boards from verified sellers
             </p>
-            <div className="flex items-center justify-center gap-3 mt-4">
-              <Badge variant="outline" className="text-sm">
-                <MapPin className="h-3 w-3 mr-1" />
-                Local Pickup
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                <Store className="h-3 w-3 mr-1" />
-                Brand New from Shops
-              </Badge>
-            </div>
           </div>
         </section>
 

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
+import { HeroSlideshow } from "@/components/hero-slideshow"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -143,10 +144,12 @@ export default async function HomePage() {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-offwhite py-20 md:py-32">
-          <div className="container mx-auto px-4">
+        <section className="relative min-h-[420px] md:min-h-[520px] flex items-center overflow-hidden">
+          <HeroSlideshow />
+          <div className="absolute inset-0 bg-white/55" aria-hidden />
+          <div className="container mx-auto px-4 relative z-10 py-20 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
-              <Badge variant="secondary" className="mb-4">
+              <Badge variant="secondary" className="mb-4 hover:bg-secondary/70">
                 The Surf Community Marketplace
               </Badge>
               <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl text-balance">
@@ -168,21 +171,6 @@ export default async function HomePage() {
                 </Button>
               </div>
             </div>
-          </div>
-          {/* Decorative wave */}
-          <div className="absolute bottom-0 left-0 right-0">
-            <svg
-              viewBox="0 0 1440 120"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-auto"
-              preserveAspectRatio="none"
-            >
-              <path
-                d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
-                className="fill-background"
-              />
-            </svg>
           </div>
         </section>
 
@@ -286,11 +274,47 @@ export default async function HomePage() {
                 <Link
                   key={category.href}
                   href={category.href}
-                  className="group flex flex-col items-center justify-center rounded-xl bg-card p-4 text-center transition-all hover:bg-primary/5 hover:shadow-md min-h-[80px]"
+                  className="group flex flex-col items-center justify-center rounded-xl bg-muted p-4 text-center transition-all hover:bg-primary/5 hover:shadow-md min-h-[80px]"
                 >
                   <span className="text-sm font-medium">{category.name}</span>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Ocean images */}
+        <section className="py-6 md:py-8">
+          <div className="container mx-auto px-4 max-w-4xl md:max-w-5xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
+                <img
+                  src="/images/home/wave-1.png"
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
+                <img
+                  src="/images/home/wave-2.png"
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
+                <img
+                  src="/images/home/wave-3.png"
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
+                <img
+                  src="/images/home/wave-4.png"
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
             </div>
           </div>
         </section>
