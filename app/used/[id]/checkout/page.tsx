@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
 import { ArrowLeft } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { UsedCheckoutForm } from "./UsedCheckoutForm"
+import { MessageListingButton } from "@/components/message-listing-button"
 
 export default async function UsedCheckoutPage(props: {
   params: Promise<{ id: string }>
@@ -42,15 +42,30 @@ export default async function UsedCheckoutPage(props: {
             </Link>
           </Button>
           <h1 className="text-2xl font-bold mb-2">Checkout</h1>
-          <p className="text-muted-foreground mb-8">
-            Complete your purchase. Choose card, Apple Pay, or ReSwell Bucks.
+          <p className="text-muted-foreground mb-6">
+            {capitalizeWords(listing.title)} — ${Number(listing.price).toFixed(2)}
           </p>
-          <UsedCheckoutForm
-            listingId={listing.id}
-            listingTitle={capitalizeWords(listing.title)}
-            price={Number(listing.price)}
-            sellerId={listing.user_id}
-          />
+          <div className="rounded-lg border bg-card p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              To complete your purchase, message the seller to arrange payment and delivery.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <MessageListingButton
+                listingId={listing.id}
+                sellerId={listing.user_id}
+                redirectPath={`/used/${id}/checkout`}
+                size="default"
+                variant="default"
+                className="gap-2"
+              />
+              <Button variant="outline" asChild>
+                <Link href={`/used/${id}`} className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to listing
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </main>
       <Footer />
