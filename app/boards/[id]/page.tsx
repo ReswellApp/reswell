@@ -257,10 +257,10 @@ export default async function BoardDetailPage(props: {
               {/* Seller Info */}
               <Card>
                 <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex flex-col gap-4">
                     <Link
                       href={`/sellers/${board.profiles?.id}`}
-                      className="flex items-center gap-4 flex-1 min-w-0"
+                      className="flex items-center gap-4"
                     >
                       <Avatar className="h-12 w-12 shrink-0">
                         <AvatarImage src={board.profiles?.avatar_url || ""} />
@@ -269,11 +269,11 @@ export default async function BoardDetailPage(props: {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
+                        <p className="font-medium">
                           {getPublicSellerDisplayName(board.profiles)}
                         </p>
                         {board.profiles?.location && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1 truncate mt-1">
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                             <MapPin className="h-3 w-3 shrink-0" />
                             {board.profiles.location}
                           </p>
@@ -289,12 +289,12 @@ export default async function BoardDetailPage(props: {
                       </div>
                     </Link>
                     {!isOwnListing && (
-                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:shrink-0">
+                      <div className="flex flex-row gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           asChild
-                          className="min-h-touch w-full sm:w-40 justify-center"
+                          className="min-h-touch flex-1 justify-center"
                         >
                           <Link
                             href={
@@ -311,7 +311,7 @@ export default async function BoardDetailPage(props: {
                           variant="outline"
                           size="sm"
                           asChild
-                          className="min-h-touch w-full sm:w-40 justify-center"
+                          className="min-h-touch flex-1 justify-center"
                         >
                           <Link href={`/sellers/${board.profiles?.id}`}>
                             View Profile
