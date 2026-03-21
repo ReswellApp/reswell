@@ -72,7 +72,9 @@ function BoardCheckoutSuccessInner() {
                   </div>
                   <h1 className="text-2xl font-bold mb-2">You&apos;re all set</h1>
                   <p className="text-muted-foreground mb-6">
-                    Payment received. Message the seller to arrange pickup or shipping.
+                    Payment received. If you chose delivery, your shipping address and phone were saved
+                    for the seller—no need to DM your address. For local pickup, message the seller to
+                    arrange a meetup.
                   </p>
                   <div className="flex flex-col gap-3">
                     <Button asChild>

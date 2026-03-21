@@ -60,13 +60,21 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 (On Vercel you can rely on `VERCEL_URL` if this is unset.)
 
-## 5. Test a payment
+## 5. Database: purchase shipping fields
+
+Run in Supabase SQL editor (once):
+
+`scripts/015_purchases_shipping_address.sql`
+
+This adds `shipping_address` and `stripe_checkout_session_id` on `purchases` so surfboard card checkouts can store the buyer’s Stripe shipping form. Shop orders already use `orders.shipping_address`.
+
+## 6. Test a payment
 
 1. Use a [Stripe test card](https://docs.stripe.com/testing), e.g. `4242 4242 4242 4242`, any future expiry, any CVC.
 2. Complete checkout; you should redirect back to `/boards/checkout/success` or `/shop/checkout/success`.
 3. In Stripe Dashboard → **Payments**, confirm a succeeded payment.
 
-## Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Fix |
 |--------|-----|

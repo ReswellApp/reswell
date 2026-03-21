@@ -5,6 +5,10 @@ import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getStripe } from "@/lib/stripe-server"
 import { SURFBOARD_CHECKOUT_MODE } from "@/lib/checkout/surfboard-stripe-completion"
 import { getCheckoutAppOrigin } from "@/lib/checkout-app-origin"
+import {
+  STRIPE_CHECKOUT_SHIPPING_COUNTRIES,
+  surfboardCheckoutCollectsShipping,
+} from "@/lib/stripe-shipping-address"
 
 function safeProductName(title: string | null | undefined): string {
   const t = (title ?? "").trim() || "Surfboard listing"
@@ -108,10 +112,20 @@ export async function POST(request: NextRequest) {
 
     const expectedTotalCents = Math.round(resolved.total * 100)
 
+    const collectShipping = surfboardCheckoutCollectsShipping(listing, fulfillment)
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
+      ...(collectShipping
+        ? {
+            shipping_address_collection: {
+              allowed_countries: STRIPE_CHECKOUT_SHIPPING_COUNTRIES,
+            },
+            phone_number_collection: { enabled: true },
+          }
+        : {}),
       metadata: {
         mode: SURFBOARD_CHECKOUT_MODE,
         user_id: user.id,
@@ -120,6 +134,7 @@ export async function POST(request: NextRequest) {
         item_price: resolved.itemPrice.toFixed(2),
         shipping: resolved.shipping.toFixed(2),
         total_cents: String(expectedTotalCents),
+        collect_shipping: collectShipping ? "1" : "0",
       },
       success_url: `${origin}/boards/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/boards/${listing.id}/checkout?canceled=1`,

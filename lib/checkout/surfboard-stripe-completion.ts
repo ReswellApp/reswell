@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type Stripe from "stripe"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
+import {
+  sessionToShippingAddressRecord,
+  surfboardCheckoutCollectsShipping,
+} from "@/lib/stripe-shipping-address"
 
 export const SURFBOARD_CHECKOUT_MODE = "surfboard_listing"
 
@@ -110,7 +114,17 @@ export async function completeSurfboardCheckoutFromSession(
 
   const newSellerBalance = parseFloat(String(sellerWallet.balance)) + sellerEarnings
 
-  const { data: purchase } = await supabase
+  const collectShipping = surfboardCheckoutCollectsShipping(listing, fulfillment)
+  const shippingPayload = collectShipping ? sessionToShippingAddressRecord(session) : null
+  if (collectShipping && !shippingPayload) {
+    return {
+      ok: false,
+      error:
+        "Stripe did not return a shipping address. If you were charged, contact support with your receipt.",
+    }
+  }
+
+  const { data: purchase, error: purchaseInsertError } = await supabase
     .from("purchases")
     .insert({
       listing_id: listing.id,
@@ -120,9 +134,20 @@ export async function completeSurfboardCheckoutFromSession(
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
       status: "confirmed",
+      shipping_address: shippingPayload,
+      stripe_checkout_session_id: session.id,
     })
     .select()
     .single()
+
+  if (purchaseInsertError) {
+    console.error("[surfboard checkout] purchase insert failed:", purchaseInsertError)
+    return {
+      ok: false,
+      error:
+        "Could not save your purchase. If you just added shipping columns, run scripts/015_purchases_shipping_address.sql in Supabase. Otherwise contact support with your receipt.",
+    }
+  }
 
   await supabase
     .from("wallets")

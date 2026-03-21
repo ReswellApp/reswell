@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type Stripe from "stripe"
+import { sessionToShippingAddressRecord } from "@/lib/stripe-shipping-address"
 
 export const CART_CHECKOUT_MODE = "cart"
 
@@ -51,11 +52,21 @@ export async function completeCartCheckoutFromSession(
     return { ok: false, error: "Order is not payable" }
   }
 
+  const shippingPayload = sessionToShippingAddressRecord(session)
+  if (!shippingPayload) {
+    return {
+      ok: false,
+      error:
+        "Missing shipping address from checkout. If you were charged, contact support with your receipt.",
+    }
+  }
+
   const { error: updateError } = await supabase
     .from("orders")
     .update({
       status: "paid",
       stripe_session_id: session.id,
+      shipping_address: shippingPayload,
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)

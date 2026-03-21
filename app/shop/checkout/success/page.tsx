@@ -99,7 +99,8 @@ function ShopCheckoutSuccessInner() {
                   <h1 className="text-2xl font-bold mb-2">Order confirmed</h1>
                   <p className="text-muted-foreground mb-6">
                     Thanks for your purchase. Your order has been placed
-                    {orderId ? ` (Order #${orderId.slice(0, 8)})` : ""}.
+                    {orderId ? ` (Order #${orderId.slice(0, 8)})` : ""}. Your shipping address and
+                    phone from checkout are saved on the order for fulfillment.
                   </p>
                   <div className="flex flex-col gap-3">
                     <Button asChild>

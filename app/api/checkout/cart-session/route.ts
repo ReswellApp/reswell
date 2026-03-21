@@ -4,6 +4,7 @@ import Stripe from "stripe"
 import { getStripe } from "@/lib/stripe-server"
 import { CART_CHECKOUT_MODE } from "@/lib/checkout/cart-stripe-completion"
 import { getCheckoutAppOrigin } from "@/lib/checkout-app-origin"
+import { STRIPE_CHECKOUT_SHIPPING_COUNTRIES } from "@/lib/stripe-shipping-address"
 
 const SHIPPING_FLAT_CENTS = 999 // $9.99
 const FREE_SHIPPING_THRESHOLD_CENTS = 5000 // $50
@@ -158,6 +159,10 @@ export async function POST(request: NextRequest) {
     mode: "payment",
     payment_method_types: ["card"],
     line_items: lineItems,
+    shipping_address_collection: {
+      allowed_countries: STRIPE_CHECKOUT_SHIPPING_COUNTRIES,
+    },
+    phone_number_collection: { enabled: true },
     metadata: {
       order_id: order.id,
       mode: CART_CHECKOUT_MODE,
