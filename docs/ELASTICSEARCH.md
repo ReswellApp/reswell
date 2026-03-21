@@ -1,6 +1,6 @@
 # Elasticsearch search
 
-When `ELASTICSEARCH_URL` is set (and auth if required), the `/search` page uses Elasticsearch for relevance-ranked results across **title, description, category name, brand, board type, city, and state**. If ES is unavailable or errors, search falls back to Supabase `ilike` queries.
+The **nav search bar** (magnifying glass) is the main site-wide search. It navigates to **`/search`**, a dedicated results page that searches across **used gear** and **surfboards**. When `ELASTICSEARCH_URL` is set, `/search` uses Elasticsearch for relevance-ranked results; otherwise it falls back to Supabase `ilike` queries.
 
 ## Quick setup (Vercel + Elastic Cloud)
 

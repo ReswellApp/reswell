@@ -2,14 +2,30 @@
 
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
+import Image from "next/image"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
-import { Tag, Package, Type } from "lucide-react"
+import { Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
+
+export type SuggestListing = {
+  id: string
+  title: string
+  price: number
+  section: string
+  imageUrl: string | null
+  brand: string | null
+  city: string | null
+  state: string | null
+  condition: string | null
+}
 
 export interface SuggestResult {
   titles: string[]
   categories: string[]
   brands: string[]
+  listings?: SuggestListing[]
 }
 
 interface SearchInputWithSuggestProps {
@@ -21,21 +37,26 @@ interface SearchInputWithSuggestProps {
   section?: string
   className?: string
   inputClassName?: string
-  /** Min length before fetching suggestions (default 2) */
   minLength?: number
-  /** Debounce ms (default 200) */
   debounceMs?: number
-  /** Optional id for the listbox (for a11y) */
   listboxId?: string
-  /** Show type labels (category/brand/title) in dropdown */
   showTypeLabels?: boolean
-  /** Optional icon to render left of input (e.g. Search icon) */
   leftIcon?: React.ReactNode
-  /** Input name for forms */
   name?: string
-  /** Disable autocomplete dropdown */
   disableSuggest?: boolean
   autoFocus?: boolean
+  /** Clear (×) inside the field when there is text (Pango-style). */
+  showClearButton?: boolean
+}
+
+function listingHref(listing: SuggestListing) {
+  return listing.section === "surfboards" ? `/boards/${listing.id}` : `/used/${listing.id}`
+}
+
+function listingSectionLabel(section: string) {
+  if (section === "surfboards") return "Surfboard"
+  if (section === "used") return "Used gear"
+  return "Listing"
 }
 
 export function SearchInputWithSuggest({
@@ -54,6 +75,7 @@ export function SearchInputWithSuggest({
   name,
   disableSuggest = false,
   autoFocus = false,
+  showClearButton = true,
 }: SearchInputWithSuggestProps) {
   const [suggestions, setSuggestions] = useState<SuggestResult | null>(null)
   const [open, setOpen] = useState(false)
@@ -61,7 +83,7 @@ export function SearchInputWithSuggest({
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const dropdownRef = useRef<HTMLUListElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (disableSuggest) return
@@ -79,7 +101,9 @@ export function SearchInputWithSuggest({
         if (section) params.set("section", section)
         const res = await fetch(`/api/search/suggest?${params.toString()}`)
         const data: SuggestResult = await res.json()
+        const listings = data.listings ?? []
         const hasAny =
+          listings.length > 0 ||
           (data.titles?.length ?? 0) > 0 ||
           (data.categories?.length ?? 0) > 0 ||
           (data.brands?.length ?? 0) > 0
@@ -94,24 +118,38 @@ export function SearchInputWithSuggest({
     }
   }, [value, section, minLength, debounceMs, disableSuggest])
 
-  const flatSuggestions = [
-    ...(suggestions?.categories?.map((c) => ({ type: "category" as const, text: c })) ?? []),
-    ...(suggestions?.brands?.map((b) => ({ type: "brand" as const, text: b })) ?? []),
-    ...(suggestions?.titles?.map((t) => ({ type: "title" as const, text: t })) ?? []),
-  ].slice(0, 12)
+  const listings = suggestions?.listings ?? []
+  const listingTitlesLower = new Set(listings.map((l) => l.title.toLowerCase()))
+  const extraTitles = (suggestions?.titles ?? []).filter((t) => !listingTitlesLower.has(t.toLowerCase()))
 
-  const hasSuggestions = open && flatSuggestions.length > 0 && !disableSuggest
+  /** Avoid duplicating brands/categories already shown in the rich strips. */
+  const flatSuggestions =
+    listings.length > 0
+      ? extraTitles.map((t) => ({ type: "title" as const, text: t })).slice(0, 12)
+      : [
+          ...(suggestions?.categories?.map((c) => ({ type: "category" as const, text: c })) ?? []),
+          ...(suggestions?.brands?.map((b) => ({ type: "brand" as const, text: b })) ?? []),
+          ...extraTitles.map((t) => ({ type: "title" as const, text: t })),
+        ].slice(0, 12)
 
-  // Position dropdown when open (for portal)
+  const hasRichStrip =
+    !disableSuggest &&
+    open &&
+    suggestions &&
+    (listings.length > 0 || (suggestions.brands?.length ?? 0) > 0 || (suggestions.categories?.length ?? 0) > 0)
+
+  const hasFallbackList = !disableSuggest && open && flatSuggestions.length > 0
+  const showDropdown = hasRichStrip || hasFallbackList
+
   useEffect(() => {
-    if (!hasSuggestions || !containerRef.current || typeof document === "undefined") {
+    if (!showDropdown || !containerRef.current || typeof document === "undefined") {
       setDropdownRect(null)
       return
     }
     const el = containerRef.current
     const update = () => {
       const rect = el.getBoundingClientRect()
-      setDropdownRect({ top: rect.bottom + 6, left: rect.left, width: rect.width })
+      setDropdownRect({ top: rect.bottom + 8, left: rect.left, width: rect.width })
     }
     update()
     window.addEventListener("scroll", update, true)
@@ -120,7 +158,7 @@ export function SearchInputWithSuggest({
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
     }
-  }, [hasSuggestions])
+  }, [showDropdown])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -140,65 +178,208 @@ export function SearchInputWithSuggest({
     setSuggestions(null)
   }
 
-  const dropdownList = hasSuggestions && dropdownRect && typeof document !== "undefined" && (
-    <ul
-      ref={dropdownRef}
-      id={listboxId}
-      role="listbox"
-      className={cn(
-        "fixed z-[100] overflow-auto rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-lg shadow-black/5",
-        "max-h-[280px] py-1 min-w-[200px]",
-        "animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150"
-      )}
-      style={{
-        top: dropdownRect.top,
-        left: dropdownRect.left,
-        width: Math.max(dropdownRect.width, 200),
-      }}
-    >
-      {flatSuggestions.map((item, i) => {
-        const Icon = item.type === "category" ? Tag : item.type === "brand" ? Package : Type
-        return (
-          <li
-            key={`${item.type}-${item.text}-${i}`}
-            role="option"
-            tabIndex={0}
+  const closeDropdown = () => setOpen(false)
+
+  const panelWidth = dropdownRect
+    ? Math.min(Math.max(dropdownRect.width, 400), 520)
+    : 400
+  const panelLeft = dropdownRect
+    ? Math.min(dropdownRect.left, typeof window !== "undefined" ? window.innerWidth - panelWidth - 16 : dropdownRect.left)
+    : 0
+
+  const dropdownPanel =
+    showDropdown &&
+    dropdownRect &&
+    typeof document !== "undefined" &&
+    createPortal(
+      <div
+        ref={dropdownRef}
+        id={listboxId}
+        role="listbox"
+        className={cn(
+          "fixed z-[100] overflow-hidden rounded-2xl border border-border/80 bg-popover text-popover-foreground",
+          "shadow-xl shadow-black/10",
+          "animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-200",
+        )}
+        style={{
+          top: dropdownRect.top,
+          left: panelLeft,
+          width: panelWidth,
+          maxHeight: "min(70vh, 520px)",
+        }}
+      >
+        {listings.length > 0 && (
+          <>
+            <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-4 py-2.5">
+              <span className="text-sm font-semibold tracking-tight text-foreground">Top listings</span>
+              <Link
+                href={`/search?q=${encodeURIComponent(value.trim())}`}
+                className="shrink-0 text-sm font-medium text-cerulean hover:text-pacific hover:underline"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={closeDropdown}
+              >
+                View all results
+              </Link>
+            </div>
+            <ul className="max-h-[280px] overflow-y-auto py-1">
+              {listings.map((item) => {
+                const meta = [
+                  listingSectionLabel(item.section),
+                  item.brand || null,
+                  formatCondition(item.condition),
+                  item.city && item.state ? `${item.city}, ${item.state}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+
+                return (
+                  <li key={item.id} role="none">
+                    <Link
+                      href={listingHref(item)}
+                      className="mx-1 flex gap-3 rounded-xl px-2 py-2.5 outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={closeDropdown}
+                    >
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        {item.imageUrl ? (
+                          <Image
+                            src={item.imageUrl}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="56px"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                            No photo
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 font-semibold leading-snug text-foreground">
+                          {capitalizeWords(item.title)}
+                        </p>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{meta}</p>
+                        <p className="mt-1 text-sm font-semibold text-cerulean">
+                          ${item.price.toFixed(2)}
+                        </p>
+                      </div>
+                      <span className="hidden shrink-0 self-center text-sm font-medium text-cerulean sm:inline">
+                        View
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        )}
+
+        {(suggestions?.brands?.length ?? 0) > 0 && (
+          <div
             className={cn(
-              "mx-1 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors",
-              "hover:bg-muted/80 focus:bg-muted/80",
-              i === 0 && "mt-0.5",
-              i === flatSuggestions.length - 1 && "mb-0.5"
+              "border-t border-border/60 bg-background px-4 py-3",
+              listings.length === 0 && "rounded-t-2xl",
             )}
-            onMouseDown={(e) => {
-              e.preventDefault()
-              handleSelect(item.text)
-            }}
           >
-            {showTypeLabels ? (
-              <>
-                <span
-                  className={cn(
-                    "flex shrink-0 items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
-                  )}
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Brands
+            </p>
+            <div className="flex gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {suggestions!.brands!.map((brand) => (
+                <button
+                  key={brand}
+                  type="button"
+                  className="flex min-w-[4.5rem] max-w-[5.5rem] flex-col items-center gap-1.5 text-center"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleSelect(brand)}
                 >
-                  <Icon className="h-3 w-3" />
-                  {item.type}
-                </span>
-                <span className="min-w-0 truncate font-medium text-foreground">{item.text}</span>
-              </>
-            ) : (
-              item.text
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted text-base font-bold text-cerulean">
+                    {brand.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="line-clamp-2 w-full text-xs font-medium leading-tight text-foreground">
+                    {brand}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(suggestions?.categories?.length ?? 0) > 0 && (
+          <div className="border-t border-border/60 px-4 py-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Categories
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {suggestions!.categories!.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted hover:border-cerulean/30"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleSelect(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {flatSuggestions.length > 0 && (
+          <div
+            className={cn(
+              "border-t border-border/60",
+              listings.length === 0 &&
+                (suggestions?.brands?.length ?? 0) === 0 &&
+                (suggestions?.categories?.length ?? 0) === 0 &&
+                "rounded-t-2xl",
             )}
-          </li>
-        )
-      })}
-    </ul>
-  )
+          >
+            <p className="border-b border-border/40 bg-muted/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Suggestions
+            </p>
+            <ul className="max-h-40 overflow-y-auto py-1">
+              {flatSuggestions.map((item, i) => {
+                const Icon = item.type === "category" ? Tag : item.type === "brand" ? Package : Type
+                return (
+                  <li key={`${item.type}-${item.text}-${i}`} role="option">
+                    <button
+                      type="button"
+                      className="mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelect(item.text)}
+                    >
+                      {showTypeLabels ? (
+                        <>
+                          <span className="flex shrink-0 items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            <Icon className="h-3 w-3" />
+                            {item.type}
+                          </span>
+                          <span className="min-w-0 truncate font-medium text-foreground">{item.text}</span>
+                        </>
+                      ) : (
+                        item.text
+                      )}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </div>,
+      document.body,
+    )
+
+  const showClear = showClearButton && value.length > 0
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       {leftIcon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-muted-foreground">
+        <div className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground">
           {leftIcon}
         </div>
       )}
@@ -208,18 +389,50 @@ export function SearchInputWithSuggest({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => suggestions && flatSuggestions.length > 0 && !disableSuggest && setOpen(true)}
-        className={leftIcon ? `pl-10 ${inputClassName}` : inputClassName}
+        onFocus={() => {
+          if (disableSuggest) return
+          const s = suggestions
+          const has =
+            (s?.listings?.length ?? 0) > 0 ||
+            (s?.titles?.length ?? 0) > 0 ||
+            (s?.categories?.length ?? 0) > 0 ||
+            (s?.brands?.length ?? 0) > 0
+          if (has) setOpen(true)
+        }}
+        className={cn(
+          leftIcon && "pl-10",
+          showClear && (loading ? "pr-16" : "pr-10"),
+          inputClassName,
+        )}
         autoComplete="off"
-        aria-expanded={hasSuggestions}
+        aria-expanded={showDropdown}
         aria-controls={listboxId}
         aria-autocomplete="list"
-        aria-activedescendant={undefined}
         autoFocus={autoFocus}
       />
-      {dropdownList && createPortal(dropdownList, document.body)}
+      {showClear && (
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Clear search"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            onChange("")
+            setOpen(false)
+            setSuggestions(null)
+          }}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+      {dropdownPanel}
       {loading && value.trim().length >= minLength && !disableSuggest && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+        <span
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2 text-xs text-muted-foreground",
+            showClear ? "right-10" : "right-3",
+          )}
+        >
           …
         </span>
       )}

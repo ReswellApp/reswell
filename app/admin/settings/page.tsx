@@ -132,14 +132,16 @@ export default function AdminSettingsPage() {
         method: 'POST',
         credentials: 'include',
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error(data.error || 'Reindex failed')
+        const msg = data?.error || `Reindex failed (${res.status})`
+        toast.error(msg)
         return
       }
       toast.success(`Reindex complete: ${data.indexed} listings indexed${data.errors ? `, ${data.errors} errors` : ''}`)
-    } catch {
-      toast.error('Reindex failed')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Reindex failed'
+      toast.error(msg)
     } finally {
       setReindexing(false)
     }

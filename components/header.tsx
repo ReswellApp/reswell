@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,8 @@ import {
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
+import { HeaderNavSearch } from "@/components/header-nav-search"
+import { readNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 const navigation = [
@@ -57,7 +59,10 @@ export function Header() {
   const supabase = createClient()
 
   useEffect(() => {
-    if (searchOpen) setSearchQuery("")
+    if (searchOpen) {
+      const saved = readNavSearchQuery()
+      if (saved) setSearchQuery(saved)
+    }
   }, [searchOpen])
 
   useEffect(() => {
@@ -131,6 +136,12 @@ export function Header() {
     }
   }, [supabase, pathname])
 
+  useEffect(() => {
+    if (mobileMenuOpen && mobileSearchRef.current) {
+      mobileSearchRef.current.value = readNavSearchQuery()
+    }
+  }, [mobileMenuOpen])
+
   async function handleSignOut() {
     await supabase.auth.signOut()
     setUser(null)
@@ -140,7 +151,7 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto flex h-14 sm:h-16 min-w-0 items-center justify-between gap-2 px-4">
+        <div className="container mx-auto flex h-14 sm:h-16 min-w-0 items-center gap-2 px-4 md:gap-3">
           {/* Logo + home link (desktop: logo left of name; mobile: logo is in menu toggle) */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <div className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cerulean text-white">
@@ -168,7 +179,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden shrink-0 items-center gap-6 md:flex">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -180,11 +191,23 @@ export function Header() {
             ))}
           </nav>
 
+          {/* Main search (md+): fills space between nav and actions */}
+          <Suspense
+            fallback={<div className="hidden min-w-0 flex-1 md:block" aria-hidden />}
+          >
+            <HeaderNavSearch />
+          </Suspense>
+
           {/* Actions */}
-          <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2 text-black">
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-2 text-black">
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="hidden sm:flex text-black hover:bg-pacific/5" aria-label="Search">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex text-black hover:bg-pacific/5 md:hidden"
+                  aria-label="Search"
+                >
                   <Search className="h-5 w-5" />
                 </Button>
               </PopoverTrigger>
@@ -198,6 +221,7 @@ export function Header() {
                     e.preventDefault()
                     const q = searchQuery.trim()
                     if (q) {
+                      writeNavSearchQuery(q)
                       router.push(`/search?q=${encodeURIComponent(q)}`)
                       setSearchOpen(false)
                     }
@@ -210,12 +234,13 @@ export function Header() {
                       onChange={setSearchQuery}
                       onSelect={(text) => {
                         setSearchQuery(text)
+                        writeNavSearchQuery(text)
                         router.push(`/search?q=${encodeURIComponent(text)}`)
                         setSearchOpen(false)
                       }}
                       placeholder="Search gear, boards, wetsuits..."
                       section=""
-                      listboxId="nav-search-suggestions"
+                      listboxId="nav-search-suggestions-tablet"
                       leftIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                       inputClassName="h-10 rounded-xl border-border bg-background text-foreground"
                       className="w-full"
@@ -445,6 +470,7 @@ export function Header() {
                       e.preventDefault()
                       const q = (e.currentTarget.value || "").trim()
                       if (q) {
+                        writeNavSearchQuery(q)
                         router.push(`/search?q=${encodeURIComponent(q)}`)
                         setMobileMenuOpen(false)
                       }
@@ -458,6 +484,7 @@ export function Header() {
                   onClick={() => {
                     const q = (mobileSearchRef.current?.value || "").trim()
                     if (q) {
+                      writeNavSearchQuery(q)
                       router.push(`/search?q=${encodeURIComponent(q)}`)
                       setMobileMenuOpen(false)
                     }

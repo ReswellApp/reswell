@@ -55,7 +55,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Elasticsearch client unavailable" }, { status: 503 })
   }
 
-  await ensureListingsIndex()
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return NextResponse.json(
+      {
+        error:
+          "SUPABASE_SERVICE_ROLE_KEY is not set. Add it in Vercel (Production) or .env.local (local). Get it from Supabase → Settings → API.",
+      },
+      { status: 503 },
+    )
+  }
+
+  try {
+    await ensureListingsIndex()
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json(
+      { error: `Elasticsearch index setup failed: ${msg}` },
+      { status: 503 },
+    )
+  }
 
   const supabase = createServiceRoleClient()
   const pageSize = 200

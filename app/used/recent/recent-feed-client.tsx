@@ -30,6 +30,8 @@ interface RecentFeedClientProps {
   listings: RecentListing[]
   favoritedListingIds: string[]
   isLoggedIn: boolean
+  /** Override default empty state copy (e.g. search results). */
+  emptyMessage?: string
 }
 
 function getListingHref(listing: RecentListing): string {
@@ -47,11 +49,12 @@ export function RecentFeedClient({
   listings,
   favoritedListingIds,
   isLoggedIn,
+  emptyMessage,
 }: RecentFeedClientProps) {
   if (!listings.length) {
     return (
       <p className="text-center text-muted-foreground py-12">
-        No recent listings yet. Check back soon.
+        {emptyMessage ?? "No recent listings yet. Check back soon."}
       </p>
     )
   }
