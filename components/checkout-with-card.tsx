@@ -33,13 +33,35 @@ export function CheckoutWithCard({
           ...(fulfillment ? { fulfillment } : {}),
         }),
       })
-      const data = await res.json()
+
+      const raw = await res.text()
+      let data: {
+        error?: string
+        code?: string
+        url?: string
+        stripe_code?: string
+      } = {}
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as typeof data
+        } catch {
+          setError(
+            `Server returned an invalid response (${res.status}). If this persists, check deployment logs.`
+          )
+          return
+        }
+      }
+
       if (!res.ok) {
         if (data.code === "stripe_not_configured") {
           setError("stripe_not_configured")
           return
         }
-        setError(data.error || "Checkout failed")
+        if (data.code === "stripe_error" && data.error) {
+          setError(data.error)
+          return
+        }
+        setError(data.error || `Checkout failed (${res.status})`)
         return
       }
       if (data.url) {
@@ -47,8 +69,13 @@ export function CheckoutWithCard({
         return
       }
       setError("No checkout URL returned")
-    } catch {
-      setError("Something went wrong. Please try again.")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error"
+      setError(
+        msg.includes("Failed to fetch")
+          ? "Network error — check your connection or try again."
+          : `Something went wrong: ${msg}`
+      )
     } finally {
       setLoading(false)
     }
