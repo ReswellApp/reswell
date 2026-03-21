@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server"
 import { UsedListingsFilters } from "@/components/used-listings-filters"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
+import { VerifiedBadge } from "@/components/verified-badge"
 
 interface SearchParams {
   category?: string
@@ -40,7 +41,7 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
     .select(`
       *,
       listing_images (url, is_primary),
-      profiles (display_name, avatar_url, sales_count),
+      profiles (display_name, avatar_url, sales_count, shop_verified),
       categories (name, slug)
     `, { count: "exact" })
     .eq("status", "active")
@@ -184,8 +185,9 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
                     ${listing.price.toFixed(2)}
                   </p>
                   <div className="flex items-center justify-between mt-2">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
                       {getPublicSellerDisplayName(listing.profiles)}
+                      {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
                     </p>
                     {listing.categories?.name && (
                       <Badge variant="outline" className="text-xs">
@@ -265,7 +267,7 @@ export default async function UsedGearPage(props: {
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-offwhite py-12">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <h1 className="text-3xl font-bold text-center">Used Surf Gear</h1>
             <p className="text-center text-muted-foreground mt-2">
               Find great deals on pre-loved surf accessories — shipping only
@@ -275,7 +277,7 @@ export default async function UsedGearPage(props: {
 
         {/* Filters */}
         <section className="border-b py-4 sticky top-14 sm:top-16 bg-background z-40 min-w-0 overflow-x-auto">
-          <div className="container mx-auto px-4 min-w-0 flex justify-center">
+          <div className="container mx-auto min-w-0 flex justify-center">
             <UsedListingsFilters
               categoryOptions={categoryOptions}
               initialQ={searchParams.q ?? ""}
@@ -290,7 +292,7 @@ export default async function UsedGearPage(props: {
 
         {/* Listings */}
         <section className="py-8">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <Suspense
               fallback={
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

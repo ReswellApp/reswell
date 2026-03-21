@@ -25,6 +25,7 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { TranslateableDescription } from "@/components/translateable-description"
 import { findListingByParam } from "@/lib/listing-query"
+import { VerifiedBadge } from "@/components/verified-badge"
 export default async function UsedListingPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -38,7 +39,7 @@ export default async function UsedListingPage(props: {
       select: `
         *,
         listing_images (id, url, is_primary),
-        profiles (id, display_name, avatar_url, location, created_at),
+        profiles (id, display_name, avatar_url, location, created_at, shop_verified),
         categories (name, slug)
       `,
       section: "used",
@@ -109,7 +110,7 @@ export default async function UsedListingPage(props: {
       <Header />
       
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
             <Link href="/used" className="hover:text-foreground flex items-center gap-1">
@@ -199,8 +200,9 @@ export default async function UsedListingPage(props: {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
-                          {getPublicSellerDisplayName(listing.profiles)}
+                        <p className="font-medium flex items-center gap-1 truncate">
+                          <span className="truncate">{getPublicSellerDisplayName(listing.profiles)}</span>
+                          {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
                         </p>
                         {listing.profiles?.location && (
                           <p className="text-sm text-muted-foreground flex items-center gap-1 truncate mt-1">

@@ -88,7 +88,7 @@ export default async function ProductPage(props: {
       <Header />
 
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
             <Link href="/shop" className="hover:text-foreground flex items-center gap-1">
               <ArrowLeft className="h-4 w-4" />

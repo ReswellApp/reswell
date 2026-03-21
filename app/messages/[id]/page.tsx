@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 
@@ -36,11 +37,13 @@ interface Conversation {
     id: string
     display_name: string
     avatar_url: string | null
+    shop_verified?: boolean
   }
   seller: {
     id: string
     display_name: string
     avatar_url: string | null
+    shop_verified?: boolean
   }
 }
 
@@ -66,8 +69,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .select(`
           *,
           listing:listings(id, title, price, section, listing_images(url)),
-          buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url),
-          seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url)
+          buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
+          seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
         `)
         .eq('id', id)
         .single()
@@ -206,7 +209,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-4 flex flex-col max-w-3xl">
+      <main className="flex-1 container mx-auto py-4 flex flex-col max-w-3xl">
         {/* Header */}
         <div className="flex items-center gap-4 pb-4 border-b border-border">
           <Link href="/messages">
@@ -230,7 +233,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               )}
             </div>
             <div>
-              <p className="font-semibold text-foreground">{otherUser?.display_name}</p>
+              <p className="font-semibold text-foreground flex items-center gap-1">
+                {otherUser?.display_name}
+                {otherUser?.shop_verified && <VerifiedBadge size="sm" />}
+              </p>
               {conversation.listing && (
                 <Link 
                   href={`/${conversation.listing.section}/${conversation.listing.id}`}

@@ -57,7 +57,7 @@ export default async function SearchPage(props: {
       <Header />
       <main className="flex-1">
         <section className="border-b bg-background">
-          <div className="container mx-auto px-4 py-6 md:py-8">
+          <div className="container mx-auto py-6 md:py-8">
             <h1 className="text-xl font-bold text-foreground md:text-2xl">
               {rawQuery ? (
                 <>Results for &ldquo;{rawQuery}&rdquo;</>
@@ -100,7 +100,7 @@ export default async function SearchPage(props: {
           />
         </Suspense>
 
-        <section className="container mx-auto px-4 py-8">
+        <section className="container mx-auto py-8">
           <RecentFeedClient
             listings={listings}
             favoritedListingIds={favoritedListingIds}
@@ -212,7 +212,7 @@ async function fetchCuratedRecentListings(
       length_inches,
       created_at,
       listing_images (url, is_primary),
-      profiles (display_name, avatar_url, location, sales_count),
+      profiles (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name, slug)
     `,
     )
@@ -343,7 +343,7 @@ async function buildSearchQuery(
       length_feet,
       length_inches,
       listing_images (url, is_primary),
-      profiles (display_name, avatar_url, location, sales_count),
+      profiles (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name, slug)
     `,
       { count: "exact" },

@@ -166,7 +166,7 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto flex h-14 sm:h-16 md:h-20 min-w-0 items-center gap-2 px-4 md:gap-4">
+        <div className="container mx-auto flex h-14 sm:h-16 md:h-20 min-w-0 items-center gap-2 md:gap-4">
           {/* Logo + home link (desktop: logo left of name; mobile: logo is in menu toggle) */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cerulean text-white">
@@ -430,7 +430,7 @@ export function Header() {
         </div>
 
         {/* Categories bar (desktop) */}
-        <div className="hidden md:flex items-center gap-8 border-t border-lightgray/40 px-4 container mx-auto">
+        <div className="hidden md:flex container mx-auto items-center gap-8 border-t border-lightgray/40">
           {navigation.map((item) => (
             <Link
               key={item.name}

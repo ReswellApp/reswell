@@ -18,10 +18,10 @@ import {
   ShoppingBag,
   Users,
   Store,
-  CheckCircle2,
 } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
+import { VerifiedBadge } from "@/components/verified-badge"
 
 const categories = [
   { name: "Surfboards", href: "/boards" },
@@ -64,7 +64,7 @@ export default async function HomePage() {
     .select(`
       *,
       listing_images (url),
-      profiles (display_name, avatar_url, sales_count)
+      profiles (display_name, avatar_url, sales_count, shop_verified)
     `)
     .eq("status", "active")
     .eq("section", "used")
@@ -110,7 +110,7 @@ export default async function HomePage() {
     .select(`
       *,
       listing_images (url),
-      profiles (display_name, avatar_url, location, sales_count)
+      profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)
     .eq("status", "active")
     .eq("section", "surfboards")
@@ -147,7 +147,7 @@ export default async function HomePage() {
         <section className="relative min-h-[420px] md:min-h-[520px] flex items-center overflow-hidden">
           <HeroSlideshow />
           <div className="absolute inset-0 bg-white/55" aria-hidden />
-          <div className="container mx-auto px-4 relative z-10 py-20 md:py-32">
+          <div className="container mx-auto relative z-10 py-20 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="secondary" className="mb-4 hover:bg-secondary/70">
                 The Surf Community Marketplace
@@ -176,7 +176,7 @@ export default async function HomePage() {
 
         {/* Marketplace Sections */}
         <section className="py-16">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {/* Used Gear */}
               <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
@@ -259,7 +259,7 @@ export default async function HomePage() {
 
         {/* Categories */}
         <section className="py-16 bg-offwhite">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold">Browse by Category</h2>
               <Button variant="ghost" asChild>
@@ -285,7 +285,7 @@ export default async function HomePage() {
 
         {/* Ocean images */}
         <section className="py-6 md:py-8">
-          <div className="container mx-auto px-4 max-w-4xl md:max-w-5xl">
+          <div className="container mx-auto max-w-4xl md:max-w-5xl">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
               <div className="relative aspect-[4/3] overflow-hidden rounded-md">
                 <img
@@ -322,7 +322,7 @@ export default async function HomePage() {
         {/* Featured Sellers */}
         {featuredShops && featuredShops.length > 0 && (
           <section className="py-16">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-2xl font-bold">Featured Sellers</h2>
@@ -357,7 +357,7 @@ export default async function HomePage() {
                             </AvatarFallback>
                           </Avatar>
                           {shop.shop_verified && (
-                            <CheckCircle2 className="h-4 w-4 text-primary -ml-1 mb-0.5" />
+                            <VerifiedBadge size="md" className="-ml-1 mb-0.5" />
                           )}
                         </div>
                         <h3 className="font-semibold line-clamp-1 text-foreground">
@@ -386,7 +386,7 @@ export default async function HomePage() {
         {/* Featured Used Gear */}
         {featuredUsed && featuredUsed.length > 0 && (
           <section className="py-16">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-2xl font-bold">Featured Used Gear</h2>
@@ -428,8 +428,9 @@ export default async function HomePage() {
                         <p className="text-lg font-bold text-primary mt-1">
                           ${listing.price.toFixed(2)}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
                           {getPublicSellerDisplayName(listing.profiles)}
+                          {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
                         </p>
                       </CardContent>
                     </Link>
@@ -450,7 +451,7 @@ export default async function HomePage() {
         {/* Featured New Gear */}
         {featuredNew && featuredNew.length > 0 && (
           <section className="py-16 bg-offwhite">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-2xl font-bold">New Arrivals</h2>
@@ -506,7 +507,7 @@ export default async function HomePage() {
         {/* Featured Surfboards */}
         {featuredBoards && featuredBoards.length > 0 && (
           <section className="py-16">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-2xl font-bold">Recently added surfboards</h2>
@@ -570,7 +571,7 @@ export default async function HomePage() {
 
         {/* Features */}
         <section className="py-16 bg-primary/5">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <h2 className="text-2xl font-bold text-center mb-12">Why Choose Reswell?</h2>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((feature) => (
@@ -588,7 +589,7 @@ export default async function HomePage() {
 
         {/* CTA */}
         <section className="py-20">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-3xl font-bold">Ready to Ride the Wave?</h2>
               <p className="mt-4 text-muted-foreground">

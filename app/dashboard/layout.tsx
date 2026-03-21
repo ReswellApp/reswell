@@ -57,7 +57,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <div className="flex-1 container mx-auto px-4 py-8">
+      <div className="flex-1 container mx-auto py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">

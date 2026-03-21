@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { MessageCircle, Search, Heart } from 'lucide-react'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 
@@ -40,11 +41,13 @@ interface Conversation {
     id: string
     display_name: string
     avatar_url: string | null
+    shop_verified?: boolean
   }
   seller: {
     id: string
     display_name: string
     avatar_url: string | null
+    shop_verified?: boolean
   }
   messages: {
     content: string
@@ -109,8 +112,8 @@ function MessagesContent() {
           .select(`
             *,
             listing:listings(id, title, listing_images(url)),
-            buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url),
-            seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url),
+            buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
+            seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
             messages(content, is_read, sender_id)
           `)
           .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
@@ -166,7 +169,7 @@ function MessagesContent() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto py-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold text-foreground mb-6">Messages</h1>
 
@@ -276,8 +279,9 @@ function MessagesContent() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <p className="font-semibold text-foreground truncate">
-                                  {otherUser?.display_name || 'Unknown User'}
+                                <p className="font-semibold text-foreground truncate flex items-center gap-1">
+                                  <span className="truncate">{otherUser?.display_name || 'Unknown User'}</span>
+                                  {otherUser?.shop_verified && <VerifiedBadge size="sm" />}
                                 </p>
                                 <p className="text-sm text-muted-foreground truncate">
                                   {capitalizeWords(conv.listing?.title) || 'General inquiry'}
@@ -323,7 +327,7 @@ export default function MessagesPage() {
     <Suspense fallback={
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto py-8">
           <div className="max-w-3xl mx-auto animate-pulse space-y-4">
             <div className="h-9 bg-muted rounded w-48" />
             <div className="h-10 bg-muted rounded" />

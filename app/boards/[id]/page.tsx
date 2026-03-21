@@ -28,6 +28,7 @@ import { LocationMap } from "@/components/location-map"
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
+import { VerifiedBadge } from "@/components/verified-badge"
 export default async function BoardDetailPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -41,7 +42,7 @@ export default async function BoardDetailPage(props: {
       select: `
         *,
         listing_images (id, url, is_primary),
-        profiles (id, display_name, avatar_url, location, created_at)
+        profiles (id, display_name, avatar_url, location, created_at, shop_verified)
       `,
       section: "surfboards",
     },
@@ -141,7 +142,7 @@ export default async function BoardDetailPage(props: {
       <Header />
       
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
             <Link href="/boards" className="hover:text-foreground flex items-center gap-1">
@@ -344,8 +345,9 @@ export default async function BoardDetailPage(props: {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium">
+                        <p className="font-medium flex items-center gap-1">
                           {getPublicSellerDisplayName(board.profiles)}
+                          {board.profiles?.shop_verified && <VerifiedBadge size="sm" />}
                         </p>
                         {board.profiles?.location && (
                           <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">

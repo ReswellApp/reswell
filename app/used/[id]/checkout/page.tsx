@@ -43,7 +43,7 @@ export default async function UsedCheckoutPage(props: {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4 max-w-lg">
+        <div className="container mx-auto max-w-lg">
           <Button variant="ghost" size="sm" className="mb-6 -ml-2" asChild>
             <Link href={`/used/${usedSlug}`} className="gap-2">
               <ArrowLeft className="h-4 w-4" />

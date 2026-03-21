@@ -581,7 +581,7 @@ function SellPageContent() {
       <Header />
       
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4 max-w-2xl">
+        <div className="container mx-auto max-w-2xl">
           <Link
             href="/dashboard"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"

@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog } from 'lucide-react'
+import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 
@@ -34,6 +34,7 @@ interface User {
   city: string | null
   is_admin: boolean
   is_employee: boolean
+  shop_verified: boolean
   created_at: string
   listings_count: number
 }
@@ -95,6 +96,20 @@ export default function AdminUsersPage() {
     if (!error) {
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_employee: !currentStatus, is_admin: currentStatus ? u.is_admin : false } : u))
       toast.success(currentStatus ? 'Employee access removed' : 'Employee access granted')
+    } else {
+      toast.error('Failed to update user')
+    }
+  }
+
+  async function toggleVerified(userId: string, currentStatus: boolean) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ shop_verified: !currentStatus })
+      .eq('id', userId)
+
+    if (!error) {
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, shop_verified: !currentStatus } : u))
+      toast.success(!currentStatus ? 'Verified seller badge granted' : 'Verified seller badge removed')
     } else {
       toast.error('Failed to update user')
     }
@@ -182,13 +197,21 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{user.listings_count}</TableCell>
                     <TableCell>
-                      {user.is_admin ? (
-                        <Badge className="bg-primary text-primary-foreground">Admin</Badge>
-                      ) : user.is_employee ? (
-                        <Badge variant="secondary">Employee</Badge>
-                      ) : (
-                        <Badge variant="outline">User</Badge>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1">
+                        {user.is_admin ? (
+                          <Badge className="bg-primary text-primary-foreground">Admin</Badge>
+                        ) : user.is_employee ? (
+                          <Badge variant="secondary">Employee</Badge>
+                        ) : (
+                          <Badge variant="outline">User</Badge>
+                        )}
+                        {user.shop_verified && (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                            Verified
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(user.created_at), 'MMM d, yyyy')}
@@ -220,6 +243,17 @@ export default function AdminUsersPage() {
                             ) : (
                               <>
                                 <UserCog className="h-4 w-4 mr-2" /> Make Employee
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleVerified(user.id, user.shop_verified)}>
+                            {user.shop_verified ? (
+                              <>
+                                <XCircle className="h-4 w-4 mr-2" /> Remove Verified Badge
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 mr-2" /> Grant Verified Badge
                               </>
                             )}
                           </DropdownMenuItem>

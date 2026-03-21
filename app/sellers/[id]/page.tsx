@@ -15,7 +15,6 @@ import {
   MapPin,
   Phone,
   Globe,
-  CheckCircle2,
   Star,
   MessageSquare,
   Calendar,
@@ -24,6 +23,7 @@ import {
 } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
+import { VerifiedBadge } from "@/components/verified-badge"
 
 export async function generateMetadata({
   params,
@@ -141,7 +141,7 @@ export default async function SellerProfilePage({
         </div>
 
         {/* Profile Header */}
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto">
           <div className="relative -mt-12 mb-8">
             <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
               <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
@@ -161,8 +161,8 @@ export default async function SellerProfilePage({
                     {displayName}
                   </h1>
                   {shop.shop_verified && (
-                    <Badge className="bg-primary/10 text-primary hover:bg-primary/15">
-                      <CheckCircle2 className="mr-1 h-3 w-3" />
+                    <Badge className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100">
+                      <VerifiedBadge size="sm" className="mr-1" />
                       Verified Seller
                     </Badge>
                   )}

@@ -23,7 +23,7 @@ export interface RecentListing {
   board_type?: string | null
   board_length?: string | null
   listing_images?: { url: string; is_primary?: boolean }[] | null
-  profiles?: { display_name?: string | null; avatar_url?: string | null; location?: string | null; sales_count?: number } | null
+  profiles?: { display_name?: string | null; avatar_url?: string | null; location?: string | null; sales_count?: number; shop_verified?: boolean } | null
   categories?: { name?: string | null; slug?: string | null } | null
 }
 

@@ -67,7 +67,7 @@ function ShopCheckoutSuccessInner() {
       <Header />
 
       <main className="flex-1 py-16">
-        <div className="container mx-auto px-4 max-w-md text-center">
+        <div className="container mx-auto max-w-md text-center">
           <Card>
             <CardContent className="pt-8 pb-8">
               {sessionId && confirmState === "loading" && (

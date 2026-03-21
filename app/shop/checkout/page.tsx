@@ -103,7 +103,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 py-8">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto text-center">
             <p className="text-muted-foreground mb-4">Please sign in to checkout.</p>
             <Button asChild>
               <Link href="/login?redirect=/shop/checkout">Sign in</Link>
@@ -120,7 +120,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 py-8">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto text-center">
             <p className="text-muted-foreground mb-4">Your cart is empty.</p>
             <Button asChild>
               <Link href="/shop">Continue Shopping</Link>
@@ -137,7 +137,7 @@ export default function CheckoutPage() {
       <Header />
 
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4 max-w-2xl mx-auto">
+        <div className="container mx-auto max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link
               href="/shop/cart"

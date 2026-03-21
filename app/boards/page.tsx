@@ -69,7 +69,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     .select(`
       *,
       listing_images (url, is_primary),
-      profiles (display_name, avatar_url, location, sales_count)
+      profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `, { count: "exact" })
     .eq("status", "active")
     .eq("section", "surfboards")
@@ -300,7 +300,7 @@ export default async function BoardsPage(props: {
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-offwhite py-12">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <h1 className="text-3xl font-bold text-center">Surfboards</h1>
             <p className="text-center text-muted-foreground mt-2">
               Find local boards for pickup from sellers in your area
@@ -309,7 +309,7 @@ export default async function BoardsPage(props: {
         </section>
 
         <section className="py-4 min-w-0">
-          <div className="container mx-auto px-4 min-w-0">
+          <div className="container mx-auto min-w-0">
             <div className="border-b py-4 mb-6 min-w-0 overflow-x-auto">
               <div className="min-w-0">
                 <BoardsListingsFilters

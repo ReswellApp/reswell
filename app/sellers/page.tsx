@@ -11,11 +11,11 @@ import {
   MapPin,
   Store,
   ExternalLink,
-  CheckCircle2,
   Search,
   ArrowRight,
   Package,
 } from "lucide-react"
+import { VerifiedBadge } from "@/components/verified-badge"
 
 export const metadata = {
   title: "Sellers - Reswell",
@@ -57,7 +57,7 @@ export default async function SellersPage({
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-offwhite py-12">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <div className="mx-auto max-w-2xl text-center">
               <div className="mb-4 flex items-center justify-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -95,7 +95,7 @@ export default async function SellersPage({
 
         {/* Results */}
         <section className="py-12">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             {q && (
               <div className="mb-6 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
@@ -166,7 +166,7 @@ export default async function SellersPage({
                                 {shop.shop_name || shop.display_name}
                               </h3>
                               {shop.shop_verified && (
-                                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-primary" />
+                                <VerifiedBadge size="md" />
                               )}
                             </div>
                             {(shop.city || shop.shop_address) && (
@@ -179,8 +179,9 @@ export default async function SellersPage({
                           {shop.shop_verified && (
                             <Badge
                               variant="secondary"
-                              className="flex-shrink-0 bg-primary/10 text-primary"
+                              className="flex-shrink-0 bg-blue-50 text-blue-600 border-blue-200"
                             >
+                              <VerifiedBadge size="sm" className="mr-1" />
                               Verified
                             </Badge>
                           )}
@@ -215,7 +216,7 @@ export default async function SellersPage({
 
         {/* CTA for shop owners */}
         <section className="py-16 bg-offwhite">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <div className="mx-auto max-w-2xl text-center">
               <Package className="mx-auto mb-4 h-10 w-10 text-primary" />
               <h2 className="text-2xl font-bold text-foreground">

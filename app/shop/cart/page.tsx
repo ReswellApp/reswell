@@ -73,7 +73,7 @@ export default function CartPage() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 py-8">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <div className="animate-pulse space-y-4">
               <div className="h-8 w-48 bg-muted rounded" />
               <div className="h-64 bg-muted rounded" />
@@ -90,7 +90,7 @@ export default function CartPage() {
       <Header />
       
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">

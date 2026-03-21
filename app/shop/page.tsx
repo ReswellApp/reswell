@@ -49,7 +49,7 @@ export default async function ShopPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-offwhite py-12">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto text-center">
             <h1 className="text-3xl font-bold text-balance">New Gear from Verified Brands</h1>
             <p className="text-muted-foreground mt-2 max-w-lg mx-auto text-pretty">
               Shop products directly from verified surf brands and retailers, or buy marketplace new gear with checkout here.
@@ -60,7 +60,7 @@ export default async function ShopPage() {
         {/* Marketplace New (in-app checkout) */}
         {marketplaceItems.length > 0 && (
           <section className="py-8 border-b">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto">
               <h2 className="text-xl font-bold mb-6">Marketplace New — Buy here</h2>
               <MarketplaceNewGrid items={marketplaceItems} />
             </div>
@@ -69,7 +69,7 @@ export default async function ShopPage() {
 
         {/* Brand Products (external Shopify) */}
         <section className="py-8">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto">
             <h2 className="text-xl font-bold mb-6">Brand products</h2>
             <ShopifyProducts />
           </div>

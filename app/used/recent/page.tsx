@@ -111,7 +111,7 @@ export default async function RecentUsedPage() {
       <main className="flex-1">
         {/* Feed header - reference style, site theme */}
         <section className="border-b border-border bg-background">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto py-8">
             <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               New listings feed
             </h1>
@@ -121,7 +121,7 @@ export default async function RecentUsedPage() {
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-6">
+        <section className="container mx-auto py-6">
           <RecentFeedClient
             listings={feedListings}
             favoritedListingIds={favoritedListingIds}

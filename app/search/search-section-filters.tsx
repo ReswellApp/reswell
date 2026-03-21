@@ -58,7 +58,7 @@ export function SearchSectionFilters({
   }
 
   return (
-    <div className="border-b border-border bg-muted/20 px-4 py-3">
+    <div className="border-b border-border bg-muted/20 py-3">
       <div className="container mx-auto flex flex-wrap items-center gap-3">
         <p className="text-sm text-muted-foreground">
           {query ? (

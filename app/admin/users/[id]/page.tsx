@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Flag, Mail, User, RotateCcw } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Flag, Mail, User, RotateCcw, CheckCircle2, XCircle } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -36,6 +36,8 @@ interface Profile {
   state: string | null
   bio: string | null
   is_admin: boolean
+  shop_verified: boolean
+  sales_count: number
   created_at: string
   updated_at: string
 }
@@ -102,6 +104,21 @@ export default function AdminUserDetailPage() {
     }
     load()
   }, [id])
+
+  async function toggleVerified() {
+    if (!profile) return
+    const next = !profile.shop_verified
+    const { error } = await supabase
+      .from('profiles')
+      .update({ shop_verified: next })
+      .eq('id', id)
+    if (!error) {
+      setProfile({ ...profile, shop_verified: next })
+      toast.success(next ? 'Verified seller badge granted' : 'Verified seller badge removed')
+    } else {
+      toast.error('Failed to update profile')
+    }
+  }
 
   async function updateListingStatus(listingId: string, newStatus: string) {
     const { error } = await supabase
@@ -195,11 +212,57 @@ export default function AdminUserDetailPage() {
               {profile.is_admin && (
                 <Badge className="bg-primary text-primary-foreground">Admin</Badge>
               )}
+              {profile.shop_verified && (
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  Verified Seller
+                </Badge>
+              )}
               <span className="text-xs text-muted-foreground">
                 Joined {format(new Date(profile.created_at), 'MMM d, yyyy')}
               </span>
             </div>
+            {profile.sales_count > 0 && (
+              <p className="text-xs text-muted-foreground pt-1">
+                {profile.sales_count} sale{profile.sales_count !== 1 ? 's' : ''}
+              </p>
+            )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Verified Seller Badge */}
+      <Card>
+        <CardContent className="p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <CheckCircle2 className={`h-5 w-5 shrink-0 ${profile.shop_verified ? 'text-green-600' : 'text-muted-foreground'}`} />
+            <div>
+              <p className="font-medium text-foreground text-sm">Verified Seller Badge</p>
+              <p className="text-xs text-muted-foreground">
+                {profile.shop_verified
+                  ? 'This user has a verified seller badge visible on their profile and listings.'
+                  : 'Grant a verified badge to indicate this is a trusted seller.'}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant={profile.shop_verified ? 'outline' : 'default'}
+            size="sm"
+            onClick={toggleVerified}
+            className="shrink-0"
+          >
+            {profile.shop_verified ? (
+              <>
+                <XCircle className="h-4 w-4 mr-1.5" />
+                Remove
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                Grant Badge
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 

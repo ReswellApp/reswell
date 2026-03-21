@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Heart, MapPin, Truck } from 'lucide-react'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { MessageListingButton } from '@/components/message-listing-button'
 import { FavoriteButtonCardOverlay } from '@/components/favorite-button-card-overlay'
 import {
@@ -38,7 +39,7 @@ export interface SavedFavorite {
     length_inches?: number | null
     shipping_available?: boolean
     listing_images: { url: string; is_primary: boolean }[]
-    profiles?: { display_name?: string | null } | null
+    profiles?: { display_name?: string | null; shop_verified?: boolean } | null
     categories?: { name?: string | null } | null
   }
 }
@@ -80,7 +81,7 @@ export function SavedListContent() {
           length_inches,
           shipping_available,
           listing_images(url, is_primary),
-          profiles(display_name),
+          profiles(display_name, shop_verified),
           categories(name)
         )
       `)
@@ -210,8 +211,9 @@ export function SavedListContent() {
                     <p className="text-xl font-bold text-primary mt-2">
                       ${Number(listing.price).toFixed(2)}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
                       {getPublicSellerDisplayName(listing.profiles)}
+                      {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
                     </p>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                       <MapPin className="h-3 w-3 shrink-0" />
