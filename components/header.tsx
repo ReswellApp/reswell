@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useState, useEffect, useRef, Suspense } from "react"
+import { Fragment, useState, useEffect, useRef, Suspense } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -35,16 +36,19 @@ import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
-import { allCategoriesForNav } from "@/lib/site-category-directory"
+import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
-/** Desktop + mobile primary nav (Wetsuits last before Categories dropdown). */
+/** Desktop + mobile primary nav (Apparel / Leashes / Collectibles last before Categories dropdown). */
 const navigation = [
   { name: "Surfboards", href: "/boards" },
   { name: "Fins", href: "/used/fins" },
   { name: "Surfpacks & Bags", href: "/used/backpacks" },
   { name: "Board Bags", href: "/used/board-bags" },
   { name: "Wetsuits", href: "/used/wetsuits" },
+  { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
+  { name: "Leashes", href: "/used/leashes" },
+  { name: "Collectibles & Vintage", href: "/used/collectibles-vintage" },
 ]
 
 function navItemIsActive(pathname: string | null, searchParams: URLSearchParams, href: string): boolean {
@@ -61,6 +65,11 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
       const cat = searchParams.get("category")
       return !cat || cat === "all"
     }
+    if (path === "/boards") {
+      return (
+        (pathname === path && !searchParams.get("type")) || pathname.startsWith(`${path}/`)
+      )
+    }
     return pathname === path || pathname.startsWith(`${path}/`)
   }
 
@@ -73,6 +82,9 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
 
 const mainNavHrefs = new Set(navigation.map((item) => item.href))
 const dropdownCategories = allCategoriesForNav.filter((cat) => !mainNavHrefs.has(cat.href))
+
+/** Header Categories dropdown: grey heading + links only (no bold title / view-all row). */
+const headerDropdownCompactSectionIds = new Set(["surfboards", "fins", "surfpacks"])
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
@@ -452,7 +464,7 @@ export function Header() {
         <div className="hidden md:flex container mx-auto items-center gap-8 border-t border-lightgray/40">
           {navigation.map((item) => (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href}
               className={`py-4 text-[15px] transition-colors duration-smooth hover:text-cerulean ${
                 navItemIsActive(pathname, headerSearchParams, item.href)
@@ -469,7 +481,42 @@ export function Header() {
               Categories
               <ChevronDown className="h-4 w-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent
+              align="start"
+              className="max-h-[min(70vh,28rem)] w-56 overflow-y-auto"
+            >
+              {headerCategoriesDropdownSections.map((section, idx) => (
+                <Fragment key={section.id}>
+                  {idx > 0 ? <DropdownMenuSeparator /> : null}
+                  {!headerDropdownCompactSectionIds.has(section.id) ? (
+                    <>
+                      <DropdownMenuLabel className="px-2 py-1.5 text-sm font-semibold text-foreground">
+                        {section.title}
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link href={section.browseAllHref} className="w-full font-medium">
+                          {section.browseAllLabel}
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                  {section.subcategories.map((group) => (
+                    <Fragment key={`${section.id}-${group.heading}`}>
+                      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                        {group.heading}
+                      </DropdownMenuLabel>
+                      {group.links.map((link) => (
+                        <DropdownMenuItem key={`${link.href}-${link.label}`} asChild>
+                          <Link href={link.href} className="w-full">
+                            {link.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </Fragment>
+                  ))}
+                </Fragment>
+              ))}
+              <DropdownMenuSeparator />
               {dropdownCategories.map((cat) => (
                 <DropdownMenuItem key={cat.label} asChild>
                   <Link href={cat.href} className="w-full">
@@ -510,13 +557,45 @@ export function Header() {
             <nav className="flex flex-col gap-1">
               {navigation.map((item) => (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className="py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {item.name}
                 </Link>
+              ))}
+              <p className="px-2 pt-4 pb-1 text-xs font-medium text-muted-foreground">More categories</p>
+              {headerCategoriesDropdownSections.map((section, sIdx) => (
+                <div key={section.id} className={sIdx > 0 ? "mt-4 border-t border-border/60 pt-4" : ""}>
+                  {!headerDropdownCompactSectionIds.has(section.id) ? (
+                    <>
+                      <p className="px-2 pb-2 text-sm font-semibold text-foreground">{section.title}</p>
+                      <Link
+                        href={section.browseAllHref}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="py-2.5 px-2 text-[15px] font-medium text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                      >
+                        {section.browseAllLabel}
+                      </Link>
+                    </>
+                  ) : null}
+                  {section.subcategories.map((group) => (
+                    <div key={`${section.id}-${group.heading}`} className="mt-2">
+                      <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">{group.heading}</p>
+                      {group.links.map((link) => (
+                        <Link
+                          key={`${link.href}-${link.label}`}
+                          href={link.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="py-2.5 px-2 pl-4 text-[15px] text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               ))}
               {dropdownCategories.map((cat) => (
                 <Link

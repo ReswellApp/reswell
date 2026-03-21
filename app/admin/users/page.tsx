@@ -102,14 +102,25 @@ export default function AdminUsersPage() {
   }
 
   async function toggleVerified(userId: string, currentStatus: boolean) {
+    const nextVerified = !currentStatus
     const { error } = await supabase
       .from('profiles')
-      .update({ shop_verified: !currentStatus })
+      .update(
+        nextVerified
+          ? {
+              shop_verified: true,
+              shop_verified_at: new Date().toISOString(),
+            }
+          : {
+              shop_verified: false,
+              shop_verified_at: null,
+            }
+      )
       .eq('id', userId)
 
     if (!error) {
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, shop_verified: !currentStatus } : u))
-      toast.success(!currentStatus ? 'Verified seller badge granted' : 'Verified seller badge removed')
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, shop_verified: nextVerified } : u))
+      toast.success(nextVerified ? 'Verified seller badge granted' : 'Verified seller badge removed')
     } else {
       toast.error('Failed to update user')
     }

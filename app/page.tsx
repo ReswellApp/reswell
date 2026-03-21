@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
+import { capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -17,20 +17,32 @@ import {
   Recycle,
   Users,
   Store,
+  UserCheck,
 } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
 
 const categories = [
-  { name: "Surfboards", href: "/boards" },
-  { name: "Wetsuits", href: "/used/wetsuits" },
-  { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
-  { name: "Fins", href: "/used/fins" },
-  { name: "Leashes", href: "/used/leashes" },
-  { name: "Board Bags", href: "/used/board-bags" },
-  { name: "Collectibles & Vintage", href: "/used/collectibles-vintage" },
+  { name: "Surfboards", href: "/boards", section: "surfboards", slug: null },
+  { name: "Wetsuits", href: "/used/wetsuits", section: "used", slug: "wetsuits" },
+  { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle", section: "used", slug: "apparel-lifestyle" },
+  { name: "Fins", href: "/used/fins", section: "used", slug: "fins" },
+  { name: "Leashes", href: "/used/leashes", section: "used", slug: "leashes" },
+  { name: "Board Bags", href: "/used/board-bags", section: "used", slug: "board-bags" },
+  { name: "Collectibles & Vintage", href: "/used/collectibles-vintage", section: "used", slug: "collectibles-vintage" },
 ]
+
+function listingPublicHref(listing: {
+  id: string
+  slug?: string | null
+  section: string
+}): string {
+  const slugOrId = listing.slug || listing.id
+  if (listing.section === "surfboards") return `/boards/${slugOrId}`
+  if (listing.section === "new") return `/shop/${listing.id}`
+  return `/used/${slugOrId}`
+}
 
 const features = [
   {
@@ -123,10 +135,82 @@ export default async function HomePage() {
         .slice(0, 4)
     : null
 
+  // Recently verified sellers: each card shows their single most expensive active listing + profile
+  const verifiedForSpotlightFields =
+    "id, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified, shop_verified_at, updated_at"
+  const { data: recentVerifiedProfiles } = await supabase
+    .from("profiles")
+    .select(verifiedForSpotlightFields)
+    .eq("shop_verified", true)
+    .order("shop_verified_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
+    .limit(24)
+
+  const verifiedProfileIds = (recentVerifiedProfiles ?? []).map((p) => p.id)
+  type ListingRow = NonNullable<typeof rawFeaturedBoards>[number]
+  let verifiedSpotlight: { profile: NonNullable<typeof recentVerifiedProfiles>[number]; listing: ListingRow }[] = []
+
+  if (verifiedProfileIds.length > 0) {
+    const { data: listingsForVerified } = await supabase
+      .from("listings")
+      .select(
+        `
+        *,
+        listing_images (url),
+        profiles (display_name, avatar_url, sales_count, shop_verified)
+      `
+      )
+      .in("user_id", verifiedProfileIds)
+      .eq("status", "active")
+
+    const bestByUser = new Map<string, ListingRow>()
+    for (const listing of (listingsForVerified ?? []) as ListingRow[]) {
+      const uid = listing.user_id
+      const prev = bestByUser.get(uid)
+      const price = Number(listing.price)
+      if (!prev || price > Number(prev.price)) {
+        bestByUser.set(uid, listing)
+      }
+    }
+
+    for (const profile of recentVerifiedProfiles ?? []) {
+      const listing = bestByUser.get(profile.id)
+      if (listing) {
+        verifiedSpotlight.push({ profile, listing })
+        if (verifiedSpotlight.length >= 4) break
+      }
+    }
+  }
+
+  // Fetch one recent listing per homepage category
+  const { data: allCategoryListings } = await supabase
+    .from("listings")
+    .select(`
+      *,
+      listing_images (url),
+      categories (slug),
+      profiles (display_name, avatar_url, sales_count, shop_verified)
+    `)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(200)
+
+  const categoryLatest = new Map<string, NonNullable<typeof allCategoryListings>[number]>()
+  for (const cat of categories) {
+    const match = (allCategoryListings ?? []).find((l) => {
+      if (cat.slug === null) return l.section === "surfboards"
+      const catSlug = Array.isArray(l.categories) ? (l.categories as any)[0]?.slug : (l.categories as any)?.slug
+      return catSlug === cat.slug
+    })
+    if (match) categoryLatest.set(cat.name, match)
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   const featuredListingIds = [
     ...(featuredUsed ?? []).map((l) => l.id),
     ...(featuredBoards ?? []).map((b) => b.id),
+    ...verifiedSpotlight.map(({ listing }) => listing.id),
+    ...Array.from(categoryLatest.values()).map((l) => l.id),
   ]
   let favoritedIds: string[] = []
   if (user && featuredListingIds.length > 0) {
@@ -149,7 +233,7 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-white/55" aria-hidden />
           <div className="container mx-auto relative z-10 py-20 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
-              <Badge variant="secondary" className="mb-4 hover:bg-secondary/70">
+              <Badge variant="secondary" className="mb-4">
                 The Surf Community Marketplace
               </Badge>
               <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl text-balance">
@@ -174,67 +258,289 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Marketplace Sections */}
-        <section className="py-16">
-          <div className="container mx-auto">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* Used Gear */}
-              <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Recycle className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-semibold">Used Gear</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Peer-to-peer marketplace for pre-loved surf accessories. Great deals on quality gear.
-                  </p>
-                  <Button variant="link" className="mt-4 p-0" asChild>
-                    <Link href="/used">
-                      Browse Used
-                      <ArrowRight className="ml-1 h-4 w-4" />
+        {/* Featured Used Gear */}
+        {featuredUsed && featuredUsed.length > 0 && (
+          <section className="py-16">
+            <div className="container mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold">Featured Used Gear</h2>
+                  <p className="text-muted-foreground">Pre-loved items from the community</p>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link href="/used">
+                    View All
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {featuredUsed.map((listing) => (
+                  <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                    <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
+                      <div className="aspect-square relative bg-muted overflow-hidden">
+                        {listing.listing_images?.[0]?.url ? (
+                          <Image
+                            src={listing.listing_images[0].url || "/placeholder.svg"}
+                            alt={capitalizeWords(listing.title)}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                            No Image
+                          </div>
+                        )}
+                        <FavoriteButtonCardOverlay
+                          listingId={listing.id}
+                          initialFavorited={favoritedIds.includes(listing.id)}
+                          isLoggedIn={!!user}
+                        />
+                      </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
+                        <p className="text-lg font-bold text-primary mt-1">
+                          ${listing.price.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                          {getPublicSellerDisplayName(listing.profiles)}
+                          {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
+                        </p>
+                      </CardContent>
                     </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Surfboards */}
-              <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-black text-white">
-                    <Users className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-semibold">Surfboards</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Find surfboards in your area for in-person pickup. Inspect before you buy.
-                  </p>
-                  <Button variant="link" className="mt-4 p-0" asChild>
-                    <Link href="/boards">
-                      Find Boards
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Sellers */}
-              <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Store className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-semibold">Sellers</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Browse local surf sellers and retail stores listing their inventory.
-                  </p>
-                  <Button variant="link" className="mt-4 p-0" asChild>
-                    <Link href="/sellers">
-                      Browse Sellers
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
+                    <div className="px-4 pb-4 pt-0">
+                      <MessageListingButton
+                        listingId={listing.id}
+                        sellerId={listing.user_id}
+                        redirectPath={`/used/${listing.slug || listing.id}`}
+                      />
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
+          </section>
+        )}
+
+        {/* Features CTA */}
+        <section className="py-8">
+          <div className="container mx-auto">
+            <Link href="/sell" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+              <div>
+                <p className="text-lg font-semibold text-foreground">Give your gear a second life</p>
+                <p className="text-muted-foreground mt-1">
+                  Secure payments, verified sellers, direct messaging, shipping, and local pickup — all in one place.
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+                Start selling
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          </div>
+        </section>
+
+        {/* Featured Surfboards */}
+        {featuredBoards && featuredBoards.length > 0 && (
+          <section className="py-16">
+            <div className="container mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold">Recently added surfboards</h2>
+                  <p className="text-muted-foreground">In-person pickup only</p>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link href="/boards">
+                    Find More
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {featuredBoards.map((board) => (
+                  <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                    <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
+                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                        {board.listing_images?.[0]?.url ? (
+                          <Image
+                            src={board.listing_images[0].url || "/placeholder.svg"}
+                            alt={capitalizeWords(board.title)}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                            No Image
+                          </div>
+                        )}
+                        <FavoriteButtonCardOverlay
+                          listingId={board.id}
+                          initialFavorited={favoritedIds.includes(board.id)}
+                          isLoggedIn={!!user}
+                        />
+                      </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
+                        <p className="text-lg font-bold text-primary mt-1">
+                          ${board.price.toFixed(2)}
+                        </p>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {[board.city, board.state].filter(Boolean).join(", ") || "Location not set"}
+                        </div>
+                      </CardContent>
+                    </Link>
+                    <div className="px-4 pb-4 pt-0">
+                      <MessageListingButton
+                        listingId={board.id}
+                        sellerId={board.user_id}
+                        redirectPath={`/boards/${board.slug || board.id}`}
+                      />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Confidence banner */}
+        <section className="py-8">
+          <div className="container mx-auto">
+            <Link href="/contact" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+              <div>
+                <p className="text-lg font-semibold text-foreground">Buy and sell with confidence!</p>
+                <p className="text-muted-foreground mt-1">
+                  All transactions on Reswell are backed by verified sellers and secure payments. Contact our support team anytime for help.
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+                Contact us
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          </div>
+        </section>
+
+        {/* Recently verified sellers — top-priced listing + profile */}
+        {verifiedSpotlight.length > 0 && (
+          <section className="py-16 bg-offwhite">
+            <div className="container mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold">Recently verified users</h2>
+                  <p className="text-muted-foreground">
+                    Each seller&apos;s priciest active listing right now, with their profile below
+                  </p>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link href="/sellers">
+                    Browse sellers
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {verifiedSpotlight.map(({ profile, listing }) => {
+                  const href = listingPublicHref(listing)
+                  const sellerLabel =
+                    profile.shop_name?.trim() || getPublicSellerDisplayName(profile)
+                  const locationLine = [listing.city, listing.state].filter(Boolean).join(", ")
+                  return (
+                    <Card
+                      key={`${profile.id}-${listing.id}`}
+                      className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
+                    >
+                      <Link href={href} className="flex-1 flex flex-col">
+                        <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                          {listing.listing_images?.[0]?.url ? (
+                            <Image
+                              src={listing.listing_images[0].url || "/placeholder.svg"}
+                              alt={capitalizeWords(listing.title)}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              style={{ objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                              No Image
+                            </div>
+                          )}
+                          <FavoriteButtonCardOverlay
+                            listingId={listing.id}
+                            initialFavorited={favoritedIds.includes(listing.id)}
+                            isLoggedIn={!!user}
+                          />
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
+                          <p className="text-lg font-bold text-primary mt-1">
+                            ${Number(listing.price).toFixed(2)}
+                          </p>
+                          {locationLine ? (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              {locationLine}
+                            </div>
+                          ) : null}
+                        </CardContent>
+                      </Link>
+                      <div className="border-t border-border/60 bg-muted/40 px-4 py-3">
+                        <Link
+                          href={`/sellers/${profile.id}`}
+                          className="flex items-center gap-3 rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-muted/80"
+                        >
+                          <Avatar className="h-10 w-10 border border-border shrink-0">
+                            <AvatarImage
+                              src={profile.shop_logo_url || profile.avatar_url || ""}
+                              alt=""
+                            />
+                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                              {sellerLabel.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="font-medium text-sm line-clamp-1 text-foreground">{sellerLabel}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <UserCheck className="h-3 w-3 shrink-0" />
+                              Verified seller
+                            </p>
+                          </div>
+                          <VerifiedBadge size="md" className="shrink-0" />
+                        </Link>
+                      </div>
+                      <div className="px-4 pb-4 pt-0">
+                        <MessageListingButton
+                          listingId={listing.id}
+                          sellerId={listing.user_id}
+                          redirectPath={href}
+                        />
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* CTA */}
+        <section className="py-8">
+          <div className="container mx-auto">
+            <Link href="/auth/sign-up" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+              <div>
+                <p className="text-lg font-semibold text-foreground">Ready to ride the wave?</p>
+                <p className="text-muted-foreground mt-1">
+                  Join our community of surfers and start buying, selling, or trading today.
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+                Create account
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
           </div>
         </section>
 
@@ -250,52 +556,96 @@ export default async function HomePage() {
                 </Link>
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
-              {categories.map((category) => (
-                <Link
-                  key={category.href}
-                  href={category.href}
-                  className="group flex flex-col items-center justify-center rounded-xl bg-muted p-4 text-center transition-all hover:bg-primary/5 hover:shadow-md min-h-[80px]"
-                >
-                  <span className="text-sm font-medium">{category.name}</span>
-                </Link>
-              ))}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {categories.map((category) => {
+                const listing = categoryLatest.get(category.name)
+                if (!listing) {
+                  return (
+                    <Link
+                      key={category.href}
+                      href={category.href}
+                      className="group flex flex-col items-center justify-center rounded-xl bg-muted p-4 text-center transition-all hover:bg-primary/5 hover:shadow-md min-h-[80px]"
+                    >
+                      <span className="text-sm font-medium">{category.name}</span>
+                    </Link>
+                  )
+                }
+                const href = listingPublicHref(listing)
+                return (
+                  <Card key={category.href} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                    <Link href={href} className="flex-1 flex flex-col">
+                      <div className="aspect-square relative bg-muted overflow-hidden">
+                        {listing.listing_images?.[0]?.url ? (
+                          <Image
+                            src={listing.listing_images[0].url || "/placeholder.svg"}
+                            alt={capitalizeWords(listing.title)}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            style={{ objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                            No Image
+                          </div>
+                        )}
+                        <FavoriteButtonCardOverlay
+                          listingId={listing.id}
+                          initialFavorited={favoritedIds.includes(listing.id)}
+                          isLoggedIn={!!user}
+                        />
+                      </div>
+                      <CardContent className="p-4">
+                        <Badge variant="secondary" className="mb-2 text-xs">
+                          {category.name}
+                        </Badge>
+                        <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
+                        <p className="text-lg font-bold text-primary mt-1">
+                          ${Number(listing.price).toFixed(2)}
+                        </p>
+                      </CardContent>
+                    </Link>
+                    <div className="px-4 pb-3 pt-0">
+                      <Link
+                        href={category.href}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                      >
+                        All {category.name}
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </Card>
+                )
+              })}
             </div>
           </div>
         </section>
 
         {/* Ocean images */}
-        <section className="py-6 md:py-8">
-          <div className="container mx-auto max-w-4xl md:max-w-5xl">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
-                <img
-                  src="/images/home/wave-1.png"
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
-                <img
-                  src="/images/home/wave-2.png"
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
-                <img
-                  src="/images/home/wave-3.png"
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-md">
-                <img
-                  src="/images/home/wave-4.png"
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </div>
+        <section className="py-8 md:py-12">
+          <div className="container mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              {[
+                { src: "/images/home/wave-1.png", heading: "Effortless", sub: "From listing to lineup" },
+                { src: "/images/home/wave-2.png", heading: "Local", sub: "Right down the coast" },
+                { src: "/images/home/wave-3.png", heading: "Trusted", sub: "No scams. No guesswork." },
+                { src: "/images/home/wave-4.png", heading: "Better", sub: "This is how it should be" },
+              ].map(({ src, heading, sub }) => (
+                <div key={heading} className="relative aspect-[3/2] overflow-hidden rounded-lg">
+                  <img
+                    src={src}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/25 flex flex-col items-center justify-center text-center px-3">
+                    <span className="font-[family-name:var(--font-caveat)] text-white text-3xl sm:text-4xl md:text-5xl font-bold drop-shadow-lg select-none">
+                      {heading}
+                    </span>
+                    <span className="text-white text-xs sm:text-sm mt-1 drop-shadow select-none">
+                      {sub}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -364,71 +714,6 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* Featured Used Gear */}
-        {featuredUsed && featuredUsed.length > 0 && (
-          <section className="py-16">
-            <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold">Featured Used Gear</h2>
-                  <p className="text-muted-foreground">Pre-loved items from the community</p>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/used">
-                    View All
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {featuredUsed.map((listing) => (
-                  <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-square relative bg-muted overflow-hidden">
-                        {listing.listing_images?.[0]?.url ? (
-                          <Image
-                            src={listing.listing_images[0].url || "/placeholder.svg"}
-                            alt={capitalizeWords(listing.title)}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                            No Image
-                          </div>
-                        )}
-                        <FavoriteButtonCardOverlay
-                          listingId={listing.id}
-                          initialFavorited={favoritedIds.includes(listing.id)}
-                          isLoggedIn={!!user}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                        <p className="text-lg font-bold text-primary mt-1">
-                          ${listing.price.toFixed(2)}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                          {getPublicSellerDisplayName(listing.profiles)}
-                          {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
-                        </p>
-                      </CardContent>
-                    </Link>
-                    <div className="px-4 pb-4 pt-0">
-                      <MessageListingButton
-                        listingId={listing.id}
-                        sellerId={listing.user_id}
-                        redirectPath={`/used/${listing.slug || listing.id}`}
-                      />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
         {/* Featured New Gear */}
         {featuredNew && featuredNew.length > 0 && (
           <section className="py-16 bg-offwhite">
@@ -485,108 +770,6 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* Featured Surfboards */}
-        {featuredBoards && featuredBoards.length > 0 && (
-          <section className="py-16">
-            <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold">Recently added surfboards</h2>
-                  <p className="text-muted-foreground">In-person pickup only</p>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/boards">
-                    Find More
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {featuredBoards.map((board) => (
-                  <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                        {board.listing_images?.[0]?.url ? (
-                          <Image
-                            src={board.listing_images[0].url || "/placeholder.svg"}
-                            alt={capitalizeWords(board.title)}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                            No Image
-                          </div>
-                        )}
-                        <FavoriteButtonCardOverlay
-                          listingId={board.id}
-                          initialFavorited={favoritedIds.includes(board.id)}
-                          isLoggedIn={!!user}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
-                        <p className="text-lg font-bold text-primary mt-1">
-                          ${board.price.toFixed(2)}
-                        </p>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          {[board.city, board.state].filter(Boolean).join(", ") || "Location not set"}
-                        </div>
-                      </CardContent>
-                    </Link>
-                    <div className="px-4 pb-4 pt-0">
-                      <MessageListingButton
-                        listingId={board.id}
-                        sellerId={board.user_id}
-                        redirectPath={`/boards/${board.slug || board.id}`}
-                      />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Features */}
-        <section className="py-16 bg-primary/5">
-          <div className="container mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-12">Why Choose Reswell?</h2>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map((feature) => (
-                <div key={feature.title} className="text-center">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <feature.icon className="h-7 w-7" />
-                  </div>
-                  <h3 className="font-semibold">{feature.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{feature.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-20">
-          <div className="container mx-auto">
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold">Ready to Ride the Wave?</h2>
-              <p className="mt-4 text-muted-foreground">
-                Join our community of surfers and start buying, selling, or trading today.
-              </p>
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" asChild>
-                  <Link href="/auth/sign-up">Create Account</Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <Link href="/used">Start Browsing</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer />

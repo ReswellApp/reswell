@@ -1,7 +1,7 @@
 import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
-import { Inter } from 'next/font/google'
+import { Inter, Caveat } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
@@ -11,6 +11,7 @@ import type { Locale } from '@/lib/translations'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat' })
 
 export const metadata: Metadata = {
   title: 'Reswell - Buy & Sell Surfing Gear',
@@ -37,7 +38,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="overflow-x-hidden">
-      <body className={`${inter.variable} font-sans antialiased bg-white text-midgray min-h-dvh overflow-x-hidden`}>
+      <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-white text-midgray min-h-dvh overflow-x-hidden`}>
         <LocaleProvider initialLocale={locale}>
           {children}
           <Toaster />

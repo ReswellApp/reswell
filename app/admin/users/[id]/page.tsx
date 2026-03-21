@@ -110,7 +110,11 @@ export default function AdminUserDetailPage() {
     const next = !profile.shop_verified
     const { error } = await supabase
       .from('profiles')
-      .update({ shop_verified: next })
+      .update(
+        next
+          ? { shop_verified: true, shop_verified_at: new Date().toISOString() }
+          : { shop_verified: false, shop_verified_at: null }
+      )
       .eq('id', id)
     if (!error) {
       setProfile({ ...profile, shop_verified: next })

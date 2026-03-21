@@ -18,7 +18,6 @@ export const surfboardBrowseLinks: CategoryLink[] = [
 
 /** Every used-gear category filter (slug on /used). Includes browse-all for nav dropdown. */
 export const usedCategoryLinks: CategoryLink[] = [
-  { label: "All Gear", href: "/used" },
   { label: "Wetsuits", href: "/used/wetsuits" },
   { label: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
   { label: "Fins", href: "/used/fins" },
@@ -26,6 +25,7 @@ export const usedCategoryLinks: CategoryLink[] = [
   { label: "Board Bags", href: "/used/board-bags" },
   { label: "Surfpacks & Bags", href: "/used/backpacks" },
   { label: "Collectibles & Vintage", href: "/used/collectibles-vintage" },
+  { label: "All Gear", href: "/used" },
 ]
 
 /** Full list for the Categories dropdown (includes surfboards for deep links). */
@@ -343,3 +343,50 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
     ],
   },
 ]
+
+const HEADER_CATEGORIES_DROPDOWN_IDS = new Set(["surfboards", "fins", "surfpacks"])
+
+/** Surfboard shapes shown in the header Categories dropdown only (full list stays on /categories). */
+const headerSurfboardsDropdownShapes: CategoryLink[] = [
+  { label: "Shortboard", href: "/boards?type=shortboard" },
+  { label: "Fish", href: "/boards?type=fish" },
+  { label: "Longboard", href: "/boards?type=longboard" },
+]
+
+/** Fin box types in the header Categories dropdown (`brand` matches fins filters). */
+const headerFinsDropdownBrands: CategoryLink[] = [
+  { label: "Futures", href: "/used/fins?brand=Futures" },
+  { label: "FCS", href: "/used/fins?brand=FCS" },
+]
+
+/** Surfpacks vs bags in the header Categories dropdown (`pack` matches backpacks filters). */
+const headerSurfpacksDropdownTypes: CategoryLink[] = [
+  { label: "Surfpacks", href: "/used/backpacks?pack=surfpack" },
+  { label: "Bags", href: "/used/backpacks?pack=bag" },
+]
+
+/** Subcategory submenus in the header Categories dropdown only (all sections remain on /categories). */
+export const headerCategoriesDropdownSections: AdvancedCategorySection[] =
+  advancedCategorySections
+    .filter((s) => HEADER_CATEGORIES_DROPDOWN_IDS.has(s.id))
+    .map((s) => {
+      if (s.id === "surfboards") {
+        return {
+          ...s,
+          subcategories: [{ heading: "Surfboards", links: headerSurfboardsDropdownShapes }],
+        }
+      }
+      if (s.id === "fins") {
+        return {
+          ...s,
+          subcategories: [{ heading: "Fins", links: headerFinsDropdownBrands }],
+        }
+      }
+      if (s.id === "surfpacks") {
+        return {
+          ...s,
+          subcategories: [{ heading: "Surfpacks & Bags", links: headerSurfpacksDropdownTypes }],
+        }
+      }
+      return s
+    })
