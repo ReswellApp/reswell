@@ -6,12 +6,17 @@ import { SearchSectionFilters } from "./search-section-filters"
 import type { RecentListing } from "@/app/used/recent/recent-feed-client"
 import { RecentFeedClient } from "@/app/used/recent/recent-feed-client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
-import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
+import {
+  meaningfulSearchTerms,
+  searchListingIdsFromElasticsearch,
+} from "@/lib/elasticsearch/listings-index"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 
 interface SearchParams {
   q?: string
   section?: string
+  /** Set when opening search with no query — curated recent feed (bookmarkable). */
+  view?: string
 }
 
 const LIMIT = 48
@@ -28,6 +33,7 @@ export default async function SearchPage(props: {
     | "all"
     | "used"
     | "boards"
+  const curatedView = !rawQuery
 
   const supabase = await createClient()
 
@@ -56,15 +62,29 @@ export default async function SearchPage(props: {
               {rawQuery ? (
                 <>Results for &ldquo;{rawQuery}&rdquo;</>
               ) : (
-                <>Marketplace search</>
+                <>Recently listed for you</>
               )}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Use the search bar in the header to find gear and boards.
-              {isElasticsearchConfigured() && (
-                <span className="mt-1 block text-xs text-muted-foreground/80">
-                  Results use Elasticsearch when the index is populated.
-                </span>
+              {rawQuery ? (
+                <>
+                  Use the search bar in the header to refine results.
+                  {isElasticsearchConfigured() && (
+                    <span className="mt-1 block text-xs text-muted-foreground/80">
+                      Results use Elasticsearch when the index is populated.
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  A curated mix of new listings, favoring active sellers, then freshest posts. Use
+                  the header search to look up gear and boards.
+                  {searchParams.view === "recent" && (
+                    <span className="mt-1 block text-xs text-muted-foreground/80">
+                      Bookmark this page — <code className="rounded bg-muted px-1 py-0.5 text-[11px]">/search?view=recent</code>
+                    </span>
+                  )}
+                </>
               )}
             </p>
           </div>
@@ -76,6 +96,7 @@ export default async function SearchPage(props: {
             section={sectionParam}
             usedCount={usedCount}
             boardsCount={boardsCount}
+            curated={curatedView}
           />
         </Suspense>
 
@@ -87,7 +108,7 @@ export default async function SearchPage(props: {
             emptyMessage={
               rawQuery
                 ? "No listings match your search. Try different keywords or filters."
-                : "No active listings to show. Use the header search or browse Used Gear and Surfboards."
+                : "No listings to show yet. Check back soon or browse Used Gear and Surfboards."
             }
           />
         </section>
@@ -106,6 +127,15 @@ async function resolveSearchListings(
   usedCount: number
   boardsCount: number
 }> {
+  if (!rawQuery.trim()) {
+    const r = await fetchCuratedRecentListings(supabase, section, LIMIT)
+    return {
+      listings: r.listings,
+      usedCount: r.used,
+      boardsCount: r.boards,
+    }
+  }
+
   let listings: RecentListing[] = []
   let usedCount = 0
   let boardsCount = 0
@@ -150,6 +180,76 @@ async function resolveSearchListings(
   }
 
   return { listings, usedCount, boardsCount }
+}
+
+/** No text query: show curated recents (seller activity + freshness), not raw ES / full-table sort. */
+async function fetchCuratedRecentListings(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  section: "all" | "used" | "boards",
+  limit: number,
+): Promise<{
+  listings: RecentListing[]
+  used: number
+  boards: number
+}> {
+  const pool = Math.min(120, Math.max(limit * 4, 48))
+  let q = supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      user_id,
+      title,
+      price,
+      condition,
+      section,
+      city,
+      state,
+      shipping_available,
+      board_type,
+      length_feet,
+      length_inches,
+      created_at,
+      listing_images (url, is_primary),
+      profiles (display_name, avatar_url, location, sales_count),
+      categories (name, slug)
+    `,
+    )
+    .eq("status", "active")
+
+  if (section === "used") {
+    q = q.eq("section", "used")
+  } else if (section === "boards") {
+    q = q.eq("section", "surfboards")
+  } else {
+    q = q.in("section", ["used", "surfboards"])
+  }
+
+  q = q.order("created_at", { ascending: false }).limit(pool)
+  const { data: rows, error } = await q
+
+  if (error || !rows?.length) {
+    const fallback = await buildSearchFromSupabase(supabase, "", section, limit)
+    return { listings: fallback.listings, used: fallback.used, boards: fallback.boards }
+  }
+
+  const sorted = [...rows].sort((a: any, b: any) => {
+    const sa = a.profiles?.sales_count ?? 0
+    const sb = b.profiles?.sales_count ?? 0
+    if (sb !== sa) return sb - sa
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
+
+  const [usedRes, boardsRes] = await Promise.all([
+    buildSearchQuery(supabase, "", "used", 1),
+    buildSearchQuery(supabase, "", "boards", 1),
+  ])
+
+  return {
+    listings: sorted.slice(0, limit).map((row) => rowToRecentListing(row)),
+    used: usedRes.count,
+    boards: boardsRes.count,
+  }
 }
 
 async function getSectionCounts(
@@ -256,19 +356,33 @@ async function buildSearchQuery(
   }
 
   if (rawQuery) {
-    const terms = rawQuery
-      .split(/\s+/)
-      .map((t) => t.trim())
-      .filter(Boolean)
-    if (terms.length > 0) {
-      const orParts: string[] = []
-      for (const term of terms) {
+    const meaningful = meaningfulSearchTerms(rawQuery)
+    if (meaningful.length > 0) {
+      // AND across terms (each term may match title, description, or brand) — aligns with ES relevance
+      for (const term of meaningful) {
         const safe = term.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
         const pattern = `"%${safe}%"`
-        orParts.push(`title.ilike.${pattern}`)
-        orParts.push(`description.ilike.${pattern}`)
+        query = query.or(
+          `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern}`,
+        )
       }
-      query = query.or(orParts.join(","))
+    } else {
+      // Digits-only / symbols — lenient: any whitespace token can match
+      const terms = rawQuery
+        .split(/\s+/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+      if (terms.length > 0) {
+        const orParts: string[] = []
+        for (const term of terms) {
+          const safe = term.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+          const pattern = `"%${safe}%"`
+          orParts.push(`title.ilike.${pattern}`)
+          orParts.push(`description.ilike.${pattern}`)
+          orParts.push(`brand.ilike.${pattern}`)
+        }
+        query = query.or(orParts.join(","))
+      }
     }
   }
 

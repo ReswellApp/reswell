@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState, useEffect, useRef, Suspense } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -32,7 +32,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
-import { readNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
+import { clearNavSearchQuery } from "@/lib/nav-search-storage"
+import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 const navigation = [
@@ -56,12 +57,13 @@ export function Header() {
   const mobileSearchRef = useRef<HTMLInputElement>(null)
   const pathname = usePathname()
   const router = useRouter()
+  const headerSearchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
     if (searchOpen) {
-      const saved = readNavSearchQuery()
-      if (saved) setSearchQuery(saved)
+      setSearchQuery("")
+      clearNavSearchQuery()
     }
   }, [searchOpen])
 
@@ -138,7 +140,7 @@ export function Header() {
 
   useEffect(() => {
     if (mobileMenuOpen && mobileSearchRef.current) {
-      mobileSearchRef.current.value = readNavSearchQuery()
+      mobileSearchRef.current.value = ""
     }
   }, [mobileMenuOpen])
 
@@ -217,14 +219,20 @@ export function Header() {
                 sideOffset={8}
               >
                 <form
-                  onSubmit={(e) => {
+                  onSubmit={async (e) => {
                     e.preventDefault()
                     const q = searchQuery.trim()
-                    if (q) {
-                      writeNavSearchQuery(q)
-                      router.push(`/search?q=${encodeURIComponent(q)}`)
+                    if (!q) {
+                      clearNavSearchQuery()
+                      setSearchQuery("")
                       setSearchOpen(false)
+                      await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+                      return
                     }
+                    router.push(`/search?q=${encodeURIComponent(q)}`)
+                    setSearchQuery("")
+                    clearNavSearchQuery()
+                    setSearchOpen(false)
                   }}
                   className="flex gap-3"
                 >
@@ -233,9 +241,14 @@ export function Header() {
                       value={searchQuery}
                       onChange={setSearchQuery}
                       onSelect={(text) => {
-                        setSearchQuery(text)
-                        writeNavSearchQuery(text)
                         router.push(`/search?q=${encodeURIComponent(text)}`)
+                        setSearchQuery("")
+                        clearNavSearchQuery()
+                        setSearchOpen(false)
+                      }}
+                      onNavigate={() => {
+                        setSearchQuery("")
+                        clearNavSearchQuery()
                         setSearchOpen(false)
                       }}
                       placeholder="Search gear, boards, wetsuits..."
@@ -465,15 +478,20 @@ export function Header() {
                   type="search"
                   placeholder="Search..."
                   className="min-w-0 flex-1 rounded-lg border-border min-h-touch"
-                  onKeyDown={(e) => {
+                  onKeyDown={async (e) => {
                     if (e.key === "Enter") {
                       e.preventDefault()
                       const q = (e.currentTarget.value || "").trim()
-                      if (q) {
-                        writeNavSearchQuery(q)
-                        router.push(`/search?q=${encodeURIComponent(q)}`)
+                      if (!q) {
+                        clearNavSearchQuery()
                         setMobileMenuOpen(false)
+                        await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+                        return
                       }
+                      router.push(`/search?q=${encodeURIComponent(q)}`)
+                      e.currentTarget.value = ""
+                      clearNavSearchQuery()
+                      setMobileMenuOpen(false)
                     }
                   }}
                 />
@@ -481,13 +499,19 @@ export function Header() {
                   type="button"
                   size="sm"
                   className="rounded-lg min-h-touch shrink-0"
-                  onClick={() => {
-                    const q = (mobileSearchRef.current?.value || "").trim()
-                    if (q) {
-                      writeNavSearchQuery(q)
-                      router.push(`/search?q=${encodeURIComponent(q)}`)
+                  onClick={async () => {
+                    const input = mobileSearchRef.current
+                    const q = (input?.value || "").trim()
+                    if (!q) {
+                      clearNavSearchQuery()
                       setMobileMenuOpen(false)
+                      await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+                      return
                     }
+                    router.push(`/search?q=${encodeURIComponent(q)}`)
+                    if (input) input.value = ""
+                    clearNavSearchQuery()
+                    setMobileMenuOpen(false)
                   }}
                 >
                   Search

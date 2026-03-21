@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-const MAX_TITLES = 8
-const MAX_CATEGORIES = 5
-const MAX_BRANDS = 8
-const MAX_LISTINGS = 6
+/** Returned to the client after dedupe / slice */
+const MAX_TITLES = 20
+const MAX_CATEGORIES = 12
+const MAX_BRANDS = 16
+const MAX_LISTINGS = 12
+/** Rows to scan before deduping distinct titles (same text match as listings). */
+const TITLE_SUGGEST_FETCH = 80
 
 export type SuggestListing = {
   id: string
@@ -70,15 +73,16 @@ export async function GET(request: NextRequest) {
       .select("title")
       .eq("status", "active")
       .in("section", sections)
-      .or(`title.ilike.${pattern}`)
-      .limit(MAX_TITLES * 2)
-      .order("created_at", { ascending: false }),
+      .or(textOr)
+      .order("created_at", { ascending: false })
+      .limit(TITLE_SUGGEST_FETCH),
     supabase
       .from("categories")
       .select("name, slug")
       .in("section", sections)
       .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
-      .limit(MAX_CATEGORIES),
+      .order("name", { ascending: true })
+      .limit(MAX_CATEGORIES * 3),
     supabase
       .from("listings")
       .select("brand")
@@ -86,7 +90,8 @@ export async function GET(request: NextRequest) {
       .in("section", sections)
       .not("brand", "is", null)
       .ilike("brand", `%${safe}%`)
-      .limit(MAX_BRANDS * 2),
+      .order("created_at", { ascending: false })
+      .limit(MAX_BRANDS * 4),
   ])
 
   const listings: SuggestListing[] = (listingsRes.data || []).map((row: any) => {

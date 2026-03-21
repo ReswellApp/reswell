@@ -1,15 +1,16 @@
 "use client"
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Search, X } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
-import { clearNavSearchQuery, readNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
+import { clearNavSearchQuery } from "@/lib/nav-search-storage"
+import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 
 /**
  * Desktop (md+): expandable search in the nav flex gap — does not overlap action buttons.
- * Stays open with the last query after search (URL on /search + sessionStorage elsewhere).
+ * Keeps the bar clear after search or suggestion so users can start a new search immediately.
  */
 export function HeaderNavSearch() {
   const router = useRouter()
@@ -18,28 +19,40 @@ export function HeaderNavSearch() {
   const [query, setQuery] = useState("")
   const [expanded, setExpanded] = useState(false)
   const inputWrapRef = useRef<HTMLDivElement>(null)
+  /** True when user opened search from the collapsed pill — focus input after mount (one click). */
+  const focusInputAfterExpandRef = useRef(false)
+  const prevPathnameRef = useRef(pathname)
+  /** Only clear the bar when the route *enters* /search, not on every ?q= / filter change (avoids killing the suggest dropdown). */
+  const prevPathForEnterSearchRef = useRef(pathname)
 
   const urlQ = pathname === "/search" ? (searchParams.get("q") ?? "").trim() : ""
 
-  // Sync from URL on /search
+  // When navigating onto /search, clear the bar once (URL still has q for results; input stays empty for the next search)
   useEffect(() => {
-    if (pathname === "/search") {
-      const q = (searchParams.get("q") ?? "").trim()
-      setQuery(q)
-      setExpanded(true)
-      if (q) writeNavSearchQuery(q)
-    }
-  }, [pathname, searchParams])
-
-  // Restore from session when leaving /search (keep bar expanded if we have a remembered query)
-  useEffect(() => {
-    if (pathname === "/search") return
-    const saved = readNavSearchQuery()
-    if (saved) {
-      setQuery(saved)
+    const prev = prevPathForEnterSearchRef.current
+    prevPathForEnterSearchRef.current = pathname
+    if (pathname === "/search" && prev !== "/search") {
+      setQuery("")
       setExpanded(true)
     }
   }, [pathname])
+
+  // Clear when navigating away from /search (e.g. clicked a listing)
+  useEffect(() => {
+    const prev = prevPathnameRef.current
+    prevPathnameRef.current = pathname
+    if (prev === "/search" && pathname !== "/search") {
+      setQuery("")
+      clearNavSearchQuery()
+    }
+  }, [pathname])
+
+  // After expanding from the pill, focus the search input (the opening click doesn’t reach the new input).
+  useLayoutEffect(() => {
+    if (!expanded || !focusInputAfterExpandRef.current) return
+    focusInputAfterExpandRef.current = false
+    inputWrapRef.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus()
+  }, [expanded])
 
   const runSearch = useCallback(
     (q: string) => {
@@ -49,15 +62,28 @@ export function HeaderNavSearch() {
       const params = new URLSearchParams()
       params.set("q", term)
       if (section && section !== "all") params.set("section", section)
-      writeNavSearchQuery(term)
       setExpanded(true)
       router.push(`/search?${params.toString()}`)
+      setQuery("")
+      clearNavSearchQuery()
     },
     [router, pathname, searchParams],
   )
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const clearSearchAndStorage = useCallback(() => {
+    setQuery("")
+    clearNavSearchQuery()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const term = query.trim()
+    if (!term) {
+      clearNavSearchQuery()
+      setQuery("")
+      await goToCuratedSearchPage(router, pathname, searchParams.toString())
+      return
+    }
     runSearch(query)
   }
 
@@ -72,17 +98,21 @@ export function HeaderNavSearch() {
 
   if (!showBar) {
     return (
-      <div className="hidden min-w-0 flex-1 items-center justify-center px-2 md:flex">
+      <div className="hidden min-w-0 w-full flex-1 items-center px-2 md:flex">
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="h-9 gap-2 rounded-full border border-border/80 bg-muted/30 px-3 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          className="h-9 w-full max-w-full justify-start gap-2.5 rounded-full border border-border/80 bg-muted/30 px-5 text-muted-foreground hover:bg-muted/60 hover:text-foreground sm:px-6"
           aria-label="Open search"
-          onClick={() => setExpanded(true)}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            focusInputAfterExpandRef.current = true
+            setExpanded(true)
+          }}
         >
           <Search className="h-4 w-4 shrink-0" />
-          <span className="text-sm font-normal">Search marketplace…</span>
+          <span className="text-sm font-normal leading-none">Search marketplace…</span>
         </Button>
       </div>
     )
@@ -91,7 +121,7 @@ export function HeaderNavSearch() {
   return (
     <div
       ref={inputWrapRef}
-      className="hidden min-w-0 flex-1 items-center px-2 md:flex md:max-w-2xl lg:max-w-3xl"
+      className="hidden min-w-0 w-full flex-1 items-center px-2 md:flex"
     >
       <form
         onSubmit={handleSubmit}
@@ -102,9 +132,9 @@ export function HeaderNavSearch() {
             value={query}
             onChange={setQuery}
             onSelect={(text) => {
-              setQuery(text)
               runSearch(text)
             }}
+            onNavigate={clearSearchAndStorage}
             placeholder="Search gear, boards, wetsuits…"
             section=""
             listboxId="header-nav-search-suggestions"

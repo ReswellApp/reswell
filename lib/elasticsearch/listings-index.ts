@@ -94,6 +94,127 @@ export async function deleteListingDocument(listingId: string): Promise<void> {
 
 export type SearchSectionFilter = "all" | "used" | "boards"
 
+const SEARCH_FIELDS = [
+  "title^3",
+  "description^2",
+  "category_name^2",
+  "brand^2",
+  "board_type",
+  "city",
+  "state",
+] as const
+
+/**
+ * Tokens that carry real search intent. Pure digits (e.g. from "6/4/3" thickness) are
+ * excluded so a single "6" cannot match unrelated listings like "Monsta 6".
+ */
+export function meaningfulSearchTerms(raw: string): string[] {
+  const s = raw.trim().toLowerCase()
+  if (!s) return []
+  const tokens = s.match(/[\w']+/g) ?? []
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const t of tokens) {
+    const core = t.replace(/^['']+|['']+$/g, "")
+    if (core.length < 2) continue
+    if (/^\d+$/.test(core)) continue
+    if (seen.has(core)) continue
+    seen.add(core)
+    out.push(core)
+  }
+  return out
+}
+
+/** How many distinct meaningful terms must match (spread across indexed fields). */
+function requiredMeaningfulMatches(meaningfulCount: number): number {
+  if (meaningfulCount <= 1) return 1
+  return Math.min(meaningfulCount, Math.max(2, Math.ceil(meaningfulCount * 0.65)))
+}
+
+/**
+ * Builds a bool query: requires a majority of meaningful terms (not lone digits),
+ * plus optional phrase boosts so exact titles rank higher.
+ */
+function buildListingsSearchQueryBody(filter: object[], rawQuery: string): object {
+  const q = rawQuery.trim()
+  const meaningful = meaningfulSearchTerms(q)
+
+  if (meaningful.length === 0) {
+    // Only digits / symbols / very short tokens — keep lenient but still use analyzed match
+    return {
+      bool: {
+        filter,
+        must: [
+          {
+            multi_match: {
+              query: q,
+              fields: [...SEARCH_FIELDS],
+              type: "best_fields",
+              tie_breaker: 0.2,
+              operator: "or",
+              fuzziness: "AUTO",
+            },
+          },
+        ],
+      },
+    }
+  }
+
+  const required = requiredMeaningfulMatches(meaningful.length)
+  const termClauses = meaningful.map((term) => ({
+    multi_match: {
+      query: term,
+      fields: [...SEARCH_FIELDS],
+      type: "best_fields",
+      operator: "or",
+    },
+  }))
+
+  return {
+    bool: {
+      filter,
+      must: [
+        {
+          bool: {
+            should: termClauses,
+            minimum_should_match: required,
+          },
+        },
+      ],
+      should: [
+        {
+          multi_match: {
+            query: q,
+            fields: ["title^4", "brand^3", "category_name^2"],
+            type: "phrase",
+            boost: 5,
+          },
+        },
+        {
+          multi_match: {
+            query: q,
+            fields: ["title^2", "description"],
+            type: "phrase",
+            slop: 2,
+            boost: 2,
+          },
+        },
+        {
+          multi_match: {
+            query: q,
+            fields: [...SEARCH_FIELDS],
+            type: "best_fields",
+            tie_breaker: 0.15,
+            operator: "or",
+            boost: 0.35,
+          },
+        },
+      ],
+      minimum_should_match: 0,
+    },
+  }
+}
+
 /**
  * Returns listing IDs in relevance order (then created_at).
  */
@@ -126,29 +247,7 @@ export async function searchListingIdsFromElasticsearch(
         index: ELASTICSEARCH_LISTINGS_INDEX,
         size: limit,
         _source: false,
-        query: {
-          bool: {
-            filter,
-            must: [
-              {
-                simple_query_string: {
-                  query: q,
-                  fields: [
-                    "title^3",
-                    "description^2",
-                    "category_name^2",
-                    "brand^2",
-                    "board_type",
-                    "city",
-                    "state",
-                  ],
-                  default_operator: "or",
-                  flags: "OR|AND|NOT|PHRASE|PREFIX",
-                },
-              },
-            ],
-          },
-        },
+        query: buildListingsSearchQueryBody(filter, q),
         sort: [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
       })
     : await es.search({

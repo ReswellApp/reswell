@@ -13,6 +13,8 @@ interface SearchSectionFiltersProps {
   section: Section
   usedCount: number
   boardsCount: number
+  /** True when showing curated recents (no keyword search). */
+  curated?: boolean
 }
 
 const SECTION_OPTIONS: { value: Section; label: string }[] = [
@@ -27,6 +29,7 @@ export function SearchSectionFilters({
   section,
   usedCount,
   boardsCount,
+  curated = false,
 }: SearchSectionFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -39,10 +42,13 @@ export function SearchSectionFilters({
     const sectionValue = (form.section?.value ?? "all") as Section
     const params = new URLSearchParams()
     const q = (searchParams.get("q") ?? query).trim()
-    if (q) params.set("q", q)
+    if (q) {
+      params.set("q", q)
+    } else {
+      params.set("view", "recent")
+    }
     if (sectionValue !== "all") params.set("section", sectionValue)
-    const search = params.toString()
-    router.push(search ? `/search?${search}` : "/search")
+    router.push(`/search?${params.toString()}`)
   }
 
   const getSectionLabel = (opt: (typeof SECTION_OPTIONS)[0]) => {
@@ -60,8 +66,10 @@ export function SearchSectionFilters({
               Filtering results for <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>
               <span className="hidden sm:inline"> — change keywords in the search bar above</span>
             </>
+          ) : curated ? (
+            "Curated recents — filter by used gear or surfboards below, or search from the header."
           ) : (
-            "Browse all active used gear and surfboards — use the search bar to narrow results"
+            "Browse active listings — use the search bar to narrow results."
           )}
         </p>
         <form

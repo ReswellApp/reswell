@@ -4,10 +4,14 @@ import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
+
+/** Max rows in the combined Suggestions list (titles / categories / brands). */
+const SUGGEST_COMBINED_CAP = 24
 
 export type SuggestListing = {
   id: string
@@ -47,6 +51,14 @@ interface SearchInputWithSuggestProps {
   autoFocus?: boolean
   /** Clear (×) inside the field when there is text (Pango-style). */
   showClearButton?: boolean
+  /** Called when user navigates from a listing or "View all results" — use to clear the input. */
+  onNavigate?: () => void
+  /**
+   * When false, the query-driven fetch still fills suggestions but does not open the menu.
+   * Prevents flashing after navigating to `/search` (URL sync + focused input).
+   * User can still open via focus (cached suggestions) or by typing on other routes.
+   */
+  autoOpenDropdownOnFetch?: boolean
 }
 
 function listingHref(listing: SuggestListing) {
@@ -57,6 +69,23 @@ function listingSectionLabel(section: string) {
   if (section === "surfboards") return "Surfboard"
   if (section === "used") return "Used gear"
   return "Listing"
+}
+
+async function fetchSearchSuggestionsJson(
+  q: string,
+  section: string,
+): Promise<{ data: SuggestResult; hasAny: boolean }> {
+  const params = new URLSearchParams({ q })
+  if (section) params.set("section", section)
+  const res = await fetch(`/api/search/suggest?${params.toString()}`)
+  const data: SuggestResult = await res.json()
+  const listings = data.listings ?? []
+  const hasAny =
+    listings.length > 0 ||
+    (data.titles?.length ?? 0) > 0 ||
+    (data.categories?.length ?? 0) > 0 ||
+    (data.brands?.length ?? 0) > 0
+  return { data, hasAny }
 }
 
 export function SearchInputWithSuggest({
@@ -76,6 +105,8 @@ export function SearchInputWithSuggest({
   disableSuggest = false,
   autoFocus = false,
   showClearButton = true,
+  autoOpenDropdownOnFetch = true,
+  onNavigate,
 }: SearchInputWithSuggestProps) {
   const [suggestions, setSuggestions] = useState<SuggestResult | null>(null)
   const [open, setOpen] = useState(false)
@@ -84,39 +115,76 @@ export function SearchInputWithSuggest({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+  /** Bumps when user dismisses or starts a new fetch; stale async results must not reopen the dropdown. */
+  const suggestGenerationRef = useRef(0)
+
+  const invalidatePendingSuggest = () => {
+    suggestGenerationRef.current += 1
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+      debounceRef.current = null
+    }
+  }
+
+  const isSearchInputFocused = () =>
+    Boolean(inputRef.current && document.activeElement === inputRef.current)
+
+  const applySuggestFetchResult = (
+    generation: number,
+    data: SuggestResult,
+    hasAny: boolean,
+    source: "valueEffect" | "focus",
+  ) => {
+    if (generation !== suggestGenerationRef.current) return
+    setSuggestions(hasAny ? data : null)
+    if (!hasAny) {
+      setOpen(false)
+      return
+    }
+    if (source === "focus") {
+      setOpen(isSearchInputFocused())
+      return
+    }
+    // Query changed (typing or parent sync). Never auto-open on /search-style parents.
+    if (!autoOpenDropdownOnFetch) {
+      setOpen(false)
+      return
+    }
+    setOpen(isSearchInputFocused())
+  }
 
   useEffect(() => {
     if (disableSuggest) return
     const q = value.trim()
     if (q.length < minLength) {
+      invalidatePendingSuggest()
       setSuggestions(null)
       setOpen(false)
+      setLoading(false)
       return
     }
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true)
-      try {
-        const params = new URLSearchParams({ q })
-        if (section) params.set("section", section)
-        const res = await fetch(`/api/search/suggest?${params.toString()}`)
-        const data: SuggestResult = await res.json()
-        const listings = data.listings ?? []
-        const hasAny =
-          listings.length > 0 ||
-          (data.titles?.length ?? 0) > 0 ||
-          (data.categories?.length ?? 0) > 0 ||
-          (data.brands?.length ?? 0) > 0
-        setSuggestions(hasAny ? data : null)
-        setOpen(hasAny)
-      } finally {
-        setLoading(false)
-      }
+    debounceRef.current = setTimeout(() => {
+      const generation = ++suggestGenerationRef.current
+      void (async () => {
+        if (generation !== suggestGenerationRef.current) return
+        if (q.length < minLength) return
+        setLoading(true)
+        try {
+          const { data, hasAny } = await fetchSearchSuggestionsJson(q, section)
+          if (generation !== suggestGenerationRef.current) return
+          applySuggestFetchResult(generation, data, hasAny, "valueEffect")
+        } finally {
+          if (generation === suggestGenerationRef.current) setLoading(false)
+        }
+      })()
     }, debounceMs)
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [value, section, minLength, debounceMs, disableSuggest])
+  }, [value, section, minLength, debounceMs, disableSuggest, autoOpenDropdownOnFetch])
 
   const listings = suggestions?.listings ?? []
   const listingTitlesLower = new Set(listings.map((l) => l.title.toLowerCase()))
@@ -125,12 +193,12 @@ export function SearchInputWithSuggest({
   /** Avoid duplicating brands/categories already shown in the rich strips. */
   const flatSuggestions =
     listings.length > 0
-      ? extraTitles.map((t) => ({ type: "title" as const, text: t })).slice(0, 12)
+      ? extraTitles.map((t) => ({ type: "title" as const, text: t })).slice(0, SUGGEST_COMBINED_CAP)
       : [
           ...(suggestions?.categories?.map((c) => ({ type: "category" as const, text: c })) ?? []),
           ...(suggestions?.brands?.map((b) => ({ type: "brand" as const, text: b })) ?? []),
           ...extraTitles.map((t) => ({ type: "title" as const, text: t })),
-        ].slice(0, 12)
+        ].slice(0, SUGGEST_COMBINED_CAP)
 
   const hasRichStrip =
     !disableSuggest &&
@@ -165,20 +233,29 @@ export function SearchInputWithSuggest({
       const target = e.target as Node
       if (containerRef.current?.contains(target)) return
       if (dropdownRef.current?.contains(target)) return
+      invalidatePendingSuggest()
       setOpen(false)
     }
     document.addEventListener("click", handleClickOutside)
     return () => document.removeEventListener("click", handleClickOutside)
   }, [])
 
+  /** After choosing a link result: kill stale fetches, clear cache, blur so focus doesn’t reopen the menu. */
+  const dismissForNavigation = () => {
+    invalidatePendingSuggest()
+    setOpen(false)
+    setSuggestions(null)
+    setLoading(false)
+    if (inputRef.current && document.activeElement === inputRef.current) inputRef.current.blur()
+  }
+
   const handleSelect = (text: string) => {
+    invalidatePendingSuggest()
     onChange(text)
     onSelect?.(text)
     setOpen(false)
     setSuggestions(null)
   }
-
-  const closeDropdown = () => setOpen(false)
 
   const panelWidth = dropdownRect
     ? Math.min(Math.max(dropdownRect.width, 400), 520)
@@ -199,7 +276,6 @@ export function SearchInputWithSuggest({
         className={cn(
           "fixed z-[100] overflow-hidden rounded-2xl border border-border/80 bg-popover text-popover-foreground",
           "shadow-xl shadow-black/10",
-          "animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-200",
         )}
         style={{
           top: dropdownRect.top,
@@ -216,12 +292,17 @@ export function SearchInputWithSuggest({
                 href={`/search?q=${encodeURIComponent(value.trim())}`}
                 className="shrink-0 text-sm font-medium text-cerulean hover:text-pacific hover:underline"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={closeDropdown}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onNavigate?.()
+                  router.push(`/search?q=${encodeURIComponent(value.trim())}`)
+                  dismissForNavigation()
+                }}
               >
                 View all results
               </Link>
             </div>
-            <ul className="max-h-[280px] overflow-y-auto py-1">
+            <ul className="max-h-[min(45vh,360px)] overflow-y-auto py-1">
               {listings.map((item) => {
                 const meta = [
                   listingSectionLabel(item.section),
@@ -238,7 +319,12 @@ export function SearchInputWithSuggest({
                       href={listingHref(item)}
                       className="mx-1 flex gap-3 rounded-xl px-2 py-2.5 outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80"
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={closeDropdown}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        onNavigate?.()
+                        router.push(listingHref(item))
+                        dismissForNavigation()
+                      }}
                     >
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                         {item.imageUrl ? (
@@ -341,7 +427,7 @@ export function SearchInputWithSuggest({
             <p className="border-b border-border/40 bg-muted/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Suggestions
             </p>
-            <ul className="max-h-40 overflow-y-auto py-1">
+            <ul className="max-h-[min(40vh,280px)] overflow-y-auto py-1">
               {flatSuggestions.map((item, i) => {
                 const Icon = item.type === "category" ? Tag : item.type === "brand" ? Package : Type
                 return (
@@ -352,7 +438,7 @@ export function SearchInputWithSuggest({
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelect(item.text)}
                     >
-                      {showTypeLabels ? (
+                      {showTypeLabels && item.type !== "title" ? (
                         <>
                           <span className="flex shrink-0 items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                             <Icon className="h-3 w-3" />
@@ -361,7 +447,7 @@ export function SearchInputWithSuggest({
                           <span className="min-w-0 truncate font-medium text-foreground">{item.text}</span>
                         </>
                       ) : (
-                        item.text
+                        <span className="min-w-0 truncate font-medium text-foreground">{item.text}</span>
                       )}
                     </button>
                   </li>
@@ -391,14 +477,36 @@ export function SearchInputWithSuggest({
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => {
           if (disableSuggest) return
+          const q = value.trim()
+          if (q.length < minLength) return
           const s = suggestions
           const has =
             (s?.listings?.length ?? 0) > 0 ||
             (s?.titles?.length ?? 0) > 0 ||
             (s?.categories?.length ?? 0) > 0 ||
             (s?.brands?.length ?? 0) > 0
-          if (has) setOpen(true)
+          if (has) {
+            setOpen(true)
+            return
+          }
+          // Repopulate after navigate/dismiss cleared suggestions (same query still in the field).
+          if (debounceRef.current) clearTimeout(debounceRef.current)
+          debounceRef.current = setTimeout(() => {
+            const gen = ++suggestGenerationRef.current
+            void (async () => {
+              if (gen !== suggestGenerationRef.current) return
+              setLoading(true)
+              try {
+                const { data, hasAny } = await fetchSearchSuggestionsJson(q, section)
+                if (gen !== suggestGenerationRef.current) return
+                applySuggestFetchResult(gen, data, hasAny, "focus")
+              } finally {
+                if (gen === suggestGenerationRef.current) setLoading(false)
+              }
+            })()
+          }, debounceMs)
         }}
+        ref={inputRef}
         className={cn(
           leftIcon && "pl-10",
           showClear && (loading ? "pr-16" : "pr-10"),
@@ -417,9 +525,11 @@ export function SearchInputWithSuggest({
           aria-label="Clear search"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
+            invalidatePendingSuggest()
             onChange("")
             setOpen(false)
             setSuggestions(null)
+            setLoading(false)
           }}
         >
           <X className="h-4 w-4" />

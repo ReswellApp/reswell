@@ -57,6 +57,10 @@ Set `SEARCH_REINDEX_SECRET` in Vercel to match. Or use a logged-in admin session
 
 3. **Sell flow / dashboard updates**: if listings are updated only from the browser, rely on the webhook or run reindex periodically.
 
+## Relevance
+
+Queries no longer use a single loose `OR` across every token. **Pure-number tokens** (e.g. `6`, `4`, `3` from thickness `6/4/3`) are ignored for the *required* match set so one digit cannot match unrelated titles like “Monsta **6**”. Search requires a **majority of meaningful terms** (letters/alphanumerics ≥2 chars) to match across title, description, category, brand, etc., with **phrase boosts** so close title matches rank higher. Digit-only queries stay lenient. The Supabase fallback uses the same **meaningful-term** idea (AND across terms). **No reindex** is required for these query changes.
+
 ## Local Elastic (Docker)
 
 ```bash

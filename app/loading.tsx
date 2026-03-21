@@ -1,5 +1,5 @@
 import { SurfboardPageLoading } from "@/components/listing-detail-page-loading"
 
-export default function AdminUsersLoading() {
+export default function RootLoading() {
   return <SurfboardPageLoading />
 }
