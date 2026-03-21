@@ -21,12 +21,14 @@ import {
   AlertTriangle,
   Ruler,
   Info,
+  Truck,
 } from "lucide-react"
 import { ImageGallery } from "@/components/image-gallery"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { LocationMap } from "@/components/location-map"
 import { TranslateableDescription } from "@/components/translateable-description"
+import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 export default async function BoardDetailPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -97,6 +99,35 @@ export default async function BoardDetailPage(props: {
 
   const isOwnListing = user?.id === board.user_id
 
+  const pickupOffered = board.local_pickup !== false
+  const shippingOffered = !!board.shipping_available
+  const shipPrice =
+    board.shipping_price != null ? Number(board.shipping_price) : 0
+
+  const shippingNote = shippingOffered ? (
+    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
+      <div className="flex items-start gap-2">
+        <Truck className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden />
+        <div>
+          <p className="font-medium text-foreground">Shipping</p>
+          {shipPrice > 0 ? (
+            <p className="text-muted-foreground mt-0.5">
+              <span className="text-foreground font-semibold tabular-nums">
+                + ${shipPrice.toFixed(2)}
+              </span>{" "}
+              flat rate if you choose delivery at checkout (local pickup has no shipping charge).
+            </p>
+          ) : (
+            <p className="text-muted-foreground mt-0.5">
+              <span className="text-foreground font-medium">Free shipping</span> if you choose
+              delivery at checkout.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : null
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -153,7 +184,24 @@ export default async function BoardDetailPage(props: {
                   {board.board_length}
                 </Badge>
               )}
+              <Badge variant="outline" className="capitalize">
+                {boardFulfillmentSummary(board.local_pickup, board.shipping_available)}
+              </Badge>
             </div>
+            {shippingNote && <div className="mt-3 lg:hidden">{shippingNote}</div>}
+            {!isOwnListing && board.status === "active" && (
+              <Button size="lg" className="w-full gap-2 lg:hidden mt-3" asChild>
+                <Link
+                  href={
+                    user
+                      ? `/boards/${board.id}/checkout`
+                      : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}/checkout`)}`
+                  }
+                >
+                  Buy now — ${Number(board.price).toFixed(2)}
+                </Link>
+              </Button>
+            )}
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -195,6 +243,9 @@ export default async function BoardDetailPage(props: {
                     {board.board_length}
                   </Badge>
                 )}
+                <Badge variant="outline" className="capitalize">
+                  {boardFulfillmentSummary(board.local_pickup, board.shipping_available)}
+                </Badge>
               </div>
 
               {/* Description (above map) */}
@@ -202,6 +253,24 @@ export default async function BoardDetailPage(props: {
                 <h2 className="font-semibold mb-2">Description</h2>
                 <TranslateableDescription text={board.description || ""} />
               </div>
+
+              {shippingNote && <div className="hidden lg:block space-y-3">{shippingNote}</div>}
+
+              {!isOwnListing && board.status === "active" && (
+                <div className="hidden lg:block">
+                  <Button size="lg" className="w-full gap-2" asChild>
+                    <Link
+                      href={
+                        user
+                          ? `/boards/${board.id}/checkout`
+                          : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}/checkout`)}`
+                      }
+                    >
+                      Buy now — ${Number(board.price).toFixed(2)}
+                    </Link>
+                  </Button>
+                </div>
+              )}
 
               {/* Location (map above contact seller) */}
               <Card className="bg-primary/5 border-primary/20 overflow-hidden">
@@ -215,9 +284,15 @@ export default async function BoardDetailPage(props: {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 mb-3">
-                    Approximate pickup area for meeting the seller. This surfboard is available for local pickup only.
+                    {pickupOffered && shippingOffered &&
+                      "Approximate area for pickup, or the seller can ship this board to you."}
+                    {pickupOffered && !shippingOffered &&
+                      "Approximate pickup area for meeting the seller and inspecting the board."}
+                    {!pickupOffered &&
+                      shippingOffered &&
+                      "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
                   </p>
-                  {board.latitude && board.longitude ? (
+                  {pickupOffered && board.latitude && board.longitude ? (
                     <LocationMap
                       lat={parseFloat(board.latitude)}
                       lng={parseFloat(board.longitude)}
@@ -229,11 +304,15 @@ export default async function BoardDetailPage(props: {
                       showDirections
                       height={280}
                     />
-                  ) : board.profiles?.location ? (
+                  ) : pickupOffered && board.profiles?.location ? (
                     <div className="h-[200px] rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-sm">
                       <MapPin className="h-5 w-5 mr-2" />
                       {board.profiles.location}
                     </div>
+                  ) : !pickupOffered ? (
+                    <p className="text-sm text-muted-foreground py-4">
+                      Map is shown when the seller offers local pickup.
+                    </p>
                   ) : null}
                 </CardContent>
               </Card>
@@ -247,6 +326,8 @@ export default async function BoardDetailPage(props: {
                       sellerId={board.user_id}
                       listingTitle={capitalizeWords(board.title)}
                       isLoggedIn={!!user}
+                      section="surfboards"
+                      shippingAvailable={shippingOffered}
                     />
                   </CardContent>
                 </Card>

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
+import { resolvePayableAmount } from "@/lib/purchase-amount"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { listing_id } = await request.json()
+  const { listing_id, fulfillment } = await request.json()
 
   if (!listing_id) {
     return NextResponse.json({ error: "Missing listing_id" }, { status: 400 })
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
   // Fetch the listing
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("*")
+    .select("id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status")
     .eq("id", listing_id)
     .eq("status", "active")
     .single()
@@ -34,7 +35,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
-  const price = parseFloat(listing.price)
+  const resolved = resolvePayableAmount(listing, fulfillment)
+  if (!resolved.ok) {
+    return NextResponse.json({ error: resolved.error }, { status: 400 })
+  }
+
+  const price = resolved.total
   const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, { cardPayment: false })
 
   // Fetch buyer wallet
@@ -120,7 +126,7 @@ export async function POST(request: NextRequest) {
     type: "purchase",
     amount: -price,
     balance_after: newBuyerBalance,
-    description: `Purchased "${listing.title}"`,
+    description: `Purchased "${listing.title}"${resolved.shipping > 0 ? ` (incl. shipping R$${resolved.shipping.toFixed(2)})` : ""}`,
     reference_id: purchase?.id,
     reference_type: "listing",
   })

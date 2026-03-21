@@ -9,9 +9,15 @@ interface CheckoutWithCardProps {
   listingId: string
   listingTitle: string
   price: number
+  fulfillment?: "pickup" | "shipping" | null
 }
 
-export function CheckoutWithCard({ listingId, listingTitle, price }: CheckoutWithCardProps) {
+export function CheckoutWithCard({
+  listingId,
+  listingTitle,
+  price,
+  fulfillment,
+}: CheckoutWithCardProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -22,7 +28,10 @@ export function CheckoutWithCard({ listingId, listingTitle, price }: CheckoutWit
       const res = await fetch("/api/checkout/create-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listing_id: listingId }),
+        body: JSON.stringify({
+          listing_id: listingId,
+          ...(fulfillment ? { fulfillment } : {}),
+        }),
       })
       const data = await res.json()
       if (!res.ok) {

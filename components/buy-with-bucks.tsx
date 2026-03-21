@@ -21,9 +21,20 @@ interface BuyWithBucksProps {
   listingTitle: string
   price: number
   sellerId: string
+  fulfillment?: "pickup" | "shipping" | null
+  itemPrice?: number
+  shippingAmount?: number
 }
 
-export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWithBucksProps) {
+export function BuyWithBucks({
+  listingId,
+  listingTitle,
+  price,
+  sellerId,
+  fulfillment,
+  itemPrice,
+  shippingAmount = 0,
+}: BuyWithBucksProps) {
   const [open, setOpen] = useState(false)
   const [balance, setBalance] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
@@ -47,8 +58,11 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
     }
   }, [open])
 
-  const { marketplaceFee: platformFee, sellerEarnings: sellerGets } = getSellerEarnings(price, { cardPayment: false })
+  const { marketplaceFee: platformFee, sellerEarnings: sellerGets } = getSellerEarnings(price, {
+    cardPayment: false,
+  })
   const canAfford = balance !== null && balance >= price
+  const lineItem = itemPrice ?? price - shippingAmount
 
   const handlePurchase = async () => {
     setLoading(true)
@@ -58,7 +72,10 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
       const res = await fetch("/api/wallet/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listing_id: listingId }),
+        body: JSON.stringify({
+          listing_id: listingId,
+          ...(fulfillment ? { fulfillment } : {}),
+        }),
       })
 
       const data = await res.json()
@@ -168,10 +185,20 @@ export function BuyWithBucks({ listingId, listingTitle, price, sellerId }: BuyWi
 
                   <div className="rounded-lg border p-4 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Item Price</span>
+                      <span className="text-muted-foreground">Item</span>
+                      <span>R${lineItem.toFixed(2)}</span>
+                    </div>
+                    {shippingAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Shipping</span>
+                        <span>R${shippingAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm font-medium border-t pt-2">
+                      <span>Total</span>
                       <span>R${price.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm pt-1">
                       <span className="text-muted-foreground">Platform Fee (5%)</span>
                       <span className="text-muted-foreground">R${platformFee.toFixed(2)}</span>
                     </div>

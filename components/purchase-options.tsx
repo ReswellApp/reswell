@@ -7,8 +7,13 @@ import { Separator } from "@/components/ui/separator"
 interface PurchaseOptionsProps {
   listingId: string
   listingTitle: string
+  /** Total charged (item + shipping when applicable). */
   price: number
   sellerId: string
+  /** Surfboards with pickup + shipping: which option the buyer selected. */
+  fulfillment?: "pickup" | "shipping" | null
+  itemPrice?: number
+  shippingAmount?: number
 }
 
 export function PurchaseOptions({
@@ -16,6 +21,9 @@ export function PurchaseOptions({
   listingTitle,
   price,
   sellerId,
+  fulfillment,
+  itemPrice,
+  shippingAmount,
 }: PurchaseOptionsProps) {
   return (
     <div className="space-y-3">
@@ -24,6 +32,7 @@ export function PurchaseOptions({
         listingId={listingId}
         listingTitle={listingTitle}
         price={price}
+        fulfillment={fulfillment}
       />
       <div className="relative">
         <Separator className="absolute inset-0 flex items-center" />
@@ -36,6 +45,9 @@ export function PurchaseOptions({
         listingTitle={listingTitle}
         price={price}
         sellerId={sellerId}
+        fulfillment={fulfillment}
+        itemPrice={itemPrice}
+        shippingAmount={shippingAmount}
       />
     </div>
   )

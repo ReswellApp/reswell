@@ -26,7 +26,7 @@ export default function ShippingGuidePage() {
           </div>
 
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            Sellers can choose whether to offer shipping on used gear. Surfboards are typically in-person pickup only so buyers can inspect the board. Use this guide whether you’re sending or receiving an item.
+            Sellers can choose whether to offer shipping on used gear. For surfboards, sellers can offer local pickup, shipping, or both—if they ship, they set a flat shipping price at listing time. Use this guide whether you’re sending or receiving an item.
           </p>
 
           <div className="space-y-6">

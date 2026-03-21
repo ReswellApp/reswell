@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCondition, formatBoardType, capitalizeWords } from "@/lib/listing-labels"
+import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsListingsFilters } from "@/components/boards-listings-filters"
@@ -241,9 +242,9 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                       </Badge>
                     )}
                   </div>
-                  <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    In-Person Only
+                  <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0 max-w-[11rem] truncate">
+                    <MapPin className="h-3 w-3 mr-1 shrink-0 inline" />
+                    {boardFulfillmentSummary(board.local_pickup, board.shipping_available)}
                   </Badge>
                   <FavoriteButtonCardOverlay
                     listingId={board.id}

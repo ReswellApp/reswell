@@ -23,6 +23,11 @@ import {
 import { toast } from "sonner"
 import { ArrowLeft, Upload, Loader2, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { LocationPicker } from "@/components/location-picker"
+import {
+  boardFulfillmentFromFlags,
+  flagsFromBoardFulfillment,
+  type BoardFulfillmentChoice,
+} from "@/lib/listing-fulfillment"
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
 const categories = [
@@ -70,6 +75,13 @@ type EditableImage = {
   file?: File
 }
 
+function shippingPriceToFormValue(v: unknown): string {
+  if (v == null || v === "") return ""
+  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""))
+  if (!Number.isFinite(n)) return ""
+  return String(n)
+}
+
 function SellPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -87,7 +99,8 @@ function SellPageContent() {
     price: "",
     category: "",
     condition: "",
-    allowsShipping: true,
+    boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+    boardShippingPrice: "",
     boardType: "",
     boardLength: "",
     locationLat: 0,
@@ -111,7 +124,29 @@ function SellPageContent() {
       }
       const { data: listing, error } = await supabase
         .from("listings")
-        .select("*, listing_images(id, url, is_primary, sort_order)")
+        .select(
+          `
+          id,
+          user_id,
+          section,
+          title,
+          description,
+          price,
+          condition,
+          category_id,
+          board_type,
+          length_feet,
+          length_inches,
+          latitude,
+          longitude,
+          city,
+          state,
+          local_pickup,
+          shipping_available,
+          shipping_price,
+          listing_images (id, url, is_primary, sort_order)
+        `
+        )
         .eq("id", editId)
         .eq("user_id", user.id)
         .single()
@@ -126,13 +161,25 @@ function SellPageContent() {
       setListingType(section)
       const lengthFeet = listing.length_feet != null ? String(listing.length_feet) : ""
       const lengthInches = listing.length_inches != null ? String(listing.length_inches) : ""
+      const loadedFulfillment = boardFulfillmentFromFlags(
+        listing.local_pickup,
+        listing.shipping_available
+      )
+      let boardShippingPrice = shippingPriceToFormValue(listing.shipping_price)
+      if (
+        (loadedFulfillment === "shipping_only" || loadedFulfillment === "pickup_and_shipping") &&
+        !boardShippingPrice
+      ) {
+        boardShippingPrice = "0"
+      }
       setFormData({
         title: listing.title ?? "",
         description: listing.description ?? "",
         price: String(listing.price ?? ""),
         category: listing.category_id ?? "",
         condition: listing.condition ?? "",
-        allowsShipping: !!listing.shipping_available,
+        boardFulfillment: loadedFulfillment,
+        boardShippingPrice,
         boardType: listing.board_type ?? "",
         boardLength: lengthFeet && lengthInches ? `${lengthFeet}'${lengthInches}"` : "",
         locationLat: Number(listing.latitude) || 0,
@@ -373,6 +420,41 @@ function SellPageContent() {
         return
       }
 
+      const boardFlags =
+        listingType === "board"
+          ? flagsFromBoardFulfillment(formData.boardFulfillment)
+          : null
+
+      if (listingType === "board" && boardFlags?.shipping_available) {
+        const raw = formData.boardShippingPrice.trim()
+        if (!raw) {
+          toast.error("Enter a shipping price when offering shipping (use 0 for free shipping).")
+          setLoading(false)
+          return
+        }
+        const sp = parseFloat(raw)
+        if (Number.isNaN(sp) || sp < 0) {
+          toast.error("Shipping price must be a number ≥ 0.")
+          setLoading(false)
+          return
+        }
+      }
+
+      const fulfillmentRow =
+        listingType === "used"
+          ? {
+              shipping_available: true,
+              local_pickup: false,
+              shipping_price: null as number | null,
+            }
+          : {
+              shipping_available: boardFlags!.shipping_available,
+              local_pickup: boardFlags!.local_pickup,
+              shipping_price: boardFlags!.shipping_available
+                ? parseFloat(formData.boardShippingPrice.trim())
+                : null,
+            }
+
       let listingId = editId
 
       if (editId) {
@@ -401,8 +483,9 @@ function SellPageContent() {
               listingType === "board" && formData.locationLng ? formData.locationLng : null,
             city: listingType === "board" ? formData.locationCity : null,
             state: listingType === "board" ? formData.locationState : null,
-            shipping_available: listingType === "used" ? true : false,
-            local_pickup: listingType === "used" ? false : true,
+            shipping_available: fulfillmentRow.shipping_available,
+            local_pickup: fulfillmentRow.local_pickup,
+            shipping_price: fulfillmentRow.shipping_price,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editId)
@@ -436,8 +519,9 @@ function SellPageContent() {
               listingType === "board" && formData.locationLng ? formData.locationLng : null,
             city: listingType === "board" ? formData.locationCity : null,
             state: listingType === "board" ? formData.locationState : null,
-            shipping_available: listingType === "used" ? true : false,
-            local_pickup: listingType === "used" ? false : true,
+            shipping_available: fulfillmentRow.shipping_available,
+            local_pickup: fulfillmentRow.local_pickup,
+            shipping_price: fulfillmentRow.shipping_price,
             status: "active",
           })
           .select()
@@ -493,11 +577,18 @@ function SellPageContent() {
                 {/* Listing Type */}
                 <div className="space-y-3">
                   <Label>What are you selling?</Label>
+                  {editId && (
+                    <p className="text-xs text-muted-foreground">
+                      Listing type is fixed while editing. Fulfillment options for surfboards appear below
+                      the location map.
+                    </p>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
+                      disabled={!!editId}
                       onClick={() => setListingType("used")}
-                      className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                      className={`p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                         listingType === "used"
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/50"
@@ -510,8 +601,9 @@ function SellPageContent() {
                     </button>
                     <button
                       type="button"
+                      disabled={!!editId}
                       onClick={() => setListingType("board")}
-                      className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                      className={`p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                         listingType === "board"
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/50"
@@ -519,7 +611,7 @@ function SellPageContent() {
                     >
                       <p className="font-medium">Surfboard</p>
                       <p className="text-sm text-muted-foreground">
-                        In-person pickup only
+                        Local pickup, shipping, or both
                       </p>
                     </button>
                   </div>
@@ -609,6 +701,72 @@ function SellPageContent() {
                     initialState={formData.locationState || undefined}
                     initialDisplay={formData.locationDisplay || undefined}
                   />
+                )}
+
+                {listingType === "board" && (
+                  <div className="space-y-4 rounded-lg border border-border p-4">
+                    <div className="space-y-2">
+                      <Label>How can buyers get this board? *</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Pickup uses the map location above. If you ship, set a flat shipping price (use 0
+                        for free shipping).
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {(
+                          [
+                            {
+                              value: "pickup_only" as const,
+                              title: "Local pickup",
+                              hint: "Buyer meets you",
+                            },
+                            {
+                              value: "shipping_only" as const,
+                              title: "Shipping only",
+                              hint: "You ship to buyer",
+                            },
+                            {
+                              value: "pickup_and_shipping" as const,
+                              title: "Pickup or shipping",
+                              hint: "Buyer chooses",
+                            },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() =>
+                              setFormData({ ...formData, boardFulfillment: opt.value })
+                            }
+                            className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
+                              formData.boardFulfillment === opt.value
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/40"
+                            }`}
+                          >
+                            <p className="font-medium">{opt.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{opt.hint}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {(formData.boardFulfillment === "shipping_only" ||
+                      formData.boardFulfillment === "pickup_and_shipping") && (
+                      <div className="space-y-2">
+                        <Label htmlFor="boardShippingPrice">Shipping price ($) *</Label>
+                        <Input
+                          id="boardShippingPrice"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00 = free shipping"
+                          value={formData.boardShippingPrice}
+                          onChange={(e) =>
+                            setFormData({ ...formData, boardShippingPrice: e.target.value })
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Price & Condition */}
