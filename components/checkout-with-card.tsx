@@ -90,7 +90,22 @@ export function CheckoutWithCard({
                   <code className="text-xs">next dev</code>, then try again.
                 </>
               ) : (
-                <>Card checkout isn&apos;t configured yet. Please try ReSwell Bucks or contact support.</>
+                <span className="block space-y-2">
+                  <span className="block font-medium text-foreground">
+                    Card checkout isn&apos;t enabled on this server yet.
+                  </span>
+                  <span className="block text-muted-foreground">
+                    <code className="rounded bg-muted px-1 py-0.5 text-xs">.env.local</code> only
+                    applies when you run the app locally. For your live site, add{" "}
+                    <code className="rounded bg-muted px-1 py-0.5 text-xs">STRIPE_SECRET_KEY</code>{" "}
+                    (and redeploy) in your host&apos;s dashboard — e.g. Vercel → Project → Settings →
+                    Environment Variables.
+                  </span>
+                  <span className="block text-muted-foreground">
+                    You can still use <strong>ReSwell Bucks</strong>, or test card checkout with{" "}
+                    <code className="text-xs">npm run dev</code> on your machine.
+                  </span>
+                </span>
               )}
             </span>
           ) : error === "Unauthorized" ? (
