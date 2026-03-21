@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { getStripe } from "@/lib/stripe-server"
 import { CART_CHECKOUT_MODE } from "@/lib/checkout/cart-stripe-completion"
+import { getCheckoutAppOrigin } from "@/lib/checkout-app-origin"
 
 const SHIPPING_FLAT_CENTS = 999 // $9.99
 const FREE_SHIPPING_THRESHOLD_CENTS = 5000 // $50
@@ -124,9 +125,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  const origin = getCheckoutAppOrigin()
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
     (i) => ({
       price_data: {

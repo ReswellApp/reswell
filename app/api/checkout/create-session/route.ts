@@ -4,6 +4,7 @@ import Stripe from "stripe"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getStripe } from "@/lib/stripe-server"
 import { SURFBOARD_CHECKOUT_MODE } from "@/lib/checkout/surfboard-stripe-completion"
+import { getCheckoutAppOrigin } from "@/lib/checkout-app-origin"
 
 function safeProductName(title: string | null | undefined): string {
   const t = (title ?? "").trim() || "Surfboard listing"
@@ -75,9 +76,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: resolved.error }, { status: 400 })
     }
 
-    const origin =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+    const origin = getCheckoutAppOrigin()
 
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
       {
