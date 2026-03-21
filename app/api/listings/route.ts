@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -86,6 +87,12 @@ export async function POST(request: NextRequest) {
     }))
 
     await supabase.from('listing_images').insert(imageInserts)
+  }
+
+  try {
+    await syncListingToIndex(supabase, listing.id)
+  } catch {
+    // ES optional; listing still created
   }
 
   return NextResponse.json({ success: true, listing_id: listing.id })

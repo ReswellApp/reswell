@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Info, LayoutDashboard, Package, Users, Flag, Settings, ArrowRight, Shield, UserCog, Loader2 } from 'lucide-react'
+import { Info, LayoutDashboard, Package, Users, Flag, Settings, ArrowRight, Shield, UserCog, Loader2, Search, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -34,6 +34,7 @@ export default function AdminSettingsPage() {
   const [employeeEmail, setEmployeeEmail] = useState('')
   const [grantingAdmin, setGrantingAdmin] = useState(false)
   const [grantingEmployee, setGrantingEmployee] = useState(false)
+  const [reindexing, setReindexing] = useState(false)
   const [admins, setAdmins] = useState<ProfileRole[]>([])
   const [employees, setEmployees] = useState<ProfileRole[]>([])
   const [loadingRoles, setLoadingRoles] = useState(true)
@@ -121,6 +122,26 @@ export default function AdminSettingsPage() {
       }
     } catch {
       toast.error('Failed to revoke')
+    }
+  }
+
+  async function reindexSearch() {
+    setReindexing(true)
+    try {
+      const res = await fetch('/api/search/reindex', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Reindex failed')
+        return
+      }
+      toast.success(`Reindex complete: ${data.indexed} listings indexed${data.errors ? `, ${data.errors} errors` : ''}`)
+    } catch {
+      toast.error('Reindex failed')
+    } finally {
+      setReindexing(false)
     }
   }
 
@@ -231,6 +252,28 @@ export default function AdminSettingsPage() {
           </Card>
         </>
       )}
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Search className="h-5 w-5 text-primary" />
+            Search index (Elasticsearch)
+          </CardTitle>
+          <p className="text-sm text-muted-foreground font-normal">
+            Rebuild the search index from your listings. Use after adding Elasticsearch, or if search results seem stale.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            onClick={reindexSearch}
+            disabled={reindexing}
+          >
+            {reindexing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {reindexing ? 'Reindexing…' : 'Reindex search'}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-sm">
         <CardHeader>
