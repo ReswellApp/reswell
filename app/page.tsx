@@ -620,36 +620,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Ocean images */}
-        <section className="py-8 md:py-12">
-          <div className="container mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                { src: "/images/home/wave-1.png", heading: "Effortless", sub: "From listing to lineup" },
-                { src: "/images/home/wave-2.png", heading: "Local", sub: "Right down the coast" },
-                { src: "/images/home/wave-3.png", heading: "Trusted", sub: "No scams. No guesswork." },
-                { src: "/images/home/wave-4.png", heading: "Better", sub: "This is how it should be" },
-              ].map(({ src, heading, sub }) => (
-                <div key={heading} className="relative aspect-[3/2] overflow-hidden rounded-lg">
-                  <img
-                    src={src}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/25 flex flex-col items-center justify-center text-center px-3">
-                    <span className="font-[family-name:var(--font-caveat)] text-white text-3xl sm:text-4xl md:text-5xl font-bold drop-shadow-lg select-none">
-                      {heading}
-                    </span>
-                    <span className="text-white text-xs sm:text-sm mt-1 drop-shadow select-none">
-                      {sub}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Featured Sellers */}
         {featuredShops && featuredShops.length > 0 && (
           <section className="py-16">
