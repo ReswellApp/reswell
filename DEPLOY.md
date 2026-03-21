@@ -63,8 +63,10 @@ So Stripe can confirm payments and run your logic:
 
 1. [Stripe Dashboard](https://dashboard.stripe.com/webhooks) → **Add endpoint**.
 2. **Endpoint URL**: `https://YOUR_VERCEL_DOMAIN/api/webhooks/stripe`.
-3. **Events**: e.g. `checkout.session.completed`.
+3. **Events**: `checkout.session.completed`.
 4. Copy the **Signing secret** and set it as `STRIPE_WEBHOOK_SECRET` in Vercel, then redeploy.
+
+Local dev: see **`docs/STRIPE.md`** (`npm run stripe:listen` + test keys in `.env.local`).
 
 ## 6. (Optional) Custom domain
 

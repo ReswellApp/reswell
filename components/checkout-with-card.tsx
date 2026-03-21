@@ -35,6 +35,10 @@ export function CheckoutWithCard({
       })
       const data = await res.json()
       if (!res.ok) {
+        if (data.code === "stripe_not_configured") {
+          setError("stripe_not_configured")
+          return
+        }
         setError(data.error || "Checkout failed")
         return
       }
@@ -67,15 +71,28 @@ export function CheckoutWithCard({
         ) : (
           <>
             <CreditCard className="h-4 w-4" />
-            Pay with card or Apple Pay — ${price.toFixed(2)}
+            Pay with card — ${price.toFixed(2)}
           </>
         )}
       </Button>
       {error && (
         <div className="flex items-center gap-2 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          {error === "Card payments are not configured" ? (
-            <span>Card payments are not available right now.</span>
+          {error === "stripe_not_configured" ||
+          error === "Card payments are not configured" ? (
+            <span className="text-left">
+              {process.env.NODE_ENV === "development" ? (
+                <>
+                  Add{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs">STRIPE_SECRET_KEY</code>{" "}
+                  (test: <code className="text-xs">sk_test_…</code>) to{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs">.env.local</code>, restart{" "}
+                  <code className="text-xs">next dev</code>, then try again.
+                </>
+              ) : (
+                <>Card checkout isn&apos;t configured yet. Please try ReSwell Bucks or contact support.</>
+              )}
+            </span>
           ) : error === "Unauthorized" ? (
             <span>
               <Link href="/auth/login" className="underline">Sign in</Link> to checkout with card.

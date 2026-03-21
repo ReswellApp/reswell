@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
+import { getStripe } from "@/lib/stripe-server"
+import { CART_CHECKOUT_MODE } from "@/lib/checkout/cart-stripe-completion"
 
 const SHIPPING_FLAT_CENTS = 999 // $9.99
 const FREE_SHIPPING_THRESHOLD_CENTS = 5000 // $50
@@ -22,10 +24,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
   }
 
-  const secret = process.env.STRIPE_SECRET_KEY
-  if (!secret) {
+  const stripe = getStripe()
+  if (!stripe) {
     return NextResponse.json(
-      { error: "Card payments are not configured" },
+      { error: "Card payments are not configured", code: "stripe_not_configured" },
       { status: 503 }
     )
   }
@@ -125,8 +127,6 @@ export async function POST(request: NextRequest) {
   const origin =
     process.env.NEXT_PUBLIC_APP_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-  const stripe = new Stripe(secret)
-
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
     (i) => ({
       price_data: {
@@ -157,11 +157,11 @@ export async function POST(request: NextRequest) {
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card", "apple_pay"],
+    payment_method_types: ["card"],
     line_items: lineItems,
     metadata: {
       order_id: order.id,
-      mode: "cart",
+      mode: CART_CHECKOUT_MODE,
       user_id: user.id,
     },
     success_url: `${origin}/shop/checkout/success?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`,

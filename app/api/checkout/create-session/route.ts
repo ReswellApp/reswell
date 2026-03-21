@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
-
-const MODE = "surfboard_listing"
+import { getStripe } from "@/lib/stripe-server"
+import { SURFBOARD_CHECKOUT_MODE } from "@/lib/checkout/surfboard-stripe-completion"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -23,9 +23,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing listing_id" }, { status: 400 })
   }
 
-  const secret = process.env.STRIPE_SECRET_KEY
-  if (!secret) {
-    return NextResponse.json({ error: "Card payments are not configured" }, { status: 503 })
+  const stripe = getStripe()
+  if (!stripe) {
+    return NextResponse.json(
+      {
+        error: "Card payments are not configured",
+        code: "stripe_not_configured",
+      },
+      { status: 503 }
+    )
   }
 
   const { data: listing, error: listingError } = await supabase
@@ -60,8 +66,6 @@ export async function POST(request: NextRequest) {
   const origin =
     process.env.NEXT_PUBLIC_APP_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-
-  const stripe = new Stripe(secret)
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     {
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
     payment_method_types: ["card"],
     line_items: lineItems,
     metadata: {
-      mode: MODE,
+      mode: SURFBOARD_CHECKOUT_MODE,
       user_id: user.id,
       listing_id: listing.id,
       fulfillment: fulfillment ?? "",

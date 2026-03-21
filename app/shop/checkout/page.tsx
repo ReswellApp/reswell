@@ -63,7 +63,15 @@ export default function CheckoutPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Checkout failed")
+        if (data.code === "stripe_not_configured") {
+          toast.error(
+            process.env.NODE_ENV === "development"
+              ? "Add STRIPE_SECRET_KEY to .env.local and restart the dev server."
+              : "Card checkout is not available. Try again later or contact support."
+          )
+        } else {
+          toast.error(data.error || "Checkout failed")
+        }
         setPaying(false)
         return
       }
