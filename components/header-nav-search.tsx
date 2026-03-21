@@ -15,6 +15,10 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 
 const RECENT_SEARCHES_KEY = "reswell_recent_searches"
+
+function isSearchResultsPath(p: string) {
+  return p === "/search" || p === "/search/recent"
+}
 const MAX_RECENT = 5
 
 type SuggestedListing = {
@@ -71,7 +75,7 @@ export function HeaderNavSearch() {
   useEffect(() => {
     const prev = prevPathForEnterSearchRef.current
     prevPathForEnterSearchRef.current = pathname
-    if (pathname === "/search" && prev !== "/search") {
+    if (isSearchResultsPath(pathname) && !isSearchResultsPath(prev)) {
       setQuery("")
     }
   }, [pathname])
@@ -79,7 +83,7 @@ export function HeaderNavSearch() {
   useEffect(() => {
     const prev = prevPathnameRef.current
     prevPathnameRef.current = pathname
-    if (prev === "/search" && pathname !== "/search") {
+    if (isSearchResultsPath(prev) && !isSearchResultsPath(pathname)) {
       setQuery("")
       clearNavSearchQuery()
     }
@@ -165,7 +169,9 @@ export function HeaderNavSearch() {
       const term = q.trim()
       if (!term) return
       saveRecentSearch(term)
-      const section = pathname === "/search" ? searchParams.get("section") : null
+      const section = isSearchResultsPath(pathname)
+        ? searchParams.get("section")
+        : null
       const params = new URLSearchParams()
       params.set("q", term)
       if (section && section !== "all") params.set("section", section)

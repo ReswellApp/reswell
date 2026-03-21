@@ -5,6 +5,7 @@ import { Inter, Caveat } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
+import { PresenceHeartbeat } from '@/components/presence-heartbeat'
 import { LOCALE_COOKIE_NAME } from '@/lib/translations'
 import type { Locale } from '@/lib/translations'
 
@@ -40,6 +41,7 @@ export default async function RootLayout({
     <html lang={locale} className="overflow-x-hidden">
       <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-white text-midgray min-h-dvh overflow-x-hidden`}>
         <LocaleProvider initialLocale={locale}>
+          <PresenceHeartbeat />
           {children}
           <Toaster />
           <Analytics />

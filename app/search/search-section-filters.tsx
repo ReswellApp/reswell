@@ -5,6 +5,7 @@ import { useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { SlidersHorizontal, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { curatedRecentSearchHref } from "@/lib/nav-curated-search"
 
 type Section = "all" | "used" | "boards"
 
@@ -40,15 +41,20 @@ export function SearchSectionFilters({
     const form = formRef.current
     if (!form) return
     const sectionValue = (form.section?.value ?? "all") as Section
-    const params = new URLSearchParams()
     const q = (searchParams.get("q") ?? query).trim()
     if (q) {
+      const params = new URLSearchParams()
       params.set("q", q)
-    } else {
-      params.set("view", "recent")
+      if (sectionValue !== "all") params.set("section", sectionValue)
+      router.push(`/search?${params.toString()}`)
+      return
     }
-    if (sectionValue !== "all") params.set("section", sectionValue)
-    router.push(`/search?${params.toString()}`)
+    const base = curatedRecentSearchHref("")
+    if (sectionValue === "all") {
+      router.push(base)
+    } else {
+      router.push(`${base}?section=${encodeURIComponent(sectionValue)}`)
+    }
   }
 
   const getSectionLabel = (opt: (typeof SECTION_OPTIONS)[0]) => {

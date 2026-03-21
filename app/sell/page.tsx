@@ -44,7 +44,7 @@ import {
   WETSUIT_ZIP_VALUES,
   type WetsuitZipValue,
 } from "@/lib/wetsuit-options"
-import { LEASH_LENGTH_FT_OPTIONS, LEASH_THICKNESS_MM_OPTIONS, leashLengthLabel } from "@/lib/leash-options"
+import { LEASH_LENGTH_FT_OPTIONS, LEASH_THICKNESS_OPTIONS, leashLengthLabel } from "@/lib/leash-options"
 import {
   COLLECTIBLE_TYPE_OPTIONS,
   COLLECTIBLE_TYPE_VALUES,
@@ -278,7 +278,7 @@ function SellPageContent() {
         })(),
         leashThickness: (() => {
           const t = (listing as { leash_thickness?: string | null }).leash_thickness?.trim() ?? ""
-          return (LEASH_THICKNESS_MM_OPTIONS as readonly string[]).includes(t) ? t : ""
+          return (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(t) ? t : ""
         })(),
         collectibleType: (() => {
           const v = (listing as { collectible_type?: string | null }).collectible_type?.trim() ?? ""
@@ -689,7 +689,7 @@ function SellPageContent() {
             leash_thickness:
               listingType === "used" &&
               formData.category === LEASHES_CATEGORY_ID &&
-              (LEASH_THICKNESS_MM_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
+              (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
                 ? formData.leashThickness.trim()
                 : null,
             collectible_type:
@@ -817,7 +817,7 @@ function SellPageContent() {
             leash_thickness:
               listingType === "used" &&
               formData.category === LEASHES_CATEGORY_ID &&
-              (LEASH_THICKNESS_MM_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
+              (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
                 ? formData.leashThickness.trim()
                 : null,
             collectible_type:
@@ -1073,9 +1073,9 @@ function SellPageContent() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__unset__">Not specified</SelectItem>
-                              {LEASH_THICKNESS_MM_OPTIONS.map((mm) => (
-                                <SelectItem key={mm} value={mm}>
-                                  {mm}
+                              {LEASH_THICKNESS_OPTIONS.map((t) => (
+                                <SelectItem key={t} value={t}>
+                                  {`${t}"`}
                                 </SelectItem>
                               ))}
                             </SelectContent>

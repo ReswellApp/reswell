@@ -12,11 +12,13 @@ import {
   Users, 
   Flag,
   MessageSquare,
-  Settings 
+  Settings,
+  Activity,
 } from 'lucide-react'
 
 const adminNavItems = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/live', label: 'Live', icon: Activity },
   { href: '/admin/listings', label: 'Listings', icon: Package },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/reports', label: 'Reports', icon: Flag },

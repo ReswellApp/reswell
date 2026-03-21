@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select"
 import { Search, SlidersHorizontal } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
-import { LEASH_LENGTH_FT_OPTIONS, LEASH_THICKNESS_MM_OPTIONS, leashLengthLabel } from "@/lib/leash-options"
+import { LEASH_LENGTH_FT_OPTIONS, LEASH_THICKNESS_OPTIONS, leashLengthLabel } from "@/lib/leash-options"
 
 const conditions = [
   { value: "all", label: "Any Condition" },
@@ -107,9 +107,9 @@ export function LeashesListingsFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Any thickness</SelectItem>
-            {LEASH_THICKNESS_MM_OPTIONS.map((mm) => (
-              <SelectItem key={mm} value={mm}>
-                {mm}
+            {LEASH_THICKNESS_OPTIONS.map((t) => (
+              <SelectItem key={t} value={t}>
+                {`${t}"`}
               </SelectItem>
             ))}
           </SelectContent>
