@@ -2,16 +2,18 @@ import Link from "next/link"
 
 const footerLinks = {
   marketplace: [
-    { name: "Used Gear", href: "/used" },
-    { name: "New Gear", href: "/shop" },
     { name: "Surfboards", href: "/boards" },
+    { name: "All Gear", href: "/used" },
     { name: "Sell Your Gear", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
   ],
   categories: [
     { name: "Surfboards", href: "/used?category=surfboards" },
-    { name: "Wetsuits", href: "/used?category=wetsuits" },
-    { name: "Fins", href: "/used?category=fins" },
+    { name: "Wetsuits", href: "/used/wetsuits" },
+    { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
+    { name: "Fins", href: "/used/fins" },
+    { name: "Surfpacks & Bags", href: "/used/backpacks" },
+    { name: "Board Bags", href: "/used/board-bags" },
     { name: "Accessories", href: "/used?category=accessories" },
   ],
   support: [

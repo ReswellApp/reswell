@@ -21,16 +21,14 @@ import { toast } from 'sonner'
 const SECTION_CATEGORIES: Record<string, { value: string; label: string }[]> = {
   used: [
     { value: '2744c29e-d6d4-43d9-a3ee-5bc11a0027df', label: 'Wetsuits' },
+    { value: 'a2000002-0000-4000-8000-000000000002', label: 'Apparel & Lifestyle' },
     { value: 'f8327e72-d54c-4333-b383-58a8cef225a6', label: 'Fins' },
     { value: 'b2a6282c-4c23-42dc-83f4-492eaa4f993a', label: 'Leashes' },
-    { value: 'a5000005-0000-4000-8000-000000000005', label: 'Traction Pads' },
     { value: '3779de38-dcf8-430f-a42c-9a17a2e048c4', label: 'Board Bags' },
-    { value: 'a6000006-0000-4000-8000-000000000006', label: 'Backpacks' },
-    { value: 'a2000002-0000-4000-8000-000000000002', label: 'Apparel & Lifestyle' },
+    { value: 'a6000006-0000-4000-8000-000000000006', label: 'Surfpacks & Bags' },
     { value: 'a3000003-0000-4000-8000-000000000003', label: 'Collectibles & Vintage' },
   ],
   new: [
-    { value: 'a5000005-0000-4000-8000-000000000005', label: 'Traction Pads' },
     { value: 'b2a6282c-4c23-42dc-83f4-492eaa4f993a', label: 'Leashes' },
     { value: 'f8327e72-d54c-4333-b383-58a8cef225a6', label: 'Fins' },
     { value: '2744c29e-d6d4-43d9-a3ee-5bc11a0027df', label: 'Wetsuits' },

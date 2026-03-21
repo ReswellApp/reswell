@@ -35,25 +35,44 @@ import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
+import { allCategoriesForNav } from "@/lib/site-category-directory"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
+/** Desktop + mobile primary nav (Wetsuits last before Categories dropdown). */
 const navigation = [
-  { name: "Used Gear", href: "/used" },
-  { name: "New Gear", href: "/shop" },
   { name: "Surfboards", href: "/boards" },
+  { name: "Fins", href: "/used/fins" },
+  { name: "Surfpacks & Bags", href: "/used/backpacks" },
+  { name: "Board Bags", href: "/used/board-bags" },
+  { name: "Wetsuits", href: "/used/wetsuits" },
 ]
 
-const allCategories = [
-  { name: "Surfboards", href: "/boards" },
-  { name: "Wetsuits", href: "/used?category=wetsuits" },
-  { name: "Fins", href: "/used?category=fins" },
-  { name: "Leashes", href: "/used?category=leashes" },
-  { name: "Traction Pads", href: "/used?category=traction-pads-used" },
-  { name: "Board Bags", href: "/used?category=board-bags" },
-  { name: "Backpacks", href: "/used?category=backpacks" },
-  { name: "Apparel & Lifestyle", href: "/used?category=apparel-lifestyle" },
-  { name: "Collectibles & Vintage", href: "/used?category=collectibles-vintage" },
-]
+function navItemIsActive(pathname: string | null, searchParams: URLSearchParams, href: string): boolean {
+  if (!pathname) return false
+  const q = href.indexOf("?")
+  const path = q === -1 ? href : href.slice(0, q)
+  const query = q === -1 ? null : href.slice(q + 1)
+
+  if (!pathname.startsWith(path)) return false
+
+  if (!query) {
+    if (path === "/used") {
+      if (pathname !== "/used") return false
+      const cat = searchParams.get("category")
+      return !cat || cat === "all"
+    }
+    return pathname === path || pathname.startsWith(`${path}/`)
+  }
+
+  const required = new URLSearchParams(query)
+  for (const key of new Set(required.keys())) {
+    if (searchParams.get(key) !== required.get(key)) return false
+  }
+  return pathname === path || (path === "/used" && pathname.startsWith("/used"))
+}
+
+const mainNavHrefs = new Set(navigation.map((item) => item.href))
+const dropdownCategories = allCategoriesForNav.filter((cat) => !mainNavHrefs.has(cat.href))
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
@@ -436,7 +455,7 @@ export function Header() {
               key={item.name}
               href={item.href}
               className={`py-4 text-[15px] transition-colors duration-smooth hover:text-cerulean ${
-                pathname?.startsWith(item.href)
+                navItemIsActive(pathname, headerSearchParams, item.href)
                   ? "text-cerulean font-medium"
                   : "text-foreground/70"
               }`}
@@ -451,13 +470,19 @@ export function Header() {
               <ChevronDown className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-              {allCategories.map((cat) => (
-                <DropdownMenuItem key={cat.name} asChild>
+              {dropdownCategories.map((cat) => (
+                <DropdownMenuItem key={cat.label} asChild>
                   <Link href={cat.href} className="w-full">
-                    {cat.name}
+                    {cat.label}
                   </Link>
                 </DropdownMenuItem>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/categories" className="w-full font-medium text-cerulean">
+                  See all categories
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -493,6 +518,23 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
+              {dropdownCategories.map((cat) => (
+                <Link
+                  key={cat.href}
+                  href={cat.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                >
+                  {cat.label}
+                </Link>
+              ))}
+              <Link
+                href="/categories"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+              >
+                See all categories
+              </Link>
               <Link
                 href="/used/recent"
                 onClick={() => setMobileMenuOpen(false)}

@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import {
   ArrowLeft,
   Heart,
@@ -26,6 +27,9 @@ import { FavoriteButton } from "@/components/favorite-button"
 import { TranslateableDescription } from "@/components/translateable-description"
 import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { wetsuitZipLabel } from "@/lib/wetsuit-options"
+import { leashLengthLabel } from "@/lib/leash-options"
+import { collectibleTypeLabel, collectibleEraLabel, collectibleConditionLabel } from "@/lib/collectible-options"
 export default async function UsedListingPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -89,6 +93,7 @@ export default async function UsedListingPage(props: {
 
   // Check if favorited
   let isFavorited = false
+  let sellerListingFavIds: string[] = []
   if (user) {
     const { data: favorite } = await supabase
       .from("favorites")
@@ -97,6 +102,15 @@ export default async function UsedListingPage(props: {
       .eq("listing_id", listing.id)
       .single()
     isFavorited = !!favorite
+
+    if (sellerListings && sellerListings.length > 0) {
+      const { data: sellerFavs } = await supabase
+        .from("favorites")
+        .select("listing_id")
+        .eq("user_id", user.id)
+        .in("listing_id", sellerListings.map((l) => l.id))
+      sellerListingFavIds = (sellerFavs ?? []).map((f) => f.listing_id)
+    }
   }
 
   const images = listing.listing_images?.sort((a: { is_primary: boolean }, b: { is_primary: boolean }) => 
@@ -121,7 +135,23 @@ export default async function UsedListingPage(props: {
               <>
                 <span>/</span>
                 <Link
-                  href={`/used?category=${listing.categories.slug}`}
+                  href={
+                    listing.categories.slug === "fins"
+                      ? "/used/fins"
+                      : listing.categories.slug === "backpacks"
+                        ? "/used/backpacks"
+                        : listing.categories.slug === "board-bags"
+                          ? "/used/board-bags"
+                          : listing.categories.slug === "apparel-lifestyle"
+                            ? "/used/apparel-lifestyle"
+                            : listing.categories.slug === "wetsuits"
+                              ? "/used/wetsuits"
+                              : listing.categories.slug === "leashes"
+                                ? "/used/leashes"
+                                : listing.categories.slug === "collectibles-vintage"
+                                  ? "/used/collectibles-vintage"
+                                  : `/used?category=${listing.categories.slug}`
+                  }
                   className="hover:text-foreground"
                 >
                   {formatCategory(listing.categories.name)}
@@ -178,6 +208,66 @@ export default async function UsedListingPage(props: {
                   listing.categories ? formatCategory(listing.categories.name) : null,
                 ].filter(Boolean).join(" · ")}
               </p>
+              {listing.categories?.slug === "wetsuits" &&
+                ((listing as { wetsuit_size?: string | null }).wetsuit_size ||
+                  (listing as { wetsuit_thickness?: string | null }).wetsuit_thickness ||
+                  (listing as { wetsuit_zip_type?: string | null }).wetsuit_zip_type) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[
+                      (listing as { wetsuit_size?: string | null }).wetsuit_size?.trim(),
+                      (listing as { wetsuit_thickness?: string | null }).wetsuit_thickness?.trim(),
+                      (listing as { wetsuit_zip_type?: string | null }).wetsuit_zip_type?.trim()
+                        ? wetsuitZipLabel(
+                            (listing as { wetsuit_zip_type: string }).wetsuit_zip_type.trim(),
+                          )
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
+              {listing.categories?.slug === "leashes" &&
+                ((listing as { leash_length?: string | null }).leash_length ||
+                  (listing as { leash_thickness?: string | null }).leash_thickness) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[
+                      (listing as { leash_length?: string | null }).leash_length?.trim()
+                        ? leashLengthLabel(
+                            (listing as { leash_length: string }).leash_length.trim(),
+                          )
+                        : null,
+                      (listing as { leash_thickness?: string | null }).leash_thickness?.trim(),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
+              {listing.categories?.slug === "collectibles-vintage" &&
+                ((listing as { collectible_type?: string | null }).collectible_type ||
+                  (listing as { collectible_era?: string | null }).collectible_era ||
+                  (listing as { collectible_condition?: string | null }).collectible_condition) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[
+                      (listing as { collectible_type?: string | null }).collectible_type?.trim()
+                        ? collectibleTypeLabel(
+                            (listing as { collectible_type: string }).collectible_type.trim(),
+                          )
+                        : null,
+                      (listing as { collectible_era?: string | null }).collectible_era?.trim()
+                        ? collectibleEraLabel(
+                            (listing as { collectible_era: string }).collectible_era.trim(),
+                          )
+                        : null,
+                      (listing as { collectible_condition?: string | null }).collectible_condition?.trim()
+                        ? collectibleConditionLabel(
+                            (listing as { collectible_condition: string }).collectible_condition.trim(),
+                          )
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
 
               {/* Description */}
               <div>
@@ -310,31 +400,36 @@ export default async function UsedListingPage(props: {
                 {sellerListings.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
                   return (
-                    <Link key={item.id} href={`/used/${item.slug || item.id}`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="aspect-square relative bg-muted">
+                    <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+                      <Link href={`/used/${item.slug || item.id}`} className="flex-1 flex flex-col">
+                        <div className="aspect-square relative bg-muted overflow-hidden">
                           {primaryImage?.url ? (
                             <Image
                               src={primaryImage.url || "/placeholder.svg"}
-                              alt={item.title}
+                              alt={capitalizeWords(item.title)}
                               fill
-                              className="object-contain group-hover:scale-105 transition-transform duration-300"
-                              style={{ objectFit: "contain" }}
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              style={{ objectFit: "cover" }}
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                               No Image
                             </div>
                           )}
+                          <FavoriteButtonCardOverlay
+                            listingId={item.id}
+                            initialFavorited={sellerListingFavIds.includes(item.id)}
+                            isLoggedIn={!!user}
+                          />
                         </div>
                         <CardContent className="p-4">
-                          <h3 className="font-medium line-clamp-1">{item.title}</h3>
+                          <h3 className="font-medium line-clamp-1">{capitalizeWords(item.title)}</h3>
                           <p className="text-lg font-bold text-primary mt-1">
                             ${item.price.toFixed(2)}
                           </p>
                         </CardContent>
-                      </Card>
-                    </Link>
+                      </Link>
+                    </Card>
                   )
                 })}
               </div>

@@ -15,7 +15,6 @@ import {
   Shield,
   MessageSquare,
   Recycle,
-  ShoppingBag,
   Users,
   Store,
 } from "lucide-react"
@@ -25,11 +24,12 @@ import { VerifiedBadge } from "@/components/verified-badge"
 
 const categories = [
   { name: "Surfboards", href: "/boards" },
-  { name: "Wetsuits", href: "/used?category=wetsuits" },
-  { name: "Fins", href: "/used?category=fins" },
-  { name: "Leashes", href: "/used?category=leashes" },
-  { name: "Traction Pads", href: "/used?category=traction-pads-used" },
-  { name: "Board Bags", href: "/used?category=board-bags" },
+  { name: "Wetsuits", href: "/used/wetsuits" },
+  { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
+  { name: "Fins", href: "/used/fins" },
+  { name: "Leashes", href: "/used/leashes" },
+  { name: "Board Bags", href: "/used/board-bags" },
+  { name: "Collectibles & Vintage", href: "/used/collectibles-vintage" },
 ]
 
 const features = [
@@ -177,7 +177,7 @@ export default async function HomePage() {
         {/* Marketplace Sections */}
         <section className="py-16">
           <div className="container mx-auto">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* Used Gear */}
               <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
                 <CardContent className="p-6">
@@ -191,25 +191,6 @@ export default async function HomePage() {
                   <Button variant="link" className="mt-4 p-0" asChild>
                     <Link href="/used">
                       Browse Used
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* New Gear */}
-              <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/20 text-accent-foreground">
-                    <ShoppingBag className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-semibold">New Gear</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Shop brand new accessories from our curated collection. Shipped directly to you.
-                  </p>
-                  <Button variant="link" className="mt-4 p-0" asChild>
-                    <Link href="/shop">
-                      Shop New
                       <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>
                   </Button>
