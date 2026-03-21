@@ -11,19 +11,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Loader2, Save, LogOut, Camera, User, Languages } from 'lucide-react'
+import { Loader2, Save, LogOut, Camera, User } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { validateDisplayName } from '@/lib/display-name-validation'
 import { useLocale } from '@/components/locale-provider'
-import type { Locale } from '@/lib/translations'
 
 interface Profile {
   id: string
@@ -36,7 +28,7 @@ interface Profile {
 }
 
 export default function SettingsPage() {
-  const { locale, setLocale, t, supportedLocales } = useLocale()
+  const { t } = useLocale()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -161,7 +153,6 @@ export default function SettingsPage() {
   const s = t('settings')
   const p = s.profile
   const a = s.account
-  const lang = s.language
 
   return (
     <div className="space-y-6">
@@ -289,39 +280,6 @@ export default function SettingsPage() {
               </>
             )}
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Languages className="h-5 w-5" />
-            {lang.title}
-          </CardTitle>
-          <CardDescription>{lang.description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label>{lang.label}</Label>
-            <Select
-              value={locale}
-              onValueChange={(value) => {
-                setLocale(value as Locale)
-                toast.success(locale === 'es' ? 'Idioma actualizado' : 'Language updated')
-              }}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {supportedLocales.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </CardContent>
       </Card>
 

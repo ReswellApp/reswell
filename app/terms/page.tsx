@@ -2,10 +2,11 @@ import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { FileText } from "lucide-react"
+import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 
 export const metadata = {
-  title: "Terms of Service - ReSwell Surf",
-  description: "ReSwell Surf terms of service. Rules and guidelines for using the marketplace.",
+  title: "Terms of Service - Reswell",
+  description: "Reswell terms of service. Rules and guidelines for using the marketplace.",
 }
 
 export default function TermsOfServicePage() {
@@ -28,14 +29,14 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">1. Agreement to terms</h2>
               <p className="leading-relaxed">
-                By accessing or using ReSwell Surf (“the platform,” “we,” “our”), you agree to be bound by these Terms of Service and our <Link href="/privacy" className="text-primary underline">Privacy Policy</Link>. If you do not agree, do not use the platform.
+                By accessing or using Reswell (“the platform,” “we,” “our”), you agree to be bound by these Terms of Service and our <Link href="/privacy" className="text-primary underline">Privacy Policy</Link>. If you do not agree, do not use the platform.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">2. Description of service</h2>
               <p className="leading-relaxed">
-                ReSwell Surf is a peer-to-peer marketplace where users can list, browse, and buy or sell surf gear and related items. We provide the platform, messaging, and ReSwell Bucks (in-app currency); transactions are between buyers and sellers. We are not a party to those transactions unless otherwise stated.
+                Reswell is a peer-to-peer marketplace where users can list, browse, and buy or sell surf gear and related items. We provide the platform, messaging, and Reswell Bucks (in-app currency); transactions are between buyers and sellers. We are not a party to those transactions unless otherwise stated.
               </p>
             </section>
 
@@ -61,9 +62,14 @@ export default function TermsOfServicePage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">5. ReSwell Bucks and payments</h2>
+              <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">5. Reswell Bucks and payments</h2>
               <p className="leading-relaxed">
-                ReSwell Bucks are an in-app currency used for purchases on the platform. They have no cash value outside the platform except when cashed out according to our wallet and cash-out rules. For used gear sales, the platform charges a 5% marketplace fee; card payments also include payment processing (~2.9% + $0.30). Cash-out to real currency: 0% standard payout; 1% instant payout. Other details are in the app. You are responsible for any taxes that apply to your sales or income.
+                Reswell Bucks are an in-app currency used for purchases on the platform. They have no cash value
+                outside the platform except when cashed out according to our wallet and cash-out rules. For used
+                gear sales, the platform charges a {MARKETPLACE_FEE_PERCENT}% marketplace fee; card payments also
+                include payment processing (~2.9% + $0.30). Cash-out to real currency: 0% standard payout; 1%
+                instant payout. Other details are in the app. You are responsible for any taxes that apply to your
+                sales or income.
               </p>
             </section>
 
@@ -88,7 +94,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">8. Intellectual property</h2>
               <p className="leading-relaxed">
-                ReSwell Surf and its branding, design, and content (excluding user-generated content) are owned by us or our licensors. You may not copy, modify, or use our trademarks or content without permission. You retain ownership of your listings and messages; you grant us a license to use them to operate and promote the platform.
+                Reswell and its branding, design, and content (excluding user-generated content) are owned by us or our licensors. You may not copy, modify, or use our trademarks or content without permission. You retain ownership of your listings and messages; you grant us a license to use them to operate and promote the platform.
               </p>
             </section>
 
@@ -102,7 +108,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">10. Limitation of liability</h2>
               <p className="leading-relaxed">
-                To the maximum extent permitted by law, ReSwell Surf and its affiliates are not liable for any indirect, incidental, special, or consequential damages, or for any loss of profits or data, arising from your use of the platform or from transactions with other users. Our total liability is limited to the amount you paid us (if any) in the twelve months before the claim.
+                To the maximum extent permitted by law, Reswell and its affiliates are not liable for any indirect, incidental, special, or consequential damages, or for any loss of profits or data, arising from your use of the platform or from transactions with other users. Our total liability is limited to the amount you paid us (if any) in the twelve months before the claim.
               </p>
             </section>
 

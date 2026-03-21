@@ -1,11 +1,10 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { formatCondition, formatBoardType, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -19,7 +18,6 @@ import {
   Share2,
   Clock,
   AlertTriangle,
-  Ruler,
   Info,
   Truck,
 } from "lucide-react"
@@ -29,25 +27,32 @@ import { FavoriteButton } from "@/components/favorite-button"
 import { LocationMap } from "@/components/location-map"
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
+import { findListingByParam } from "@/lib/listing-query"
 export default async function BoardDetailPage(props: {
   params: Promise<{ id: string }>
 }) {
   const params = await props.params
   const supabase = await createClient()
   
-  const { data: board } = await supabase
-    .from("listings")
-    .select(`
-      *,
-      listing_images (id, url, is_primary),
-      profiles (id, display_name, avatar_url, location, created_at)
-    `)
-    .eq("id", params.id)
-    .eq("section", "surfboards")
-    .single()
+  const { listing: board, redirectSlug } = await findListingByParam(
+    supabase,
+    params.id,
+    {
+      select: `
+        *,
+        listing_images (id, url, is_primary),
+        profiles (id, display_name, avatar_url, location, created_at)
+      `,
+      section: "surfboards",
+    },
+  )
 
   if (!board) {
     notFound()
+  }
+
+  if (redirectSlug) {
+    redirect(`/boards/${redirectSlug}`)
   }
 
   // Ensure seller profile never contains private data (email, etc.) before sending to client
@@ -62,11 +67,14 @@ export default async function BoardDetailPage(props: {
     }
   }
 
+  const boardSlug = board.slug || board.id
+
   // Get seller's other boards
   const { data: sellerBoards } = await supabase
     .from("listings")
     .select(`
       id,
+      slug,
       title,
       price,
       board_length,
@@ -173,29 +181,22 @@ export default async function BoardDetailPage(props: {
             <p className="text-2xl font-bold text-primary">
               ${board.price.toFixed(2)}
             </p>
-            <div className="mt-1 flex flex-wrap gap-2">
-              <Badge variant="secondary">{formatCondition(board.condition)}</Badge>
-              {board.board_type && (
-                <Badge variant="outline">{formatBoardType(board.board_type)}</Badge>
-              )}
-              {board.board_length && (
-                <Badge variant="outline">
-                  <Ruler className="h-3 w-3 mr-1" />
-                  {board.board_length}
-                </Badge>
-              )}
-              <Badge variant="outline" className="capitalize">
-                {boardFulfillmentSummary(board.local_pickup, board.shipping_available)}
-              </Badge>
-            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {[
+                formatCondition(board.condition),
+                board.board_type ? formatBoardType(board.board_type) : null,
+                board.board_length || null,
+                boardFulfillmentSummary(board.local_pickup, board.shipping_available),
+              ].filter(Boolean).join(" · ")}
+            </p>
             {shippingNote && <div className="mt-3 lg:hidden">{shippingNote}</div>}
             {!isOwnListing && board.status === "active" && (
               <Button size="lg" className="w-full gap-2 lg:hidden mt-3" asChild>
-                <Link
+                  <Link
                   href={
                     user
-                      ? `/boards/${board.id}/checkout`
-                      : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}/checkout`)}`
+                      ? `/boards/${boardSlug}/checkout`
+                      : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
                   }
                 >
                   Buy now — ${Number(board.price).toFixed(2)}
@@ -231,22 +232,14 @@ export default async function BoardDetailPage(props: {
                 </p>
               </div>
 
-              {/* Board Specs */}
-              <div className="hidden lg:flex flex-wrap gap-2">
-                <Badge variant="secondary">{formatCondition(board.condition)}</Badge>
-                {board.board_type && (
-                  <Badge variant="outline">{formatBoardType(board.board_type)}</Badge>
-                )}
-                {board.board_length && (
-                  <Badge variant="outline">
-                    <Ruler className="h-3 w-3 mr-1" />
-                    {board.board_length}
-                  </Badge>
-                )}
-                <Badge variant="outline" className="capitalize">
-                  {boardFulfillmentSummary(board.local_pickup, board.shipping_available)}
-                </Badge>
-              </div>
+              <p className="hidden lg:block text-sm text-muted-foreground">
+                {[
+                  formatCondition(board.condition),
+                  board.board_type ? formatBoardType(board.board_type) : null,
+                  board.board_length || null,
+                  boardFulfillmentSummary(board.local_pickup, board.shipping_available),
+                ].filter(Boolean).join(" · ")}
+              </p>
 
               {/* Description (above map) */}
               <div>
@@ -262,8 +255,8 @@ export default async function BoardDetailPage(props: {
                     <Link
                       href={
                         user
-                          ? `/boards/${board.id}/checkout`
-                          : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}/checkout`)}`
+                          ? `/boards/${boardSlug}/checkout`
+                          : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
                       }
                     >
                       Buy now — ${Number(board.price).toFixed(2)}
@@ -323,6 +316,7 @@ export default async function BoardDetailPage(props: {
                   <CardContent className="p-4">
                     <ContactSellerForm
                       listingId={board.id}
+                      listingSlug={board.slug}
                       sellerId={board.user_id}
                       listingTitle={capitalizeWords(board.title)}
                       isLoggedIn={!!user}
@@ -381,7 +375,7 @@ export default async function BoardDetailPage(props: {
                             href={
                               user
                                 ? `/messages?user=${board.user_id}&listing=${board.id}`
-                                : `/auth/login?redirect=${encodeURIComponent(`/boards/${board.id}`)}`
+                                : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}`)}`
                             }
                           >
                             <MessageSquare className="h-4 w-4 mr-2" />
@@ -445,7 +439,7 @@ export default async function BoardDetailPage(props: {
                 {sellerBoards.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
                   return (
-                    <Link key={item.id} href={`/boards/${item.id}`}>
+                    <Link key={item.id} href={`/boards/${item.slug || item.id}`}>
                       <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-[4/5] relative bg-muted">
                           {primaryImage?.url ? (

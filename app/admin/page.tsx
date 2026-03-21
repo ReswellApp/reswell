@@ -1,17 +1,52 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Package, 
   Users, 
-  DollarSign, 
   TrendingUp,
   ShoppingBag,
-  Flag
+  Flag,
+  Coins,
 } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: adminProfile } = user
+    ? await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+    : { data: null as { is_admin: boolean | null } | null }
+
+  let platformPurchaseFees: {
+    totalFees: number
+    confirmedCount: number
+    totalSaleVolume: number
+  } | null = null
+  let platformFeesError: string | null = null
+
+  if (adminProfile?.is_admin) {
+    try {
+      const adminDb = createServiceRoleClient()
+      const { data: purchaseRows, error: purchasesError } = await adminDb
+        .from('purchases')
+        .select('platform_fee, amount')
+        .eq('status', 'confirmed')
+
+      if (purchasesError) {
+        platformFeesError = 'Could not load purchase fee totals.'
+      } else {
+        const rows = purchaseRows ?? []
+        platformPurchaseFees = {
+          totalFees: rows.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0),
+          confirmedCount: rows.length,
+          totalSaleVolume: rows.reduce((s, r) => s + Number(r.amount ?? 0), 0),
+        }
+      }
+    } catch {
+      platformFeesError =
+        'Add SUPABASE_SERVICE_ROLE_KEY on the server to aggregate platform fees from purchases.'
+    }
+  }
 
   // Fetch stats
   const [
@@ -86,7 +121,7 @@ export default async function AdminDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here&apos;s an overview of ReSwell Surf.</p>
+        <p className="text-muted-foreground">Welcome back! Here&apos;s an overview of Reswell.</p>
       </div>
 
       {/* Stats Grid */}
@@ -106,6 +141,53 @@ export default async function AdminDashboard() {
           </Card>
         ))}
       </div>
+
+      {adminProfile?.is_admin && (
+        <Card className="border-primary/25 bg-primary/[0.04]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Coins className="h-5 w-5 text-primary" />
+              Platform Reswell Bucks (fees from purchases)
+            </CardTitle>
+            <p className="text-sm text-muted-foreground font-normal">
+              Total marketplace fees collected on completed purchases (Reswell Bucks and card
+              checkout). Same units as listing prices in the app.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {platformFeesError ? (
+              <p className="text-sm text-muted-foreground">{platformFeesError}</p>
+            ) : platformPurchaseFees ? (
+              <div className="grid gap-6 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Platform fees
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                    R${platformPurchaseFees.totalFees.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Completed purchases
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                    {platformPurchaseFees.confirmedCount}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Gross sale volume
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                    R${platformPurchaseFees.totalSaleVolume.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Section Breakdown */}
       <div className="grid gap-6 md:grid-cols-2">

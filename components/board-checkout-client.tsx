@@ -10,6 +10,7 @@ import { Truck, MapPin } from "lucide-react"
 
 export type BoardCheckoutListing = PayableListing & {
   id: string
+  slug?: string | null
   title: string
   user_id: string
   section: string
@@ -41,7 +42,7 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
     return (
       <p className="text-sm text-destructive">
         This listing cannot be checked out ({resolved.error}).{" "}
-        <Link href={`/boards/${listing.id}`} className="underline">
+        <Link href={`/boards/${listing.slug || listing.id}`} className="underline">
           Back to listing
         </Link>
       </p>

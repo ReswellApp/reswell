@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, Truck, MapPin, DollarSign } from "lucide-react"
 
 export const metadata = {
-  title: "Shipping Guide - ReSwell Surf",
-  description: "How to ship and receive surf gear on ReSwell Surf. Seller and buyer responsibilities, packaging tips, and local pickup.",
+  title: "Shipping Guide - Reswell",
+  description: "How to ship and receive surf gear on Reswell. Seller and buyer responsibilities, packaging tips, and local pickup.",
 }
 
 export default function ShippingGuidePage() {
@@ -58,7 +58,7 @@ export default function ShippingGuidePage() {
                 <p>If a listing says “Ships,” you can buy and have it shipped. The seller will send tracking once shipped.</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Confirm your shipping address with the seller in Messages before they ship.</li>
-                  <li>Inspect the package when it arrives. If something is damaged or not as described, message the seller right away and, if you used ReSwell Bucks, you may be eligible for help from our team.</li>
+                  <li>Inspect the package when it arrives. If something is damaged or not as described, message the seller right away and, if you used Reswell Bucks, you may be eligible for help from our team.</li>
                 </ul>
               </CardContent>
             </Card>

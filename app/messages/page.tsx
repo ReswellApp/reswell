@@ -21,8 +21,8 @@ interface Notification {
   message: string | null
   is_read: boolean
   created_at: string
-  listing?: { id: string; title: string; section: string; listing_images?: { url: string }[] } | null
-  listings?: { id: string; title: string; section: string; listing_images?: { url: string }[] } | null
+  listing?: { id: string; slug?: string | null; title: string; section: string; listing_images?: { url: string }[] } | null
+  listings?: { id: string; slug?: string | null; title: string; section: string; listing_images?: { url: string }[] } | null
 }
 
 interface Conversation {
@@ -124,7 +124,7 @@ function MessagesContent() {
             message,
             is_read,
             created_at,
-            listings(id, title, section, listing_images(url))
+            listings(id, slug, title, section, listing_images(url))
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -135,8 +135,8 @@ function MessagesContent() {
         setConversations(data as Conversation[])
       }
       if (notifData) {
-        setNotifications(notifData as Notification[])
-        const unreadIds = (notifData as Notification[]).filter((n) => !n.is_read).map((n) => n.id)
+        setNotifications(notifData as unknown as Notification[])
+        const unreadIds = (notifData as unknown as Notification[]).filter((n) => !n.is_read).map((n) => n.id)
         if (unreadIds.length > 0) {
           await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds)
           if (typeof window !== 'undefined') {
@@ -204,11 +204,12 @@ function MessagesContent() {
                   <div className="space-y-2">
                     {notifications.map((n) => {
                       const listing = n.listing ?? n.listings
+                      const listingSlugOrId = listing?.slug || n.listing_id
                       const href = n.listing_id && listing?.section
                         ? listing.section === 'surfboards'
-                          ? `/boards/${n.listing_id}`
+                          ? `/boards/${listingSlugOrId}`
                           : listing.section === 'used'
-                            ? `/used/${n.listing_id}`
+                            ? `/used/${listingSlugOrId}`
                             : `/shop/${n.listing_id}`
                         : '/saved'
                       return (

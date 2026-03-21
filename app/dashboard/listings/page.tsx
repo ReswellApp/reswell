@@ -31,6 +31,7 @@ import { capitalizeWords } from '@/lib/listing-labels'
 
 interface Listing {
   id: string
+  slug?: string | null
   title: string
   price: number
   status: string
@@ -62,7 +63,7 @@ export default function MyListingsPage() {
 
     const res = await supabase
       .from('listings')
-      .select('id, title, price, status, section, views, created_at, archived_at, listing_images(url, is_primary)')
+      .select('id, slug, title, price, status, section, views, created_at, archived_at, listing_images(url, is_primary)')
       .eq('user_id', user.id)
       .is('archived_at', null)
       .order('created_at', { ascending: false })
@@ -70,7 +71,7 @@ export default function MyListingsPage() {
     if (res.error) {
       const fallback = await supabase
         .from('listings')
-        .select('id, title, price, status, section, views, created_at, listing_images(url, is_primary)')
+        .select('id, slug, title, price, status, section, views, created_at, listing_images(url, is_primary)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
       if (!fallback.error && fallback.data) {
@@ -145,10 +146,11 @@ export default function MyListingsPage() {
     }
   }
 
-  const getListingHref = (section: string, id: string) => {
-    if (section === 'surfboards') return `/boards/${id}`
+  const getListingHref = (section: string, id: string, slug?: string | null) => {
+    const identifier = slug || id
+    if (section === 'surfboards') return `/boards/${identifier}`
     if (section === 'new') return `/shop/${id}`
-    return `/used/${id}`
+    return `/used/${identifier}`
   }
 
   const filterByStatus = (status: string) => {
@@ -163,7 +165,7 @@ export default function MyListingsPage() {
       <Card>
         <CardContent className="p-4">
           <div className="flex gap-4">
-            <Link href={getListingHref(listing.section, listing.id)} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+            <Link href={getListingHref(listing.section, listing.id, listing.slug)} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {primaryImage?.url ? (
                 <Image
                   src={primaryImage.url || "/placeholder.svg"}
@@ -181,7 +183,7 @@ export default function MyListingsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <Link href={getListingHref(listing.section, listing.id)} className="font-semibold text-foreground hover:text-primary truncate block">
+                  <Link href={getListingHref(listing.section, listing.id, listing.slug)} className="font-semibold text-foreground hover:text-primary truncate block">
                     {capitalizeWords(listing.title)}
                   </Link>
                   <p className="text-lg font-bold text-primary">${listing.price}</p>
@@ -194,7 +196,7 @@ export default function MyListingsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={getListingHref(listing.section, listing.id)}>
+                      <Link href={getListingHref(listing.section, listing.id, listing.slug)}>
                         <Eye className="h-4 w-4 mr-2" /> View
                       </Link>
                     </DropdownMenuItem>

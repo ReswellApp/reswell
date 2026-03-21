@@ -61,7 +61,7 @@ function SignUpSuccessContent() {
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-sm text-muted-foreground text-center">
-              Click the link in that email to confirm your account and start using ReSwell Surf.
+              Click the link in that email to confirm your account and start using Reswell.
             </p>
             <div className="rounded-lg bg-muted/50 p-4 text-center">
               <p className="text-xs text-muted-foreground">

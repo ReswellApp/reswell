@@ -402,7 +402,7 @@ export default async function HomePage() {
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {featuredUsed.map((listing) => (
                   <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    <Link href={`/used/${listing.id}`} className="flex-1 flex flex-col">
+                    <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-square relative bg-muted overflow-hidden">
                         {listing.listing_images?.[0]?.url ? (
                           <Image
@@ -417,9 +417,6 @@ export default async function HomePage() {
                             No Image
                           </div>
                         )}
-                        <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
-                          {formatCondition(listing.condition)}
-                        </Badge>
                         <FavoriteButtonCardOverlay
                           listingId={listing.id}
                           initialFavorited={favoritedIds.includes(listing.id)}
@@ -440,7 +437,7 @@ export default async function HomePage() {
                       <MessageListingButton
                         listingId={listing.id}
                         sellerId={listing.user_id}
-                        redirectPath={`/used/${listing.id}`}
+                        redirectPath={`/used/${listing.slug || listing.id}`}
                       />
                     </div>
                   </Card>
@@ -484,11 +481,6 @@ export default async function HomePage() {
                             No Image
                           </div>
                         )}
-                        {item.compare_at_price && item.compare_at_price > item.price && (
-                          <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
-                            Sale
-                          </Badge>
-                        )}
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium line-clamp-1">{item.name}</h3>
@@ -530,7 +522,7 @@ export default async function HomePage() {
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {featuredBoards.map((board) => (
                   <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    <Link href={`/boards/${board.id}`} className="flex-1 flex flex-col">
+                    <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                         {board.listing_images?.[0]?.url ? (
                           <Image
@@ -545,9 +537,6 @@ export default async function HomePage() {
                             No Image
                           </div>
                         )}
-                        <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
-                          {formatCondition(board.condition)}
-                        </Badge>
                         <FavoriteButtonCardOverlay
                           listingId={board.id}
                           initialFavorited={favoritedIds.includes(board.id)}
@@ -569,7 +558,7 @@ export default async function HomePage() {
                       <MessageListingButton
                         listingId={board.id}
                         sellerId={board.user_id}
-                        redirectPath={`/boards/${board.id}`}
+                        redirectPath={`/boards/${board.slug || board.id}`}
                       />
                     </div>
                   </Card>
@@ -582,7 +571,7 @@ export default async function HomePage() {
         {/* Features */}
         <section className="py-16 bg-primary/5">
           <div className="container mx-auto px-4">
-            <h2 className="text-2xl font-bold text-center mb-12">Why Choose ReSwell Surf?</h2>
+            <h2 className="text-2xl font-bold text-center mb-12">Why Choose Reswell?</h2>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((feature) => (
                 <div key={feature.title} className="text-center">

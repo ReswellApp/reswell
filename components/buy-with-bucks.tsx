@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getSellerEarnings } from "@/lib/seller-fees"
+import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -99,7 +99,7 @@ export function BuyWithBucks({
       <DialogTrigger asChild>
         <Button size="lg" className="w-full gap-2">
           <Wallet className="h-4 w-4" />
-          Buy with ReSwell Bucks - R${price.toFixed(2)}
+          Buy with Reswell Bucks - R${price.toFixed(2)}
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -143,7 +143,7 @@ export function BuyWithBucks({
             <DialogHeader>
               <DialogTitle>Confirm Purchase</DialogTitle>
               <DialogDescription>
-                Buy &quot;{listingTitle}&quot; with ReSwell Bucks
+                Buy &quot;{listingTitle}&quot; with Reswell Bucks
               </DialogDescription>
             </DialogHeader>
 
@@ -157,7 +157,7 @@ export function BuyWithBucks({
                   <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
                   <p className="font-medium">Sign in required</p>
                   <p className="text-sm text-muted-foreground">
-                    You need to sign in to purchase items with ReSwell Bucks.
+                    You need to sign in to purchase items with Reswell Bucks.
                   </p>
                   <Button asChild>
                     <Link href="/auth/login">Sign In</Link>
@@ -199,7 +199,7 @@ export function BuyWithBucks({
                       <span>R${price.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm pt-1">
-                      <span className="text-muted-foreground">Platform Fee (5%)</span>
+                      <span className="text-muted-foreground">Platform Fee ({MARKETPLACE_FEE_PERCENT}%)</span>
                       <span className="text-muted-foreground">R${platformFee.toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between text-sm">
@@ -212,7 +212,7 @@ export function BuyWithBucks({
                     <div className="flex items-start gap-2 text-sm text-destructive">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <p>
-                        You need R${(price - (balance ?? 0)).toFixed(2)} more. Earn ReSwell Bucks by selling items on the marketplace.
+                        You need R${(price - (balance ?? 0)).toFixed(2)} more. Earn Reswell Bucks by selling items on the marketplace.
                       </p>
                     </div>
                   )}

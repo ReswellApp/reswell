@@ -80,7 +80,7 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      name: "ReSwell Bucks",
+      name: "Reswell Bucks",
       value: `R$${walletBalance.toFixed(2)}`,
       icon: Wallet,
       href: "/dashboard/wallet",
@@ -243,7 +243,7 @@ export default async function DashboardPage() {
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
               <Link href="/dashboard/wallet">
                 <Wallet className="h-6 w-6 mb-2" />
-                ReSwell Bucks
+                Reswell Bucks
               </Link>
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>

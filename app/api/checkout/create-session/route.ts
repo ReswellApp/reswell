@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const { data: listing, error: listingError } = await supabase
       .from("listings")
       .select(
-        "id, user_id, title, price, section, status, shipping_available, local_pickup, shipping_price"
+        "id, slug, user_id, title, price, section, status, shipping_available, local_pickup, shipping_price"
       )
       .eq("id", listing_id)
       .eq("status", "active")
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
           currency: "usd",
           product_data: {
             name: safeProductName(listing.title),
-            description: "Surfboard — ReSwell marketplace",
+            description: "Surfboard — Reswell marketplace",
           },
           unit_amount: Math.round(resolved.itemPrice * 100),
         },
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         collect_shipping: collectShipping ? "1" : "0",
       },
       success_url: `${origin}/boards/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/boards/${listing.id}/checkout?canceled=1`,
+      cancel_url: `${origin}/boards/${listing.slug || listing.id}/checkout?canceled=1`,
     })
 
     if (!session.url) {

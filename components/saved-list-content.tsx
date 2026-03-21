@@ -24,6 +24,7 @@ export interface SavedFavorite {
   created_at: string
   listing: {
     id: string
+    slug: string | null
     user_id: string
     title: string
     price: number
@@ -65,6 +66,7 @@ export function SavedListContent() {
         created_at,
         listing:listings(
           id,
+          slug,
           user_id,
           title,
           price,
@@ -105,11 +107,12 @@ export function SavedListContent() {
   }
 
   const getListingHref = (listing: SavedFavorite['listing']) => {
+    const id = listing.slug || listing.id
     switch (listing.section) {
-      case 'used': return `/used/${listing.id}`
+      case 'used': return `/used/${id}`
       case 'new': return `/shop/${listing.id}`
-      case 'surfboards': return `/boards/${listing.id}`
-      default: return `/used/${listing.id}`
+      case 'surfboards': return `/boards/${id}`
+      default: return `/used/${id}`
     }
   }
 
@@ -185,35 +188,6 @@ export function SavedListContent() {
                         No Image
                       </div>
                     )}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      {listing.condition && (
-                        <Badge className="bg-black/70 text-white border-0">
-                          {formatCondition(listing.condition)}
-                        </Badge>
-                      )}
-                      {listing.section === 'surfboards' && listing.board_type ? (
-                        <Badge className="bg-black/70 text-white border-0">
-                          {formatBoardType(listing.board_type)}
-                        </Badge>
-                      ) : listing.categories?.name ? (
-                        <Badge className="bg-black/70 text-white border-0">
-                          {formatCategory(listing.categories.name)}
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0">
-                      {isInPersonOnly ? (
-                        <>
-                          <MapPin className="h-3 w-3 mr-1" />
-                          In-Person Only
-                        </>
-                      ) : (
-                        <>
-                          <Truck className="h-3 w-3 mr-1" />
-                          Ships
-                        </>
-                      )}
-                    </Badge>
                     <FavoriteButtonCardOverlay
                       listingId={listing.id}
                       initialFavorited

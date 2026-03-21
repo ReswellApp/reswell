@@ -198,6 +198,7 @@ async function fetchCuratedRecentListings(
     .select(
       `
       id,
+      slug,
       user_id,
       title,
       price,
@@ -301,6 +302,7 @@ function rowToRecentListing(row: any): RecentListing {
         : null
   return {
     id: row.id,
+    slug: row.slug ?? null,
     user_id: row.user_id,
     title: row.title,
     price: row.price,
@@ -328,6 +330,7 @@ async function buildSearchQuery(
     .select(
       `
       id,
+      slug,
       user_id,
       title,
       price,

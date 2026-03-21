@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
         currency: "usd",
         product_data: {
           name: i.name,
-          description: "ReSwell Surf marketplace",
+          description: "Reswell marketplace",
         },
         unit_amount: Math.round(Number(i.price) * 100),
       },

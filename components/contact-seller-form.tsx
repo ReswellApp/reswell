@@ -11,6 +11,7 @@ import Link from "next/link"
 
 interface ContactSellerFormProps {
   listingId: string
+  listingSlug?: string | null
   sellerId: string
   listingTitle: string
   isLoggedIn: boolean
@@ -22,6 +23,7 @@ interface ContactSellerFormProps {
 
 export function ContactSellerForm({
   listingId,
+  listingSlug,
   sellerId,
   listingTitle,
   isLoggedIn,
@@ -123,7 +125,7 @@ export function ContactSellerForm({
         <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground mb-3">Sign in to contact the seller</p>
         <Button asChild>
-          <Link href={`/auth/login?redirect=/used/${listingId}`}>
+          <Link href={`/auth/login?redirect=/${section === "surfboards" ? "boards" : "used"}/${listingSlug || listingId}`}>
             Sign In to Message
           </Link>
         </Button>

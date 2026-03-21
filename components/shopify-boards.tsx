@@ -188,25 +188,11 @@ export function ShopifyBoardsGrid() {
                         No Image
                       </div>
                     )}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      <Badge className="bg-black/70 text-white border-0">
-                        New
-                      </Badge>
-                      {hasDiscount && (
-                        <Badge className="bg-black/70 text-white border-0">
-                          -{discountPercent}%
-                        </Badge>
-                      )}
-                    </div>
                     {!product.availableForSale && (
                       <Badge className="absolute top-2 right-2 bg-black/70 text-white border-0">
                         Sold Out
                       </Badge>
                     )}
-                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0 text-xs">
-                      <Truck className="h-3 w-3 mr-1" />
-                      Ships
-                    </Badge>
                   </div>
                 </a>
                 <CardContent className="p-4 flex flex-col flex-1">

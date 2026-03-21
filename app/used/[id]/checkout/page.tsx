@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server"
 import { ArrowLeft } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { MessageListingButton } from "@/components/message-listing-button"
+import { findListingByParam } from "@/lib/listing-query"
 
 export default async function UsedCheckoutPage(props: {
   params: Promise<{ id: string }>
@@ -19,16 +20,24 @@ export default async function UsedCheckoutPage(props: {
     redirect(`/auth/login?redirect=${encodeURIComponent(`/used/${id}/checkout`)}`)
   }
 
-  const { data: listing } = await supabase
-    .from("listings")
-    .select("id, title, price, user_id, status")
-    .eq("id", id)
-    .eq("section", "used")
-    .single()
+  const { listing, redirectSlug } = await findListingByParam(
+    supabase,
+    id,
+    {
+      select: "id, slug, title, price, user_id, status",
+      section: "used",
+    },
+  )
 
   if (!listing || listing.status !== "active") {
     notFound()
   }
+
+  if (redirectSlug) {
+    redirect(`/used/${redirectSlug}/checkout`)
+  }
+
+  const usedSlug = listing.slug || listing.id
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -36,7 +45,7 @@ export default async function UsedCheckoutPage(props: {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-lg">
           <Button variant="ghost" size="sm" className="mb-6 -ml-2" asChild>
-            <Link href={`/used/${id}`} className="gap-2">
+            <Link href={`/used/${usedSlug}`} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to listing
             </Link>
@@ -53,13 +62,13 @@ export default async function UsedCheckoutPage(props: {
               <MessageListingButton
                 listingId={listing.id}
                 sellerId={listing.user_id}
-                redirectPath={`/used/${id}/checkout`}
+                redirectPath={`/used/${usedSlug}/checkout`}
                 size="default"
                 variant="default"
                 className="gap-2"
               />
               <Button variant="outline" asChild>
-                <Link href={`/used/${id}`} className="gap-2">
+                <Link href={`/used/${usedSlug}`} className="gap-2">
                   <ArrowLeft className="h-4 w-4" />
                   Back to listing
                 </Link>

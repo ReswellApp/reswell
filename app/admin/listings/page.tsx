@@ -29,13 +29,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Eye, Trash2, Flag, Package } from 'lucide-react'
+import { Search, MoreVertical, Eye, Trash2, Flag, Package, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 
 interface Listing {
   id: string
+  slug?: string | null
   title: string
   price: number
   status: string
@@ -62,7 +63,7 @@ export default function AdminListingsPage() {
     let query = supabase
       .from('listings')
       .select(`
-        id, title, price, status, section, views, created_at,
+        id, slug, title, price, status, section, views, created_at,
         profiles(display_name, email),
         listing_images(url)
       `)
@@ -127,11 +128,11 @@ export default function AdminListingsPage() {
     }
   }
 
-  /** Public URL for a listing by section (used → /used, new → /shop, surfboards → /boards). */
-  function getListingViewHref(section: string, id: string) {
-    if (section === 'surfboards') return `/boards/${id}`
+  function getListingViewHref(section: string, id: string, slug?: string | null) {
+    const identifier = slug || id
+    if (section === 'surfboards') return `/boards/${identifier}`
     if (section === 'new') return `/shop/${id}`
-    return `/used/${id}`
+    return `/used/${identifier}`
   }
 
   return (
@@ -268,7 +269,7 @@ export default function AdminListingsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={getListingViewHref(listing.section, listing.id)}>
+                            <Link href={getListingViewHref(listing.section, listing.id, listing.slug)}>
                               <Eye className="h-4 w-4 mr-2" /> View
                             </Link>
                           </DropdownMenuItem>
@@ -280,6 +281,21 @@ export default function AdminListingsPage() {
                           {listing.status === 'removed' && (
                             <DropdownMenuItem onClick={() => updateListingStatus(listing.id, 'active')}>
                               Restore
+                            </DropdownMenuItem>
+                          )}
+                          {listing.status === 'sold' && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (
+                                  !confirm(
+                                    'Make this listing live again? It was marked sold—only do this if the sale was reversed or was a mistake.'
+                                  )
+                                )
+                                  return
+                                updateListingStatus(listing.id, 'active')
+                              }}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-2" /> Reactivate (make live)
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 

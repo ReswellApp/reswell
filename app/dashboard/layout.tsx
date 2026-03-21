@@ -23,12 +23,13 @@ const sidebarLinks = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Archived", href: "/dashboard/listings/archived", icon: Archive },
-  { name: "ReSwell Bucks", href: "/dashboard/wallet", icon: Wallet },
+  { name: "Reswell Bucks", href: "/dashboard/wallet", icon: Wallet },
   { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Reports", href: "/dashboard/reports", icon: Flag },
-  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Shopify Connect", href: "/dashboard/profile", icon: Store },
+  { name: "Profile", href: "/dashboard/settings", icon: UserCircle },
+  { name: "Settings", href: "/dashboard/preferences", icon: Settings },
 ]
 
 export default async function DashboardLayout({

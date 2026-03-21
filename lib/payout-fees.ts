@@ -1,5 +1,5 @@
 /**
- * Payout (cash-out) fee structure for cashing out ReSwell Bucks to real currency.
+ * Payout (cash-out) fee structure for cashing out Reswell Bucks to real currency.
  */
 
 export type PayoutType = "standard" | "instant"

@@ -14,6 +14,7 @@ export default async function RecentUsedPage() {
       .from("listings")
       .select(`
         id,
+        slug,
         user_id,
         title,
         price,
@@ -35,6 +36,7 @@ export default async function RecentUsedPage() {
       .from("listings")
       .select(`
         id,
+        slug,
         user_id,
         title,
         price,
@@ -76,6 +78,7 @@ export default async function RecentUsedPage() {
             : null
       return {
         id: row.id,
+        slug: row.slug ?? null,
         user_id: row.user_id,
         title: row.title,
         price: row.price,
@@ -93,8 +96,8 @@ export default async function RecentUsedPage() {
       }
     })
   const merged = [
-    ...withCreated(usedRes.data, "used"),
-    ...withCreated(boardsRes.data, "surfboards"),
+    ...withCreated(usedRes.data ?? [], "used"),
+    ...withCreated(boardsRes.data ?? [], "surfboards"),
   ]
   const feedListings: RecentListing[] = merged
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())

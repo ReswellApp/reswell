@@ -28,6 +28,7 @@ import {
   flagsFromBoardFulfillment,
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
+import { slugify } from "@/lib/slugify"
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
 const categories = [
@@ -456,15 +457,38 @@ function SellPageContent() {
             }
 
       let listingId = editId
+      let listingSlug: string | null = null
+
+      // Generate a unique slug from the title
+      async function generateUniqueSlug(title: string): Promise<string> {
+        const base = slugify(title)
+        const { count } = await supabase
+          .from("listings")
+          .select("id", { count: "exact", head: true })
+          .eq("slug", base)
+        if (!count) return base
+        // Append incrementing suffix until unique
+        for (let i = 2; i < 100; i++) {
+          const candidate = `${base}-${i}`
+          const { count: c } = await supabase
+            .from("listings")
+            .select("id", { count: "exact", head: true })
+            .eq("slug", candidate)
+          if (!c) return candidate
+        }
+        return `${base}-${Date.now()}`
+      }
 
       if (editId) {
-        const { error: updateError } = await supabase
+        const newSlug = await generateUniqueSlug(formData.title)
+        const { data: updated, error: updateError } = await supabase
           .from("listings")
           .update({
             title: formData.title,
             description: formData.description,
             price: parseFloat(formData.price),
             condition: formData.condition,
+            slug: newSlug,
             category_id:
               listingType === "used"
                 ? formData.category
@@ -490,8 +514,12 @@ function SellPageContent() {
           })
           .eq("id", editId)
           .eq("user_id", user.id)
+          .select("slug")
+          .single()
         if (updateError) throw updateError
+        listingSlug = updated?.slug ?? newSlug
       } else {
+        const newSlug = await generateUniqueSlug(formData.title)
         const { data: listing, error: listingError } = await supabase
           .from("listings")
           .insert({
@@ -500,6 +528,7 @@ function SellPageContent() {
             description: formData.description,
             price: parseFloat(formData.price),
             condition: formData.condition,
+            slug: newSlug,
             section: listingType === "board" ? "surfboards" : listingType,
             category_id:
               listingType === "used"
@@ -529,6 +558,7 @@ function SellPageContent() {
 
         if (listingError || !listing) throw listingError
         listingId = listing.id
+        listingSlug = listing.slug ?? newSlug
       }
 
       if (listingId) {
@@ -537,7 +567,7 @@ function SellPageContent() {
 
       toast.success(editId ? "Listing updated" : "Listing created successfully!")
       const sectionPath = listingType === "board" ? "boards" : "used"
-      router.push(`/${sectionPath}/${listingId}`)
+      router.push(`/${sectionPath}/${listingSlug || listingId}`)
     } catch (error: any) {
       console.error("Error creating listing:", error?.message || error)
       toast.error(error?.message || "Failed to create listing")

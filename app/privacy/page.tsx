@@ -4,8 +4,8 @@ import { Footer } from "@/components/footer"
 import { Shield } from "lucide-react"
 
 export const metadata = {
-  title: "Privacy Policy - ReSwell Surf",
-  description: "ReSwell Surf privacy policy. How we collect, use, and protect your information.",
+  title: "Privacy Policy - Reswell",
+  description: "Reswell privacy policy. How we collect, use, and protect your information.",
 }
 
 export default function PrivacyPolicyPage() {
@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">1. Introduction</h2>
               <p className="leading-relaxed">
-                ReSwell Surf (“we,” “our,” or “us”) operates the ReSwell Surf marketplace. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services. By using ReSwell Surf, you agree to the practices described in this policy.
+                Reswell (“we,” “our,” or “us”) operates the Reswell marketplace. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services. By using Reswell, you agree to the practices described in this policy.
               </p>
             </section>
 
@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
               <p className="leading-relaxed mb-2">We may collect:</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li><strong className="text-foreground">Account information:</strong> name, email address, profile photo, and display name when you sign up or update your profile.</li>
-                <li><strong className="text-foreground">Listing and transaction data:</strong> listings you create, messages with other users, and ReSwell Bucks balance and transaction history.</li>
+                <li><strong className="text-foreground">Listing and transaction data:</strong> listings you create, messages with other users, and Reswell Bucks balance and transaction history.</li>
                 <li><strong className="text-foreground">Usage data:</strong> how you use the site (e.g. pages visited, actions taken) to improve our services and security.</li>
                 <li><strong className="text-foreground">Device and log data:</strong> IP address, browser type, and similar technical information.</li>
               </ul>
@@ -46,7 +46,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">3. How we use your information</h2>
               <p className="leading-relaxed">
-                We use the information we collect to provide, maintain, and improve the marketplace; to process transactions and ReSwell Bucks; to communicate with you (e.g. about your account or safety); to enforce our Terms of Service; and to comply with applicable law. We do not sell your personal information to third parties for marketing.
+                We use the information we collect to provide, maintain, and improve the marketplace; to process transactions and Reswell Bucks; to communicate with you (e.g. about your account or safety); to enforce our Terms of Service; and to comply with applicable law. We do not sell your personal information to third parties for marketing.
               </p>
             </section>
 
@@ -81,7 +81,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">8. Changes to this policy</h2>
               <p className="leading-relaxed">
-                We may update this Privacy Policy from time to time. We will post the updated policy on this page and update the “Last updated” date. Continued use of ReSwell Surf after changes constitutes acceptance of the revised policy.
+                We may update this Privacy Policy from time to time. We will post the updated policy on this page and update the “Last updated” date. Continued use of Reswell after changes constitutes acceptance of the revised policy.
               </p>
             </section>
 

@@ -28,6 +28,7 @@ import {
   LayoutDashboard,
   Wallet,
   Clock,
+  ChevronDown,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
@@ -40,6 +41,18 @@ const navigation = [
   { name: "Used Gear", href: "/used" },
   { name: "New Gear", href: "/shop" },
   { name: "Surfboards", href: "/boards" },
+]
+
+const allCategories = [
+  { name: "Surfboards", href: "/boards" },
+  { name: "Wetsuits", href: "/used?category=wetsuits" },
+  { name: "Fins", href: "/used?category=fins" },
+  { name: "Leashes", href: "/used?category=leashes" },
+  { name: "Traction Pads", href: "/used?category=traction-pads-used" },
+  { name: "Board Bags", href: "/used?category=board-bags" },
+  { name: "Backpacks", href: "/used?category=backpacks" },
+  { name: "Apparel & Lifestyle", href: "/used?category=apparel-lifestyle" },
+  { name: "Collectibles & Vintage", href: "/used?category=collectibles-vintage" },
 ]
 
 export function Header() {
@@ -153,10 +166,10 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto flex h-14 sm:h-16 min-w-0 items-center gap-2 px-4 md:gap-3">
+        <div className="container mx-auto flex h-14 sm:h-16 md:h-20 min-w-0 items-center gap-2 px-4 md:gap-4">
           {/* Logo + home link (desktop: logo left of name; mobile: logo is in menu toggle) */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <div className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cerulean text-white">
+            <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cerulean text-white">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -165,7 +178,7 @@ export function Header() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-5 w-5"
+                className="h-6 w-6"
               >
                 <path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
                 <path d="M2 19c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
@@ -173,25 +186,12 @@ export function Header() {
               </svg>
             </div>
             <span
-              className="text-xl font-bold text-black whitespace-nowrap"
+              className="text-2xl font-bold text-black whitespace-nowrap"
               style={{ overflow: "visible", textOverflow: "clip" }}
             >
-              ReSwell Surf
+              Reswell
             </span>
           </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden shrink-0 items-center gap-6 md:flex">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-sm font-medium text-cerulean transition-colors duration-smooth hover:text-pacific"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
 
           {/* Main search (md+): fills space between nav and actions */}
           <Suspense
@@ -201,16 +201,16 @@ export function Header() {
           </Suspense>
 
           {/* Actions */}
-          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-2 text-black">
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5 text-black">
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="flex text-black hover:bg-pacific/5 md:hidden"
+                  className="flex h-10 w-10 text-black hover:bg-pacific/5 md:hidden"
                   aria-label="Search"
                 >
-                  <Search className="h-5 w-5" />
+                  <Search className="h-[22px] w-[22px]" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -268,14 +268,14 @@ export function Header() {
             </Popover>
 
             <Link href="/used/recent">
-              <Button variant="ghost" size="icon" className="hidden sm:flex text-black hover:bg-pacific/5" aria-label="Recently added used items">
-                <Clock className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="hidden sm:flex h-11 w-11 text-black hover:bg-pacific/5" aria-label="Recently added used items">
+                <Clock className="h-6 w-6" />
               </Button>
             </Link>
 
             <Link href={user ? "/saved" : `/auth/login?redirect=${encodeURIComponent("/saved")}`}>
-              <Button variant="ghost" size="icon" className="text-black hover:bg-pacific/5">
-                <Heart className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
+                <Heart className="h-6 w-6" />
                 <span className="sr-only">Saved</span>
               </Button>
             </Link>
@@ -283,8 +283,8 @@ export function Header() {
             {user ? (
               <>
                 <Link href="/messages" className="relative">
-                  <Button variant="ghost" size="icon" className="text-black hover:bg-pacific/5">
-                    <MessageSquare className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
+                    <MessageSquare className="h-6 w-6" />
                     <Badge
                       variant={unreadMessages > 0 ? "destructive" : "secondary"}
                       className="absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center"
@@ -296,8 +296,8 @@ export function Header() {
                 </Link>
 
                 <Link href="/shop/cart" className="relative">
-                  <Button variant="ghost" size="icon" className="text-black hover:bg-pacific/5">
-                    <ShoppingCart className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
+                    <ShoppingCart className="h-6 w-6" />
                     {cartCount > 0 && (
                       <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-cerulean text-white">
                         {cartCount > 9 ? "9+" : cartCount}
@@ -309,8 +309,8 @@ export function Header() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full text-black hover:bg-pacific/5">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-black hover:bg-pacific/5">
+                      <Avatar className="h-9 w-9">
                         <AvatarImage src={profileAvatarUrl || user.user_metadata?.avatar_url || "/placeholder.svg"} alt="Profile" />
                         <AvatarFallback>
                         {(profileDisplayName || user.user_metadata?.full_name || "User").charAt(0).toUpperCase()}
@@ -336,7 +336,7 @@ export function Header() {
                       <Link href="/dashboard/wallet" className="flex items-center justify-between">
                         <span className="flex items-center">
                           <Wallet className="mr-2 h-4 w-4" />
-                          ReSwell Bucks
+                          Reswell Bucks
                         </span>
                         {walletBalance !== null && (
                           <span className="text-xs font-medium text-cerulean ml-2">
@@ -382,18 +382,15 @@ export function Header() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button asChild variant="outline" className="hidden sm:flex border-cerulean text-cerulean hover:bg-pacific/5">
-                  <Link href="/sell">Sell</Link>
-                </Button>
+                <Link href="/sell" className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-2">
+                  Sell
+                </Link>
               </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" asChild className="hidden sm:flex text-black hover:bg-pacific/5">
-                  <Link href="/auth/login">Sign In</Link>
-                </Button>
-                <Button asChild variant="outline" className="border-cerulean text-cerulean hover:bg-pacific/5">
-                  <Link href="/auth/sign-up">Get Started</Link>
-                </Button>
+              <div className="flex items-center gap-1">
+                <Link href="/auth/login" className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2">
+                  Log in
+                </Link>
               </div>
             )}
 
@@ -430,6 +427,39 @@ export function Header() {
               )}
             </button>
           </div>
+        </div>
+
+        {/* Categories bar (desktop) */}
+        <div className="hidden md:flex items-center gap-8 border-t border-lightgray/40 px-4 container mx-auto">
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`py-4 text-[15px] transition-colors duration-smooth hover:text-cerulean ${
+                pathname?.startsWith(item.href)
+                  ? "text-cerulean font-medium"
+                  : "text-foreground/70"
+              }`}
+            >
+              {item.name}
+            </Link>
+          ))}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 py-4 text-[15px] text-foreground/70 transition-colors duration-smooth hover:text-cerulean focus:outline-none">
+              Categories
+              <ChevronDown className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {allCategories.map((cat) => (
+                <DropdownMenuItem key={cat.name} asChild>
+                  <Link href={cat.href} className="w-full">
+                    {cat.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

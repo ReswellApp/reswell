@@ -4,8 +4,8 @@ import { Footer } from "@/components/footer"
 import { Cookie } from "lucide-react"
 
 export const metadata = {
-  title: "Cookie Policy - ReSwell Surf",
-  description: "How ReSwell Surf uses cookies and similar technologies.",
+  title: "Cookie Policy - Reswell",
+  description: "How Reswell uses cookies and similar technologies.",
 }
 
 export default function CookiePolicyPage() {
@@ -34,7 +34,7 @@ export default function CookiePolicyPage() {
 
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">2. How we use cookies</h2>
-              <p className="leading-relaxed mb-2">ReSwell Surf uses cookies and similar technologies for:</p>
+              <p className="leading-relaxed mb-2">Reswell uses cookies and similar technologies for:</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li><strong className="text-foreground">Strictly necessary:</strong> Required for the site to work (e.g. keeping you logged in, securing your session, and load balancing).</li>
                 <li><strong className="text-foreground">Preferences:</strong> Remembering your settings (e.g. theme or language) so you don’t have to set them again.</li>
@@ -52,7 +52,7 @@ export default function CookiePolicyPage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">4. Your choices</h2>
               <p className="leading-relaxed">
-                Most browsers let you block or delete cookies through their settings. If you block or delete cookies, some parts of ReSwell Surf may not work correctly (for example, you may be logged out or preferences may not be saved). You can also use “Do Not Track” or similar signals; we consider those signals where our tools support them.
+                Most browsers let you block or delete cookies through their settings. If you block or delete cookies, some parts of Reswell may not work correctly (for example, you may be logged out or preferences may not be saved). You can also use “Do Not Track” or similar signals; we consider those signals where our tools support them.
               </p>
             </section>
 

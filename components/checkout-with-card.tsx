@@ -129,7 +129,7 @@ export function CheckoutWithCard({
                     Environment Variables.
                   </span>
                   <span className="block text-muted-foreground">
-                    You can still use <strong>ReSwell Bucks</strong>, or test card checkout with{" "}
+                    You can still use <strong>Reswell Bucks</strong>, or test card checkout with{" "}
                     <code className="text-xs">npm run dev</code> on your machine.
                   </span>
                 </span>

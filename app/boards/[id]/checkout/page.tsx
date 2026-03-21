@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server"
 import { ArrowLeft } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { BoardCheckoutClient } from "@/components/board-checkout-client"
+import { findListingByParam } from "@/lib/listing-query"
 
 export default async function BoardCheckoutPage(props: {
   params: Promise<{ id: string }>
@@ -21,21 +22,27 @@ export default async function BoardCheckoutPage(props: {
     redirect(`/auth/login?redirect=${encodeURIComponent(`/boards/${id}/checkout`)}`)
   }
 
-  const { data: listing } = await supabase
-    .from("listings")
-    .select(
-      "id, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price"
-    )
-    .eq("id", id)
-    .eq("section", "surfboards")
-    .single()
+  const { listing, redirectSlug } = await findListingByParam(
+    supabase,
+    id,
+    {
+      select: "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price",
+      section: "surfboards",
+    },
+  )
 
   if (!listing || listing.status !== "active") {
     notFound()
   }
 
+  if (redirectSlug) {
+    redirect(`/boards/${redirectSlug}/checkout`)
+  }
+
+  const boardSlug = listing.slug || listing.id
+
   if (listing.user_id === user.id) {
-    redirect(`/boards/${id}`)
+    redirect(`/boards/${boardSlug}`)
   }
 
   const lp = listing.local_pickup !== false
@@ -50,7 +57,7 @@ export default async function BoardCheckoutPage(props: {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-lg">
           <Button variant="ghost" size="sm" className="mb-6 -ml-2" asChild>
-            <Link href={`/boards/${id}`} className="gap-2">
+            <Link href={`/boards/${boardSlug}`} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to listing
             </Link>

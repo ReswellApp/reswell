@@ -210,7 +210,7 @@ export default function DashboardProfilePage() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Connect your Shopify store to automatically list your products in the New Gear section.
-                  Your products will appear alongside ReSwell Surf listings and link back to your Shopify checkout.
+                  Your products will appear alongside Reswell listings and link back to your Shopify checkout.
                 </p>
                 <div className="space-y-2">
                   <Label htmlFor="shopify_domain">Shopify Store Domain</Label>

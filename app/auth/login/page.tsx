@@ -68,7 +68,7 @@ function LoginForm() {
             <CardHeader>
               <CardTitle className="text-2xl">Welcome back</CardTitle>
               <CardDescription>
-                Sign in to your ReSwell Surf account
+                Sign in to your Reswell account
               </CardDescription>
             </CardHeader>
             <CardContent>

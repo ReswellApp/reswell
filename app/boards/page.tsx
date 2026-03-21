@@ -5,14 +5,10 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatBoardType, capitalizeWords } from "@/lib/listing-labels"
-import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { capitalizeWords } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsListingsFilters } from "@/components/boards-listings-filters"
-import { MapPin, Users, Store } from "lucide-react"
-import { ShopifyBoardsGrid } from "@/components/shopify-boards"
+import { MapPin, Users } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 
@@ -219,7 +215,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
           const primaryImage = board.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || board.listing_images?.[0]
           return (
             <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-              <Link href={`/boards/${board.id}`} className="flex-1 flex flex-col">
+              <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
                 <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
                     <Image
@@ -234,18 +230,6 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                       No Image
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    <Badge className="bg-black/70 text-white border-0">{formatCondition(board.condition)}</Badge>
-                    {board.board_type && (
-                      <Badge className="bg-black/70 text-white border-0">
-                        {formatBoardType(board.board_type)}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0 max-w-[11rem] truncate">
-                    <MapPin className="h-3 w-3 mr-1 shrink-0 inline" />
-                    {boardFulfillmentSummary(board.local_pickup, board.shipping_available)}
-                  </Badge>
                   <FavoriteButtonCardOverlay
                     listingId={board.id}
                     initialFavorited={favoritedIds.includes(board.id)}
@@ -274,7 +258,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                 <MessageListingButton
                   listingId={board.id}
                   sellerId={board.user_id}
-                  redirectPath={`/boards/${board.id}`}
+                  redirectPath={`/boards/${board.slug || board.id}`}
                 />
               </div>
             </Card>
@@ -319,81 +303,46 @@ export default async function BoardsPage(props: {
           <div className="container mx-auto px-4">
             <h1 className="text-3xl font-bold text-center">Surfboards</h1>
             <p className="text-center text-muted-foreground mt-2">
-              Find local boards for pickup or shop brand new boards from verified sellers
+              Find local boards for pickup from sellers in your area
             </p>
           </div>
         </section>
 
-        {/* Tabs */}
         <section className="py-4 min-w-0">
           <div className="container mx-auto px-4 min-w-0">
-            <Tabs defaultValue="local" className="w-full min-w-0">
-              <TabsList className="mb-6 flex-wrap sm:flex-nowrap gap-1">
-                <TabsTrigger value="local" className="gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Local Boards
-                </TabsTrigger>
-                <TabsTrigger value="brand" className="gap-2">
-                  <Store className="h-4 w-4" />
-                  Brand New Boards
-                </TabsTrigger>
-              </TabsList>
+            <div className="border-b py-4 mb-6 min-w-0 overflow-x-auto">
+              <div className="min-w-0">
+                <BoardsListingsFilters
+                  initialQ={searchParams.q ?? ""}
+                  initialLocation={searchParams.location ?? ""}
+                  initialType={searchParams.type ?? "all"}
+                  initialCondition={searchParams.condition ?? "all"}
+                  initialMinPrice={searchParams.minPrice ?? ""}
+                  initialMaxPrice={searchParams.maxPrice ?? ""}
+                  initialRadius={searchParams.radius ?? ""}
+                  initialSort={searchParams.sort ?? "newest"}
+                />
+              </div>
+            </div>
 
-              {/* Local Boards Tab */}
-              <TabsContent value="local">
-                {/* Filters - same look as used section */}
-                <div className="border-b py-4 mb-6 min-w-0 overflow-x-auto">
-                  <div className="min-w-0">
-                    <BoardsListingsFilters
-                    initialQ={searchParams.q ?? ""}
-                    initialLocation={searchParams.location ?? ""}
-                    initialType={searchParams.type ?? "all"}
-                    initialCondition={searchParams.condition ?? "all"}
-                    initialMinPrice={searchParams.minPrice ?? ""}
-                    initialMaxPrice={searchParams.maxPrice ?? ""}
-                    initialRadius={searchParams.radius ?? ""}
-                    initialSort={searchParams.sort ?? "newest"}
-                    />
-                  </div>
+            <Suspense
+              fallback={
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <div className="aspect-[4/5] bg-muted animate-pulse" />
+                      <CardContent className="p-4 space-y-2">
+                        <div className="h-4 bg-muted rounded animate-pulse" />
+                        <div className="h-6 w-20 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-
-                <Suspense
-                  fallback={
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <Card key={i} className="overflow-hidden">
-                          <div className="aspect-[4/5] bg-muted animate-pulse" />
-                          <CardContent className="p-4 space-y-2">
-                            <div className="h-4 bg-muted rounded animate-pulse" />
-                            <div className="h-6 w-20 bg-muted rounded animate-pulse" />
-                            <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  }
-                >
-                  <BoardListings searchParams={searchParams} />
-                </Suspense>
-
-                {/* Info Section */}
-                <div className="mt-12 rounded-lg bg-offwhite p-8">
-                  <div className="max-w-2xl mx-auto text-center">
-                    <h2 className="text-xl font-bold mb-4">Why In-Person Only?</h2>
-                    <p className="text-muted-foreground">
-                      Surfboards are a personal investment. We believe you should inspect the board, 
-                      check for dings, and feel the weight before you buy. Meet locally with sellers 
-                      in your area to find your perfect ride.
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Brand New Boards Tab */}
-              <TabsContent value="brand">
-                <ShopifyBoardsGrid />
-              </TabsContent>
-            </Tabs>
+              }
+            >
+              <BoardListings searchParams={searchParams} />
+            </Suspense>
           </div>
         </section>
       </main>

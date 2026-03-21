@@ -18,9 +18,9 @@ import {
 } from "lucide-react"
 
 export const metadata = {
-  title: "Sellers - ReSwell Surf",
+  title: "Sellers - Reswell",
   description:
-    "Browse local surf sellers and retail stores on ReSwell Surf. Find verified sellers near you.",
+    "Browse local surf sellers and retail stores on Reswell. Find verified sellers near you.",
 }
 
 export default async function SellersPage({
@@ -68,7 +68,7 @@ export default async function SellersPage({
                 Sellers
               </h1>
               <p className="mt-3 text-muted-foreground text-pretty">
-                Browse retail surf sellers listing their inventory on ReSwell Surf.
+                Browse retail surf sellers listing their inventory on Reswell.
                 Find gear from verified local stores.
               </p>
             </div>
@@ -219,10 +219,10 @@ export default async function SellersPage({
             <div className="mx-auto max-w-2xl text-center">
               <Package className="mx-auto mb-4 h-10 w-10 text-primary" />
               <h2 className="text-2xl font-bold text-foreground">
-                Want to Sell on ReSwell Surf?
+                Want to Sell on Reswell?
               </h2>
               <p className="mt-3 text-muted-foreground text-pretty">
-                List your store inventory on ReSwell Surf and reach thousands of
+                List your store inventory on Reswell and reach thousands of
                 local surfers. Set up your seller profile in minutes.
               </p>
               <Button className="mt-6" size="lg" asChild>

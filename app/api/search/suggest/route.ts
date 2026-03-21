@@ -11,6 +11,7 @@ const TITLE_SUGGEST_FETCH = 80
 
 export type SuggestListing = {
   id: string
+  slug: string | null
   title: string
   price: number
   section: string
@@ -53,6 +54,7 @@ export async function GET(request: NextRequest) {
       .select(
         `
         id,
+        slug,
         title,
         price,
         section,
@@ -99,6 +101,7 @@ export async function GET(request: NextRequest) {
     const primary = imgs?.find((i) => i.is_primary) || imgs?.[0]
     return {
       id: row.id,
+      slug: row.slug ?? null,
       title: row.title ?? "",
       price: typeof row.price === "number" ? row.price : parseFloat(row.price) || 0,
       section: row.section,

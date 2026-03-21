@@ -5,7 +5,6 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { formatCondition, formatCategory, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -25,26 +24,34 @@ import { ImageGallery } from "@/components/image-gallery"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { TranslateableDescription } from "@/components/translateable-description"
+import { findListingByParam } from "@/lib/listing-query"
 export default async function UsedListingPage(props: {
   params: Promise<{ id: string }>
 }) {
   const params = await props.params
   const supabase = await createClient()
   
-  const { data: listing } = await supabase
-    .from("listings")
-    .select(`
-      *,
-      listing_images (id, url, is_primary),
-      profiles (id, display_name, avatar_url, location, created_at),
-      categories (name, slug)
-    `)
-    .eq("id", params.id)
-    .eq("section", "used")
-    .single()
+  const { listing, redirectSlug } = await findListingByParam(
+    supabase,
+    params.id,
+    {
+      select: `
+        *,
+        listing_images (id, url, is_primary),
+        profiles (id, display_name, avatar_url, location, created_at),
+        categories (name, slug)
+      `,
+      section: "used",
+    },
+  )
 
   if (!listing) {
     notFound()
+  }
+
+  if (redirectSlug) {
+    const { redirect } = await import("next/navigation")
+    redirect(`/used/${redirectSlug}`)
   }
 
   // Ensure seller profile never contains private data (email, etc.) before sending to client
@@ -59,11 +66,14 @@ export default async function UsedListingPage(props: {
     }
   }
 
+  const listingSlug = listing.slug || listing.id
+
   // Get seller's other listings
   const { data: sellerListings } = await supabase
     .from("listings")
     .select(`
       id,
+      slug,
       title,
       price,
       listing_images (url, is_primary)
@@ -144,29 +154,29 @@ export default async function UsedListingPage(props: {
                 </p>
               </div>
 
-              {/* Purchase item — requires login; checkout lets user choose card, Apple Pay, or ReSwell Bucks */}
+              {/* Purchase item — requires login; checkout lets user choose card, Apple Pay, or Reswell Bucks */}
               {!isOwnListing && listing.status === "active" && (
                 user ? (
                   <Button size="lg" className="w-full gap-2" asChild>
-                    <Link href={`/used/${listing.id}/checkout`}>
+                    <Link href={`/used/${listingSlug}/checkout`}>
                       Purchase item — ${listing.price.toFixed(2)}
                     </Link>
                   </Button>
                 ) : (
                   <Button size="lg" className="w-full gap-2" asChild>
-                    <Link href={`/used/${listing.id}/checkout`}>
+                    <Link href={`/used/${listingSlug}/checkout`}>
                       Add to cart
                     </Link>
                   </Button>
                 )
               )}
 
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{formatCondition(listing.condition)}</Badge>
-                {listing.categories && (
-                  <Badge variant="outline">{formatCategory(listing.categories.name)}</Badge>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">
+                {[
+                  formatCondition(listing.condition),
+                  listing.categories ? formatCategory(listing.categories.name) : null,
+                ].filter(Boolean).join(" · ")}
+              </p>
 
               {/* Description */}
               <div>
@@ -220,7 +230,7 @@ export default async function UsedListingPage(props: {
                             href={
                               user
                                 ? `/messages?user=${listing.user_id}&listing=${listing.id}`
-                                : `/auth/login?redirect=${encodeURIComponent(`/used/${listing.id}`)}`
+                                : `/auth/login?redirect=${encodeURIComponent(`/used/${listingSlug}`)}`
                             }
                           >
                             <MessageSquare className="h-4 w-4 mr-2" />
@@ -249,6 +259,7 @@ export default async function UsedListingPage(props: {
                   <CardContent className="p-4">
                     <ContactSellerForm
                       listingId={listing.id}
+                      listingSlug={listing.slug}
                       sellerId={listing.user_id}
                       listingTitle={capitalizeWords(listing.title)}
                       isLoggedIn={!!user}
@@ -297,7 +308,7 @@ export default async function UsedListingPage(props: {
                 {sellerListings.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
                   return (
-                    <Link key={item.id} href={`/used/${item.id}`}>
+                    <Link key={item.id} href={`/used/${item.slug || item.id}`}>
                       <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-square relative bg-muted">
                           {primaryImage?.url ? (

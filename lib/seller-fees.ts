@@ -1,10 +1,10 @@
 /**
  * Standard fees for used gear sales on the platform.
- * Applied consistently to ReSwell Bucks and card (Stripe) purchases.
+ * Applied consistently to Reswell Bucks and card (Stripe) purchases.
  */
 
-/** Marketplace fee: 5% of sale price (platform fee) */
-export const MARKETPLACE_FEE_PERCENT = 5
+/** Marketplace fee: 7% of sale price (platform fee) */
+export const MARKETPLACE_FEE_PERCENT = 7
 
 /** Payment processing: ~2.9% + $0.30 (Stripe; applied only for card payments) */
 export const PAYMENT_PROCESSING_PERCENT = 2.9

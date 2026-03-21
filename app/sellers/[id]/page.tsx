@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
@@ -22,6 +23,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
+import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 
 export async function generateMetadata({
   params,
@@ -38,9 +40,9 @@ export async function generateMetadata({
 
   return {
     title: shop
-? `${shop.shop_name || shop.display_name} - ReSwell Surf`
-  : "Seller - ReSwell Surf",
-    description: shop?.shop_description || "View this seller on ReSwell Surf.",
+? `${shop.shop_name || shop.display_name} - Reswell`
+  : "Seller - Reswell",
+    description: shop?.shop_description || "View this seller on Reswell.",
   }
 }
 
@@ -90,6 +92,17 @@ export default async function SellerProfilePage({
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0
   const reviewCount = reviews?.length || 0
+
+  const { data: { user } } = await supabase.auth.getUser()
+  let favoritedIds: string[] = []
+  if (user && listings && listings.length > 0) {
+    const { data: favs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", listings.map((l: any) => l.id))
+    favoritedIds = (favs ?? []).map((f) => f.listing_id)
+  }
 
   const allListings = listings || []
   const currentListings = allListings.filter(
@@ -300,16 +313,16 @@ export default async function SellerProfilePage({
               </TabsList>
 
               <TabsContent value="all" className="mt-6">
-                <ListingGrid listings={currentListings} />
+                <ListingGrid listings={currentListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
               </TabsContent>
               <TabsContent value="used" className="mt-6">
-                <ListingGrid listings={usedListings} />
+                <ListingGrid listings={usedListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
               </TabsContent>
               <TabsContent value="new" className="mt-6">
-                <ListingGrid listings={newListings} />
+                <ListingGrid listings={newListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
               </TabsContent>
               <TabsContent value="boards" className="mt-6">
-                <ListingGrid listings={boardListings} />
+                <ListingGrid listings={boardListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
               </TabsContent>
             </Tabs>
           </div>
@@ -324,7 +337,7 @@ export default async function SellerProfilePage({
                   ({pastListings.length})
                 </span>
               </h2>
-              <ListingGrid listings={pastListings} />
+              <ListingGrid listings={pastListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
             </div>
           )}
         </div>
@@ -335,7 +348,7 @@ export default async function SellerProfilePage({
   )
 }
 
-function ListingGrid({ listings }: { listings: any[] }) {
+function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; favoritedIds: string[]; isLoggedIn: boolean }) {
   if (listings.length === 0) {
     return (
       <div className="text-center py-12">
@@ -346,67 +359,56 @@ function ListingGrid({ listings }: { listings: any[] }) {
   }
 
   function getListingHref(listing: any) {
+    const id = listing.slug || listing.id
     switch (listing.section) {
       case "used":
-        return `/used/${listing.id}`
+        return `/used/${id}`
       case "new":
         return `/shop/${listing.id}`
       case "surfboards":
-        return `/boards/${listing.id}`
+        return `/boards/${id}`
       default:
-        return `/used/${listing.id}`
+        return `/used/${id}`
     }
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {listings.map((listing) => {
         const primaryImage = listing.listing_images?.find(
           (img: any) => img.is_primary
-        )
-        const firstImage =
-          primaryImage || listing.listing_images?.[0]
+        ) || listing.listing_images?.[0]
 
         return (
-          <Card key={listing.id} className="group h-full overflow-hidden hover:shadow-md transition-all flex flex-col">
+          <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
             <Link href={getListingHref(listing)} className="flex-1 flex flex-col">
-              <div className="aspect-square relative bg-muted">
-                {firstImage?.url ? (
-                  <img
-                    src={firstImage.url || "/placeholder.svg"}
+              <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                {primaryImage?.url ? (
+                  <Image
+                    src={primaryImage.url || "/placeholder.svg"}
                     alt={capitalizeWords(listing.title)}
-                    className="absolute inset-0 h-full w-full group-hover:scale-105 transition-transform duration-300"
-                    style={{ objectFit: "contain" }}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    style={{ objectFit: "cover" }}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                    <Package className="h-10 w-10" />
+                    No Image
                   </div>
                 )}
-                <div className="absolute top-2 left-2 flex gap-1.5">
-                  {listing.condition && (
-                    <Badge className="text-xs bg-black/70 text-white border-0">
-                      {formatCondition(listing.condition)}
-                    </Badge>
-                  )}
-                  <Badge className="text-xs bg-black/70 text-white border-0">
-                    {listing.section === "surfboards"
-                      ? "Board"
-                      : listing.section === "new"
-                        ? "New"
-                        : "Used"}
-                  </Badge>
-                </div>
+                <FavoriteButtonCardOverlay
+                  listingId={listing.id}
+                  initialFavorited={favoritedIds.includes(listing.id)}
+                  isLoggedIn={isLoggedIn}
+                />
               </div>
-              <CardContent className="p-3">
-                <h3 className="font-medium text-sm line-clamp-1 text-foreground">
-                  {capitalizeWords(listing.title)}
-                </h3>
-                <p className="text-base font-bold text-primary mt-0.5">
+              <CardContent className="p-4">
+                <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
+                <p className="text-xl font-bold text-primary mt-2">
                   ${Number(listing.price).toFixed(2)}
                 </p>
                 {listing.status && listing.status !== "active" && (
-                  <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+                  <p className="mt-1 text-sm font-medium text-muted-foreground">
                     {listing.status === "sold"
                       ? "Sold"
                       : listing.status === "pending"
@@ -415,20 +417,19 @@ function ListingGrid({ listings }: { listings: any[] }) {
                   </p>
                 )}
                 {listing.city && (
-                  <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
                     <MapPin className="h-3 w-3" />
                     {listing.city}
                     {listing.state ? `, ${listing.state}` : ""}
-                  </p>
+                  </div>
                 )}
               </CardContent>
             </Link>
-            <div className="px-3 pb-3 pt-0">
+            <div className="px-4 pb-4 pt-0">
               <MessageListingButton
                 listingId={listing.id}
                 sellerId={listing.user_id}
                 redirectPath={getListingHref(listing)}
-                size="sm"
               />
             </div>
           </Card>

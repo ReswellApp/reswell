@@ -3,6 +3,7 @@ import type { RecentListing } from "@/app/used/recent/recent-feed-client"
 
 const SELECT = `
   id,
+  slug,
   user_id,
   title,
   price,
@@ -50,6 +51,7 @@ export async function hydrateListingsByIds(
           : null
     out.push({
       id: row.id,
+      slug: row.slug ?? null,
       user_id: row.user_id,
       title: row.title,
       price: row.price,

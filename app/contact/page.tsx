@@ -5,8 +5,8 @@ import { MessageSquare, HelpCircle } from "lucide-react"
 import { ContactForm } from "./contact-form"
 
 export const metadata = {
-  title: "Contact Us - ReSwell Surf",
-  description: "Get in touch with the ReSwell Surf team for support, feedback, or questions.",
+  title: "Contact Us - Reswell",
+  description: "Get in touch with the Reswell team for support, feedback, or questions.",
 }
 
 export default function ContactPage() {

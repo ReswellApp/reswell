@@ -34,6 +34,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { getPayoutFee, getPayoutNetAmount, type PayoutType } from "@/lib/payout-fees"
+import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 
 interface WalletData {
   id: string
@@ -196,7 +197,7 @@ export default function WalletPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">ReSwell Bucks</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Reswell Bucks</h1>
         <p className="text-muted-foreground">
           Your internal currency for buying and selling on the marketplace
         </p>
@@ -264,7 +265,7 @@ export default function WalletPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Cash Out ReSwell Bucks</DialogTitle>
+              <DialogTitle>Cash Out Reswell Bucks</DialogTitle>
               <DialogDescription>
                 0% standard payout; 1% instant payout. Minimum R${MIN_CASHOUT}.00.
               </DialogDescription>
@@ -473,8 +474,8 @@ export default function WalletPage() {
       {/* How It Works */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">How ReSwell Bucks Work</CardTitle>
-          <CardDescription>Your guide to the ReSwell Surf marketplace currency</CardDescription>
+          <CardTitle className="text-lg">How Reswell Bucks Work</CardTitle>
+          <CardDescription>Your guide to the Reswell marketplace currency</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 sm:grid-cols-3">
@@ -486,7 +487,8 @@ export default function WalletPage() {
                 Earn
               </div>
               <p className="text-sm text-muted-foreground">
-                When you sell used gear on ReSwell Surf, the buyer pays and funds go to your wallet. Standard fees: 5% marketplace fee; card sales also include payment processing (~2.9% + $0.30).
+                When you sell used gear on Reswell, the buyer pays and funds go to your wallet. Standard fees:{" "}
+                {MARKETPLACE_FEE_PERCENT}% marketplace fee; card sales also include payment processing (~2.9% + $0.30).
               </p>
             </div>
             <div className="space-y-2">
@@ -497,7 +499,7 @@ export default function WalletPage() {
                 Spend
               </div>
               <p className="text-sm text-muted-foreground">
-                Use your ReSwell bucks to purchase used gear, surfboards, and more from other sellers on the marketplace.
+                Use your Reswell Bucks to purchase used gear, surfboards, and more from other sellers on the marketplace.
               </p>
             </div>
             <div className="space-y-2">

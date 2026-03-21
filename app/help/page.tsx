@@ -5,22 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { HelpCircle } from "lucide-react"
 
 export const metadata = {
-  title: "Help Center - ReSwell Surf",
-  description: "Get answers to common questions about buying and selling surf gear on ReSwell Surf.",
+  title: "Help Center - Reswell",
+  description: "Get answers to common questions about buying and selling surf gear on Reswell.",
 }
 
 const faqs = [
   {
     question: "How do I buy an item?",
-    answer: "Browse used gear or surfboards, click on a listing you like, and use the \"Contact Seller\" or \"Buy with ReSwell Bucks\" option. For items that ship, you can pay with ReSwell Bucks (in-app currency) or coordinate payment and shipping directly with the seller via messages.",
+    answer: "Browse used gear or surfboards, click on a listing you like, and use the \"Contact Seller\" or \"Buy with Reswell Bucks\" option. For items that ship, you can pay with Reswell Bucks (in-app currency) or coordinate payment and shipping directly with the seller via messages.",
   },
   {
     question: "How do I sell an item?",
     answer: "Sign in, click \"Sell\" in the header, and create a listing. Add photos, a title, description, price, and condition. For used gear you can offer shipping; for surfboards we recommend in-person pickup only so buyers can inspect the board.",
   },
   {
-    question: "What are ReSwell Bucks?",
-    answer: "ReSwell Bucks are our in-app currency. Buyers use them to purchase items from sellers; sellers receive Bucks in their wallet and can cash out to PayPal, Venmo, or bank transfer. This keeps transactions secure and simple within the community.",
+    question: "What are Reswell Bucks?",
+    answer: "Reswell Bucks are our in-app currency. Buyers use them to purchase items from sellers; sellers receive Bucks in their wallet and can cash out to PayPal, Venmo, or bank transfer. This keeps transactions secure and simple within the community.",
   },
   {
     question: "How do I contact a seller or buyer?",
@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     question: "What if I have a problem with a purchase?",
-    answer: "Try to resolve the issue directly with the seller via messages first. If you used ReSwell Bucks, our team can help with eligible disputes. For serious issues (e.g. fraud or safety), use the report options on the listing or in Messages and we’ll review.",
+    answer: "Try to resolve the issue directly with the seller via messages first. If you used Reswell Bucks, our team can help with eligible disputes. For serious issues (e.g. fraud or safety), use the report options on the listing or in Messages and we’ll review.",
   },
 ]
 
@@ -43,7 +43,7 @@ export default function HelpCenterPage() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Help Center</h1>
               <p className="text-muted-foreground mt-1">
-                Answers to common questions about buying and selling on ReSwell Surf
+                Answers to common questions about buying and selling on Reswell
               </p>
             </div>
           </div>

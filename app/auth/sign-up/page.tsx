@@ -93,7 +93,7 @@ export default function Page() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Join ReSwell Surf</CardTitle>
+              <CardTitle className="text-2xl">Join Reswell</CardTitle>
               <CardDescription>Create an account to buy, sell, and trade surf gear</CardDescription>
             </CardHeader>
             <CardContent>

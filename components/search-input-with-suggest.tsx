@@ -15,6 +15,7 @@ const SUGGEST_COMBINED_CAP = 24
 
 export type SuggestListing = {
   id: string
+  slug: string | null
   title: string
   price: number
   section: string
@@ -53,6 +54,8 @@ interface SearchInputWithSuggestProps {
   showClearButton?: boolean
   /** Called when user navigates from a listing or "View all results" — use to clear the input. */
   onNavigate?: () => void
+  /** Called when the input receives focus. */
+  onFocus?: () => void
   /**
    * When false, the query-driven fetch still fills suggestions but does not open the menu.
    * Prevents flashing after navigating to `/search` (URL sync + focused input).
@@ -62,7 +65,8 @@ interface SearchInputWithSuggestProps {
 }
 
 function listingHref(listing: SuggestListing) {
-  return listing.section === "surfboards" ? `/boards/${listing.id}` : `/used/${listing.id}`
+  const id = listing.slug || listing.id
+  return listing.section === "surfboards" ? `/boards/${id}` : `/used/${id}`
 }
 
 function listingSectionLabel(section: string) {
@@ -107,6 +111,7 @@ export function SearchInputWithSuggest({
   showClearButton = true,
   autoOpenDropdownOnFetch = true,
   onNavigate,
+  onFocus: onFocusProp,
 }: SearchInputWithSuggestProps) {
   const [suggestions, setSuggestions] = useState<SuggestResult | null>(null)
   const [open, setOpen] = useState(false)
@@ -476,6 +481,7 @@ export function SearchInputWithSuggest({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => {
+          onFocusProp?.()
           if (disableSuggest) return
           const q = value.trim()
           if (q.length < minLength) return

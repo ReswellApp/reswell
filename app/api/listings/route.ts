@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
+import { slugify } from '@/lib/slugify'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -45,12 +46,30 @@ export async function POST(request: NextRequest) {
     images = [],
   } = body
 
-  // Create listing
+  // Generate unique slug
+  const baseSlug = slugify(title)
+  let slug = baseSlug
+  const { count } = await supabase
+    .from('listings')
+    .select('id', { count: 'exact', head: true })
+    .eq('slug', baseSlug)
+  if (count) {
+    for (let i = 2; i < 100; i++) {
+      const candidate = `${baseSlug}-${i}`
+      const { count: c } = await supabase
+        .from('listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('slug', candidate)
+      if (!c) { slug = candidate; break }
+    }
+  }
+
   const { data: listing, error: listingError } = await supabase
     .from('listings')
     .insert({
       user_id: user.id,
       title,
+      slug,
       description,
       price: parseFloat(price),
       condition,

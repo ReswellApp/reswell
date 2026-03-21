@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Flag, Mail, User } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Flag, Mail, User, RotateCcw } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -283,6 +283,21 @@ export default function AdminUserDetailPage() {
                               onClick={() => updateListingStatus(l.id, 'active')}
                             >
                               Restore
+                            </DropdownMenuItem>
+                          )}
+                          {l.status === 'sold' && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (
+                                  !confirm(
+                                    'Make this listing live again? It was marked sold—only do this if the sale was reversed or was a mistake.'
+                                  )
+                                )
+                                  return
+                                updateListingStatus(l.id, 'active')
+                              }}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-2" /> Reactivate (make live)
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

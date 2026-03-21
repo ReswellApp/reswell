@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, MessageSquare, Eye, MapPin, AlertTriangle } from "lucide-react"
 
 export const metadata = {
-  title: "Safety Tips - ReSwell Surf",
+  title: "Safety Tips - Reswell",
   description: "Stay safe when buying and selling surf gear. Best practices for meeting sellers, payments, and avoiding scams.",
 }
 
@@ -13,7 +13,7 @@ const tips = [
   {
     icon: MessageSquare,
     title: "Communicate on the platform",
-    body: "Keep conversations in ReSwell Surf messages so we have a record. Avoid moving to external email or text for payment or pickup details until you’re comfortable.",
+    body: "Keep conversations in Reswell messages so we have a record. Avoid moving to external email or text for payment or pickup details until you’re comfortable.",
   },
   {
     icon: MapPin,
@@ -27,8 +27,8 @@ const tips = [
   },
   {
     icon: Shield,
-    title: "Prefer ReSwell Bucks when possible",
-    body: "Paying with ReSwell Bucks keeps the transaction on the platform and makes it easier for us to help if something goes wrong. Be cautious with off-platform payment requests.",
+    title: "Prefer Reswell Bucks when possible",
+    body: "Paying with Reswell Bucks keeps the transaction on the platform and makes it easier for us to help if something goes wrong. Be cautious with off-platform payment requests.",
   },
   {
     icon: AlertTriangle,
@@ -48,13 +48,13 @@ export default function SafetyTipsPage() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Safety Tips</h1>
               <p className="text-muted-foreground mt-1">
-                Best practices for buying and selling safely on ReSwell Surf
+                Best practices for buying and selling safely on Reswell
               </p>
             </div>
           </div>
 
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            ReSwell Surf is built on trust. Following these tips helps keep you and the community safe when meeting up, shipping, or paying for gear.
+            Reswell is built on trust. Following these tips helps keep you and the community safe when meeting up, shipping, or paying for gear.
           </p>
 
           <div className="space-y-6">

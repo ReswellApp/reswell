@@ -176,11 +176,6 @@ export function ShopifyProducts() {
                         No Image
                       </div>
                     )}
-                    {hasDiscount && (
-                      <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
-                        -{discountPercent}%
-                      </Badge>
-                    )}
                     {!product.availableForSale && (
                       <Badge className="absolute top-2 right-2 bg-black/70 text-white border-0">
                         Sold Out

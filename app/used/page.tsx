@@ -157,7 +157,7 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
           const primaryImage = listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || listing.listing_images?.[0]
           return (
             <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-              <Link href={`/used/${listing.id}`} className="flex-1 flex flex-col">
+              <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
                 <div className="aspect-square relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
                     <Image
@@ -172,9 +172,6 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
                       No Image
                     </div>
                   )}
-                  <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
-                    {formatCondition(listing.condition)}
-                  </Badge>
                   <FavoriteButtonCardOverlay
                     listingId={listing.id}
                     initialFavorited={favoritedIds.includes(listing.id)}
@@ -202,7 +199,7 @@ async function UsedListings({ searchParams }: { searchParams: SearchParams }) {
                 <MessageListingButton
                   listingId={listing.id}
                   sellerId={listing.user_id}
-                  redirectPath={`/used/${listing.id}`}
+                  redirectPath={`/used/${listing.slug || listing.id}`}
                 />
               </div>
             </Card>
