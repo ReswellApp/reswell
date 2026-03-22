@@ -106,7 +106,7 @@ export function BuyWithBucks({
         {success ? (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-emerald-600">
+              <DialogTitle className="flex items-center gap-2 text-neutral-900">
                 <CheckCircle2 className="h-5 w-5" />
                 Purchase Complete
               </DialogTitle>
@@ -115,9 +115,9 @@ export function BuyWithBucks({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 space-y-2">
                 <p className="text-sm text-muted-foreground">Amount Paid</p>
-                <p className="text-xl font-bold">R${price.toFixed(2)}</p>
+                <p className="text-xl font-bold text-black dark:text-white">R${price.toFixed(2)}</p>
                 <p className="text-sm text-muted-foreground">
                   Remaining balance: R${(balance ?? 0).toFixed(2)}
                 </p>
@@ -171,7 +171,7 @@ export function BuyWithBucks({
                       <p className="text-xl font-bold text-primary">R${(balance ?? 0).toFixed(2)}</p>
                     </div>
                     {canAfford ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                      <Badge className="bg-neutral-100 text-neutral-900 border-neutral-200">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Sufficient
                       </Badge>

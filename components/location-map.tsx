@@ -44,21 +44,21 @@ export function LocationMap({
         dragging: true,
       })
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
       }).addTo(map)
 
       L.circle([lat, lng], {
-        color: "#2E5E8C",
-        fillColor: "#2E5E8C",
-        fillOpacity: 0.2,
+        color: "#111111",
+        fillColor: "#111111",
+        fillOpacity: 0.15,
         radius: 1500,
         weight: 2,
       }).addTo(map)
 
       const icon = L.divIcon({
-        html: `<div style="background:#2E5E8C;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+        html: `<div style="background:#111111;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
         className: "",
         iconSize: [28, 28],
         iconAnchor: [14, 14],

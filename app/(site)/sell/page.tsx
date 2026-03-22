@@ -1710,7 +1710,7 @@ function SellPageContent() {
                       : "Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."}
                   </p>
                   {(listingType === "used" || listingType === "board") && images.length > 0 && images.length < 5 && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
                       Add {5 - images.length} more photo{5 - images.length !== 1 ? "s" : ""} to meet the minimum (5 required).
                     </p>
                   )}

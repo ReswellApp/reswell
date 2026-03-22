@@ -191,7 +191,7 @@ export default async function DashboardPage() {
                     <h3 className="font-medium line-clamp-1 group-hover:text-primary transition-colors">
                       {capitalizeWords(listing.title)}
                     </h3>
-                    <p className="text-sm text-primary font-bold">
+                    <p className="text-sm font-bold text-black dark:text-white">
                       ${listing.price.toFixed(2)}
                     </p>
                   </Link>

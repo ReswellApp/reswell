@@ -196,7 +196,7 @@ export default async function UsedListingPage(props: {
                     <ShareButton title={capitalizeWords(listing.title)} />
                   </div>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-primary mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
                   ${listing.price.toFixed(2)}
                 </p>
               </div>
@@ -227,7 +227,7 @@ export default async function UsedListingPage(props: {
                 ].filter(Boolean).join(" · ")}
               </p>
               {shippingOffered && (
-                <p className="text-sm font-medium text-green-600 flex items-center gap-1.5">
+                <p className="text-sm font-medium text-neutral-900 flex items-center gap-1.5">
                   <Truck className="h-4 w-4" />
                   {shippingPrice === 0 ? "Free shipping" : `+$${shippingPrice.toFixed(2)} shipping`}
                 </p>
@@ -455,7 +455,7 @@ export default async function UsedListingPage(props: {
                         </div>
                         <CardContent className="p-4">
                           <h3 className="font-medium line-clamp-1">{capitalizeWords(item.title)}</h3>
-                          <p className="text-lg font-bold text-primary mt-1">
+                          <p className="text-lg font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>
                         </CardContent>

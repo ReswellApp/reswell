@@ -150,12 +150,12 @@ export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY }: BoardChe
       <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">{copy.itemLineLabel}</span>
-          <span>${resolved.itemPrice.toFixed(2)}</span>
+          <span className="tabular-nums text-black dark:text-white font-medium">${resolved.itemPrice.toFixed(2)}</span>
         </div>
         {deliverySelected && resolved.shipping > 0 && (
           <div className="flex justify-between">
             <span className="text-muted-foreground">Shipping</span>
-            <span>${resolved.shipping.toFixed(2)}</span>
+            <span className="tabular-nums text-black dark:text-white font-medium">${resolved.shipping.toFixed(2)}</span>
           </div>
         )}
         {deliverySelected && resolved.shipping === 0 && (
@@ -166,7 +166,7 @@ export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY }: BoardChe
         )}
         <div className="flex justify-between font-semibold text-base border-t pt-2">
           <span>Total</span>
-          <span>${resolved.total.toFixed(2)}</span>
+          <span className="tabular-nums text-black dark:text-white">${resolved.total.toFixed(2)}</span>
         </div>
       </div>
 

@@ -9,18 +9,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /* Primary: cerulean, white text, hover pacific, lift -1px */
         default:
-          'bg-cerulean text-white hover:bg-pacific hover:-translate-y-px active:translate-y-0',
+          'bg-black text-white hover:bg-neutral-800 hover:-translate-y-px active:translate-y-0 dark:bg-white dark:text-black dark:hover:bg-neutral-200',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors',
-        /* Secondary: transparent, border cerulean, hover pacific 5% */
         outline:
-          'border border-cerulean bg-transparent text-cerulean hover:bg-pacific/5',
+          'border border-black bg-transparent text-black hover:bg-neutral-100 dark:border-white dark:text-white dark:hover:bg-white/10',
         secondary:
-          'border border-cerulean bg-transparent text-cerulean hover:bg-pacific/5',
-        ghost: 'hover:bg-pacific/5 text-foreground',
-        link: 'text-cerulean underline-offset-4 hover:text-pacific hover:underline',
+          'border border-black bg-transparent text-black hover:bg-neutral-100 dark:border-white dark:text-white dark:hover:bg-white/10',
+        ghost:
+          'text-foreground hover:bg-neutral-200/70 dark:hover:bg-white/10',
+        link:
+          'text-black underline-offset-4 hover:text-neutral-600 hover:underline dark:text-white dark:hover:text-neutral-300',
       },
       size: {
         default: 'h-10 px-4 py-2',

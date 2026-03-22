@@ -224,11 +224,11 @@ export default async function OrdersPage() {
                           ) : (
                             <span className="font-medium text-foreground line-clamp-2">{title}</span>
                           )}
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-black dark:text-white tabular-nums font-medium">
                             Qty {line.quantity} × ${Number(line.price).toFixed(2)}
                           </p>
                         </div>
-                        <div className="text-right text-sm font-medium tabular-nums">
+                        <div className="text-right text-sm font-medium tabular-nums text-black dark:text-white">
                           ${(Number(line.price) * line.quantity).toFixed(2)}
                         </div>
                       </li>

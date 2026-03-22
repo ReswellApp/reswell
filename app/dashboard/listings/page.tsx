@@ -130,9 +130,9 @@ export default function MyListingsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      case 'sold': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      case 'active': return 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
+      case 'sold': return 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
+      case 'pending': return 'bg-neutral-50 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
       default: return 'bg-muted text-muted-foreground'
     }
   }
@@ -186,7 +186,7 @@ export default function MyListingsPage() {
                   <Link href={getListingHref(listing.section, listing.id, listing.slug)} className="font-semibold text-foreground hover:text-primary truncate block">
                     {capitalizeWords(listing.title)}
                   </Link>
-                  <p className="text-lg font-bold text-primary">${listing.price}</p>
+                  <p className="text-lg font-bold text-black dark:text-white">${listing.price}</p>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

@@ -217,7 +217,7 @@ export default function AdminUsersPage() {
                           <Badge variant="outline">User</Badge>
                         )}
                         {user.shop_verified && (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          <Badge className="bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
                             <CheckCircle2 className="mr-1 h-3 w-3" />
                             Verified
                           </Badge>

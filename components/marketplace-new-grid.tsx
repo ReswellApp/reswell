@@ -46,7 +46,7 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
                 {item.title}
               </h3>
             </Link>
-            <p className="text-xl font-bold text-primary mt-2">
+            <p className="text-xl font-bold text-black dark:text-white mt-2">
               ${Number(item.price).toFixed(2)}
             </p>
             <div className="mt-3">

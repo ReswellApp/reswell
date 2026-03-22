@@ -217,7 +217,7 @@ export default function AdminUserDetailPage() {
                 <Badge className="bg-primary text-primary-foreground">Admin</Badge>
               )}
               {profile.shop_verified && (
-                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                <Badge className="bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                   Verified Seller
                 </Badge>
@@ -239,7 +239,7 @@ export default function AdminUserDetailPage() {
       <Card>
         <CardContent className="p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <CheckCircle2 className={`h-5 w-5 shrink-0 ${profile.shop_verified ? 'text-green-600' : 'text-muted-foreground'}`} />
+            <CheckCircle2 className={`h-5 w-5 shrink-0 ${profile.shop_verified ? 'text-neutral-900' : 'text-muted-foreground'}`} />
             <div>
               <p className="font-medium text-foreground text-sm">Verified Seller Badge</p>
               <p className="text-xs text-muted-foreground">
@@ -308,7 +308,7 @@ export default function AdminUserDetailPage() {
                         {l.section}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-semibold">${l.price}</TableCell>
+                    <TableCell className="font-semibold text-black dark:text-white">${l.price}</TableCell>
                     <TableCell>
                       <Badge
                         variant={

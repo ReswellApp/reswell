@@ -143,7 +143,7 @@ export default function CartPage() {
                           >
                             {item.name}
                           </Link>
-                          <p className="text-lg font-bold text-primary mt-1">
+                          <p className="text-lg font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>
                           <div className="flex items-center gap-4 mt-2">
@@ -178,7 +178,7 @@ export default function CartPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">
+                          <p className="font-semibold text-black dark:text-white">
                             ${(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
@@ -203,7 +203,7 @@ export default function CartPage() {
                       <span className="text-muted-foreground">Shipping</span>
                       <span>
                         {shipping === 0 ? (
-                          <span className="text-green-600">Free</span>
+                          <span className="text-neutral-900 font-medium">Free</span>
                         ) : (
                           `$${shipping.toFixed(2)}`
                         )}

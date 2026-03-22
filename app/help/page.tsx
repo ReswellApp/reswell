@@ -35,7 +35,7 @@ export default function HelpCenterPage() {
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8">
-            <HelpCircle className="h-10 w-10 text-primary" />
+            <HelpCircle className="h-10 w-10 text-black dark:text-white" />
             <div>
               <h1 className="text-3xl font-bold text-foreground">Help Center</h1>
               <p className="text-muted-foreground mt-1">

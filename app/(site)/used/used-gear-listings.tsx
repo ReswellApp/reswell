@@ -339,7 +339,7 @@ export async function UsedGearListings({
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
-                  <p className="text-xl font-bold text-primary mt-2">${listing.price.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-black dark:text-white mt-2">${listing.price.toFixed(2)}</p>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       {getPublicSellerDisplayName(listing.profiles)}

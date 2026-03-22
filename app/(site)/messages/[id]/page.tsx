@@ -261,7 +261,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 </div>
                 <div>
                   <p className="font-medium text-foreground">{capitalizeWords(conversation.listing?.title)}</p>
-                  <p className="text-lg font-bold text-primary">${conversation.listing.price}</p>
+                  <p className="text-lg font-bold text-black dark:text-white">${conversation.listing.price}</p>
                 </div>
               </CardContent>
             </Card>

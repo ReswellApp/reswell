@@ -241,7 +241,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                       {board.board_length}
                     </p>
                   )}
-                  <p className="text-xl font-bold text-primary mt-2">
+                  <p className="text-xl font-bold text-black dark:text-white mt-2">
                     ${board.price.toFixed(2)}
                   </p>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">

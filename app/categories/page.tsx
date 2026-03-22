@@ -29,7 +29,7 @@ export default function CategoriesPage() {
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-lightgray bg-softwhite px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-cerulean/30 hover:bg-cerulean/[0.04] hover:text-cerulean no-underline"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-lightgray bg-softwhite px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-black/25 hover:bg-black/[0.04] hover:text-black dark:hover:border-white/30 dark:hover:bg-white/[0.06] dark:hover:text-white no-underline"
                 >
                   {section.title}
                 </a>
@@ -58,7 +58,7 @@ export default function CategoriesPage() {
                 </div>
                 <Link
                   href={section.browseAllHref}
-                  className="group inline-flex shrink-0 items-center gap-1.5 rounded-md bg-cerulean px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-cerulean/90 hover:no-underline sm:mt-1"
+                  className="group inline-flex shrink-0 items-center gap-1.5 rounded-md bg-black px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-neutral-800 hover:no-underline dark:bg-white dark:text-black dark:hover:bg-neutral-200 sm:mt-1"
                 >
                   {section.browseAllLabel}
                   <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -80,9 +80,9 @@ export default function CategoriesPage() {
                         <li key={link.href + link.label}>
                           <Link
                             href={link.href}
-                            className="group/link flex items-center gap-2 rounded-md px-2 py-1.5 text-[0.9375rem] text-foreground transition-colors hover:bg-cerulean/[0.05] hover:text-cerulean hover:no-underline"
+                            className="group/link flex items-center gap-2 rounded-md px-2 py-1.5 text-[0.9375rem] text-foreground transition-colors hover:bg-black/[0.05] hover:text-black hover:no-underline dark:hover:bg-white/[0.08] dark:hover:text-white"
                           >
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-lightgray transition-colors group-hover/link:text-cerulean/50" />
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-lightgray transition-colors group-hover/link:text-black/40 dark:group-hover/link:text-white/50" />
                             {link.label}
                           </Link>
                         </li>

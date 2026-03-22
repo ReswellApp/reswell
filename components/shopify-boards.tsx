@@ -228,7 +228,7 @@ export function ShopifyBoardsGrid() {
                   </a>
 
                   <div className="flex items-center gap-2 mt-2">
-                    <p className="text-xl font-bold text-primary">
+                    <p className="text-xl font-bold text-black dark:text-white">
                       ${price.toFixed(2)}
                     </p>
                     {hasDiscount && (

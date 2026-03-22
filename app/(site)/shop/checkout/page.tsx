@@ -154,11 +154,11 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium line-clamp-2">{item.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-black dark:text-white font-medium">
                     ${item.price.toFixed(2)} × {item.quantity}
                   </p>
                 </div>
-                <p className="font-semibold">
+                <p className="font-semibold text-black dark:text-white">
                   ${(item.price * item.quantity).toFixed(2)}
                 </p>
               </div>
@@ -178,7 +178,7 @@ export default function CheckoutPage() {
                 <span className="text-muted-foreground">Shipping</span>
                 <span>
                   {shipping === 0 ? (
-                    <span className="text-green-600">Free</span>
+                    <span className="text-neutral-900 font-medium">Free</span>
                   ) : (
                     `$${shipping.toFixed(2)}`
                   )}

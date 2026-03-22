@@ -206,7 +206,7 @@ export function Header() {
         <div className="container mx-auto flex h-14 sm:h-16 md:h-20 min-w-0 items-center gap-2 md:gap-4">
           {/* Logo + home link (desktop: logo left of name; mobile: logo is in menu toggle) */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cerulean text-white">
+            <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black text-white dark:bg-white dark:text-black">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -336,7 +336,7 @@ export function Header() {
                   <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                     <ShoppingCart className="h-6 w-6" />
                     {cartCount > 0 && (
-                      <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-cerulean text-white">
+                      <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-black text-white dark:bg-white dark:text-black">
                         {cartCount > 9 ? "9+" : cartCount}
                       </Badge>
                     )}
@@ -378,7 +378,7 @@ export function Header() {
                           Reswell Bucks
                         </span>
                         {walletBalance !== null && (
-                          <span className="text-xs font-medium text-cerulean ml-2">
+                          <span className="text-xs font-medium text-black dark:text-white ml-2 tabular-nums">
                             R${walletBalance.toFixed(2)}
                           </span>
                         )}
@@ -406,7 +406,7 @@ export function Header() {
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href="/admin" className="flex items-center text-cerulean">
+                          <Link href="/admin" className="flex items-center text-foreground">
                             <User className="mr-2 h-4 w-4" />
                             Admin Panel
                           </Link>
@@ -414,7 +414,7 @@ export function Header() {
                       </>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <DropdownMenuItem onClick={handleSignOut} className="text-foreground">
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
                     </DropdownMenuItem>
@@ -438,7 +438,7 @@ export function Header() {
               type="button"
               className={`md:hidden flex h-9 w-9 min-w-[2.25rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 mobileLogoHovered && !mobileMenuOpen
-                  ? "border-cerulean bg-cerulean text-white"
+                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
                   : "border-border bg-white text-black"
               }`}
               onMouseEnter={() => setMobileLogoHovered(true)}
@@ -534,7 +534,7 @@ export function Header() {
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/categories" className="w-full font-medium text-cerulean">
+                <Link href="/categories" className="w-full font-medium text-black dark:text-white">
                   See all categories
                 </Link>
               </DropdownMenuItem>
@@ -618,7 +618,7 @@ export function Header() {
               <Link
                 href="/categories"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                className="py-3 px-2 text-lg font-medium text-black dark:text-white hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
               >
                 See all categories
               </Link>

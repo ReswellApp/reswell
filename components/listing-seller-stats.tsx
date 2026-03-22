@@ -1,11 +1,9 @@
 import { Star, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-/** Gold used for filled stars (reference UI ~#EAB341). */
-const STAR_GOLD = "fill-[#EAB341] text-[#EAB341]"
+const STAR_FILLED = "fill-neutral-900 text-neutral-900 dark:fill-neutral-100 dark:text-neutral-100"
 const STAR_EMPTY = "fill-none stroke-neutral-300/90 text-neutral-300/90 dark:stroke-neutral-600 dark:text-neutral-600"
-/** Parenthetical count color ~#343A4E on light backgrounds. */
-const RATING_COUNT = "text-[#343A4E] dark:text-foreground/90"
+const RATING_COUNT = "text-neutral-600 dark:text-foreground/90"
 
 function StarRow({ value }: { value: number }) {
   const clamped = Math.min(5, Math.max(0, value))
@@ -24,7 +22,7 @@ function StarRow({ value }: { value: number }) {
               style={{ width: `${fill * 100}%` }}
             >
               <Star
-                className={cn("h-4 w-4", STAR_GOLD)}
+                className={cn("h-4 w-4", STAR_FILLED)}
                 strokeWidth={0}
               />
             </span>

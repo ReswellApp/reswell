@@ -81,7 +81,7 @@ export function FavoriteButton({
       disabled={loading}
       className={cn(
         "transition-colors border-0 shadow-none",
-        favorited && "text-red-500 hover:text-red-600"
+        favorited && "text-black hover:text-neutral-700"
       )}
     >
       <Heart className={cn("h-4 w-4", favorited && "fill-current")} />

@@ -321,7 +321,7 @@ export default async function HomePage() {
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                        <p className="text-lg font-bold text-primary mt-1">
+                        <p className="text-lg font-bold text-black dark:text-white mt-1">
                           ${listing.price.toFixed(2)}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
@@ -404,7 +404,7 @@ export default async function HomePage() {
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
-                        <p className="text-lg font-bold text-primary mt-1">
+                        <p className="text-lg font-bold text-black dark:text-white mt-1">
                           ${board.price.toFixed(2)}
                         </p>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
@@ -497,7 +497,7 @@ export default async function HomePage() {
                         </div>
                         <CardContent className="p-4">
                           <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                          <p className="text-lg font-bold text-primary mt-1">
+                          <p className="text-lg font-bold text-black dark:text-white mt-1">
                             ${Number(listing.price).toFixed(2)}
                           </p>
                           {locationLine ? (
@@ -597,7 +597,7 @@ export default async function HomePage() {
                         <CardContent className="p-4">
                           <h3 className="font-medium line-clamp-2">{category.name}</h3>
                           <p
-                            className="text-xl font-bold text-primary mt-2 invisible select-none pointer-events-none"
+                            className="text-xl font-bold text-black dark:text-white mt-2 invisible select-none pointer-events-none"
                             aria-hidden
                           >
                             $0.00
@@ -675,7 +675,7 @@ export default async function HomePage() {
                               {listing.board_length}
                             </p>
                           )}
-                          <p className="text-xl font-bold text-primary mt-2">
+                          <p className="text-xl font-bold text-black dark:text-white mt-2">
                             ${Number(listing.price).toFixed(2)}
                           </p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
@@ -726,7 +726,7 @@ export default async function HomePage() {
                         <h3 className="font-medium line-clamp-2">
                           {capitalizeWords(listing.title)}
                         </h3>
-                        <p className="text-xl font-bold text-primary mt-2">
+                        <p className="text-xl font-bold text-black dark:text-white mt-2">
                           ${Number(listing.price).toFixed(2)}
                         </p>
                         <div className="flex items-center justify-between mt-2">
@@ -858,7 +858,7 @@ export default async function HomePage() {
                       <CardContent className="p-4">
                         <h3 className="font-medium line-clamp-1">{item.name}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <p className="text-lg font-bold text-primary">
+                          <p className="text-lg font-bold text-black dark:text-white">
                             ${item.price.toFixed(2)}
                           </p>
                           {item.compare_at_price && item.compare_at_price > item.price && (

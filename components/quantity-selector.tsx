@@ -138,7 +138,7 @@ export function QuantitySelector({ productId, maxQuantity, item: itemProp }: Qua
         size="lg"
         onClick={addToCart}
         disabled={loading || maxQuantity <= 0}
-        className={`w-full ${added ? "bg-green-600 hover:bg-green-700" : ""}`}
+        className={`w-full ${added ? "bg-black hover:bg-neutral-800" : ""}`}
       >
         {loading ? (
           <Loader2 className="h-5 w-5 animate-spin" />

@@ -39,7 +39,7 @@ export function ContactForm() {
 
   if (submitted) {
     return (
-      <Card className="border-emerald-500/30 bg-emerald-500/5">
+      <Card className="border-neutral-300 bg-neutral-50">
         <CardContent className="pt-6">
           <p className="font-medium text-foreground">Thanks for reaching out</p>
           <p className="text-sm text-muted-foreground mt-2">

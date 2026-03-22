@@ -297,7 +297,7 @@ export function HeaderNavSearch() {
                       <p className="line-clamp-1 text-sm font-semibold text-foreground">
                         {capitalizeWords(listing.title)}
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-cerulean">
+                      <p className="mt-1 text-sm font-semibold text-black dark:text-white">
                         ${listing.price.toFixed(2)}
                       </p>
                     </div>

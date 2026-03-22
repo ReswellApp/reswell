@@ -16,7 +16,7 @@ const sizes = {
 export function VerifiedBadge({ className, size = "md" }: VerifiedBadgeProps) {
   return (
     <CheckCircle2
-      className={cn("shrink-0 fill-blue-500 text-white", sizes[size], className)}
+      className={cn("shrink-0 fill-black text-white", sizes[size], className)}
       aria-label="Verified seller"
     />
   )

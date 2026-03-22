@@ -112,9 +112,9 @@ export default async function AdminDashboard() {
   ]
 
   const sectionStats = [
-    { label: 'Used Gear', count: usedCount ?? 0, color: 'bg-blue-500' },
-    { label: 'New Items', count: newCount ?? 0, color: 'bg-green-500' },
-    { label: 'Surfboards', count: boardsCount ?? 0, color: 'bg-amber-500' },
+    { label: 'Used Gear', count: usedCount ?? 0, color: 'bg-neutral-700' },
+    { label: 'New Items', count: newCount ?? 0, color: 'bg-neutral-500' },
+    { label: 'Surfboards', count: boardsCount ?? 0, color: 'bg-neutral-400' },
   ]
 
   return (
@@ -253,10 +253,10 @@ export default async function AdminDashboard() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-primary">${listing.price}</p>
+                      <p className="font-semibold text-black dark:text-white">${listing.price}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         listing.status === 'active' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                          ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' 
                           : 'bg-muted text-muted-foreground'
                       }`}>
                         {listing.status}

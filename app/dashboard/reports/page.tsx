@@ -170,11 +170,11 @@ export default function DashboardReportsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+        return 'bg-neutral-50 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
       case 'reviewed':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+        return 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
       case 'resolved':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+        return 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
       case 'dismissed':
         return 'bg-muted text-muted-foreground'
       default:

@@ -149,7 +149,7 @@ export default function ArchivedListingsPage() {
                       >
                         {capitalizeWords(listing.title)}
                       </Link>
-                      <p className="text-lg font-bold text-primary mt-0.5">${listing.price}</p>
+                      <p className="text-lg font-bold text-black dark:text-white mt-0.5">${listing.price}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Badge variant="secondary">{getStatusLabel(listing.status)}</Badge>
                         <Badge variant="outline">{getSectionLabel(listing.section)}</Badge>
@@ -157,7 +157,7 @@ export default function ArchivedListingsPage() {
                       <p className="text-sm text-muted-foreground mt-2">
                         Archived {formatDistanceToNow(archivedAt, { addSuffix: true })} ·{' '}
                         {isPastDelete ? (
-                          <span className="text-amber-600 dark:text-amber-400">Eligible for deletion</span>
+                          <span className="text-neutral-700 dark:text-neutral-300">Eligible for deletion</span>
                         ) : (
                           <>Deleted on {format(deleteOn, 'MMM d, yyyy')}</>
                         )}

@@ -162,7 +162,7 @@ export default async function BoardDetailPage(props: {
 
           {/* Mobile price + tags above images */}
           <div className="mb-4 lg:hidden">
-            <p className="text-2xl font-bold text-primary">
+            <p className="text-2xl font-bold text-black dark:text-white">
               ${board.price.toFixed(2)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -210,7 +210,7 @@ export default async function BoardDetailPage(props: {
                     <ShareButton title={capitalizeWords(board.title)} />
                   </div>
                 </div>
-                <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-primary mt-2">
+                <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
                   ${board.price.toFixed(2)}
                 </p>
               </div>
@@ -449,7 +449,7 @@ export default async function BoardDetailPage(props: {
                           {item.board_length && (
                             <p className="text-sm text-muted-foreground">{item.board_length}</p>
                           )}
-                          <p className="text-lg font-bold text-primary mt-1">
+                          <p className="text-lg font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>
                         </CardContent>

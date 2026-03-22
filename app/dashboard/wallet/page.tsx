@@ -145,15 +145,15 @@ export default function WalletPage() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "sale":
-        return <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
+        return <ArrowDownLeft className="h-4 w-4 text-neutral-800" />
       case "purchase":
-        return <ArrowUpRight className="h-4 w-4 text-red-500" />
+        return <ArrowUpRight className="h-4 w-4 text-neutral-500" />
       case "cashout":
-        return <Banknote className="h-4 w-4 text-amber-500" />
+        return <Banknote className="h-4 w-4 text-neutral-600" />
       case "deposit":
-        return <ArrowDownLeft className="h-4 w-4 text-blue-500" />
+        return <ArrowDownLeft className="h-4 w-4 text-neutral-700" />
       case "refund":
-        return <ArrowDownLeft className="h-4 w-4 text-purple-500" />
+        return <ArrowDownLeft className="h-4 w-4 text-neutral-500" />
       default:
         return <DollarSign className="h-4 w-4" />
     }
@@ -173,11 +173,11 @@ export default function WalletPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Completed</Badge>
+        return <Badge variant="default" className="bg-neutral-100 text-neutral-900 border-neutral-200"><CheckCircle2 className="h-3 w-3 mr-1" />Completed</Badge>
       case "pending":
         return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pending</Badge>
       case "processing":
-        return <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Processing</Badge>
+        return <Badge variant="secondary" className="bg-neutral-100 text-neutral-700 border-neutral-200"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Processing</Badge>
       case "failed":
       case "rejected":
         return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>
@@ -223,7 +223,7 @@ export default function WalletPage() {
               <TrendingUp className="h-4 w-4" />
               Lifetime Earned
             </div>
-            <div className="text-2xl font-bold text-emerald-600">
+            <div className="text-2xl font-bold text-neutral-900">
               R${earned.toFixed(2)}
             </div>
           </CardContent>
@@ -354,13 +354,13 @@ export default function WalletPage() {
                   {cashoutFee > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Fee (1% instant)</span>
-                      <span className="text-red-500">-R${cashoutFee.toFixed(2)}</span>
+                      <span className="text-neutral-600">-R${cashoutFee.toFixed(2)}</span>
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between font-medium">
                     <span>You receive</span>
-                    <span className="text-emerald-600">${cashoutNet.toFixed(2)} USD</span>
+                    <span className="text-neutral-900">${cashoutNet.toFixed(2)} USD</span>
                   </div>
                 </div>
               )}
@@ -481,8 +481,8 @@ export default function WalletPage() {
           <div className="grid gap-6 sm:grid-cols-3">
             <div className="space-y-2">
               <div className="flex items-center gap-2 font-medium">
-                <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                  <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
+                <div className="h-8 w-8 rounded-full bg-neutral-100 flex items-center justify-center">
+                  <ArrowDownLeft className="h-4 w-4 text-neutral-800" />
                 </div>
                 Earn
               </div>
@@ -504,8 +504,8 @@ export default function WalletPage() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2 font-medium">
-                <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center">
-                  <Banknote className="h-4 w-4 text-amber-500" />
+                <div className="h-8 w-8 rounded-full bg-neutral-100 flex items-center justify-center">
+                  <Banknote className="h-4 w-4 text-neutral-700" />
                 </div>
                 Cash Out
               </div>
@@ -569,7 +569,7 @@ function TransactionList({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-semibold ${isPositive ? "text-emerald-600" : "text-foreground"}`}>
+                  <p className={`font-semibold ${isPositive ? "text-neutral-900" : "text-foreground"}`}>
                     {isPositive ? "+" : ""}R${Math.abs(amount).toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">

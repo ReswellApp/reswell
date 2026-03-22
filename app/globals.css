@@ -2,11 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* White-dominant minimal — 90% white, refined coastal marketplace
-   Foundation: white, softwhite, black, midgray, lightgray
-   Accent (use lightly): cerulean, pacific, olive, gold
-   No large solid accent sections. Color as detail, not branding noise.
-*/
+/* Black & white — white/off-white backgrounds, black headings, gray body text */
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -15,14 +11,13 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  /* Badges: olive 10–15% opacity; gold for premium/verified only */
   .badge-olive {
-    background-color: rgba(67, 87, 46, 0.12);
-    color: #43572E;
+    background-color: rgba(17, 17, 17, 0.08);
+    color: #111111;
   }
   .badge-gold {
-    background-color: rgba(139, 98, 18, 0.12);
-    color: #8B6212;
+    background-color: rgba(17, 17, 17, 0.12);
+    color: #404040;
   }
 }
 
@@ -43,7 +38,7 @@ body {
     --muted-foreground: 0 0% 42%;    /* #6B6B6B midgray (body) */
     --accent: 0 0% 7%;               /* black (no blue links) */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 0% 20%;
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 90%;              /* #E5E5E5 lightgray */
     --input: 0 0% 85%;               /* #DADADA bordergray */
@@ -52,7 +47,7 @@ body {
     --chart-2: 0 0% 42%;
     --chart-3: 0 0% 90%;
     --chart-4: 0 0% 97%;
-    --chart-5: 0 84% 60%;
+    --chart-5: 0 0% 42%;
     --radius: 0.25rem;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 7%;
@@ -78,8 +73,8 @@ body {
     --muted-foreground: 0 0% 65%;
     --accent: 0 0% 98%;
     --accent-foreground: 0 0% 7%;
-    --destructive: 0 70% 45%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 0% 85%;
+    --destructive-foreground: 0 0% 7%;
     --border: 0 0% 20%;
     --input: 0 0% 20%;
     --ring: 0 0% 98%;
@@ -87,7 +82,7 @@ body {
     --chart-2: 0 0% 65%;
     --chart-3: 0 0% 20%;
     --chart-4: 0 0% 15%;
-    --chart-5: 0 70% 50%;
+    --chart-5: 0 0% 65%;
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 0 0% 98%;

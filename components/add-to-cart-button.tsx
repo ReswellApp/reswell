@@ -93,7 +93,7 @@ export function AddToCartButton({
       disabled={loading || item.stock_quantity <= 0}
       className={cn(
         "transition-all",
-        added && "bg-green-600 hover:bg-green-700 text-white",
+        added && "bg-black hover:bg-neutral-800 text-white",
         className
       )}
     >

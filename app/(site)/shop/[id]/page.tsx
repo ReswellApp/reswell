@@ -112,18 +112,18 @@ export default async function ProductPage(props: {
             <div className="space-y-6">
               <div>
                 <h1 className="text-3xl font-bold">{listing.title}</h1>
-                <p className="text-3xl font-bold text-primary mt-3">
+                <p className="text-3xl font-bold text-black dark:text-white mt-3">
                   ${price.toFixed(2)}
                 </p>
               </div>
 
               <div>
                 {stockQuantity > 10 ? (
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  <Badge variant="secondary" className="bg-neutral-100 text-neutral-900">
                     In Stock
                   </Badge>
                 ) : stockQuantity > 0 ? (
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                  <Badge variant="secondary" className="bg-neutral-200 text-neutral-800">
                     Only {stockQuantity} left
                   </Badge>
                 ) : (

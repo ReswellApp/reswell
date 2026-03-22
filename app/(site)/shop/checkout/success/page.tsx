@@ -87,8 +87,8 @@ function ShopCheckoutSuccessInner() {
               {confirmState === "ok" && (
                 <>
                   <div className="flex justify-center mb-4">
-                    <div className="rounded-full bg-green-100 p-4">
-                      <CheckCircle2 className="h-12 w-12 text-green-600" />
+                    <div className="rounded-full bg-neutral-100 p-4">
+                      <CheckCircle2 className="h-12 w-12 text-neutral-900" />
                     </div>
                   </div>
                   <h1 className="text-2xl font-bold mb-2">Order confirmed</h1>

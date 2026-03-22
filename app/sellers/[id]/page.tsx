@@ -156,7 +156,7 @@ export default async function SellerProfilePage({
                     {displayName}
                   </h1>
                   {shop.shop_verified && (
-                    <Badge className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100">
+                    <Badge className="bg-neutral-100 text-neutral-900 border-neutral-200 hover:bg-neutral-200">
                       <VerifiedBadge size="sm" className="mr-1" />
                       Verified Seller
                     </Badge>
@@ -396,7 +396,7 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
               </div>
               <CardContent className="p-4">
                 <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
-                <p className="text-xl font-bold text-primary mt-2">
+                <p className="text-xl font-bold text-black dark:text-white mt-2">
                   ${Number(listing.price).toFixed(2)}
                 </p>
                 {listing.status && listing.status !== "active" && (

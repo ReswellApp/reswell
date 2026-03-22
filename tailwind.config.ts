@@ -22,17 +22,17 @@ const config: Config = {
         touch: '44px',
       },
       colors: {
-        /* White-dominant minimal — 90% white, accent used lightly */
+        /* Black & white — neutrals only */
         white: '#FFFFFF',
-        softwhite: '#F8F9F7',
+        softwhite: '#F5F5F5',
         black: '#111111',
         midgray: '#6E6E6E',
         lightgray: '#E5E5E5',
-        cerulean: '#0F2143',
-        pacific: '#354E56',
-        olive: '#43572E',
-        gold: '#8B6212',
-        /* Semantic — accent only in buttons/hover/badges */
+        /* Legacy names → same grayscale (keeps existing class names working) */
+        cerulean: '#111111',
+        pacific: '#333333',
+        olive: '#525252',
+        gold: '#737373',
         background: '#FFFFFF',
         foreground: '#111111',
         card: {
@@ -44,19 +44,19 @@ const config: Config = {
           foreground: '#111111',
         },
         primary: {
-          DEFAULT: '#0F2143',
+          DEFAULT: '#111111',
           foreground: '#FFFFFF',
         },
         secondary: {
           DEFAULT: 'transparent',
-          foreground: '#0F2143',
+          foreground: '#111111',
         },
         muted: {
-          DEFAULT: '#F8F9F7',
+          DEFAULT: '#F5F5F5',
           foreground: '#6E6E6E',
         },
         accent: {
-          DEFAULT: '#354E56',
+          DEFAULT: '#333333',
           foreground: '#FFFFFF',
         },
         destructive: {
@@ -65,7 +65,7 @@ const config: Config = {
         },
         border: '#E5E5E5',
         input: '#E5E5E5',
-        ring: '#0F2143',
+        ring: '#111111',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',

@@ -27,10 +27,10 @@ export default async function Page(props: {
                 </p>
               )}
               <div className="flex gap-2 mt-4">
-                <Link href="/auth/login" className="inline-flex items-center justify-center flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">
+                <Link href="/auth/login" className="inline-flex items-center justify-center flex-1 rounded-md bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200">
                   Try logging in
                 </Link>
-                <Link href="/" className="inline-flex items-center justify-center flex-1 rounded-md border border-input bg-transparent px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground">
+                <Link href="/" className="inline-flex items-center justify-center flex-1 rounded-md border border-black bg-transparent px-4 py-2 text-sm font-medium text-black shadow-sm hover:bg-neutral-100 dark:border-white dark:text-white dark:hover:bg-white/10">
                   Go home
                 </Link>
               </div>

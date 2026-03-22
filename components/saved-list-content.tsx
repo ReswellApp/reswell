@@ -208,7 +208,7 @@ export function SavedListContent() {
                     {listing.section === 'surfboards' && boardLength && (
                       <p className="text-sm text-muted-foreground mt-1">{boardLength}</p>
                     )}
-                    <p className="text-xl font-bold text-primary mt-2">
+                    <p className="text-xl font-bold text-black dark:text-white mt-2">
                       ${Number(listing.price).toFixed(2)}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">

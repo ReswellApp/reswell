@@ -352,7 +352,7 @@ export function SearchInputWithSuggest({
                           {capitalizeWords(item.title)}
                         </p>
                         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{meta}</p>
-                        <p className="mt-1 text-sm font-semibold text-cerulean">
+                        <p className="mt-1 text-sm font-semibold text-black dark:text-white">
                           ${item.price.toFixed(2)}
                         </p>
                       </div>

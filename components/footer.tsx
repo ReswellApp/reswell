@@ -37,7 +37,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cerulean text-white">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-black text-white dark:bg-white dark:text-black">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -68,7 +68,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-midgray hover:text-cerulean transition-colors duration-smooth"
+                    className="text-sm text-midgray hover:text-black dark:hover:text-white transition-colors duration-smooth"
                   >
                     {link.name}
                   </Link>
@@ -85,7 +85,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-midgray hover:text-cerulean transition-colors duration-smooth"
+                    className="text-sm text-midgray hover:text-black dark:hover:text-white transition-colors duration-smooth"
                   >
                     {link.name}
                   </Link>
@@ -102,7 +102,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-midgray hover:text-cerulean transition-colors duration-smooth"
+                    className="text-sm text-midgray hover:text-black dark:hover:text-white transition-colors duration-smooth"
                   >
                     {link.name}
                   </Link>
@@ -119,7 +119,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-midgray hover:text-cerulean transition-colors duration-smooth"
+                    className="text-sm text-midgray hover:text-black dark:hover:text-white transition-colors duration-smooth"
                   >
                     {link.name}
                   </Link>

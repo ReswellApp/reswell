@@ -106,13 +106,13 @@ export function LocationPicker({
         scrollWheelZoom: true,
       })
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; OSM &copy; CARTO',
         maxZoom: 19,
       }).addTo(map)
 
       const icon = L.divIcon({
-        html: `<div style="background:#2E5E8C;width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+        html: `<div style="background:#111111;width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         </div>`,
         className: "",
@@ -286,7 +286,7 @@ export function LocationPicker({
       </div>
 
       {searchError && (
-        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg px-3 py-2">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {searchError}
         </div>
@@ -328,7 +328,7 @@ export function LocationPicker({
       <Button
         type="button"
         onClick={handleApplyLocation}
-        className={`w-full sm:w-auto transition-all ${appliedSuccess ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+        className={`w-full sm:w-auto transition-all ${appliedSuccess ? "bg-black hover:bg-neutral-800 text-white" : ""}`}
       >
         {appliedSuccess ? (
           <>
