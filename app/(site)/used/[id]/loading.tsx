@@ -1,0 +1,5 @@
+import { SurfboardPageLoading } from "@/components/listing-detail-page-loading"
+
+export default function UsedListingLoading() {
+  return <SurfboardPageLoading withShell={false} />
+}

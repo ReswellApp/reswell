@@ -1,7 +1,5 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -51,9 +49,6 @@ export default async function SellersPage({
   const { data: shops } = await query
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-offwhite py-12">
@@ -236,8 +231,5 @@ export default async function SellersPage({
           </div>
         </section>
       </main>
-
-      <Footer />
-    </div>
   )
 }

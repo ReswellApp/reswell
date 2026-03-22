@@ -1,6 +1,4 @@
 import Link from "next/link"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { advancedCategorySections } from "@/lib/site-category-directory"
 import { ArrowRight, ChevronRight } from "lucide-react"
 
@@ -12,8 +10,6 @@ export const metadata = {
 
 export default function CategoriesPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 bg-white pb-24 pt-14 md:pb-32 md:pt-20">
         {/* ─── Hero ─── */}
         <div className="border-b border-lightgray/70">
@@ -99,7 +95,5 @@ export default function CategoriesPage() {
           ))}
         </div>
       </main>
-      <Footer />
-    </div>
   )
 }

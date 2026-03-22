@@ -1,6 +1,4 @@
 import Link from "next/link"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { FileText } from "lucide-react"
 import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 
@@ -11,8 +9,6 @@ export const metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8">
@@ -128,7 +124,5 @@ export default function TermsOfServicePage() {
           </div>
         </div>
       </main>
-      <Footer />
-    </div>
   )
 }

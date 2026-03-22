@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Fragment, useState, useEffect, useRef, Suspense } from "react"
+import { Fragment, useState, useEffect, useRef, useMemo, Suspense } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -102,7 +102,7 @@ export function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const headerSearchParams = useSearchParams()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     if (searchOpen) {
@@ -186,7 +186,7 @@ export function Header() {
       window.removeEventListener("cartUpdated", updateCartCount)
       subscription.unsubscribe()
     }
-  }, [supabase, pathname])
+  }, [supabase])
 
   useEffect(() => {
     if (mobileMenuOpen && mobileSearchRef.current) {

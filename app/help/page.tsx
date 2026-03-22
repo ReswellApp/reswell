@@ -1,6 +1,4 @@
 import Link from "next/link"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { HelpCircle } from "lucide-react"
 
@@ -34,8 +32,6 @@ const faqs = [
 
 export default function HelpCenterPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8">
@@ -73,7 +69,5 @@ export default function HelpCenterPage() {
           </Card>
         </div>
       </main>
-      <Footer />
-    </div>
   )
 }

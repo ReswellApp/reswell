@@ -1,6 +1,4 @@
 import Link from "next/link"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { Shield } from "lucide-react"
 
 export const metadata = {
@@ -10,8 +8,6 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8">
@@ -94,7 +90,5 @@ export default function PrivacyPolicyPage() {
           </div>
         </div>
       </main>
-      <Footer />
-    </div>
   )
 }

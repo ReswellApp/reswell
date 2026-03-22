@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { RecentListing } from "@/app/used/recent/recent-feed-client"
+import type { RecentListing } from "@/app/(site)/used/recent/recent-feed-client"
 
 const SELECT = `
   id,

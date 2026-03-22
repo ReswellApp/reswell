@@ -2,8 +2,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -125,9 +123,6 @@ export default async function SellerProfilePage({
     : shop.display_name
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
       <main className="flex-1">
         {/* Banner */}
         <div className="relative h-40 sm:h-56 bg-offwhite">
@@ -342,9 +337,6 @@ export default async function SellerProfilePage({
           )}
         </div>
       </main>
-
-      <Footer />
-    </div>
   )
 }
 

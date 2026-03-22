@@ -2,8 +2,6 @@ import React from "react"
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Header } from '@/components/header'
-import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { AdminGuard } from './AdminGuard'
 import { 
@@ -55,9 +53,7 @@ export default async function AdminLayout({
     : adminNavItems.filter((item) => item.href !== '/admin/users' && item.href !== '/admin/settings')
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Header />
-      <div className="flex-1 container mx-auto py-8">
+      <div className="flex-1 container mx-auto py-8 bg-background">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0">
@@ -84,7 +80,5 @@ export default async function AdminLayout({
           </main>
         </div>
       </div>
-      <Footer />
-    </div>
   )
 }

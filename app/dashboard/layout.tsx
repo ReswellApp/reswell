@@ -2,8 +2,6 @@ import React from "react"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import {
   LayoutDashboard,
@@ -57,9 +55,6 @@ export default async function DashboardLayout({
   const isShop = profile?.is_shop || false
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
       <div className="flex-1 container mx-auto py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
@@ -105,8 +100,5 @@ export default async function DashboardLayout({
           </main>
         </div>
       </div>
-
-      <Footer />
-    </div>
   )
 }

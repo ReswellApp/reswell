@@ -1,5 +1,3 @@
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
 import { MessageSquare, HelpCircle } from "lucide-react"
 import { ContactForm } from "./contact-form"
@@ -11,8 +9,6 @@ export const metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-2xl">
           <div className="flex items-center gap-3 mb-8">
@@ -49,7 +45,5 @@ export default function ContactPage() {
           </Card>
         </div>
       </main>
-      <Footer />
-    </div>
   )
 }
