@@ -6,7 +6,21 @@ import { PurchaseOptions } from "@/components/purchase-options"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { resolvePayableAmount, type PayableListing } from "@/lib/purchase-amount"
+import { listingDetailHref } from "@/lib/listing-href"
 import { Truck, MapPin } from "lucide-react"
+
+const SURFBOARD_COPY = {
+  itemLineLabel: "Board",
+  inspectNoun: "board",
+  priceContextNoun: "board",
+} as const
+
+export type PeerListingCheckoutCopy = {
+  itemLineLabel: string
+  inspectNoun: string
+  /** e.g. "board" / "item" — used in "the ___ price only" */
+  priceContextNoun: string
+}
 
 export type BoardCheckoutListing = PayableListing & {
   id: string
@@ -18,9 +32,11 @@ export type BoardCheckoutListing = PayableListing & {
 
 interface BoardCheckoutClientProps {
   listing: BoardCheckoutListing
+  /** Surfboard wording by default; pass used-gear labels for `/used/.../checkout`. */
+  copy?: PeerListingCheckoutCopy
 }
 
-export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
+export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY }: BoardCheckoutClientProps) {
   const canPick = listing.local_pickup !== false
   const canShip = !!listing.shipping_available
 
@@ -39,11 +55,13 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
     return resolvePayableAmount(listing, impliedFulfillment)
   }, [listing, impliedFulfillment])
 
+  const backHref = listingDetailHref(listing)
+
   if (!resolved.ok) {
     return (
       <p className="text-sm text-destructive">
         This listing cannot be checked out ({resolved.error}).{" "}
-        <Link href={`/boards/${listing.slug || listing.id}`} className="underline">
+        <Link href={backHref} className="underline">
           Back to listing
         </Link>
       </p>
@@ -73,7 +91,7 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
                 ) : (
                   <>
                     <span className="text-foreground font-medium">Free shipping</span> from this
-                    seller. Your total below is the board price only; Stripe will collect your
+                    seller. Your total below is the {copy.priceContextNoun} price only; Stripe will collect your
                     shipping address after you continue.
                   </>
                 )}
@@ -103,7 +121,7 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
                   Local pickup
                 </span>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Meet the seller and inspect the board in person.
+                  Meet the seller and inspect the {copy.inspectNoun} in person.
                 </p>
               </div>
             </label>
@@ -131,7 +149,7 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
 
       <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Board</span>
+          <span className="text-muted-foreground">{copy.itemLineLabel}</span>
           <span>${resolved.itemPrice.toFixed(2)}</span>
         </div>
         {deliverySelected && resolved.shipping > 0 && (

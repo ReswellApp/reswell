@@ -6,15 +6,21 @@ import {
   sessionToShippingAddressRecord,
   surfboardCheckoutCollectsShipping,
 } from "@/lib/stripe-shipping-address"
+import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 
 export const SURFBOARD_CHECKOUT_MODE = "surfboard_listing"
+export const USED_LISTING_CHECKOUT_MODE = "used_listing"
+
+export function isPeerListingCheckoutMode(mode: string | undefined): boolean {
+  return mode === SURFBOARD_CHECKOUT_MODE || mode === USED_LISTING_CHECKOUT_MODE
+}
 
 type Result =
   | { ok: true; duplicate?: boolean; listing_id?: string }
   | { ok: false; error: string }
 
 /**
- * Fulfill a paid surfboard Checkout Session: purchase row, seller wallet credit, listing sold.
+ * Fulfill a paid peer listing Checkout Session (surfboard or used gear): purchase row, seller wallet credit, listing sold.
  * Call only after payment is confirmed (success page or webhook).
  */
 export async function completeSurfboardCheckoutFromSession(
@@ -22,11 +28,13 @@ export async function completeSurfboardCheckoutFromSession(
   session: Stripe.Checkout.Session,
   options: { assertBuyerId?: string }
 ): Promise<Result> {
-  if (session.metadata?.mode !== SURFBOARD_CHECKOUT_MODE) {
+  const meta = session.metadata ?? {}
+  const mode = meta.mode
+  if (!isPeerListingCheckoutMode(mode)) {
     return { ok: false, error: "Invalid session mode" }
   }
 
-  const buyerId = session.metadata.user_id
+  const buyerId = meta.user_id
   if (!buyerId) {
     return { ok: false, error: "Missing buyer" }
   }
@@ -39,12 +47,12 @@ export async function completeSurfboardCheckoutFromSession(
     return { ok: false, error: "Payment not completed" }
   }
 
-  const listingId = session.metadata.listing_id
+  const listingId = meta.listing_id
   if (!listingId) {
     return { ok: false, error: "Missing listing" }
   }
 
-  const fulfillment = session.metadata.fulfillment || null
+  const fulfillment = meta.fulfillment || null
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
@@ -56,6 +64,13 @@ export async function completeSurfboardCheckoutFromSession(
 
   if (listingError || !listing) {
     return { ok: false, error: "Listing not found" }
+  }
+
+  if (mode === SURFBOARD_CHECKOUT_MODE && listing.section !== "surfboards") {
+    return { ok: false, error: "Invalid listing for this checkout" }
+  }
+  if (mode === USED_LISTING_CHECKOUT_MODE && listing.section !== "used") {
+    return { ok: false, error: "Invalid listing for this checkout" }
   }
 
   const resolved = resolvePayableAmount(listing, fulfillment)
@@ -124,6 +139,8 @@ export async function completeSurfboardCheckoutFromSession(
     }
   }
 
+  const fulfillmentMethod: "pickup" | "shipping" = collectShipping ? "shipping" : "pickup"
+
   const { data: purchase, error: purchaseInsertError } = await supabase
     .from("purchases")
     .insert({
@@ -136,16 +153,17 @@ export async function completeSurfboardCheckoutFromSession(
       status: "confirmed",
       shipping_address: shippingPayload,
       stripe_checkout_session_id: session.id,
+      fulfillment_method: fulfillmentMethod,
     })
     .select()
     .single()
 
   if (purchaseInsertError) {
-    console.error("[surfboard checkout] purchase insert failed:", purchaseInsertError)
+    console.error("[peer listing checkout] purchase insert failed:", purchaseInsertError)
     return {
       ok: false,
       error:
-        "Could not save your purchase. If you just added shipping columns, run scripts/015_purchases_shipping_address.sql in Supabase. Otherwise contact support with your receipt.",
+        "Could not save your purchase. Run scripts/015_purchases_shipping_address.sql and scripts/030_purchases_fulfillment_seller_policy.sql in Supabase if you have not yet. Otherwise contact support with your receipt.",
     }
   }
 
@@ -170,6 +188,20 @@ export async function completeSurfboardCheckoutFromSession(
   })
 
   await supabase.from("listings").update({ status: "sold" }).eq("id", listing.id)
+
+  try {
+    await postPurchaseThreadNotification(supabase, {
+      buyerId,
+      sellerId: listing.user_id,
+      listingId: listing.id,
+      listingTitle: listing.title ?? "your listing",
+      total: price,
+      fulfillment: fulfillmentMethod,
+      shippingAddress: shippingPayload,
+    })
+  } catch (e) {
+    console.error("[peer listing checkout] thread notification failed:", e)
+  }
 
   return { ok: true, listing_id: listing.id }
 }

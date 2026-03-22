@@ -124,7 +124,11 @@ export default async function OrdersPage() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Orders</h1>
         <p className="text-muted-foreground mt-1">
-          Shop purchases (new gear checkout). For used gear and surfboards, see activity in{" "}
+          Shop purchases (new gear checkout). Sales you make on used gear and surfboards appear under{" "}
+          <Link href="/dashboard/sales" className="text-primary underline underline-offset-2">
+            Sales
+          </Link>
+          ; wallet activity is in{" "}
           <Link href="/dashboard/wallet" className="text-primary underline underline-offset-2">
             Reswell Bucks
           </Link>

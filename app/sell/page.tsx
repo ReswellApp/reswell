@@ -148,8 +148,8 @@ function SellPageContent() {
     collectibleType: "" as "" | CollectibleTypeValue,
     collectibleEra: "" as "" | CollectibleEraValue,
     collectibleCondition: "" as "" | CollectibleConditionValue,
-    boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
-    boardShippingPrice: "",
+    boardFulfillment: "shipping_only" as BoardFulfillmentChoice,
+    boardShippingPrice: "0",
     boardType: "",
     boardLength: "",
     locationLat: 0,
@@ -577,12 +577,12 @@ function SellPageContent() {
         return
       }
 
-      const boardFlags =
-        listingType === "board"
-          ? flagsFromBoardFulfillment(formData.boardFulfillment)
-          : null
+      const fulfillmentFlags =
+        listingType === "used"
+          ? { shipping_available: true, local_pickup: false }
+          : flagsFromBoardFulfillment(formData.boardFulfillment)
 
-      if (listingType === "board" && boardFlags?.shipping_available) {
+      if (fulfillmentFlags.shipping_available) {
         const raw = formData.boardShippingPrice.trim()
         if (!raw) {
           toast.error("Enter a shipping price when offering shipping (use 0 for free shipping).")
@@ -597,20 +597,13 @@ function SellPageContent() {
         }
       }
 
-      const fulfillmentRow =
-        listingType === "used"
-          ? {
-              shipping_available: true,
-              local_pickup: false,
-              shipping_price: null as number | null,
-            }
-          : {
-              shipping_available: boardFlags!.shipping_available,
-              local_pickup: boardFlags!.local_pickup,
-              shipping_price: boardFlags!.shipping_available
-                ? parseFloat(formData.boardShippingPrice.trim())
-                : null,
-            }
+      const fulfillmentRow = {
+        shipping_available: fulfillmentFlags.shipping_available,
+        local_pickup: fulfillmentFlags.local_pickup,
+        shipping_price: fulfillmentFlags.shipping_available
+          ? parseFloat(formData.boardShippingPrice.trim())
+          : null,
+      }
 
       let listingId = editId
       let listingSlug: string | null = null
@@ -658,11 +651,11 @@ function SellPageContent() {
               listingType === "board" && formData.boardLength
                 ? parseInt(formData.boardLength.split("'")[1] || "0")
                 : null,
-            latitude: listingType === "board" && formData.locationLat ? formData.locationLat : null,
+            latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
             longitude:
-              listingType === "board" && formData.locationLng ? formData.locationLng : null,
-            city: listingType === "board" ? formData.locationCity : null,
-            state: listingType === "board" ? formData.locationState : null,
+              fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
+            city: fulfillmentRow.local_pickup ? formData.locationCity : null,
+            state: fulfillmentRow.local_pickup ? formData.locationState : null,
             shipping_available: fulfillmentRow.shipping_available,
             local_pickup: fulfillmentRow.local_pickup,
             shipping_price: fulfillmentRow.shipping_price,
@@ -786,11 +779,11 @@ function SellPageContent() {
               listingType === "board" && formData.boardLength
                 ? parseInt(formData.boardLength.split("'")[1] || "0")
                 : null,
-            latitude: listingType === "board" && formData.locationLat ? formData.locationLat : null,
+            latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
             longitude:
-              listingType === "board" && formData.locationLng ? formData.locationLng : null,
-            city: listingType === "board" ? formData.locationCity : null,
-            state: listingType === "board" ? formData.locationState : null,
+              fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
+            city: fulfillmentRow.local_pickup ? formData.locationCity : null,
+            state: fulfillmentRow.local_pickup ? formData.locationState : null,
             shipping_available: fulfillmentRow.shipping_available,
             local_pickup: fulfillmentRow.local_pickup,
             shipping_price: fulfillmentRow.shipping_price,
@@ -947,7 +940,10 @@ function SellPageContent() {
                     <button
                       type="button"
                       disabled={!!editId}
-                      onClick={() => setListingType("used")}
+                      onClick={() => {
+                        setListingType("used")
+                        setFormData((prev) => ({ ...prev, boardFulfillment: "shipping_only" as BoardFulfillmentChoice, boardShippingPrice: "0" }))
+                      }}
                       className={`p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                         listingType === "used"
                           ? "border-primary bg-primary/5"
@@ -962,7 +958,10 @@ function SellPageContent() {
                     <button
                       type="button"
                       disabled={!!editId}
-                      onClick={() => setListingType("board")}
+                      onClick={() => {
+                        setListingType("board")
+                        setFormData((prev) => ({ ...prev, boardFulfillment: "pickup_only" as BoardFulfillmentChoice, boardShippingPrice: "" }))
+                      }}
                       className={`p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                         listingType === "board"
                           ? "border-primary bg-primary/5"
@@ -1438,33 +1437,69 @@ function SellPageContent() {
                   </div>
                 )}
 
-                {/* Location Picker (surfboards only) */}
-                {listingType === "board" && (
-                  <LocationPicker
-                    onLocationSelect={(loc) => {
-                      setFormData({
-                        ...formData,
-                        locationLat: loc.lat,
-                        locationLng: loc.lng,
-                        locationCity: loc.city,
-                        locationState: loc.state,
-                        locationDisplay: loc.displayName,
-                      })
-                    }}
-                    initialLat={formData.locationLat || undefined}
-                    initialLng={formData.locationLng || undefined}
-                    initialCity={formData.locationCity || undefined}
-                    initialState={formData.locationState || undefined}
-                    initialDisplay={formData.locationDisplay || undefined}
-                  />
-                )}
-
-                {listingType === "board" && (
+                {listingType === "used" ? (
+                  <div className="space-y-4 rounded-lg border border-border p-4">
+                    <div className="space-y-2">
+                      <Label>Shipping</Label>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({ ...formData, boardFulfillment: "shipping_only", boardShippingPrice: "0" })
+                          }
+                          className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
+                            formData.boardFulfillment === "shipping_only" && formData.boardShippingPrice === "0"
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/40"
+                          }`}
+                        >
+                          <p className="font-medium">Free shipping</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">No extra cost to buyer</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              boardFulfillment: "shipping_only",
+                              boardShippingPrice: formData.boardShippingPrice === "0" ? "" : formData.boardShippingPrice,
+                            })
+                          }
+                          className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
+                            formData.boardFulfillment === "shipping_only" && formData.boardShippingPrice !== "0"
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/40"
+                          }`}
+                        >
+                          <p className="font-medium">Charge for shipping</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Set a flat shipping fee</p>
+                        </button>
+                      </div>
+                    </div>
+                    {formData.boardShippingPrice !== "0" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="boardShippingPrice">Shipping price ($) *</Label>
+                        <Input
+                          id="boardShippingPrice"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          placeholder="e.g. 8.99"
+                          value={formData.boardShippingPrice}
+                          onChange={(e) =>
+                            setFormData({ ...formData, boardShippingPrice: e.target.value })
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
                   <div className="space-y-4 rounded-lg border border-border p-4">
                     <div className="space-y-2">
                       <Label>How can buyers get this board? *</Label>
                       <p className="text-xs text-muted-foreground">
-                        Pickup uses the map location above. If you ship, set a flat shipping price (use 0
+                        Pickup uses the map location below. If you ship, set a flat shipping price (use 0
                         for free shipping).
                       </p>
                       <div className="grid gap-2 sm:grid-cols-3">
@@ -1523,6 +1558,28 @@ function SellPageContent() {
                       </div>
                     )}
                   </div>
+
+                  {(formData.boardFulfillment === "pickup_only" ||
+                    formData.boardFulfillment === "pickup_and_shipping") && (
+                    <LocationPicker
+                      onLocationSelect={(loc) => {
+                        setFormData({
+                          ...formData,
+                          locationLat: loc.lat,
+                          locationLng: loc.lng,
+                          locationCity: loc.city,
+                          locationState: loc.state,
+                          locationDisplay: loc.displayName,
+                        })
+                      }}
+                      initialLat={formData.locationLat || undefined}
+                      initialLng={formData.locationLng || undefined}
+                      initialCity={formData.locationCity || undefined}
+                      initialState={formData.locationState || undefined}
+                      initialDisplay={formData.locationDisplay || undefined}
+                    />
+                  )}
+                  </>
                 )}
 
                 {/* Price & Condition */}

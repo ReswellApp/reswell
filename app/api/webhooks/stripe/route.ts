@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { getStripe } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { completeSurfboardCheckoutFromSession } from "@/lib/checkout/surfboard-stripe-completion"
+import {
+  completeSurfboardCheckoutFromSession,
+  isPeerListingCheckoutMode,
+} from "@/lib/checkout/surfboard-stripe-completion"
 import { completeCartCheckoutFromSession } from "@/lib/checkout/cart-stripe-completion"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 /**
- * Stripe webhook: confirm checkout.session.completed for surfboards and shop cart.
+ * Stripe webhook: confirm checkout.session.completed for peer listings (surfboards, used gear) and shop cart.
  * Requires STRIPE_WEBHOOK_SECRET and SUPABASE_SERVICE_ROLE_KEY.
  */
 export async function POST(request: NextRequest) {
@@ -51,10 +54,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const mode = session.metadata?.mode
-    if (mode === "surfboard_listing") {
+    if (isPeerListingCheckoutMode(mode)) {
       const result = await completeSurfboardCheckoutFromSession(supabase, session, {})
       if (!result.ok) {
-        console.error("[stripe webhook] Surfboard fulfillment failed:", result.error, session.id)
+        console.error("[stripe webhook] Peer listing fulfillment failed:", result.error, session.id)
       }
     } else if (mode === "cart") {
       const result = await completeCartCheckoutFromSession(supabase, session)

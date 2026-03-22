@@ -17,10 +17,6 @@ export function resolvePayableAmount(
     return { ok: false, error: "Invalid listing price" }
   }
 
-  if (listing.section !== "surfboards") {
-    return { ok: true, total: itemPrice, itemPrice, shipping: 0 }
-  }
-
   const lp = listing.local_pickup !== false
   const sa = !!listing.shipping_available
   const shipRate = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)

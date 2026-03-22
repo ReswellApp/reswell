@@ -30,6 +30,9 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { wetsuitZipLabel } from "@/lib/wetsuit-options"
 import { leashLengthLabel } from "@/lib/leash-options"
 import { collectibleTypeLabel, collectibleEraLabel, collectibleConditionLabel } from "@/lib/collectible-options"
+import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
+import { Truck } from "lucide-react"
+
 export default async function UsedListingPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -118,6 +121,9 @@ export default async function UsedListingPage(props: {
   ) || []
 
   const isOwnListing = user?.id === listing.user_id
+  const pickupOffered = listing.local_pickup !== false
+  const shippingOffered = !!listing.shipping_available
+  const shippingPrice = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -190,7 +196,8 @@ export default async function UsedListingPage(props: {
                 user ? (
                   <Button size="lg" className="w-full gap-2" asChild>
                     <Link href={`/used/${listingSlug}/checkout`}>
-                      Purchase item — ${listing.price.toFixed(2)}
+                      Purchase item — ${(listing.price + (shippingOffered && !pickupOffered ? shippingPrice : 0)).toFixed(2)}
+                      {shippingOffered && !pickupOffered && shippingPrice > 0 && " (incl. shipping)"}
                     </Link>
                   </Button>
                 ) : (
@@ -206,8 +213,15 @@ export default async function UsedListingPage(props: {
                 {[
                   formatCondition(listing.condition),
                   listing.categories ? formatCategory(listing.categories.name) : null,
+                  boardFulfillmentSummary(listing.local_pickup, listing.shipping_available),
                 ].filter(Boolean).join(" · ")}
               </p>
+              {shippingOffered && (
+                <p className="text-sm font-medium text-green-600 flex items-center gap-1.5">
+                  <Truck className="h-4 w-4" />
+                  {shippingPrice === 0 ? "Free shipping" : `+$${shippingPrice.toFixed(2)} shipping`}
+                </p>
+              )}
               {listing.categories?.slug === "wetsuits" &&
                 ((listing as { wetsuit_size?: string | null }).wetsuit_size ||
                   (listing as { wetsuit_thickness?: string | null }).wetsuit_thickness ||
@@ -356,6 +370,7 @@ export default async function UsedListingPage(props: {
                       listingTitle={capitalizeWords(listing.title)}
                       isLoggedIn={!!user}
                       section="used"
+                      shippingAvailable={shippingOffered}
                     />
                   </CardContent>
                 </Card>

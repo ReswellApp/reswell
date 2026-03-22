@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getStripe } from "@/lib/stripe-server"
-import { SURFBOARD_CHECKOUT_MODE } from "@/lib/checkout/surfboard-stripe-completion"
+import {
+  SURFBOARD_CHECKOUT_MODE,
+  USED_LISTING_CHECKOUT_MODE,
+} from "@/lib/checkout/surfboard-stripe-completion"
 import { getCheckoutAppOrigin } from "@/lib/checkout-app-origin"
 import {
   STRIPE_CHECKOUT_SHIPPING_COUNTRIES,
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
     }
 
-    if (listing.section !== "surfboards") {
+    if (listing.section !== "surfboards" && listing.section !== "used") {
       return NextResponse.json(
         { error: "Card checkout for this listing type is not supported here" },
         { status: 400 }
@@ -82,13 +85,16 @@ export async function POST(request: NextRequest) {
 
     const origin = getCheckoutAppOrigin()
 
+    const productBlurb =
+      listing.section === "used" ? "Used gear — Reswell marketplace" : "Surfboard — Reswell marketplace"
+
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
       {
         price_data: {
           currency: "usd",
           product_data: {
             name: safeProductName(listing.title),
-            description: "Surfboard — Reswell marketplace",
+            description: productBlurb,
           },
           unit_amount: Math.round(resolved.itemPrice * 100),
         },
@@ -114,6 +120,18 @@ export async function POST(request: NextRequest) {
 
     const collectShipping = surfboardCheckoutCollectsShipping(listing, fulfillment)
 
+    const checkoutMode =
+      listing.section === "used" ? USED_LISTING_CHECKOUT_MODE : SURFBOARD_CHECKOUT_MODE
+    const slugOrId = listing.slug || listing.id
+    const successUrl =
+      listing.section === "used"
+        ? `${origin}/used/checkout/success?session_id={CHECKOUT_SESSION_ID}`
+        : `${origin}/boards/checkout/success?session_id={CHECKOUT_SESSION_ID}`
+    const cancelUrl =
+      listing.section === "used"
+        ? `${origin}/used/${slugOrId}/checkout?canceled=1`
+        : `${origin}/boards/${slugOrId}/checkout?canceled=1`
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -127,7 +145,7 @@ export async function POST(request: NextRequest) {
           }
         : {}),
       metadata: {
-        mode: SURFBOARD_CHECKOUT_MODE,
+        mode: checkoutMode,
         user_id: user.id,
         listing_id: listing.id,
         fulfillment: fulfillment ?? "",
@@ -136,8 +154,8 @@ export async function POST(request: NextRequest) {
         total_cents: String(expectedTotalCents),
         collect_shipping: collectShipping ? "1" : "0",
       },
-      success_url: `${origin}/boards/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/boards/${listing.slug || listing.id}/checkout?canceled=1`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     })
 
     if (!session.url) {

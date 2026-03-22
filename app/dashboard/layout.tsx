@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import {
   LayoutDashboard,
   Package,
+  PackageCheck,
   Archive,
   Heart,
   Settings,
@@ -26,6 +27,7 @@ const sidebarLinks = [
   { name: "Reswell Bucks", href: "/dashboard/wallet", icon: Wallet },
   { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+  { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Reports", href: "/dashboard/reports", icon: Flag },
   { name: "Shopify Connect", href: "/dashboard/profile", icon: Store },
   { name: "Profile", href: "/dashboard/settings", icon: UserCircle },

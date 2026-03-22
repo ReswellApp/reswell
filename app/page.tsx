@@ -44,6 +44,16 @@ function listingPublicHref(listing: {
   return `/used/${slugOrId}`
 }
 
+function primaryImageUrl(
+  images?: { url: string; sort_order?: number | null }[] | null
+): string | undefined {
+  if (!images || images.length === 0) return undefined
+  const sorted = [...images].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  )
+  return sorted[0].url
+}
+
 const features = [
   {
     icon: Recycle,
@@ -75,7 +85,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url),
+      listing_images (url, sort_order),
       profiles (display_name, avatar_url, sales_count, shop_verified)
     `)
     .eq("status", "active")
@@ -121,7 +131,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url),
+      listing_images (url, sort_order),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)
     .eq("status", "active")
@@ -156,7 +166,7 @@ export default async function HomePage() {
       .select(
         `
         *,
-        listing_images (url),
+        listing_images (url, sort_order),
         profiles (display_name, avatar_url, sales_count, shop_verified)
       `
       )
@@ -187,7 +197,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url),
+      listing_images (url, sort_order),
       categories (slug),
       profiles (display_name, avatar_url, sales_count, shop_verified)
     `)
@@ -279,9 +289,9 @@ export default async function HomePage() {
                   <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-square relative bg-muted overflow-hidden">
-                        {listing.listing_images?.[0]?.url ? (
+                        {primaryImageUrl(listing.listing_images) ? (
                           <Image
-                            src={listing.listing_images[0].url || "/placeholder.svg"}
+                            src={primaryImageUrl(listing.listing_images)!}
                             alt={capitalizeWords(listing.title)}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -362,9 +372,9 @@ export default async function HomePage() {
                   <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                        {board.listing_images?.[0]?.url ? (
+                        {primaryImageUrl(board.listing_images) ? (
                           <Image
-                            src={board.listing_images[0].url || "/placeholder.svg"}
+                            src={primaryImageUrl(board.listing_images)!}
                             alt={capitalizeWords(board.title)}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -455,9 +465,9 @@ export default async function HomePage() {
                     >
                       <Link href={href} className="flex-1 flex flex-col">
                         <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                          {listing.listing_images?.[0]?.url ? (
+                          {primaryImageUrl(listing.listing_images) ? (
                             <Image
-                              src={listing.listing_images[0].url || "/placeholder.svg"}
+                              src={primaryImageUrl(listing.listing_images)!}
                               alt={capitalizeWords(listing.title)}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -575,9 +585,9 @@ export default async function HomePage() {
                   <Card key={category.href} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={href} className="flex-1 flex flex-col">
                       <div className="aspect-square relative bg-muted overflow-hidden">
-                        {listing.listing_images?.[0]?.url ? (
+                        {primaryImageUrl(listing.listing_images) ? (
                           <Image
-                            src={listing.listing_images[0].url || "/placeholder.svg"}
+                            src={primaryImageUrl(listing.listing_images)!}
                             alt={capitalizeWords(listing.title)}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
