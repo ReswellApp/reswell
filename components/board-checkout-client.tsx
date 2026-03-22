@@ -32,11 +32,12 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
 
   const fulfillmentForApi = canPick && canShip ? method : undefined
 
+  const impliedFulfillment: "pickup" | "shipping" =
+    canPick && canShip ? method : !canPick && canShip ? "shipping" : "pickup"
+
   const resolved = useMemo(() => {
-    const f =
-      canPick && canShip ? method : !canPick && canShip ? "shipping" : "pickup"
-    return resolvePayableAmount(listing, f)
-  }, [listing, method, canPick, canShip])
+    return resolvePayableAmount(listing, impliedFulfillment)
+  }, [listing, impliedFulfillment])
 
   if (!resolved.ok) {
     return (
@@ -49,8 +50,39 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
     )
   }
 
+  const deliverySelected = impliedFulfillment === "shipping"
+
   return (
     <div className="space-y-6">
+      {!canPick && canShip && (
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-start gap-3">
+            <Truck className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden />
+            <div className="text-sm min-w-0">
+              <p className="font-medium">Delivery</p>
+              <p className="text-muted-foreground mt-1">
+                {resolved.shipping > 0 ? (
+                  <>
+                    Flat{" "}
+                    <span className="text-foreground font-semibold tabular-nums">
+                      ${resolved.shipping.toFixed(2)}
+                    </span>{" "}
+                    shipping set by the seller — included in your total below. Stripe will collect your
+                    shipping address after you continue.
+                  </>
+                ) : (
+                  <>
+                    <span className="text-foreground font-medium">Free shipping</span> from this
+                    seller. Your total below is the board price only; Stripe will collect your
+                    shipping address after you continue.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {canPick && canShip && (
         <div className="space-y-3 rounded-lg border bg-card p-4">
           <Label className="text-base">How do you want to receive it?</Label>
@@ -102,10 +134,16 @@ export function BoardCheckoutClient({ listing }: BoardCheckoutClientProps) {
           <span className="text-muted-foreground">Board</span>
           <span>${resolved.itemPrice.toFixed(2)}</span>
         </div>
-        {resolved.shipping > 0 && (
+        {deliverySelected && resolved.shipping > 0 && (
           <div className="flex justify-between">
             <span className="text-muted-foreground">Shipping</span>
             <span>${resolved.shipping.toFixed(2)}</span>
+          </div>
+        )}
+        {deliverySelected && resolved.shipping === 0 && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Shipping</span>
+            <span>Free</span>
           </div>
         )}
         <div className="flex justify-between font-semibold text-base border-t pt-2">

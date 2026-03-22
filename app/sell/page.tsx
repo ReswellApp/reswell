@@ -411,6 +411,54 @@ function SellPageContent() {
     return file
   }
 
+  /**
+   * Resize images >12 MP down to 12 MP keeping aspect ratio, then
+   * progressively compress to JPEG until the file fits comfortably
+   * within typical storage limits (~4.5 MB).  Uses multi-step
+   * downscaling for best visual quality on large reductions.
+   */
+  async function compressImage(file: File): Promise<File> {
+    const MAX_PIXELS = 12_000_000
+    const MAX_BYTES  = 4.5 * 1024 * 1024
+
+    const bitmap = await createImageBitmap(file)
+    let { width, height } = bitmap
+    const totalPixels = width * height
+
+    if (totalPixels > MAX_PIXELS) {
+      const scale = Math.sqrt(MAX_PIXELS / totalPixels)
+      width  = Math.round(width * scale)
+      height = Math.round(height * scale)
+    }
+
+    const canvas  = document.createElement("canvas")
+    canvas.width  = width
+    canvas.height = height
+    const ctx = canvas.getContext("2d")!
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = "high"
+    ctx.drawImage(bitmap, 0, 0, width, height)
+    bitmap.close()
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image"
+
+    let quality = 0.92
+    while (quality >= 0.5) {
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/jpeg", quality),
+      )
+      if (blob.size <= MAX_BYTES || quality <= 0.5) {
+        return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" })
+      }
+      quality -= 0.05
+    }
+
+    const finalBlob = await new Promise<Blob>((resolve) =>
+      canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.5),
+    )
+    return new File([finalBlob], `${baseName}.jpg`, { type: "image/jpeg" })
+  }
+
   async function syncListingImages(listingId: string, userId: string) {
     // Delete removed existing images
     if (removedImageIds.length) {
@@ -439,21 +487,16 @@ function SellPageContent() {
         let fileToUpload: File
         try {
           fileToUpload = await toUploadableImage(img.file)
+          fileToUpload = await compressImage(fileToUpload)
         } catch {
           continue
         }
         const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
-        const ext =
-          fileToUpload.type === "image/png"
-            ? "png"
-            : fileToUpload.type === "image/webp"
-            ? "webp"
-            : "jpg"
-        const fileName = `${userId}/${Date.now()}-${index}-${baseName}.${ext}`
+        const fileName = `${userId}/${Date.now()}-${index}-${baseName}.jpg`
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("listings")
           .upload(fileName, fileToUpload, {
-            contentType: fileToUpload.type,
+            contentType: "image/jpeg",
             upsert: false,
           })
 

@@ -19,7 +19,6 @@ import {
   Clock,
   AlertTriangle,
   Info,
-  Truck,
 } from "lucide-react"
 import { ImageGallery } from "@/components/image-gallery"
 import { ContactSellerForm } from "@/components/contact-seller-form"
@@ -110,32 +109,6 @@ export default async function BoardDetailPage(props: {
 
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
-  const shipPrice =
-    board.shipping_price != null ? Number(board.shipping_price) : 0
-
-  const shippingNote = shippingOffered ? (
-    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
-      <div className="flex items-start gap-2">
-        <Truck className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden />
-        <div>
-          <p className="font-medium text-foreground">Shipping</p>
-          {shipPrice > 0 ? (
-            <p className="text-muted-foreground mt-0.5">
-              <span className="text-foreground font-semibold tabular-nums">
-                + ${shipPrice.toFixed(2)}
-              </span>{" "}
-              flat rate if you choose delivery at checkout (local pickup has no shipping charge).
-            </p>
-          ) : (
-            <p className="text-muted-foreground mt-0.5">
-              <span className="text-foreground font-medium">Free shipping</span> if you choose
-              delivery at checkout.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  ) : null
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -190,7 +163,6 @@ export default async function BoardDetailPage(props: {
                 boardFulfillmentSummary(board.local_pickup, board.shipping_available),
               ].filter(Boolean).join(" · ")}
             </p>
-            {shippingNote && <div className="mt-3 lg:hidden">{shippingNote}</div>}
             {!isOwnListing && board.status === "active" && (
               <Button size="lg" className="w-full gap-2 lg:hidden mt-3" asChild>
                   <Link
@@ -247,8 +219,6 @@ export default async function BoardDetailPage(props: {
                 <h2 className="font-semibold mb-2">Description</h2>
                 <TranslateableDescription text={board.description || ""} />
               </div>
-
-              {shippingNote && <div className="hidden lg:block space-y-3">{shippingNote}</div>}
 
               {!isOwnListing && board.status === "active" && (
                 <div className="hidden lg:block">
