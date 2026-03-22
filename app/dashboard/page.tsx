@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { createClient } from "@/lib/supabase/server"
+import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,64 +17,59 @@ import {
 import { capitalizeWords } from "@/lib/listing-labels"
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getCachedDashboardSession()
 
   if (!user) return null
 
-  // Get user's listings
-  const { data: listings, count: listingCount } = await supabase
-    .from("listings")
-    .select("*", { count: "exact" })
-    .eq("user_id", user.id)
+  const [
+    listingsAgg,
+    favoritesAgg,
+    unreadMsgRes,
+    unreadNotifAgg,
+    recentListingsRes,
+    reportsAgg,
+    walletRes,
+    profileRes,
+  ] = await Promise.all([
+    supabase
+      .from("listings")
+      .select("*", { count: "exact" })
+      .eq("user_id", user.id),
+    supabase
+      .from("favorites")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase.rpc("get_unread_message_count", { uid: user.id }),
+    supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false),
+    supabase
+      .from("listings")
+      .select("*, listing_images (url, is_primary)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(4),
+    supabase
+      .from("reports")
+      .select("*", { count: "exact", head: true })
+      .eq("reporter_id", user.id),
+    supabase.from("wallets").select("balance").eq("user_id", user.id).single(),
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+  ])
 
+  const listings = listingsAgg.data
+  const listingCount = listingsAgg.count
   const activeListings = listings?.filter((l) => l.status === "active").length || 0
-
-  // Get favorites count
-  const { count: favoriteCount } = await supabase
-    .from("favorites")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-
-  // Get unread messages + notifications
-  const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: user.id })
-  const { count: unreadNotifCount } = await supabase
-    .from("notifications")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("is_read", false)
+  const favoriteCount = favoritesAgg.count
+  const unreadMsgCount = unreadMsgRes.data
+  const unreadNotifCount = unreadNotifAgg.count
   const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
-
-  // Get recent listings
-  const { data: recentListings } = await supabase
-    .from("listings")
-    .select(`
-      *,
-      listing_images (url, is_primary)
-    `)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(4)
-
-  // Get my reports count
-  const { count: reportsCount } = await supabase
-    .from("reports")
-    .select("*", { count: "exact", head: true })
-    .eq("reporter_id", user.id)
-
-  // Get wallet balance
-  const { data: wallet } = await supabase
-    .from("wallets")
-    .select("balance")
-    .eq("user_id", user.id)
-    .single()
-
-  // Get profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
+  const recentListings = recentListingsRes.data
+  const reportsCount = reportsAgg.count
+  const wallet = walletRes.data
+  const profile = profileRes.data
 
   const walletBalance = wallet ? parseFloat(wallet.balance) : 0
 

@@ -1,5 +1,5 @@
-import { SurfboardPageLoading } from "@/components/listing-detail-page-loading"
+import { DashboardMainSkeleton } from "@/components/dashboard-main-skeleton"
 
 export default function DashboardLoading() {
-  return <SurfboardPageLoading />
+  return <DashboardMainSkeleton />
 }

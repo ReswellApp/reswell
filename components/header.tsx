@@ -145,6 +145,12 @@ export function Header() {
           .eq("user_id", user.id)
           .single()
         setWalletBalance(wallet ? parseFloat(wallet.balance) : 0)
+      } else {
+        setIsAdmin(false)
+        setProfileAvatarUrl(null)
+        setProfileDisplayName(null)
+        setUnreadMessages(0)
+        setWalletBalance(null)
       }
     }
 
@@ -342,10 +348,12 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-black hover:bg-pacific/5">
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src={profileAvatarUrl || user.user_metadata?.avatar_url || "/placeholder.svg"} alt="Profile" />
+                        {profileAvatarUrl ? (
+                          <AvatarImage src={profileAvatarUrl} alt="Profile" />
+                        ) : null}
                         <AvatarFallback>
-                        {(profileDisplayName || user.user_metadata?.full_name || "User").charAt(0).toUpperCase()}
-                      </AvatarFallback>
+                          {(profileDisplayName || user.user_metadata?.full_name || "User").charAt(0).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>

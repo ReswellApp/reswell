@@ -1,7 +1,7 @@
 import React from "react"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -41,8 +41,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getCachedDashboardSession()
 
   if (!user) {
     redirect("/auth/login?redirect=/dashboard")
