@@ -417,7 +417,7 @@ export default async function UsedListingPage(props: {
                   return (
                     <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                       <Link href={`/used/${item.slug || item.id}`} className="flex-1 flex flex-col">
-                        <div className="aspect-square relative bg-muted overflow-hidden">
+                        <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                           {primaryImage?.url ? (
                             <Image
                               src={primaryImage.url || "/placeholder.svg"}

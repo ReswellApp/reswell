@@ -317,7 +317,7 @@ export async function UsedGearListings({
           return (
             <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
               <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
-                <div className="aspect-square relative bg-muted overflow-hidden">
+                <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}

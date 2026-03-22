@@ -6,7 +6,11 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
+import {
+  capitalizeWords,
+  formatCategory,
+  getPublicSellerDisplayName,
+} from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -52,6 +56,18 @@ function primaryImageUrl(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   )
   return sorted[0].url
+}
+
+/** Match `used-gear-listings` / seller grids: primary flag first, else first image. */
+function primaryListingImageUrl(
+  images?:
+    | { url: string; is_primary?: boolean | null; sort_order?: number | null }[]
+    | null
+): string | undefined {
+  if (!images?.length) return undefined
+  const flagged = images.find((img) => img.is_primary)
+  if (flagged?.url) return flagged.url
+  return images[0]?.url
 }
 
 const features = [
@@ -197,9 +213,9 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url, sort_order),
+      listing_images (url, sort_order, is_primary),
       categories (slug),
-      profiles (display_name, avatar_url, sales_count, shop_verified)
+      profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)
     .eq("status", "active")
     .order("created_at", { ascending: false })
@@ -288,7 +304,7 @@ export default async function HomePage() {
                 {featuredUsed.map((listing) => (
                   <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-square relative bg-muted overflow-hidden">
+                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
                         {primaryImageUrl(listing.listing_images) ? (
                           <Image
                             src={primaryImageUrl(listing.listing_images)!}
@@ -566,30 +582,137 @@ export default async function HomePage() {
                 </Link>
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {categories.map((category) => {
                 const listing = categoryLatest.get(category.name)
+                const isBoardsCategory = category.slug === null
+
                 if (!listing) {
                   return (
-                    <Link
+                    <Card
                       key={category.href}
-                      href={category.href}
-                      className="group flex flex-col items-center justify-center rounded-xl bg-muted p-4 text-center transition-all hover:bg-primary/5 hover:shadow-md min-h-[80px]"
+                      className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
                     >
-                      <span className="text-sm font-medium">{category.name}</span>
-                    </Link>
+                      <Link href={category.href} className="flex-1 flex flex-col">
+                        <div className="relative aspect-[4/5] bg-muted overflow-hidden">
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                            No Image
+                          </div>
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="font-medium line-clamp-2">{category.name}</h3>
+                          <p
+                            className="text-xl font-bold text-primary mt-2 invisible select-none pointer-events-none"
+                            aria-hidden
+                          >
+                            $0.00
+                          </p>
+                          {isBoardsCategory ? (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                              <MapPin className="h-3 w-3" />
+                              Location not set
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between mt-2">
+                              <p
+                                className="text-sm text-muted-foreground flex items-center gap-1 invisible"
+                                aria-hidden
+                              >
+                                .
+                              </p>
+                              <Badge variant="outline" className="text-xs">
+                                {formatCategory(category.name)}
+                              </Badge>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Link>
+                      <div className="px-4 pb-4 pt-0">
+                        <Button variant="outline" size="sm" className="bg-transparent" asChild>
+                          <Link href={category.href}>Browse</Link>
+                        </Button>
+                      </div>
+                    </Card>
                   )
                 }
+
                 const href = listingPublicHref(listing)
+                const imgUrl = primaryListingImageUrl(listing.listing_images)
+
+                if (listing.section === "surfboards") {
+                  const locationLine =
+                    listing.city && listing.state
+                      ? `${listing.city}, ${listing.state}`
+                      : listing.profiles?.location || "Location not set"
+                  return (
+                    <Card
+                      key={category.href}
+                      className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
+                    >
+                      <Link href={href} className="flex-1 flex flex-col">
+                        <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                          {imgUrl ? (
+                            <Image
+                              src={imgUrl || "/placeholder.svg"}
+                              alt={capitalizeWords(listing.title)}
+                              fill
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              style={{ objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                              No Image
+                            </div>
+                          )}
+                          <FavoriteButtonCardOverlay
+                            listingId={listing.id}
+                            initialFavorited={favoritedIds.includes(listing.id)}
+                            isLoggedIn={!!user}
+                          />
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="font-medium line-clamp-2">
+                            {capitalizeWords(listing.title)}
+                          </h3>
+                          {listing.board_length && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {listing.board_length}
+                            </p>
+                          )}
+                          <p className="text-xl font-bold text-primary mt-2">
+                            ${Number(listing.price).toFixed(2)}
+                          </p>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                            <MapPin className="h-3 w-3" />
+                            {locationLine}
+                          </div>
+                        </CardContent>
+                      </Link>
+                      <div className="px-4 pb-4 pt-0">
+                        <MessageListingButton
+                          listingId={listing.id}
+                          sellerId={listing.user_id}
+                          redirectPath={href}
+                        />
+                      </div>
+                    </Card>
+                  )
+                }
+
                 return (
-                  <Card key={category.href} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                  <Card
+                    key={category.href}
+                    className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
+                  >
                     <Link href={href} className="flex-1 flex flex-col">
-                      <div className="aspect-square relative bg-muted overflow-hidden">
-                        {primaryImageUrl(listing.listing_images) ? (
+                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                        {imgUrl ? (
                           <Image
-                            src={primaryImageUrl(listing.listing_images)!}
+                            src={imgUrl || "/placeholder.svg"}
                             alt={capitalizeWords(listing.title)}
                             fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                             style={{ objectFit: "cover" }}
                           />
@@ -605,23 +728,31 @@ export default async function HomePage() {
                         />
                       </div>
                       <CardContent className="p-4">
-                        <Badge variant="secondary" className="mb-2 text-xs">
-                          {category.name}
-                        </Badge>
-                        <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                        <p className="text-lg font-bold text-primary mt-1">
+                        <h3 className="font-medium line-clamp-2">
+                          {capitalizeWords(listing.title)}
+                        </h3>
+                        <p className="text-xl font-bold text-primary mt-2">
                           ${Number(listing.price).toFixed(2)}
                         </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            {getPublicSellerDisplayName(listing.profiles)}
+                            {listing.profiles?.shop_verified && (
+                              <VerifiedBadge size="sm" />
+                            )}
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {formatCategory(category.name)}
+                          </Badge>
+                        </div>
                       </CardContent>
                     </Link>
-                    <div className="px-4 pb-3 pt-0">
-                      <Link
-                        href={category.href}
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-                      >
-                        All {category.name}
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
+                    <div className="px-4 pb-4 pt-0">
+                      <MessageListingButton
+                        listingId={listing.id}
+                        sellerId={listing.user_id}
+                        redirectPath={href}
+                      />
                     </div>
                   </Card>
                 )
