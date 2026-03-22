@@ -27,6 +27,7 @@ import { FavoriteButton } from "@/components/favorite-button"
 import { TranslateableDescription } from "@/components/translateable-description"
 import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { ListingSellerStats } from "@/components/listing-seller-stats"
 import { wetsuitZipLabel } from "@/lib/wetsuit-options"
 import { leashLengthLabel } from "@/lib/leash-options"
 import { collectibleTypeLabel, collectibleEraLabel, collectibleConditionLabel } from "@/lib/collectible-options"
@@ -46,7 +47,7 @@ export default async function UsedListingPage(props: {
       select: `
         *,
         listing_images (id, url, is_primary, sort_order),
-        profiles (id, display_name, avatar_url, location, created_at, shop_verified),
+        profiles (id, display_name, avatar_url, location, created_at, shop_verified, sales_count),
         categories (name, slug)
       `,
       section: "used",
@@ -71,8 +72,22 @@ export default async function UsedListingPage(props: {
       avatar_url: p.avatar_url,
       location: p.location,
       created_at: p.created_at,
+      shop_verified: p.shop_verified,
+      sales_count: p.sales_count,
     }
   }
+
+  const { data: sellerReviewRatings } = await supabase
+    .from("reviews")
+    .select("rating")
+    .eq("reviewed_id", listing.user_id)
+
+  const reviewRatings = (sellerReviewRatings ?? []).map((r) => r.rating)
+  const sellerReviewCount = reviewRatings.length
+  const sellerAvgRating =
+    sellerReviewCount > 0
+      ? reviewRatings.reduce((sum, r) => sum + r, 0) / sellerReviewCount
+      : 0
 
   const listingSlug = listing.slug || listing.id
 
@@ -322,6 +337,12 @@ export default async function UsedListingPage(props: {
                             year: "numeric",
                           })}
                         </p>
+                        <ListingSellerStats
+                          avgRating={sellerAvgRating}
+                          reviewCount={sellerReviewCount}
+                          itemsSold={Number(listing.profiles?.sales_count ?? 0)}
+                          className="text-xs sm:text-sm"
+                        />
                       </div>
                     </Link>
                     <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:shrink-0">

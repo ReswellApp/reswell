@@ -28,6 +28,7 @@ import { TranslateableDescription } from "@/components/translateable-description
 import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { ListingSellerStats } from "@/components/listing-seller-stats"
 export default async function BoardDetailPage(props: {
   params: Promise<{ id: string }>
 }) {
@@ -41,7 +42,7 @@ export default async function BoardDetailPage(props: {
       select: `
         *,
         listing_images (id, url, is_primary, sort_order),
-        profiles (id, display_name, avatar_url, location, created_at, shop_verified)
+        profiles (id, display_name, avatar_url, location, created_at, shop_verified, sales_count)
       `,
       section: "surfboards",
     },
@@ -64,8 +65,22 @@ export default async function BoardDetailPage(props: {
       avatar_url: p.avatar_url,
       location: p.location,
       created_at: p.created_at,
+      shop_verified: p.shop_verified,
+      sales_count: p.sales_count,
     }
   }
+
+  const { data: sellerReviewRatings } = await supabase
+    .from("reviews")
+    .select("rating")
+    .eq("reviewed_id", board.user_id)
+
+  const reviewRatings = (sellerReviewRatings ?? []).map((r) => r.rating)
+  const sellerReviewCount = reviewRatings.length
+  const sellerAvgRating =
+    sellerReviewCount > 0
+      ? reviewRatings.reduce((sum, r) => sum + r, 0) / sellerReviewCount
+      : 0
 
   const boardSlug = board.slug || board.id
 
@@ -333,6 +348,12 @@ export default async function BoardDetailPage(props: {
                             year: "numeric",
                           })}
                         </p>
+                        <ListingSellerStats
+                          avgRating={sellerAvgRating}
+                          reviewCount={sellerReviewCount}
+                          itemsSold={Number(board.profiles?.sales_count ?? 0)}
+                          className="text-xs sm:text-sm"
+                        />
                       </div>
                     </Link>
                     {!isOwnListing && (
