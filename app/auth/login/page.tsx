@@ -14,13 +14,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-
-function safeRedirect(path: string | null): string {
-  if (!path || typeof path !== 'string') return '/dashboard'
-  const p = path.trim()
-  if (!p.startsWith('/') || p.startsWith('//')) return '/dashboard'
-  return p
-}
+import { GoogleOAuthButton } from '@/components/auth/google-oauth-button'
+import { Separator } from '@/components/ui/separator'
+import { safeRedirectPath } from '@/lib/auth/safe-redirect'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -29,7 +25,7 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = safeRedirect(searchParams.get('redirect'))
+  const redirectTo = safeRedirectPath(searchParams.get('redirect'))
 
   // Redirect if already logged in
   useEffect(() => {
@@ -71,7 +67,18 @@ function LoginForm() {
                 Sign in to your Reswell account
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-6">
+              <GoogleOAuthButton nextPath={redirectTo} />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Or with email
+                  </span>
+                </div>
+              </div>
               <form onSubmit={handleLogin}>
                 <div className="flex flex-col gap-6">
                   <div className="grid gap-2">

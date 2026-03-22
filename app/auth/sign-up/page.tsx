@@ -19,6 +19,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { validateDisplayName } from '@/lib/display-name-validation'
+import { GoogleOAuthButton } from '@/components/auth/google-oauth-button'
+import { Separator } from '@/components/ui/separator'
 
 export default function Page() {
   const [displayName, setDisplayName] = useState('')
@@ -96,7 +98,18 @@ export default function Page() {
               <CardTitle className="text-2xl">Join Reswell</CardTitle>
               <CardDescription>Create an account to buy, sell, and trade surf gear</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-6">
+              <GoogleOAuthButton nextPath="/dashboard" />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Or with email
+                  </span>
+                </div>
+              </div>
               <form onSubmit={handleSignUp}>
                 <div className="flex flex-col gap-6">
                   <div className="grid gap-2">
