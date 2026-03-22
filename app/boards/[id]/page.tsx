@@ -40,7 +40,7 @@ export default async function BoardDetailPage(props: {
     {
       select: `
         *,
-        listing_images (id, url, is_primary),
+        listing_images (id, url, is_primary, sort_order),
         profiles (id, display_name, avatar_url, location, created_at, shop_verified)
       `,
       section: "surfboards",
@@ -101,8 +101,8 @@ export default async function BoardDetailPage(props: {
     isFavorited = !!favorite
   }
 
-  const images = board.listing_images?.sort((a: { is_primary: boolean }, b: { is_primary: boolean }) => 
-    (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)
+  const images = board.listing_images?.sort((a: { is_primary: boolean; sort_order?: number }, b: { is_primary: boolean; sort_order?: number }) => 
+    (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0)
   ) || []
 
   const isOwnListing = user?.id === board.user_id

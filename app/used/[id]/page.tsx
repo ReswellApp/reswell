@@ -42,7 +42,7 @@ export default async function UsedListingPage(props: {
     {
       select: `
         *,
-        listing_images (id, url, is_primary),
+        listing_images (id, url, is_primary, sort_order),
         profiles (id, display_name, avatar_url, location, created_at, shop_verified),
         categories (name, slug)
       `,
@@ -113,8 +113,8 @@ export default async function UsedListingPage(props: {
     }
   }
 
-  const images = listing.listing_images?.sort((a: { is_primary: boolean }, b: { is_primary: boolean }) => 
-    (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)
+  const images = listing.listing_images?.sort((a: { is_primary: boolean; sort_order?: number }, b: { is_primary: boolean; sort_order?: number }) => 
+    (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0)
   ) || []
 
   const isOwnListing = user?.id === listing.user_id
