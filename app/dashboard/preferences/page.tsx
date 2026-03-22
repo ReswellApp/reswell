@@ -13,7 +13,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Bell, Eye, Globe, Loader2, MapPin, Shield } from 'lucide-react'
+import { Bell, Globe, Loader2, MapPin, Receipt, Shield } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { BuyerPurchasesTab } from '@/components/buyer-purchases-tab'
 import { toast } from 'sonner'
 import { useLocale } from '@/components/locale-provider'
 import type { Locale } from '@/lib/translations'
@@ -88,9 +90,21 @@ export default function PreferencesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your notifications, privacy, and preferences</p>
+        <p className="text-muted-foreground">Manage your notifications, privacy, preferences, and purchases</p>
       </div>
 
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="purchases" className="gap-1.5">
+            <Receipt className="h-4 w-4" />
+            Purchases
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="purchases" className="mt-6">
+          <BuyerPurchasesTab />
+        </TabsContent>
+        <TabsContent value="general" className="mt-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -237,6 +251,8 @@ export default function PreferencesPage() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

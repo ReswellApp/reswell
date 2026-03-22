@@ -15,9 +15,17 @@ export function isPeerListingCheckoutMode(mode: string | undefined): boolean {
   return mode === SURFBOARD_CHECKOUT_MODE || mode === USED_LISTING_CHECKOUT_MODE
 }
 
-type Result =
-  | { ok: true; duplicate?: boolean; listing_id?: string }
-  | { ok: false; error: string }
+export type PeerCheckoutSuccessDetails = {
+  listing_id: string
+  purchase_id: string
+  listing_title: string
+  amount: number
+  fulfillment_method: "pickup" | "shipping" | null
+  listing_section: string
+  purchased_at: string
+}
+
+type Result = { ok: true; duplicate?: boolean } & PeerCheckoutSuccessDetails | { ok: false; error: string }
 
 /**
  * Fulfill a paid peer listing Checkout Session (surfboard or used gear): purchase row, seller wallet credit, listing sold.
@@ -85,14 +93,29 @@ export async function completeSurfboardCheckoutFromSession(
 
   const { data: existingPurchase } = await supabase
     .from("purchases")
-    .select("id")
+    .select("id, created_at, fulfillment_method, amount")
     .eq("listing_id", listing.id)
     .eq("buyer_id", buyerId)
     .eq("status", "confirmed")
     .maybeSingle()
 
   if (existingPurchase) {
-    return { ok: true, duplicate: true, listing_id: listing.id }
+    const dupCollect = surfboardCheckoutCollectsShipping(listing, fulfillment)
+    const dupMethod: "pickup" | "shipping" | null =
+      (existingPurchase.fulfillment_method as "pickup" | "shipping" | null) ??
+      (dupCollect ? "shipping" : "pickup")
+    const dupAmount = parseFloat(String(existingPurchase.amount ?? resolved.total)) || resolved.total
+    return {
+      ok: true,
+      duplicate: true,
+      listing_id: listing.id,
+      purchase_id: existingPurchase.id,
+      listing_title: listing.title ?? "Item",
+      amount: dupAmount,
+      fulfillment_method: dupMethod,
+      listing_section: listing.section,
+      purchased_at: existingPurchase.created_at ?? new Date().toISOString(),
+    }
   }
 
   if (listing.status !== "active") {
@@ -155,7 +178,7 @@ export async function completeSurfboardCheckoutFromSession(
       stripe_checkout_session_id: session.id,
       fulfillment_method: fulfillmentMethod,
     })
-    .select()
+    .select("id, created_at")
     .single()
 
   if (purchaseInsertError) {
@@ -203,5 +226,14 @@ export async function completeSurfboardCheckoutFromSession(
     console.error("[peer listing checkout] thread notification failed:", e)
   }
 
-  return { ok: true, listing_id: listing.id }
+  return {
+    ok: true,
+    listing_id: listing.id,
+    purchase_id: purchase.id,
+    listing_title: listing.title ?? "Item",
+    amount: price,
+    fulfillment_method: fulfillmentMethod,
+    listing_section: listing.section,
+    purchased_at: purchase.created_at ?? new Date().toISOString(),
+  }
 }

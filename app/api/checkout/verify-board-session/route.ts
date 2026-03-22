@@ -43,6 +43,12 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     duplicate: result.duplicate ?? false,
+    purchase_id: result.purchase_id,
     listing_id: result.listing_id,
+    listing_title: result.listing_title,
+    amount: result.amount,
+    fulfillment_method: result.fulfillment_method,
+    listing_section: result.listing_section,
+    purchased_at: result.purchased_at,
   })
 }

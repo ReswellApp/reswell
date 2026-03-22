@@ -124,7 +124,11 @@ export default async function OrdersPage() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Orders</h1>
         <p className="text-muted-foreground mt-1">
-          Shop purchases (new gear checkout). Sales you make on used gear and surfboards appear under{" "}
+          Shop purchases (new gear checkout). Buys from other members are under{" "}
+          <Link href="/dashboard/purchases" className="text-primary underline underline-offset-2">
+            Purchases
+          </Link>
+          ; sales you make are under{" "}
           <Link href="/dashboard/sales" className="text-primary underline underline-offset-2">
             Sales
           </Link>
