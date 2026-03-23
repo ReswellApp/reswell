@@ -386,6 +386,16 @@ function SellPageContent() {
     })
   }
 
+  function heicFailureLogLabel(err: unknown): string {
+    if (err instanceof Error && err.message.trim()) return err.message.trim()
+    if (typeof err === "string" && err.trim()) return err.trim()
+    if (err && typeof err === "object") {
+      const o = err as Record<string, unknown>
+      if (typeof o.message === "string" && o.message.trim()) return o.message.trim()
+    }
+    return "no details (browser HEIC decode often fails for some iPhone variants)"
+  }
+
   /** Convert HEIC/HEIF to JPEG so Supabase Storage accepts it; pass through other image types. */
   async function toUploadableImage(file: File): Promise<File> {
     const type = (file.type || "").toLowerCase()
@@ -401,8 +411,13 @@ function SellPageContent() {
         const name = file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg")
         return new File([jpegBlob as Blob], name, { type: "image/jpeg" })
       } catch (err) {
-        console.error("HEIC conversion failed:", err)
-        toast.error("Could not convert HEIC image. Try using a JPEG or PNG instead.")
+        // console.error triggers Next.js dev overlay; heic2any often rejects with non-Error values that log as {}
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[sell] HEIC conversion failed:", heicFailureLogLabel(err))
+        }
+        toast.error(
+          "Could not convert HEIC in the browser. Use a JPEG or PNG, or iPhone Settings → Camera → Formats → Most Compatible.",
+        )
         throw err
       }
     }
@@ -458,7 +473,6 @@ function SellPageContent() {
   }
 
   async function syncListingImages(listingId: string, userId: string) {
-    // Delete removed existing images
     if (removedImageIds.length) {
       await supabase
         .from("listing_images")
@@ -467,27 +481,31 @@ function SellPageContent() {
         .eq("listing_id", listingId)
     }
 
-    // Upsert / insert images in current order
-    for (let index = 0; index < images.length; index++) {
-      const img = images[index]
-      const isPrimary = index === 0
+    await Promise.all(
+      images.map(async (img, index) => {
+        const isPrimary = index === 0
 
-      if (img.id) {
-        await supabase
-          .from("listing_images")
-          .update({
-            sort_order: index,
-            is_primary: isPrimary,
-          })
-          .eq("id", img.id)
-          .eq("listing_id", listingId)
-      } else if (img.file) {
+        if (img.id) {
+          const { error } = await supabase
+            .from("listing_images")
+            .update({
+              sort_order: index,
+              is_primary: isPrimary,
+            })
+            .eq("id", img.id)
+            .eq("listing_id", listingId)
+          if (error) console.error("listing_images update:", error)
+          return
+        }
+
+        if (!img.file) return
+
         let fileToUpload: File
         try {
           fileToUpload = await toUploadableImage(img.file)
           fileToUpload = await compressImage(fileToUpload)
         } catch {
-          continue
+          return
         }
         const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
         const fileName = `${userId}/${Date.now()}-${index}-${baseName}.jpg`
@@ -501,21 +519,25 @@ function SellPageContent() {
         if (uploadError) {
           console.error("Upload error:", uploadError)
           toast.error(`Photo ${index + 1} failed to upload: ${uploadError.message}`)
-          continue
+          return
         }
 
         const {
           data: { publicUrl },
         } = supabase.storage.from("listings").getPublicUrl(uploadData.path)
 
-        await supabase.from("listing_images").insert({
+        const { error: insertError } = await supabase.from("listing_images").insert({
           listing_id: listingId,
           url: publicUrl,
           is_primary: isPrimary,
           sort_order: index,
         })
-      }
-    }
+        if (insertError) {
+          console.error("listing_images insert:", insertError)
+          toast.error(`Photo ${index + 1} could not be saved.`)
+        }
+      }),
+    )
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -882,13 +904,26 @@ function SellPageContent() {
         listingSlug = listing.slug ?? newSlug
       }
 
+      const sectionPath = listingType === "board" ? "boards" : "used"
+      const detailPath = `/${sectionPath}/${listingSlug || listingId}`
+
       if (listingId) {
+        if (!editId) {
+          toast.success("Your listing is live")
+          router.push(`${detailPath}?photos=pending`)
+          void syncListingImages(listingId, user.id).catch((err: unknown) => {
+            console.error("Background photo upload:", err)
+            toast.error(
+              "Some photos may not have uploaded. Open your listing to retry from edit, or add photos again.",
+            )
+          })
+          return
+        }
         await syncListingImages(listingId, user.id)
       }
 
       toast.success(editId ? "Listing updated" : "Listing created successfully!")
-      const sectionPath = listingType === "board" ? "boards" : "used"
-      router.push(`/${sectionPath}/${listingSlug || listingId}`)
+      router.push(detailPath)
     } catch (error: any) {
       console.error("Error creating listing:", error?.message || error)
       toast.error(error?.message || "Failed to create listing")

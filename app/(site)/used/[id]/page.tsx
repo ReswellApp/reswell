@@ -20,6 +20,7 @@ import {
   Shield,
 } from "lucide-react"
 import { ImageGallery } from "@/components/image-gallery"
+import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { TranslateableDescription } from "@/components/translateable-description"
@@ -179,6 +180,7 @@ export default async function UsedListingPage(props: {
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Images */}
             <div>
+              <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               <ImageGallery images={images} title={capitalizeWords(listing.title)} />
             </div>
 
