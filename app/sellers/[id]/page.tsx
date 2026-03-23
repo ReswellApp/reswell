@@ -107,7 +107,7 @@ export default async function SellerProfilePage({
     (l) => l.status === "active" && !l.archived_at
   )
   const pastListings = allListings.filter(
-    (l) => l.status !== "active" || l.archived_at
+    (l) => (l.status !== "active" || l.archived_at) && l.status !== "removed"
   )
 
   const usedListings = currentListings.filter((l) => l.section === "used")
