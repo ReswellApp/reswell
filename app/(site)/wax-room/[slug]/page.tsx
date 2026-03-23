@@ -61,7 +61,7 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
             the API schema in Supabase if needed.
           </p>
           <p className="mt-2 text-xs text-muted-foreground font-mono break-all">{error.message}</p>
-          <Link href="/threads" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
+          <Link href="/wax-room" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
             ← Wax Room
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
       <main className="flex-1">
         <div className="container mx-auto max-w-3xl py-10 px-4">
           <p className="text-sm text-destructive">Could not load comments: {commentsError.message}</p>
-          <Link href="/threads" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
+          <Link href="/wax-room" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
             ← Wax Room
           </Link>
         </div>
@@ -166,7 +166,7 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
   return (
     <main className="flex-1">
       <div className="container mx-auto max-w-3xl py-10 px-4">
-        <Link href="/threads" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+        <Link href="/wax-room" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
           ← Wax Room
         </Link>
 

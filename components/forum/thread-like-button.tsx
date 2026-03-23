@@ -63,7 +63,7 @@ export function ThreadLikeButton({ threadId, initialCount, initialLiked, isLogge
     busy.current = false
   }
 
-  const loginHref = `/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/threads")}`
+  const loginHref = `/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/wax-room")}`
 
   if (!isLoggedIn) {
     return (

@@ -21,7 +21,7 @@ export function ThreadDeleteButton({ threadId }: Props) {
     const { error } = await supabase.from("forum_threads").delete().eq("id", threadId)
     setLoading(false)
     if (!error) {
-      router.push("/threads")
+      router.push("/wax-room")
       router.refresh()
     }
   }

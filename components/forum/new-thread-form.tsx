@@ -59,7 +59,7 @@ export function NewThreadForm() {
       return
     }
 
-    router.push(`/threads/${row.slug}`)
+    router.push(`/wax-room/${row.slug}`)
     router.refresh()
   }
 
@@ -96,7 +96,7 @@ export function NewThreadForm() {
           {submitting ? "Creating…" : "Create post"}
         </Button>
         <Button type="button" variant="outline" asChild>
-          <Link href="/threads">Cancel</Link>
+          <Link href="/wax-room">Cancel</Link>
         </Button>
       </div>
     </form>

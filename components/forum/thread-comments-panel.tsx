@@ -561,7 +561,7 @@ export function ThreadCommentsPanel({
             ) : (
               <p className="py-1 text-center text-sm text-muted-foreground sm:text-left">
                 <Link
-                  href={`/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/threads")}`}
+                  href={`/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/wax-room")}`}
                   className="font-semibold text-foreground underline-offset-4 hover:underline"
                 >
                   Log in

@@ -54,7 +54,7 @@ const navigation = [
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
   { name: "Field notes", href: "/blog" },
-  { name: "Wax Room", href: "/threads" },
+  { name: "Wax Room", href: "/wax-room" },
 ]
 
 function navItemIsActive(pathname: string | null, searchParams: URLSearchParams, href: string): boolean {

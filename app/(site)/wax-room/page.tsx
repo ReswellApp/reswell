@@ -108,14 +108,14 @@ export default async function ThreadsPage() {
           <div className="shrink-0 sm:pt-1">
             {user ? (
               <Button asChild className="w-full min-h-touch sm:w-auto">
-                <Link href="/threads/new">
+                <Link href="/wax-room/new">
                   <Plus className="h-4 w-4 mr-2" />
                   New post
                 </Link>
               </Button>
             ) : (
               <Button asChild variant="outline" className="w-full min-h-touch sm:w-auto">
-                <Link href={`/auth/login?redirect=${encodeURIComponent("/threads/new")}`}>
+                <Link href={`/auth/login?redirect=${encodeURIComponent("/wax-room/new")}`}>
                   Log in to post
                 </Link>
               </Button>
@@ -129,7 +129,7 @@ export default async function ThreadsPage() {
               <p>No posts yet.</p>
               {user ? (
                 <Button asChild className="mt-6">
-                  <Link href="/threads/new">Create the first post</Link>
+                  <Link href="/wax-room/new">Create the first post</Link>
                 </Button>
               ) : null}
             </CardContent>
@@ -144,7 +144,7 @@ export default async function ThreadsPage() {
             const author = prof?.display_name?.trim() || "Member"
             return (
               <li key={t.id}>
-                <Link href={`/threads/${t.slug}`}>
+                <Link href={`/wax-room/${t.slug}`}>
                   <Card className="transition-shadow hover:shadow-md">
                     <CardContent className="px-6 py-6 sm:px-8 sm:py-8">
                       <div className="flex flex-wrap items-center gap-2 gap-y-2">

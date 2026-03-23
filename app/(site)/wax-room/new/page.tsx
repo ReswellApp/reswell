@@ -15,13 +15,13 @@ export default async function NewThreadPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect(`/auth/login?redirect=${encodeURIComponent("/threads/new")}`)
+    redirect(`/auth/login?redirect=${encodeURIComponent("/wax-room/new")}`)
   }
 
   return (
     <main className="flex-1">
       <div className="container mx-auto max-w-2xl py-10 px-4">
-        <Link href="/threads" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+        <Link href="/wax-room" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
           ← Wax Room
         </Link>
         <h1 className="mt-4 text-3xl font-bold text-foreground">New post</h1>
