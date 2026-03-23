@@ -202,6 +202,10 @@ export function Header() {
 
   return (
     <>
+      <style>{`
+        .cat-link { color: #6E6E6E !important; text-decoration: none !important; }
+        .cat-link:hover { color: #000000 !important; text-decoration: none !important; }
+      `}</style>
       <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto flex h-14 sm:h-16 md:h-20 min-w-0 items-center gap-2 md:gap-4">
           {/* Logo + home link (desktop: logo left of name; mobile: logo is in menu toggle) */}
@@ -324,7 +328,7 @@ export function Header() {
                     <MessageSquare className="h-6 w-6" />
                     <Badge
                       variant={unreadMessages > 0 ? "destructive" : "secondary"}
-                      className="absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center"
+                      className={`absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center ${unreadMessages > 0 ? "bg-red-500 text-white hover:bg-red-600" : "text-black"}`}
                     >
                       {unreadMessages > 9 ? "9+" : unreadMessages}
                     </Badge>
@@ -474,10 +478,8 @@ export function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className={`py-4 text-[15px] transition-colors duration-smooth hover:text-cerulean ${
-                navItemIsActive(pathname, headerSearchParams, item.href)
-                  ? "text-cerulean font-medium"
-                  : "text-foreground/70"
+              className={`cat-link py-4 text-[15px] transition-colors duration-smooth ${
+                navItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
               }`}
             >
               {item.name}
@@ -485,13 +487,13 @@ export function Header() {
           ))}
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 py-4 text-[15px] text-foreground/70 transition-colors duration-smooth hover:text-cerulean focus:outline-none">
+            <DropdownMenuTrigger className="cat-link flex items-center gap-1 py-4 text-[15px] transition-colors duration-smooth focus:outline-none">
               Categories
               <ChevronDown className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="max-h-[min(70vh,28rem)] w-56 overflow-y-auto"
+              className="max-h-[min(70vh,28rem)] w-56 overflow-y-auto [&_a]:!text-[#6E6E6E] [&_a:hover]:!text-[#000000] [&_a[data-highlighted]]:!text-[#000000] [&_a:focus]:!text-[#000000]"
             >
               {headerCategoriesDropdownSections.map((section, idx) => (
                 <Fragment key={section.id}>
@@ -534,7 +536,7 @@ export function Header() {
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/categories" className="w-full font-medium text-black dark:text-white">
+                <Link href="/categories" className="w-full font-medium">
                   See all categories
                 </Link>
               </DropdownMenuItem>
@@ -568,7 +570,7 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {item.name}
                 </Link>
@@ -582,7 +584,7 @@ export function Header() {
                       <Link
                         href={section.browseAllHref}
                         onClick={() => setMobileMenuOpen(false)}
-                        className="py-2.5 px-2 text-[15px] font-medium text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                        className="cat-link py-2.5 px-2 text-[15px] font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                       >
                         {section.browseAllLabel}
                       </Link>
@@ -596,7 +598,7 @@ export function Header() {
                           key={`${link.href}-${link.label}`}
                           href={link.href}
                           onClick={() => setMobileMenuOpen(false)}
-                          className="py-2.5 px-2 pl-4 text-[15px] text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                          className="cat-link py-2.5 px-2 pl-4 text-[15px] hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                         >
                           {link.label}
                         </Link>
@@ -610,7 +612,7 @@ export function Header() {
                   key={cat.href}
                   href={cat.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {cat.label}
                 </Link>
@@ -618,7 +620,7 @@ export function Header() {
               <Link
                 href="/categories"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-3 px-2 text-lg font-medium text-black dark:text-white hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
               >
                 See all categories
               </Link>

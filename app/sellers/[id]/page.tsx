@@ -156,7 +156,7 @@ export default async function SellerProfilePage({
                     {displayName}
                   </h1>
                   {shop.shop_verified && (
-                    <Badge className="bg-neutral-100 text-neutral-900 border-neutral-200 hover:bg-neutral-200">
+                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
                       <VerifiedBadge size="sm" className="mr-1" />
                       Verified Seller
                     </Badge>

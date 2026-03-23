@@ -174,7 +174,7 @@ export default async function SellersPage({
                           {shop.shop_verified && (
                             <Badge
                               variant="secondary"
-                              className="flex-shrink-0 bg-neutral-100 text-neutral-900 border-neutral-200"
+                              className="flex-shrink-0 bg-blue-50 text-blue-700 border-blue-200"
                             >
                               <VerifiedBadge size="sm" className="mr-1" />
                               Verified

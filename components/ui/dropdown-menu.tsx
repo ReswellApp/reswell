@@ -27,7 +27,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      'flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-neutral-200/90 data-[highlighted]:bg-neutral-200/90 data-[state=open]:bg-neutral-200/90 focus:text-foreground data-[highlighted]:text-foreground dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 dark:data-[state=open]:bg-neutral-800 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+      'flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm text-foreground no-underline outline-none transition-colors hover:bg-neutral-200 hover:text-muted-foreground hover:no-underline focus:bg-neutral-200 focus:text-muted-foreground focus:no-underline data-[highlighted]:bg-neutral-200 data-[highlighted]:text-muted-foreground data-[state=open]:bg-neutral-200 data-[state=open]:text-muted-foreground dark:hover:bg-neutral-800 dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 dark:data-[state=open]:bg-neutral-800 dark:hover:text-neutral-300 dark:focus:text-neutral-300 dark:data-[highlighted]:text-neutral-300 dark:data-[state=open]:text-neutral-300 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
       inset && 'pl-8',
       className,
     )}
@@ -83,7 +83,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-neutral-200/90 focus:text-foreground data-[highlighted]:bg-neutral-200/90 data-[highlighted]:text-foreground dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+      'relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground no-underline outline-none transition-colors hover:bg-neutral-200 hover:text-muted-foreground hover:no-underline focus:bg-neutral-200 focus:text-muted-foreground focus:no-underline data-[highlighted]:bg-neutral-200 data-[highlighted]:text-muted-foreground dark:hover:bg-neutral-800 dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 dark:hover:text-neutral-300 dark:focus:text-neutral-300 dark:data-[highlighted]:text-neutral-300 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[disabled]:hover:bg-transparent data-[disabled]:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
       inset && 'pl-8',
       className,
     )}
@@ -99,7 +99,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-neutral-200/90 focus:text-foreground data-[highlighted]:bg-neutral-200/90 data-[highlighted]:text-foreground dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm text-foreground no-underline outline-none transition-colors hover:bg-neutral-200 hover:text-muted-foreground hover:no-underline focus:bg-neutral-200 focus:text-muted-foreground focus:no-underline data-[highlighted]:bg-neutral-200 data-[highlighted]:text-muted-foreground dark:hover:bg-neutral-800 dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 dark:hover:text-neutral-300 dark:focus:text-neutral-300 dark:data-[highlighted]:text-neutral-300 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[disabled]:hover:bg-transparent data-[disabled]:hover:text-foreground',
       className,
     )}
     checked={checked}
@@ -123,7 +123,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-neutral-200/90 focus:text-foreground data-[highlighted]:bg-neutral-200/90 data-[highlighted]:text-foreground dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm text-foreground no-underline outline-none transition-colors hover:bg-neutral-200 hover:text-muted-foreground hover:no-underline focus:bg-neutral-200 focus:text-muted-foreground focus:no-underline data-[highlighted]:bg-neutral-200 data-[highlighted]:text-muted-foreground dark:hover:bg-neutral-800 dark:focus:bg-neutral-800 dark:data-[highlighted]:bg-neutral-800 dark:hover:text-neutral-300 dark:focus:text-neutral-300 dark:data-[highlighted]:text-neutral-300 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[disabled]:hover:bg-transparent data-[disabled]:hover:text-foreground',
       className,
     )}
     {...props}
