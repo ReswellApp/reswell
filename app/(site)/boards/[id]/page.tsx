@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation"
+import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,55 @@ import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { ListingSellerStats } from "@/components/listing-seller-stats"
+
+function getPrimaryImageUrl(
+  images: Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }> | null | undefined,
+): string | undefined {
+  if (!images?.length) return undefined
+  const sorted = images.slice().sort(
+    (a, b) =>
+      (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  )
+  const url = sorted[0]?.url?.trim()
+  return url || undefined
+}
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const params = await props.params
+  const supabase = await createClient()
+  const { listing: board } = await findListingByParam(supabase, params.id, {
+    select: "id, slug, title, description, listing_images (url, is_primary, sort_order)",
+    section: "surfboards",
+  })
+
+  if (!board) {
+    return { title: "Surfboard Listing" }
+  }
+
+  const title = capitalizeWords(board.title || "Surfboard Listing")
+  const description = (board.description || "View this surfboard listing on Reswell marketplace.").slice(0, 180)
+  const imageUrl = getPrimaryImageUrl(board.listing_images)
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: imageUrl ? [{ url: imageUrl }] : undefined,
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  }
+}
+
 export default async function BoardDetailPage(props: {
   params: Promise<{ id: string }>
 }) {
