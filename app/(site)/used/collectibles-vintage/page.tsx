@@ -37,7 +37,7 @@ export default async function UsedCollectiblesVintagePage(props: {
           </div>
         </section>
 
-        <section className="border-b py-4 sticky top-14 sm:top-16 bg-background z-40 min-w-0 overflow-x-auto">
+        <section className="border-b py-4 sticky top-14 sm:top-16 bg-background z-40 min-w-0 overflow-x-auto overflow-y-hidden">
           <div className="container mx-auto min-w-0 flex justify-center">
             <CollectiblesListingsFilters
               initialQ={searchParams.q ?? ""}
