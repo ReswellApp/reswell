@@ -305,7 +305,7 @@ export default async function BoardsPage(props: {
 
         <section className="py-4 min-w-0">
           <div className="container mx-auto min-w-0">
-            <div className="border-b py-4 mb-6 min-w-0 overflow-x-auto">
+            <div className="border-b py-4 mb-6 min-w-0 overflow-x-auto px-1 sm:px-2">
               <div className="min-w-0">
                 <BoardsListingsFilters
                   initialQ={searchParams.q ?? ""}

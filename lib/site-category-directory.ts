@@ -203,6 +203,14 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
     browseAllLabel: "View all fins",
     subcategories: [
       {
+        heading: "By type",
+        links: [
+          { label: "FCS", href: "/used/fins?brand=FCS" },
+          { label: "Futures", href: "/used/fins?brand=Futures" },
+          { label: "Single Fin", href: "/used/fins?brand=Single%20Fin" },
+        ],
+      },
+      {
         heading: "By size",
         links: [
           { label: "XS", href: "/used/fins?size=XS" },
@@ -346,10 +354,11 @@ const headerSurfboardsDropdownShapes: CategoryLink[] = [
   { label: "Longboard", href: "/boards?type=longboard" },
 ]
 
-/** Fin box types in the header Categories dropdown (`brand` matches fins filters). */
+/** Fin types in the header Categories dropdown (`brand` query on /used/fins). */
 const headerFinsDropdownBrands: CategoryLink[] = [
-  { label: "Futures", href: "/used/fins?brand=Futures" },
   { label: "FCS", href: "/used/fins?brand=FCS" },
+  { label: "Futures", href: "/used/fins?brand=Futures" },
+  { label: "Single Fin", href: "/used/fins?brand=Single%20Fin" },
 ]
 
 /** Surfpacks vs bags in the header Categories dropdown (`pack` matches backpacks filters). */

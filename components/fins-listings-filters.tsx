@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { Search, SlidersHorizontal } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
+import { SINGLE_FIN_SIZE_OPTIONS, USED_GEAR_SIZE_OPTIONS } from "@/lib/used-gear-filter-options"
 
 const conditions = [
   { value: "all", label: "Any Condition" },
@@ -89,17 +90,22 @@ export function FinsListingsFilters({
       <div className="w-full min-w-0 md:w-[160px] md:shrink-0">
         <Select name="brand" value={brand} onValueChange={setBrand}>
           <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
-            <span className={brand === "all" ? "text-muted-foreground" : ""}>{brand === "all" ? "FinBox Type" : brand}</span>
+            <span className={brand === "all" ? "text-muted-foreground" : ""}>
+              {brand === "all" ? "Any type" : brand}
+            </span>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Both</SelectItem>
+            <SelectItem value="all">Any type</SelectItem>
             <SelectItem value="Futures">Futures</SelectItem>
             <SelectItem value="FCS">FCS</SelectItem>
-            {brandOptions.filter((b) => b !== "Futures" && b !== "FCS").map((b) => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
+            <SelectItem value="Single Fin">Single Fin</SelectItem>
+            {brandOptions
+              .filter((b) => b !== "Futures" && b !== "FCS" && b !== "Single Fin")
+              .map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>
@@ -110,10 +116,16 @@ export function FinsListingsFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Any Size</SelectItem>
-            <SelectItem value="XS">XS</SelectItem>
-            <SelectItem value="S">S</SelectItem>
-            <SelectItem value="M">M</SelectItem>
-            <SelectItem value="L">L</SelectItem>
+            {USED_GEAR_SIZE_OPTIONS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+            {SINGLE_FIN_SIZE_OPTIONS.map((s) => (
+              <SelectItem key={`sf-${s}`} value={s}>
+                {`${s}" (single fin)`}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

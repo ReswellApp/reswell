@@ -27,7 +27,12 @@ import {
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
 import { slugify } from "@/lib/slugify"
-import { USED_GEAR_COLOR_OPTIONS, USED_GEAR_SIZE_OPTIONS } from "@/lib/used-gear-filter-options"
+import {
+  FINS_TYPE_OPTIONS,
+  SINGLE_FIN_SIZE_OPTIONS,
+  USED_GEAR_COLOR_OPTIONS,
+  USED_GEAR_SIZE_OPTIONS,
+} from "@/lib/used-gear-filter-options"
 import { BOARD_BAG_LENGTH_OPTIONS } from "@/lib/board-bag-length-options"
 import {
   APPAREL_KIND_OPTIONS,
@@ -980,7 +985,7 @@ function SellPageContent() {
                           : "border-border hover:border-primary/50"
                       }`}
                     >
-                      <p className="font-medium">Used Accessories</p>
+                      <p className="font-medium">Gear</p>
                       <p className="text-sm text-muted-foreground">
                         Wetsuits, fins, leashes, etc.
                       </p>
@@ -1234,31 +1239,107 @@ function SellPageContent() {
                     {formData.category === FINS_CATEGORY_ID && (
                       <div className="grid gap-4 sm:grid-cols-3">
                         <div className="space-y-2">
-                          <Label htmlFor="fins-brand">Brand</Label>
-                          <Input
-                            id="fins-brand"
-                            placeholder="e.g., FCS, Futures"
-                            value={formData.brand}
-                            onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                          />
+                          <Label>Type</Label>
+                          <Select
+                            value={formData.brand || "__unset__"}
+                            onValueChange={(v) => {
+                              const newBrand = v === "__unset__" ? "" : v
+                              const sizeOpts =
+                                newBrand === "Single Fin"
+                                  ? (SINGLE_FIN_SIZE_OPTIONS as readonly string[])
+                                  : (USED_GEAR_SIZE_OPTIONS as readonly string[])
+                              let nextGearSize = formData.gearSize
+                              if (nextGearSize && !sizeOpts.includes(nextGearSize)) {
+                                nextGearSize = ""
+                              }
+                              setFormData({ ...formData, brand: newBrand, gearSize: nextGearSize })
+                            }}
+                          >
+                            <SelectTrigger id="fins-type">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__unset__">Not specified</SelectItem>
+                              {formData.brand &&
+                              !(FINS_TYPE_OPTIONS as readonly string[]).includes(formData.brand) ? (
+                                <SelectItem value={formData.brand}>
+                                  {formData.brand} (saved)
+                                </SelectItem>
+                              ) : null}
+                              {FINS_TYPE_OPTIONS.map((t) => (
+                                <SelectItem key={t} value={t}>
+                                  {t}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="fins-size">Size</Label>
-                          <Input
-                            id="fins-size"
-                            placeholder="e.g., Medium, S"
-                            value={formData.gearSize}
-                            onChange={(e) => setFormData({ ...formData, gearSize: e.target.value })}
-                          />
+                          <Label>Size</Label>
+                          <Select
+                            value={formData.gearSize || "__unset__"}
+                            onValueChange={(v) =>
+                              setFormData({ ...formData, gearSize: v === "__unset__" ? "" : v })
+                            }
+                          >
+                            <SelectTrigger id="fins-size">
+                              <SelectValue placeholder="Select size" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__unset__">Not specified</SelectItem>
+                              {(() => {
+                                const sizeOpts =
+                                  formData.brand === "Single Fin"
+                                    ? SINGLE_FIN_SIZE_OPTIONS
+                                    : USED_GEAR_SIZE_OPTIONS
+                                const inList = (sizeOpts as readonly string[]).includes(
+                                  formData.gearSize,
+                                )
+                                return formData.gearSize && !inList ? (
+                                  <SelectItem value={formData.gearSize}>
+                                    {formData.gearSize} (saved)
+                                  </SelectItem>
+                                ) : null
+                              })()}
+                              {(formData.brand === "Single Fin"
+                                ? SINGLE_FIN_SIZE_OPTIONS
+                                : USED_GEAR_SIZE_OPTIONS
+                              ).map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="fins-color">Color</Label>
-                          <Input
-                            id="fins-color"
-                            placeholder="e.g., Black"
-                            value={formData.gearColor}
-                            onChange={(e) => setFormData({ ...formData, gearColor: e.target.value })}
-                          />
+                          <Label>Color</Label>
+                          <Select
+                            value={formData.gearColor || "__unset__"}
+                            onValueChange={(v) =>
+                              setFormData({ ...formData, gearColor: v === "__unset__" ? "" : v })
+                            }
+                          >
+                            <SelectTrigger id="fins-color">
+                              <SelectValue placeholder="Select color" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__unset__">Not specified</SelectItem>
+                              {formData.gearColor &&
+                              !(USED_GEAR_COLOR_OPTIONS as readonly string[]).includes(
+                                formData.gearColor,
+                              ) ? (
+                                <SelectItem value={formData.gearColor}>
+                                  {formData.gearColor} (saved)
+                                </SelectItem>
+                              ) : null}
+                              {USED_GEAR_COLOR_OPTIONS.map((c) => (
+                                <SelectItem key={c} value={c}>
+                                  {c}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     )}
