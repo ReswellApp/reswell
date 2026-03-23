@@ -100,16 +100,16 @@ export default function AdminListingsPage() {
 
   async function deleteListing(id: string) {
     if (!confirm('Permanently delete this listing? This cannot be undone.')) return
-    const { error } = await supabase
-      .from('listings')
-      .delete()
-      .eq('id', id)
-
-    if (!error) {
+    const res = await fetch(`/api/admin/listings?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+    if (res.ok) {
       setListings(prev => prev.filter(l => l.id !== id))
       toast.success('Listing deleted')
     } else {
-      toast.error('Failed to delete listing')
+      const data = await res.json().catch(() => ({ error: 'Failed to delete listing' }))
+      toast.error(data.error || 'Failed to delete listing')
     }
   }
 

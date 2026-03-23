@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/slugify'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
@@ -123,4 +124,55 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ success: true, listing_id: listing.id })
+}
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin, is_employee')
+    .eq('id', user.id)
+    .single()
+
+  const isSuperAdmin = user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
+  const canDelete = isSuperAdmin || profile?.is_admin || profile?.is_employee
+  if (!canDelete) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const listingId = request.nextUrl.searchParams.get('id')?.trim()
+  if (!listingId) {
+    return NextResponse.json({ error: 'Missing listing id' }, { status: 400 })
+  }
+
+  let service
+  try {
+    service = createServiceRoleClient()
+  } catch (e) {
+    console.error('[admin listings] Missing SUPABASE_SERVICE_ROLE_KEY for delete:', e)
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+  }
+
+  const { error } = await service.from('listings').delete().eq('id', listingId)
+  if (error) {
+    // Most common blocker: listing is referenced by order_items (FK constraint)
+    if (error.code === '23503') {
+      return NextResponse.json(
+        { error: 'Listing has related order history and cannot be permanently deleted.' },
+        { status: 409 },
+      )
+    }
+    console.error('[admin listings] delete failed:', error)
+    return NextResponse.json({ error: 'Failed to delete listing' }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
 }
