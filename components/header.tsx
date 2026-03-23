@@ -575,38 +575,6 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
-              <p className="px-2 pt-4 pb-1 text-xs font-medium text-muted-foreground">More categories</p>
-              {headerCategoriesDropdownSections.map((section, sIdx) => (
-                <div key={section.id} className={sIdx > 0 ? "mt-4 border-t border-border/60 pt-4" : ""}>
-                  {!headerDropdownCompactSectionIds.has(section.id) ? (
-                    <>
-                      <p className="px-2 pb-2 text-sm font-semibold text-foreground">{section.title}</p>
-                      <Link
-                        href={section.browseAllHref}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="cat-link py-2.5 px-2 text-[15px] font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-                      >
-                        {section.browseAllLabel}
-                      </Link>
-                    </>
-                  ) : null}
-                  {section.subcategories.map((group) => (
-                    <div key={`${section.id}-${group.heading}`} className="mt-2">
-                      <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">{group.heading}</p>
-                      {group.links.map((link) => (
-                        <Link
-                          key={`${link.href}-${link.label}`}
-                          href={link.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="cat-link py-2.5 px-2 pl-4 text-[15px] hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-                        >
-                          {link.label}
-                        </Link>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              ))}
               {dropdownCategories.map((cat) => (
                 <Link
                   key={cat.href}

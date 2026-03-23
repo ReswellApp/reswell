@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsListingsFilters } from "@/components/boards-listings-filters"
+import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { MapPin, Users } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
@@ -102,8 +103,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
   }
 
   if (location) {
-    const locEscaped = location.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-    dbQuery = dbQuery.or(`city.ilike."%${locEscaped}%",state.ilike."%${locEscaped}%"`)
+    dbQuery = applyListingsLocationTextFilter(dbQuery, location)
   }
 
   const hasLatLng = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)
