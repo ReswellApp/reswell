@@ -32,8 +32,8 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   const { slug } = await props.params
   const supabase = await createClient()
   const { data } = await supabase.from("forum_threads").select("title").eq("slug", slug).maybeSingle()
-  if (!data?.title) return { title: "Wax Room" }
-  return { title: `${data.title} · Wax Room` }
+  if (!data?.title) return { title: "Board Talk" }
+  return { title: `${data.title} · Board Talk` }
 }
 
 export default async function ThreadDetailPage(props: { params: Promise<{ slug: string }> }) {
@@ -61,8 +61,8 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
             the API schema in Supabase if needed.
           </p>
           <p className="mt-2 text-xs text-muted-foreground font-mono break-all">{error.message}</p>
-          <Link href="/wax-room" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
-            ← Wax Room
+          <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
+            ← Board Talk
           </Link>
         </div>
       </main>
@@ -98,8 +98,8 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
       <main className="flex-1">
         <div className="container mx-auto max-w-3xl py-10 px-4">
           <p className="text-sm text-destructive">Could not load comments: {commentsError.message}</p>
-          <Link href="/wax-room" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
-            ← Wax Room
+          <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
+            ← Board Talk
           </Link>
         </div>
       </main>
@@ -166,8 +166,8 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
   return (
     <main className="flex-1">
       <div className="container mx-auto max-w-3xl py-10 px-4">
-        <Link href="/wax-room" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-          ← Wax Room
+        <Link href="/board-talk" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+          ← Board Talk
         </Link>
 
         <article className="relative mt-6 rounded-lg border border-border bg-card p-5 sm:p-6">

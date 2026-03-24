@@ -28,7 +28,7 @@ export function CommentLikeButton({
   const [liked, setLiked] = useState(initialLiked)
   const busy = useRef(false)
 
-  const loginHref = `/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/wax-room")}`
+  const loginHref = `/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/board-talk")}`
 
   async function toggle() {
     if (!isLoggedIn || busy.current) return

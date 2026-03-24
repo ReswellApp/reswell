@@ -8,9 +8,12 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: "/threads/new", destination: "/wax-room/new", permanent: true },
-      { source: "/threads/:slug", destination: "/wax-room/:slug", permanent: true },
-      { source: "/threads", destination: "/wax-room", permanent: true },
+      { source: "/threads/new", destination: "/board-talk/new", permanent: true },
+      { source: "/wax-room/new", destination: "/board-talk/new", permanent: true },
+      { source: "/threads/:slug", destination: "/board-talk/:slug", permanent: true },
+      { source: "/wax-room/:slug", destination: "/board-talk/:slug", permanent: true },
+      { source: "/threads", destination: "/board-talk", permanent: true },
+      { source: "/wax-room", destination: "/board-talk", permanent: true },
     ]
   },
 }

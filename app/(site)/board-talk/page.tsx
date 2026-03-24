@@ -18,7 +18,7 @@ type ThreadRow = {
 }
 
 export const metadata: Metadata = {
-  title: "Wax Room",
+  title: "Board Talk",
   description: "Community posts, stoke, and conversation.",
 }
 
@@ -57,9 +57,9 @@ export default async function ThreadsPage() {
     return (
       <main className="flex-1">
         <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
-          <h1 className="text-3xl font-bold text-foreground">Wax Room</h1>
+          <h1 className="text-3xl font-bold text-foreground">Board Talk</h1>
           <p className="mt-5 text-sm text-destructive">
-            Could not load the Wax Room. Confirm{" "}
+            Could not load Board Talk. Confirm{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/032_forum_threads.sql</code> ran on this
             Supabase project, then try{" "}
             <span className="font-medium">Settings → API → Reload schema</span> in the dashboard.
@@ -100,7 +100,7 @@ export default async function ThreadsPage() {
       <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
         <header className="flex flex-col gap-8 border-b border-border/60 pb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-10 sm:pb-12">
           <div className="min-w-0 space-y-3">
-            <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Wax Room</h1>
+            <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Board Talk</h1>
             <p className="max-w-xl text-muted-foreground leading-relaxed">
               Start a conversation, share stoke, and jump into what the community is talking about.
             </p>
@@ -108,14 +108,14 @@ export default async function ThreadsPage() {
           <div className="shrink-0 sm:pt-1">
             {user ? (
               <Button asChild className="w-full min-h-touch sm:w-auto">
-                <Link href="/wax-room/new">
+                <Link href="/board-talk/new">
                   <Plus className="h-4 w-4 mr-2" />
                   New post
                 </Link>
               </Button>
             ) : (
               <Button asChild variant="outline" className="w-full min-h-touch sm:w-auto">
-                <Link href={`/auth/login?redirect=${encodeURIComponent("/wax-room/new")}`}>
+                <Link href={`/auth/login?redirect=${encodeURIComponent("/board-talk/new")}`}>
                   Log in to post
                 </Link>
               </Button>
@@ -129,7 +129,7 @@ export default async function ThreadsPage() {
               <p>No posts yet.</p>
               {user ? (
                 <Button asChild className="mt-6">
-                  <Link href="/wax-room/new">Create the first post</Link>
+                  <Link href="/board-talk/new">Create the first post</Link>
                 </Button>
               ) : null}
             </CardContent>
@@ -144,7 +144,7 @@ export default async function ThreadsPage() {
             const author = prof?.display_name?.trim() || "Member"
             return (
               <li key={t.id}>
-                <Link href={`/wax-room/${t.slug}`}>
+                <Link href={`/board-talk/${t.slug}`}>
                   <Card className="transition-shadow hover:shadow-md">
                     <CardContent className="px-6 py-6 sm:px-8 sm:py-8">
                       <div className="flex flex-wrap items-center gap-2 gap-y-2">
