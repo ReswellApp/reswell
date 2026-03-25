@@ -385,16 +385,16 @@ export function Header() {
     }
   }, [mobileMenuOpen])
 
-  /** Close drawer then navigate — closing first unmounts `<Link>` and can cancel Next.js client navigation. */
-  const onMobileDrawerLinkClick = useCallback(
-    (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-      e.preventDefault()
-      router.push(href)
-      setMobileMenuOpen(false)
-    },
-    [router],
-  )
+  /**
+   * Close the drawer after Next `<Link>` runs its own navigation (`linkClicked`).
+   * We must not `preventDefault` here — that skips Link's handler and only our `router.push` runs,
+   * which can fail to match `/index` correctly on some clients. Defer closing so the anchor stays
+   * mounted until navigation has started.
+   */
+  const onMobileDrawerLinkClick = useCallback((e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    queueMicrotask(() => setMobileMenuOpen(false))
+  }, [])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -701,7 +701,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={onMobileDrawerLinkClick(item.href)}
+                  onClick={onMobileDrawerLinkClick}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {item.name}
@@ -711,7 +711,7 @@ export function Header() {
                 <Link
                   key={cat.href}
                   href={cat.href}
-                  onClick={onMobileDrawerLinkClick(cat.href)}
+                  onClick={onMobileDrawerLinkClick}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {cat.label}
@@ -719,7 +719,7 @@ export function Header() {
               ))}
               <Link
                 href="/categories"
-                onClick={onMobileDrawerLinkClick("/categories")}
+                onClick={onMobileDrawerLinkClick}
                 className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
               >
                 See all categories
@@ -729,7 +729,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={onMobileDrawerLinkClick(item.href)}
+                  onClick={onMobileDrawerLinkClick}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {item.name}
@@ -737,7 +737,7 @@ export function Header() {
               ))}
               <Link
                 href="/used/recent"
-                onClick={onMobileDrawerLinkClick("/used/recent")}
+                onClick={onMobileDrawerLinkClick}
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
               >
                 <Clock className="h-5 w-5 shrink-0" />
@@ -791,9 +791,7 @@ export function Header() {
               </div>
               <Link
                 href={user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved")}
-                onClick={onMobileDrawerLinkClick(
-                  user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved"),
-                )}
+                onClick={onMobileDrawerLinkClick}
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
               >
                 <Heart className="h-5 w-5 shrink-0" />
@@ -802,7 +800,7 @@ export function Header() {
               {user && (
                 <Link
                   href="/sell"
-                  onClick={onMobileDrawerLinkClick("/sell")}
+                  onClick={onMobileDrawerLinkClick}
                   className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch"
                 >
                   Sell Your Gear
@@ -812,14 +810,14 @@ export function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    onClick={onMobileDrawerLinkClick("/auth/login")}
+                    onClick={onMobileDrawerLinkClick}
                     className="py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/auth/sign-up"
-                    onClick={onMobileDrawerLinkClick("/auth/sign-up")}
+                    onClick={onMobileDrawerLinkClick}
                     className="py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Get Started
