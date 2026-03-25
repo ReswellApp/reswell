@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight, ExternalLink, MapPin } from "lucide-react"
 import type { BoardModel, BrandProfile } from "@/lib/index-directory/types"
+import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { Button } from "@/components/ui/button"
 function rockerLine(m: BoardModel): string | null {
   const parts: string[] = []
@@ -19,7 +20,7 @@ export function BrandProfileView({ profile }: { profile: BrandProfile }) {
       <div className="border-b border-border/80 bg-muted/15">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
           <Link
-            href="/index"
+            href={INDEX_DIRECTORY_BASE}
             className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
             ← Index
@@ -128,7 +129,7 @@ export function BrandProfileView({ profile }: { profile: BrandProfile }) {
             {profile.models.map((m) => (
               <li key={m.slug}>
                 <Link
-                  href={`/index/brands/${profile.slug}/models/${m.slug}`}
+                  href={`${INDEX_DIRECTORY_BASE}/brands/${profile.slug}/models/${m.slug}`}
                   className="group block h-full rounded-xl border border-border/80 bg-card shadow-soft transition-all hover:border-foreground/20 hover:shadow-soft-hover"
                 >
                   <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-xl bg-muted">
@@ -169,7 +170,7 @@ export function BrandProfileView({ profile }: { profile: BrandProfile }) {
       <div className="border-t border-border/80 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <p className="text-sm text-muted-foreground">
-            <Link href="/index" className="font-medium text-foreground underline-offset-4 hover:underline">
+            <Link href={INDEX_DIRECTORY_BASE} className="font-medium text-foreground underline-offset-4 hover:underline">
               Back to Index
             </Link>
             {" · "}

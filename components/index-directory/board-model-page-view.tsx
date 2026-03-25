@@ -6,6 +6,7 @@ import type { BoardModelDetail, BrandProfile, BoardModel, BoardModelGalleryImage
 import { Button } from "@/components/ui/button"
 import { BoardModelDeckBottomHero } from "@/components/index-directory/board-model-deck-bottom-hero"
 import { BoardModelStockDimsCollapsible } from "@/components/index-directory/board-model-stock-dims-collapsible"
+import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { cn } from "@/lib/utils"
 
 function formatUsd(n: number) {
@@ -162,7 +163,7 @@ export function BoardModelPageView({
   model: BoardModel
   detail: BoardModelDetail | null
 }) {
-  const brandModelsHref = `/index/brands/${brand.slug}`
+  const brandModelsHref = `${INDEX_DIRECTORY_BASE}/brands/${brand.slug}`
   const priceLabel = detail?.priceUsd != null ? formatUsd(detail.priceUsd) : null
   const gallery = resolveGallery(model, detail)
   const deckBottom = extractDeckBottom(gallery)
@@ -174,7 +175,10 @@ export function BoardModelPageView({
       <div className="border-b border-border/40 bg-muted/[0.35]">
         <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6">
           <nav className="flex flex-wrap items-center gap-1 text-xs font-medium text-muted-foreground sm:text-sm">
-            <Link href="/index" className="rounded-md px-1 py-0.5 transition-colors hover:bg-background hover:text-foreground">
+            <Link
+              href={INDEX_DIRECTORY_BASE}
+              className="rounded-md px-1 py-0.5 transition-colors hover:bg-background hover:text-foreground"
+            >
               Index
             </Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-40" aria-hidden />

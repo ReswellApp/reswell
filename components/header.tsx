@@ -47,6 +47,7 @@ import { HeaderNavSearch } from "@/components/header-nav-search"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
+import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 /** Desktop + mobile primary nav (Apparel / Leashes / Vintage last before Categories dropdown). */
@@ -64,7 +65,7 @@ const navigation = [
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
   { name: "Field notes", href: "/blog" },
-  { name: "Index", href: "/index" },
+  { name: "Index", href: INDEX_DIRECTORY_BASE },
   { name: "Board Talk", href: "/board-talk" },
 ]
 
@@ -387,9 +388,8 @@ export function Header() {
 
   /**
    * Close the drawer after Next `<Link>` runs its own navigation (`linkClicked`).
-   * We must not `preventDefault` here — that skips Link's handler and only our `router.push` runs,
-   * which can fail to match `/index` correctly on some clients. Defer closing so the anchor stays
-   * mounted until navigation has started.
+   * We must not `preventDefault` here — that skips Link's handler. Defer closing so the drawer
+   * stays mounted until navigation has started.
    */
   const onMobileDrawerLinkClick = useCallback((e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return

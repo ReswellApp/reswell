@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { ArrowUpRight, MapPin, Package, Store, UserCircle } from "lucide-react"
 import type { DirectoryKind, DirectoryListEntry } from "@/lib/index-directory/types"
+import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { cn } from "@/lib/utils"
 
 const FILTERS: { id: "all" | DirectoryKind; label: string }[] = [
@@ -15,9 +16,9 @@ const FILTERS: { id: "all" | DirectoryKind; label: string }[] = [
 ]
 
 function profileHref(entry: DirectoryListEntry) {
-  if (entry.kind === "brand") return `/index/brands/${entry.slug}`
-  if (entry.kind === "shaper") return `/index/shapers/${entry.slug}`
-  return `/index/storefronts/${entry.slug}`
+  if (entry.kind === "brand") return `${INDEX_DIRECTORY_BASE}/brands/${entry.slug}`
+  if (entry.kind === "shaper") return `${INDEX_DIRECTORY_BASE}/shapers/${entry.slug}`
+  return `${INDEX_DIRECTORY_BASE}/storefronts/${entry.slug}`
 }
 
 export function DirectoryExplorer({ entries }: { entries: DirectoryListEntry[] }) {

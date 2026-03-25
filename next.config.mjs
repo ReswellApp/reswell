@@ -8,6 +8,9 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // `/index` is often treated like the site root; canonical directory lives at `/directory`.
+      { source: "/index", destination: "/directory", permanent: true },
+      { source: "/index/:path*", destination: "/directory/:path*", permanent: true },
       { source: "/threads/new", destination: "/board-talk/new", permanent: true },
       { source: "/wax-room/new", destination: "/board-talk/new", permanent: true },
       { source: "/threads/:slug", destination: "/board-talk/:slug", permanent: true },

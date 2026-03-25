@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { format } from "date-fns"
 import type { FieldNoteArticle } from "@/lib/field-notes-articles"
+import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { ArticleBody } from "@/components/field-notes/article-body"
 
 export function ArticlePageView({ article }: { article: FieldNoteArticle }) {
@@ -46,7 +47,7 @@ export function ArticlePageView({ article }: { article: FieldNoteArticle }) {
 
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
         <p className="text-sm text-muted-foreground">
-          <Link href="/index" className="font-medium text-foreground underline-offset-4 hover:underline">
+          <Link href={INDEX_DIRECTORY_BASE} className="font-medium text-foreground underline-offset-4 hover:underline">
             Index
           </Link>
           {" · "}
