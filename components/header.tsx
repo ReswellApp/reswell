@@ -2,7 +2,17 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Fragment, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, Suspense } from "react"
+import {
+  Fragment,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  Suspense,
+  type MouseEvent,
+} from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -375,6 +385,17 @@ export function Header() {
     }
   }, [mobileMenuOpen])
 
+  /** Close drawer then navigate — closing first unmounts `<Link>` and can cancel Next.js client navigation. */
+  const onMobileDrawerLinkClick = useCallback(
+    (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+      e.preventDefault()
+      router.push(href)
+      setMobileMenuOpen(false)
+    },
+    [router],
+  )
+
   async function handleSignOut() {
     await supabase.auth.signOut()
     setUser(null)
@@ -680,7 +701,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={onMobileDrawerLinkClick(item.href)}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {item.name}
@@ -690,7 +711,7 @@ export function Header() {
                 <Link
                   key={cat.href}
                   href={cat.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={onMobileDrawerLinkClick(cat.href)}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {cat.label}
@@ -698,7 +719,7 @@ export function Header() {
               ))}
               <Link
                 href="/categories"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={onMobileDrawerLinkClick("/categories")}
                 className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
               >
                 See all categories
@@ -708,7 +729,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={onMobileDrawerLinkClick(item.href)}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
                   {item.name}
@@ -716,7 +737,7 @@ export function Header() {
               ))}
               <Link
                 href="/used/recent"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={onMobileDrawerLinkClick("/used/recent")}
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
               >
                 <Clock className="h-5 w-5 shrink-0" />
@@ -770,7 +791,9 @@ export function Header() {
               </div>
               <Link
                 href={user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved")}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={onMobileDrawerLinkClick(
+                  user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved"),
+                )}
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
               >
                 <Heart className="h-5 w-5 shrink-0" />
@@ -779,7 +802,7 @@ export function Header() {
               {user && (
                 <Link
                   href="/sell"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={onMobileDrawerLinkClick("/sell")}
                   className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch"
                 >
                   Sell Your Gear
@@ -789,14 +812,14 @@ export function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={onMobileDrawerLinkClick("/auth/login")}
                     className="py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/auth/sign-up"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={onMobileDrawerLinkClick("/auth/sign-up")}
                     className="py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Get Started
