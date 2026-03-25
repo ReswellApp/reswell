@@ -1,0 +1,113 @@
+{
+  "brandSlug": "sharpeye-surfboards",
+  "modelSlug": "inferno-ft-c1-lite",
+  "descriptionParagraphs": [
+    "The Inferno FT from SHARPEYE Surfboards delivers you the world's fastest surfboard with Unparalleled Acceleration, Speed and Flow.",
+    "Filipe Toledo Pro Model. An evolution of the Inferno 72, the Inferno FT was a pivotal model featured in Filipe Toledo's 2022 world title campaign. The Inferno FT features a Quad fin design with a medium single concave that runs into a deep double concave between the fins that flows into a flat exit through the tail. This bottom contour, combined with the same proven rocker from the Inferno 72, allows electric performance in a vast range of wave types and sizes.",
+    "Looking for Unparalleled Acceleration, Speed and Flow, choose the Inferno FT."
+  ],
+  "priceUsd": 999,
+  "marketingImageUrl": "https://sharpeyesurfboards.com/cdn/shop/files/InfernoFT_C1_SE_Deck.jpg?v=1701374114&width=2000",
+  "galleryImages": [
+    {
+      "url": "https://sharpeyesurfboards.com/cdn/shop/files/InfernoFT_C1_SE_Deck.jpg?v=1701374114&width=2000",
+      "caption": "Inferno FT (C1 LITE)"
+    }
+  ],
+  "waveSizeLabels": [
+    "Small",
+    "Medium",
+    "Overhead"
+  ],
+  "skillLevelLabels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced"
+  ],
+  "stockDims": [
+    {
+      "length": "5'8\"",
+      "width": "18.75",
+      "thickness": "2.38",
+      "volume": "25.50L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "19.0",
+      "thickness": "2.44",
+      "volume": "26.50L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "18.75",
+      "thickness": "2.44",
+      "volume": "26.50L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "27.90L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.0",
+      "thickness": "2.5",
+      "volume": "28.00L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.25",
+      "thickness": "2.63",
+      "volume": "29.70L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "28.70L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "19.5",
+      "thickness": "2.63",
+      "volume": "30.50L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "19.38",
+      "thickness": "2.52",
+      "volume": "29.60L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "19.75",
+      "thickness": "2.63",
+      "volume": "31.40L"
+    },
+    {
+      "length": "6'1\"",
+      "width": "19.5",
+      "thickness": "2.63",
+      "volume": "31.40L"
+    },
+    {
+      "length": "6'1\"",
+      "width": "20.0",
+      "thickness": "2.63",
+      "volume": "32.25L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "19.75",
+      "thickness": "2.63",
+      "volume": "32.30L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "20.25",
+      "thickness": "2.68",
+      "volume": "33.80L"
+    }
+  ]
+}

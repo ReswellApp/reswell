@@ -1,0 +1,20 @@
+{
+  "brandSlug": "lovelace-machine",
+  "modelSlug": "bigpin",
+  "descriptionParagraphs": [
+    "Add up the paddle power and speed of a big ThickLizzy, the walkability of a wide-nosed longboard and the super ball-bearing feel of a v.Bowls and the BigPin is the outcome — a nose-ridable, planing glider feel.",
+    "Flat and wide across the deck makes the paddle speed great but not at the expense of making the board unresponsive on-rail. A really healthy spiral vee in the back half of the board keeps this shape extremely loose and smooth off the back half while maintaining a lot of speed.",
+    "Down-rails all the way around for trim speed on flat sections and less-powerful waves, coupled with the triplane of the Lizzy for efficiency onto rail — the BigPin is a mashup of a ton of my favorite details, all focused around effortless speed and fun on days."
+  ],
+  "priceUsd": null,
+  "marketingImageUrl": "https://lovemachinesurfboards.com/cdn/shop/files/IMG_27742.jpg?v=1703714319&width=2000",
+  "galleryImages": [
+    {
+      "url": "https://lovemachinesurfboards.com/cdn/shop/files/IMG_27742.jpg?v=1703714319&width=2000",
+      "caption": "BigPin"
+    }
+  ],
+  "waveSizeLabels": ["Small", "Medium"],
+  "skillLevelLabels": ["Intermediate", "Advanced"],
+  "stockDims": []
+}

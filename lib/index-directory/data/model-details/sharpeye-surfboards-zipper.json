@@ -1,0 +1,90 @@
+{
+  "brandSlug": "sharpeye-surfboards",
+  "modelSlug": "zipper",
+  "descriptionParagraphs": [
+    "The Zipper from SHARPEYE Surfboards delivers the world's fastest surfboard with Alternate Performance in Everyday Conditions.",
+    "The Zipper offers a versatile fin configuration, allowing it to be set up as a performance two-plus-one, thruster, or quad. It features a flat entry rocker that smoothly transitions into a flattened exit, complemented by forgiving, catch-resistant boxy rails. A single concave runs between the fins, flowing seamlessly into a flat exit through the tail. The combination of bottom contours, flat rocker, and boxy rails enables the Zipper to make tight directional changes with ease and release while maintaining exceptional speed and drive.",
+    "The Zipper brings the fun with Alternate Performance, the perfect addition to any summer quiver.",
+    "E3-Lite Epoxy Technology The E3-Lite epoxy glassing technology has been developed with leading composite material firms to develop custom carbon/Innegra tapes to produce incredible results with unmatched performance. E3 Epoxy tech features a super tight cell structured core, a stringer-less EPS blank, and a 4oz layer of fiberglass on the bottom combined with a custom Innegra/carbon tape. The deck is layered with SharpEye's custom triple carbon tape with a layer of Bi-axle 4oz cloth. SharpEye's commitment to innovation and constant improvement has paid off with the E3 Lite technology. Zero Compromise."
+  ],
+  "priceUsd": 850,
+  "marketingImageUrl": "https://sharpeyesurfboards.com/cdn/shop/files/Zipper_E3-Lite_Camo_D.jpg?v=1730077263&width=2000",
+  "galleryImages": [
+    {
+      "url": "https://sharpeyesurfboards.com/cdn/shop/files/Zipper_E3-Lite_Camo_D.jpg?v=1730077263&width=2000",
+      "caption": "Zipper (E3 LITE)"
+    }
+  ],
+  "waveSizeLabels": [
+    "Small",
+    "Medium",
+    "Overhead"
+  ],
+  "skillLevelLabels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced"
+  ],
+  "stockDims": [
+    {
+      "length": "5'4\"",
+      "width": "19.65",
+      "thickness": "2.5",
+      "volume": "29.60L"
+    },
+    {
+      "length": "5'6\"",
+      "width": "20.0",
+      "thickness": "2.5",
+      "volume": "31.10L"
+    },
+    {
+      "length": "5'7\"",
+      "width": "20.5",
+      "thickness": "2.65",
+      "volume": "34.20L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "20.75",
+      "thickness": "2.65",
+      "volume": "35.30L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "21.0",
+      "thickness": "2.7",
+      "volume": "37.00L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "21.0",
+      "thickness": "2.75",
+      "volume": "38.20L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "21.25",
+      "thickness": "2.75",
+      "volume": "39.20L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "21.5",
+      "thickness": "2.75",
+      "volume": "40.20L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "21.75",
+      "thickness": "2.88",
+      "volume": "43.80L"
+    },
+    {
+      "length": "6'4\"",
+      "width": "22.1",
+      "thickness": "3.0",
+      "volume": "47.30L"
+    }
+  ]
+}

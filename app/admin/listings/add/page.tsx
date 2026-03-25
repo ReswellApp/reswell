@@ -26,7 +26,7 @@ const SECTION_CATEGORIES: Record<string, { value: string; label: string }[]> = {
     { value: 'b2a6282c-4c23-42dc-83f4-492eaa4f993a', label: 'Leashes' },
     { value: '3779de38-dcf8-430f-a42c-9a17a2e048c4', label: 'Board Bags' },
     { value: 'a6000006-0000-4000-8000-000000000006', label: 'Surfpacks & Bags' },
-    { value: 'a3000003-0000-4000-8000-000000000003', label: 'Collectibles & Vintage' },
+    { value: 'a3000003-0000-4000-8000-000000000003', label: 'Vintage' },
   ],
   new: [
     { value: 'b2a6282c-4c23-42dc-83f4-492eaa4f993a', label: 'Leashes' },

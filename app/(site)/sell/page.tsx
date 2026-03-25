@@ -76,7 +76,7 @@ const categories = [
   { value: LEASHES_CATEGORY_ID, label: "Leashes" },
   { value: BOARD_BAGS_CATEGORY_ID, label: "Board Bags" },
   { value: BACKPACK_CATEGORY_ID, label: "Surfpacks & Bags" },
-  { value: "a3000003-0000-4000-8000-000000000003", label: "Collectibles & Vintage" },
+  { value: "a3000003-0000-4000-8000-000000000003", label: "Vintage" },
 ]
 
 // Board type to category UUID mapping

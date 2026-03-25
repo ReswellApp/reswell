@@ -1,0 +1,45 @@
+{
+  "brandSlug": "sharpeye-surfboards",
+  "modelSlug": "ht2-youth",
+  "descriptionParagraphs": [
+    "The HT2 YTH from SHARPEYE Surfboards has been developed for youth to Push their Performance. A truly scaled-down version of the HT2, a Filipe Toledo Pro Model. The HT2 YTH features a forgiving yet sensitive medium/boxy rail that minimises rail catches in both full/flat sections and sub-par conditions. The HT2 YTH combines a deep single concave and a generous sweet spot between the feet with a medium entry rocker for an instant burst of speed on take-off, the entry rocker, flows seamlessly into a flattened exit rocker, delivering peak hold and drive where needed. The HT2 YTH delivers the perfect combination to Push the Performance in everyday conditions."
+  ],
+  "priceUsd": 679,
+  "marketingImageUrl": "https://sharpeyesurfboards.com/cdn/shop/products/SE_HT2_Y_D.jpg?v=1686184174&width=2000",
+  "galleryImages": [
+    {
+      "url": "https://sharpeyesurfboards.com/cdn/shop/products/SE_HT2_Y_D.jpg?v=1686184174&width=2000",
+      "caption": "Ht2 YTH"
+    }
+  ],
+  "waveSizeLabels": [
+    "Small",
+    "Medium",
+    "Overhead"
+  ],
+  "skillLevelLabels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced"
+  ],
+  "stockDims": [
+    {
+      "length": "5'0\"",
+      "width": "17.75",
+      "thickness": "2.06",
+      "volume": "19.00L"
+    },
+    {
+      "length": "5'2\"",
+      "width": "17.87",
+      "thickness": "2.06",
+      "volume": "20.00L"
+    },
+    {
+      "length": "5'4\"",
+      "width": "18.0",
+      "thickness": "2.12",
+      "volume": "21.00L"
+    }
+  ]
+}

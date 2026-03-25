@@ -1,0 +1,154 @@
+{
+  "brandSlug": "sharpeye-surfboards",
+  "modelSlug": "storms",
+  "descriptionParagraphs": [
+    "The Storms from SHARPEYE Surfboards delivers the world's fastest surfboard with Increased Everyday Performance in small to medium conditions.",
+    "The Storms was developed to offer Increased Everyday Performance in small to medium conditions. Featuring a performance outline with a bump squash combined with a medium rail, the Storms model delivers the perfect balance of predictable and controlled performance with the ability to make blistering directional changes. The bottom contour features a medium single concave that flows into a deep double between the fins. These concaves, combine with a medium entry rocker that blends seamlessly into a medium exit rocker, providing an instant burst of speed from take-off, and adding extra manoeuvrability and drive. A supreme combination for everyday conditions.",
+    "Choose the Storms as the ideal alternative to the Inferno 72."
+  ],
+  "priceUsd": 780,
+  "marketingImageUrl": "https://sharpeyesurfboards.com/cdn/shop/products/SE_Storms_D.jpg?v=1686184106&width=2000",
+  "galleryImages": [
+    {
+      "url": "https://sharpeyesurfboards.com/cdn/shop/products/SE_Storms_D.jpg?v=1686184106&width=2000",
+      "caption": "Storms"
+    }
+  ],
+  "waveSizeLabels": [
+    "Small",
+    "Medium",
+    "Overhead"
+  ],
+  "skillLevelLabels": [
+    "Intermediate",
+    "Advanced"
+  ],
+  "stockDims": [
+    {
+      "length": "5'4\"",
+      "width": "18.25",
+      "thickness": "2.25",
+      "volume": "22.35L"
+    },
+    {
+      "length": "5'5\"",
+      "width": "18.4",
+      "thickness": "2.32",
+      "volume": "23.50L"
+    },
+    {
+      "length": "5'6\"",
+      "width": "18.5",
+      "thickness": "2.35",
+      "volume": "24.40L"
+    },
+    {
+      "length": "5'7\"",
+      "width": "18.65",
+      "thickness": "2.35",
+      "volume": "24.90L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "18.75",
+      "thickness": "2.38",
+      "volume": "25.80L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "19.0",
+      "thickness": "2.45",
+      "volume": "26.88L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "19.5",
+      "thickness": "2.58",
+      "volume": "29.40L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "18.75",
+      "thickness": "2.4",
+      "volume": "26.40L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "28.10L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "18.75",
+      "thickness": "2.4",
+      "volume": "26.40L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.0",
+      "thickness": "2.5",
+      "volume": "28.20L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.25",
+      "thickness": "2.6",
+      "volume": "29.70L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.88",
+      "thickness": "2.68",
+      "volume": "32.00L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "29.00L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "19.4",
+      "thickness": "2.6",
+      "volume": "30.80L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "20.25",
+      "thickness": "2.78",
+      "volume": "34.90L"
+    },
+    {
+      "length": "6'1\"",
+      "width": "19.5",
+      "thickness": "2.6",
+      "volume": "31.50L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "19.65",
+      "thickness": "2.65",
+      "volume": "32.80L"
+    },
+    {
+      "length": "6'3\"",
+      "width": "19.7",
+      "thickness": "2.65",
+      "volume": "33.30L"
+    },
+    {
+      "length": "6'4\"",
+      "width": "19.75",
+      "thickness": "2.7",
+      "volume": "34.50L"
+    },
+    {
+      "length": "6'6\"",
+      "width": "20.0",
+      "thickness": "2.8",
+      "volume": "37.20L"
+    }
+  ]
+}

@@ -31,8 +31,15 @@ export function formatCondition(condition: string | null | undefined): string {
   return CONDITION_LABELS[condition] ?? condition.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+/** Map legacy DB / canonical names to preferred display labels (URLs & slugs unchanged). */
+const CATEGORY_DISPLAY_OVERRIDES: Record<string, string> = {
+  "collectibles & vintage": "Vintage",
+}
+
 export function formatCategory(name: string | null | undefined): string {
   if (!name) return ""
+  const override = CATEGORY_DISPLAY_OVERRIDES[name.trim().toLowerCase()]
+  if (override) return override
   return name.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 

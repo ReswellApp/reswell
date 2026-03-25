@@ -1,0 +1,146 @@
+{
+  "brandSlug": "sharpeye-surfboards",
+  "modelSlug": "inferno-72-e3-lite-1",
+  "descriptionParagraphs": [
+    "The Inferno 72 from SHARPEYE Surfboards delivers the world's fastest surfboard with Proven Performance.",
+    "This model was developed to offer proven performance in small to medium-sized conditions. A global staple favoured by professional and everyday surfers alike, the Stab in the Dark winning Inferno 72 model is the must-have, tuned-up, everyday shortboard. The Inferno 72 is one of the world's most popular shortboard models for a reason.",
+    "Featuring a medium single concave that flows into a deep double between the fins. These concaves combine with a medium entry rocker that flows seamlessly into a medium exit rocker, providing an instant burst of speed from take-off and an exceptional balance of manoeuvrability and drive. These features integrate with a reliable, controlled medium rail to deliver the perfect combination for everyday conditions. The Stab in the Dark winning Inferno 72's proven performance will handle just about any conditions thrown at it.",
+    "It's recommended to order the Inferno 72 in the same size as your go-to shortboard. Drop one inch for a step-down.",
+    "E3-Lite Epoxy Technology",
+    "The E3-Lite epoxy glassing technology has been developed with leading composite material firms to develop custom carbon/Innegra tapes to produce incredible results with unmatched performance. E3 Epoxy tech features a super tight cell structured core, a stringer-less EPS blank, and a 4oz layer of fiberglass on the bottom combined with a custom Innegra/carbon tape. The deck is layered with SharpEye's custom triple carbon tape with a layer of Bi-axle 4oz cloth. SharpEye's commitment to innovation and constant improvement has paid off with the E3 Lite technology. Zero Compromise."
+  ],
+  "priceUsd": 825,
+  "marketingImageUrl": "https://sharpeyesurfboards.com/cdn/shop/files/SE_Inferno72_E3-Lite_BR_D.jpg?v=1708049832&width=2000",
+  "galleryImages": [
+    {
+      "url": "https://sharpeyesurfboards.com/cdn/shop/files/SE_Inferno72_E3-Lite_BR_D.jpg?v=1708049832&width=2000",
+      "caption": "Inferno 72 (E3 LITE)"
+    }
+  ],
+  "waveSizeLabels": [
+    "Small",
+    "Medium",
+    "Overhead"
+  ],
+  "skillLevelLabels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced"
+  ],
+  "stockDims": [
+    {
+      "length": "4'10\"",
+      "width": "16.75",
+      "thickness": "1.9",
+      "volume": "15.80L"
+    },
+    {
+      "length": "5'0\"",
+      "width": "17.0",
+      "thickness": "2.0",
+      "volume": "17.48L"
+    },
+    {
+      "length": "5'2\"",
+      "width": "17.25",
+      "thickness": "2.0",
+      "volume": "18.34L"
+    },
+    {
+      "length": "5'4\"",
+      "width": "18.25",
+      "thickness": "2.25",
+      "volume": "22.10L"
+    },
+    {
+      "length": "5'6\"",
+      "width": "18.5",
+      "thickness": "2.37",
+      "volume": "24.20L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "18.75",
+      "thickness": "2.37",
+      "volume": "25.30L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "19.0",
+      "thickness": "2.45",
+      "volume": "26.60L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "19.5",
+      "thickness": "2.58",
+      "volume": "29.10L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "19.0",
+      "thickness": "2.45",
+      "volume": "27.10L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.0",
+      "thickness": "2.5",
+      "volume": "28.00L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.25",
+      "thickness": "2.62",
+      "volume": "29.40L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.88",
+      "thickness": "2.68",
+      "volume": "32.10L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "28.80L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "19.37",
+      "thickness": "2.62",
+      "volume": "31.00L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "20.25",
+      "thickness": "2.78",
+      "volume": "34.70L"
+    },
+    {
+      "length": "6'1\"",
+      "width": "19.5",
+      "thickness": "2.62",
+      "volume": "31.60L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "19.62",
+      "thickness": "2.62",
+      "volume": "32.40L"
+    },
+    {
+      "length": "6'3\"",
+      "width": "19.68",
+      "thickness": "2.62",
+      "volume": "33.00L"
+    },
+    {
+      "length": "6'4\"",
+      "width": "19.75",
+      "thickness": "2.68",
+      "volume": "34.10L"
+    }
+  ]
+}

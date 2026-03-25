@@ -30,7 +30,7 @@ export default async function UsedCollectiblesVintagePage(props: {
       <main className="flex-1">
         <section className="bg-offwhite py-12">
           <div className="container mx-auto">
-            <h1 className="text-3xl font-bold text-center">Collectibles & Vintage</h1>
+            <h1 className="text-3xl font-bold text-center">Vintage</h1>
             <p className="text-center text-muted-foreground mt-2">
               Rare finds and classic surf culture — shipping only
             </p>

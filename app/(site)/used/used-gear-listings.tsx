@@ -34,11 +34,11 @@ export interface UsedGearSearchParams {
   leashLength?: string
   /** e.g. 6mm — Leashes page */
   leashThickness?: string
-  /** vintage_surfboards | vintage_apparel | … — Collectibles & Vintage page */
+  /** vintage_surfboards | vintage_apparel | … — Vintage category page */
   collectibleType?: string
-  /** 70s | 80s | 90s | 2000s — Collectibles & Vintage page */
+  /** 70s | 80s | 90s | 2000s — Vintage category page */
   collectibleEra?: string
-  /** mint | good | restored | display_only — Collectibles & Vintage page */
+  /** mint | good | restored | display_only — Vintage category page */
   collectibleCondition?: string
 }
 

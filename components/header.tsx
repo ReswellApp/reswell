@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Fragment, useState, useEffect, useRef, useMemo, Suspense } from "react"
+import { Fragment, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, Suspense } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,7 +39,7 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
-/** Desktop + mobile primary nav (Apparel / Leashes / Collectibles last before Categories dropdown). */
+/** Desktop + mobile primary nav (Apparel / Leashes / Vintage last before Categories dropdown). */
 const navigation = [
   { name: "Surfboards", href: "/boards" },
   { name: "Fins", href: "/used/fins" },
@@ -48,7 +48,7 @@ const navigation = [
   { name: "Wetsuits", href: "/used/wetsuits" },
   { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
   { name: "Leashes", href: "/used/leashes" },
-  { name: "Collectibles & Vintage", href: "/used/collectibles-vintage" },
+  { name: "Vintage", href: "/used/collectibles-vintage" },
 ]
 
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
@@ -92,6 +92,180 @@ const dropdownCategories = allCategoriesForNav.filter((cat) => !mainNavHrefs.has
 
 /** Header Categories dropdown: grey heading + links only (no bold title / view-all row). */
 const headerDropdownCompactSectionIds = new Set(["surfboards", "fins", "surfpacks"])
+
+const CATEGORY_BAR_GAP_PX = 32
+
+function computeVisibleNavCount(availableWidth: number, linkWidths: number[], categoriesWidth: number): number {
+  for (let n = linkWidths.length; n >= 0; n--) {
+    const sumLinks = linkWidths.slice(0, n).reduce((a, b) => a + b, 0)
+    const total = sumLinks + categoriesWidth + n * CATEGORY_BAR_GAP_PX
+    if (total <= availableWidth) return n
+  }
+  return 0
+}
+
+function HeaderDesktopCategoryBar({
+  pathname,
+  headerSearchParams,
+}: {
+  pathname: string | null
+  headerSearchParams: URLSearchParams
+}) {
+  const leftSlotRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
+  const [visibleCount, setVisibleCount] = useState(navigation.length)
+
+  const recalc = useCallback(() => {
+    const slot = leftSlotRef.current
+    const measure = measureRef.current
+    if (!slot || !measure) return
+    const available = slot.clientWidth
+    if (available <= 0) return
+    const linkEls = measure.querySelectorAll<HTMLElement>("[data-nav-measure='link']")
+    const catEl = measure.querySelector<HTMLElement>("[data-nav-measure='categories']")
+    const linkWidths = Array.from(linkEls).map((el) => el.getBoundingClientRect().width)
+    const catW = catEl?.getBoundingClientRect().width ?? 96
+    const next = computeVisibleNavCount(available, linkWidths, catW)
+    setVisibleCount((prev) => (prev === next ? prev : next))
+  }, [])
+
+  useLayoutEffect(() => {
+    recalc()
+    const slot = leftSlotRef.current
+    if (!slot) return
+    const ro = new ResizeObserver(() => recalc())
+    ro.observe(slot)
+    window.addEventListener("resize", recalc)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener("resize", recalc)
+    }
+  }, [recalc])
+
+  const visibleNav = navigation.slice(0, visibleCount)
+  const overflowNav = navigation.slice(visibleCount)
+
+  return (
+    <div className="relative hidden border-t border-lightgray/40 md:block">
+      <div
+        ref={measureRef}
+        className="pointer-events-none fixed left-[-10000px] top-0 z-[-1] flex items-center gap-8 whitespace-nowrap opacity-0"
+        aria-hidden
+      >
+        {navigation.map((item) => (
+          <span key={item.href} data-nav-measure="link" className="shrink-0 py-4 text-[15px]">
+            {item.name}
+          </span>
+        ))}
+        <span data-nav-measure="categories" className="flex shrink-0 items-center gap-1 py-4 text-[15px]">
+          Categories
+          <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+        </span>
+      </div>
+
+      <div className="container mx-auto flex min-w-0 items-stretch">
+        <div ref={leftSlotRef} className="flex min-w-0 flex-1 items-center gap-8 overflow-hidden">
+          {visibleNav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
+                navItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
+              }`}
+            >
+              {item.name}
+            </Link>
+          ))}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="cat-link flex shrink-0 items-center gap-1 py-4 text-[15px] transition-colors duration-smooth focus:outline-none">
+              Categories
+              <ChevronDown className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="max-h-[min(70vh,28rem)] w-56 overflow-y-auto [&_a]:!text-[#6E6E6E] [&_a:hover]:!text-[#000000] [&_a[data-highlighted]]:!text-[#000000] [&_a:focus]:!text-[#000000]"
+            >
+              {overflowNav.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href} className="w-full">
+                    {item.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+              {overflowNav.length > 0 ? <DropdownMenuSeparator /> : null}
+              {headerCategoriesDropdownSections.map((section, idx) => (
+                <Fragment key={section.id}>
+                  {idx > 0 ? <DropdownMenuSeparator /> : null}
+                  {!headerDropdownCompactSectionIds.has(section.id) ? (
+                    <>
+                      <DropdownMenuLabel className="px-2 py-1.5 text-sm font-semibold text-foreground">
+                        {section.title}
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link href={section.browseAllHref} className="w-full font-medium">
+                          {section.browseAllLabel}
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                  {section.subcategories.map((group) => (
+                    <Fragment key={`${section.id}-${group.heading}`}>
+                      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                        {group.heading}
+                      </DropdownMenuLabel>
+                      {group.links.map((link) => (
+                        <DropdownMenuItem key={`${link.href}-${link.label}`} asChild>
+                          <Link href={link.href} className="w-full">
+                            {link.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </Fragment>
+                  ))}
+                </Fragment>
+              ))}
+              <DropdownMenuSeparator />
+              {dropdownCategories.map((cat) => (
+                <DropdownMenuItem key={cat.label} asChild>
+                  <Link href={cat.href} className="w-full">
+                    {cat.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/categories" className="w-full font-medium">
+                  See all categories
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <nav
+          className="ml-6 flex shrink-0 items-center gap-8 border-l border-lightgray/60 pl-8"
+          aria-label="Editorial and community"
+        >
+          {secondaryNav.map((item) => {
+            const active = pathname === item.href || (pathname?.startsWith(`${item.href}/`) ?? false)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`cat-link py-4 text-[15px] transition-colors duration-smooth ${
+                  active ? "font-medium" : ""
+                }`}
+              >
+                {item.name}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+    </div>
+  )
+}
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
@@ -479,102 +653,7 @@ export function Header() {
           </div>
         </div>
 
-        {/* Categories bar (desktop): categories left, Field notes + Index + Board Talk right */}
-        <div className="hidden md:block border-t border-lightgray/40">
-          <div className="container mx-auto flex min-w-0 items-stretch">
-            <div className="flex min-w-0 flex-1 items-center gap-8 overflow-x-auto [scrollbar-width:thin]">
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
-                    navItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger className="cat-link flex shrink-0 items-center gap-1 py-4 text-[15px] transition-colors duration-smooth focus:outline-none">
-                  Categories
-                  <ChevronDown className="h-4 w-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  className="max-h-[min(70vh,28rem)] w-56 overflow-y-auto [&_a]:!text-[#6E6E6E] [&_a:hover]:!text-[#000000] [&_a[data-highlighted]]:!text-[#000000] [&_a:focus]:!text-[#000000]"
-                >
-                  {headerCategoriesDropdownSections.map((section, idx) => (
-                    <Fragment key={section.id}>
-                      {idx > 0 ? <DropdownMenuSeparator /> : null}
-                      {!headerDropdownCompactSectionIds.has(section.id) ? (
-                        <>
-                          <DropdownMenuLabel className="px-2 py-1.5 text-sm font-semibold text-foreground">
-                            {section.title}
-                          </DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={section.browseAllHref} className="w-full font-medium">
-                              {section.browseAllLabel}
-                            </Link>
-                          </DropdownMenuItem>
-                        </>
-                      ) : null}
-                      {section.subcategories.map((group) => (
-                        <Fragment key={`${section.id}-${group.heading}`}>
-                          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                            {group.heading}
-                          </DropdownMenuLabel>
-                          {group.links.map((link) => (
-                            <DropdownMenuItem key={`${link.href}-${link.label}`} asChild>
-                              <Link href={link.href} className="w-full">
-                                {link.label}
-                              </Link>
-                            </DropdownMenuItem>
-                          ))}
-                        </Fragment>
-                      ))}
-                    </Fragment>
-                  ))}
-                  <DropdownMenuSeparator />
-                  {dropdownCategories.map((cat) => (
-                    <DropdownMenuItem key={cat.label} asChild>
-                      <Link href={cat.href} className="w-full">
-                        {cat.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/categories" className="w-full font-medium">
-                      See all categories
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <nav
-              className="ml-6 flex shrink-0 items-center gap-8 border-l border-lightgray/60 pl-8"
-              aria-label="Editorial and community"
-            >
-              {secondaryNav.map((item) => {
-                const active =
-                  pathname === item.href || (pathname?.startsWith(`${item.href}/`) ?? false)
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`cat-link py-4 text-[15px] transition-colors duration-smooth ${
-                      active ? "font-medium" : ""
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                )
-              })}
-            </nav>
-          </div>
-        </div>
+        <HeaderDesktopCategoryBar pathname={pathname} headerSearchParams={headerSearchParams} />
       </header>
 
       {/* Mobile slide-out menu (pure CSS, no Radix Dialog) */}

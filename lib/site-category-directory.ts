@@ -24,7 +24,7 @@ export const usedCategoryLinks: CategoryLink[] = [
   { label: "Leashes", href: "/used/leashes" },
   { label: "Board Bags", href: "/used/board-bags" },
   { label: "Surfpacks & Bags", href: "/used/backpacks" },
-  { label: "Collectibles & Vintage", href: "/used/collectibles-vintage" },
+  { label: "Vintage", href: "/used/collectibles-vintage" },
   { label: "All Gear", href: "/used" },
 ]
 
@@ -71,9 +71,9 @@ export const categoryDirectorySections: CategoryDirectorySection[] = [
     ],
   },
   {
-    title: "Collectibles & vintage",
+    title: "Vintage",
     description: "Rare finds and classic surf culture.",
-    links: [{ label: "Collectibles & Vintage", href: "/used/collectibles-vintage" }],
+    links: [{ label: "Vintage", href: "/used/collectibles-vintage" }],
   },
 ]
 
@@ -306,11 +306,11 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
   },
   {
     id: "collectibles",
-    title: "Collectibles & Vintage",
+    title: "Vintage",
     description:
       "Rare finds and classic surf culture — vintage boards, apparel, art, media, and more.",
     browseAllHref: "/used/collectibles-vintage",
-    browseAllLabel: "View all collectibles",
+    browseAllLabel: "View all vintage",
     subcategories: [
       {
         heading: "By type",

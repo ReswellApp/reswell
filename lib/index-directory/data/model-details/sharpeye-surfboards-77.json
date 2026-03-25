@@ -1,0 +1,190 @@
+{
+  "brandSlug": "sharpeye-surfboards",
+  "modelSlug": "77",
+  "descriptionParagraphs": [
+    "The #77 from SHARPEYE Surfboards delivers the world's fastest surfboard with Superior Performance.",
+    "A Filipe Toledo Pro Model. The #77 features a full entry and exit rocker, sensitive low rails for maximum control and bite, and a speed-generating deep single concave that runs from the nose through the tail. The deepest point of the concave is positioned between the fins providing an abundance of drive and grip through high-speed manoeuvres. The #77 offers superior performance in various conditions and sizes but is recommended for intermediate to expert surfers only.",
+    "Looking for Superior Performance, look no further, choose the #77."
+  ],
+  "priceUsd": 760,
+  "marketingImageUrl": "https://sharpeyesurfboards.com/cdn/shop/products/SE_77_D.jpg?v=1686184070&width=2000",
+  "galleryImages": [
+    {
+      "url": "https://sharpeyesurfboards.com/cdn/shop/products/SE_77_D.jpg?v=1686184070&width=2000",
+      "caption": "#77"
+    }
+  ],
+  "waveSizeLabels": [
+    "Small",
+    "Medium",
+    "Overhead"
+  ],
+  "skillLevelLabels": [
+    "Intermediate",
+    "Advanced"
+  ],
+  "stockDims": [
+    {
+      "length": "5'4\"",
+      "width": "18.0",
+      "thickness": "2.18",
+      "volume": "21.40L"
+    },
+    {
+      "length": "5'4\"",
+      "width": "18.25",
+      "thickness": "2.25",
+      "volume": "22.30L"
+    },
+    {
+      "length": "5'6\"",
+      "width": "18.25",
+      "thickness": "2.25",
+      "volume": "23.10L"
+    },
+    {
+      "length": "5'6\"",
+      "width": "18.5",
+      "thickness": "2.3",
+      "volume": "23.90L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "18.5",
+      "thickness": "2.32",
+      "volume": "24.90L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "18.75",
+      "thickness": "2.38",
+      "volume": "25.90L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "18.5",
+      "thickness": "2.35",
+      "volume": "25.60L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "18.88",
+      "thickness": "2.4",
+      "volume": "26.68L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "19.0",
+      "thickness": "2.45",
+      "volume": "27.30L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "18.75",
+      "thickness": "2.4",
+      "volume": "26.80L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.0",
+      "thickness": "2.45",
+      "volume": "27.80L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "19.25",
+      "thickness": "2.45",
+      "volume": "28.20L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "18.88",
+      "thickness": "2.45",
+      "volume": "28.00L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "29.15L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "19.5",
+      "thickness": "2.58",
+      "volume": "30.40L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "19.0",
+      "thickness": "2.48",
+      "volume": "28.90L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "19.5",
+      "thickness": "2.55",
+      "volume": "30.50L"
+    },
+    {
+      "length": "6'1\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "30.00L"
+    },
+    {
+      "length": "6'1\"",
+      "width": "19.65",
+      "thickness": "2.6",
+      "volume": "31.80L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "19.25",
+      "thickness": "2.5",
+      "volume": "30.40L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "19.5",
+      "thickness": "2.6",
+      "volume": "32.00L"
+    },
+    {
+      "length": "6'3\"",
+      "width": "19.5",
+      "thickness": "2.5",
+      "volume": "31.20L"
+    },
+    {
+      "length": "6'3\"",
+      "width": "19.65",
+      "thickness": "2.68",
+      "volume": "33.60L"
+    },
+    {
+      "length": "6'4\"",
+      "width": "19.5",
+      "thickness": "2.5",
+      "volume": "31.60L"
+    },
+    {
+      "length": "6'4\"",
+      "width": "19.75",
+      "thickness": "2.68",
+      "volume": "34.30L"
+    },
+    {
+      "length": "6'6\"",
+      "width": "19.75",
+      "thickness": "2.65",
+      "volume": "34.80L"
+    },
+    {
+      "length": "6'6\"",
+      "width": "20.0",
+      "thickness": "2.88",
+      "volume": "38.20L"
+    }
+  ]
+}

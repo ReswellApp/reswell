@@ -1,19 +1,15 @@
 import type { Metadata } from "next"
-import { ReadingHub } from "@/components/field-notes/reading-hub"
 import { DirectoryExplorer } from "@/components/index-directory/directory-explorer"
-import { getFieldNotesSorted } from "@/lib/field-notes-articles"
 import { getDirectoryListEntries } from "@/lib/index-directory/registry"
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: "Index",
-  description:
-    "Directory of surf brands, shapers, and storefronts — plus Field notes articles on Reswell.",
+  description: "Directory of surf brands, shapers, and storefronts on Reswell.",
 }
 
 export default function IndexPage() {
-  const articles = getFieldNotesSorted()
   const directoryEntries = getDirectoryListEntries()
 
   return (
@@ -24,19 +20,12 @@ export default function IndexPage() {
             Index
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Discover who makes what you ride, then settle in with longer reads from Field notes.
+            Discover who makes what you ride.
           </p>
         </div>
       </div>
 
       <DirectoryExplorer entries={directoryEntries} />
-
-      <ReadingHub
-        wrapper="div"
-        title="Field notes"
-        description="Stories and guides worth sitting down with — gear, community, and life around the water."
-        articles={articles}
-      />
     </main>
   )
 }

@@ -32,7 +32,7 @@ const categories = [
   { name: "Fins", href: "/used/fins", section: "used", slug: "fins" },
   { name: "Leashes", href: "/used/leashes", section: "used", slug: "leashes" },
   { name: "Board Bags", href: "/used/board-bags", section: "used", slug: "board-bags" },
-  { name: "Collectibles & Vintage", href: "/used/collectibles-vintage", section: "used", slug: "collectibles-vintage" },
+  { name: "Vintage", href: "/used/collectibles-vintage", section: "used", slug: "collectibles-vintage" },
 ]
 
 function listingPublicHref(listing: {

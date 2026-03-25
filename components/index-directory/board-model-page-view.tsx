@@ -238,7 +238,7 @@ export function BoardModelPageView({
             <div className="mt-8 flex w-full max-w-sm flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
               <Button asChild className="h-12 flex-1 rounded-xl text-sm font-semibold" size="lg">
                 <a href={model.productUrl} target="_blank" rel="noopener noreferrer">
-                  Shop on Channel Islands
+                  {`Shop on ${brand.name}`}
                   <ExternalLink className="ml-2 h-4 w-4 opacity-80" aria-hidden />
                 </a>
               </Button>

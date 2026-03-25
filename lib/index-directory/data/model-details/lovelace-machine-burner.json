@@ -1,0 +1,45 @@
+{
+  "brandSlug": "lovelace-machine",
+  "modelSlug": "burner",
+  "descriptionParagraphs": [
+    "Super capable in about anything you want to throw it into — the Burner represents something that a lot of midlength designs from Ryan Lovelace lack: a bit of neutrality. While it has plenty of spark off the back foot due to a nice little single concave out the fins, this design's major highlights are smooth glide and predictability underfoot. Burners are a trustworthy travel board and a loyal daily driver.",
+    "On one side of the coin these are a shortboard for people who don't shortboard; at the same time, they're a midlength for lifelong performance shortboarders. The Burner is a very happy middle ground that's rarely out of place.",
+    "Fin setups stay flexible: 2+1 has been the baseline, with Twin, Quad, Twinzer, and classic 2+1 among the options. Available from 6' to 6'10. Stock sizing questions: e-mail Jeremy at Jeremy@LovemachineSurfboards.com."
+  ],
+  "priceUsd": null,
+  "marketingImageUrl": "https://lovemachinesurfboards.com/cdn/shop/files/burner.jpg?width=2000",
+  "galleryImages": [
+    {
+      "url": "https://lovemachinesurfboards.com/cdn/shop/files/burner.jpg?width=2000",
+      "caption": "Burner"
+    }
+  ],
+  "waveSizeLabels": ["Small", "Medium", "Overhead"],
+  "skillLevelLabels": ["Intermediate", "Advanced"],
+  "stockDims": [
+    {
+      "length": "6'4\"",
+      "width": "20 1/2\"",
+      "thickness": "2 5/8\"",
+      "volume": "36.4L"
+    },
+    {
+      "length": "6'6\"",
+      "width": "20 3/4\"",
+      "thickness": "2 11/16\"",
+      "volume": "38.7L"
+    },
+    {
+      "length": "6'8\"",
+      "width": "21\"",
+      "thickness": "2 3/4\"",
+      "volume": "41.3L"
+    },
+    {
+      "length": "6'10\"",
+      "width": "21 1/4\"",
+      "thickness": "2 13/16\"",
+      "volume": "43.4L"
+    }
+  ]
+}
