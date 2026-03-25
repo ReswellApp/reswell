@@ -29,6 +29,8 @@ import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { ListingSellerStats } from "@/components/listing-seller-stats"
+import { getBrandModelPagePayload } from "@/lib/index-directory/model-details-registry"
+import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 
 function getPrimaryImageUrl(
   images: Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }> | null | undefined,
@@ -174,6 +176,13 @@ export default async function BoardDetailPage(props: {
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
 
+  const indexBrandSlug = (board as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? ""
+  const indexModelSlug = (board as { index_model_slug?: string | null }).index_model_slug?.trim() ?? ""
+  const indexModelPage =
+    indexBrandSlug && indexModelSlug
+      ? getBrandModelPagePayload(indexBrandSlug, indexModelSlug)
+      : null
+
   return (
       <main className="flex-1 py-8">
         <div className="container mx-auto">
@@ -281,6 +290,18 @@ export default async function BoardDetailPage(props: {
                 <h2 className="font-semibold mb-2">Description</h2>
                 <TranslateableDescription text={board.description || ""} />
               </div>
+
+              {indexModelPage ? (
+                <div className="rounded-lg border border-border/50 bg-muted/20 px-4 py-3 text-sm">
+                  <p className="text-muted-foreground mb-1">Brand index</p>
+                  <Link
+                    href={`${INDEX_DIRECTORY_BASE}/brands/${indexBrandSlug}/models/${indexModelSlug}`}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    View {indexModelPage.model.name} ({indexModelPage.brand.name}) in the index
+                  </Link>
+                </div>
+              ) : null}
 
               {!isOwnListing && board.status === "active" && (
                 <div className="hidden lg:block">

@@ -59,6 +59,11 @@ import {
   type CollectibleEraValue,
   type CollectibleConditionValue,
 } from "@/lib/collectible-options"
+import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
+import {
+  SurfboardTitleIndexInput,
+  titleFromIndexModelPick,
+} from "@/components/surfboard-title-index-input"
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
 const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
@@ -155,6 +160,9 @@ function SellPageContent() {
     boardShippingPrice: "0",
     boardType: "",
     boardLength: "",
+    boardIndexBrandSlug: "",
+    boardIndexModelSlug: "",
+    boardIndexLabel: "",
     locationLat: 0,
     locationLng: 0,
     locationCity: "",
@@ -197,6 +205,9 @@ function SellPageContent() {
           shipping_available,
           shipping_price,
           brand,
+          index_brand_slug,
+          index_model_slug,
+          index_model_label,
           gear_size,
           gear_color,
           pack_kind,
@@ -299,6 +310,9 @@ function SellPageContent() {
         boardShippingPrice,
         boardType: listing.board_type ?? "",
         boardLength: lengthFeet && lengthInches ? `${lengthFeet}'${lengthInches}"` : "",
+        boardIndexBrandSlug: (listing as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? "",
+        boardIndexModelSlug: (listing as { index_model_slug?: string | null }).index_model_slug?.trim() ?? "",
+        boardIndexLabel: (listing as { index_model_label?: string | null }).index_model_label?.trim() ?? "",
         locationLat: Number(listing.latitude) || 0,
         locationLng: Number(listing.longitude) || 0,
         locationCity: listing.city ?? "",
@@ -685,11 +699,16 @@ function SellPageContent() {
             local_pickup: fulfillmentRow.local_pickup,
             shipping_price: fulfillmentRow.shipping_price,
             brand:
-              listingType === "used" &&
-              (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-              formData.brand.trim()
+              listingType === "board" && formData.brand.trim()
                 ? formData.brand.trim()
-                : null,
+                : listingType === "used" &&
+                    (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
+                    formData.brand.trim()
+                  ? formData.brand.trim()
+                  : null,
+            index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
+            index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
+            index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
             gear_size:
               listingType === "used" &&
               (formData.category === FINS_CATEGORY_ID ||
@@ -813,11 +832,16 @@ function SellPageContent() {
             local_pickup: fulfillmentRow.local_pickup,
             shipping_price: fulfillmentRow.shipping_price,
             brand:
-              listingType === "used" &&
-              (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-              formData.brand.trim()
+              listingType === "board" && formData.brand.trim()
                 ? formData.brand.trim()
-                : null,
+                : listingType === "used" &&
+                    (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
+                    formData.brand.trim()
+                  ? formData.brand.trim()
+                  : null,
+            index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
+            index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
+            index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
             gear_size:
               listingType === "used" &&
               (formData.category === FINS_CATEGORY_ID ||
@@ -1014,13 +1038,34 @@ function SellPageContent() {
                 {/* Title */}
                 <div className="space-y-2">
                   <Label htmlFor="title">Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., Channel Islands Dumpster Diver - 5'6&quot;"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
+                  {listingType === "board" ? (
+                    <SurfboardTitleIndexInput
+                      id="title"
+                      placeholder={`e.g., Channel Islands Dumpster Diver - 5'6"`}
+                      value={formData.title}
+                      onChange={(title) => setFormData((f) => ({ ...f, title }))}
+                      boardLength={formData.boardLength}
+                      onSelectModel={(opt: IndexBoardModelSelection) => {
+                        setFormData((f) => ({
+                          ...f,
+                          title: titleFromIndexModelPick(opt, f.boardLength),
+                          boardIndexBrandSlug: opt.brandSlug,
+                          boardIndexModelSlug: opt.modelSlug,
+                          boardIndexLabel: opt.label,
+                          brand: opt.brandName,
+                        }))
+                      }}
+                      required
+                    />
+                  ) : (
+                    <Input
+                      id="title"
+                      placeholder="e.g., Channel Islands Dumpster Diver - 5'6&quot;"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                    />
+                  )}
                 </div>
 
                 {/* Category or Board Type */}
@@ -1516,36 +1561,76 @@ function SellPageContent() {
                     )}
                   </>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Board Type *</Label>
-                      <Select
-                        value={formData.boardType}
-                        onValueChange={(value) => setFormData({ ...formData, boardType: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {boardTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Board Type *</Label>
+                        <Select
+                          value={formData.boardType}
+                          onValueChange={(value) => setFormData({ ...formData, boardType: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {boardTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="boardLength">Board Length *</Label>
+                        <Input
+                          id="boardLength"
+                          placeholder={`e.g., 6'2"`}
+                          value={formData.boardLength}
+                          onChange={(e) => setFormData({ ...formData, boardLength: e.target.value })}
+                          required={listingType === "board"}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="boardLength">Board Length *</Label>
-                      <Input
-                        id="boardLength"
-                        placeholder={`e.g., 6'2"`}
-                        value={formData.boardLength}
-                        onChange={(e) => setFormData({ ...formData, boardLength: e.target.value })}
-                        required={listingType === "board"}
-                      />
+                    <div className="space-y-3 rounded-lg border border-border/60 bg-muted/15 p-4">
+                      {formData.boardIndexBrandSlug && formData.boardIndexModelSlug ? (
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/80 bg-background/80 px-3 py-2 text-sm">
+                          <span className="text-muted-foreground">
+                            Linked to index:{" "}
+                            <span className="font-medium text-foreground">
+                              {formData.boardIndexLabel ||
+                                `${formData.boardIndexModelSlug} — ${formData.boardIndexBrandSlug}`}
+                            </span>
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 shrink-0 text-muted-foreground"
+                            onClick={() =>
+                              setFormData((f) => ({
+                                ...f,
+                                boardIndexBrandSlug: "",
+                                boardIndexModelSlug: "",
+                                boardIndexLabel: "",
+                              }))
+                            }
+                          >
+                            Clear link
+                          </Button>
+                        </div>
+                      ) : null}
+                      <div className="space-y-2">
+                        <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
+                        <Input
+                          id="surf-brand"
+                          placeholder="Pre-filled when you pick a directory model from the title; edit anytime"
+                          value={formData.brand}
+                          onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {listingType === "used" ? (
