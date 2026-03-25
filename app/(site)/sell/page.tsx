@@ -1000,24 +1000,6 @@ function SellPageContent() {
                       type="button"
                       disabled={!!editId}
                       onClick={() => {
-                        setListingType("used")
-                        setFormData((prev) => ({ ...prev, boardFulfillment: "shipping_only" as BoardFulfillmentChoice, boardShippingPrice: "0" }))
-                      }}
-                      className={`p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
-                        listingType === "used"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <p className="font-medium">Gear</p>
-                      <p className="text-sm text-muted-foreground">
-                        Wetsuits, fins, leashes, etc.
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!!editId}
-                      onClick={() => {
                         setListingType("board")
                         setFormData((prev) => ({ ...prev, boardFulfillment: "pickup_only" as BoardFulfillmentChoice, boardShippingPrice: "" }))
                       }}
@@ -1030,6 +1012,24 @@ function SellPageContent() {
                       <p className="font-medium">Surfboard</p>
                       <p className="text-sm text-muted-foreground">
                         Local pickup, shipping, or both
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!!editId}
+                      onClick={() => {
+                        setListingType("used")
+                        setFormData((prev) => ({ ...prev, boardFulfillment: "shipping_only" as BoardFulfillmentChoice, boardShippingPrice: "0" }))
+                      }}
+                      className={`p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                        listingType === "used"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <p className="font-medium">Gear</p>
+                      <p className="text-sm text-muted-foreground">
+                        Wetsuits, fins, leashes, etc.
                       </p>
                     </button>
                   </div>
