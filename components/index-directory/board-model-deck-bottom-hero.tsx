@@ -23,25 +23,26 @@ export function BoardModelDeckBottomHero({
   }, [])
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-3 sm:gap-4">
+      {/* Product well — Channel Islands–style clean backdrop + tappable hero */}
       <div
         className={cn(
-          "rounded-2xl bg-gradient-to-b from-muted/60 via-muted/30 to-background p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04]",
+          "overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-sm",
+          "dark:border-white/10 dark:bg-zinc-950",
         )}
       >
         <button
           type="button"
           onClick={flip}
           className={cn(
-            "relative mx-auto aspect-[4/5] w-full overflow-hidden rounded-[0.875rem] bg-background/80 text-left",
-            "max-w-none",
-            "cursor-pointer transition-[box-shadow,transform] duration-300 hover:shadow-soft-hover active:scale-[0.998]",
-            "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2",
+            "relative block aspect-[4/5] w-full cursor-pointer text-left outline-none",
+            "transition-[box-shadow,transform] duration-200 hover:shadow-md active:scale-[0.997]",
+            "focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           )}
           aria-label={
             side === "deck"
-              ? "Deck view. Click image to show bottom."
-              : "Bottom view. Click image to show deck."
+              ? "Showing deck. Click to show bottom."
+              : "Showing bottom. Click to show deck."
           }
         >
           <Image
@@ -49,40 +50,46 @@ export function BoardModelDeckBottomHero({
             src={src}
             alt={`${modelName} — ${side === "deck" ? "Deck" : "Bottom"}`}
             fill
-            className="object-contain object-center p-5 sm:p-8"
-            sizes="(max-width: 1024px) 85vw, 22rem"
+            className="object-contain object-center p-5 sm:p-8 md:p-10"
+            sizes="(max-width: 1024px) 85vw, 28rem"
             priority
           />
         </button>
       </div>
 
+      {/* Pill segmented control — matches CI product page pattern */}
       <div
-        className="flex rounded-xl border border-border/70 bg-muted/20 p-1 shadow-inner"
-        role="group"
-        aria-label="Choose deck or bottom"
+        className={cn(
+          "flex h-11 w-full items-stretch overflow-hidden rounded-full border border-black/[0.08] p-1",
+          "bg-muted/35 shadow-inner dark:border-white/10 dark:bg-muted/25",
+        )}
+        role="tablist"
+        aria-label="Deck or bottom view"
       >
         <button
           type="button"
+          role="tab"
+          aria-selected={side === "deck"}
           onClick={() => setSide("deck")}
-          aria-pressed={side === "deck"}
           className={cn(
-            "min-h-touch flex-1 rounded-lg py-2.5 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-all duration-200",
+            "min-h-touch min-w-0 flex-1 rounded-full px-2 text-center text-[11px] uppercase tracking-[0.16em] transition-all duration-200 sm:text-xs sm:tracking-[0.14em]",
             side === "deck"
-              ? "bg-background text-foreground shadow-sm ring-1 ring-black/[0.06]"
-              : "text-muted-foreground hover:text-foreground",
+              ? "bg-background font-bold text-foreground shadow-sm ring-1 ring-black/[0.06] dark:ring-white/10"
+              : "font-normal text-muted-foreground hover:text-foreground/85",
           )}
         >
           Deck
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={side === "bottom"}
           onClick={() => setSide("bottom")}
-          aria-pressed={side === "bottom"}
           className={cn(
-            "min-h-touch flex-1 rounded-lg py-2.5 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-all duration-200",
+            "min-h-touch min-w-0 flex-1 rounded-full px-2 text-center text-[11px] uppercase tracking-[0.16em] transition-all duration-200 sm:text-xs sm:tracking-[0.14em]",
             side === "bottom"
-              ? "bg-background text-foreground shadow-sm ring-1 ring-black/[0.06]"
-              : "text-muted-foreground hover:text-foreground",
+              ? "bg-background font-bold text-foreground shadow-sm ring-1 ring-black/[0.06] dark:ring-white/10"
+              : "font-normal text-muted-foreground hover:text-foreground/85",
           )}
         >
           Bottom

@@ -3,6 +3,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight, ExternalLink } from "lucide-react"
 import type { BoardModelDetail, BrandProfile, BoardModel, BoardModelGalleryImage } from "@/lib/index-directory/types"
+import { extractDeckBottomPair } from "@/lib/index-directory/extract-deck-bottom"
+import { resolveModelGallery } from "@/lib/index-directory/resolve-model-gallery"
 import { Button } from "@/components/ui/button"
 import { BoardModelDeckBottomHero } from "@/components/index-directory/board-model-deck-bottom-hero"
 import { BoardModelStockDimsCollapsible } from "@/components/index-directory/board-model-stock-dims-collapsible"
@@ -14,41 +16,8 @@ function formatUsd(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n)
 }
 
-function resolveGallery(model: BoardModel, detail: BoardModelDetail | null): BoardModelGalleryImage[] {
-  if (detail?.galleryImages?.length) {
-    return detail.galleryImages
-  }
-  const out: BoardModelGalleryImage[] = [{ url: model.imageUrl, caption: "Board" }]
-  if (detail?.marketingImageUrl) {
-    out.push({ url: detail.marketingImageUrl, caption: "Model art" })
-  }
-  return out
-}
-
 function primaryHeroImage(gallery: BoardModelGalleryImage[], model: BoardModel): { url: string; caption: string } {
   return gallery[0] ?? { url: model.imageUrl, caption: "Board" }
-}
-
-function extractDeckBottom(gallery: BoardModelGalleryImage[]): { deck: string; bottom: string } | null {
-  let deck: string | undefined
-  let bottom: string | undefined
-
-  for (const { url, caption } of gallery) {
-    const c = caption.trim().toLowerCase()
-    if (c === "deck") deck = url
-    if (c === "bottom") bottom = url
-  }
-
-  if (!deck || !bottom) {
-    for (const { url } of gallery) {
-      const u = url.toLowerCase()
-      if (!deck && /deck/i.test(u) && !/top-and-bottom|deck-and-bottom/i.test(u)) deck = url
-      if (!bottom && /-bottom\./i.test(u) && !/top-and-bottom/i.test(u)) bottom = url
-    }
-  }
-
-  if (deck && bottom && deck !== bottom) return { deck, bottom }
-  return null
 }
 
 function galleryExcludingDeckBottom(
@@ -170,8 +139,8 @@ export function BoardModelPageView({
 }) {
   const brandModelsHref = `${INDEX_DIRECTORY_BASE}/brands/${brand.slug}`
   const priceLabel = detail?.priceUsd != null ? formatUsd(detail.priceUsd) : null
-  const gallery = resolveGallery(model, detail)
-  const deckBottom = extractDeckBottom(gallery)
+  const gallery = resolveModelGallery(model, detail)
+  const deckBottom = extractDeckBottomPair(gallery, model, detail)
   const heroFallback = primaryHeroImage(gallery, model)
   const galleryRest = galleryExcludingDeckBottom(gallery, deckBottom)
 
@@ -221,11 +190,16 @@ export function BoardModelPageView({
           <div className="mx-auto flex w-full max-w-lg flex-col items-stretch gap-8">
             <div className="w-full">
               {deckBottom ? (
-                <BoardModelDeckBottomHero
-                  modelName={model.name}
-                  deckUrl={deckBottom.deck}
-                  bottomUrl={deckBottom.bottom}
-                />
+                <div className="flex w-full flex-col gap-3">
+                  <BoardModelDeckBottomHero
+                    modelName={model.name}
+                    deckUrl={deckBottom.deck}
+                    bottomUrl={deckBottom.bottom}
+                  />
+                  <p className="text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    Board
+                  </p>
+                </div>
               ) : (
                 <div className="rounded-2xl bg-gradient-to-b from-muted/50 to-background p-1 ring-1 ring-black/[0.04]">
                   <div className="relative mx-auto aspect-[4/5] w-full overflow-hidden rounded-[0.875rem] bg-background/90">

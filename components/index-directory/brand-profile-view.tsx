@@ -2,6 +2,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight, ExternalLink, MapPin } from "lucide-react"
 import type { BoardModel, BrandProfile } from "@/lib/index-directory/types"
+import { extractDeckBottomPair } from "@/lib/index-directory/extract-deck-bottom"
+import { getModelDetail } from "@/lib/index-directory/model-details-registry"
+import { resolveModelGallery } from "@/lib/index-directory/resolve-model-gallery"
 import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { Button } from "@/components/ui/button"
 function rockerLine(m: BoardModel): string | null {
@@ -12,8 +15,19 @@ function rockerLine(m: BoardModel): string | null {
   return parts.length ? parts.join(" · ") : null
 }
 
-export function BrandProfileView({ profile }: { profile: BrandProfile }) {
+export async function BrandProfileView({ profile }: { profile: BrandProfile }) {
   const modelCount = profile.models.length
+
+  const modelsVisual = profile.models.map((m) => {
+    const detail = getModelDetail(profile.slug, m.slug)
+    const gallery = resolveModelGallery(m, detail)
+    const pair = extractDeckBottomPair(gallery, m, detail)
+    return {
+      model: m,
+      cardImageUrl: pair?.deck ?? m.imageUrl,
+      hasDeckBottom: Boolean(pair),
+    }
+  })
 
   return (
     <main className="flex-1">
@@ -126,15 +140,20 @@ export function BrandProfileView({ profile }: { profile: BrandProfile }) {
           </div>
 
           <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {profile.models.map((m) => (
+            {modelsVisual.map(({ model: m, cardImageUrl, hasDeckBottom }) => (
               <li key={m.slug}>
                 <Link
                   href={`${INDEX_DIRECTORY_BASE}/brands/${profile.slug}/models/${m.slug}`}
                   className="group block h-full rounded-xl border border-border/80 bg-card shadow-soft transition-all hover:border-foreground/20 hover:shadow-soft-hover"
                 >
                   <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-xl bg-muted">
+                    {hasDeckBottom ? (
+                      <span className="absolute right-2 top-2 z-10 rounded-md border border-border/80 bg-background/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground shadow-sm backdrop-blur-sm">
+                        Deck / bottom
+                      </span>
+                    ) : null}
                     <Image
-                      src={m.imageUrl}
+                      src={cardImageUrl}
                       alt={m.name}
                       fill
                       className="object-contain object-center p-3 transition-transform duration-300 group-hover:scale-[1.02]"

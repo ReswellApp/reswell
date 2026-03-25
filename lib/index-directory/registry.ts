@@ -5,6 +5,8 @@ import lovelaceMachineData from "@/lib/index-directory/data/lovelace-machine.jso
 import sharpeyeSurfboardsData from "@/lib/index-directory/data/sharpeye-surfboards.json"
 import lostSurfboardsData from "@/lib/index-directory/data/lost-surfboards.json"
 import haydenShapesData from "@/lib/index-directory/data/hayden-shapes.json"
+import jsSurfboardsData from "@/lib/index-directory/data/js-surfboards.json"
+import dhdSurfboardsData from "@/lib/index-directory/data/dhd-surfboards.json"
 
 const albumSurf = albumSurfData as BrandProfile
 const channelIslands = channelIslandsData as BrandProfile
@@ -12,6 +14,8 @@ const lovelaceMachine = lovelaceMachineData as BrandProfile
 const sharpeyeSurfboards = sharpeyeSurfboardsData as BrandProfile
 const lostSurfboards = lostSurfboardsData as BrandProfile
 const haydenShapes = haydenShapesData as BrandProfile
+const jsSurfboards = jsSurfboardsData as BrandProfile
+const dhdSurfboards = dhdSurfboardsData as BrandProfile
 
 const BRAND_BY_SLUG: Record<string, BrandProfile> = {
   [albumSurf.slug]: albumSurf,
@@ -20,6 +24,8 @@ const BRAND_BY_SLUG: Record<string, BrandProfile> = {
   [sharpeyeSurfboards.slug]: sharpeyeSurfboards,
   [lostSurfboards.slug]: lostSurfboards,
   [haydenShapes.slug]: haydenShapes,
+  [jsSurfboards.slug]: jsSurfboards,
+  [dhdSurfboards.slug]: dhdSurfboards,
 }
 
 export function getBrandProfileBySlug(slug: string): BrandProfile | undefined {
@@ -86,6 +92,24 @@ export function getDirectoryListEntries(): DirectoryListEntry[] {
       logoUrl: haydenShapes.logoUrl,
       locationLabel: haydenShapes.locationLabel,
       modelCount: haydenShapes.models.length,
+    },
+    {
+      slug: jsSurfboards.slug,
+      kind: "brand",
+      name: jsSurfboards.name,
+      shortDescription: jsSurfboards.shortDescription,
+      logoUrl: jsSurfboards.logoUrl,
+      locationLabel: jsSurfboards.locationLabel,
+      modelCount: jsSurfboards.models.length,
+    },
+    {
+      slug: dhdSurfboards.slug,
+      kind: "brand",
+      name: dhdSurfboards.name,
+      shortDescription: dhdSurfboards.shortDescription,
+      logoUrl: dhdSurfboards.logoUrl,
+      locationLabel: dhdSurfboards.locationLabel,
+      modelCount: dhdSurfboards.models.length,
     },
   ]
 }

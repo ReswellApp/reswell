@@ -26,6 +26,13 @@ export type BoardModelDetail = {
   descriptionParagraphs: string[]
   priceUsd: number | null
   marketingImageUrl?: string
+  /**
+   * Optional explicit deck/bottom hero URLs (same UX as Channel Islands models with
+   * gallery captions "Deck" / "Bottom"). When both are set, they take precedence over
+   * caption and filename inference.
+   */
+  deckImageUrl?: string
+  bottomImageUrl?: string
   /** When set, shown as a gallery on the model page (e.g. deck, bottom, hero composite). */
   galleryImages?: BoardModelGalleryImage[]
   waveSizeLabels: string[]
