@@ -1,0 +1,710 @@
+{
+  "slug": "lost-surfboards",
+  "kind": "brand",
+  "name": "Lost Surfboards",
+  "shortDescription": "Performance surfboards handcrafted since 1985",
+  "websiteUrl": "https://lostsurfboards.net",
+  "logoUrl": "https://lostsurfboards.net/wp-content/uploads/2026/03/twinzer_logo.jpg",
+  "founderName": "Matt \"Mayhem\" Biolos",
+  "leadShaperName": "Matt \"Mayhem\" Biolos",
+  "locationLabel": "San Clemente, California",
+  "aboutParagraphs": [
+    "Lost Surfboards is a performance surfboard brand known for retro-inspired shapes.",
+    "Founded by Matt \"Mayhem\" Biolos in 1985, the lineup spans multiple series built for real-world surfing."
+  ],
+  "models": [
+    {
+      "slug": "rnf-twinzer-96er",
+      "name": "RNF Twinzer+ '96er",
+      "productUrl": "https://lostsurfboards.net/surfboards/rnf-twinzer-96er/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2026/03/rnf_twinzer_96er.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "mini-driver-re-issue",
+      "name": "Mini Driver (Re-Issue)",
+      "productUrl": "https://lostsurfboards.net/surfboards/mini-driver-re-issue/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2026/02/mini-driver-re-issue-2026-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "formula-1-round",
+      "name": "Formula-1 Round",
+      "productUrl": "https://lostsurfboards.net/surfboards/formula-1-round/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2025/11/f1-round-lost-surfboards-1-1.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sub-driver-3-0-swallow",
+      "name": "Sub Driver 3.0 Swallow",
+      "productUrl": "https://lostsurfboards.net/surfboards/lightspeed-ii-sub-driver-3-0-swallow/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/sub-driver-swallow-3.0-lost-surfboards-1.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "big-rig-driver",
+      "name": "Big Rig Driver",
+      "productUrl": "https://lostsurfboards.net/surfboards/big-rig-driver/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/big-rig-driver-lost-surfboards-1-1.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-ripper-round",
+      "name": "The Ripper Round",
+      "productUrl": "https://lostsurfboards.net/surfboards/the-ripper-round/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/the-rippper-round-lost-surfboards-1-1.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "mod-quad",
+      "name": "Mod Quad",
+      "productUrl": "https://lostsurfboards.net/surfboards/mod-quad/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/mod_quad_lost_surfboards-1-1-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "original-puddle-jumper-25",
+      "name": "Original Puddle Jumper '25",
+      "productUrl": "https://lostsurfboards.net/surfboards/original-puddle-jumper-25/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/puddle-jumper-og-lostsurfboards.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "quiver-killer-25",
+      "name": "Quiver Killer '25",
+      "productUrl": "https://lostsurfboards.net/surfboards/quiver-killer/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/quiver-killer-25-lost-surfboards-1-2.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rad-zapper",
+      "name": "Rad Zapper",
+      "productUrl": "https://lostsurfboards.net/surfboards/rad-zapper/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/rad-zapper-lost-surfboards-1.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pisces",
+      "name": "Pisces",
+      "productUrl": "https://lostsurfboards.net/surfboards/pisces/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/pisces-25-lost-surfboards.webp",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rnf-96-kingfish",
+      "name": "RNF '96 Kingfish",
+      "productUrl": "https://lostsurfboards.net/surfboards/rnf-96-kingfish/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/king-fish-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sabo-taj",
+      "name": "Sabo Taj",
+      "productUrl": "https://lostsurfboards.net/surfboards/sabo-taj/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/09/sabo-taj-lost-surfboards-1-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "california-mid",
+      "name": "California Mid",
+      "productUrl": "https://lostsurfboards.net/surfboards/california-mid/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/12/ca-mid-lost-surfboards-1-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "party-platter",
+      "name": "Party Platter",
+      "productUrl": "https://lostsurfboards.net/surfboards/party-platter/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/07/party-platter-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "3-0-stub-squash",
+      "name": "3.0 Stub Squash",
+      "productUrl": "https://lostsurfboards.net/surfboards/3-0-stub/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/07/3.0-stub-squash-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "3-0-stub-thumb",
+      "name": "3.0 Stub Thumb",
+      "productUrl": "https://lostsurfboards.net/surfboards/3-0-stub-thumb/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2025/01/3.0-stub-drivre-round-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "driver-3-0-round",
+      "name": "Driver 3.0 Round",
+      "productUrl": "https://lostsurfboards.net/surfboards/driver-3-0-round/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2022/11/driver-3.0-round-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "driver-3-0-squash",
+      "name": "Driver 3.0 Squash",
+      "productUrl": "https://lostsurfboards.net/surfboards/driver-3-0-squash/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/01/driver-3.0-stub-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "step-driver",
+      "name": "Step Driver",
+      "productUrl": "https://lostsurfboards.net/surfboards/step-driver/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2021/12/step-driver-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "california-twin",
+      "name": "California Twin",
+      "productUrl": "https://lostsurfboards.net/surfboards/california-twin/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/MR-CA-twin-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "california-twin-pin",
+      "name": "California Twin Pin",
+      "productUrl": "https://lostsurfboards.net/surfboards/california-twin-pin/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/01/mr-ca-twin-pin-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "puddle-jumper-pro",
+      "name": "Puddle Jumper Pro",
+      "productUrl": "https://lostsurfboards.net/surfboards/puddle-jumper-pro/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2022/07/puddle-jumper-pro-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "puddle-jumper-sting",
+      "name": "Puddle Jumper Sting",
+      "productUrl": "https://lostsurfboards.net/surfboards/puddle-jumper-sting/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/05/aipa-puddle-jumper-sting.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pocket-rocket-round",
+      "name": "Pocket Rocket Round",
+      "productUrl": "https://lostsurfboards.net/surfboards/pocket-rocket-round/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/pocket-rocket-round-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pocket-rocket-squash",
+      "name": "Pocket Rocket Squash",
+      "productUrl": "https://lostsurfboards.net/surfboards/pocket-rocket-squash/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/pocket-rocket-squash-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cobra-killer",
+      "name": "Cobra Killer",
+      "productUrl": "https://lostsurfboards.net/surfboards/cobra-killer/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/cobra-killer-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-ripper-squash",
+      "name": "The Ripper Squash",
+      "productUrl": "https://lostsurfboards.net/surfboards/the-ripper/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2024/03/the-ripper-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rad-ripper",
+      "name": "Rad Ripper",
+      "productUrl": "https://lostsurfboards.net/surfboards/rad-ripper/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/rad-rippper-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "retro-ripper",
+      "name": "Retro Ripper",
+      "productUrl": "https://lostsurfboards.net/surfboards/retro-ripper/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/09/retro-ripper-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "retro-tripper",
+      "name": "Retro Tripper",
+      "productUrl": "https://lostsurfboards.net/surfboards/retro-tripper/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2022/05/retro-tripper-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "crowd-killer",
+      "name": "Crowd Killer",
+      "productUrl": "https://lostsurfboards.net/surfboards/crowd-killer/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/crowd-killer-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "crowd-killer-round",
+      "name": "Crowd Killer Round",
+      "productUrl": "https://lostsurfboards.net/surfboards/crowd-killer-round/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/crowd-killer-lost-surfboards-1-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "driver-2-0",
+      "name": "Driver 2.0",
+      "productUrl": "https://lostsurfboards.net/surfboards/driver/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2020/05/driver-2.0-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "el-patro",
+      "name": "El Patroń",
+      "productUrl": "https://lostsurfboards.net/surfboards/el-patron/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/09/el-patron-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "evil-twin",
+      "name": "Evil Twin",
+      "productUrl": "https://lostsurfboards.net/surfboards/evil-twin/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/evil-twin-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hydra",
+      "name": "Hydra",
+      "productUrl": "https://lostsurfboards.net/surfboards/hydra/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2020/03/hydra-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "little-wing",
+      "name": "Little Wing",
+      "productUrl": "https://lostsurfboards.net/surfboards/little-wing/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2022/03/little-wing-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "maysym",
+      "name": "Maysym",
+      "productUrl": "https://lostsurfboards.net/surfboards/maysym/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/maysm-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "micks-tape",
+      "name": "Micks Tape",
+      "productUrl": "https://lostsurfboards.net/surfboards/micks-tape/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2022/10/micks-tape-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "micks-tape-symm",
+      "name": "Micks Tape Symm",
+      "productUrl": "https://lostsurfboards.net/surfboards/micks-tape-symm/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/03/micks-tape-symm-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "psycho-killer",
+      "name": "Psycho Killer",
+      "productUrl": "https://lostsurfboards.net/surfboards/psycho-killer/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/pyscho-killer-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "puddle-jumper-hp",
+      "name": "Puddle Jumper HP",
+      "productUrl": "https://lostsurfboards.net/surfboards/puddle-jumper-hp/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/pj-hp-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "puddle-jumper-hp-rnd",
+      "name": "Puddle Jumper HP RND",
+      "productUrl": "https://lostsurfboards.net/surfboards/puddle-jumper-hp-rnd/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/puddle-jumper-hp-rnd.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rnf-96",
+      "name": "RNF 96",
+      "productUrl": "https://lostsurfboards.net/surfboards/rnf-96/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2021/05/round-nose-fish-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rnf-redux",
+      "name": "RNF Redux",
+      "productUrl": "https://lostsurfboards.net/surfboards/rnf-redux/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/rnf-redux-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rnf-classic-1997",
+      "name": "RNF Classic (1997)",
+      "productUrl": "https://lostsurfboards.net/surfboards/rnf-classic-1997/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2015/05/nrf-1997-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rnf-retro",
+      "name": "RNF Retro",
+      "productUrl": "https://lostsurfboards.net/surfboards/rnf-retro/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/01/rnf-retro-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rocket-redux",
+      "name": "Rocket Redux",
+      "productUrl": "https://lostsurfboards.net/surfboards/rocket-redux/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/11/rocket-redux-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "short-round",
+      "name": "Short Round",
+      "productUrl": "https://lostsurfboards.net/surfboards/short-round/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2025/01/short-round-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "party-crasher",
+      "name": "Party Crasher",
+      "productUrl": "https://lostsurfboards.net/surfboards/party-crasher/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2020/02/party-crasher-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "smooth-operator",
+      "name": "Smooth Operator",
+      "productUrl": "https://lostsurfboards.net/surfboards/smooth-operator/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/01/smooth-operator-lost-surfbpoards-.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "glydra",
+      "name": "Glydra",
+      "productUrl": "https://lostsurfboards.net/surfboards/glydra/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2022/08/glydra-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sub-driver-2-0-squash",
+      "name": "Sub Driver 2.0 Squash",
+      "productUrl": "https://lostsurfboards.net/surfboards/sub-driver-2-0/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2020/08/sub-driver-2-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sub-driver-2-0-thumb",
+      "name": "Sub Driver 2.0 Thumb",
+      "productUrl": "https://lostsurfboards.net/surfboards/sub-driver-thumb/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/01/sub-driver-2.0-stub-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sub-scorcher-sting",
+      "name": "Sub Scorcher Sting",
+      "productUrl": "https://lostsurfboards.net/surfboards/sub-scorcher-sting/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2023/05/sub-scorcher-sting-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "tube-pig",
+      "name": "Tube Pig",
+      "productUrl": "https://lostsurfboards.net/surfboards/tube-pig/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/tube-pig-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "uber-driver",
+      "name": "Uber Driver",
+      "productUrl": "https://lostsurfboards.net/surfboards/uber-driver/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/uber-driver-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "uber-xl",
+      "name": "Uber XL",
+      "productUrl": "https://lostsurfboards.net/surfboards/uber-xl/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2019/01/uber-xl-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "baby-buggy",
+      "name": "Baby Buggy",
+      "productUrl": "https://lostsurfboards.net/surfboards/baby-buggy/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/baby-buggy-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "beach-buggy",
+      "name": "Beach Buggy",
+      "productUrl": "https://lostsurfboards.net/surfboards/beach-buggy/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/beach-buggy-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "tb-whiplash",
+      "name": "TB Whiplash",
+      "productUrl": "https://lostsurfboards.net/surfboards/tb-whiplash/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/whiplash-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sub-scorcher-2-hip-squash",
+      "name": "Sub Scorcher 2 (Hip Squash)",
+      "productUrl": "https://lostsurfboards.net/surfboards/sub-scorcher-2-hip-squash/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2025/01/Sub-Scorcher-2-Hip-Squash-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sub-scorcher-2-doublewing-swallow",
+      "name": "Sub Scorcher 2 (Doublewing Swallow)",
+      "productUrl": "https://lostsurfboards.net/surfboards/sub-scorcher-2-doublewing-swallow/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/SS2DWS-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sub-scorcher-2-single-wing-swallow",
+      "name": "Sub Scorcher 2 (Single Wing Swallow)",
+      "productUrl": "https://lostsurfboards.net/surfboards/sub-scorcher-2-single-wing-swallow/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/sub-scorcher-swallow-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "stretch-rv",
+      "name": "Stretch Rv",
+      "productUrl": "https://lostsurfboards.net/surfboards/stretch-rv/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/stretch-rv-lost-surfboads.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "split-tail-rv",
+      "name": "Split Tail Rv",
+      "productUrl": "https://lostsurfboards.net/surfboards/split-tail-rv/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/split-tail-rv-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rv",
+      "name": "Rv",
+      "productUrl": "https://lostsurfboards.net/surfboards/rv/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/rv-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "lazy-toy",
+      "name": "Lazy Toy",
+      "productUrl": "https://lostsurfboards.net/surfboards/lazy-toy/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/lazy-toy-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "bean-bag",
+      "name": "Bean Bag",
+      "productUrl": "https://lostsurfboards.net/surfboards/bean-bag/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/bean-bag-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "ez-up",
+      "name": "Ez Up",
+      "productUrl": "https://lostsurfboards.net/surfboards/ez-up/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/ez-up-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "trouble-shooter",
+      "name": "Trouble Shooter",
+      "productUrl": "https://lostsurfboards.net/surfboards/trouble-shooter/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/trouble-shooter-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "indo-driver",
+      "name": "Indo Driver",
+      "productUrl": "https://lostsurfboards.net/surfboards/indo-driver/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/indo-driver-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "rock-up",
+      "name": "Rock Up",
+      "productUrl": "https://lostsurfboards.net/surfboards/rock-up/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/rock-up-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "round-up",
+      "name": "Round Up",
+      "productUrl": "https://lostsurfboards.net/surfboards/round-up/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/round-up-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "retro-gun",
+      "name": "Retro Gun",
+      "productUrl": "https://lostsurfboards.net/surfboards/retro-gun/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/09/retro-gun-lost-surfboards.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "double-up",
+      "name": "Double Up",
+      "productUrl": "https://lostsurfboards.net/surfboards/double-up/",
+      "imageUrl": "https://lostsurfboards.net/wp-content/uploads/2018/05/double-up-lost-surfboards-1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    }
+  ]
+}

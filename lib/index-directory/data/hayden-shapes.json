@@ -1,0 +1,476 @@
+{
+  "slug": "hayden-shapes",
+  "kind": "brand",
+  "name": "Hayden Shapes",
+  "shortDescription": "FutureFlex performance surfboards from Sydney.",
+  "websiteUrl": "https://www.haydenshapes.com",
+  "logoUrl": "https://www.haydenshapes.com/cdn/shop/files/3_6_640x.jpg?v=1754878168",
+  "founderName": "Hayden Cox",
+  "leadShaperName": "Hayden Cox",
+  "locationLabel": "Sydney, Australia",
+  "aboutParagraphs": [
+    "Haydenshapes is a performance surfboard brand founded by Hayden Cox in Sydney, Australia.",
+    "Our patented parabolic carbon fiber frame construction is called FutureFlex."
+  ],
+  "models": [
+    {
+      "slug": "hypto-krypto-future-flex",
+      "name": "Hypto Krypto FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/HK_640x.jpg?v=1754878168",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-carbonyx",
+      "name": "Hypto Krypto - Carbonyx",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-futureflex-carbonyx",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_fa5be276-3add-4fa7-a5e9-5ab13a1d603b_640x.jpg?v=1756868188",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "holy-hypto-future-flex",
+      "name": "Holy Hypto FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/holy-hypto-futureflex-clear",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/HOLYHYPTO-FF-DECK_640x.jpg?v=1754878006",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto",
+      "name": "Hypto Krypto",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-pu-3-fin",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_ef3e9bca-31f4-4e98-ae5c-b5c119d4ee84_640x.jpg?v=1755747275",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "holy-hypto",
+      "name": "Holy Hypto",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/holy-hypto-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_3c555549-5e23-4a61-9bda-375f685b28e8_640x.jpg?v=1756254566",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-twin-future-flex",
+      "name": "Hypto Krypto Twin FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-twin-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/HKTWIN-FF-DECK_640x.jpg?v=1754878056",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-twin",
+      "name": "Hypto Krypto Twin",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-twin-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_e3874da7-4fd7-42d8-bc5a-36545f5e03b9_640x.jpg?v=1757394961",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-twin-pin-future-flex",
+      "name": "Hypto Krypto Twin Pin FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-twin-pin-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/HYPTOKRYPTO_TWINPIN_CLEAR_DECK_640x.jpg?v=1754878010",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-step-up-future-flex",
+      "name": "Hypto Krypto Step Up FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-step-up-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/11_PriceBreak_146_640x.jpg?v=1754878013",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-step-up",
+      "name": "Hypto Krypto Step Up",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/hypto-krypto-step-up-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_558c35f7-be9c-42ee-aae4-8036dceb1a31_640x.jpg?v=1757299961",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "holy-hypto-future-flex-cobalt-blue",
+      "name": "Holy Hypto FutureFlex Cobalt Blue",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-signature/products/holy-hypto-futureflex-cobalt-blue",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/3_77c6fb5d-497e-417d-a84d-6fc595ea9dad_640x.jpg?v=1766789305",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-softboard-moonscape-black-rail-futures-3",
+      "name": "Hypto Krypto Softboard - Moonscape Black Rail - Futures 3",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-soft-series/products/hypto-krypto-softboard-black-rail-futures-3",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_16_640x.jpg?v=1754877964",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-softboard-blue-tile-futures-3",
+      "name": "Hypto Krypto Softboard - Blue Tile - Futures 3",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-soft-series/products/hypto-krypto-softboard-blue-tile-futures-3",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/HYPTOSOFT-BLUE-DECK_640x.jpg?v=1754878047",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-softboard-clay-futures-3",
+      "name": "Hypto Krypto Softboard - Clay - Futures 3",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-soft-series/products/hypto-krypto-softboard-clay-futures-3",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/HYPTOSOFT-CLAY-DECK_640x.jpg?v=1708996298",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hypto-krypto-softboard-inverted-futures-3",
+      "name": "Hypto Krypto Softboard - Inverted - Futures 3",
+      "productUrl": "https://www.haydenshapes.com/collections/hs-soft-series/products/hypto-krypto-softboard-inverted-futures-3",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/HYPTOSOFT-BLACKINV-DECK_fff07723-28eb-4eab-88bd-61a0f5fb7495_640x.jpg?v=1754877879",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "holy-hypto-future-flex-tie-dye-green",
+      "name": "Holy Hypto FutureFlex - Tie Dye Green",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/holy-hypto-futureflex-tie-dye-green",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_d984ae98-1934-4fd2-9a68-f0dff8ea1936_640x.jpg?v=1762143219",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "performance-cruiser-blue-moss",
+      "name": "Performance Cruiser Blue Moss",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/performance-cruiser-blue-moss",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/PERFORMANCECRUISER-BLUEMOSS-DECK_640x.jpg?v=1688619841",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "performance-cruiser",
+      "name": "Performance Cruiser",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/performance-cruiser-clear",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/PERFORMANCECRUISER-CLEAR-DECK_b7498865-c5cb-4f25-9714-6a4a8e0eee01_640x.jpg?v=1688619915",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cruiser-teal",
+      "name": "Cruiser Teal",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/cruiser-teal",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/CRUISER-TEAL-DECK_949531c2-853c-42ef-94ef-419a30f3b3ad_640x.jpg?v=1677269094",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cruiser",
+      "name": "Cruiser",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/cruiser-clear",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/CRUISER-CLEAR-DECK_fe58870d-f4a0-440e-b90c-66869456972e_640x.jpg?v=1688713481",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "retro-longboard",
+      "name": "Retro Longboard",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/retro-longboard-clear",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_3_640x.jpg?v=1754892431",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "new-wave-mid-future-flex-blue",
+      "name": "New Wave Mid FutureFlex - Blue",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/new-wave-mid-futureflex-blue",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_2_e34b1c67-77ff-4652-a24b-6a27d0b154c1_640x.jpg?v=1754877992",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "retro-longboard-blue-moss",
+      "name": "Retro Longboard - Blue Moss",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/retro-longboard-blue-moss",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/RETRO-LB-BLUEMOSS-DECK_640x.jpg?v=1751413589",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "holy-hypto-future-flex-cobalt-blue-7ab0eddc",
+      "name": "Holy Hypto FutureFlex Cobalt Blue",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/holy-hypto-futureflex-cobalt-blue",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/3_77c6fb5d-497e-417d-a84d-6fc595ea9dad_640x.jpg?v=1766789305",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "performance-cruiser-salmon",
+      "name": "Performance Cruiser Salmon",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/performance-cruiser-salmon",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/PERFORMANCECRUISER-SALMON-DECK_9439c31f-996f-4ffe-94c0-f03856459f6f_640x.jpg?v=1688619971",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "new-wave-mid-future-flex-black",
+      "name": "New Wave Mid FutureFlex - Black",
+      "productUrl": "https://www.haydenshapes.com/collections/outlet/products/new-wave-mid-futureflex-black",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_1_853bb844-bf06-45ce-9ca0-60ed4dac78ec_640x.jpg?v=1754877989",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "nova-future-flex",
+      "name": "Nova FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/nova-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/NOVA-1_8e6a2a60-19f4-47ba-826c-528c2bd67471_640x.jpg?v=1755650157",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "nova",
+      "name": "Nova",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/nova-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_745fc5f6-dbcb-451c-ba2b-63e0990c752a_640x.jpg?v=1755585197",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "untitled-future-flex",
+      "name": "Untitled FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/untitled-v2-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/3_3_efe7c0e0-0c71-4c72-bcb2-2a47fad6e4b0_640x.jpg?v=1763597531",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "untitled-v2",
+      "name": "Untitled V2",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/untitled-v2-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_ba59859f-853e-448c-8aa9-4e6b18fc2a00_640x.jpg?v=1757052996",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "misc-future-flex",
+      "name": "Misc FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/misc-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/3_41_640x.jpg?v=1763596960",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "misc",
+      "name": "Misc",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/misc-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_5002e164-0eb2-4fd4-98c9-8f8d39deb2b1_640x.jpg?v=1757053110",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "holy-grail-future-flex",
+      "name": "Holy Grail FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/holy-grail-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/HOLY_GRAIL_640x.jpg?v=1754878164",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "holy-grail",
+      "name": "Holy Grail",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/holy-grail-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_9c4b3710-f685-4712-a0ff-6e28cfb9d162_640x.jpg?v=1757053274",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "psychedelic-germ-future-flex",
+      "name": "Psychedelic Germ FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/psychedelic-germ-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/GERM-FF-DECK_640x.jpg?v=1754878142",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "psychedelic-germ",
+      "name": "Psychedelic Germ",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/psychedelic-germ-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_653166b1-e834-4e55-8b3b-33423d8b140b_640x.jpg?v=1757397742",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "virtue-future-flex",
+      "name": "Virtue FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/virtue-futureflex-clear",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_43d05791-1653-4c0b-b97b-e7b21fc3f845_640x.jpg?v=1772162302",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "virtue",
+      "name": "Virtue",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/virtue-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_32a17f35-3565-46e7-bfdd-bcbc4795929c_640x.jpg?v=1757398012",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "loot-future-flex",
+      "name": "Loot FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/loot-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/LOOT-FF-DECK_640x.jpg?v=1754878175",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "loot",
+      "name": "Loot",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/loot-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_9bda7328-106d-4032-9b00-0b59f51a1f80_640x.jpg?v=1757053612",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "merlot-future-flex",
+      "name": "Merlot FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/merlot-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/MERLOT-FF-DECK_640x.jpg?v=1623287483",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "merlot",
+      "name": "Merlot",
+      "productUrl": "https://www.haydenshapes.com/collections/small-wave/products/merlot-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_0e2d73e0-eb95-41f8-a1de-fe3b041bcb4e_640x.jpg?v=1757053964",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "darkside-future-flex",
+      "name": "Darkside FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/darkside-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/DARKSIDE-FF-DECK_640x.jpg?v=1754878123",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cohort-ii-futureflex-mi-g-edition",
+      "name": "Cohort II Futureflex - MiG Edition",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/cohort-ii-futureflex-clear",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/COHORT_II-FF-DECK_640x.jpg?v=1754878003",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cohort-i-future-flex",
+      "name": "Cohort I FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/cohort-i-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/3_bbf09db7-0b86-436f-bcdb-af6aca756f2a_640x.jpg?v=1754878088",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cohort-i",
+      "name": "Cohort I",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/cohort-i-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_29bea517-5629-4db6-9e17-b50930e4e29a_640x.jpg?v=1757395493",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "white-noiz-v2-future-flex",
+      "name": "White Noiz V2 FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/white-noiz-v2-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/WHITE-NOIZ-DECK_FF_640x.jpg?v=1754878104",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "white-noiz-v2",
+      "name": "White Noiz V2",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/white-noiz-v2-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_4796ed6d-bdd8-4ac2-bead-eaf6967cad2e_640x.jpg?v=1757052621",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "black-noiz-future-flex",
+      "name": "Black Noiz FutureFlex",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/black-noiz-futureflex",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/products/BLACK-NOIZ-FF-DECK_640x.jpg?v=1754878130",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "black-noiz",
+      "name": "Black Noiz",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/black-noiz-pu",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/1_ea58ae04-d99e-43e7-a6c1-c1ccba679869_640x.jpg?v=1757052517",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cohort-i-pe",
+      "name": "Cohort I PE",
+      "productUrl": "https://www.haydenshapes.com/collections/shortboards/products/cohort-i-pe-1",
+      "imageUrl": "https://www.haydenshapes.com/cdn/shop/files/5_28_640x.jpg?v=1759204378",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    }
+  ]
+}

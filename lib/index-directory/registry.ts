@@ -3,17 +3,23 @@ import albumSurfData from "@/lib/index-directory/data/album-surf.json"
 import channelIslandsData from "@/lib/index-directory/data/channel-islands.json"
 import lovelaceMachineData from "@/lib/index-directory/data/lovelace-machine.json"
 import sharpeyeSurfboardsData from "@/lib/index-directory/data/sharpeye-surfboards.json"
+import lostSurfboardsData from "@/lib/index-directory/data/lost-surfboards.json"
+import haydenShapesData from "@/lib/index-directory/data/hayden-shapes.json"
 
 const albumSurf = albumSurfData as BrandProfile
 const channelIslands = channelIslandsData as BrandProfile
 const lovelaceMachine = lovelaceMachineData as BrandProfile
 const sharpeyeSurfboards = sharpeyeSurfboardsData as BrandProfile
+const lostSurfboards = lostSurfboardsData as BrandProfile
+const haydenShapes = haydenShapesData as BrandProfile
 
 const BRAND_BY_SLUG: Record<string, BrandProfile> = {
   [albumSurf.slug]: albumSurf,
   [channelIslands.slug]: channelIslands,
   [lovelaceMachine.slug]: lovelaceMachine,
   [sharpeyeSurfboards.slug]: sharpeyeSurfboards,
+  [lostSurfboards.slug]: lostSurfboards,
+  [haydenShapes.slug]: haydenShapes,
 }
 
 export function getBrandProfileBySlug(slug: string): BrandProfile | undefined {
@@ -62,6 +68,24 @@ export function getDirectoryListEntries(): DirectoryListEntry[] {
       logoUrl: sharpeyeSurfboards.logoUrl,
       locationLabel: sharpeyeSurfboards.locationLabel,
       modelCount: sharpeyeSurfboards.models.length,
+    },
+    {
+      slug: lostSurfboards.slug,
+      kind: "brand",
+      name: lostSurfboards.name,
+      shortDescription: lostSurfboards.shortDescription,
+      logoUrl: lostSurfboards.logoUrl,
+      locationLabel: lostSurfboards.locationLabel,
+      modelCount: lostSurfboards.models.length,
+    },
+    {
+      slug: haydenShapes.slug,
+      kind: "brand",
+      name: haydenShapes.name,
+      shortDescription: haydenShapes.shortDescription,
+      logoUrl: haydenShapes.logoUrl,
+      locationLabel: haydenShapes.locationLabel,
+      modelCount: haydenShapes.models.length,
     },
   ]
 }

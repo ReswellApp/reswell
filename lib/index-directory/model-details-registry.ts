@@ -9,6 +9,8 @@ import lovelaceGordoFeoDetail from "@/lib/index-directory/data/model-details/lov
 import lovelaceBurnerDetail from "@/lib/index-directory/data/model-details/lovelace-machine-burner.json"
 import lovelaceEveningstarDetail from "@/lib/index-directory/data/model-details/lovelace-machine-eveningstar.json"
 import { sharpeyeSurfboardsModelDetailsBySlug } from "@/lib/index-directory/sharpeye-model-details.generated"
+import lostSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/lost-surfboards-model-details.json"
+import haydenShapesModelDetailsBySlug from "@/lib/index-directory/data/hayden-shapes-model-details.json"
 
 const DETAILS: Record<string, Record<string, BoardModelDetail>> = {
   "album-surf": albumSurfModelDetailsBySlug as Record<string, BoardModelDetail>,
@@ -24,6 +26,8 @@ const DETAILS: Record<string, Record<string, BoardModelDetail>> = {
     eveningstar: lovelaceEveningstarDetail as BoardModelDetail,
   },
   "sharpeye-surfboards": sharpeyeSurfboardsModelDetailsBySlug,
+  "lost-surfboards": lostSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,
+  "hayden-shapes": haydenShapesModelDetailsBySlug as Record<string, BoardModelDetail>,
 }
 
 export function getModelDetail(brandSlug: string, modelSlug: string): BoardModelDetail | null {
