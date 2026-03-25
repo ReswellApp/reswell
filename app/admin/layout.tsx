@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Settings,
   Activity,
+  Library,
 } from 'lucide-react'
 
 const adminNavItems = [
@@ -21,6 +22,7 @@ const adminNavItems = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/reports', label: 'Reports', icon: Flag },
   { href: '/admin/contact-messages', label: 'Contact messages', icon: MessageSquare },
+  { href: '/admin/collection-requests', label: 'Collection requests', icon: Library },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 

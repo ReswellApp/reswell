@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { BoardModelPageView } from "@/components/index-directory/board-model-page-view"
+import { createClient } from "@/lib/supabase/server"
+import { getBoardModelReviewStats } from "@/lib/board-model-reviews"
 import {
   getAllBrandModelStaticParams,
   getBrandModelPagePayload,
@@ -33,5 +35,17 @@ export default async function BrandModelPage({ params }: Props) {
   if (!payload) {
     notFound()
   }
-  return <BoardModelPageView brand={payload.brand} model={payload.model} detail={payload.detail} />
+
+  const supabase = await createClient()
+  const { avgRating, reviewCount } = await getBoardModelReviewStats(supabase, slug, modelSlug)
+
+  return (
+    <BoardModelPageView
+      brand={payload.brand}
+      model={payload.model}
+      detail={payload.detail}
+      reviewAvg={avgRating}
+      reviewCount={reviewCount}
+    />
+  )
 }

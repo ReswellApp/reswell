@@ -66,6 +66,7 @@ const navigation = [
 const secondaryNav = [
   { name: "Field notes", href: "/blog" },
   { name: "Index", href: INDEX_DIRECTORY_BASE },
+  { name: "Collections", href: "/collections" },
   { name: "Board Talk", href: "/board-talk" },
 ]
 

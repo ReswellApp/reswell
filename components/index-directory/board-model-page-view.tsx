@@ -6,6 +6,7 @@ import type { BoardModelDetail, BrandProfile, BoardModel, BoardModelGalleryImage
 import { Button } from "@/components/ui/button"
 import { BoardModelDeckBottomHero } from "@/components/index-directory/board-model-deck-bottom-hero"
 import { BoardModelStockDimsCollapsible } from "@/components/index-directory/board-model-stock-dims-collapsible"
+import { BoardModelRatingSection } from "@/components/index-directory/board-model-rating-section"
 import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { cn } from "@/lib/utils"
 
@@ -158,10 +159,14 @@ export function BoardModelPageView({
   brand,
   model,
   detail,
+  reviewAvg = 0,
+  reviewCount = 0,
 }: {
   brand: BrandProfile
   model: BoardModel
   detail: BoardModelDetail | null
+  reviewAvg?: number
+  reviewCount?: number
 }) {
   const brandModelsHref = `${INDEX_DIRECTORY_BASE}/brands/${brand.slug}`
   const priceLabel = detail?.priceUsd != null ? formatUsd(detail.priceUsd) : null
@@ -213,7 +218,7 @@ export function BoardModelPageView({
 
         {/* Centered hero + CTAs, then overview, then specifications */}
         <section className="border-b border-border/30 py-10 sm:py-12">
-          <div className="mx-auto flex w-full max-w-md flex-col items-center">
+          <div className="mx-auto flex w-full max-w-lg flex-col items-stretch gap-8">
             <div className="w-full">
               {deckBottom ? (
                 <BoardModelDeckBottomHero
@@ -239,17 +244,29 @@ export function BoardModelPageView({
                 </div>
               )}
             </div>
-            <div className="mt-8 flex w-full max-w-sm flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
-              <Button asChild className="h-12 flex-1 rounded-xl text-sm font-semibold" size="lg">
+            <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:items-stretch sm:gap-3">
+              <Button asChild className="h-12 w-full rounded-xl text-sm font-semibold sm:min-h-12 sm:flex-1" size="lg">
                 <a href={model.productUrl} target="_blank" rel="noopener noreferrer">
                   {`Shop on ${brand.name}`}
                   <ExternalLink className="ml-2 h-4 w-4 opacity-80" aria-hidden />
                 </a>
               </Button>
-              <Button asChild variant="outline" className="h-11 flex-1 rounded-xl border-foreground/20 text-sm font-medium sm:h-12">
+              <Button
+                asChild
+                variant="outline"
+                className="h-11 w-full rounded-xl border-foreground/20 text-sm font-medium sm:h-12 sm:flex-1"
+              >
                 <Link href={`/search?q=${encodeURIComponent(`${brand.name} ${model.name}`)}`}>Search on Reswell</Link>
               </Button>
             </div>
+            <BoardModelRatingSection
+              brandSlug={brand.slug}
+              modelSlug={model.slug}
+              modelName={model.name}
+              avgRating={reviewAvg}
+              reviewCount={reviewCount}
+              className="w-full"
+            />
           </div>
 
           <div className="mx-auto mt-10 w-full max-w-2xl border-t border-border/25 pt-10">
