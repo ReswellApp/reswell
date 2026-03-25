@@ -1,0 +1,113 @@
+{
+  "brandSlug": "channel-islands-surfboards",
+  "modelSlug": "the-solution",
+  "descriptionParagraphs": [
+    "The struggle of lackluster surf is real. So, Channel Islands created The Solution.",
+    "Blending glide, paddle power, and versatility, The Solution is Britt Merrick's most adaptable small-wave template yet. A fuller outline with a rounded tail increases planing area and drive through flat sections, while a single-to-generous double concave keeps the board quick, lively, and free underfoot.",
+    "The Solution's new rocker and outline are unlike anything else in the CI range---a fresh design that holds speed in weak surf yet still invites performance when the moment calls for it. A five-fin setup lets you tune how the board feels: ride as a thruster for tight, up-and-down turns; a quad for pure top-end speed; or a 2+1 for twin-fin glide and flow. Custom tail patches add strength where it counts most.",
+    "The Solution is exactly that---a true step-down shortboard for less-than-ideal surf, built for speed, flow, and performance when it's anything but pumping. Designed to be ridden 2\" shorter than your Better Everyday, The Solution sits perfectly at the lower end of your quiver---ready to solve whatever small-wave struggles you pull up on."
+  ],
+  "priceUsd": 845,
+  "marketingImageUrl": "https://cisurfboards.com/cdn/shop/files/The-Solution-Logo_grande.png",
+  "galleryImages": [
+    {
+      "url": "https://cisurfboards.com/cdn/shop/files/The-Solution-Deck.png",
+      "caption": "Deck"
+    },
+    {
+      "url": "https://cisurfboards.com/cdn/shop/files/The-Solution-Bottom.png",
+      "caption": "Bottom"
+    },
+    {
+      "url": "https://cisurfboards.com/cdn/shop/files/The-Solution-Top-and-Bottom.png",
+      "caption": "Deck & bottom"
+    },
+    {
+      "url": "https://cisurfboards.com/cdn/shop/files/The-Solution-Logo_grande.png",
+      "caption": "Model badge"
+    }
+  ],
+  "waveSizeLabels": [
+    "Knee",
+    "Double+"
+  ],
+  "skillLevelLabels": [
+    "Novice",
+    "Intermediate",
+    "Expert"
+  ],
+  "stockDims": [
+    {
+      "length": "5'2\"",
+      "width": "18 1/2\"",
+      "thickness": "2 3/16\"",
+      "volume": "22.5L"
+    },
+    {
+      "length": "5'4\"",
+      "width": "19\"",
+      "thickness": "2 5/16\"",
+      "volume": "25.1L"
+    },
+    {
+      "length": "5'5\"",
+      "width": "19 1/4\"",
+      "thickness": "2 3/8\"",
+      "volume": "26.6L"
+    },
+    {
+      "length": "5'6\"",
+      "width": "19 1/2\"",
+      "thickness": "2 7/16\"",
+      "volume": "28.0L"
+    },
+    {
+      "length": "5'7\"",
+      "width": "19 3/4\"",
+      "thickness": "2 1/2\"",
+      "volume": "29.5L"
+    },
+    {
+      "length": "5'8\"",
+      "width": "20\"",
+      "thickness": "2 9/16\"",
+      "volume": "31.1L"
+    },
+    {
+      "length": "5'9\"",
+      "width": "20 1/4\"",
+      "thickness": "2 5/8\"",
+      "volume": "32.7L"
+    },
+    {
+      "length": "5'10\"",
+      "width": "20 1/2\"",
+      "thickness": "2 11/16\"",
+      "volume": "34.3L"
+    },
+    {
+      "length": "5'11\"",
+      "width": "20 3/4\"",
+      "thickness": "2 3/4\"",
+      "volume": "36.0L"
+    },
+    {
+      "length": "6'0\"",
+      "width": "20 7/8\"",
+      "thickness": "2 13/16\"",
+      "volume": "37.6L"
+    },
+    {
+      "length": "6'2\"",
+      "width": "21 1/4\"",
+      "thickness": "2 15/16\"",
+      "volume": "41.0L"
+    },
+    {
+      "length": "6'4\"",
+      "width": "21 5/8\"",
+      "thickness": "3 1/16\"",
+      "volume": "44.6L"
+    }
+  ]
+}

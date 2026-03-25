@@ -1,5 +1,8 @@
-import Link from "next/link"
 import type { Metadata } from "next"
+import { getFieldNotesSorted } from "@/lib/field-notes-articles"
+import { ReadingHub } from "@/components/field-notes/reading-hub"
+
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: "Field notes",
@@ -7,19 +10,13 @@ export const metadata: Metadata = {
 }
 
 export default function BlogPage() {
+  const articles = getFieldNotesSorted()
+
   return (
-    <main className="flex-1">
-      <div className="container mx-auto max-w-2xl py-16 px-4">
-        <h1 className="text-3xl font-bold text-foreground">Field notes</h1>
-        <p className="mt-4 text-muted-foreground">
-          Stories, guides, and updates from Reswell. More posts are coming soon.
-        </p>
-        <p className="mt-8">
-          <Link href="/" className="text-sm font-medium text-foreground underline-offset-4 hover:underline">
-            Back to home
-          </Link>
-        </p>
-      </div>
-    </main>
+    <ReadingHub
+      title="Field notes"
+      description="Longer reads on gear, travel, and the people who keep surf culture moving."
+      articles={articles}
+    />
   )
 }

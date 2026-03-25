@@ -1,0 +1,577 @@
+{
+  "slug": "channel-islands-surfboards",
+  "kind": "brand",
+  "name": "Channel Islands Surfboards",
+  "shortDescription": "Performance surfboards from Santa Barbara since 1969 — Al Merrick, Britt Merrick, and the CI team.",
+  "websiteUrl": "https://cisurfboards.com/pages/about",
+  "logoUrl": "/index-directory/brands/channel-islands-surfboards-logo.png",
+  "founderName": "Al Merrick",
+  "leadShaperName": "Britt Merrick",
+  "locationLabel": "Santa Barbara, California",
+  "aboutParagraphs": [
+    "Since 1969, Channel Islands Surfboards has been dedicated to performance and quality through hard work, innovation, and originality. Over the last 50 years, Channel Islands has grown from a local grass-roots operation to a cutting edge organization, catering to the best surfers in the world. It started with hard-core surfing and quality in mind and these guidelines have brought us through four decades of constant change in the surf industry. Channel Islands will shape the new millennium with innovative design and quality as our main focus.",
+    "\"The driving force behind Channel Islands Surfboards is the demand on design created by the world's greatest surfers, allowing for the highest performance surfing possible. To provide the most dedicated surfers with the most advanced, performance designs is my passion\" - Al Merrick, Designer/Shaper",
+    "CI is a privately held organization focused on rider-driven product and manufacturing the best possible equipment available. Located in a state-of-the-art facility just blocks from Rincon Del Mar, the CI HQ represents a foundation for developing, testing, and building boards while providing jobs in Santa Barbara for many years to come.",
+    "Channel Islands Surfboards was created by Al and Terry Merrick in 1969. From his birth, Britt spent his days in the factory by the beach in Santa Barbara, from toddling around blanks to sweeping out shaping rooms. Eventually he started shaping alongside his father Al in 1990. He is now the lead shaper and designer for CI and carries on the family tradition of developing high performance board designs collaborating with the world's greatest surfers. From Tom Curren, to Dane Reynolds, Channel Islands continues to evolve with the highest standard of surfing."
+  ],
+  "models": [
+    {
+      "slug": "the-solution",
+      "name": "The Solution",
+      "productUrl": "https://cisurfboards.com/products/the-solution",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/The-Solution-Top-and-Bottom.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "mikey-february-shorty",
+      "name": "Mikey February Shorty",
+      "productUrl": "https://cisurfboards.com/products/mikey-february-shorty",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/Mikey-February-Shorty-Deck-and-Bottom-Web.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "goldie",
+      "name": "Goldie",
+      "productUrl": "https://cisurfboards.com/products/goldie",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/Goldie_Featured_Image.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "medium",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "better-everyday",
+      "name": "Better Everyday",
+      "productUrl": "https://cisurfboards.com/products/better-everyday",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/Better-Everyday-Featured-Image-Web.png",
+      "entryRocker": "medium",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "febs-fish",
+      "name": "Feb's Fish",
+      "productUrl": "https://cisurfboards.com/products/febs-fish",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/Febs-Fish-Featured-Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "dumpster-diver-2",
+      "name": "Dumpster Diver 2",
+      "productUrl": "https://cisurfboards.com/products/dumpster-diver-2",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/Dumpster_Diver_2_Featured_Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "ci-log",
+      "name": "CI Log",
+      "productUrl": "https://cisurfboards.com/products/ci-log",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/CI_Log_Featured_Image.png",
+      "entryRocker": "medium",
+      "exitRocker": "aggressive",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "ci-2-pro",
+      "name": "CI 2.Pro",
+      "productUrl": "https://cisurfboards.com/products/ci-2-pro",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/CI2.Pro_Featured_Image.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "big-happy",
+      "name": "Big Happy",
+      "productUrl": "https://cisurfboards.com/products/big-happy",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/Big-Happy-Grid-View_507ce946-a618-449b-a38b-1664687ae443.png",
+      "entryRocker": "aggressive",
+      "exitRocker": null,
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "two-happy",
+      "name": "Two Happy",
+      "productUrl": "https://cisurfboards.com/products/two-happy",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/2024_Two_Happy_Featured_Image.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "fever",
+      "name": "Fever",
+      "productUrl": "https://cisurfboards.com/products/fever",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Fever-Featured-Image-for-Web-Page1.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "g-skate",
+      "name": "G Skate",
+      "productUrl": "https://cisurfboards.com/products/g-skate",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/GSkate-Cherry-Red-Featured-Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "neckbeard-3",
+      "name": "NeckBeard 3",
+      "productUrl": "https://cisurfboards.com/products/neckbeard-3",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/neckbeard-3-fcsii-featured-image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "ci-pro-step-up",
+      "name": "CI Pro Step Up",
+      "productUrl": "https://cisurfboards.com/products/ci-pro-step-up",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/CI-2.Pro-Grid-View.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "medium",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "happy-traveler-1",
+      "name": "Happy Traveler",
+      "productUrl": "https://cisurfboards.com/products/happy-traveler-1",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Happy_Traveler_Featured-Image_Web.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "medium",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "ci-mid",
+      "name": "CI Mid",
+      "productUrl": "https://cisurfboards.com/products/ci-mid",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/CI-Mid_Featured_Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "ci-mid-twin",
+      "name": "CI Mid Twin",
+      "productUrl": "https://cisurfboards.com/products/ci-mid-twin",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/CIMidTwin_SteelBlue_Top-Bottom.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "m-23",
+      "name": "M-23",
+      "productUrl": "https://cisurfboards.com/products/m-23",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/M23_Featured_Image.png",
+      "entryRocker": "medium",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "tph-single-fin-1",
+      "name": "TPH Single",
+      "productUrl": "https://cisurfboards.com/products/tph-single-fin-1",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/CI_TPH_Deck_Bottom_Olive.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "ci-pro",
+      "name": "CI Pro",
+      "productUrl": "https://cisurfboards.com/products/ci-pro",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/CI_PRO_Featured_Image.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "happy-everyday",
+      "name": "Happy Everyday",
+      "productUrl": "https://cisurfboards.com/products/happy-everyday",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Happy_Everyday_Featured_Image.png",
+      "entryRocker": "medium",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "mavs-gun",
+      "name": "Mavs Gun",
+      "productUrl": "https://cisurfboards.com/products/mavs-gun",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Mavs_Gun_Featured_Image.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "continuous"
+    },
+    {
+      "slug": "bobby-quad",
+      "name": "Bobby Quad",
+      "productUrl": "https://cisurfboards.com/products/bobby-quad",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Bobby_Quad_Featured_Curren.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "rocket-wide-squash",
+      "name": "Rocket Wide Squash",
+      "productUrl": "https://cisurfboards.com/products/rocket-wide-squash",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/rocket-wide-squash-featured-image-1228x2000.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "twin-pin",
+      "name": "Twin Pin",
+      "productUrl": "https://cisurfboards.com/products/twin-pin",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/twin-pin-seafoam-futures-featured-image.png",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "fishbeard",
+      "name": "FishBeard",
+      "productUrl": "https://cisurfboards.com/products/fishbeard",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/FishBeard_Web_Featured-Image.png",
+      "entryRocker": "medium",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "happy",
+      "name": "Happy",
+      "productUrl": "https://cisurfboards.com/products/happy",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Happy_Featured_Image.png",
+      "entryRocker": "medium",
+      "exitRocker": "aggressive",
+      "rockerStyle": null
+    },
+    {
+      "slug": "rocket-wide",
+      "name": "Rocket Wide",
+      "productUrl": "https://cisurfboards.com/products/rocket-wide",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Rocket-Wide-Featured-Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "ci-fish",
+      "name": "CI Fish",
+      "productUrl": "https://cisurfboards.com/products/ci-fish",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/CI_Fish_Featured_Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "og-flyer",
+      "name": "OG Flyer",
+      "productUrl": "https://cisurfboards.com/products/og-flyer",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/OG-Flyer-Featured-Image.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "ultra-joe-1",
+      "name": "Ultra Joe",
+      "productUrl": "https://cisurfboards.com/products/ultra-joe-1",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Ultra-Joe-Featured-Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "neckbeard-2",
+      "name": "Neckbeard 2",
+      "productUrl": "https://cisurfboards.com/products/neckbeard-2",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Neckbeard-2-Featured-Image-Tight.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "black-and-white",
+      "name": "Black and White",
+      "productUrl": "https://cisurfboards.com/products/black-and-white",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/BW_feature2.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "sampler",
+      "name": "Sampler",
+      "productUrl": "https://cisurfboards.com/products/sampler",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/sampler_feature.png",
+      "entryRocker": "medium",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "pod-mod-1",
+      "name": "Pod Mod",
+      "productUrl": "https://cisurfboards.com/products/pod-mod-1",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/pod_mod_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "twin-fin",
+      "name": "Twin Fin",
+      "productUrl": "https://cisurfboards.com/products/twin-fin",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/twinfin_feature2.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "high-5",
+      "name": "High 5",
+      "productUrl": "https://cisurfboards.com/products/high-5",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/high_5_feature.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": null
+    },
+    {
+      "slug": "chancho",
+      "name": "Chancho",
+      "productUrl": "https://cisurfboards.com/products/chancho",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Chancho_Featured_Image.png",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hoglet",
+      "name": "Hoglet",
+      "productUrl": "https://cisurfboards.com/products/hoglet",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/hoglet_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "the-peregrine",
+      "name": "The Peregrine",
+      "productUrl": "https://cisurfboards.com/products/the-peregrine",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/peregrine_feature1.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "mini-eco-hybrid",
+      "name": "Mini Eco-hybrid",
+      "productUrl": "https://cisurfboards.com/products/mini-eco-hybrid",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Mini-Eco-hybrid-Featured-Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": null
+    },
+    {
+      "slug": "taco-grinder-1",
+      "name": "Taco Grinder",
+      "productUrl": "https://cisurfboards.com/products/taco-grinder-1",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/taco_grinder_feature.png",
+      "entryRocker": "medium",
+      "exitRocker": "aggressive",
+      "rockerStyle": null
+    },
+    {
+      "slug": "rook-15",
+      "name": "Rook 15",
+      "productUrl": "https://cisurfboards.com/products/rook-15",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/rookie_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "girabbit",
+      "name": "Girabbit",
+      "productUrl": "https://cisurfboards.com/products/girabbit",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/girrabit_feature.png",
+      "entryRocker": "medium",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "bunny-chow",
+      "name": "Bunny Chow",
+      "productUrl": "https://cisurfboards.com/products/bunny-chow",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/bunny_chow_feature.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "4",
+      "name": "#4",
+      "productUrl": "https://cisurfboards.com/products/4",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/four_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "medium",
+      "rockerStyle": null
+    },
+    {
+      "slug": "t-low",
+      "name": "T-Low",
+      "productUrl": "https://cisurfboards.com/products/t-low",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/t-low_feature.png",
+      "entryRocker": "medium",
+      "exitRocker": "medium",
+      "rockerStyle": null
+    },
+    {
+      "slug": "dfr",
+      "name": "DFR",
+      "productUrl": "https://cisurfboards.com/products/dfr",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/dfr_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-new-flyer",
+      "name": "The New Flyer",
+      "productUrl": "https://cisurfboards.com/products/the-new-flyer",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/new_flyer_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "semi-pro-12",
+      "name": "Semi Pro 12",
+      "productUrl": "https://cisurfboards.com/products/semi-pro-12",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/ks_semi_pro_feature.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "weirdo-ripper",
+      "name": "Weirdo Ripper",
+      "productUrl": "https://cisurfboards.com/products/weirdo-ripper",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/weirdo_ripper_feature.png",
+      "entryRocker": "medium",
+      "exitRocker": "aggressive",
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-proton",
+      "name": "The Proton",
+      "productUrl": "https://cisurfboards.com/products/the-proton",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/proton_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "average-joe",
+      "name": "Average Joe",
+      "productUrl": "https://cisurfboards.com/products/average-joe",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/joe_feature.png",
+      "entryRocker": "medium",
+      "exitRocker": "medium",
+      "rockerStyle": null
+    },
+    {
+      "slug": "dumpster-diver",
+      "name": "Dumpster Diver",
+      "productUrl": "https://cisurfboards.com/products/dumpster-diver",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/dumpster_diver_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-black-beauty",
+      "name": "The Black Beauty",
+      "productUrl": "https://cisurfboards.com/products/the-black-beauty",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/black_beauty_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "medium",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "zeus",
+      "name": "Zeus",
+      "productUrl": "https://cisurfboards.com/products/zeus",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/zeus_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "the-water-hog",
+      "name": "The Water Hog",
+      "productUrl": "https://cisurfboards.com/products/the-water-hog",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/water_hog_feature.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "bonzer-3d",
+      "name": "Bonzer 3D",
+      "productUrl": "https://cisurfboards.com/products/bonzer-3d",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Bonzer-3D-Featured-Image.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "free-scrubber-1",
+      "name": "Free Scrubber",
+      "productUrl": "https://cisurfboards.com/products/free-scrubber-1",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Free_Scrubber_Featured_Image.png",
+      "entryRocker": "medium",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "biscuit-bonzer",
+      "name": "Biscuit Bonzer",
+      "productUrl": "https://cisurfboards.com/products/biscuit-bonzer",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Bonzer-Biscuit-Deck-and-Bottom-for-Web.png",
+      "entryRocker": "relaxed",
+      "exitRocker": "relaxed",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "bonzer-shelter",
+      "name": "Bonzer Shelter",
+      "productUrl": "https://cisurfboards.com/products/bonzer-shelter",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/products/Bonzer-Shelter-Deck-and-Bottom-for-Web-Green.png",
+      "entryRocker": "aggressive",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    },
+    {
+      "slug": "ci-noserider",
+      "name": "CI Noserider",
+      "productUrl": "https://cisurfboards.com/products/ci-noserider",
+      "imageUrl": "https://cisurfboards.com/cdn/shop/files/Noserider-Grid-View.png",
+      "entryRocker": "medium",
+      "exitRocker": "aggressive",
+      "rockerStyle": "staged"
+    }
+  ]
+}

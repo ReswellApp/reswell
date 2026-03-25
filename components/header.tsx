@@ -54,6 +54,7 @@ const navigation = [
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
   { name: "Field notes", href: "/blog" },
+  { name: "Index", href: "/index" },
   { name: "Board Talk", href: "/board-talk" },
 ]
 
@@ -478,7 +479,7 @@ export function Header() {
           </div>
         </div>
 
-        {/* Categories bar (desktop): categories left, Field notes + Board Talk right */}
+        {/* Categories bar (desktop): categories left, Field notes + Index + Board Talk right */}
         <div className="hidden md:block border-t border-lightgray/40">
           <div className="container mx-auto flex min-w-0 items-stretch">
             <div className="flex min-w-0 flex-1 items-center gap-8 overflow-x-auto [scrollbar-width:thin]">
