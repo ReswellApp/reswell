@@ -1,0 +1,152 @@
+{
+  "slug": "album-surf",
+  "kind": "brand",
+  "name": "Album Surf",
+  "shortDescription": "Custom boards from Matt Parker — performance twins, asymmetrics, fish, and mid-lengths from San Clemente.",
+  "websiteUrl": "https://albumsurf.com",
+  "logoUrl": "https://albumsurf.com/cdn/shop/files/Album-Logo-small_220x.png?v=1613776528",
+  "founderName": "Matt Parker",
+  "leadShaperName": "Matt Parker",
+  "locationLabel": "San Clemente, California",
+  "aboutParagraphs": [
+    "Album Surf is a Southern California surfboard brand known for innovative shapes — from the Twinsman and Plasmic to asymmetrical designs like the Disorder.",
+    "Led by shaper Matt Parker, Album builds boards that emphasize speed, flow, and real-world usability, often developed with team riders and collaborators such as Asher Pacey, Victor Bernardo, and Jack Freestone."
+  ],
+  "models": [
+    {
+      "slug": "sunstone",
+      "name": "Sunstone",
+      "productUrl": "https://albumsurf.com/collections/sunstone-concept",
+      "imageUrl": "https://albumsurf.com/cdn/shop/files/Screen_Shot_2023-04-24_at_12.13.22_PM_28002536-1f75-4e7c-a9ee-ff6bf5329647_1950x.png?v=1682363866",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sunstone-ap",
+      "name": "Sunstone (AP)",
+      "productUrl": "https://albumsurf.com/collections/sunstone-ap",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/Sunstone-ap-outline_180x.png?v=1678997390",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sunstone-hovercraft",
+      "name": "Sunstone (Hovercraft)",
+      "productUrl": "https://albumsurf.com/collections/sunstone-hip",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/Sunstone-hip_180x.png?v=1686951071",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "disorder",
+      "name": "Disorder",
+      "productUrl": "https://albumsurf.com/collections/disorder-concept",
+      "imageUrl": "https://albumsurf.com/cdn/shop/files/Photo_May_15_2022_8_23_22_PM_d651df3c-3d15-4f8e-b604-4a6106764df9_180x.jpg?v=1683134662",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "freewing",
+      "name": "Freewing",
+      "productUrl": "https://albumsurf.com/collections/freewing-concept",
+      "imageUrl": "https://albumsurf.com/cdn/shop/files/Freewing_Thumbnail_e9314dc1-7310-4520-b7e5-a9893ade5dfa.png?v=1683238655",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "fascination",
+      "name": "Fascination",
+      "productUrl": "https://albumsurf.com/collections/fascination-1",
+      "imageUrl": "https://albumsurf.com/cdn/shop/files/54393568_Unknown_180x.jpg?v=1688746152",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "plasmic",
+      "name": "Plasmic",
+      "productUrl": "https://albumsurf.com/collections/plasmic-concept",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/Plasmic_Background_180x.png?v=1693415259",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "moonstone",
+      "name": "Moonstone",
+      "productUrl": "https://albumsurf.com/collections/moonstone-1",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/moonstone_180x.jpg?v=1686176287",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "townsend",
+      "name": "Townsend",
+      "productUrl": "https://albumsurf.com/collections/townsend-concept",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/Townsend_Background_180x.png?v=1693420635",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "darkness",
+      "name": "Darkness",
+      "productUrl": "https://albumsurf.com/collections/darkness-1",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/darkness-white-back_180x.png?v=1693420745",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "whale-shark",
+      "name": "Whale Shark",
+      "productUrl": "https://albumsurf.com/collections/whale-shark",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/model-outline-whaleshark_180x.jpg?v=1643010407",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "lightbender",
+      "name": "Lightbender",
+      "productUrl": "https://albumsurf.com/collections/lightbender-1",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/lightbender_180x.jpg?v=1693414538",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "twinsman",
+      "name": "Twinsman",
+      "productUrl": "https://albumsurf.com/collections/twinsman-concept",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/model-outline-twinsman_180x.png?v=1682362854",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "insanity",
+      "name": "Insanity",
+      "productUrl": "https://albumsurf.com/collections/insanity-1",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/insanity_62386479-6261-448d-b307-96b22c328861_180x.jpg?v=1693421018",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "bom-dia",
+      "name": "Bom Dia",
+      "productUrl": "https://albumsurf.com/collections/bom-dia-concept",
+      "imageUrl": "https://albumsurf.com/cdn/shop/collections/BomDia_180x.png?v=1693414932",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    }
+  ]
+}

@@ -1,0 +1,997 @@
+{
+  "sunstone": {
+    "brandSlug": "album-surf",
+    "modelSlug": "sunstone",
+    "descriptionParagraphs": [
+      "A fish for everyday surf and travel.",
+      "The Sunstone is the foundation of Asher Pacey's quiver. This is the purest form of a classic fish that we make, an ode to Southern California. It has traditional fish roots that have been refined to perform and feel more alive.",
+      "Surfed with a classic approach, the board is doing all the work, trimming and generating speed with fast and fluid carves. Paddles and gets up to speed regardless of conditions, bringing small surf to life with easy glide and release, while also offering surprising hold in better conditions. A standard keel gives it the most classic feel, but a modern keel or upright fin can bring out another level of performance.",
+      "Bottom contour: A subtle double-concave under the back foot and vee off the exit, the Sunstone combines tradition and progression.",
+      "Deck & rocker: A pronounced beak nose to carry foam throughout the board combined with a flat rocker profile makes the Sunstone a great paddler that gets up to speed right away."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/files/Screen_Shot_2023-04-24_at_12.13.22_PM_28002536-1f75-4e7c-a9ee-ff6bf5329647_1950x.png?v=1682363866",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Screen_Shot_2023-04-24_at_12.13.22_PM_28002536-1f75-4e7c-a9ee-ff6bf5329647_1950x.png?v=1682363866",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/5343E40B-3D45-4026-9D8B-055F77A0BEA0-25940-000004084D19541D_180x.jpg?v=1713918648",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Screen_Shot_2023-06-09_at_9.30.16_AM_1950x.jpg?v=1686330444",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Mack_Sitting_410091b0-c2e9-4140-a88a-dd117266de35_1950x.png?v=1682364011",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/A35BEE33-2375-4CC0-AE39-A8A23CC4786D-1295-0000020F1C9EC43C_900x.jpg?v=1713918762",
+        "caption": "Photo 4"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "4'10\" x 19.5\" x 2.2\" | 24 liters"
+      },
+      {
+        "raw": "5'0\" x 19.75\" x 2.25\" | 26.2 liters"
+      },
+      {
+        "raw": "5'2\" x 20\" x 2.35\" | 29 liters"
+      },
+      {
+        "raw": "5'4\" x 20.25\" x 2.4\" | 31.2 liters"
+      },
+      {
+        "raw": "5'6\" x 20.5\" x 2.5\" | 33 liters"
+      },
+      {
+        "raw": "5'8\" x 20.75\" x 2.6\" | 35.3 liters"
+      },
+      {
+        "raw": "5'10\" x 21\" x 2.65\" | 38 liters"
+      },
+      {
+        "raw": "6'0\" x 21.5\" x 2.75\" | 42.5 liters"
+      }
+    ]
+  },
+  "sunstone-ap": {
+    "brandSlug": "album-surf",
+    "modelSlug": "sunstone-ap",
+    "descriptionParagraphs": [
+      "The Sunstone is the foundation of Asher Pacey's quiver. This is the purest form of a classic fish that we make, an ode to Southern California. It has traditional fish roots that have been refined to perform and feel more alive.",
+      "The Sunstone is the foundation of Asher Pacey's quiver. This is the purest form of a classic fish that we make, an ode to Southern California. It has traditional fish roots that have been refined to perform and feel more alive. The AP variation is wider and thicker throughout, designed to be ridden shorter than the standard Sunstone.",
+      "Surfed with a classic approach, the board is doing all the work, trimming and generating speed with fast and fluid carves. Paddles and gets up to speed regardless of conditions, bringing small surf to life with easy glide and release, while also offering surprising hold in better conditions. A standard keel gives it the most classic feel, but a modern keel or upright fin can bring out another level of performance."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/Sunstone-ap-outline_180x.png?v=1678997390",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Sunstone-ap-outline_180x.png?v=1678997390",
+        "caption": "Board"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": []
+  },
+  "sunstone-hovercraft": {
+    "brandSlug": "album-surf",
+    "modelSlug": "sunstone-hovercraft",
+    "descriptionParagraphs": [
+      "This is the purest form of a classic fish that we make, an ode to Southern California. It has traditional fish roots that have been refined to perform and feel more alive.",
+      "The Sunstone is the foundation of Asher Pacey's quiver. This is the purest form of a classic fish that we make, an ode to Southern California. It has traditional fish roots that have been refined to perform and feel more alive. The Hovercraft is wider and thicker throughout, designed to be ridden shorter than the standard Sunstone. The hip in the tail creates a break in the rail allowing for more pivot and release.",
+      "Surfed with a classic approach, the board is doing all the work, trimming and generating speed with fast and fluid carves. Paddles and gets up to speed regardless of conditions, bringing small surf to life with easy glide and release, while also offering surprising hold in better conditions. A standard keel gives it the most classic feel, but a modern keel or upright fin can bring out another level of performance."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/Sunstone-hip_180x.png?v=1686951071",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Sunstone-hip_180x.png?v=1686951071",
+        "caption": "Board"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": []
+  },
+  "disorder": {
+    "brandSlug": "album-surf",
+    "modelSlug": "disorder",
+    "descriptionParagraphs": [
+      "This is the pinnacle of our research and development of performance asymmetry over the last decade. Intuitive in design, the Disorder is intended to complement your strengths and supplement your weaknesses.",
+      "Set up for regular- or goofy-foot. Twin fin speed on your toes with quad grip and a pulled-in rail line on your heels, and now with an updated performance rocker that opens up more in smaller waves.",
+      "High performance entry rocker with extra exit rocker. The high entry rocker makes it more forgiving through turns. Extra exit rocker allows for more critical surfing by letting the board fit in steeper sections of the wave. Performance deck profile with slightly more foam under the chest. Paddles are similar to a performance board but carry momentum and speed like a twin fin.",
+      "Bottom contour: The deep single concave that rolls to a vee through the fins generates speed and allows for smooth rail-to-rail transition. Twin fin speed combined with the control and maneuverability of a quad.",
+      "Deck & rocker: High performance entry rocker with extra exit rocker. The high entry rocker makes it more forgiving through turns. Extra exit rocker allows for more critical surfing by letting the board fit in steeper sections of the wave. Performance deck profile with slightly more foam under the chest. Paddles are similar to a performance board but carry momentum and speed like a twin fin."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/files/Photo_May_15_2022_8_23_22_PM_d651df3c-3d15-4f8e-b604-4a6106764df9_180x.jpg?v=1683134662",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_May_15_2022_8_23_22_PM_d651df3c-3d15-4f8e-b604-4a6106764df9_180x.jpg?v=1683134662",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Disorder_Outline_b37aab2f-ea73-4ebe-93ee-4b38a56d568b_180x.png?v=1682450504",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Disaster-Outline_180x.png?v=1678488305",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Disorder-swallow-outline_180x.png?v=1682457666",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Mar_03_2023_3_55_03_PM_2e932a28-dc96-43ea-a73a-5f6465dbc58f_180x.jpg?v=1683134681",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Apr_20_2023_11_38_52_PM_5ff36538-2cb6-44be-a513-2bdeef5b4ebc_180x.jpg?v=1683134396",
+        "caption": "Photo 5"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/655150763_18039363443762751_51385441632510562_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=106&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiQ0FST1VTRUxfSVRFTS5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=0q1MM-MprWIQ7kNvwEE6q4E&_nc_oc=AdpXkmzVYc2VpffuXXN7Yc4llszbcDfa-FKKeCnFYpm4AY0jC_iwZ49ivJqHDGKj4-k&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=C2nFUevuQDswQO0ZzLRj-A&_nc_tpa=Q5bMBQEnmYxES4zjuk_IIE6wJiwQ2kDqyBBc3ZGlvZW7KAteuHtYuGaqvTmfHQdXvgAh3gdm6a195jqN&oh=00_AfzpKBRix1DZjCAoVr07-3ZEqWRhyhGc_sWuwI-7VQ5OZw&oe=69C8C4CA",
+        "caption": "Photo 6"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "5'0\" x 18\" x 2.13\" | 21.5 liters"
+      },
+      {
+        "raw": "5'2\" x 18.5\" x 2.25\" | 23.4 liters"
+      },
+      {
+        "raw": "5'4\" x 18.5\" x 2.25\" | 25.3 liters"
+      },
+      {
+        "raw": "5'6\" x 18.5\" x 2.28\" | 26.3 liters"
+      },
+      {
+        "raw": "5'7\" x 18.63\" x 2.32\" | 27.3 liters"
+      },
+      {
+        "raw": "5'8\" x 18.75\" x 2.35\" | 28.3 liters"
+      },
+      {
+        "raw": "5'9\" x 19\" x 2.38\" | 29.5 liters"
+      },
+      {
+        "raw": "5'10\" x 19.25\" x 2.44\" | 31.1 liters"
+      },
+      {
+        "raw": "5'11\" x 19.5\" x 2.5\" | 32.7 liters"
+      },
+      {
+        "raw": "6'0\" x 19.75\" x 2.56\" | 34.4 liters"
+      },
+      {
+        "raw": "6'1\" x 20\" x 2.63\" | 36.2 liters"
+      }
+    ]
+  },
+  "freewing": {
+    "brandSlug": "album-surf",
+    "modelSlug": "freewing",
+    "descriptionParagraphs": [
+      "Fresh off the tour, Jack Freestone was looking for something new but not out of his comfort zone. The aim of the Freewing is just that, bringing new feeling and life into a familiar design. A high performance board that does more of the work for you.",
+      "Fresh off the tour, Jack Freestone was looking for something new but not out of his comfort zone. The aim of the Freewing is just that, bringing new feeling and life into a familiar design. A high performance board that does more of the work for you.",
+      "Bottom contour: Deep single concave under the front foot, transitioning into a slight double through the fins and vee off the tail, otherwise known as a spiral vee. The modern bottom generates speed, helps the board roll rail to rail and drive off your back foot.",
+      "Deck & rocker: Hidden foam in the center and under the chest, tapering quickly into a modern rail. The fuller deck profile on a performance board gives it extra paddle without sacrificing performance and allows the board to carry momentum."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/files/Freewing_Thumbnail_e9314dc1-7310-4520-b7e5-a9893ade5dfa.png?v=1683238655",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Freewing_Thumbnail_e9314dc1-7310-4520-b7e5-a9893ade5dfa.png?v=1683238655",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Oct_21_2022_3_07_42_PM_57035953-a7c1-4e5e-846c-0a3daf28dc02_180x.jpg?v=1741218015",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Jul_18_2022_9_05_05_AM_e53edda6-ef41-460a-a474-592df0a33faa_180x.jpg?v=1741217988",
+        "caption": "Photo 2"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "5'6\" x 18.5\" x 2.28\" | 26.5 liters"
+      },
+      {
+        "raw": "5'7\" x 18.63\" x 2.32\" | 27.5 liters"
+      },
+      {
+        "raw": "5'8\" x 18.75\" x 2.35\" | 28.5 liters"
+      },
+      {
+        "raw": "5'9\" x 18.88\" x 2.38\" | 29.5 liters"
+      },
+      {
+        "raw": "5'10\" x 19\" x 2.38\" | 30 liters"
+      },
+      {
+        "raw": "5'11\" x 19.25\" x 2.44\" | 31.7 liters"
+      },
+      {
+        "raw": "6'0\" x 19.5\" x 2.5\" | 33.5 liters"
+      },
+      {
+        "raw": "6'1\" x 19.75\" x 2.56\" | 35 liters"
+      },
+      {
+        "raw": "6'2\" x 20.25\" x 2.6\" | 36.5 liters"
+      }
+    ]
+  },
+  "fascination": {
+    "brandSlug": "album-surf",
+    "modelSlug": "fascination",
+    "descriptionParagraphs": [
+      "Everything you love about a fish, without the limitations.",
+      "\"I've been playing around with asymmetry in both asymmetric boards and asymmetric fin setups for quite a while. Inherently they generate a ton of speed, they have a big sweet spot and they allow for different types of turns in different sections of the wave that normal boards don't. The theory for me made a ton of sense to apply it to a fish.\"\n\n-Matt Parker",
+      "Flatter rocker underneath the chest for easy wave-catching with slightly more entry and exit rocker than a standard fish. Holds better in steep surf, while taking the speed/flow of a fish and mixing it with a more aggressive approach. Foam packed under the chest, easing into a modern rail and carried forward to a beak nose. Strong paddler that easily gets up to speed while continuing momentum and flow throughout the wave.",
+      "Bottom contour: Flatter rocker underneath the chest for easy wave-catching with slightly more entry and exit rocker than a standard fish. Holds better in steep surf, while taking the speed/flow of a fish and mixing it with a more aggressive approach.",
+      "Deck & rocker: Foam packed under the chest, easing into a modern rail and carried forward to a beak nose. Strong paddler that easily gets up to speed while continuing momentum and flow throughout the wave."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/files/54393568_Unknown_180x.jpg?v=1688746152",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/54393568_Unknown_180x.jpg?v=1688746152",
+        "caption": "Board"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "5'0\" x 19\" x 2.13\" | 24.7 liters"
+      },
+      {
+        "raw": "5'2\" x 19.5\" x 2.25\" | 27.4 liters"
+      },
+      {
+        "raw": "5'4\" x 19.75\" x 2.38\" | 30.1 liters"
+      },
+      {
+        "raw": "5'6\" x 20\" x 2.5\" | 32.8 liters"
+      },
+      {
+        "raw": "5'8\" x 20.5\" x 2.63\" | 36.2 liters"
+      },
+      {
+        "raw": "5'10\" x 21\" x 2.75\" | 39.6 liters"
+      },
+      {
+        "raw": "6'0\" x 21.5\" x 2.75\" | 41.7 liters"
+      }
+    ]
+  },
+  "plasmic": {
+    "brandSlug": "album-surf",
+    "modelSlug": "plasmic",
+    "descriptionParagraphs": [
+      "The paddle and planing of a fish without sacrificing performance.",
+      "Flat and fast, the Plasmic combines the paddle and planing of a fish without sacrificing performance. Speed through your turns with a deep double concave and a filled in swallow tail allowing you to surf way back on the tail.",
+      "The Plasmic packs a lot of foam, flat deck profile through to a beak nose with a low apex rail, making it a great paddler with easy rail-engagement.",
+      "Bottom contour: Single concave transitioning into a deep double-barrel concave that runs from the middle of the board through the tail. The deep, double-barrel concave generates effortless speed and creates lift off the back foot, while providing grip through your turns.",
+      "Deck & rocker: The Plasmic packs a lot of foam, flat deck profile through to a beak nose with a low apex rail, making it a great paddler with easy rail-engagement. Similar to a fish, the Plasmic has a very low entry rocker and is pretty flat throughout. This allows more of the board to be in contact with the water, generating speed."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/Plasmic_Background_180x.png?v=1693415259",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Plasmic_Background_180x.png?v=1693415259",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/20E593D0-9273-433F-9507-71738B0139F0_180x.jpg?v=1714237158",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/IMG_7255_900x.png?v=1684188899",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/boards_up_124d9a85-3550-4df9-bf02-6382fda89c7c_900x.png?v=1684188952",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Aug_11_2022_8_42_36_AM_48f75a87-1bfc-4a4c-b5c0-615f14d1f3f8.jpg?v=1684188925",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Screen_Shot_2023-05-16_at_3.43.03_PM.png?v=1684277030",
+        "caption": "Photo 5"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Apr_11_2023_11_45_43_AM_3442f690-617a-4a29-97a2-912955277ce2_180x.jpg?v=1741223552",
+        "caption": "Photo 6"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/IMG_9658_736ffa49-3af3-4030-90cb-cb3bbdd05993_180x.jpg?v=1741223579",
+        "caption": "Photo 7"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/550821865_18528135085044186_3854800569475166005_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=104&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=PglYZFbTg6kQ7kNvwFpdyRU&_nc_oc=AdoF4SYJ9mhy28Dug0nXvbFggAbOreZ4B0SKc3Y-7nGWFnAP0OPQTMard-7hg1r4QXA&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=efNJ0hTWEABxcGQDnCyepA&_nc_tpa=Q5bMBQGXY73krmU-fc5g7oIWdxJ9gkAU5DhnMtINwW6Of9gSeIfa2o9C_Ls7W7pfhJCNw6A-eFOdMBFv&oh=00_AfxJI6AyCOwtT643EN5OMoeuMw6KaRR2OrEHoJ60IrKS6Q&oe=69C8DE6C",
+        "caption": "Photo 8"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.75761-15/495247697_18501602179044186_1259398184952466582_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=101&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=hREOpS0FqJYQ7kNvwEOHwPo&_nc_oc=AdqwxBZi9vH3Njh-OA7PQ2FtspyyxX4luYNgZrn4IqLQmAjHOrawHFWekbLG5USUE0w&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=nMpfXftiiVaQm0XDixhUEA&_nc_tpa=Q5bMBQEY9Ve1UdHCICpPLBMs8aES_18y4SH02V-DXmqnD19Pt7Mv53_QkmCFIZ0N4ATdQ9bqV1XziLGD&oh=00_Afyv1JmOw-Y00jN0xlscbedFK8G4j9pHpT1QMRHRBgkGSw&oe=69C8E7BF",
+        "caption": "Photo 9"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.75761-15/491505890_18498613303044186_2645457947406835719_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=101&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=UK82-qAegmsQ7kNvwEiputW&_nc_oc=AdqmNrm2OwxqXfES0NykTZSdEGo-KbFW-5T7mbdHZ1yf-vsLzFSxy08Fqkjuj23vM4g&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=nMpfXftiiVaQm0XDixhUEA&_nc_tpa=Q5bMBQF5dFzoOOGygW_oPxSH4Zz7WWhqBD4l3tdhUD4ccvkSLQeACXwMrCeLmFXLU5YHXYX89MZi3pNW&oh=00_AfwJx4Anwyx80KazZf6HmBuGrDpVnnAR9lV5v5kprP0X2Q&oe=69C8EF77",
+        "caption": "Photo 10"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.75761-15/489817171_18497550508044186_1241323506861500982_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=104&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=-VLotFoiDJ0Q7kNvwEH8Q85&_nc_oc=Adq8YALqRfPWxlXxXRVC4_hWqSUFMXCY47De16ezMn1IXl7EEld_YOgoL-mJRIwR2gI&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=To0T8aKyVOBUT6T1lk_bSw&_nc_tpa=Q5bMBQEUGSbzFZRamJp-oabyF7-rUDfVQZw_NDkvSnEE2KbIj6qRXeKXqbrKjua26XSca_UrCuTIe0oG&oh=00_AfxzI9dJ2XuQwnkKigzbqdfTzJ-dZ2P8LwJ-w3vSLjem9Q&oe=69C8DE59",
+        "caption": "Photo 11"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "4'10\" x 19.5\" x 2.25\" | 26.5 liters"
+      },
+      {
+        "raw": "4'11\" x 19.63\" x 2.3\" | 27.5 liters"
+      },
+      {
+        "raw": "5'0\" x 19.75\" x 2.32\" | 28.5 liters"
+      },
+      {
+        "raw": "5'1\" x 19.88\" x 2.35\" | 29.4 liters"
+      },
+      {
+        "raw": "5'2\" x 20\" x 2.38\" | 30.5 liters"
+      },
+      {
+        "raw": "5'3\" x 20.13\" x 2.4\" | 31.6 liters"
+      },
+      {
+        "raw": "5'4\" x 20.25\" x 2.44\" | 32.7 liters"
+      },
+      {
+        "raw": "5'5\" x 20.38\" x 2.48\" | 33.8 liters"
+      },
+      {
+        "raw": "5'6\" x 20.5\" x 2.5\" | 34.8 liters"
+      },
+      {
+        "raw": "5'7\" x 20.63\" x 2.56\" | 36.4 liters"
+      },
+      {
+        "raw": "5'8\" x 20.75\" x 2.63\" | 38.2 liters"
+      },
+      {
+        "raw": "5'10\" x 21\" x 2.68\" | 40.7 liters"
+      },
+      {
+        "raw": "6'0\" x 22\" x 2.75\" | 44.8 liters"
+      },
+      {
+        "raw": "6'2\" x 22.5\" x 2.75\" | 47 liters"
+      }
+    ]
+  },
+  "moonstone": {
+    "brandSlug": "album-surf",
+    "modelSlug": "moonstone",
+    "descriptionParagraphs": [
+      "Immense paddle power, early speed and a fish feel that can handle good waves",
+      "A board that offers exceptional paddle power, easy speed, and a fishy feel, enabling it to handle larger waves surprisingly well while remaining maneuverable. With the freedom of a twin-fin, and the perfect blend of mid-length paddle and fish-like flow, this board delivers a combination of performance and versatility.",
+      "Bottom contour: Mellow single concave under the front foot, transitioning to a slight double through the fins and accentuated vee off the tail. The concave under the front foot creates lift, while the slight double in the fins helps the board roll rail to rail and accentuated vee creates release off the back foot.",
+      "Deck & rocker: Rocker Profile:\nStretched fish rocker, making it flatter under the chest but also giving it more entry and exit rocker. The extra entry and exit rocker allow the board to be ridden in steeper surf and maintain performance.\n\nDeck Profile:\nFoam packed under the chest, easing into a modern rail and carried forward to a beak nose. Strong paddler that easily gets up to speed while continuing momentum and flow throughout the wave."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/moonstone_180x.jpg?v=1686176287",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/moonstone_180x.jpg?v=1686176287",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/8BB64C85-788E-4F74-B989-EAD9DF27BC08-85420-00000CA6AFDFD493_180x.jpg?v=1714237495",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/A053_C016_0302VF.0000182_2_180x.jpg?v=1709862619",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/A053_C016_0302VF.0000182_2_1728x.jpg?v=1709862619",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53834928_Unknown_ecacded9-23e6-4474-9bf0-1a60f459f4ba_180x.jpg?v=1685139648",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53834928_Unknown_ecacded9-23e6-4474-9bf0-1a60f459f4ba_900x.jpg?v=1685139648",
+        "caption": "Photo 5"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/A053_C046_0302TZ.0000364_180x.jpg?v=1709862677",
+        "caption": "Photo 6"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/A053_C046_0302TZ.0000364_1950x.jpg?v=1709862677",
+        "caption": "Photo 7"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_May_11_2023_9_34_04_AM_8170d72e-9392-414f-8083-5c1491f69009_180x.jpg?v=1684973858",
+        "caption": "Photo 8"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53551296_Unknown_09bf87d7-e138-48c6-ae2d-9a8f9860babc_180x.jpg?v=1685139668",
+        "caption": "Photo 9"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/649238481_18569806135044186_8432270156407483148_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=100&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=QATErZ-cok0Q7kNvwGv3HHG&_nc_oc=Adoap8RzijSAXX20HATvJDbqTi7Ly5lw7_rCpCgvuI4Th3GC3CXwK-jGJE7bSrhRvI0&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=Q0_S-lb3OxR0sS2mZ0JoUg&_nc_tpa=Q5bMBQH3fYL9CkI8Q85r93kvw1L_dPPrhp-Uqm_PmjpNAQyt2OcQK4tOCRvuJ6vWopt41AJUhBgvcGYh&oh=00_AfyQ6fOb7jWFBg5cYvYRZxGI69crXYS4BpasI5OvxMIY_g&oe=69C8EE96",
+        "caption": "Photo 10"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/611292980_18550928665044186_254240803540332254_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=111&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=ddJwiP3HOXQQ7kNvwHOa-Jb&_nc_oc=AdrwMDBXCm0EZaKt7hTKqmy8IV0d9nuHyZPIFRDYrdmdQb2jGq9-N4y7sv_tskGBXhc&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=Q0_S-lb3OxR0sS2mZ0JoUg&_nc_tpa=Q5bMBQEHEl3-ovy7aoD8mTqNWozaPGJ61r_79_nitaYqm5iunsLn1vOftkWZu0HXClW-BtOIZ5fleHMB&oh=00_Afy2Yt8SocUEmvSIVIEJqdw40ED1p6qJDyzrM-drJtarJQ&oe=69C8E9C8",
+        "caption": "Photo 11"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/560043827_18531513667044186_2331147919611654793_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=100&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=pujQVRAcpvcQ7kNvwE0jZOR&_nc_oc=Ado5QGxz-s1Brrgw-5vPIVBRjWBW9va6fv5W-ORv5fDLQgipLD4NtRQNXMv5PY59tss&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=efNJ0hTWEABxcGQDnCyepA&_nc_tpa=Q5bMBQH4BEWi0hPB49Yzq1jnR_MKz5ILonltQrC-JTEjQcj6AXCa5d_6kTpy69tllRNo14B_GJJ-iUuC&oh=00_Afz2SE5MYYel2DVuzXxFjH3SEoPhgFZRsW5ztSbqGhXYpA&oe=69C8C249",
+        "caption": "Photo 12"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "5'10\" x 18.6\" x 2.38\" | 30 liters"
+      },
+      {
+        "raw": "6'0\" x 18.8\" x 2.44\" | 31.5 liters"
+      },
+      {
+        "raw": "6'2\" x 19\" x 2.5\" | 33.7 liters"
+      },
+      {
+        "raw": "6'4\" x 19.5\" x 2.56\" | 36.8 liters"
+      },
+      {
+        "raw": "6'6\" x 19.75\" x 2.63\" | 39.5 liters"
+      },
+      {
+        "raw": "6'8\" x 20\" x 2.68\" | 41.2 liters"
+      },
+      {
+        "raw": "6'10\" x 20.5\" x 2.75\" | 44.5 liters"
+      },
+      {
+        "raw": "7'0\" x 20.75\" x 2.8\" | 47 liters"
+      }
+    ]
+  },
+  "townsend": {
+    "brandSlug": "album-surf",
+    "modelSlug": "townsend",
+    "descriptionParagraphs": [
+      "A long, narrow midlength that works in a wide variety of waves.",
+      "A board that will change your perspective on midlengths. It effortlessly handles small, mushy waves with its paddle power and stability, while still delivering a performance feel in more powerful waves.",
+      "Foam packed under the chest, easing into a performance-oriented modern rail and carried forward to a beak nose. Strong paddler that easily gets up to speed while continuing momentum and flow throughout the wave.",
+      "Bottom contour: Single concave under the front foot, transitioning into a slight double through the fins and vee off the tail, otherwise known as a spiral vee. The modern bottom generates speed, helps the board roll rail to rail and drive off your back foot.",
+      "Deck & rocker: Foam packed under the chest, easing into a performance-oriented modern rail and carried forward to a beak nose. Strong paddler that easily gets up to speed while continuing momentum and flow throughout the wave. Relaxed entry rocker with a subtle curve throughout and a bit of extra rocker in the exit. Relaxed entry gives more surface area under your chest for paddling and down the line speed. Extra exit rocker allows for more critical surfing by letting the board fit in steeper sections of the wave."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/Townsend_Background_180x.png?v=1693420635",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Townsend_Background_180x.png?v=1693420635",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53830048_Unknown_180x.jpg?v=1684530491",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Townsend_Outline_f6823ba3-5c05-4fa0-92a1-9bdf94a2e3db_180x.png?v=1684428672",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Townsend-Diamond-Outline_180x.png?v=1684428528",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/Townsend-pin-outline_180x.png?v=1696021239",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53830160_Unknown_180x.jpg?v=1684530463",
+        "caption": "Photo 5"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Aug_28_2020_2_40_25_PM_1_180x.jpg?v=1684784718",
+        "caption": "Photo 6"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.75761-15/475429094_18482899495044186_3989506337808328902_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=105&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiQ0FST1VTRUxfSVRFTS5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=zJAcnMqNOCUQ7kNvwH_oMjJ&_nc_oc=AdqXwIIuytHBJpKaK4wjHr2yX248UzIqmAWXet8s1H2TUU9ybH-Q2oJQ42n7ZmzTlpE&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=To0T8aKyVOBUT6T1lk_bSw&_nc_tpa=Q5bMBQHpAYnrAbD0v9D31oPGePbwye5uQ3lwRle7EyGW0pFMOS7olvg4NBDp82IYduw2UxUys1eabeo1&oh=00_AfzLAotyIC7yzvFEBXTom4fvOXzw2C5FseYQS77qwHyNNQ&oe=69C8C43C",
+        "caption": "Photo 7"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t39.30808-6/471452766_18477183136044186_7758567974458448217_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=105&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=Y84TEd7ZFH4Q7kNvwFqtR8B&_nc_oc=Adpzh3DsVYauwFwRqqVKXwhcq5HNVkUDoj0Bt5Riz5X5tLW_6hyx6NanULWrjZ1HtVw&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=P3gLNDq4LZuO7Q571UWRWQ&_nc_tpa=Q5bMBQHLsv4N34JF2HRB8M-kcdO4uPNIh54kp1-nLTHoXlim4jz2jwy78_6c28G8swbCX5rp5I3_sP4l&oh=00_AfwLWSvTGTXdCY9yos8S4nPRd-2MNdm3k3EM_mhPoUoxTA&oe=69C8DB63",
+        "caption": "Photo 8"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t39.30808-6/471707476_18476939176044186_3367159959743788961_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=104&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMiJ9&_nc_ohc=KkzWm0_ZoxQQ7kNvwG2yS0G&_nc_oc=AdqNOivQQPgxsCuyQ872ezD7RAbPT2_fn4-k2_o4hYUSFkSJ42Rs6LmfozsSyySdfE4&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=gyWkODez3IH4DH5CnDIK1w&_nc_tpa=Q5bMBQEbMdXNUGcK3tXFWXryddAoHYtLcMyvPR_S6NjGLMaAX5Dn9LMsWnfs2wbqmQ2xUNuEBFNNTJta&oh=00_AfzX-1tmcS2ycEOtxgC3rxm21Kc9zz5uxThcYF7V8CwSCA&oe=69C8C286",
+        "caption": "Photo 9"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/628286833_18326150644220320_4334817076988308520_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=110&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=iYWQ0JTQe88Q7kNvwFTCboD&_nc_oc=Adq5WcHgE1TZxlBlPENyPaW7ZhOpV0xWBek0uCikxy_f5heLJMrGSv9EiW09KDyjB9c&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=9lKJe8iOZkM6eiG27T3xmQ&_nc_tpa=Q5bMBQF4gw_MBeB-hrI4-Ff9ONke186Mzc4Wvn39o7tgzvOTK3wGo5o2X-XNvssw1YU6-XCeAVSvKmRs&oh=00_Afz2ndV20wh794WGovlTlQ5cknEM7_pms_OttLUaI8OI7g&oe=69C8BFD7",
+        "caption": "Photo 10"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "6'4\" x 19.25\" x 2.44\" | 33.5 liters"
+      },
+      {
+        "raw": "6'6\" x 19.5\" x 2.5\" | 36.5 liters"
+      },
+      {
+        "raw": "6'8\" x 19.75\" x 2.63\" | 39.5 liters"
+      },
+      {
+        "raw": "6'10\" x 20\" x 2.68\" | 42 liters"
+      },
+      {
+        "raw": "7'0\" x 20\" x 2.7\" | 43.1 liters"
+      },
+      {
+        "raw": "7'2\" x 20.25\" x 2.75\" | 45.5 liters"
+      },
+      {
+        "raw": "7'4\" x 20.5\" x 2.8\" | 48 liters"
+      }
+    ]
+  },
+  "darkness": {
+    "brandSlug": "album-surf",
+    "modelSlug": "darkness",
+    "descriptionParagraphs": [
+      "The paddle and glide of a traditional mid length, with the freedom of a twin fin.",
+      "The Darkness combines the paddle of a classic egg midlength with more bite and maneuverability. A great all around option that is extremely versatile. Longer sizes are perfect longboard alternatives with a ton of paddle and glide. The shorter you go the more maneuverable.",
+      "For anyone looking to dive deeper.",
+      "Bottom contour: Single concave under the front foot, transitioning into a slight double through the fins and vee off the tail, otherwise known as a spiral vee. The modern bottom generates speed and helps the board roll rail to rail.",
+      "Deck & rocker: Low rocker profile, making it a great wave-catcher, even in the smallest conditions. The flatter rocker compliments a softer face and creates more surface area, easily generating and maintaining speed.\n\nFull deck profile with softer rails. No beak nose, but it's not necessary because of the strong paddle from a wide outline, plenty of foam and low rocker."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/darkness-white-back_180x.png?v=1693420745",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/darkness-white-back_180x.png?v=1693420745",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Aug_18_2022_9_28_48_AM_4a1e4771-00c3-4166-bc25-d01dcc546e83_180x.jpg?v=1686333542",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Mar_03_2021_7_37_32_AM_180x.jpg?v=1686333567",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Jan_22_2022_2_42_17_PM_900x.png?v=1686333209",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/520476570_18516660250044186_1090164933103674459_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=105&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiQ0FST1VTRUxfSVRFTS5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=DVbYWCpRfhMQ7kNvwF3DNI4&_nc_oc=Adpvl6B37OWGG2zUpdQoqxl0D0Ob00Z0qWYUU9Rv_BMIDEiewlvoL5hMsZ2BPRZqJdM&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=nMpfXftiiVaQm0XDixhUEA&_nc_tpa=Q5bMBQGnSD9dHOjyVMqua7BUSDO5uCBiittecfCiQybH3g1T3tIHDd7muGaKpJ6ynN6Ps1r-hHfrPqvo&oh=00_AfwrKQnZLzBWlsjZPRVdviWX19YR8BfdVCfbpNiLUdO7mw&oe=69C8C4EF",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/516576417_18514605877044186_912844403802637989_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=106&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=wAAD_h6jjngQ7kNvwFHlZK2&_nc_oc=AdrkdmvvTrnDdsdOZqVucS2MkHnC6DqtvRVjXat64HRQurwYdOTxniJPJipP3FG5pRw&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=nMpfXftiiVaQm0XDixhUEA&_nc_tpa=Q5bMBQHfTVtnZS93SvH0d8WRgvvC9h5iLzDyeSc2s0mc1g7i5dcoP4466inP9JRrz3U9US3XubHjoP7m&oh=00_Afxhb4BLRhn7tVv-jrse2eYYOKVNUgMGw-ElR7DuIPo1IQ&oe=69C8DF8A",
+        "caption": "Photo 5"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.75761-15/473151450_18480537751044186_3594710859403169654_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=110&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiQ0FST1VTRUxfSVRFTS5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=nlEii9BwlJ8Q7kNvwFVNh7S&_nc_oc=AdrnfiauYjyi5p1xbrpD1I_wgaBXBZ903x3zg9eI9NNrb-Wf2HRzsiIACRPMWljkRIk&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=To0T8aKyVOBUT6T1lk_bSw&_nc_tpa=Q5bMBQGd86E1k3F7kxXGb-MqyoKiBYEFZpo5ZSizJHxijIrke8W81VSt7yIIzkdrXiYhsT5SRSe2pmEq&oh=00_Afw8dX68CS8MhCdWv0qTLCRN9WjmUzMk08Du32zJ1CG-EA&oe=69C8E937",
+        "caption": "Photo 6"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "6'7\" x 21\" x 2.68\""
+      },
+      {
+        "raw": "6'8\" x 21.5\" x 2.68\""
+      },
+      {
+        "raw": "6'9\" x 21.5\" x 2.68\""
+      },
+      {
+        "raw": "6'11\" x 21.5\" x 2.68\""
+      },
+      {
+        "raw": "7'1\" x 21.5\" x 2.75\""
+      },
+      {
+        "raw": "7'2\" x 22\" x 2.75\""
+      },
+      {
+        "raw": "7'4\" x 22\" x 2.75\""
+      },
+      {
+        "raw": "7'6\" x 22.5\" x 2.88\""
+      }
+    ]
+  },
+  "whale-shark": {
+    "brandSlug": "album-surf",
+    "modelSlug": "whale-shark",
+    "descriptionParagraphs": [
+      "Part glider, part log, part fish. Widepoint way forward, catches anything you paddle for. Easy glide and trim, leading into flowing cutbacks with stability off the white wash. As simple as surfing gets."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/model-outline-whaleshark_180x.jpg?v=1643010407",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/model-outline-whaleshark_180x.jpg?v=1643010407",
+        "caption": "Board"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "9'6\" x 23\" x 3\""
+      },
+      {
+        "raw": "9'10\" x 23.5\" x 3.25\""
+      },
+      {
+        "raw": "10'2\" x 23.75\" x 3.5\""
+      },
+      {
+        "raw": "10'7\" x 24\" x 3.75\""
+      },
+      {
+        "raw": "11'0\" x 24\" x 4\""
+      }
+    ]
+  },
+  "lightbender": {
+    "brandSlug": "album-surf",
+    "modelSlug": "lightbender",
+    "descriptionParagraphs": [
+      "Asher and Matt's next evolution of a fish.",
+      "With the bottom contours of a performance shortboard, and a more refined rail, the Lightbender combines the best of both worlds. A flat fast rocker, combined with a balance of pivot and drive makes the lightbender a versatile board that's approachable from a performance and alternative perspective.",
+      "Flatter rocker underneath the chest for easy wave-catching with slightly more entry and exit rocker than a standard fish. Holds better in steep surf, while taking the speed/flow of a fish and mixing it with a more aggressive approach. Foam packed under the chest, easing into a modern rail and carried forward to a beak nose. Strong paddler that easily gets up to speed while continuing momentum and flow throughout the wave.",
+      "Bottom contour: Single concave under the front foot, transitioning into a slight double through the fins and vee off the tail, otherwise known as a spiral vee. The modern bottom generates speed, helps the board roll rail to rail and drive off your back foot.",
+      "Deck & rocker: Flatter rocker underneath the chest for easy wave-catching with slightly more entry and exit rocker than a standard fish. Holds better in steep surf, while taking the speed/flow of a fish and mixing it with a more aggressive approach. Foam packed under the chest, easing into a modern rail and carried forward to a beak nose. Strong paddler that easily gets up to speed while continuing momentum and flow throughout the wave."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/lightbender_180x.jpg?v=1693414538",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/lightbender_180x.jpg?v=1693414538",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/17C038C0-A833-442C-AD50-2707BC3342A8-578-00000145A4E40889_be98fddc-25d4-4222-ba38-9d9f25687a86_180x.jpg?v=1714158439",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Mar_14_2023_11_47_54_AM.png?v=1679087065",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/3D3B3479-F5C0-42A0-917B-679794C3721D_1_105_c_180x.jpg?v=1714235565",
+        "caption": "Photo 3"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "4'9\" x 19\" x 2.2\" | 23 liters"
+      },
+      {
+        "raw": "5'1\" x 19.5\" x 2.3\" | 26 liters"
+      },
+      {
+        "raw": "5'3\" x 19.75\" x 2.35\" | 28 liters"
+      },
+      {
+        "raw": "5'5\" x 20\" x 2.44\" | 30.6 liters"
+      },
+      {
+        "raw": "5'6\" x 20.13\" x 2.48\" | 31.7 liters"
+      },
+      {
+        "raw": "5'7\" x 20.25\" x 2.5\" | 32.8 liters"
+      },
+      {
+        "raw": "5'8\" x 20.38\" x 2.52\" | 34 liters"
+      },
+      {
+        "raw": "5'9\" x 20.5\" x 2.56\" | 35 liters"
+      },
+      {
+        "raw": "5'10\" x 20.63\" x 2.63\" | 36.7 liters"
+      },
+      {
+        "raw": "5'11\" x 20.75\" x 2.63\" | 37.9 liters"
+      },
+      {
+        "raw": "6'0\" x 20.88\" x 2.68\" | 39.1 liters"
+      },
+      {
+        "raw": "6'1\" x 21\" x 2.7\" | 40.8 liters"
+      }
+    ]
+  },
+  "twinsman": {
+    "brandSlug": "album-surf",
+    "modelSlug": "twinsman",
+    "descriptionParagraphs": [
+      "This board will change your perspective of what a twin fin is.",
+      "The Twinsman offers the same performance as a shortboard combined with the effortless speed of a twin fin. Approachable for any style of surfing. A board that you can really push on rail or just enjoy the easy down the line speed. Paddles and gets up to speed faster than a standard performance board, but doesn't have the limitations of a traditional twin. More pivot and drive off the bottom while fitting in tighter sections. Different variations allow this concept to be applied to any wave range.",
+      "The Twinsman offers the same performance as a shortboard combined with the effortless speed of a twin fin. Approachable for any style of surfing. A board that you can really push on rail or just enjoy the easy down the line speed. Paddles and gets up to speed faster than a standard performance board, but doesn't have the limitations of a traditional twin. More pivot and drive off the bottom while fitting in tighter sections.",
+      "Bottom contour: Single concave under the front foot, transitioning into a slight double through the fins and vee off the tail, otherwise known as a spiral vee. The modern bottom generates speed, helps the board roll rail to rail and drive off your back foot.",
+      "Deck & rocker: Relaxed entry rocker lets more surface area contact the water, in turn creating better paddle, speed generation and momentum. Extra exit rocker allows the board to fit in steeper sections and be surfed more vertically than traditional twins.\n\nFlat/concave deck with foam pushed to the perimeter, quickly tapering into a modern rail. A flat deck distributes foam evenly throughout the board and under your chest, providing more paddle and allowing the board to be ridden with extra foam."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/model-outline-twinsman_180x.png?v=1682362854",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/model-outline-twinsman_180x.png?v=1682362854",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/7261379A-1828-412E-A208-8BF0D0EECBD3-6374-00000130011E0F06_acd9bcc0-e2fd-458f-b422-ab5703ba11d5.jpg?v=1741217274",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/519424531_18516113158044186_159752847109747114_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=mZ4idvOQaBkQ7kNvwGpAvch&_nc_oc=Adofg_1msu5D6jIeR5LfmaTtZGFhl5BHP3XRaO7mf2tG_LbNHOoIXklM6z2JU64a_TY&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=nMpfXftiiVaQm0XDixhUEA&_nc_tpa=Q5bMBQGc2842DgUu1wSNTJG6q2_Qou13tYJZkyUyQPqznN6Nu4qb8pDRqx9vwinE8SWQ7LZE6ydy0FxF&oh=00_AfxWMoslyN7YJARCQCMg5egkJmcnYNVOG-HTFoxBHKxMEA&oe=69C8BC7B",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Nov_21_2022_4_04_58_PM_1950x.png?v=1674772222",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Twinny_180x.png?v=1770056162",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/BA357FE0-98E7-47A5-B2C8-D50A5AEF2C93_1_105_c_180x.jpg?v=1714236626",
+        "caption": "Photo 5"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "5'0\" x 18.75\" x 2\" | 23 liters"
+      },
+      {
+        "raw": "5'2\" x 19\" x 2.13\" | 25.3 liters"
+      },
+      {
+        "raw": "5'3\" x 19.13\" x 2.18\" | 26.6 liters"
+      },
+      {
+        "raw": "5'4\" x 19.25\" x 2.25\" | 27.9 liters"
+      },
+      {
+        "raw": "5'5\" x 19.38\" x 2.3\" | 29 liters"
+      },
+      {
+        "raw": "5'6\" x 19.5\" x 2.32\" | 30 liters"
+      },
+      {
+        "raw": "5'7\" x 19.63\" x 2.35\" | 31 liters"
+      },
+      {
+        "raw": "5'8\" x 19.75\" x 2.38\" | 32 liters"
+      },
+      {
+        "raw": "5'9\" x 19.88\" x 2.4\" | 33.4 liters"
+      },
+      {
+        "raw": "5'10\" x 20\" x 2.44\" | 34.4 liters"
+      },
+      {
+        "raw": "5'11\" x 20.25\" x 2.48\" | 36 liters"
+      },
+      {
+        "raw": "6'0\" x 20.5\" x 2.5\" | 37.3 liters"
+      },
+      {
+        "raw": "6'2\" x 21\" x 2.63\" | 40.4 liters"
+      },
+      {
+        "raw": "6'4\" x 21.5\" x 2.75\" | 43.9 liters"
+      }
+    ]
+  },
+  "insanity": {
+    "brandSlug": "album-surf",
+    "modelSlug": "insanity",
+    "descriptionParagraphs": [
+      "The Insanity is a swiss army knife when it comes to high performance shortboards. Designed with versatility in mind, the Insanity has a unique ability to fit in the most critical section of the wave, while also carrying speed through flat sections with ease.",
+      "\"It was a weird year where the sand was all off on the north shore and this wave insanities was breaking and it was just like a sand bottom dredging square tube and I start getting these clips coming through making these crazy steep drops just like knifing in holding it and then getting to the bottom and squaring it up\"\n-Matt parker",
+      "Bottom contour: Deep single concave under the front foot, transitioning into a slight double through the fins and vee off the tail, otherwise known as a spiral vee. The modern bottom generates speed, helps the board roll rail to rail and drive off your back foot.",
+      "Deck & rocker: Rocker Profile\nRelaxed entry rocker for a performance board with a subtle curve throughout and extra rocker in the exit. Relaxed entry gives more surface area under your chest for paddling and down the line speed. Extra exit rocker allows for more critical surfing by letting the board fit in steeper sections of the wave.\n\nDeck Profile\nHidden foam in the center and under the chest, dispersing evenly towards the beak nose and tapering quickly into a modern rail. The fuller deck profile on a performance board gives it extra paddle without sacrificing performance and allows the board to carry momentum."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/insanity_62386479-6261-448d-b307-96b22c328861_180x.jpg?v=1693421018",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/insanity_62386479-6261-448d-b307-96b22c328861_180x.jpg?v=1693421018",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/209FA2BF-D571-42FD-BEE0-B62280555680-926-000000D6B72FD2B2_180x.jpg?v=1714236944",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/DSC_3551_1728x.jpg?v=1686775535",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53549792_Unknown_900x.jpg?v=1686775517",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/IMG_4993_c2a43c67-5c05-49f7-bb14-a1bf5c1aeb31_1950x.jpg?v=1686775955",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/IMG_9602_180x.png?v=1686776964",
+        "caption": "Photo 5"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53549808_Unknown_180x.jpg?v=1686776289",
+        "caption": "Photo 6"
+      },
+      {
+        "url": "https://scontent.cdninstagram.com/v/t51.82787-15/622987690_18118248868524949_413156125323785372_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=110&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiRkVFRC5iZXN0X2ltYWdlX3VybGdlbi5DMyJ9&_nc_ohc=XxmjJTvy1GEQ7kNvwGW0tta&_nc_oc=AdoyafQV7JQiT_1fePfp5Rs5trFzXnTM1rTSbjIwwXBbsyQxCK6SxFyn5CAHwE9NF8c&_nc_zt=23&_nc_ht=scontent.cdninstagram.com&edm=ANo9K5cEAAAA&_nc_gid=s0yz1tAukWS_T1yfnWWwnQ&_nc_tpa=Q5bMBQEWmihk_Pnn8Ovax-4FZdP5JI9ybRisEOYH4_iQ9TAtTf0bzt27OJJuTTgc7Ammamt2IJzZNTkB&oh=00_Afzh04S24sc2fU7LuZ7UYqHdL-DAhmxAnKIrvsCYVFKSNw&oe=69C8EC7A",
+        "caption": "Photo 7"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "5'2\" x 18.5\" x 2.13\" | 23.3 liters"
+      },
+      {
+        "raw": "5'4\" x 18.63\" x 2.25\" | 25.5 liters"
+      },
+      {
+        "raw": "5'6\" x 18.88\" x 2.32\" | 27.5 liters"
+      },
+      {
+        "raw": "5'7\" x 19\" x 2.35\" | 28.5 liters"
+      },
+      {
+        "raw": "5'8\" x 19.13\" x 2.38\" | 29.5 liters"
+      },
+      {
+        "raw": "5'9\" x 19.25\" x 2.4\" | 30.5 liters"
+      },
+      {
+        "raw": "5'10\" x 19.38\" x 2.44\" | 31.5 liters"
+      },
+      {
+        "raw": "5'11\" x 19.5\" x 2.5\" | 33 liters"
+      },
+      {
+        "raw": "6'1\" x 19.75\" x 2.56\" | 35 liters"
+      },
+      {
+        "raw": "6'3\" x 20\" x 2.63\" | 37.5 liters"
+      },
+      {
+        "raw": "6'5\" x 21\" x 2.75\" | 42 liters"
+      }
+    ]
+  },
+  "bom-dia": {
+    "brandSlug": "album-surf",
+    "modelSlug": "bom-dia",
+    "descriptionParagraphs": [
+      "Bom Dia (Good Morning), a collaboration between Matt Parker and Victor Bernardo.",
+      "The Bom Dia is an alternative performance board that is meant to be ridden as well as you can surf. Unlike most alternative boards, the Bom Dia doesn't need much width as it generates speed efficiently and planes right off the bat. With a narrow outline and asymmetrical tail, it rolls rail to rail instantly, making it very user friendly. Strong paddler that carries speed through turns. Sized similar to an Insanity, slightly shorter with more volume than a performance board.",
+      "The Bom Dia combines the performance of a modern shortboard with the paddle and speed of an alternative board. With a narrow outline and asymmetrical tail, it rolls rail to rail instantly, while maintaining speed, making it very user friendly.",
+      "Bottom contour: Deep single concave under the front foot, transitioning into a slight double through the fins and vee off the tail, otherwise known as a spiral vee. The modern bottom generates speed, helps the board roll rail to rail and drive off your back foot.",
+      "Deck & rocker: Rocker Profile:\nRelaxed entry rocker for a performance board with a subtle curve throughout and extra rocker in the exit. Relaxed entry gives more surface area under your chest for paddling and down the line speed. Extra exit rocker allows for more critical surfing by letting the board fit in steeper sections of the wave.\n\nDeck Profile:\nHidden foam in the center and under the chest, dispersing evenly towards the beak nose and tapering quickly into a modern rail. The fuller deck profile on a performance board gives it extra paddle without sacrificing performance and allows the board to carry momentum."
+    ],
+    "priceUsd": null,
+    "marketingImageUrl": "https://albumsurf.com/cdn/shop/collections/BomDia_180x.png?v=1693414932",
+    "galleryImages": [
+      {
+        "url": "https://albumsurf.com/cdn/shop/collections/BomDia_180x.png?v=1693414932",
+        "caption": "Board"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Jul_29_2022_11_36_33_AM.png?v=1680214824",
+        "caption": "Photo 1"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Oct_04_2022_12_54_03_PM_84e2f8ba-ce41-4ebf-851e-92791d21c825_900x.png?v=1680215537",
+        "caption": "Photo 2"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Feb_13_2023_10_08_34_PM_35a3e85c-425a-43ac-92ff-554e36f738c4_900x.jpg?v=1680215194",
+        "caption": "Photo 3"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Mar_09_2023_9_02_26_AM_1950x.jpg?v=1680215163",
+        "caption": "Photo 4"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/Photo_Jul_29_2022_11_39_26_AM_48dfd10d-abfe-4e98-a561-1742abd2c1a6_180x.jpg?v=1680215200",
+        "caption": "Photo 5"
+      },
+      {
+        "url": "https://albumsurf.com/cdn/shop/files/53279296_Unknown_900x.jpg?v=1680645111",
+        "caption": "Photo 6"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "5'6\" x 18.25\" x 2.28\" | 26.6 liters"
+      },
+      {
+        "raw": "5'7\" x 18.5\" x 2.32\" | 27.5 liters"
+      },
+      {
+        "raw": "5'8\" x 18.75\" x 2.35\" | 28.8 liters"
+      },
+      {
+        "raw": "5'9\" x 19\" x 2.38\" | 29.8 liters"
+      },
+      {
+        "raw": "5'10\" x 19.25\" x 2.42\" | 31.4 liters"
+      },
+      {
+        "raw": "5'11\" x 19.38\" x 2.44\" | 32.2 liters"
+      },
+      {
+        "raw": "6'0\" x 19.5\" x 2.48\" | 33.4 liters"
+      },
+      {
+        "raw": "6'1\" x 19.68\" x 2.5\" | 34.3 liters"
+      },
+      {
+        "raw": "6'2\" x 19.75\" x 2.54\" | 35.7 liters"
+      },
+      {
+        "raw": "6'3\" x 19.75\" x 2.63\" | 37.1 liters"
+      },
+      {
+        "raw": "6'4\" x 20\" x 2.63\" | 37.5 liters"
+      }
+    ]
+  }
+}
