@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   Fragment,
@@ -28,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
   X,
+  Menu,
   Search,
   ShoppingCart,
   MessageSquare,
@@ -410,31 +412,17 @@ export function Header() {
         .cat-link:hover { color: #000000 !important; text-decoration: none !important; }
       `}</style>
       <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto flex h-14 sm:h-16 md:h-20 min-w-0 items-center gap-2 md:gap-4">
+        <div className="container mx-auto flex h-32 sm:h-40 md:h-52 min-w-0 items-center gap-2 md:gap-4">
           {/* Logo + home link (desktop: logo left of name; mobile: logo is in menu toggle) */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black text-white dark:bg-white dark:text-black">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6"
-              >
-                <path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-                <path d="M2 19c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-                <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-              </svg>
-            </div>
-            <span
-              className="text-2xl font-bold text-black whitespace-nowrap"
-              style={{ overflow: "visible", textOverflow: "clip" }}
-            >
-              Reswell
-            </span>
+            <Image
+              src="/images/reswell-logo.png"
+              alt="Reswell"
+              width={880}
+              height={218}
+              priority
+              className="h-28 w-auto sm:h-[9rem] md:h-48"
+            />
           </Link>
 
           {/* Main search (md+): fills space between nav and actions */}
@@ -640,10 +628,10 @@ export function Header() {
               </div>
             )}
 
-            {/* Mobile menu toggle: logo when closed (white + black waves, hover blue + white waves), X when open */}
+            {/* Mobile menu toggle: two-line hamburger when closed, X when open */}
             <button
               type="button"
-              className={`md:hidden flex h-9 w-9 min-w-[2.25rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              className={`md:hidden flex h-10 w-10 min-w-[2.5rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 mobileLogoHovered && !mobileMenuOpen
                   ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
                   : "border-border bg-white text-black"
@@ -656,20 +644,7 @@ export function Header() {
               {mobileMenuOpen ? (
                 <X className="h-5 w-5" />
               ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-5 w-5 pointer-events-none"
-                >
-                  <path d="M2 12c.6.5 1.2 1 2.5 1C7 13 7 11 9.5 11c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-                  <path d="M2 19c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-                  <path d="M2 5c.6.5 1.2 1 2.5 1C7 6 7 4 9.5 4c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-                </svg>
+                <Menu className="h-5 w-5" />
               )}
             </button>
           </div>
