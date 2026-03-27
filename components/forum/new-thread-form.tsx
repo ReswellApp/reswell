@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 import { pickUniqueThreadSlug } from "@/lib/forum-slug"
+import { getImpersonation } from "@/lib/impersonation"
 
 export function NewThreadForm() {
   const router = useRouter()
@@ -16,6 +17,7 @@ export function NewThreadForm() {
   const [body, setBody] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [impersonation] = useState(() => getImpersonation())
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,6 +33,24 @@ export function NewThreadForm() {
       return
     }
     setSubmitting(true)
+
+    if (impersonation) {
+      const res = await fetch("/api/admin/impersonate/create-thread", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: t, body: b }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Could not create post as this user.")
+        setSubmitting(false)
+        return
+      }
+      router.push(`/board-talk/${data.slug}`)
+      router.refresh()
+      return
+    }
+
     const supabase = createClient()
     const {
       data: { user },

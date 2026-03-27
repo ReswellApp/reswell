@@ -22,10 +22,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Flag, Mail, User, RotateCcw, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Flag, Mail, User, RotateCcw, CheckCircle2, XCircle, UserCog } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 interface Profile {
   id: string
@@ -62,6 +63,7 @@ interface ReportRow {
 
 export default function AdminUserDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const id = params.id as string
   const supabase = createClient()
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -104,6 +106,25 @@ export default function AdminUserDetailPage() {
     }
     load()
   }, [id])
+
+  async function startImpersonation() {
+    if (!profile) return
+    const res = await fetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: id,
+        displayName: profile.display_name || 'User',
+        email: profile.email,
+      }),
+    })
+    if (res.ok) {
+      toast.success(`Now acting as ${profile.display_name || 'this user'}`)
+      router.push('/')
+    } else {
+      toast.error('Failed to start impersonation')
+    }
+  }
 
   async function toggleVerified() {
     if (!profile) return
@@ -232,6 +253,30 @@ export default function AdminUserDetailPage() {
               </p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Act as User */}
+      <Card>
+        <CardContent className="p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <UserCog className="h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-medium text-foreground text-sm">Act as this user</p>
+              <p className="text-xs text-muted-foreground">
+                Browse the site and perform actions on behalf of this user. You can create listings, post in forums, and help with account issues.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => void startImpersonation()}
+            className="shrink-0 bg-amber-500 hover:bg-amber-600 text-black"
+          >
+            <UserCog className="h-4 w-4 mr-1.5" />
+            Act as User
+          </Button>
         </CardContent>
       </Card>
 

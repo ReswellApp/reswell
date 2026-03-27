@@ -27,6 +27,7 @@ import {
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
 import { slugify } from "@/lib/slugify"
+import { getImpersonation, type ImpersonationData } from "@/lib/impersonation"
 import {
   FINS_TYPE_OPTIONS,
   SINGLE_FIN_SIZE_OPTIONS,
@@ -131,6 +132,7 @@ function SellPageContent() {
   const supabase = createClient()
   const editId = searchParams.get("edit")
 
+  const [impersonation] = useState<ImpersonationData | null>(() => getImpersonation())
   const [loading, setLoading] = useState(false)
   const [editLoading, setEditLoading] = useState(!!editId)
   const [listingType, setListingType] = useState<"used" | "board">("used")
@@ -491,6 +493,43 @@ function SellPageContent() {
     return new File([finalBlob], `${baseName}.jpg`, { type: "image/jpeg" })
   }
 
+  async function uploadImagesToStorage(userId: string): Promise<string[]> {
+    const urls: string[] = []
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i]
+      if (img.url && !img.file) {
+        urls.push(img.url)
+        continue
+      }
+      if (!img.file) continue
+      let fileToUpload: File
+      try {
+        fileToUpload = await toUploadableImage(img.file)
+        fileToUpload = await compressImage(fileToUpload)
+      } catch {
+        continue
+      }
+      const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
+      const fileName = `${userId}/${Date.now()}-${i}-${baseName}.jpg`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("listings")
+        .upload(fileName, fileToUpload, {
+          contentType: "image/jpeg",
+          upsert: false,
+        })
+      if (uploadError) {
+        console.error("Upload error:", uploadError)
+        toast.error(`Photo ${i + 1} failed to upload: ${uploadError.message}`)
+        continue
+      }
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("listings").getPublicUrl(uploadData.path)
+      urls.push(publicUrl)
+    }
+    return urls
+  }
+
   async function syncListingImages(listingId: string, userId: string) {
     if (removedImageIds.length) {
       await supabase
@@ -570,6 +609,8 @@ function SellPageContent() {
         router.push("/auth/login?redirect=/sell")
         return
       }
+
+      const effectiveUserId = impersonation?.userId ?? user.id
 
       if (!formData.title || !formData.price || !formData.condition) {
         toast.error("Please fill in all required fields")
@@ -799,145 +840,162 @@ function SellPageContent() {
         if (updateError) throw updateError
         listingSlug = updated?.slug ?? newSlug
       } else {
-        const newSlug = await generateUniqueSlug(formData.title)
-        const { data: listing, error: listingError } = await supabase
-          .from("listings")
-          .insert({
-            user_id: user.id,
-            title: formData.title,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            condition: formData.condition,
-            slug: newSlug,
-            section: listingType === "board" ? "surfboards" : listingType,
-            category_id:
-              listingType === "used"
-                ? formData.category
-                : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
-            board_type: listingType === "board" ? formData.boardType : null,
-            length_feet:
-              listingType === "board" && formData.boardLength
-                ? parseInt(formData.boardLength.split("'")[0])
-                : null,
-            length_inches:
-              listingType === "board" && formData.boardLength
-                ? parseInt(formData.boardLength.split("'")[1] || "0")
-                : null,
-            latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
-            longitude:
-              fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
-            city: fulfillmentRow.local_pickup ? formData.locationCity : null,
-            state: fulfillmentRow.local_pickup ? formData.locationState : null,
-            shipping_available: fulfillmentRow.shipping_available,
-            local_pickup: fulfillmentRow.local_pickup,
-            shipping_price: fulfillmentRow.shipping_price,
-            brand:
-              listingType === "board" && formData.brand.trim()
+        const listingFields = {
+          title: formData.title,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          condition: formData.condition,
+          section: listingType === "board" ? "surfboards" : listingType,
+          category_id:
+            listingType === "used"
+              ? formData.category
+              : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
+          board_type: listingType === "board" ? formData.boardType : null,
+          length_feet:
+            listingType === "board" && formData.boardLength
+              ? parseInt(formData.boardLength.split("'")[0])
+              : null,
+          length_inches:
+            listingType === "board" && formData.boardLength
+              ? parseInt(formData.boardLength.split("'")[1] || "0")
+              : null,
+          latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
+          longitude:
+            fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
+          city: fulfillmentRow.local_pickup ? formData.locationCity : null,
+          state: fulfillmentRow.local_pickup ? formData.locationState : null,
+          shipping_available: fulfillmentRow.shipping_available,
+          local_pickup: fulfillmentRow.local_pickup,
+          shipping_price: fulfillmentRow.shipping_price,
+          brand:
+            listingType === "board" && formData.brand.trim()
+              ? formData.brand.trim()
+              : listingType === "used" &&
+                  (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
+                  formData.brand.trim()
                 ? formData.brand.trim()
-                : listingType === "used" &&
-                    (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-                    formData.brand.trim()
-                  ? formData.brand.trim()
-                  : null,
-            index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
-            index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
-            index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
-            gear_size:
-              listingType === "used" &&
-              (formData.category === FINS_CATEGORY_ID ||
-                formData.category === BACKPACK_CATEGORY_ID ||
-                formData.category === BOARD_BAGS_CATEGORY_ID ||
-                formData.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
-              formData.gearSize.trim()
-                ? formData.gearSize.trim()
                 : null,
-            gear_color:
-              listingType === "used" &&
-              (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-              formData.gearColor.trim()
-                ? formData.gearColor.trim()
-                : null,
-            pack_kind:
-              listingType === "used" &&
-              formData.category === BACKPACK_CATEGORY_ID &&
-              (formData.packKind === "surfpack" || formData.packKind === "bag")
-                ? formData.packKind
-                : null,
-            board_bag_kind:
-              listingType === "used" &&
-              formData.category === BOARD_BAGS_CATEGORY_ID &&
-              (formData.boardBagKind === "day" || formData.boardBagKind === "travel")
-                ? formData.boardBagKind
-                : null,
-            apparel_kind:
-              listingType === "used" &&
-              formData.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
-              APPAREL_KIND_VALUES.includes(formData.apparelKind as ApparelKindValue)
-                ? formData.apparelKind
-                : null,
-            wetsuit_size:
-              listingType === "used" &&
-              formData.category === WETSUITS_CATEGORY_ID &&
-              (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(formData.wetsuitSize.trim())
-                ? formData.wetsuitSize.trim()
-                : null,
-            wetsuit_thickness:
-              listingType === "used" &&
-              formData.category === WETSUITS_CATEGORY_ID &&
-              (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(formData.wetsuitThickness.trim())
-                ? formData.wetsuitThickness.trim()
-                : null,
-            wetsuit_zip_type:
-              listingType === "used" &&
-              formData.category === WETSUITS_CATEGORY_ID &&
-              WETSUIT_ZIP_VALUES.includes(formData.wetsuitZipType as WetsuitZipValue)
-                ? formData.wetsuitZipType
-                : null,
-            leash_length:
-              listingType === "used" &&
-              formData.category === LEASHES_CATEGORY_ID &&
-              (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(formData.leashLength.trim())
-                ? formData.leashLength.trim()
-                : null,
-            leash_thickness:
-              listingType === "used" &&
-              formData.category === LEASHES_CATEGORY_ID &&
-              (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
-                ? formData.leashThickness.trim()
-                : null,
-            collectible_type:
-              listingType === "used" &&
-              formData.category === COLLECTIBLES_CATEGORY_ID &&
-              (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(formData.collectibleType)
-                ? formData.collectibleType
-                : null,
-            collectible_era:
-              listingType === "used" &&
-              formData.category === COLLECTIBLES_CATEGORY_ID &&
-              (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(formData.collectibleEra)
-                ? formData.collectibleEra
-                : null,
-            collectible_condition:
-              listingType === "used" &&
-              formData.category === COLLECTIBLES_CATEGORY_ID &&
-              (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(formData.collectibleCondition)
-                ? formData.collectibleCondition
-                : null,
-            status: "active",
-          })
-          .select()
-          .single()
+          index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
+          index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
+          index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
+          gear_size:
+            listingType === "used" &&
+            (formData.category === FINS_CATEGORY_ID ||
+              formData.category === BACKPACK_CATEGORY_ID ||
+              formData.category === BOARD_BAGS_CATEGORY_ID ||
+              formData.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
+            formData.gearSize.trim()
+              ? formData.gearSize.trim()
+              : null,
+          gear_color:
+            listingType === "used" &&
+            (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
+            formData.gearColor.trim()
+              ? formData.gearColor.trim()
+              : null,
+          pack_kind:
+            listingType === "used" &&
+            formData.category === BACKPACK_CATEGORY_ID &&
+            (formData.packKind === "surfpack" || formData.packKind === "bag")
+              ? formData.packKind
+              : null,
+          board_bag_kind:
+            listingType === "used" &&
+            formData.category === BOARD_BAGS_CATEGORY_ID &&
+            (formData.boardBagKind === "day" || formData.boardBagKind === "travel")
+              ? formData.boardBagKind
+              : null,
+          apparel_kind:
+            listingType === "used" &&
+            formData.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
+            APPAREL_KIND_VALUES.includes(formData.apparelKind as ApparelKindValue)
+              ? formData.apparelKind
+              : null,
+          wetsuit_size:
+            listingType === "used" &&
+            formData.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(formData.wetsuitSize.trim())
+              ? formData.wetsuitSize.trim()
+              : null,
+          wetsuit_thickness:
+            listingType === "used" &&
+            formData.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(formData.wetsuitThickness.trim())
+              ? formData.wetsuitThickness.trim()
+              : null,
+          wetsuit_zip_type:
+            listingType === "used" &&
+            formData.category === WETSUITS_CATEGORY_ID &&
+            WETSUIT_ZIP_VALUES.includes(formData.wetsuitZipType as WetsuitZipValue)
+              ? formData.wetsuitZipType
+              : null,
+          leash_length:
+            listingType === "used" &&
+            formData.category === LEASHES_CATEGORY_ID &&
+            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(formData.leashLength.trim())
+              ? formData.leashLength.trim()
+              : null,
+          leash_thickness:
+            listingType === "used" &&
+            formData.category === LEASHES_CATEGORY_ID &&
+            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
+              ? formData.leashThickness.trim()
+              : null,
+          collectible_type:
+            listingType === "used" &&
+            formData.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(formData.collectibleType)
+              ? formData.collectibleType
+              : null,
+          collectible_era:
+            listingType === "used" &&
+            formData.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(formData.collectibleEra)
+              ? formData.collectibleEra
+              : null,
+          collectible_condition:
+            listingType === "used" &&
+            formData.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(formData.collectibleCondition)
+              ? formData.collectibleCondition
+              : null,
+        }
 
-        if (listingError || !listing) throw listingError
-        listingId = listing.id
-        listingSlug = listing.slug ?? newSlug
+        if (impersonation) {
+          const imageUrls = await uploadImagesToStorage(effectiveUserId)
+          const res = await fetch("/api/admin/impersonate/create-listing", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ listing: listingFields, images: imageUrls }),
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || "Failed to create listing")
+          listingId = data.listing_id
+          listingSlug = data.slug
+        } else {
+          const newSlug = await generateUniqueSlug(formData.title)
+          const { data: listing, error: listingError } = await supabase
+            .from("listings")
+            .insert({
+              user_id: user.id,
+              ...listingFields,
+              slug: newSlug,
+              status: "active",
+            })
+            .select()
+            .single()
+
+          if (listingError || !listing) throw listingError
+          listingId = listing.id
+          listingSlug = listing.slug ?? newSlug
+        }
       }
 
       const sectionPath = listingType === "board" ? "boards" : "used"
       const detailPath = `/${sectionPath}/${listingSlug || listingId}`
 
       if (listingId) {
-        if (!editId) {
+        if (!editId && !impersonation) {
           toast.success("Your listing is live")
           router.push(`${detailPath}?photos=pending`)
           void syncListingImages(listingId, user.id).catch((err: unknown) => {
@@ -948,10 +1006,12 @@ function SellPageContent() {
           })
           return
         }
-        await syncListingImages(listingId, user.id)
+        if (editId) {
+          await syncListingImages(listingId, user.id)
+        }
       }
 
-      toast.success(editId ? "Listing updated" : "Listing created successfully!")
+      toast.success(impersonation ? `Listing created for ${impersonation.displayName}` : editId ? "Listing updated" : "Listing created successfully!")
       router.push(detailPath)
     } catch (error: any) {
       console.error("Error creating listing:", error?.message || error)

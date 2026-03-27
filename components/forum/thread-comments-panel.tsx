@@ -12,6 +12,7 @@ import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { getImpersonation } from "@/lib/impersonation"
 
 export type ThreadCommentRow = {
   id: string
@@ -72,6 +73,7 @@ export function ThreadCommentsPanel({
   isLoggedIn,
   likedCommentIds: initialLikedIds,
 }: Props) {
+  const [impersonation] = useState(() => getImpersonation())
   const [comments, setComments] = useState(initialComments)
   const [likedIds, setLikedIds] = useState(() => new Set(initialLikedIds))
   const [body, setBody] = useState("")
@@ -156,8 +158,44 @@ export function ThreadCommentsPanel({
   async function submitTopLevel(e?: React.FormEvent) {
     e?.preventDefault()
     const text = body.trim()
-    if (!text || !isLoggedIn || submitting) return
+    if (!text || (!isLoggedIn && !impersonation) || submitting) return
     setSubmitting(true)
+
+    if (impersonation) {
+      const res = await fetch("/api/admin/impersonate/create-comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId, body: text, parentId: null }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || "Could not post comment as this user.")
+        setSubmitting(false)
+        return
+      }
+      const sb = createClient()
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", impersonation.userId)
+        .single()
+      const newId = data.comment.id
+      setComments((prev) => [
+        ...prev,
+        {
+          ...data.comment,
+          parent_id: data.comment.parent_id ?? null,
+          profiles: profile ?? { display_name: null, avatar_url: null },
+          forum_comment_likes: [{ count: 0 }],
+        },
+      ])
+      setBody("")
+      setSubmitting(false)
+      toast.success(`Comment posted as ${impersonation.displayName}`)
+      scrollPostedCommentIntoView(newId, composerBarRef.current)
+      return
+    }
+
     const supabase = createClient()
     const {
       data: { user },
@@ -208,8 +246,45 @@ export function ThreadCommentsPanel({
       return
     }
     const text = replyBody.trim()
-    if (!text || !isLoggedIn || replySubmitting) return
+    if (!text || (!isLoggedIn && !impersonation) || replySubmitting) return
     setReplySubmitting(true)
+
+    if (impersonation) {
+      const res = await fetch("/api/admin/impersonate/create-comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId, body: text, parentId }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || "Could not post reply as this user.")
+        setReplySubmitting(false)
+        return
+      }
+      const sb = createClient()
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", impersonation.userId)
+        .single()
+      const newId = data.comment.id
+      setComments((prev) => [
+        ...prev,
+        {
+          ...data.comment,
+          parent_id: data.comment.parent_id ?? parentId,
+          profiles: profile ?? { display_name: null, avatar_url: null },
+          forum_comment_likes: [{ count: 0 }],
+        },
+      ])
+      setReplyBody("")
+      setReplyingToId(null)
+      setReplySubmitting(false)
+      toast.success(`Reply posted as ${impersonation.displayName}`)
+      scrollPostedCommentIntoView(newId, composerBarRef.current)
+      return
+    }
+
     const supabase = createClient()
     const {
       data: { user },

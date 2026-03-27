@@ -22,9 +22,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, XCircle } from 'lucide-react'
+import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, XCircle, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 interface User {
   id: string
@@ -40,6 +41,7 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -123,6 +125,24 @@ export default function AdminUsersPage() {
       toast.success(nextVerified ? 'Verified seller badge granted' : 'Verified seller badge removed')
     } else {
       toast.error('Failed to update user')
+    }
+  }
+
+  async function actAsUser(user: User) {
+    const res = await fetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        displayName: user.display_name || 'User',
+        email: user.email,
+      }),
+    })
+    if (res.ok) {
+      toast.success(`Now acting as ${user.display_name || 'this user'}`)
+      router.push('/')
+    } else {
+      toast.error('Failed to start impersonation')
     }
   }
 
@@ -235,6 +255,9 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => void actAsUser(user)}>
+                            <UserCheck className="h-4 w-4 mr-2" /> Act as User
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleAdmin(user.id, user.is_admin)}>
                             {user.is_admin ? (
                               <>
