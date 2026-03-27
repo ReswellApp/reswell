@@ -482,13 +482,13 @@ export default async function UsedListingPage(props: {
           {sellerListings && sellerListings.length > 0 && (
             <section className="mt-16">
               <h2 className="text-xl font-bold mb-6">More from this Seller</h2>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {sellerListings.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
                   return (
                     <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                       <Link href={`/used/${item.slug || item.id}`} className="flex-1 flex flex-col">
-                        <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                        <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                           {primaryImage?.url ? (
                             <Image
                               src={primaryImage.url || "/placeholder.svg"}
@@ -508,9 +508,9 @@ export default async function UsedListingPage(props: {
                             isLoggedIn={!!user}
                           />
                         </div>
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <h3 className="font-medium line-clamp-1">{capitalizeWords(item.title)}</h3>
-                          <p className="text-lg font-bold text-black dark:text-white mt-1">
+                          <p className="text-base font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>
                         </CardContent>

@@ -365,7 +365,7 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
   }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => {
         const primaryImage = listing.listing_images?.find(
           (img: any) => img.is_primary
@@ -374,7 +374,7 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
         return (
           <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
             <Link href={getListingHref(listing)} className="flex-1 flex flex-col">
-              <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+              <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                 {primaryImage?.url ? (
                   <Image
                     src={primaryImage.url || "/placeholder.svg"}
@@ -394,9 +394,9 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
                   isLoggedIn={isLoggedIn}
                 />
               </div>
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <h3 className="font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
-                <p className="text-xl font-bold text-black dark:text-white mt-2">
+                <p className="text-base font-bold text-black dark:text-white mt-2">
                   ${Number(listing.price).toFixed(2)}
                 </p>
                 {listing.status && listing.status !== "active" && (
@@ -417,7 +417,7 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
                 )}
               </CardContent>
             </Link>
-            <div className="px-4 pb-4 pt-0">
+            <div className="px-3 pb-3 pt-0">
               <MessageListingButton
                 listingId={listing.id}
                 sellerId={listing.user_id}

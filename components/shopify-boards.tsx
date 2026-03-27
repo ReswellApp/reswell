@@ -147,7 +147,7 @@ export function ShopifyBoardsGrid() {
           )}
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {products.map((product) => {
             const price = parseFloat(
               product.priceRange.minVariantPrice.amount
@@ -172,7 +172,7 @@ export function ShopifyBoardsGrid() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <div className="aspect-[4/5] relative bg-muted">
+                  <div className="aspect-[3/4] w-full relative bg-muted">
                     {product.featuredImage ? (
                       <Image
                         src={product.featuredImage.url || "/placeholder.svg"}
@@ -195,7 +195,7 @@ export function ShopifyBoardsGrid() {
                     )}
                   </div>
                 </a>
-                <CardContent className="p-4 flex flex-col flex-1">
+                <CardContent className="p-3 flex flex-col flex-1">
                   {/* Seller info with location */}
                   <Link
                     href={`/sellers/${product.seller.id}`}
@@ -222,13 +222,13 @@ export function ShopifyBoardsGrid() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <h3 className="font-medium line-clamp-2 hover:text-primary transition-colors text-foreground">
+                    <h3 className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors text-foreground">
                       {product.title}
                     </h3>
                   </a>
 
                   <div className="flex items-center gap-2 mt-2">
-                    <p className="text-xl font-bold text-black dark:text-white">
+                    <p className="text-base font-bold text-black dark:text-white">
                       ${price.toFixed(2)}
                     </p>
                     {hasDiscount && (

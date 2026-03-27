@@ -294,16 +294,16 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredUsed.map((listing) => (
                   <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
                           alt={capitalizeWords(listing.title)}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <FavoriteButtonCardOverlay
@@ -312,18 +312,18 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                        <p className="text-lg font-bold text-black dark:text-white mt-1">
+                      <CardContent className="p-3">
+                        <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
+                        <p className="text-base font-bold text-black dark:text-white mt-1">
                           ${listing.price.toFixed(2)}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                           {getPublicSellerDisplayName(listing.profiles)}
                           {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
                         </p>
                       </CardContent>
                     </Link>
-                    <div className="px-4 pb-4 pt-0">
+                    <div className="px-3 pb-3 pt-0">
                       <MessageListingButton
                         listingId={listing.id}
                         sellerId={listing.user_id}
@@ -371,16 +371,16 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredBoards.map((board) => (
                   <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(primaryListingImageUrl(board.listing_images))}
                           alt={capitalizeWords(board.title)}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <FavoriteButtonCardOverlay
@@ -389,18 +389,18 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
-                        <p className="text-lg font-bold text-black dark:text-white mt-1">
+                      <CardContent className="p-3">
+                        <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
+                        <p className="text-base font-bold text-black dark:text-white mt-1">
                           ${board.price.toFixed(2)}
                         </p>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <MapPin className="h-3 w-3 shrink-0" />
                           {[board.city, board.state].filter(Boolean).join(", ") || "Location not set"}
                         </div>
                       </CardContent>
                     </Link>
-                    <div className="px-4 pb-4 pt-0">
+                    <div className="px-3 pb-3 pt-0">
                       <MessageListingButton
                         listingId={board.id}
                         sellerId={board.user_id}
@@ -450,7 +450,7 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {verifiedSpotlight.map(({ profile, listing }) => {
                   const href = listingPublicHref(listing)
                   const sellerLabel =
@@ -462,7 +462,7 @@ export default async function HomePage() {
                       className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
                     >
                       <Link href={href} className="flex-1 flex flex-col">
-                        <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                        <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                           <Image
                             src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
                             alt={capitalizeWords(listing.title)}
@@ -476,20 +476,20 @@ export default async function HomePage() {
                             isLoggedIn={!!user}
                           />
                         </div>
-                        <CardContent className="p-4">
-                          <h3 className="font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                          <p className="text-lg font-bold text-black dark:text-white mt-1">
+                        <CardContent className="p-3">
+                          <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
+                          <p className="text-base font-bold text-black dark:text-white mt-1">
                             ${Number(listing.price).toFixed(2)}
                           </p>
                           {locationLine ? (
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                               <MapPin className="h-3 w-3 shrink-0" />
                               {locationLine}
                             </div>
                           ) : null}
                         </CardContent>
                       </Link>
-                      <div className="border-t border-border/60 bg-muted/40 px-4 py-3">
+                      <div className="border-t border-border/60 bg-muted/40 px-3 py-2">
                         <Link
                           href={`/sellers/${profile.id}`}
                           className="flex items-center gap-3 rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-muted/80"
@@ -513,7 +513,7 @@ export default async function HomePage() {
                           <VerifiedBadge size="md" className="shrink-0" />
                         </Link>
                       </div>
-                      <div className="px-4 pb-4 pt-0">
+                      <div className="px-3 pb-3 pt-0">
                         <MessageListingButton
                           listingId={listing.id}
                           sellerId={listing.user_id}
@@ -558,7 +558,7 @@ export default async function HomePage() {
                 </Link>
               </Button>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {categories.map((category) => {
                 const listing = categoryLatest.get(category.name)
                 const isBoardsCategory = category.slug === null
@@ -570,40 +570,40 @@ export default async function HomePage() {
                       className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
                     >
                       <Link href={category.href} className="flex-1 flex flex-col">
-                        <div className="relative aspect-[4/5] bg-muted overflow-hidden">
+                        <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                             No Image
                           </div>
                         </div>
-                        <CardContent className="p-4">
-                          <h3 className="font-medium line-clamp-2">{category.name}</h3>
+                        <CardContent className="p-3">
+                          <h3 className="text-sm font-medium line-clamp-2">{category.name}</h3>
                           <p
-                            className="text-xl font-bold text-black dark:text-white mt-2 invisible select-none pointer-events-none"
+                            className="text-base font-bold text-black dark:text-white mt-1 invisible select-none pointer-events-none"
                             aria-hidden
                           >
                             $0.00
                           </p>
                           {isBoardsCategory ? (
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                               <MapPin className="h-3 w-3" />
                               Location not set
                             </div>
                           ) : (
-                            <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center justify-between mt-1">
                               <p
-                                className="text-sm text-muted-foreground flex items-center gap-1 invisible"
+                                className="text-xs text-muted-foreground flex items-center gap-1 invisible"
                                 aria-hidden
                               >
                                 .
                               </p>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                 {formatCategory(category.name)}
                               </Badge>
                             </div>
                           )}
                         </CardContent>
                       </Link>
-                      <div className="px-4 pb-4 pt-0">
+                      <div className="px-3 pb-3 pt-0">
                         <Button variant="outline" size="sm" className="bg-transparent" asChild>
                           <Link href={category.href}>Browse</Link>
                         </Button>
@@ -626,12 +626,12 @@ export default async function HomePage() {
                       className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
                     >
                       <Link href={href} className="flex-1 flex flex-col">
-                        <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                        <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                           <Image
                             src={listingCardSrc(imgUrl)}
                             alt={capitalizeWords(listing.title)}
                             fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <FavoriteButtonCardOverlay
@@ -640,25 +640,25 @@ export default async function HomePage() {
                             isLoggedIn={!!user}
                           />
                         </div>
-                        <CardContent className="p-4">
-                          <h3 className="font-medium line-clamp-2">
+                        <CardContent className="p-3">
+                          <h3 className="text-sm font-medium line-clamp-2">
                             {capitalizeWords(listing.title)}
                           </h3>
                           {listing.board_length && (
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               {listing.board_length}
                             </p>
                           )}
-                          <p className="text-xl font-bold text-black dark:text-white mt-2">
+                          <p className="text-base font-bold text-black dark:text-white mt-1">
                             ${Number(listing.price).toFixed(2)}
                           </p>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                             <MapPin className="h-3 w-3" />
                             {locationLine}
                           </div>
                         </CardContent>
                       </Link>
-                      <div className="px-4 pb-4 pt-0">
+                      <div className="px-3 pb-3 pt-0">
                         <MessageListingButton
                           listingId={listing.id}
                           sellerId={listing.user_id}
@@ -675,12 +675,12 @@ export default async function HomePage() {
                     className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
                   >
                     <Link href={href} className="flex-1 flex flex-col">
-                      <div className="aspect-[4/5] relative bg-muted overflow-hidden">
+                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(imgUrl)}
                           alt={capitalizeWords(listing.title)}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <FavoriteButtonCardOverlay
@@ -689,27 +689,27 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-2">
+                      <CardContent className="p-3">
+                        <h3 className="text-sm font-medium line-clamp-2">
                           {capitalizeWords(listing.title)}
                         </h3>
-                        <p className="text-xl font-bold text-black dark:text-white mt-2">
+                        <p className="text-base font-bold text-black dark:text-white mt-1">
                           ${Number(listing.price).toFixed(2)}
                         </p>
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
                             {getPublicSellerDisplayName(listing.profiles)}
                             {listing.profiles?.shop_verified && (
                               <VerifiedBadge size="sm" />
                             )}
                           </p>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                             {formatCategory(category.name)}
                           </Badge>
                         </div>
                       </CardContent>
                     </Link>
-                    <div className="px-4 pb-4 pt-0">
+                    <div className="px-3 pb-3 pt-0">
                       <MessageListingButton
                         listingId={listing.id}
                         sellerId={listing.user_id}
@@ -739,7 +739,7 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredShops.map((shop) => (
                   <Link key={shop.id} href={`/sellers/${shop.id}`}>
                     <Card className="group overflow-hidden hover:shadow-lg transition-shadow h-full">
@@ -803,7 +803,7 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredNew.map((item) => (
                   <Link key={item.id} href={`/shop/${item.id}`}>
                     <Card className="group overflow-hidden hover:shadow-lg transition-shadow">

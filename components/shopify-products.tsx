@@ -142,7 +142,7 @@ export function ShopifyProducts() {
           )}
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {products.map((product) => {
             const price = parseFloat(product.priceRange.minVariantPrice.amount)
             const comparePrice = product.compareAtPriceRange
@@ -183,7 +183,7 @@ export function ShopifyProducts() {
                     )}
                   </div>
                 </a>
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   {/* Seller info */}
                   <Link
                     href={`/sellers/${product.seller.id}`}
@@ -202,12 +202,12 @@ export function ShopifyProducts() {
                   </Link>
 
                   <a href={shopifyUrl} target="_blank" rel="noopener noreferrer">
-                    <h3 className="font-medium line-clamp-2 hover:text-primary transition-colors text-foreground">
+                    <h3 className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors text-foreground">
                       {product.title}
                     </h3>
                   </a>
                   <div className="flex items-center gap-2 mt-2">
-                    <p className="text-xl font-bold text-black dark:text-white">
+                    <p className="text-base font-bold text-black dark:text-white">
                       ${price.toFixed(2)}
                     </p>
                     {hasDiscount && (

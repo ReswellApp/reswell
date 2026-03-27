@@ -496,13 +496,13 @@ export default async function BoardDetailPage(props: {
           {sellerBoards && sellerBoards.length > 0 && (
             <section className="mt-16">
               <h2 className="text-xl font-bold mb-6">More Boards from this Seller</h2>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {sellerBoards.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
                   return (
                     <Link key={item.id} href={`/boards/${item.slug || item.id}`}>
                       <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="aspect-[4/5] relative bg-muted">
+                        <div className="aspect-[3/4] w-full relative bg-muted">
                           {primaryImage?.url ? (
                             <Image
                               src={primaryImage.url || "/placeholder.svg"}
@@ -517,12 +517,12 @@ export default async function BoardDetailPage(props: {
                             </div>
                           )}
                         </div>
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <h3 className="font-medium line-clamp-1">{item.title}</h3>
                           {item.board_length && (
                             <p className="text-sm text-muted-foreground">{item.board_length}</p>
                           )}
-                          <p className="text-lg font-bold text-black dark:text-white mt-1">
+                          <p className="text-base font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>
                         </CardContent>

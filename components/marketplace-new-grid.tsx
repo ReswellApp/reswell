@@ -17,7 +17,7 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
   if (items.length === 0) return null
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {items.map((item) => (
         <Card
           key={item.id}
@@ -40,16 +40,16 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
               )}
             </div>
           </Link>
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <Link href={`/shop/${item.id}`}>
-              <h3 className="font-medium line-clamp-2 hover:text-primary transition-colors text-foreground">
+              <h3 className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors text-foreground">
                 {item.title}
               </h3>
             </Link>
-            <p className="text-xl font-bold text-black dark:text-white mt-2">
+            <p className="text-base font-bold text-black dark:text-white mt-1">
               ${Number(item.price).toFixed(2)}
             </p>
-            <div className="mt-3">
+            <div className="mt-2">
               <AddToCartButton
                 item={{
                   id: item.id,

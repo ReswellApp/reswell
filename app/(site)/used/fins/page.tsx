@@ -80,11 +80,11 @@ export default async function UsedFinsPage(props: { searchParams: Promise<UsedGe
           <div className="container mx-auto">
             <Suspense
               fallback={
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {Array.from({ length: 8 }).map((_, i) => (
                     <Card key={i} className="overflow-hidden">
-                      <div className="aspect-[4/5] bg-muted animate-pulse" />
-                      <CardContent className="p-4 space-y-2">
+                      <div className="aspect-[3/4] w-full bg-muted animate-pulse" />
+                      <CardContent className="p-3 space-y-2">
                         <div className="h-4 bg-muted rounded animate-pulse" />
                         <div className="h-6 w-20 bg-muted rounded animate-pulse" />
                       </CardContent>
