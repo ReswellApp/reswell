@@ -16,9 +16,22 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat' })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://reswell.com'),
   title: 'Reswell - Buy & Sell Surfing Gear',
   description: 'The peer-to-peer marketplace for surfing accessories and surfboards. Buy used gear, shop new items, or find surfboards for in-person pickup.',
   keywords: ['surfing', 'surfboard', 'marketplace', 'used surf gear', 'wetsuit', 'fins'],
+  openGraph: {
+    title: 'Reswell - Buy & Sell Surfing Gear',
+    description: 'The peer-to-peer marketplace for surfing accessories and surfboards. Buy used gear, shop new items, or find surfboards for in-person pickup.',
+    images: [{ url: '/images/og-image.png', width: 1024, height: 1024, alt: 'Reswell' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Reswell - Buy & Sell Surfing Gear',
+    description: 'The peer-to-peer marketplace for surfing accessories and surfboards. Buy used gear, shop new items, or find surfboards for in-person pickup.',
+    images: ['/images/og-image.png'],
+  },
 }
 
 export const viewport: Viewport = {
