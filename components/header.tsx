@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import reswellLogo from "@/public/images/reswell-logo.png"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   Fragment,
@@ -416,13 +417,11 @@ export function Header() {
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link
             href="/"
-            className="flex shrink-0 items-center rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2"
+            className="flex shrink-0 items-center rounded-md px-2 py-1 sm:px-2 sm:py-1.5"
           >
             <Image
-              src="/images/reswell-logo.png"
+              src={reswellLogo}
               alt="Reswell"
-              width={696}
-              height={136}
               priority
               className="block h-14 w-auto sm:h-16 md:h-20"
             />
