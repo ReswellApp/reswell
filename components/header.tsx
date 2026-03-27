@@ -1,8 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
-import reswellLogo from "@/public/images/reswell-logo.png"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   Fragment,
@@ -417,14 +415,14 @@ export function Header() {
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link
             href="/"
-            className="flex shrink-0 items-center rounded-md px-2 py-1 sm:px-2 sm:py-1.5"
+            className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
-            <Image
-              src={reswellLogo}
-              alt="Reswell"
-              priority
-              className="block h-14 w-auto sm:h-16 md:h-20"
-            />
+            <span
+              className="text-3xl font-black tracking-tight text-black sm:text-4xl md:text-5xl"
+              style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
+            >
+              Reswell
+            </span>
           </Link>
 
           {/* Main search (md+): fills space between nav and actions */}

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import reswellLogo from "@/public/images/reswell-logo.png"
+import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
 
 const footerLinks = {
   marketplace: [
@@ -40,7 +40,7 @@ export function Footer() {
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
               <Image
-                src={reswellLogo}
+                src={reswellFooterLogo}
                 alt="Reswell logo"
                 className="h-28 w-auto sm:h-32 md:h-40"
               />
