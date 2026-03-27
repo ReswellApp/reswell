@@ -610,8 +610,8 @@ function SellPageContent() {
         }
       }
 
-      if ((listingType === "used" || listingType === "board") && images.length < 5) {
-        toast.error("At least 5 photos are required for this listing")
+      if ((listingType === "used" || listingType === "board") && images.length < 3) {
+        toast.error("At least 3 photos are required for this listing")
         setLoading(false)
         return
       }
@@ -1840,7 +1840,7 @@ function SellPageContent() {
 
                 {/* Images */}
                 <div className="space-y-2">
-                  <Label>Photos (5–12 required)</Label>
+                  <Label>Photos (3–12 required)</Label>
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {images.map((image, index) => (
                       <div
@@ -1907,12 +1907,12 @@ function SellPageContent() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {listingType === "used" || listingType === "board"
-                      ? "Minimum 5 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."
+                      ? "Minimum 3 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."
                       : "Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."}
                   </p>
-                  {(listingType === "used" || listingType === "board") && images.length > 0 && images.length < 5 && (
+                  {(listingType === "used" || listingType === "board") && images.length > 0 && images.length < 3 && (
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Add {5 - images.length} more photo{5 - images.length !== 1 ? "s" : ""} to meet the minimum (5 required).
+                      Add {3 - images.length} more photo{3 - images.length !== 1 ? "s" : ""} to meet the minimum (3 required).
                     </p>
                   )}
                 </div>
