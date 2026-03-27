@@ -514,7 +514,7 @@ export function Header() {
 
             {user ? (
               <>
-                <Link href="/messages" className="relative">
+                <Link href="/messages" className="relative hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                     <MessageSquare className="h-6 w-6" />
                     <Badge
@@ -527,7 +527,7 @@ export function Header() {
                   </Button>
                 </Link>
 
-                <Link href="/shop/cart" className="relative">
+                <Link href="/shop/cart" className="relative hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                     <ShoppingCart className="h-6 w-6" />
                     {cartCount > 0 && (

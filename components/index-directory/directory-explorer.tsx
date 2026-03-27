@@ -75,7 +75,7 @@ export function DirectoryExplorer({ entries }: { entries: DirectoryListEntry[] }
               <li key={`${entry.kind}-${entry.slug}`}>
                 <Link
                   href={profileHref(entry)}
-                  className="group flex h-full flex-col rounded-xl border border-border/80 bg-card p-5 shadow-soft transition-all hover:border-foreground/25 hover:shadow-soft-hover sm:p-6"
+                  className="group flex h-full flex-col rounded-xl border border-border/80 bg-card p-5 no-underline shadow-soft transition-all hover:border-foreground/25 hover:no-underline hover:shadow-soft-hover sm:p-6"
                 >
                   <div className="flex items-start gap-4">
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background p-1.5">
@@ -98,7 +98,7 @@ export function DirectoryExplorer({ entries }: { entries: DirectoryListEntry[] }
                         )}
                         {entry.kind === "brand" ? "Brand" : entry.kind === "shaper" ? "Shaper" : "Storefront"}
                       </div>
-                      <h3 className="mt-1 font-semibold tracking-tight text-foreground group-hover:underline">
+                      <h3 className="mt-1 font-semibold tracking-tight text-foreground">
                         {entry.name}
                       </h3>
                       {entry.locationLabel ? (

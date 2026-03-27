@@ -24,6 +24,12 @@ import {
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
+const PLACEHOLDER_IMAGE = "/placeholder.svg"
+
+function listingCardSrc(url?: string | null): string {
+  const u = typeof url === "string" ? url.trim() : ""
+  return u || PLACEHOLDER_IMAGE
+}
 
 const categories = [
   { name: "Surfboards", href: "/boards", section: "surfboards", slug: null },
@@ -46,16 +52,6 @@ function listingPublicHref(listing: {
   return `/used/${slugOrId}`
 }
 
-function primaryImageUrl(
-  images?: { url: string; sort_order?: number | null }[] | null
-): string | undefined {
-  if (!images || images.length === 0) return undefined
-  const sorted = [...images].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  )
-  return sorted[0].url
-}
-
 /** Match `used-gear-listings` / seller grids: primary flag first, else first image. */
 function primaryListingImageUrl(
   images?:
@@ -65,7 +61,10 @@ function primaryListingImageUrl(
   if (!images?.length) return undefined
   const flagged = images.find((img) => img.is_primary)
   if (flagged?.url) return flagged.url
-  return images[0]?.url
+  const sorted = [...images].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  )
+  return sorted[0]?.url
 }
 
 const features = [
@@ -99,7 +98,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url, sort_order),
+      listing_images (url, sort_order, is_primary),
       profiles (display_name, avatar_url, sales_count, shop_verified)
     `)
     .eq("status", "active")
@@ -145,7 +144,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url, sort_order),
+      listing_images (url, sort_order, is_primary),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)
     .eq("status", "active")
@@ -180,7 +179,7 @@ export default async function HomePage() {
       .select(
         `
         *,
-        listing_images (url, sort_order),
+        listing_images (url, sort_order, is_primary),
         profiles (display_name, avatar_url, sales_count, shop_verified)
       `
       )
@@ -300,19 +299,13 @@ export default async function HomePage() {
                   <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                        {primaryImageUrl(listing.listing_images) ? (
-                          <Image
-                            src={primaryImageUrl(listing.listing_images)!}
-                            alt={capitalizeWords(listing.title)}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                            No Image
-                          </div>
-                        )}
+                        <Image
+                          src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
+                          alt={capitalizeWords(listing.title)}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                         <FavoriteButtonCardOverlay
                           listingId={listing.id}
                           initialFavorited={favoritedIds.includes(listing.id)}
@@ -383,19 +376,13 @@ export default async function HomePage() {
                   <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
                     <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
                       <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                        {primaryImageUrl(board.listing_images) ? (
-                          <Image
-                            src={primaryImageUrl(board.listing_images)!}
-                            alt={capitalizeWords(board.title)}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                            No Image
-                          </div>
-                        )}
+                        <Image
+                          src={listingCardSrc(primaryListingImageUrl(board.listing_images))}
+                          alt={capitalizeWords(board.title)}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                         <FavoriteButtonCardOverlay
                           listingId={board.id}
                           initialFavorited={favoritedIds.includes(board.id)}
@@ -476,19 +463,13 @@ export default async function HomePage() {
                     >
                       <Link href={href} className="flex-1 flex flex-col">
                         <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                          {primaryImageUrl(listing.listing_images) ? (
-                            <Image
-                              src={primaryImageUrl(listing.listing_images)!}
-                              alt={capitalizeWords(listing.title)}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                              style={{ objectFit: "cover" }}
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                              No Image
-                            </div>
-                          )}
+                          <Image
+                            src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
+                            alt={capitalizeWords(listing.title)}
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
                           <FavoriteButtonCardOverlay
                             listingId={listing.id}
                             initialFavorited={favoritedIds.includes(listing.id)}
@@ -646,20 +627,13 @@ export default async function HomePage() {
                     >
                       <Link href={href} className="flex-1 flex flex-col">
                         <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                          {imgUrl ? (
-                            <Image
-                              src={imgUrl || "/placeholder.svg"}
-                              alt={capitalizeWords(listing.title)}
-                              fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                              style={{ objectFit: "cover" }}
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                              No Image
-                            </div>
-                          )}
+                          <Image
+                            src={listingCardSrc(imgUrl)}
+                            alt={capitalizeWords(listing.title)}
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
                           <FavoriteButtonCardOverlay
                             listingId={listing.id}
                             initialFavorited={favoritedIds.includes(listing.id)}
@@ -702,20 +676,13 @@ export default async function HomePage() {
                   >
                     <Link href={href} className="flex-1 flex flex-col">
                       <div className="aspect-[4/5] relative bg-muted overflow-hidden">
-                        {imgUrl ? (
-                          <Image
-                            src={imgUrl || "/placeholder.svg"}
-                            alt={capitalizeWords(listing.title)}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                            No Image
-                          </div>
-                        )}
+                        <Image
+                          src={listingCardSrc(imgUrl)}
+                          alt={capitalizeWords(listing.title)}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                         <FavoriteButtonCardOverlay
                           listingId={listing.id}
                           initialFavorited={favoritedIds.includes(listing.id)}
@@ -841,19 +808,13 @@ export default async function HomePage() {
                   <Link key={item.id} href={`/shop/${item.id}`}>
                     <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
                       <div className="aspect-square relative bg-muted">
-                        {item.image_url ? (
-                          <Image
-                            src={item.image_url || "/placeholder.svg"}
-                            alt={item.name}
-                            fill
-                            className="object-contain group-hover:scale-105 transition-transform duration-300"
-                            style={{ objectFit: "contain" }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                            No Image
-                          </div>
-                        )}
+                        <Image
+                          src={listingCardSrc(item.image_url)}
+                          alt={item.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-contain group-hover:scale-105 transition-transform duration-300"
+                        />
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-medium line-clamp-1">{item.name}</h3>
