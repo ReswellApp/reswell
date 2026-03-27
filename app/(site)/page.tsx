@@ -278,83 +278,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Featured Used Gear */}
-        {featuredUsed && featuredUsed.length > 0 && (
-          <section className="py-16">
-            <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold">Featured Used Gear</h2>
-                  <p className="text-muted-foreground">Pre-loved items from the community</p>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/used">
-                    View All
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {featuredUsed.map((listing) => (
-                  <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-                        <Image
-                          src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
-                          alt={capitalizeWords(listing.title)}
-                          fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <FavoriteButtonCardOverlay
-                          listingId={listing.id}
-                          initialFavorited={favoritedIds.includes(listing.id)}
-                          isLoggedIn={!!user}
-                        />
-                      </div>
-                      <CardContent className="p-3">
-                        <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                        <p className="text-base font-bold text-black dark:text-white mt-1">
-                          ${listing.price.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          {getPublicSellerDisplayName(listing.profiles)}
-                          {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
-                        </p>
-                      </CardContent>
-                    </Link>
-                    <div className="px-3 pb-3 pt-0">
-                      <MessageListingButton
-                        listingId={listing.id}
-                        sellerId={listing.user_id}
-                        redirectPath={`/used/${listing.slug || listing.id}`}
-                      />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Features CTA */}
-        <section className="py-8">
-          <div className="container mx-auto">
-            <Link href="/sell" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
-              <div>
-                <p className="text-lg font-semibold text-foreground">Give your gear a second life</p>
-                <p className="text-muted-foreground mt-1">
-                  Secure payments, verified sellers, direct messaging, shipping, and local pickup — all in one place.
-                </p>
-              </div>
-              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
-                Start selling
-                <ArrowRight className="h-4 w-4" />
-              </span>
-            </Link>
-          </div>
-        </section>
-
         {/* Featured Surfboards */}
         {featuredBoards && featuredBoards.length > 0 && (
           <section className="py-16">
@@ -405,6 +328,83 @@ export default async function HomePage() {
                         listingId={board.id}
                         sellerId={board.user_id}
                         redirectPath={`/boards/${board.slug || board.id}`}
+                      />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Features CTA */}
+        <section className="py-8">
+          <div className="container mx-auto">
+            <Link href="/sell" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+              <div>
+                <p className="text-lg font-semibold text-foreground">Give your gear a second life</p>
+                <p className="text-muted-foreground mt-1">
+                  Secure payments, verified sellers, direct messaging, shipping, and local pickup — all in one place.
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+                Start selling
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          </div>
+        </section>
+
+        {/* Featured Used Gear */}
+        {featuredUsed && featuredUsed.length > 0 && (
+          <section className="py-16">
+            <div className="container mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold">Featured Used Gear</h2>
+                  <p className="text-muted-foreground">Pre-loved items from the community</p>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link href="/used">
+                    View All
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {featuredUsed.map((listing) => (
+                  <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                    <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
+                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
+                        <Image
+                          src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
+                          alt={capitalizeWords(listing.title)}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <FavoriteButtonCardOverlay
+                          listingId={listing.id}
+                          initialFavorited={favoritedIds.includes(listing.id)}
+                          isLoggedIn={!!user}
+                        />
+                      </div>
+                      <CardContent className="p-3">
+                        <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
+                        <p className="text-base font-bold text-black dark:text-white mt-1">
+                          ${listing.price.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          {getPublicSellerDisplayName(listing.profiles)}
+                          {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
+                        </p>
+                      </CardContent>
+                    </Link>
+                    <div className="px-3 pb-3 pt-0">
+                      <MessageListingButton
+                        listingId={listing.id}
+                        sellerId={listing.user_id}
+                        redirectPath={`/used/${listing.slug || listing.id}`}
                       />
                     </div>
                   </Card>
