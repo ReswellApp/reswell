@@ -340,7 +340,7 @@ export default async function HomePage() {
         {/* Features CTA */}
         <section className="py-8">
           <div className="container mx-auto">
-            <Link href="/sell" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+            <Link href="/sell" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
               <div>
                 <p className="text-lg font-semibold text-foreground">Give your gear a second life</p>
                 <p className="text-muted-foreground mt-1">
@@ -417,7 +417,7 @@ export default async function HomePage() {
         {/* Confidence banner */}
         <section className="py-8">
           <div className="container mx-auto">
-            <Link href="/contact" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+            <Link href="/contact" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
               <div>
                 <p className="text-lg font-semibold text-foreground">Buy and sell with confidence!</p>
                 <p className="text-muted-foreground mt-1">
@@ -531,7 +531,7 @@ export default async function HomePage() {
         {/* CTA */}
         <section className="py-8">
           <div className="container mx-auto">
-            <Link href="/auth/sign-up" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+            <Link href="/auth/sign-up" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
               <div>
                 <p className="text-lg font-semibold text-foreground">Ready to ride the wave?</p>
                 <p className="text-muted-foreground mt-1">
