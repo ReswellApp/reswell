@@ -30,10 +30,22 @@ import type { ReactNode } from "react"
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
 
 /** Single-row horizontal scroll for homepage listing sections (up to 20 cards). */
-function HomeListingScrollRow({ children }: { children: ReactNode }) {
+function HomeListingScrollRow({
+  children,
+  uniformCardHeights,
+}: {
+  children: ReactNode
+  /** Stretch all cards to the row height (surfboards + Featured Used Gear). */
+  uniformCardHeights?: boolean
+}) {
   return (
     <div className="-mx-4 overflow-x-auto overflow-y-visible pb-2 pl-4 sm:-mx-6 sm:pl-6 lg:-mx-8 lg:pl-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex w-max min-h-0 items-stretch gap-3 pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none">
+      <div
+        className={cn(
+          "flex w-max gap-3 pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none",
+          uniformCardHeights && "min-h-0 items-stretch",
+        )}
+      >
         {children}
       </div>
     </div>
@@ -43,22 +55,21 @@ function HomeListingScrollRow({ children }: { children: ReactNode }) {
 /** ~3 full cards + peek of 4th on mobile; fixed width from `sm` up. */
 const homeListingScrollCardClass = cn(
   listingProductCardGridClassName,
-  "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
+  "shrink-0 snap-start w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
 )
 
 const homeListingScrollImageSizes = "(max-width: 639px) 30vw, 208px"
 
-/** Fill stretched card; min-h-0 keeps flex children from overflowing. */
-const homeListingScrollLinkClass = "flex min-h-0 h-full min-w-0 flex-1 flex-col"
-const homeListingScrollBodyClass =
-  "flex min-h-0 min-w-0 flex-1 flex-col p-3 pt-3"
+/** Equal row height + meta pinned to bottom so price/location align across cards. */
+const homeListingScrollLinkClass = "min-w-0 flex flex-1 flex-col min-h-0"
+const homeListingScrollBodyClass = "min-w-0 p-3 flex flex-col flex-1 min-h-0"
 
 /**
- * Fixed title band so every card in the row matches; line-clamp inside (no scroll).
- * Sizes fit line-clamp-4 + optional board-length line (mobile) / line-clamp-3 (sm+).
+ * flex-1 + overflow hidden so line-clamp works; flex row stretches cards so prices align.
+ * Mobile: line-clamp with ellipsis (narrow cards get 4 lines, sm+ wider cards use 3).
  */
 const homeListingScrollTitleSlotClass =
-  "flex h-[6.25rem] max-h-[6.25rem] min-h-0 shrink-0 flex-col overflow-hidden sm:h-[5.75rem] sm:max-h-[5.75rem]"
+  "flex min-h-0 flex-1 flex-col overflow-hidden"
 
 const homeListingScrollHeadingClass =
   "text-sm font-medium leading-snug line-clamp-4 break-words sm:line-clamp-3"
@@ -67,7 +78,20 @@ const homeListingScrollHeadingClass =
 const homeListingScrollMetaLinesClass =
   "max-sm:h-[2.625rem] max-sm:max-h-[2.625rem] max-sm:overflow-hidden max-sm:min-h-0 sm:max-h-none sm:overflow-visible"
 
-const homeListingScrollMetaFooterClass = "mt-auto w-full shrink-0 pt-1"
+const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
+
+/** Equal-height cards: Recently added surfboards + Featured Used Gear (fixed title band, flex stretch). */
+const homeUniformScrollCardClass = cn(
+  listingProductCardGridClassName,
+  "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
+)
+const homeUniformScrollLinkClass =
+  "flex min-h-0 h-full min-w-0 flex-1 flex-col"
+const homeUniformScrollBodyClass =
+  "flex min-h-0 min-w-0 flex-1 flex-col p-3 pt-3"
+const homeUniformScrollTitleSlotClass =
+  "flex h-[6.25rem] max-h-[6.25rem] min-h-0 shrink-0 flex-col overflow-hidden sm:h-[5.75rem] sm:max-h-[5.75rem]"
+const homeUniformScrollMetaFooterClass = "mt-auto w-full shrink-0 pt-1"
 
 function HomeListingTitleSlot({ children }: { children: ReactNode }) {
   return <div className={homeListingScrollTitleSlotClass}>{children}</div>
@@ -341,10 +365,13 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <HomeListingScrollRow>
+              <HomeListingScrollRow uniformCardHeights>
                 {featuredBoards.map((board) => (
-                  <Card key={board.id} className={homeListingScrollCardClass}>
-                    <Link href={`/boards/${board.slug || board.id}`} className={homeListingScrollLinkClass}>
+                  <Card key={board.id} className={homeUniformScrollCardClass}>
+                    <Link
+                      href={`/boards/${board.slug || board.id}`}
+                      className={homeUniformScrollLinkClass}
+                    >
                       <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(primaryListingImageUrl(board.listing_images))}
@@ -359,13 +386,13 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className={homeListingScrollBodyClass}>
-                        <HomeListingTitleSlot>
+                      <CardContent className={homeUniformScrollBodyClass}>
+                        <div className={homeUniformScrollTitleSlotClass}>
                           <h3 className={homeListingScrollHeadingClass}>
                             {capitalizeWords(board.title)}
                           </h3>
-                        </HomeListingTitleSlot>
-                        <div className={homeListingScrollMetaFooterClass}>
+                        </div>
+                        <div className={homeUniformScrollMetaFooterClass}>
                           <p className="text-base font-bold text-black dark:text-white">
                             ${board.price.toFixed(2)}
                           </p>
@@ -413,10 +440,13 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <HomeListingScrollRow>
+              <HomeListingScrollRow uniformCardHeights>
                 {featuredUsed.map((listing) => (
-                  <Card key={listing.id} className={homeListingScrollCardClass}>
-                    <Link href={`/used/${listing.slug || listing.id}`} className={homeListingScrollLinkClass}>
+                  <Card key={listing.id} className={homeUniformScrollCardClass}>
+                    <Link
+                      href={`/used/${listing.slug || listing.id}`}
+                      className={homeUniformScrollLinkClass}
+                    >
                       <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
@@ -431,13 +461,13 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className={homeListingScrollBodyClass}>
-                        <HomeListingTitleSlot>
+                      <CardContent className={homeUniformScrollBodyClass}>
+                        <div className={homeUniformScrollTitleSlotClass}>
                           <h3 className={homeListingScrollHeadingClass}>
                             {capitalizeWords(listing.title)}
                           </h3>
-                        </HomeListingTitleSlot>
-                        <div className={homeListingScrollMetaFooterClass}>
+                        </div>
+                        <div className={homeUniformScrollMetaFooterClass}>
                           <p className="text-base font-bold text-black dark:text-white">
                             ${listing.price.toFixed(2)}
                           </p>
