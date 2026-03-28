@@ -1,158 +1,77 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { ArrowLeft, Loader2, Plus } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ArrowLeft, Plus, Search, UserCog, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
-
-const SECTION_CATEGORIES: Record<string, { value: string; label: string }[]> = {
-  used: [
-    { value: '2744c29e-d6d4-43d9-a3ee-5bc11a0027df', label: 'Wetsuits' },
-    { value: 'a2000002-0000-4000-8000-000000000002', label: 'Apparel & Lifestyle' },
-    { value: 'f8327e72-d54c-4333-b383-58a8cef225a6', label: 'Fins' },
-    { value: 'b2a6282c-4c23-42dc-83f4-492eaa4f993a', label: 'Leashes' },
-    { value: '3779de38-dcf8-430f-a42c-9a17a2e048c4', label: 'Board Bags' },
-    { value: 'a6000006-0000-4000-8000-000000000006', label: 'Surfpacks & Bags' },
-    { value: 'a3000003-0000-4000-8000-000000000003', label: 'Vintage' },
-  ],
-  new: [
-    { value: 'b2a6282c-4c23-42dc-83f4-492eaa4f993a', label: 'Leashes' },
-    { value: 'f8327e72-d54c-4333-b383-58a8cef225a6', label: 'Fins' },
-    { value: '2744c29e-d6d4-43d9-a3ee-5bc11a0027df', label: 'Wetsuits' },
-    { value: '3779de38-dcf8-430f-a42c-9a17a2e048c4', label: 'Board Bags' },
-  ],
-  surfboards: [
-    { value: '7e434a96-f3f7-4a73-b733-704a769195e6', label: 'Shortboard' },
-    { value: 'f3ccddc0-f0f3-45d3-ad43-51bcf9935b45', label: 'Fish' },
-    { value: '93b8eeaf-366b-4823-8bb9-98d42c5fefba', label: 'Mid-Length' },
-    { value: '47a0d0bb-8738-43b4-a0fe-a5b2acc72fa3', label: 'Longboard' },
-    { value: '7cc95cb5-2391-4e53-a48e-42977bf9504b', label: 'Soft Top' },
-  ],
-}
-
-const CONDITIONS = [
-  { value: 'new', label: 'New' },
-  { value: 'like_new', label: 'Like New' },
-  { value: 'good', label: 'Good' },
-  { value: 'fair', label: 'Fair' },
-]
+import { setImpersonation } from '@/lib/impersonation'
 
 interface Profile {
   id: string
   display_name: string | null
   email: string | null
+  avatar_url: string | null
 }
 
 export default function AdminAddListingPage() {
   const supabase = createClient()
+  const router = useRouter()
   const [users, setUsers] = useState<Profile[]>([])
-  const [loadingUsers, setLoadingUsers] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    user_id: '',
-    title: '',
-    description: '',
-    price: '',
-    condition: '',
-    section: 'used',
-    category_id: '',
-    shipping_available: false,
-    local_pickup: true,
-    shipping_price: '',
-    city: '',
-    state: '',
-    image_urls: '',
-    inventory_quantity: '',
-  })
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [starting, setStarting] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase
         .from('profiles')
-        .select('id, display_name, email')
+        .select('id, display_name, email, avatar_url')
         .order('display_name')
       setUsers((data as Profile[]) || [])
-      setLoadingUsers(false)
+      setLoading(false)
     }
     load()
   }, [])
 
-  const categories = SECTION_CATEGORIES[form.section] || SECTION_CATEGORIES.used
+  const filtered = useMemo(() => {
+    if (!search.trim()) return users
+    const q = search.toLowerCase()
+    return users.filter(
+      (u) =>
+        u.display_name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q),
+    )
+  }, [users, search])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.user_id || !form.title || !form.description || !form.price || !form.category_id) {
-      toast.error('Fill in required fields: user, title, description, price, category')
-      return
-    }
-    setSaving(true)
-    try {
-      const images = form.image_urls
-        ? form.image_urls.split(/\s+/).map((u) => u.trim()).filter(Boolean)
-        : []
-      const res = await fetch('/api/admin/listings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: form.user_id,
-          title: form.title,
-          description: form.description,
-          price: parseFloat(form.price),
-          condition: form.condition || null,
-          section: form.section,
-          category_id: form.category_id,
-          shipping_available: form.shipping_available,
-          local_pickup: form.local_pickup,
-          shipping_price: form.shipping_price ? parseFloat(form.shipping_price) : null,
-          city: form.city || null,
-          state: form.state || null,
-          images,
-          inventory_quantity: form.section === 'new' && form.inventory_quantity ? parseInt(form.inventory_quantity, 10) : undefined,
-        }),
+  async function startForUser(user: Profile) {
+    setStarting(user.id)
+    const res = await fetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        displayName: user.display_name || 'User',
+        email: user.email,
+      }),
+    })
+    if (res.ok) {
+      setImpersonation({
+        userId: user.id,
+        displayName: user.display_name || 'User',
+        email: user.email,
       })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || 'Failed to create listing')
-        setSaving(false)
-        return
-      }
-      toast.success('Listing created')
-      setForm({
-        user_id: '',
-        title: '',
-        description: '',
-        price: '',
-        condition: '',
-        section: 'used',
-        category_id: '',
-        shipping_available: false,
-        local_pickup: true,
-        shipping_price: '',
-        city: '',
-        state: '',
-        image_urls: '',
-        inventory_quantity: '',
-      })
-      if (data.listing_id) {
-        window.location.href = `/admin/listings?created=${data.listing_id}`
-      }
-    } catch {
-      toast.error('Failed to create listing')
+      toast.success(`Creating listing as ${user.display_name || 'user'}`)
+      router.push('/sell')
+    } else {
+      toast.error('Failed to start — check admin permissions')
+      setStarting(null)
     }
-    setSaving(false)
   }
 
   return (
@@ -164,8 +83,10 @@ export default function AdminAddListingPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Add listing (for user)</h1>
-          <p className="text-muted-foreground">Create a listing on behalf of a marketplace user</p>
+          <h1 className="text-2xl font-bold text-foreground">Create listing for user</h1>
+          <p className="text-muted-foreground">
+            Pick a user below — you'll be taken to the full listing form to create it on their behalf
+          </p>
         </div>
       </div>
 
@@ -173,180 +94,74 @@ export default function AdminAddListingPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
-            New listing
+            Select the listing owner
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Owner (user) *</Label>
-              <Select
-                value={form.user_id}
-                onValueChange={(v) => setForm((f) => ({ ...f, user_id: v }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={loadingUsers ? 'Loading...' : 'Select user'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.display_name || `User ${u.id.slice(0, 8)}`}
-                      {u.email && ` (${u.email})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+              autoFocus
+            />
+          </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label>Section *</Label>
-                <Select
-                  value={form.section}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, section: v, category_id: '' }))
-                  }
+          {loading ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">Loading users...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No users match your search</p>
+          ) : (
+            <div className="divide-y divide-border rounded-lg border border-border max-h-[28rem] overflow-y-auto">
+              {filtered.map((user) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  disabled={starting !== null}
+                  onClick={() => void startForUser(user)}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors disabled:opacity-50"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="used">Used Gear</SelectItem>
-                    <SelectItem value="new">New Items</SelectItem>
-                    <SelectItem value="surfboards">Surfboards</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Category *</Label>
-                <Select
-                  value={form.category_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, category_id: v }))}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Avatar className="h-9 w-9 shrink-0">
+                    {user.avatar_url ? (
+                      <AvatarImage src={user.avatar_url} alt="" />
+                    ) : null}
+                    <AvatarFallback className="text-sm font-medium">
+                      {(user.display_name || '?')[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {user.display_name || 'Unnamed user'}
+                    </p>
+                    {user.email && (
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                    {starting === user.id ? (
+                      <span className="text-xs text-primary animate-pulse">Opening form...</span>
+                    ) : (
+                      <>
+                        <span className="text-xs hidden sm:inline">Create listing</span>
+                        <ExternalLink className="h-4 w-4" />
+                      </>
+                    )}
+                  </div>
+                </button>
+              ))}
             </div>
+          )}
 
-            <div>
-              <Label>Title *</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                placeholder="Listing title"
-                required
-              />
-            </div>
-            <div>
-              <Label>Description *</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Full description"
-                rows={4}
-                required
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label>Price *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.price}
-                  onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-              {form.section !== 'surfboards' && (
-                <div>
-                  <Label>Condition</Label>
-                  <Select
-                    value={form.condition}
-                    onValueChange={(v) => setForm((f) => ({ ...f, condition: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Optional" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONDITIONS.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-
-            {form.section === 'new' && (
-              <div>
-                <Label>Inventory quantity (for New items)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.inventory_quantity}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, inventory_quantity: e.target.value }))
-                  }
-                  placeholder="0"
-                />
-              </div>
-            )}
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label>City</Label>
-                <Input
-                  value={form.city}
-                  onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                  placeholder="Optional"
-                />
-              </div>
-              <div>
-                <Label>State</Label>
-                <Input
-                  value={form.state}
-                  onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Image URLs (one per line or space-separated)</Label>
-              <Textarea
-                value={form.image_urls}
-                onChange={(e) => setForm((f) => ({ ...f, image_urls: e.target.value }))}
-                placeholder="https://..."
-                rows={2}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Create listing
-              </Button>
-              <Button type="button" variant="outline" asChild>
-                <Link href="/admin/listings">Cancel</Link>
-              </Button>
-            </div>
-          </form>
+          <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
+            <UserCog className="h-4 w-4 mt-0.5 shrink-0" />
+            <p>
+              Selecting a user starts <strong>"Act as User"</strong> mode and opens the full listing form.
+              You'll see the amber banner at the top while acting as them.
+              When you're done, click <strong>"Stop Acting as User"</strong> in the header to return to your admin account.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

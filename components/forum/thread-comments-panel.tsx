@@ -73,7 +73,8 @@ export function ThreadCommentsPanel({
   isLoggedIn,
   likedCommentIds: initialLikedIds,
 }: Props) {
-  const [impersonation] = useState(() => getImpersonation())
+  const [impersonation, setImpersonation] = useState<ReturnType<typeof getImpersonation>>(null)
+  useEffect(() => { setImpersonation(getImpersonation()) }, [])
   const [comments, setComments] = useState(initialComments)
   const [likedIds, setLikedIds] = useState(() => new Set(initialLikedIds))
   const [body, setBody] = useState("")

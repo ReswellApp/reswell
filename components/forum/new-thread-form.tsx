@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,8 @@ export function NewThreadForm() {
   const [body, setBody] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [impersonation] = useState(() => getImpersonation())
+  const [impersonation, setImpersonation] = useState(() => getImpersonation())
+  useEffect(() => { setImpersonation(getImpersonation()) }, [])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()

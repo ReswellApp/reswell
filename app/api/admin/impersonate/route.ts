@@ -30,11 +30,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 })
   }
 
-  const cookieValue = encodeURIComponent(
-    JSON.stringify({ userId, displayName: displayName || "User", email: email || null }),
-  )
+  const cookieValue = JSON.stringify({ userId, displayName: displayName || "User", email: email || null })
 
-  const res = NextResponse.json({ success: true })
+  const res = NextResponse.json({ success: true, userId, displayName: displayName || "User", email: email || null })
   res.cookies.set(IMPERSONATION_COOKIE, cookieValue, {
     path: "/",
     maxAge: 60 * 60 * 4, // 4 hours

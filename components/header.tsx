@@ -298,6 +298,7 @@ export function Header() {
   const headerSearchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
 
+
   useEffect(() => {
     if (searchOpen) {
       setSearchQuery("")

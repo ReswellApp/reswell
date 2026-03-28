@@ -26,6 +26,7 @@ import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, 
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
 
 interface User {
   id: string
@@ -139,6 +140,11 @@ export default function AdminUsersPage() {
       }),
     })
     if (res.ok) {
+      storeImpersonation({
+        userId: user.id,
+        displayName: user.display_name || 'User',
+        email: user.email,
+      })
       toast.success(`Now acting as ${user.display_name || 'this user'}`)
       router.push('/')
     } else {
@@ -255,9 +261,6 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => void actAsUser(user)}>
-                            <UserCheck className="h-4 w-4 mr-2" /> Act as User
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleAdmin(user.id, user.is_admin)}>
                             {user.is_admin ? (
                               <>

@@ -3,7 +3,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import { slugify } from "@/lib/slugify"
 
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -33,8 +33,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid impersonation cookie" }, { status: 400 })
   }
 
-  const targetUserId = impersonation.userId
-
   let service
   try {
     service = createServiceRoleClient()
@@ -43,18 +41,29 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { listing: listingData, images = [] } = body
-
-  if (!listingData?.title || listingData?.price == null) {
-    return NextResponse.json({ error: "Missing required listing fields" }, { status: 400 })
+  const {
+    listingId,
+    listing: listingData,
+    removedImageIds = [],
+    images = [],
+  } = body as {
+    listingId: string
+    listing: Record<string, unknown>
+    removedImageIds: string[]
+    images: { id?: string; url?: string; is_primary: boolean; sort_order: number }[]
   }
 
-  const baseSlug = slugify(listingData.title)
+  if (!listingId || !listingData) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  }
+
+  const baseSlug = slugify(listingData.title as string)
   let slug = baseSlug
   const { count } = await service
     .from("listings")
     .select("id", { count: "exact", head: true })
     .eq("slug", baseSlug)
+    .neq("id", listingId)
   if (count) {
     for (let i = 2; i < 100; i++) {
       const candidate = `${baseSlug}-${i}`
@@ -62,6 +71,7 @@ export async function POST(request: NextRequest) {
         .from("listings")
         .select("id", { count: "exact", head: true })
         .eq("slug", candidate)
+        .neq("id", listingId)
       if (!c) {
         slug = candidate
         break
@@ -69,34 +79,47 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: listing, error: listingError } = await service
+  const { error: updateError } = await service
     .from("listings")
-    .insert({
+    .update({
       ...listingData,
-      user_id: targetUserId,
       slug,
-      status: "active",
+      updated_at: new Date().toISOString(),
     })
-    .select("id, slug")
-    .single()
+    .eq("id", listingId)
 
-  if (listingError || !listing) {
-    console.error("[impersonate] listing insert error:", listingError)
-    return NextResponse.json({ error: "Failed to create listing" }, { status: 500 })
+  if (updateError) {
+    console.error("[impersonate] listing update error:", updateError)
+    return NextResponse.json({ error: "Failed to update listing" }, { status: 500 })
   }
 
-  if (images.length > 0) {
-    const imageInserts = images.map((url: string, index: number) => ({
-      listing_id: listing.id,
-      url,
-      is_primary: index === 0,
-      sort_order: index,
-    }))
-    const { error: imgErr } = await service.from("listing_images").insert(imageInserts)
-    if (imgErr) {
-      console.error("[impersonate] listing_images insert error:", imgErr)
+  if (removedImageIds.length > 0) {
+    const { error: delErr } = await service
+      .from("listing_images")
+      .delete()
+      .in("id", removedImageIds)
+      .eq("listing_id", listingId)
+    if (delErr) {
+      console.error("[impersonate] listing_images delete error:", delErr)
     }
   }
 
-  return NextResponse.json({ success: true, listing_id: listing.id, slug: listing.slug })
+  for (const img of images) {
+    if (img.id) {
+      await service
+        .from("listing_images")
+        .update({ sort_order: img.sort_order, is_primary: img.is_primary })
+        .eq("id", img.id)
+        .eq("listing_id", listingId)
+    } else if (img.url) {
+      await service.from("listing_images").insert({
+        listing_id: listingId,
+        url: img.url,
+        is_primary: img.is_primary,
+        sort_order: img.sort_order,
+      })
+    }
+  }
+
+  return NextResponse.json({ success: true, slug })
 }

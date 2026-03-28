@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
-import { IMPERSONATION_COOKIE } from "@/lib/impersonation"
+import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -27,10 +27,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not impersonating" }, { status: 400 })
   }
 
-  let impersonation: { userId: string }
-  try {
-    impersonation = JSON.parse(decodeURIComponent(raw))
-  } catch {
+  const impersonation = parseImpersonationCookie(raw)
+  if (!impersonation) {
     return NextResponse.json({ error: "Invalid impersonation cookie" }, { status: 400 })
   }
 

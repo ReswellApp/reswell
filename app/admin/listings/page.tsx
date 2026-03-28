@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { setImpersonation } from '@/lib/impersonation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,13 +31,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Eye, Trash2, Flag, Package, RotateCcw } from 'lucide-react'
+import { Search, MoreVertical, Eye, Trash2, Flag, Package, RotateCcw, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 
 interface Listing {
   id: string
+  user_id: string
   slug?: string | null
   title: string
   price: number
@@ -48,6 +51,7 @@ interface Listing {
 }
 
 export default function AdminListingsPage() {
+  const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -63,7 +67,7 @@ export default function AdminListingsPage() {
     let query = supabase
       .from('listings')
       .select(`
-        id, slug, title, price, status, section, views, created_at,
+        id, user_id, slug, title, price, status, section, views, created_at,
         profiles(display_name, email),
         listing_images(url)
       `)
@@ -110,6 +114,22 @@ export default function AdminListingsPage() {
     } else {
       const data = await res.json().catch(() => ({ error: 'Failed to delete listing' }))
       toast.error(data.error || 'Failed to delete listing')
+    }
+  }
+
+  async function editListing(listing: Listing) {
+    const displayName = listing.profiles?.display_name || 'User'
+    const email = listing.profiles?.email || null
+    const res = await fetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: listing.user_id, displayName, email }),
+    })
+    if (res.ok) {
+      setImpersonation({ userId: listing.user_id, displayName, email })
+      router.push(`/sell?edit=${listing.id}`)
+    } else {
+      toast.error('Failed to start impersonation for editing')
     }
   }
 
@@ -272,6 +292,9 @@ export default function AdminListingsPage() {
                             <Link href={getListingViewHref(listing.section, listing.id, listing.slug)}>
                               <Eye className="h-4 w-4 mr-2" /> View
                             </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => editListing(listing)}>
+                            <Pencil className="h-4 w-4 mr-2" /> Edit Listing
                           </DropdownMenuItem>
                           {listing.status === 'active' && (
                             <DropdownMenuItem onClick={() => updateListingStatus(listing.id, 'removed')}>

@@ -132,7 +132,8 @@ function SellPageContent() {
   const supabase = createClient()
   const editId = searchParams.get("edit")
 
-  const [impersonation] = useState<ImpersonationData | null>(() => getImpersonation())
+  const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
+  useEffect(() => { setImpersonation(getImpersonation()) }, [])
   const [loading, setLoading] = useState(false)
   const [editLoading, setEditLoading] = useState(!!editId)
   const [listingType, setListingType] = useState<"used" | "board">("used")
@@ -184,7 +185,8 @@ function SellPageContent() {
         setEditLoading(false)
         return
       }
-      const { data: listing, error } = await supabase
+      const imp = getImpersonation()
+      let query = supabase
         .from("listings")
         .select(
           `
@@ -227,8 +229,10 @@ function SellPageContent() {
         `
         )
         .eq("id", editId)
-        .eq("user_id", user.id)
-        .single()
+      if (!imp) {
+        query = query.eq("user_id", user.id)
+      }
+      const { data: listing, error } = await query.single()
       if (!mounted) return
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
@@ -365,19 +369,23 @@ function SellPageContent() {
       return
     }
     const next: EditableImage[] = []
-    for (const file of newFiles) {
+    for (const originalFile of newFiles) {
       try {
-        const { width, height } = await getImageDimensions(file)
-        if (height <= width) {
+        const file = await toJpegIfUnsupported(originalFile)
+        let dims: { width: number; height: number } | null = null
+        try {
+          dims = await getImageDimensions(file)
+        } catch { /* accept */ }
+
+        if (dims && dims.height <= dims.width) {
           toast.error(`"${file.name}" is not vertical. Please upload portrait (vertical) photos only — height must be greater than width.`)
           continue
         }
-        next.push({
-          file,
-          url: URL.createObjectURL(file),
-        })
-      } catch {
-        toast.error(`Could not read "${file.name}". Try a different image.`)
+
+        next.push({ file, url: URL.createObjectURL(file) })
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Conversion failed"
+        toast.error(`Could not convert "${originalFile.name}" to JPEG: ${msg}`)
       }
     }
     if (next.length) {
@@ -407,42 +415,20 @@ function SellPageContent() {
     })
   }
 
-  function heicFailureLogLabel(err: unknown): string {
-    if (err instanceof Error && err.message.trim()) return err.message.trim()
-    if (typeof err === "string" && err.trim()) return err.trim()
-    if (err && typeof err === "object") {
-      const o = err as Record<string, unknown>
-      if (typeof o.message === "string" && o.message.trim()) return o.message.trim()
+  async function browserCanDecodeImage(file: File): Promise<boolean> {
+    try {
+      const b = await createImageBitmap(file)
+      b.close()
+      return true
+    } catch {
+      return false
     }
-    return "no details (browser HEIC decode often fails for some iPhone variants)"
   }
 
-  /** Convert HEIC/HEIF to JPEG so Supabase Storage accepts it; pass through other image types. */
-  async function toUploadableImage(file: File): Promise<File> {
-    const type = (file.type || "").toLowerCase()
-    if (type === "image/heic" || type === "image/heif" || /\.heic$/i.test(file.name)) {
-      try {
-        const heic2any = (await import("heic2any")).default
-        const blob = await heic2any({
-          blob: file,
-          toType: "image/jpeg",
-          quality: 0.9,
-        })
-        const jpegBlob = Array.isArray(blob) ? blob[0] : blob
-        const name = file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg")
-        return new File([jpegBlob as Blob], name, { type: "image/jpeg" })
-      } catch (err) {
-        // console.error triggers Next.js dev overlay; heic2any often rejects with non-Error values that log as {}
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[sell] HEIC conversion failed:", heicFailureLogLabel(err))
-        }
-        toast.error(
-          "Could not convert HEIC in the browser. Use a JPEG or PNG, or iPhone Settings → Camera → Formats → Most Compatible.",
-        )
-        throw err
-      }
-    }
-    return file
+  /** If the browser cannot decode this file (HEIC, odd formats), convert to JPEG on the server. */
+  async function toJpegIfUnsupported(file: File): Promise<File> {
+    if (await browserCanDecodeImage(file)) return file
+    return convertViaServer(file)
   }
 
   /**
@@ -493,6 +479,43 @@ function SellPageContent() {
     return new File([finalBlob], `${baseName}.jpg`, { type: "image/jpeg" })
   }
 
+  async function convertViaServer(file: File): Promise<File> {
+    const form = new FormData()
+    form.append("file", file)
+    const res = await fetch("/api/convert-image", { method: "POST", body: form })
+    const ct = res.headers.get("content-type") || ""
+    if (!res.ok) {
+      let msg = "Server could not convert this image to JPEG"
+      try {
+        if (ct.includes("application/json")) {
+          const j = (await res.json()) as { error?: string }
+          if (j?.error) msg = j.error
+        } else {
+          const t = await res.text()
+          if (t) msg = t.slice(0, 240)
+        }
+      } catch { /* ignore */ }
+      throw new Error(msg)
+    }
+    if (!ct.includes("image/jpeg")) {
+      throw new Error("Server did not return a JPEG image")
+    }
+    const blob = await res.blob()
+    const base = file.name.replace(/\.[^.]+$/i, "") || "image"
+    return new File([blob], `${base}.jpg`, { type: "image/jpeg" })
+  }
+
+  /** Decode unsupported formats via server, then resize/compress for storage. */
+  async function preparePhotoForStorage(file: File): Promise<File> {
+    const decoded = await toJpegIfUnsupported(file)
+    try {
+      return await compressImage(decoded)
+    } catch {
+      const again = await convertViaServer(file)
+      return await compressImage(again)
+    }
+  }
+
   async function uploadImagesToStorage(userId: string): Promise<string[]> {
     const urls: string[] = []
     for (let i = 0; i < images.length; i++) {
@@ -504,9 +527,10 @@ function SellPageContent() {
       if (!img.file) continue
       let fileToUpload: File
       try {
-        fileToUpload = await toUploadableImage(img.file)
-        fileToUpload = await compressImage(fileToUpload)
-      } catch {
+        fileToUpload = await preparePhotoForStorage(img.file)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unknown error"
+        toast.error(`Photo ${i + 1} could not be processed: ${msg}`)
         continue
       }
       const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
@@ -560,9 +584,10 @@ function SellPageContent() {
 
         let fileToUpload: File
         try {
-          fileToUpload = await toUploadableImage(img.file)
-          fileToUpload = await compressImage(fileToUpload)
-        } catch {
+          fileToUpload = await preparePhotoForStorage(img.file)
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "Unknown error"
+          toast.error(`Photo ${index + 1} could not be processed: ${msg}`)
           return
         }
         const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
@@ -709,136 +734,181 @@ function SellPageContent() {
       }
 
       if (editId) {
-        const newSlug = await generateUniqueSlug(formData.title)
-        const { data: updated, error: updateError } = await supabase
-          .from("listings")
-          .update({
-            title: formData.title,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            condition: formData.condition,
-            slug: newSlug,
-            category_id:
-              listingType === "used"
-                ? formData.category
-                : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
-            board_type: listingType === "board" ? formData.boardType : null,
-            length_feet:
-              listingType === "board" && formData.boardLength
-                ? parseInt(formData.boardLength.split("'")[0])
-                : null,
-            length_inches:
-              listingType === "board" && formData.boardLength
-                ? parseInt(formData.boardLength.split("'")[1] || "0")
-                : null,
-            latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
-            longitude:
-              fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
-            city: fulfillmentRow.local_pickup ? formData.locationCity : null,
-            state: fulfillmentRow.local_pickup ? formData.locationState : null,
-            shipping_available: fulfillmentRow.shipping_available,
-            local_pickup: fulfillmentRow.local_pickup,
-            shipping_price: fulfillmentRow.shipping_price,
-            brand:
-              listingType === "board" && formData.brand.trim()
+        const editListingFields = {
+          title: formData.title,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          condition: formData.condition,
+          category_id:
+            listingType === "used"
+              ? formData.category
+              : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
+          board_type: listingType === "board" ? formData.boardType : null,
+          length_feet:
+            listingType === "board" && formData.boardLength
+              ? parseInt(formData.boardLength.split("'")[0])
+              : null,
+          length_inches:
+            listingType === "board" && formData.boardLength
+              ? parseInt(formData.boardLength.split("'")[1] || "0")
+              : null,
+          latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
+          longitude:
+            fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
+          city: fulfillmentRow.local_pickup ? formData.locationCity : null,
+          state: fulfillmentRow.local_pickup ? formData.locationState : null,
+          shipping_available: fulfillmentRow.shipping_available,
+          local_pickup: fulfillmentRow.local_pickup,
+          shipping_price: fulfillmentRow.shipping_price,
+          brand:
+            listingType === "board" && formData.brand.trim()
+              ? formData.brand.trim()
+              : listingType === "used" &&
+                  (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
+                  formData.brand.trim()
                 ? formData.brand.trim()
-                : listingType === "used" &&
-                    (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-                    formData.brand.trim()
-                  ? formData.brand.trim()
-                  : null,
-            index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
-            index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
-            index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
-            gear_size:
-              listingType === "used" &&
-              (formData.category === FINS_CATEGORY_ID ||
-                formData.category === BACKPACK_CATEGORY_ID ||
-                formData.category === BOARD_BAGS_CATEGORY_ID ||
-                formData.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
-              formData.gearSize.trim()
-                ? formData.gearSize.trim()
                 : null,
-            gear_color:
-              listingType === "used" &&
-              (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-              formData.gearColor.trim()
-                ? formData.gearColor.trim()
-                : null,
-            pack_kind:
-              listingType === "used" &&
-              formData.category === BACKPACK_CATEGORY_ID &&
-              (formData.packKind === "surfpack" || formData.packKind === "bag")
-                ? formData.packKind
-                : null,
-            board_bag_kind:
-              listingType === "used" &&
-              formData.category === BOARD_BAGS_CATEGORY_ID &&
-              (formData.boardBagKind === "day" || formData.boardBagKind === "travel")
-                ? formData.boardBagKind
-                : null,
-            apparel_kind:
-              listingType === "used" &&
-              formData.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
-              APPAREL_KIND_VALUES.includes(formData.apparelKind as ApparelKindValue)
-                ? formData.apparelKind
-                : null,
-            wetsuit_size:
-              listingType === "used" &&
-              formData.category === WETSUITS_CATEGORY_ID &&
-              (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(formData.wetsuitSize.trim())
-                ? formData.wetsuitSize.trim()
-                : null,
-            wetsuit_thickness:
-              listingType === "used" &&
-              formData.category === WETSUITS_CATEGORY_ID &&
-              (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(formData.wetsuitThickness.trim())
-                ? formData.wetsuitThickness.trim()
-                : null,
-            wetsuit_zip_type:
-              listingType === "used" &&
-              formData.category === WETSUITS_CATEGORY_ID &&
-              WETSUIT_ZIP_VALUES.includes(formData.wetsuitZipType as WetsuitZipValue)
-                ? formData.wetsuitZipType
-                : null,
-            leash_length:
-              listingType === "used" &&
-              formData.category === LEASHES_CATEGORY_ID &&
-              (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(formData.leashLength.trim())
-                ? formData.leashLength.trim()
-                : null,
-            leash_thickness:
-              listingType === "used" &&
-              formData.category === LEASHES_CATEGORY_ID &&
-              (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
-                ? formData.leashThickness.trim()
-                : null,
-            collectible_type:
-              listingType === "used" &&
-              formData.category === COLLECTIBLES_CATEGORY_ID &&
-              (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(formData.collectibleType)
-                ? formData.collectibleType
-                : null,
-            collectible_era:
-              listingType === "used" &&
-              formData.category === COLLECTIBLES_CATEGORY_ID &&
-              (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(formData.collectibleEra)
-                ? formData.collectibleEra
-                : null,
-            collectible_condition:
-              listingType === "used" &&
-              formData.category === COLLECTIBLES_CATEGORY_ID &&
-              (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(formData.collectibleCondition)
-                ? formData.collectibleCondition
-                : null,
-            updated_at: new Date().toISOString(),
+          index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
+          index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
+          index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
+          gear_size:
+            listingType === "used" &&
+            (formData.category === FINS_CATEGORY_ID ||
+              formData.category === BACKPACK_CATEGORY_ID ||
+              formData.category === BOARD_BAGS_CATEGORY_ID ||
+              formData.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
+            formData.gearSize.trim()
+              ? formData.gearSize.trim()
+              : null,
+          gear_color:
+            listingType === "used" &&
+            (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
+            formData.gearColor.trim()
+              ? formData.gearColor.trim()
+              : null,
+          pack_kind:
+            listingType === "used" &&
+            formData.category === BACKPACK_CATEGORY_ID &&
+            (formData.packKind === "surfpack" || formData.packKind === "bag")
+              ? formData.packKind
+              : null,
+          board_bag_kind:
+            listingType === "used" &&
+            formData.category === BOARD_BAGS_CATEGORY_ID &&
+            (formData.boardBagKind === "day" || formData.boardBagKind === "travel")
+              ? formData.boardBagKind
+              : null,
+          apparel_kind:
+            listingType === "used" &&
+            formData.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
+            APPAREL_KIND_VALUES.includes(formData.apparelKind as ApparelKindValue)
+              ? formData.apparelKind
+              : null,
+          wetsuit_size:
+            listingType === "used" &&
+            formData.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(formData.wetsuitSize.trim())
+              ? formData.wetsuitSize.trim()
+              : null,
+          wetsuit_thickness:
+            listingType === "used" &&
+            formData.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(formData.wetsuitThickness.trim())
+              ? formData.wetsuitThickness.trim()
+              : null,
+          wetsuit_zip_type:
+            listingType === "used" &&
+            formData.category === WETSUITS_CATEGORY_ID &&
+            WETSUIT_ZIP_VALUES.includes(formData.wetsuitZipType as WetsuitZipValue)
+              ? formData.wetsuitZipType
+              : null,
+          leash_length:
+            listingType === "used" &&
+            formData.category === LEASHES_CATEGORY_ID &&
+            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(formData.leashLength.trim())
+              ? formData.leashLength.trim()
+              : null,
+          leash_thickness:
+            listingType === "used" &&
+            formData.category === LEASHES_CATEGORY_ID &&
+            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
+              ? formData.leashThickness.trim()
+              : null,
+          collectible_type:
+            listingType === "used" &&
+            formData.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(formData.collectibleType)
+              ? formData.collectibleType
+              : null,
+          collectible_era:
+            listingType === "used" &&
+            formData.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(formData.collectibleEra)
+              ? formData.collectibleEra
+              : null,
+          collectible_condition:
+            listingType === "used" &&
+            formData.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(formData.collectibleCondition)
+              ? formData.collectibleCondition
+              : null,
+        }
+
+        if (impersonation) {
+          const imageOps: { id?: string; url?: string; is_primary: boolean; sort_order: number }[] = []
+          for (let i = 0; i < images.length; i++) {
+            const img = images[i]
+            if (img.id && !img.file) {
+              imageOps.push({ id: img.id, is_primary: i === 0, sort_order: i })
+              continue
+            }
+            if (!img.file) continue
+            let fileToUpload: File
+            try {
+              fileToUpload = await preparePhotoForStorage(img.file)
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Unknown error"
+              toast.error(`Photo ${i + 1} could not be processed: ${msg}`)
+              continue
+            }
+            const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
+            const fileName = `${user.id}/${Date.now()}-${i}-${baseName}.jpg`
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from("listings")
+              .upload(fileName, fileToUpload, { contentType: "image/jpeg", upsert: false })
+            if (uploadError) {
+              toast.error(`Photo ${i + 1} failed to upload: ${uploadError.message}`)
+              continue
+            }
+            const { data: { publicUrl } } = supabase.storage.from("listings").getPublicUrl(uploadData.path)
+            imageOps.push({ url: publicUrl, is_primary: i === 0, sort_order: i })
+          }
+
+          const res = await fetch("/api/admin/impersonate/update-listing", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              listingId: editId,
+              listing: editListingFields,
+              removedImageIds,
+              images: imageOps,
+            }),
           })
-          .eq("id", editId)
-          .eq("user_id", user.id)
-          .select("slug")
-          .single()
-        if (updateError) throw updateError
-        listingSlug = updated?.slug ?? newSlug
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || "Failed to update listing")
+          listingSlug = data.slug
+        } else {
+          const newSlug = await generateUniqueSlug(formData.title)
+          const { data: updated, error: updateError } = await supabase
+            .from("listings")
+            .update({ ...editListingFields, slug: newSlug, updated_at: new Date().toISOString() })
+            .eq("id", editId)
+            .eq("user_id", user.id)
+            .select("slug")
+            .single()
+          if (updateError) throw updateError
+          listingSlug = updated?.slug ?? newSlug
+        }
       } else {
         const listingFields = {
           title: formData.title,
@@ -962,7 +1032,7 @@ function SellPageContent() {
         }
 
         if (impersonation) {
-          const imageUrls = await uploadImagesToStorage(effectiveUserId)
+          const imageUrls = await uploadImagesToStorage(user.id)
           const res = await fetch("/api/admin/impersonate/create-listing", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1006,12 +1076,20 @@ function SellPageContent() {
           })
           return
         }
-        if (editId) {
+        if (editId && !impersonation) {
           await syncListingImages(listingId, user.id)
         }
       }
 
-      toast.success(impersonation ? `Listing created for ${impersonation.displayName}` : editId ? "Listing updated" : "Listing created successfully!")
+      toast.success(
+        impersonation
+          ? editId
+            ? `Listing updated for ${impersonation.displayName}`
+            : `Listing created for ${impersonation.displayName}`
+          : editId
+            ? "Listing updated"
+            : "Listing created successfully!",
+      )
       router.push(detailPath)
     } catch (error: any) {
       console.error("Error creating listing:", error?.message || error)
@@ -1912,6 +1990,12 @@ function SellPageContent() {
                           alt={`Photo ${index + 1}`}
                           className="w-full h-full"
                           style={{ objectFit: "contain" }}
+                          onError={(e) => {
+                            const target = e.currentTarget
+                            if (target.src !== "/placeholder.svg") {
+                              target.src = "/placeholder.svg"
+                            }
+                          }}
                         />
                         <button
                           type="button"
@@ -1957,7 +2041,7 @@ function SellPageContent() {
                         <span className="text-xs text-muted-foreground mt-1">Add</span>
                         <input
                           type="file"
-                          accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+                          accept="image/*"
                           multiple
                           onChange={handleImageChange}
                           className="hidden"
@@ -1967,8 +2051,8 @@ function SellPageContent() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {listingType === "used" || listingType === "board"
-                      ? "Minimum 3 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."
-                      : "Only vertical (portrait) photos — height greater than width. First image is the main photo. JPG, PNG, WebP, and HEIC (iPhone) supported."}
+                      ? "Minimum 3 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. Any common phone/camera format is OK; unsupported types are converted to JPEG automatically."
+                      : "Only vertical (portrait) photos — height greater than width. First image is the main photo. Any common phone/camera format is OK; unsupported types are converted to JPEG automatically."}
                   </p>
                   {(listingType === "used" || listingType === "board") && images.length > 0 && images.length < 3 && (
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
