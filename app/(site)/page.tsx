@@ -33,7 +33,7 @@ const PLACEHOLDER_IMAGE = "/placeholder.svg"
 function HomeListingScrollRow({ children }: { children: ReactNode }) {
   return (
     <div className="-mx-4 overflow-x-auto overflow-y-visible pb-2 pl-4 sm:-mx-6 sm:pl-6 lg:-mx-8 lg:pl-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex w-max gap-3 pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none">
+      <div className="flex w-max min-h-0 items-stretch gap-3 pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none">
         {children}
       </div>
     </div>
@@ -43,21 +43,22 @@ function HomeListingScrollRow({ children }: { children: ReactNode }) {
 /** ~3 full cards + peek of 4th on mobile; fixed width from `sm` up. */
 const homeListingScrollCardClass = cn(
   listingProductCardGridClassName,
-  "shrink-0 snap-start w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
+  "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
 )
 
 const homeListingScrollImageSizes = "(max-width: 639px) 30vw, 208px"
 
-/** Equal row height + meta pinned to bottom so price/location align across cards. */
-const homeListingScrollLinkClass = "min-w-0 flex flex-1 flex-col min-h-0"
-const homeListingScrollBodyClass = "min-w-0 p-3 flex flex-col flex-1 min-h-0"
+/** Fill stretched card; min-h-0 keeps flex children from overflowing. */
+const homeListingScrollLinkClass = "flex min-h-0 h-full min-w-0 flex-1 flex-col"
+const homeListingScrollBodyClass =
+  "flex min-h-0 min-w-0 flex-1 flex-col p-3 pt-3"
 
 /**
- * flex-1 + overflow hidden so line-clamp works; flex row stretches cards so prices align.
- * Mobile: line-clamp with ellipsis (narrow cards get 4 lines, sm+ wider cards use 3).
+ * Fixed title band so every card in the row matches; line-clamp inside (no scroll).
+ * Sizes fit line-clamp-4 + optional board-length line (mobile) / line-clamp-3 (sm+).
  */
 const homeListingScrollTitleSlotClass =
-  "flex min-h-0 flex-1 flex-col overflow-hidden"
+  "flex h-[6.25rem] max-h-[6.25rem] min-h-0 shrink-0 flex-col overflow-hidden sm:h-[5.75rem] sm:max-h-[5.75rem]"
 
 const homeListingScrollHeadingClass =
   "text-sm font-medium leading-snug line-clamp-4 break-words sm:line-clamp-3"
@@ -66,7 +67,7 @@ const homeListingScrollHeadingClass =
 const homeListingScrollMetaLinesClass =
   "max-sm:h-[2.625rem] max-sm:max-h-[2.625rem] max-sm:overflow-hidden max-sm:min-h-0 sm:max-h-none sm:overflow-visible"
 
-const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
+const homeListingScrollMetaFooterClass = "mt-auto w-full shrink-0 pt-1"
 
 function HomeListingTitleSlot({ children }: { children: ReactNode }) {
   return <div className={homeListingScrollTitleSlotClass}>{children}</div>
