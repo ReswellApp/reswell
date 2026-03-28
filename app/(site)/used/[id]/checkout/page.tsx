@@ -26,7 +26,7 @@ export default async function UsedCheckoutPage(props: {
     redirect(`/auth/login?redirect=${encodeURIComponent(`/used/${id}/checkout`)}`)
   }
 
-  const { listing, redirectSlug } = await findListingByParam(
+  const { listing, redirectSlug, canonicalPath } = await findListingByParam(
     supabase,
     id,
     {
@@ -38,6 +38,10 @@ export default async function UsedCheckoutPage(props: {
 
   if (!listing || listing.status !== "active") {
     notFound()
+  }
+
+  if (canonicalPath) {
+    redirect(`${canonicalPath}/checkout`)
   }
 
   if (redirectSlug) {

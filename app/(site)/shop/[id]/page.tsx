@@ -1,10 +1,12 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
+import { listingDetailPath } from "@/lib/listing-query"
+import { isUUID } from "@/lib/slugify"
 import { ArrowLeft, Package, Truck, Shield, RotateCcw } from "lucide-react"
 import { AddToCartButton } from "@/components/add-to-cart-button"
 import { QuantitySelector } from "@/components/quantity-selector"
@@ -15,6 +17,10 @@ export default async function ProductPage(props: {
 }) {
   const params = await props.params
   const supabase = await createClient()
+
+  if (!isUUID(params.id)) {
+    notFound()
+  }
 
   // Treat id as listing id — marketplace new item
   const { data: listing } = await supabase
@@ -31,9 +37,17 @@ export default async function ProductPage(props: {
     .eq("id", params.id)
     .eq("section", "new")
     .eq("status", "active")
-    .single()
+    .maybeSingle()
 
   if (!listing) {
+    const { data: elsewhere } = await supabase
+      .from("listings")
+      .select("id, section, slug")
+      .eq("id", params.id)
+      .maybeSingle()
+    if (elsewhere && elsewhere.section !== "new") {
+      redirect(listingDetailPath(elsewhere))
+    }
     notFound()
   }
 

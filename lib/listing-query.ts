@@ -1,35 +1,94 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { isUUID } from "@/lib/slugify"
 
+function isListingRow(data: unknown): data is { section: string; id: string; slug?: string | null } {
+  if (typeof data !== "object" || data === null) return false
+  const row = data as Record<string, unknown>
+  return typeof row.section === "string" && typeof row.id === "string"
+}
+
+/** Canonical detail URL for a listing (used by section-aware redirects). */
+export function listingDetailPath(listing: {
+  section: string
+  slug?: string | null
+  id: string
+}): string {
+  const ident = listing.slug || listing.id
+  if (listing.section === "surfboards") return `/boards/${ident}`
+  if (listing.section === "new") return `/shop/${listing.id}`
+  return `/used/${ident}`
+}
+
 /**
  * Look up a listing by its slug (preferred) or UUID (backward compat).
- * Returns { listing, redirectSlug } where redirectSlug is set when the caller
- * used a UUID and should 301-redirect to the canonical slug URL.
+ * - redirectSlug: URL used a UUID and the row belongs on this route; redirect to slug within the same section.
+ * - canonicalPath: listing exists but under a different section (e.g. opened /used/… for a surfboard); redirect here.
  */
 export async function findListingByParam(
   supabase: SupabaseClient,
   param: string,
   {
     select,
-    section,
+    section: expectedSection,
   }: {
     select: string
     section?: string
   },
-): Promise<{ listing: any | null; redirectSlug: string | null }> {
-  if (isUUID(param)) {
+): Promise<{
+  listing: any | null
+  redirectSlug: string | null
+  canonicalPath: string | null
+}> {
+  const byId = async (withSection: boolean) => {
     let q = supabase.from("listings").select(select).eq("id", param)
-    if (section) q = q.eq("section", section)
-    const { data } = await q.single()
-    if (!data) return { listing: null, redirectSlug: null }
+    if (withSection && expectedSection) q = q.eq("section", expectedSection)
+    const { data } = await q.maybeSingle()
+    return isListingRow(data) ? data : null
+  }
+
+  const bySlug = async (withSection: boolean) => {
+    let q = supabase.from("listings").select(select).eq("slug", param)
+    if (withSection && expectedSection) q = q.eq("section", expectedSection)
+    const { data } = await q.maybeSingle()
+    return isListingRow(data) ? data : null
+  }
+
+  if (isUUID(param)) {
+    let data = expectedSection ? await byId(true) : await byId(false)
+    if (!data && expectedSection) {
+      data = await byId(false)
+    }
+    if (!data) {
+      return { listing: null, redirectSlug: null, canonicalPath: null }
+    }
+    if (expectedSection && data.section !== expectedSection) {
+      return {
+        listing: data,
+        redirectSlug: null,
+        canonicalPath: listingDetailPath(data),
+      }
+    }
+    const slug = (data as { slug?: string | null }).slug
     return {
       listing: data,
-      redirectSlug: (data as any).slug || null,
+      redirectSlug: slug?.trim() ? slug : null,
+      canonicalPath: null,
     }
   }
 
-  let q = supabase.from("listings").select(select).eq("slug", param)
-  if (section) q = q.eq("section", section)
-  const { data } = await q.single()
-  return { listing: data, redirectSlug: null }
+  let data = expectedSection ? await bySlug(true) : await bySlug(false)
+  if (!data && expectedSection) {
+    data = await bySlug(false)
+  }
+  if (!data) {
+    return { listing: null, redirectSlug: null, canonicalPath: null }
+  }
+  if (expectedSection && data.section !== expectedSection) {
+    return {
+      listing: data,
+      redirectSlug: null,
+      canonicalPath: listingDetailPath(data),
+    }
+  }
+  return { listing: data, redirectSlug: null, canonicalPath: null }
 }

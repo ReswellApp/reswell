@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
@@ -53,7 +53,8 @@ export async function generateMetadata(props: {
   const params = await props.params
   const supabase = await createClient()
   const { listing } = await findListingByParam(supabase, params.id, {
-    select: "id, slug, title, description, listing_images (url, is_primary, sort_order), categories (name)",
+    select:
+      "id, slug, title, description, listing_images (url, is_primary, sort_order), categories (name), section",
     section: "used",
   })
 
@@ -93,7 +94,7 @@ export default async function UsedListingPage(props: {
   const params = await props.params
   const supabase = await createClient()
   
-  const { listing, redirectSlug } = await findListingByParam(
+  const { listing, redirectSlug, canonicalPath } = await findListingByParam(
     supabase,
     params.id,
     {
@@ -111,8 +112,11 @@ export default async function UsedListingPage(props: {
     notFound()
   }
 
+  if (canonicalPath) {
+    redirect(canonicalPath)
+  }
+
   if (redirectSlug) {
-    const { redirect } = await import("next/navigation")
     redirect(`/used/${redirectSlug}`)
   }
 

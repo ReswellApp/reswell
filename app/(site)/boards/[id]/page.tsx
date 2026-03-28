@@ -52,7 +52,7 @@ export async function generateMetadata(props: {
   const params = await props.params
   const supabase = await createClient()
   const { listing: board } = await findListingByParam(supabase, params.id, {
-    select: "id, slug, title, description, listing_images (url, is_primary, sort_order)",
+    select: "id, slug, title, description, listing_images (url, is_primary, sort_order), section",
     section: "surfboards",
   })
 
@@ -88,7 +88,7 @@ export default async function BoardDetailPage(props: {
   const params = await props.params
   const supabase = await createClient()
   
-  const { listing: board, redirectSlug } = await findListingByParam(
+  const { listing: board, redirectSlug, canonicalPath } = await findListingByParam(
     supabase,
     params.id,
     {
@@ -103,6 +103,10 @@ export default async function BoardDetailPage(props: {
 
   if (!board) {
     notFound()
+  }
+
+  if (canonicalPath) {
+    redirect(canonicalPath)
   }
 
   if (redirectSlug) {

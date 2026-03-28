@@ -20,7 +20,7 @@ export default async function BoardCheckoutPage(props: {
     redirect(`/auth/login?redirect=${encodeURIComponent(`/boards/${id}/checkout`)}`)
   }
 
-  const { listing, redirectSlug } = await findListingByParam(
+  const { listing, redirectSlug, canonicalPath } = await findListingByParam(
     supabase,
     id,
     {
@@ -31,6 +31,10 @@ export default async function BoardCheckoutPage(props: {
 
   if (!listing || listing.status !== "active") {
     notFound()
+  }
+
+  if (canonicalPath) {
+    redirect(`${canonicalPath}/checkout`)
   }
 
   if (redirectSlug) {

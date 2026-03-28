@@ -1,8 +1,11 @@
 "use client"
 
 import Image from "next/image"
-import { useLayoutEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
+
+/** Matches `duration-300` on the overlay; used if `transitionend` never fires (e.g. reduced motion). */
+const OVERLAY_TRANSITION_MS = 300
 
 const overlayEase =
   "transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
@@ -93,9 +96,14 @@ export function FadeRouteTransitionOverlay({
 }: FadeRouteTransitionOverlayProps) {
   const [mounted, setMounted] = useState(false)
   const [paintVisible, setPaintVisible] = useState(false)
+  const exitFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useLayoutEffect(() => {
     if (open) {
+      if (exitFallbackRef.current) {
+        clearTimeout(exitFallbackRef.current)
+        exitFallbackRef.current = null
+      }
       setMounted(true)
       setPaintVisible(false)
       const id = requestAnimationFrame(() => {
@@ -106,9 +114,34 @@ export function FadeRouteTransitionOverlay({
     setPaintVisible(false)
   }, [open])
 
+  /**
+   * When `open` becomes false, opacity may change with no transition (reduced motion), so
+   * `transitionend` never runs and the overlay would stay mounted as an invisible full-screen
+   * layer above the header (z-110 vs z-50), blocking all clicks.
+   */
+  useEffect(() => {
+    if (open || !mounted) return
+    if (exitFallbackRef.current) clearTimeout(exitFallbackRef.current)
+    exitFallbackRef.current = setTimeout(() => {
+      exitFallbackRef.current = null
+      setMounted(false)
+      onExitComplete?.()
+    }, OVERLAY_TRANSITION_MS + 80)
+    return () => {
+      if (exitFallbackRef.current) {
+        clearTimeout(exitFallbackRef.current)
+        exitFallbackRef.current = null
+      }
+    }
+  }, [open, mounted, onExitComplete])
+
   const handleTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
     if (e.propertyName !== "opacity" || e.target !== e.currentTarget) return
     if (!open && mounted) {
+      if (exitFallbackRef.current) {
+        clearTimeout(exitFallbackRef.current)
+        exitFallbackRef.current = null
+      }
       setMounted(false)
       onExitComplete?.()
     }
@@ -123,7 +156,9 @@ export function FadeRouteTransitionOverlay({
       className={cn(
         "fixed inset-0 flex items-center justify-center bg-white",
         overlayEase,
-        show ? "opacity-100" : "opacity-0"
+        show ? "opacity-100" : "opacity-0",
+        // Invisible overlay must not capture clicks (opacity alone does not disable hit-testing).
+        !show && "pointer-events-none",
       )}
       style={{ zIndex }}
       aria-hidden
