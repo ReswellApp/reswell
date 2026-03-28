@@ -53,14 +53,14 @@ const homeListingScrollLinkClass = "min-w-0 flex flex-1 flex-col min-h-0"
 const homeListingScrollBodyClass = "min-w-0 p-3 flex flex-col flex-1 min-h-0"
 
 /**
- * Mobile: fixed height so every card lines up; scroll shows full title (no ellipsis).
- * sm+: flex-1 + overflow hidden so line-clamp on the heading works.
+ * flex-1 + overflow hidden so line-clamp works; flex row stretches cards so prices align.
+ * Mobile: line-clamp with ellipsis (narrow cards get 4 lines, sm+ wider cards use 3).
  */
 const homeListingScrollTitleSlotClass =
-  "flex min-h-0 flex-col max-sm:h-[5.75rem] max-sm:max-h-[5.75rem] max-sm:flex-none max-sm:shrink-0 max-sm:overflow-y-auto max-sm:overscroll-y-contain max-sm:[-webkit-overflow-scrolling:touch] max-sm:[scrollbar-width:none] max-sm:[-ms-overflow-style:none] max-sm:[&::-webkit-scrollbar]:hidden sm:min-h-0 sm:flex-1 sm:overflow-hidden"
+  "flex min-h-0 flex-1 flex-col overflow-hidden"
 
 const homeListingScrollHeadingClass =
-  "text-sm font-medium break-words sm:line-clamp-3"
+  "text-sm font-medium leading-snug line-clamp-4 break-words sm:line-clamp-3"
 
 /** Mobile: fixed band under price so location/seller lines align; scroll if needed (no ellipsis). Pair with `mt-1`. */
 const homeListingScrollMetaLinesClass =
@@ -672,7 +672,7 @@ export default async function HomePage() {
                               {capitalizeWords(listing.title)}
                             </h3>
                             <p
-                              className={`mt-0.5 text-xs text-muted-foreground break-words sm:line-clamp-1 ${listing.board_length ? "" : "invisible"}`}
+                              className={`mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words ${listing.board_length ? "" : "invisible"}`}
                               aria-hidden={!listing.board_length}
                             >
                               {listing.board_length ?? "\u00a0"}
