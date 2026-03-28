@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
-import { slugify } from "@/lib/slugify"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -77,36 +76,19 @@ export async function PUT(request: NextRequest) {
     )
   }
 
-  const baseSlug = slugify(listingData.title as string)
-  let slug = baseSlug
-  const { count } = await service
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .eq("slug", baseSlug)
-    .neq("id", listingId)
-  if (count) {
-    for (let i = 2; i < 100; i++) {
-      const candidate = `${baseSlug}-${i}`
-      const { count: c } = await service
-        .from("listings")
-        .select("id", { count: "exact", head: true })
-        .eq("slug", candidate)
-        .neq("id", listingId)
-      if (!c) {
-        slug = candidate
-        break
-      }
-    }
+  const { slug: _listingSlugFromBody, ...listingFields } = listingData as Record<string, unknown> & {
+    slug?: unknown
   }
 
-  const { error: updateError } = await service
+  const { data: updatedRow, error: updateError } = await service
     .from("listings")
     .update({
-      ...listingData,
-      slug,
+      ...listingFields,
       updated_at: new Date().toISOString(),
     })
     .eq("id", listingId)
+    .select("slug")
+    .single()
 
   if (updateError) {
     console.error("[impersonate] listing update error:", updateError)
@@ -149,6 +131,11 @@ export async function PUT(request: NextRequest) {
 
   const sellerDisplayName =
     (sellerProfile?.display_name && String(sellerProfile.display_name).trim()) || "Seller"
+
+  const slug =
+    updatedRow && typeof (updatedRow as { slug?: string }).slug === "string"
+      ? (updatedRow as { slug: string }).slug
+      : ""
 
   return NextResponse.json({ success: true, slug, seller_display_name: sellerDisplayName })
 }

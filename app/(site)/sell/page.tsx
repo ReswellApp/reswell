@@ -879,16 +879,15 @@ function SellPageContent() {
         }
 
         if (ownerEditsOwnListing) {
-          const newSlug = await generateUniqueSlug(resolvedListingTitle)
           const { data: updated, error: updateError } = await supabase
             .from("listings")
-            .update({ ...editListingFields, slug: newSlug, updated_at: new Date().toISOString() })
+            .update({ ...editListingFields, updated_at: new Date().toISOString() })
             .eq("id", editId)
             .eq("user_id", user.id)
             .select("slug")
             .single()
           if (updateError) throw updateError
-          listingSlug = updated?.slug ?? newSlug
+          listingSlug = updated?.slug ?? null
         } else if (adminImpersonatesListingOwner) {
           usedImpersonationListingApi = true
           const imageOps: { id?: string; url?: string; is_primary: boolean; sort_order: number }[] = []
