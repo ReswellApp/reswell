@@ -5,9 +5,10 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MessageCircle, Package, Truck, MapPin } from "lucide-react"
+import { ArrowLeft, Package, Truck, MapPin, CreditCard } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { SaleMessageThread, type SaleThreadMessage } from "@/components/sale-message-thread"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -23,16 +24,17 @@ type ShippingAddressJson = {
   } | null
 } | null
 
-type PurchaseDetail = {
+type SaleDetail = {
   id: string
   amount: number | string
+  seller_earnings: number | string
   status: string
   created_at: string
-  fulfillment_method: string | null
   shipping_address: ShippingAddressJson
-  stripe_checkout_session_id: string | null
-  seller_id: string
+  fulfillment_method: string | null
+  buyer_id: string
   listing_id: string
+  stripe_checkout_session_id: string | null
   listings:
     | {
         id: string
@@ -68,7 +70,13 @@ function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
   return parts.length ? parts.join("\n") : null
 }
 
-export default async function PurchaseDetailPage(props: { params: Promise<{ id: string }> }) {
+function fulfillmentLabel(method: string | null, hasShipAddr: boolean): string {
+  if (method === "shipping" || hasShipAddr) return "Ship to buyer"
+  if (method === "pickup") return "Local pickup"
+  return hasShipAddr ? "Ship to buyer" : "Local pickup"
+}
+
+export default async function SaleDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
   const supabase = await createClient()
   const {
@@ -83,13 +91,14 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
       `
       id,
       amount,
+      seller_earnings,
       status,
       created_at,
-      fulfillment_method,
       shipping_address,
-      stripe_checkout_session_id,
-      seller_id,
+      fulfillment_method,
+      buyer_id,
       listing_id,
+      stripe_checkout_session_id,
       listings (
         id,
         title,
@@ -97,61 +106,83 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
         section,
         listing_images ( url, is_primary )
       )
-    `
+    `,
     )
     .eq("id", id)
-    .eq("buyer_id", user.id)
+    .eq("seller_id", user.id)
+    .eq("status", "confirmed")
     .maybeSingle()
 
   if (error || !row) {
     notFound()
   }
 
-  const purchase = row as unknown as PurchaseDetail
-  const listing = Array.isArray(purchase.listings) ? purchase.listings[0] : purchase.listings
+  const sale = row as unknown as SaleDetail
+  const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
   const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
   const img = primaryImage(listing?.listing_images ?? null)
   const listingHref = listing ? listingDetailHref(listing) : null
 
-  const { data: sellerProfile } = await supabase
+  const { data: buyerProfile } = await supabase
     .from("profiles")
-    .select("display_name")
-    .eq("id", purchase.seller_id)
+    .select("id, display_name")
+    .eq("id", sale.buyer_id)
     .maybeSingle()
 
-  const sellerName =
-    sellerProfile?.display_name?.trim() ||
-    `Seller ${purchase.seller_id.slice(0, 8)}…`
+  const buyerDisplay = buyerProfile?.display_name?.trim()
+  const buyerName =
+    buyerDisplay && buyerDisplay.length > 0 ? buyerDisplay : `Buyer ${sale.buyer_id.slice(0, 8)}…`
 
-  const ship = purchase.shipping_address
+  const ship = sale.shipping_address
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
-  const paidWithCard = !!purchase.stripe_checkout_session_id
-  const fulfill =
-    purchase.fulfillment_method === "shipping"
-      ? "Shipping"
-      : purchase.fulfillment_method === "pickup"
-        ? "Local pickup"
-        : addrBlock
-          ? "Shipping"
-          : "Local pickup"
+  const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
+  const paidWithCard = !!sale.stripe_checkout_session_id
+
+  const { data: convRow } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("buyer_id", sale.buyer_id)
+    .eq("seller_id", user.id)
+    .eq("listing_id", sale.listing_id)
+    .maybeSingle()
+
+  const conversationId = convRow?.id ?? null
+
+  let initialMessages: SaleThreadMessage[] = []
+  if (conversationId) {
+    const { data: msgs } = await supabase
+      .from("messages")
+      .select("id, content, sender_id, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(8)
+
+    initialMessages = [...(msgs ?? [])].reverse()
+
+    await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", user.id)
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/dashboard/purchases" className="gap-2">
+          <Link href="/dashboard/sales" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
-            All purchases
+            All sales
           </Link>
         </Button>
       </div>
 
       <div>
         <h1 className="text-2xl font-bold font-mono tracking-tight">
-          Order #{purchase.id.slice(0, 8).toUpperCase()}
+          Sale #{sale.id.slice(0, 8).toUpperCase()}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {new Date(purchase.created_at).toLocaleString(undefined, {
+          {new Date(sale.created_at).toLocaleString(undefined, {
             dateStyle: "long",
             timeStyle: "short",
           })}
@@ -159,9 +190,16 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Badge variant="secondary">Paid</Badge>
+        <Badge variant="default">Paid</Badge>
         <Badge variant="outline" className="gap-1">
-          {paidWithCard ? "Card (Stripe)" : "Reswell Bucks"}
+          {paidWithCard ? (
+            <>
+              <CreditCard className="h-3.5 w-3.5" />
+              Card (Stripe)
+            </>
+          ) : (
+            "Reswell Bucks"
+          )}
         </Badge>
         <Badge variant="outline" className="gap-1">
           {fulfill.includes("Ship") ? (
@@ -172,6 +210,19 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
           {fulfill}
         </Badge>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Buyer</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="font-medium text-foreground">{buyerName}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            They completed checkout for this order. Use messages below to coordinate pickup or
+            shipping.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -196,12 +247,17 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
               ) : (
                 <p className="font-semibold text-foreground">{title}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-1">Sold by {sellerName}</p>
             </div>
           </div>
-          <div className="border-t pt-4 flex justify-between text-lg font-semibold">
-            <span>Total paid</span>
-            <span className="tabular-nums">${Number(purchase.amount).toFixed(2)}</span>
+          <div className="border-t pt-4 space-y-2 text-sm">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Order total</span>
+              <span className="tabular-nums">${Number(sale.amount).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-semibold text-foreground">
+              <span>Your earnings</span>
+              <span className="tabular-nums">${Number(sale.seller_earnings).toFixed(2)}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -210,7 +266,7 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Shipping address</CardTitle>
-            <CardDescription>What you provided at checkout for delivery.</CardDescription>
+            <CardDescription>Provided by the buyer at checkout for delivery.</CardDescription>
           </CardHeader>
           <CardContent className="text-sm space-y-1">
             {ship?.name && <p className="font-medium text-foreground">{ship.name}</p>}
@@ -221,28 +277,23 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
         </Card>
       )}
 
-      {!addrBlock && purchase.fulfillment_method === "pickup" && (
+      {!addrBlock && sale.fulfillment_method === "pickup" && (
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground">
             <p>
-              This order was <span className="font-medium text-foreground">local pickup</span>. Use
-              Messages to agree on a time and place with the seller.
+              This order is <span className="font-medium text-foreground">local pickup</span>. Use
+              messages to agree on a time and place with the buyer.
             </p>
           </CardContent>
         </Card>
       )}
 
-      <div className="flex flex-wrap gap-3">
-        <Button asChild>
-          <Link href="/messages" className="gap-2">
-            <MessageCircle className="h-4 w-4" />
-            Open messages
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/dashboard/purchases">Back to purchases</Link>
-        </Button>
-      </div>
+      <SaleMessageThread
+        conversationId={conversationId}
+        initialMessages={initialMessages}
+        buyerName={buyerName}
+        sellerId={user.id}
+      />
     </div>
   )
 }

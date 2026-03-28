@@ -31,6 +31,7 @@ type SaleRow = {
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
   buyer_id: string
+  listing_id: string
   stripe_checkout_session_id: string | null
   listings:
     | {
@@ -93,6 +94,7 @@ export default async function SalesPage() {
       shipping_address,
       fulfillment_method,
       buyer_id,
+      listing_id,
       stripe_checkout_session_id,
       listings (
         id,
@@ -158,7 +160,6 @@ export default async function SalesPage() {
             ? capitalizeWords(listing.title)
             : "Item (listing removed)"
           const img = primaryImage(listing?.listing_images ?? null)
-          const listingHref = listing ? listingDetailHref(listing) : null
           const ship = sale.shipping_address
           const addrBlock = ship?.address ? formatAddress(ship.address) : null
           const buyerDisplay = buyerNameById.get(sale.buyer_id)?.trim()
@@ -169,103 +170,92 @@ export default async function SalesPage() {
           const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
 
           return (
-            <Card key={sale.id}>
-              <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <PackageCheck className="h-5 w-5 text-muted-foreground" />
-                      Sale #{sale.id.slice(0, 8)}
-                    </CardTitle>
-                    <CardDescription>
-                      {new Date(sale.created_at).toLocaleString(undefined, {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </CardDescription>
+            <Link
+              key={sale.id}
+              href={`/dashboard/sales/${sale.id}`}
+              className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <Card className="h-full transition-colors hover:bg-muted/40 hover:border-primary/25">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <PackageCheck className="h-5 w-5 text-muted-foreground" />
+                        Sale #{sale.id.slice(0, 8)}
+                      </CardTitle>
+                      <CardDescription>
+                        {new Date(sale.created_at).toLocaleString(undefined, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </CardDescription>
+                    </div>
+                    <Badge variant="default">Paid</Badge>
                   </div>
-                  <Badge variant="default">Paid</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="gap-1 font-normal">
-                    {fulfill.includes("Ship") ? (
-                      <Truck className="h-3.5 w-3.5" />
-                    ) : (
-                      <MapPin className="h-3.5 w-3.5" />
-                    )}
-                    {fulfill}
-                  </Badge>
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="gap-1 font-normal">
+                      {fulfill.includes("Ship") ? (
+                        <Truck className="h-3.5 w-3.5" />
+                      ) : (
+                        <MapPin className="h-3.5 w-3.5" />
+                      )}
+                      {fulfill}
+                    </Badge>
+                  </div>
 
-                <div className="flex gap-3">
-                  <div className="relative h-16 w-16 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
-                    {img ? (
-                      <Image src={img} alt="" fill className="object-cover" sizes="64px" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <Package className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
+                  <div className="flex gap-3">
+                    <div className="relative h-16 w-16 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
+                      {img ? (
+                        <Image src={img} alt="" fill className="object-cover" sizes="64px" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Package className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground line-clamp-2">{title}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">Buyer: {buyerName}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Tap for order details, shipping address, and messages
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    {listingHref ? (
-                      <Link
-                        href={listingHref}
-                        className="font-medium text-foreground hover:text-primary line-clamp-2"
-                      >
-                        {title}
-                      </Link>
-                    ) : (
-                      <span className="font-medium text-foreground line-clamp-2">{title}</span>
-                    )}
-                    <p className="text-sm text-muted-foreground mt-0.5">Buyer: {buyerName}</p>
-                  </div>
-                </div>
 
-                <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Order total</span>
-                    <span className="tabular-nums">${Number(sale.amount).toFixed(2)}</span>
+                  <div className="border-t pt-3 space-y-1 text-sm">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Order total</span>
+                      <span className="tabular-nums">${Number(sale.amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-foreground pt-1">
+                      <span>Your earnings</span>
+                      <span className="tabular-nums">${Number(sale.seller_earnings).toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between font-semibold text-foreground pt-1">
-                    <span>Your earnings</span>
-                    <span className="tabular-nums">${Number(sale.seller_earnings).toFixed(2)}</span>
-                  </div>
-                </div>
 
-                {addrBlock && (
-                  <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                    <p className="font-medium text-foreground mb-1">Ship to</p>
-                    {ship?.name && <p className="text-foreground">{ship.name}</p>}
-                    <p className="text-muted-foreground whitespace-pre-line">{addrBlock}</p>
-                    {ship?.phone && (
-                      <p className="text-muted-foreground mt-1">Phone: {ship.phone}</p>
-                    )}
-                    {ship?.email && (
-                      <p className="text-muted-foreground mt-1">Email: {ship.email}</p>
-                    )}
-                  </div>
-                )}
+                  {addrBlock && (
+                    <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                      <p className="font-medium text-foreground mb-1">Ship to</p>
+                      {ship?.name && <p className="text-foreground">{ship.name}</p>}
+                      <p className="text-muted-foreground whitespace-pre-line line-clamp-3">
+                        {addrBlock}
+                      </p>
+                      {(ship?.phone || ship?.email) && (
+                        <p className="text-xs text-muted-foreground mt-1">Open sale for full details</p>
+                      )}
+                    </div>
+                  )}
 
-                {!addrBlock && sale.fulfillment_method === "pickup" && (
-                  <p className="text-sm text-muted-foreground">
-                    Pickup: coordinate time and place with the buyer in{" "}
-                    <Link href="/messages" className="text-primary underline underline-offset-2">
-                      Messages
-                    </Link>
-                    .
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/messages">Open messages</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  {!addrBlock && sale.fulfillment_method === "pickup" && (
+                    <p className="text-sm text-muted-foreground">
+                      Local pickup — open this sale to message the buyer and confirm details.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
           )
         })}
       </div>

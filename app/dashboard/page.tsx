@@ -15,6 +15,7 @@ import {
   Flag,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 
 export default async function DashboardPage() {
   const { supabase, user } = await getCachedDashboardSession()
@@ -55,7 +56,11 @@ export default async function DashboardPage() {
       .from("reports")
       .select("*", { count: "exact", head: true })
       .eq("reporter_id", user.id),
-    supabase.from("wallets").select("balance").eq("user_id", user.id).single(),
+    supabase
+      .from("wallets")
+      .select("id, balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+      .eq("user_id", user.id)
+      .single(),
     supabase.from("profiles").select("*").eq("id", user.id).single(),
   ])
 
@@ -68,10 +73,25 @@ export default async function DashboardPage() {
   const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
   const recentListings = recentListingsRes.data
   const reportsCount = reportsAgg.count
-  const wallet = walletRes.data
+  const walletRow = walletRes.data
   const profile = profileRes.data
 
-  const walletBalance = wallet ? parseFloat(wallet.balance) : 0
+  let walletBalance = 0
+  if (walletRow) {
+    const r = reconcileWalletAggregates(walletRow)
+    walletBalance = r.balance
+    if (r.needsPersist) {
+      const s = walletAggregateStrings(r)
+      await supabase
+        .from("wallets")
+        .update({
+          balance: s.balance,
+          lifetime_cashed_out: s.lifetime_cashed_out,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", walletRow.id)
+    }
+  }
 
   const stats = [
     {

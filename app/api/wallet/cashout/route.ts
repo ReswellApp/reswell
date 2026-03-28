@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getPayoutFee, getPayoutNetAmount, type PayoutType } from "@/lib/payout-fees"
+import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 
 const MIN_CASHOUT = 10 // Minimum $10 to cash out
 
@@ -30,23 +31,42 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Fetch wallet
-  const { data: wallet } = await supabase
+  const { data: fetchedWallet } = await supabase
     .from("wallets")
     .select("*")
     .eq("user_id", user.id)
     .single()
 
-  if (!wallet || parseFloat(wallet.balance) < cashoutAmount) {
+  if (!fetchedWallet) {
+    return NextResponse.json({ error: "Wallet not found" }, { status: 400 })
+  }
+
+  let wallet = fetchedWallet
+  const agg = reconcileWalletAggregates(wallet)
+  if (agg.needsPersist) {
+    const s = walletAggregateStrings(agg)
+    await supabase
+      .from("wallets")
+      .update({
+        balance: s.balance,
+        lifetime_cashed_out: s.lifetime_cashed_out,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", wallet.id)
+    wallet = { ...wallet, balance: s.balance, lifetime_cashed_out: s.lifetime_cashed_out }
+  }
+
+  const available = parseFloat(wallet.balance)
+  if (available < cashoutAmount) {
     return NextResponse.json(
-      { error: "Insufficient balance", balance: wallet?.balance || 0 },
+      { error: "Insufficient balance", balance: available },
       { status: 400 }
     )
   }
 
   const fee = getPayoutFee(cashoutAmount, payout_type)
   const netAmount = getPayoutNetAmount(cashoutAmount, payout_type)
-  const newBalance = parseFloat(wallet.balance) - cashoutAmount
+  const newBalance = available - cashoutAmount
 
   // Deduct from wallet
   const { error: updateError } = await supabase

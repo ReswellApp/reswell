@@ -14,6 +14,7 @@ import {
   type MouseEvent,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -336,10 +337,10 @@ export function Header() {
 
         const { data: wallet } = await supabase
           .from("wallets")
-          .select("balance")
+          .select("balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
           .eq("user_id", user.id)
           .single()
-        setWalletBalance(wallet ? parseFloat(wallet.balance) : 0)
+        setWalletBalance(wallet ? reconcileWalletAggregates(wallet).balance : 0)
       } else {
         setIsAdmin(false)
         setProfileAvatarUrl(null)

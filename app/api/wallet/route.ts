@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { NextResponse } from "next/server"
 
 // GET: Fetch wallet balance + recent transactions
@@ -30,6 +31,26 @@ export async function GET() {
       return NextResponse.json({ error: "Failed to create wallet" }, { status: 500 })
     }
     wallet = newWallet
+  }
+
+  const agg = reconcileWalletAggregates(wallet)
+  if (agg.needsPersist) {
+    const s = walletAggregateStrings(agg)
+    const { error: fixError } = await supabase
+      .from("wallets")
+      .update({
+        balance: s.balance,
+        lifetime_cashed_out: s.lifetime_cashed_out,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", wallet.id)
+    if (!fixError) {
+      wallet = {
+        ...wallet,
+        balance: s.balance,
+        lifetime_cashed_out: s.lifetime_cashed_out,
+      }
+    }
   }
 
   // Fetch recent transactions
