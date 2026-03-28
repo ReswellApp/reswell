@@ -98,5 +98,19 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, listing_id: listing.id, slug: listing.slug })
+  const { data: sellerProfile } = await service
+    .from("profiles")
+    .select("display_name")
+    .eq("id", targetUserId)
+    .single()
+
+  const sellerDisplayName =
+    (sellerProfile?.display_name && String(sellerProfile.display_name).trim()) || "Seller"
+
+  return NextResponse.json({
+    success: true,
+    listing_id: listing.id,
+    slug: listing.slug,
+    seller_display_name: sellerDisplayName,
+  })
 }

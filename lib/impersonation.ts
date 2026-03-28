@@ -1,23 +1,34 @@
 export const IMPERSONATION_COOKIE = "admin_impersonating"
 const STORAGE_KEY = "admin_impersonating"
 
-/** Parse the impersonation cookie value on the server. Handles both encoded and plain JSON. */
-export function parseImpersonationCookie(raw: string): { userId: string } | null {
-  try {
-    return JSON.parse(raw)
-  } catch {
-    try {
-      return JSON.parse(decodeURIComponent(raw))
-    } catch {
-      return null
-    }
-  }
-}
-
 export interface ImpersonationData {
   userId: string
   displayName: string
   email: string | null
+}
+
+/** Parse the impersonation cookie value on the server. Handles both encoded and plain JSON. */
+export function parseImpersonationCookie(raw: string): ImpersonationData | null {
+  const tryParse = (s: string): ImpersonationData | null => {
+    try {
+      const v = JSON.parse(s) as Partial<ImpersonationData>
+      if (!v?.userId || typeof v.userId !== "string") return null
+      return {
+        userId: v.userId,
+        displayName: typeof v.displayName === "string" && v.displayName.trim() ? v.displayName.trim() : "User",
+        email: typeof v.email === "string" ? v.email : null,
+      }
+    } catch {
+      return null
+    }
+  }
+  const first = tryParse(raw)
+  if (first) return first
+  try {
+    return tryParse(decodeURIComponent(raw))
+  } catch {
+    return null
+  }
 }
 
 /** Store impersonation data client-side (localStorage). Call after the API sets the cookie. */

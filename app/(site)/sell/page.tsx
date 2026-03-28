@@ -27,7 +27,7 @@ import {
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
 import { slugify } from "@/lib/slugify"
-import { getImpersonation, type ImpersonationData } from "@/lib/impersonation"
+import { clearImpersonation, getImpersonation, type ImpersonationData } from "@/lib/impersonation"
 import {
   FINS_TYPE_OPTIONS,
   SINGLE_FIN_SIZE_OPTIONS,
@@ -65,6 +65,7 @@ import {
   SurfboardTitleIndexInput,
   titleFromIndexModelPick,
 } from "@/components/surfboard-title-index-input"
+import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
 const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
@@ -133,6 +134,7 @@ function SellPageContent() {
   const editId = searchParams.get("edit")
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
+  const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   useEffect(() => { setImpersonation(getImpersonation()) }, [])
   const [loading, setLoading] = useState(false)
   const [editLoading, setEditLoading] = useState(!!editId)
@@ -175,6 +177,7 @@ function SellPageContent() {
 
   useEffect(() => {
     if (!editId) {
+      setEditListingOwnerId(null)
       setEditLoading(false)
       return
     }
@@ -239,6 +242,11 @@ function SellPageContent() {
         router.replace("/sell")
         setEditLoading(false)
         return
+      }
+      setEditListingOwnerId(listing.user_id as string)
+      if (imp && imp.userId !== listing.user_id) {
+        clearImpersonation()
+        setImpersonation(null)
       }
       const section = listing.section === "surfboards" ? "board" : (listing.section as "used")
       setListingType(section)
@@ -635,8 +643,6 @@ function SellPageContent() {
         return
       }
 
-      const effectiveUserId = impersonation?.userId ?? user.id
-
       if (!formData.title || !formData.price || !formData.condition) {
         toast.error("Please fill in all required fields")
         setLoading(false)
@@ -710,8 +716,15 @@ function SellPageContent() {
           : null,
       }
 
+      const resolvedListingTitle =
+        listingType === "board" && formData.boardLength.trim()
+          ? listingTitleWithBoardLength(formData.title, formData.boardLength)
+          : formData.title.trim()
+
       let listingId = editId
       let listingSlug: string | null = null
+      let usedImpersonationListingApi = false
+      let impersonationSellerLabel: string | null = null
 
       // Generate a unique slug from the title
       async function generateUniqueSlug(title: string): Promise<string> {
@@ -734,8 +747,19 @@ function SellPageContent() {
       }
 
       if (editId) {
+        if (!editListingOwnerId) {
+          toast.error("Listing is still loading. Try again in a moment.")
+          setLoading(false)
+          return
+        }
+        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const adminImpersonatesListingOwner =
+          !!impersonation &&
+          impersonation.userId === editListingOwnerId &&
+          user.id !== editListingOwnerId
+
         const editListingFields = {
-          title: formData.title,
+          title: resolvedListingTitle,
           description: formData.description,
           price: parseFloat(formData.price),
           condition: formData.condition,
@@ -854,7 +878,19 @@ function SellPageContent() {
               : null,
         }
 
-        if (impersonation) {
+        if (ownerEditsOwnListing) {
+          const newSlug = await generateUniqueSlug(resolvedListingTitle)
+          const { data: updated, error: updateError } = await supabase
+            .from("listings")
+            .update({ ...editListingFields, slug: newSlug, updated_at: new Date().toISOString() })
+            .eq("id", editId)
+            .eq("user_id", user.id)
+            .select("slug")
+            .single()
+          if (updateError) throw updateError
+          listingSlug = updated?.slug ?? newSlug
+        } else if (adminImpersonatesListingOwner) {
+          usedImpersonationListingApi = true
           const imageOps: { id?: string; url?: string; is_primary: boolean; sort_order: number }[] = []
           for (let i = 0; i < images.length; i++) {
             const img = images[i]
@@ -897,21 +933,19 @@ function SellPageContent() {
           const data = await res.json()
           if (!res.ok) throw new Error(data.error || "Failed to update listing")
           listingSlug = data.slug
+          if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
+            impersonationSellerLabel = data.seller_display_name.trim()
+          }
         } else {
-          const newSlug = await generateUniqueSlug(formData.title)
-          const { data: updated, error: updateError } = await supabase
-            .from("listings")
-            .update({ ...editListingFields, slug: newSlug, updated_at: new Date().toISOString() })
-            .eq("id", editId)
-            .eq("user_id", user.id)
-            .select("slug")
-            .single()
-          if (updateError) throw updateError
-          listingSlug = updated?.slug ?? newSlug
+          toast.error(
+            "This listing belongs to another account. From admin, open the seller and use impersonation for that shop, or sign in as the listing owner.",
+          )
+          setLoading(false)
+          return
         }
       } else {
         const listingFields = {
-          title: formData.title,
+          title: resolvedListingTitle,
           description: formData.description,
           price: parseFloat(formData.price),
           condition: formData.condition,
@@ -1032,6 +1066,7 @@ function SellPageContent() {
         }
 
         if (impersonation) {
+          usedImpersonationListingApi = true
           const imageUrls = await uploadImagesToStorage(user.id)
           const res = await fetch("/api/admin/impersonate/create-listing", {
             method: "POST",
@@ -1042,8 +1077,11 @@ function SellPageContent() {
           if (!res.ok) throw new Error(data.error || "Failed to create listing")
           listingId = data.listing_id
           listingSlug = data.slug
+          if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
+            impersonationSellerLabel = data.seller_display_name.trim()
+          }
         } else {
-          const newSlug = await generateUniqueSlug(formData.title)
+          const newSlug = await generateUniqueSlug(resolvedListingTitle)
           const { data: listing, error: listingError } = await supabase
             .from("listings")
             .insert({
@@ -1076,20 +1114,20 @@ function SellPageContent() {
           })
           return
         }
-        if (editId && !impersonation) {
+        if (editId && !usedImpersonationListingApi) {
           await syncListingImages(listingId, user.id)
         }
       }
 
-      toast.success(
-        impersonation
-          ? editId
-            ? `Listing updated for ${impersonation.displayName}`
-            : `Listing created for ${impersonation.displayName}`
-          : editId
-            ? "Listing updated"
-            : "Listing created successfully!",
-      )
+      if (impersonationSellerLabel) {
+        toast.success(
+          editId
+            ? `Listing updated for ${impersonationSellerLabel}`
+            : `Listing created for ${impersonationSellerLabel}`,
+        )
+      } else {
+        toast.success(editId ? "Listing updated" : "Listing created successfully!")
+      }
       router.push(detailPath)
     } catch (error: any) {
       console.error("Error creating listing:", error?.message || error)

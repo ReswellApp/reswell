@@ -57,6 +57,26 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  const { data: existingListing, error: existingErr } = await service
+    .from("listings")
+    .select("user_id")
+    .eq("id", listingId)
+    .single()
+
+  if (existingErr || !existingListing) {
+    return NextResponse.json({ error: "Listing not found" }, { status: 404 })
+  }
+
+  if (existingListing.user_id !== impersonation.userId) {
+    return NextResponse.json(
+      {
+        error:
+          "Impersonation target does not own this listing. Re-impersonate that listing's seller from admin, or clear impersonation if you are signed in as the seller.",
+      },
+      { status: 403 },
+    )
+  }
+
   const baseSlug = slugify(listingData.title as string)
   let slug = baseSlug
   const { count } = await service
@@ -121,5 +141,14 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, slug })
+  const { data: sellerProfile } = await service
+    .from("profiles")
+    .select("display_name")
+    .eq("id", existingListing.user_id)
+    .single()
+
+  const sellerDisplayName =
+    (sellerProfile?.display_name && String(sellerProfile.display_name).trim()) || "Seller"
+
+  return NextResponse.json({ success: true, slug, seller_display_name: sellerDisplayName })
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { slugify } from '@/lib/slugify'
+import { listingTitleWithBoardLength } from '@/lib/listing-title-board-length'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -46,8 +47,24 @@ export async function POST(request: NextRequest) {
     images = [],
   } = body
 
+  const feetParsed = length_feet != null && length_feet !== '' ? parseInt(String(length_feet), 10) : NaN
+  const inchParsed =
+    length_inches != null && length_inches !== '' ? parseInt(String(length_inches), 10) : NaN
+  const boardLenLabel =
+    Number.isFinite(feetParsed) && Number.isFinite(inchParsed)
+      ? `${feetParsed}'${inchParsed}"`
+      : Number.isFinite(feetParsed)
+        ? `${feetParsed}'`
+        : null
+  const resolvedTitle =
+    section === 'surfboards' && boardLenLabel
+      ? listingTitleWithBoardLength(typeof title === 'string' ? title : '', boardLenLabel)
+      : typeof title === 'string'
+        ? title.trim()
+        : title
+
   // Generate unique slug
-  const baseSlug = slugify(title)
+  const baseSlug = slugify(resolvedTitle)
   let slug = baseSlug
   const { count } = await supabase
     .from('listings')
@@ -68,7 +85,7 @@ export async function POST(request: NextRequest) {
     .from('listings')
     .insert({
       user_id: user.id,
-      title,
+      title: resolvedTitle,
       slug,
       description,
       price: parseFloat(price),
