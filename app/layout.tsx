@@ -12,8 +12,18 @@ import type { Locale } from '@/lib/translations'
 
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat' })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+  adjustFontFallback: true,
+})
+const caveat = Caveat({
+  subsets: ['latin'],
+  variable: '--font-caveat',
+  display: 'swap',
+  adjustFontFallback: true,
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://reswellsurf.com'),

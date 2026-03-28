@@ -1,5 +1,5 @@
-import { DashboardMainSkeleton } from "@/components/dashboard-main-skeleton"
+import { RouteTransitionMark } from "@/components/route-transition-mark"
 
 export default function DashboardLoading() {
-  return <DashboardMainSkeleton />
+  return <RouteTransitionMark variant="overlay" />
 }

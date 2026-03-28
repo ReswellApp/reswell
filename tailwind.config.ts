@@ -10,6 +10,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          'var(--font-inter)',
+          'Arial',
+          'Helvetica',
+          'sans-serif',
+        ],
+      },
       container: {
         center: true,
         padding: { DEFAULT: '1.25rem', sm: '1.5rem', lg: '2rem' },

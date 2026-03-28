@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { RouteTransitionMark } from "@/components/route-transition-mark"
 
 type SurfboardPageLoadingProps = {
   /**
@@ -10,20 +11,14 @@ type SurfboardPageLoadingProps = {
 }
 
 export function SurfboardPageLoading({ withShell = true }: SurfboardPageLoadingProps = {}) {
-  const main = (
-    <main className="flex flex-1 flex-col items-center justify-center bg-gradient-to-b from-cerulean/[0.06] via-background to-muted/30 px-6 py-16">
-      <p className="text-sm font-medium text-muted-foreground">Loading…</p>
-    </main>
-  )
-
   if (!withShell) {
-    return main
+    return <RouteTransitionMark variant="overlay" />
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      {main}
+      <RouteTransitionMark variant="inline" />
       <Footer />
     </div>
   )

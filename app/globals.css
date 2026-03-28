@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Black & white — white/off-white backgrounds, black headings, gray body text */
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -114,7 +109,9 @@ body {
     padding-right: env(safe-area-inset-right, 0);
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
-  img, video {
+  /* Next/Image sets layout via inline styles and data-nimg; avoid height:auto fighting fill layouts */
+  img:not([data-nimg]),
+  video {
     max-width: 100%;
     height: auto;
   }
