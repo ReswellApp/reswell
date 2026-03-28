@@ -62,9 +62,9 @@ const homeListingScrollTitleSlotClass =
 const homeListingScrollHeadingClass =
   "text-sm font-medium leading-snug line-clamp-4 break-words sm:line-clamp-3"
 
-/** Mobile: fixed band under price so location/seller lines align; scroll if needed (no ellipsis). Pair with `mt-1`. */
+/** Mobile: fixed band under price for row alignment; clip with line-clamp (no nested vertical scroll). Pair with `mt-1`. */
 const homeListingScrollMetaLinesClass =
-  "max-sm:h-[2.625rem] max-sm:max-h-[2.625rem] max-sm:overflow-y-auto max-sm:overscroll-y-contain max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden sm:max-h-none sm:overflow-visible"
+  "max-sm:h-[2.625rem] max-sm:max-h-[2.625rem] max-sm:overflow-hidden max-sm:min-h-0 sm:max-h-none sm:overflow-visible"
 
 const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
 
@@ -443,7 +443,7 @@ export default async function HomePage() {
                           <div
                             className={`mt-1 flex items-start gap-1 text-xs text-muted-foreground ${homeListingScrollMetaLinesClass}`}
                           >
-                            <span className="min-w-0 flex-1 break-words sm:line-clamp-2">
+                            <span className="min-w-0 flex-1 break-words line-clamp-2 leading-snug">
                               {getPublicSellerDisplayName(listing.profiles)}
                             </span>
                             {listing.profiles?.shop_verified && (
@@ -719,8 +719,8 @@ export default async function HomePage() {
                           <div
                             className={`mt-1 flex items-start justify-between gap-1 ${homeListingScrollMetaLinesClass}`}
                           >
-                            <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1">
-                              <span className="min-w-0 flex-1 break-words text-xs text-muted-foreground sm:line-clamp-2">
+                            <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1 overflow-hidden">
+                              <span className="min-w-0 flex-1 break-words text-xs text-muted-foreground line-clamp-2 leading-snug">
                                 {getPublicSellerDisplayName(listing.profiles)}
                               </span>
                               {listing.profiles?.shop_verified && (
