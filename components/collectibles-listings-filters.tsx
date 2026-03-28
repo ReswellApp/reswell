@@ -18,18 +18,11 @@ import {
   COLLECTIBLE_CONDITION_OPTIONS,
 } from "@/lib/collectible-options"
 
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-]
-
 interface CollectiblesListingsFiltersProps {
   initialQ?: string
   initialCollectibleType?: string
   initialCollectibleEra?: string
   initialCollectibleCondition?: string
-  initialSort?: string
 }
 
 export function CollectiblesListingsFilters({
@@ -37,7 +30,6 @@ export function CollectiblesListingsFilters({
   initialCollectibleType = "all",
   initialCollectibleEra = "all",
   initialCollectibleCondition = "all",
-  initialSort = "newest",
 }: CollectiblesListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -46,7 +38,6 @@ export function CollectiblesListingsFilters({
   const [collectibleType, setCollectibleType] = useState(initialCollectibleType)
   const [collectibleEra, setCollectibleEra] = useState(initialCollectibleEra)
   const [collectibleCondition, setCollectibleCondition] = useState(initialCollectibleCondition)
-  const [sort, setSort] = useState(initialSort)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,7 +46,6 @@ export function CollectiblesListingsFilters({
     if (collectibleType && collectibleType !== "all") params.set("collectibleType", collectibleType)
     if (collectibleEra && collectibleEra !== "all") params.set("collectibleEra", collectibleEra)
     if (collectibleCondition && collectibleCondition !== "all") params.set("collectibleCondition", collectibleCondition)
-    if (sort && sort !== "newest") params.set("sort", sort)
     params.set("page", "1")
     startTransition(() => {
       router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`)
@@ -121,20 +111,6 @@ export function CollectiblesListingsFilters({
             {COLLECTIBLE_CONDITION_OPTIONS.map((o) => (
               <SelectItem key={o.value} value={o.value}>
                 {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="w-full min-w-0 md:w-[150px] md:shrink-0">
-        <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
-            <SelectValue placeholder="Newest First" />
-          </SelectTrigger>
-          <SelectContent>
-            {sortOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>

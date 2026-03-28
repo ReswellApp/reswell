@@ -10,6 +10,7 @@ import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filte
 import { MapPin, Users } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
+import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
 function haversineMi(
   lat1: number,
@@ -212,8 +213,8 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
         {boards.map((board) => {
           const primaryImage = board.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || board.listing_images?.[0]
           return (
-            <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-              <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
+            <Card key={board.id} className={listingProductCardGridClassName}>
+              <Link href={`/boards/${board.slug || board.id}`} className="min-w-0 flex-1 flex flex-col">
                 <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
                     <Image
@@ -234,8 +235,8 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                     isLoggedIn={!!user}
                   />
                 </div>
-                <CardContent className="p-3">
-                  <h3 className="text-sm font-medium line-clamp-2">{capitalizeWords(board.title)}</h3>
+                <CardContent className="min-w-0 p-3">
+                  <h3 className="text-sm font-medium break-words">{capitalizeWords(board.title)}</h3>
                   {board.board_length && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {board.board_length}
@@ -315,7 +316,6 @@ export default async function BoardsPage(props: {
                   initialMinPrice={searchParams.minPrice ?? ""}
                   initialMaxPrice={searchParams.maxPrice ?? ""}
                   initialRadius={searchParams.radius ?? ""}
-                  initialSort={searchParams.sort ?? "newest"}
                 />
               </div>
             </div>

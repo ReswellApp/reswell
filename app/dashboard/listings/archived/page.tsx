@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Package, Archive, ArrowLeft } from 'lucide-react'
 import { formatDistanceToNow, format, addDays } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { listingProductCardClassName } from '@/lib/listing-card-styles'
 
 const ARCHIVE_DAYS = 30
 
@@ -121,7 +122,7 @@ export default function ArchivedListingsPage() {
             const isPastDelete = deleteOn <= new Date()
 
             return (
-              <Card key={listing.id}>
+              <Card key={listing.id} className={listingProductCardClassName}>
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <Link

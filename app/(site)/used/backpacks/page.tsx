@@ -80,7 +80,6 @@ export default async function UsedSurfpacksBagsPage(props: {
               initialPack={normalizePackParam(searchParams.pack)}
               initialBrand={normalizedBrand}
               initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

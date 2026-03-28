@@ -71,7 +71,6 @@ export default async function UsedFinsPage(props: { searchParams: Promise<UsedGe
               initialBrand={normalizeFacetParam(searchParams.brand, brands)}
               initialSize={normalizeUsedGearSizeParam(searchParams.size)}
               initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

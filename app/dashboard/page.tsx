@@ -168,7 +168,7 @@ export default async function DashboardPage() {
                   <Link
                     key={listing.id}
                     href={`/dashboard/listings/${listing.id}/edit`}
-                    className="group"
+                    className="group min-w-0"
                   >
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
                       {primaryImage?.url ? (
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
                         {listing.status}
                       </Badge>
                     </div>
-                    <h3 className="font-medium line-clamp-1 group-hover:text-primary transition-colors">
+                    <h3 className="font-medium break-words group-hover:text-primary transition-colors">
                       {capitalizeWords(listing.title)}
                     </h3>
                     <p className="text-sm font-bold text-black dark:text-white">

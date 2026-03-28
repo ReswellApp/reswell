@@ -14,6 +14,8 @@ import {
   Package,
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { listingProductCardClassName } from "@/lib/listing-card-styles"
+import { cn } from "@/lib/utils"
 
 export const metadata = {
   title: "Sellers - Reswell",
@@ -128,7 +130,12 @@ export default async function SellersPage({
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {shops.map((shop) => (
                   <Link key={shop.id} href={`/sellers/${shop.id}`}>
-                    <Card className="group h-full overflow-hidden hover:shadow-lg transition-all hover:border-primary/30">
+                    <Card
+                      className={cn(
+                        listingProductCardClassName,
+                        "h-full transition-all hover:border-primary/30",
+                      )}
+                    >
                       {/* Banner */}
                       <div className="relative h-28 bg-offwhite">
                         {shop.shop_banner_url && (

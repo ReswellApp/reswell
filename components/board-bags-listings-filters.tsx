@@ -22,18 +22,11 @@ const conditions = [
   { value: "fair", label: "Fair" },
 ]
 
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-]
-
 interface BoardBagsListingsFiltersProps {
   initialQ?: string
   initialBoardBag?: string
   initialSize?: string
   initialCondition?: string
-  initialSort?: string
 }
 
 export function BoardBagsListingsFilters({
@@ -41,7 +34,6 @@ export function BoardBagsListingsFilters({
   initialBoardBag = "all",
   initialSize = "all",
   initialCondition = "all",
-  initialSort = "newest",
 }: BoardBagsListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -50,7 +42,6 @@ export function BoardBagsListingsFilters({
   const [boardBag, setBoardBag] = useState(initialBoardBag)
   const [size, setSize] = useState(initialSize)
   const [condition, setCondition] = useState(initialCondition)
-  const [sort, setSort] = useState(initialSort)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -59,7 +50,6 @@ export function BoardBagsListingsFilters({
     if (boardBag && boardBag !== "all") params.set("boardBag", boardBag)
     if (size && size !== "all") params.set("size", size)
     if (condition && condition !== "all") params.set("condition", condition)
-    if (sort && sort !== "newest") params.set("sort", sort)
     params.set("page", "1")
     startTransition(() => {
       router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`)
@@ -127,20 +117,6 @@ export function BoardBagsListingsFilters({
             {conditions.map((cond) => (
               <SelectItem key={cond.value} value={cond.value}>
                 {cond.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="w-full min-w-0 md:w-[150px] md:shrink-0">
-        <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
-            <SelectValue placeholder="Newest First" />
-          </SelectTrigger>
-          <SelectContent>
-            {sortOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>

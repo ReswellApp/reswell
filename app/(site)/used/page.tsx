@@ -85,7 +85,6 @@ export default async function UsedGearPage(props: {
               initialQ={searchParams.q ?? ""}
               initialCategory={initialCategory}
               initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

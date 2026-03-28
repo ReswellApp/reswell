@@ -44,7 +44,6 @@ export default async function UsedCollectiblesVintagePage(props: {
               initialCollectibleType={normalizeCollectibleTypeParam(searchParams.collectibleType)}
               initialCollectibleEra={normalizeCollectibleEraParam(searchParams.collectibleEra)}
               initialCollectibleCondition={normalizeCollectibleConditionParam(searchParams.collectibleCondition)}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

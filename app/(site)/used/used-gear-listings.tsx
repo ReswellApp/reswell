@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
 export interface UsedGearSearchParams {
   category?: string
@@ -315,8 +316,8 @@ export async function UsedGearListings({
             listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
             listing.listing_images?.[0]
           return (
-            <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-              <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
+            <Card key={listing.id} className={listingProductCardGridClassName}>
+              <Link href={`/used/${listing.slug || listing.id}`} className="min-w-0 flex-1 flex flex-col">
                 <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
                     <Image
@@ -337,8 +338,8 @@ export async function UsedGearListings({
                     isLoggedIn={!!user}
                   />
                 </div>
-                <CardContent className="p-3">
-                  <h3 className="text-sm font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
+                <CardContent className="min-w-0 p-3">
+                  <h3 className="text-sm font-medium break-words">{capitalizeWords(listing.title)}</h3>
                   <p className="text-base font-bold text-black dark:text-white mt-1">${listing.price.toFixed(2)}</p>
                   <div className="flex items-center justify-between mt-1">
                     <p className="text-xs text-muted-foreground flex items-center gap-1">

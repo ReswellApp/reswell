@@ -18,6 +18,7 @@ import {
   Loader2,
   Store,
 } from "lucide-react"
+import { listingProductCardClassName } from "@/lib/listing-card-styles"
 
 interface ShopifyImage {
   url: string
@@ -159,7 +160,7 @@ export function ShopifyProducts() {
             return (
               <Card
                 key={`${product.seller.id}-${product.id}`}
-                className="group overflow-hidden hover:shadow-lg transition-shadow"
+                className={listingProductCardClassName}
               >
                 <a href={shopifyUrl} target="_blank" rel="noopener noreferrer">
                   <div className="aspect-square relative bg-muted">

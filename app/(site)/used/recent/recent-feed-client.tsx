@@ -8,6 +8,7 @@ import { formatCondition, formatCategory, formatBoardType, capitalizeWords } fro
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { MessageListingButton } from "@/components/message-listing-button"
 import { MapPin, Truck } from "lucide-react"
+import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
 export interface RecentListing {
   id: string
@@ -75,9 +76,9 @@ export function RecentFeedClient({
         return (
           <Card
             key={listing.id}
-            className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
+            className={listingProductCardGridClassName}
           >
-            <Link href={href} className="flex-1 flex flex-col">
+            <Link href={href} className="min-w-0 flex-1 flex flex-col">
               <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                 {primaryImage?.url ? (
                   <Image
@@ -98,8 +99,8 @@ export function RecentFeedClient({
                   isLoggedIn={isLoggedIn}
                 />
               </div>
-              <CardContent className="p-3">
-                <h3 className="text-sm font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
+              <CardContent className="min-w-0 p-3">
+                <h3 className="text-sm font-medium break-words">{capitalizeWords(listing.title)}</h3>
                 {listing.section === "surfboards" && listing.board_length && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {listing.board_length}

@@ -19,6 +19,7 @@ import {
   Store,
   Truck,
 } from "lucide-react"
+import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
 interface ShopifyImage {
   url: string
@@ -165,7 +166,7 @@ export function ShopifyBoardsGrid() {
             return (
               <Card
                 key={`${product.seller.id}-${product.id}`}
-                className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
+                className={listingProductCardGridClassName}
               >
                 <a
                   href={shopifyUrl}

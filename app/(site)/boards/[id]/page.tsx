@@ -31,6 +31,8 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { ListingSellerStats } from "@/components/listing-seller-stats"
 import { getBrandModelPagePayload } from "@/lib/index-directory/model-details-registry"
 import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
+import { listingProductCardClassName } from "@/lib/listing-card-styles"
+import { cn } from "@/lib/utils"
 
 function getPrimaryImageUrl(
   images: Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }> | null | undefined,
@@ -233,19 +235,6 @@ export default async function BoardDetailPage(props: {
                 boardFulfillmentSummary(board.local_pickup, board.shipping_available),
               ].filter(Boolean).join(" · ")}
             </p>
-            {!isOwnListing && board.status === "active" && (
-              <Button size="lg" className="w-full gap-2 lg:hidden mt-3" asChild>
-                  <Link
-                  href={
-                    user
-                      ? `/boards/${boardSlug}/checkout`
-                      : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
-                  }
-                >
-                  Buy now — ${Number(board.price).toFixed(2)}
-                </Link>
-              </Button>
-            )}
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -253,6 +242,19 @@ export default async function BoardDetailPage(props: {
             <div>
               <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               <ImageGallery images={images} title={capitalizeWords(board.title)} />
+              {!isOwnListing && board.status === "active" && (
+                <Button size="lg" className="mt-4 w-full gap-2 lg:hidden" asChild>
+                  <Link
+                    href={
+                      user
+                        ? `/boards/${boardSlug}/checkout`
+                        : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
+                    }
+                  >
+                    Buy now — ${Number(board.price).toFixed(2)}
+                  </Link>
+                </Button>
+              )}
             </div>
 
             {/* Details */}
@@ -500,8 +502,12 @@ export default async function BoardDetailPage(props: {
                 {sellerBoards.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
                   return (
-                    <Link key={item.id} href={`/boards/${item.slug || item.id}`}>
-                      <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+                    <Link
+                      key={item.id}
+                      href={`/boards/${item.slug || item.id}`}
+                      className="min-w-0 block"
+                    >
+                      <Card className={cn(listingProductCardClassName, "min-w-0")}>
                         <div className="aspect-[3/4] w-full relative bg-muted">
                           {primaryImage?.url ? (
                             <Image
@@ -517,8 +523,8 @@ export default async function BoardDetailPage(props: {
                             </div>
                           )}
                         </div>
-                        <CardContent className="p-3">
-                          <h3 className="font-medium line-clamp-1">{item.title}</h3>
+                        <CardContent className="min-w-0 p-3">
+                          <h3 className="text-sm font-medium break-words">{item.title}</h3>
                           {item.board_length && (
                             <p className="text-sm text-muted-foreground">{item.board_length}</p>
                           )}

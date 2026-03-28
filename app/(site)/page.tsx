@@ -21,10 +21,56 @@ import {
   Store,
   UserCheck,
 } from "lucide-react"
-import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { listingProductCardClassName, listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { cn } from "@/lib/utils"
+import type { ReactNode } from "react"
+
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
+
+/** Single-row horizontal scroll for homepage listing sections (up to 20 cards). */
+function HomeListingScrollRow({ children }: { children: ReactNode }) {
+  return (
+    <div className="-mx-4 overflow-x-auto overflow-y-visible pb-2 pl-4 sm:-mx-6 sm:pl-6 lg:-mx-8 lg:pl-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex w-max gap-3 pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/** ~3 full cards + peek of 4th on mobile; fixed width from `sm` up. */
+const homeListingScrollCardClass = cn(
+  listingProductCardGridClassName,
+  "shrink-0 snap-start w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
+)
+
+const homeListingScrollImageSizes = "(max-width: 639px) 30vw, 208px"
+
+/** Equal row height + meta pinned to bottom so price/location align across cards. */
+const homeListingScrollLinkClass = "min-w-0 flex flex-1 flex-col min-h-0"
+const homeListingScrollBodyClass = "min-w-0 p-3 flex flex-col flex-1 min-h-0"
+
+/**
+ * Mobile: fixed height so every card lines up; scroll shows full title (no ellipsis).
+ * sm+: flex-1 + overflow hidden so line-clamp on the heading works.
+ */
+const homeListingScrollTitleSlotClass =
+  "flex min-h-0 flex-col max-sm:h-[5.75rem] max-sm:max-h-[5.75rem] max-sm:flex-none max-sm:shrink-0 max-sm:overflow-y-auto max-sm:overscroll-y-contain max-sm:[-webkit-overflow-scrolling:touch] max-sm:[scrollbar-width:none] max-sm:[-ms-overflow-style:none] max-sm:[&::-webkit-scrollbar]:hidden sm:min-h-0 sm:flex-1 sm:overflow-hidden"
+
+const homeListingScrollHeadingClass =
+  "text-sm font-medium break-words sm:line-clamp-3"
+
+/** Mobile: fixed band under price so location/seller lines align; scroll if needed (no ellipsis). Pair with `mt-1`. */
+const homeListingScrollMetaLinesClass =
+  "max-sm:h-[2.625rem] max-sm:max-h-[2.625rem] max-sm:overflow-y-auto max-sm:overscroll-y-contain max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden sm:max-h-none sm:overflow-visible"
+
+const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
+
+function HomeListingTitleSlot({ children }: { children: ReactNode }) {
+  return <div className={homeListingScrollTitleSlotClass}>{children}</div>
+}
 
 function listingCardSrc(url?: string | null): string {
   const u = typeof url === "string" ? url.trim() : ""
@@ -115,7 +161,7 @@ export default async function HomePage() {
           if (salesB !== salesA) return salesB - salesA
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
-        .slice(0, 4)
+        .slice(0, 20)
     : null
 
   // Fetch featured new items
@@ -155,7 +201,7 @@ export default async function HomePage() {
   const featuredBoards = rawFeaturedBoards
     ? [...rawFeaturedBoards]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 4)
+        .slice(0, 20)
     : null
 
   // Recently verified sellers: each card shows their single most expensive active listing + profile
@@ -167,7 +213,7 @@ export default async function HomePage() {
     .eq("shop_verified", true)
     .order("shop_verified_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false })
-    .limit(24)
+    .limit(48)
 
   const verifiedProfileIds = (recentVerifiedProfiles ?? []).map((p) => p.id)
   type ListingRow = NonNullable<typeof rawFeaturedBoards>[number]
@@ -200,7 +246,7 @@ export default async function HomePage() {
       const listing = bestByUser.get(profile.id)
       if (listing) {
         verifiedSpotlight.push({ profile, listing })
-        if (verifiedSpotlight.length >= 4) break
+        if (verifiedSpotlight.length >= 20) break
       }
     }
   }
@@ -294,16 +340,16 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <HomeListingScrollRow>
                 {featuredBoards.map((board) => (
-                  <Card key={board.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    <Link href={`/boards/${board.slug || board.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
+                  <Card key={board.id} className={homeListingScrollCardClass}>
+                    <Link href={`/boards/${board.slug || board.id}`} className={homeListingScrollLinkClass}>
+                      <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(primaryListingImageUrl(board.listing_images))}
                           alt={capitalizeWords(board.title)}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          sizes={homeListingScrollImageSizes}
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <FavoriteButtonCardOverlay
@@ -312,27 +358,22 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className="p-3">
-                        <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(board.title)}</h3>
-                        <p className="text-base font-bold text-black dark:text-white mt-1">
-                          ${board.price.toFixed(2)}
-                        </p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          {[board.city, board.state].filter(Boolean).join(", ") || "Location not set"}
+                      <CardContent className={homeListingScrollBodyClass}>
+                        <HomeListingTitleSlot>
+                          <h3 className={homeListingScrollHeadingClass}>
+                            {capitalizeWords(board.title)}
+                          </h3>
+                        </HomeListingTitleSlot>
+                        <div className={homeListingScrollMetaFooterClass}>
+                          <p className="text-base font-bold text-black dark:text-white">
+                            ${board.price.toFixed(2)}
+                          </p>
                         </div>
                       </CardContent>
                     </Link>
-                    <div className="px-3 pb-3 pt-0">
-                      <MessageListingButton
-                        listingId={board.id}
-                        sellerId={board.user_id}
-                        redirectPath={`/boards/${board.slug || board.id}`}
-                      />
-                    </div>
                   </Card>
                 ))}
-              </div>
+              </HomeListingScrollRow>
             </div>
           </section>
         )}
@@ -371,16 +412,16 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <HomeListingScrollRow>
                 {featuredUsed.map((listing) => (
-                  <Card key={listing.id} className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                    <Link href={`/used/${listing.slug || listing.id}`} className="flex-1 flex flex-col">
-                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
+                  <Card key={listing.id} className={homeListingScrollCardClass}>
+                    <Link href={`/used/${listing.slug || listing.id}`} className={homeListingScrollLinkClass}>
+                      <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
                           alt={capitalizeWords(listing.title)}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          sizes={homeListingScrollImageSizes}
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <FavoriteButtonCardOverlay
@@ -389,27 +430,32 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className="p-3">
-                        <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                        <p className="text-base font-bold text-black dark:text-white mt-1">
-                          ${listing.price.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          {getPublicSellerDisplayName(listing.profiles)}
-                          {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
-                        </p>
+                      <CardContent className={homeListingScrollBodyClass}>
+                        <HomeListingTitleSlot>
+                          <h3 className={homeListingScrollHeadingClass}>
+                            {capitalizeWords(listing.title)}
+                          </h3>
+                        </HomeListingTitleSlot>
+                        <div className={homeListingScrollMetaFooterClass}>
+                          <p className="text-base font-bold text-black dark:text-white">
+                            ${listing.price.toFixed(2)}
+                          </p>
+                          <div
+                            className={`mt-1 flex items-start gap-1 text-xs text-muted-foreground ${homeListingScrollMetaLinesClass}`}
+                          >
+                            <span className="min-w-0 flex-1 break-words sm:line-clamp-2">
+                              {getPublicSellerDisplayName(listing.profiles)}
+                            </span>
+                            {listing.profiles?.shop_verified && (
+                              <VerifiedBadge size="sm" className="mt-0.5 shrink-0" />
+                            )}
+                          </div>
+                        </div>
                       </CardContent>
                     </Link>
-                    <div className="px-3 pb-3 pt-0">
-                      <MessageListingButton
-                        listingId={listing.id}
-                        sellerId={listing.user_id}
-                        redirectPath={`/used/${listing.slug || listing.id}`}
-                      />
-                    </div>
                   </Card>
                 ))}
-              </div>
+              </HomeListingScrollRow>
             </div>
           </section>
         )}
@@ -450,24 +496,23 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <HomeListingScrollRow>
                 {verifiedSpotlight.map(({ profile, listing }) => {
                   const href = listingPublicHref(listing)
                   const sellerLabel =
                     profile.shop_name?.trim() || getPublicSellerDisplayName(profile)
-                  const locationLine = [listing.city, listing.state].filter(Boolean).join(", ")
                   return (
                     <Card
                       key={`${profile.id}-${listing.id}`}
-                      className="group overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
+                      className={homeListingScrollCardClass}
                     >
-                      <Link href={href} className="flex-1 flex flex-col">
-                        <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
+                      <Link href={href} className={homeListingScrollLinkClass}>
+                        <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                           <Image
                             src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
                             alt={capitalizeWords(listing.title)}
                             fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            sizes={homeListingScrollImageSizes}
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <FavoriteButtonCardOverlay
@@ -476,20 +521,20 @@ export default async function HomePage() {
                             isLoggedIn={!!user}
                           />
                         </div>
-                        <CardContent className="p-3">
-                          <h3 className="text-sm font-medium line-clamp-1">{capitalizeWords(listing.title)}</h3>
-                          <p className="text-base font-bold text-black dark:text-white mt-1">
-                            ${Number(listing.price).toFixed(2)}
-                          </p>
-                          {locationLine ? (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                              <MapPin className="h-3 w-3 shrink-0" />
-                              {locationLine}
-                            </div>
-                          ) : null}
+                        <CardContent className={homeListingScrollBodyClass}>
+                          <HomeListingTitleSlot>
+                            <h3 className={homeListingScrollHeadingClass}>
+                              {capitalizeWords(listing.title)}
+                            </h3>
+                          </HomeListingTitleSlot>
+                          <div className={homeListingScrollMetaFooterClass}>
+                            <p className="text-base font-bold text-black dark:text-white">
+                              ${Number(listing.price).toFixed(2)}
+                            </p>
+                          </div>
                         </CardContent>
                       </Link>
-                      <div className="border-t border-border/60 bg-muted/40 px-3 py-2">
+                      <div className="shrink-0 border-t border-border/60 bg-muted/40 px-3 py-2">
                         <Link
                           href={`/sellers/${profile.id}`}
                           className="flex items-center gap-3 rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-muted/80"
@@ -513,17 +558,10 @@ export default async function HomePage() {
                           <VerifiedBadge size="md" className="shrink-0" />
                         </Link>
                       </div>
-                      <div className="px-3 pb-3 pt-0">
-                        <MessageListingButton
-                          listingId={listing.id}
-                          sellerId={listing.user_id}
-                          redirectPath={href}
-                        />
-                      </div>
                     </Card>
                   )
                 })}
-              </div>
+              </HomeListingScrollRow>
             </div>
           </section>
         )}
@@ -558,52 +596,47 @@ export default async function HomePage() {
                 </Link>
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <HomeListingScrollRow>
               {categories.map((category) => {
                 const listing = categoryLatest.get(category.name)
-                const isBoardsCategory = category.slug === null
 
                 if (!listing) {
                   return (
-                    <Card
-                      key={category.href}
-                      className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
-                    >
-                      <Link href={category.href} className="flex-1 flex flex-col">
-                        <div className="relative aspect-[3/4] w-full bg-muted overflow-hidden">
+                    <Card key={category.href} className={homeListingScrollCardClass}>
+                      <Link href={category.href} className={homeListingScrollLinkClass}>
+                        <div className="relative aspect-[3/4] w-full shrink-0 bg-muted overflow-hidden">
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                             No Image
                           </div>
                         </div>
-                        <CardContent className="p-3">
-                          <h3 className="text-sm font-medium line-clamp-2">{category.name}</h3>
-                          <p
-                            className="text-base font-bold text-black dark:text-white mt-1 invisible select-none pointer-events-none"
-                            aria-hidden
-                          >
-                            $0.00
-                          </p>
-                          {isBoardsCategory ? (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                              <MapPin className="h-3 w-3" />
-                              Location not set
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between mt-1">
+                        <CardContent className={homeListingScrollBodyClass}>
+                          <HomeListingTitleSlot>
+                            <h3 className={homeListingScrollHeadingClass}>{category.name}</h3>
+                          </HomeListingTitleSlot>
+                          <div className={homeListingScrollMetaFooterClass}>
+                            <p
+                              className="text-base font-bold text-black dark:text-white invisible select-none pointer-events-none"
+                              aria-hidden
+                            >
+                              $0.00
+                            </p>
+                            <div
+                              className={`mt-1 flex items-center justify-between ${homeListingScrollMetaLinesClass}`}
+                            >
                               <p
                                 className="text-xs text-muted-foreground flex items-center gap-1 invisible"
                                 aria-hidden
                               >
                                 .
                               </p>
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 self-end">
                                 {formatCategory(category.name)}
                               </Badge>
                             </div>
-                          )}
+                          </div>
                         </CardContent>
                       </Link>
-                      <div className="px-3 pb-3 pt-0">
+                      <div className="shrink-0 px-3 pb-3 pt-0">
                         <Button variant="outline" size="sm" className="bg-transparent" asChild>
                           <Link href={category.href}>Browse</Link>
                         </Button>
@@ -616,22 +649,15 @@ export default async function HomePage() {
                 const imgUrl = primaryListingImageUrl(listing.listing_images)
 
                 if (listing.section === "surfboards") {
-                  const locationLine =
-                    listing.city && listing.state
-                      ? `${listing.city}, ${listing.state}`
-                      : listing.profiles?.location || "Location not set"
                   return (
-                    <Card
-                      key={category.href}
-                      className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
-                    >
-                      <Link href={href} className="flex-1 flex flex-col">
-                        <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
+                    <Card key={category.href} className={homeListingScrollCardClass}>
+                      <Link href={href} className={homeListingScrollLinkClass}>
+                        <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                           <Image
                             src={listingCardSrc(imgUrl)}
                             alt={capitalizeWords(listing.title)}
                             fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                            sizes={homeListingScrollImageSizes}
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <FavoriteButtonCardOverlay
@@ -640,47 +666,38 @@ export default async function HomePage() {
                             isLoggedIn={!!user}
                           />
                         </div>
-                        <CardContent className="p-3">
-                          <h3 className="text-sm font-medium line-clamp-2">
-                            {capitalizeWords(listing.title)}
-                          </h3>
-                          {listing.board_length && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {listing.board_length}
+                        <CardContent className={homeListingScrollBodyClass}>
+                          <HomeListingTitleSlot>
+                            <h3 className={homeListingScrollHeadingClass}>
+                              {capitalizeWords(listing.title)}
+                            </h3>
+                            <p
+                              className={`mt-0.5 text-xs text-muted-foreground break-words sm:line-clamp-1 ${listing.board_length ? "" : "invisible"}`}
+                              aria-hidden={!listing.board_length}
+                            >
+                              {listing.board_length ?? "\u00a0"}
                             </p>
-                          )}
-                          <p className="text-base font-bold text-black dark:text-white mt-1">
-                            ${Number(listing.price).toFixed(2)}
-                          </p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                            <MapPin className="h-3 w-3" />
-                            {locationLine}
+                          </HomeListingTitleSlot>
+                          <div className={homeListingScrollMetaFooterClass}>
+                            <p className="text-base font-bold text-black dark:text-white">
+                              ${Number(listing.price).toFixed(2)}
+                            </p>
                           </div>
                         </CardContent>
                       </Link>
-                      <div className="px-3 pb-3 pt-0">
-                        <MessageListingButton
-                          listingId={listing.id}
-                          sellerId={listing.user_id}
-                          redirectPath={href}
-                        />
-                      </div>
                     </Card>
                   )
                 }
 
                 return (
-                  <Card
-                    key={category.href}
-                    className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
-                  >
-                    <Link href={href} className="flex-1 flex flex-col">
-                      <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
+                  <Card key={category.href} className={homeListingScrollCardClass}>
+                    <Link href={href} className={homeListingScrollLinkClass}>
+                      <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(imgUrl)}
                           alt={capitalizeWords(listing.title)}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          sizes={homeListingScrollImageSizes}
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <FavoriteButtonCardOverlay
@@ -689,37 +706,41 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className="p-3">
-                        <h3 className="text-sm font-medium line-clamp-2">
-                          {capitalizeWords(listing.title)}
-                        </h3>
-                        <p className="text-base font-bold text-black dark:text-white mt-1">
-                          ${Number(listing.price).toFixed(2)}
-                        </p>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            {getPublicSellerDisplayName(listing.profiles)}
-                            {listing.profiles?.shop_verified && (
-                              <VerifiedBadge size="sm" />
-                            )}
+                      <CardContent className={homeListingScrollBodyClass}>
+                        <HomeListingTitleSlot>
+                          <h3 className={homeListingScrollHeadingClass}>
+                            {capitalizeWords(listing.title)}
+                          </h3>
+                        </HomeListingTitleSlot>
+                        <div className={homeListingScrollMetaFooterClass}>
+                          <p className="text-base font-bold text-black dark:text-white">
+                            ${Number(listing.price).toFixed(2)}
                           </p>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {formatCategory(category.name)}
-                          </Badge>
+                          <div
+                            className={`mt-1 flex items-start justify-between gap-1 ${homeListingScrollMetaLinesClass}`}
+                          >
+                            <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1">
+                              <span className="min-w-0 flex-1 break-words text-xs text-muted-foreground sm:line-clamp-2">
+                                {getPublicSellerDisplayName(listing.profiles)}
+                              </span>
+                              {listing.profiles?.shop_verified && (
+                                <VerifiedBadge size="sm" className="mt-0.5 shrink-0" />
+                              )}
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 self-start text-[10px] px-1.5 py-0"
+                            >
+                              {formatCategory(category.name)}
+                            </Badge>
+                          </div>
                         </div>
                       </CardContent>
                     </Link>
-                    <div className="px-3 pb-3 pt-0">
-                      <MessageListingButton
-                        listingId={listing.id}
-                        sellerId={listing.user_id}
-                        redirectPath={href}
-                      />
-                    </div>
                   </Card>
                 )
               })}
-            </div>
+            </HomeListingScrollRow>
           </div>
         </section>
 
@@ -742,7 +763,7 @@ export default async function HomePage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredShops.map((shop) => (
                   <Link key={shop.id} href={`/sellers/${shop.id}`}>
-                    <Card className="group overflow-hidden hover:shadow-lg transition-shadow h-full">
+                    <Card className={cn(listingProductCardClassName, "h-full")}>
                       <div className="h-20 bg-offwhite relative">
                         {shop.shop_banner_url && (
                           <img
@@ -806,7 +827,7 @@ export default async function HomePage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredNew.map((item) => (
                   <Link key={item.id} href={`/shop/${item.id}`}>
-                    <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+                    <Card className={listingProductCardClassName}>
                       <div className="aspect-square relative bg-muted">
                         <Image
                           src={listingCardSrc(item.image_url)}

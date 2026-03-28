@@ -40,7 +40,6 @@ export default async function UsedApparelLifestylePage(props: {
               initialApparel={normalizeApparelKindParam(searchParams.apparel)}
               initialSize={normalizeApparelSizeParam(searchParams.size)}
               initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

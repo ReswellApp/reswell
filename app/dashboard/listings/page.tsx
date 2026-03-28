@@ -28,6 +28,7 @@ import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from 'lucide-
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { listingProductCardClassName } from '@/lib/listing-card-styles'
 
 interface Listing {
   id: string
@@ -162,7 +163,7 @@ export default function MyListingsPage() {
     const primaryImage = listing.listing_images?.find(img => img.is_primary) || listing.listing_images?.[0]
 
     return (
-      <Card>
+      <Card className={listingProductCardClassName}>
         <CardContent className="p-4">
           <div className="flex gap-4">
             <Link href={getListingHref(listing.section, listing.id, listing.slug)} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">

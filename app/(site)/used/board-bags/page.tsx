@@ -48,7 +48,6 @@ export default async function UsedBoardBagsPage(props: {
               initialBoardBag={normalizeBoardBagParam(searchParams.boardBag)}
               initialSize={normalizeBoardBagSizeParam(searchParams.size)}
               initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

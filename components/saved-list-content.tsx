@@ -18,6 +18,7 @@ import {
   formatBoardType,
   getPublicSellerDisplayName,
 } from '@/lib/listing-labels'
+import { listingProductCardGridClassName } from '@/lib/listing-card-styles'
 import { toast } from 'sonner'
 
 export interface SavedFavorite {
@@ -172,9 +173,9 @@ export function SavedListContent() {
             return (
               <Card
                 key={favorite.id}
-                className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col"
+                className={listingProductCardGridClassName}
               >
-                <Link href={href} className="flex-1 flex flex-col">
+                <Link href={href} className="min-w-0 flex-1 flex flex-col">
                   <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                     {primaryImage?.url ? (
                       <Image
@@ -203,8 +204,8 @@ export function SavedListContent() {
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-3">
-                    <h3 className="text-sm font-medium line-clamp-2">{capitalizeWords(listing.title)}</h3>
+                  <CardContent className="min-w-0 p-3">
+                    <h3 className="text-sm font-medium break-words">{capitalizeWords(listing.title)}</h3>
                     {listing.section === 'surfboards' && boardLength && (
                       <p className="text-xs text-muted-foreground mt-0.5">{boardLength}</p>
                     )}

@@ -46,7 +46,6 @@ export default async function UsedWetsuitsPage(props: {
               initialThickness={normalizeWetsuitThicknessParam(searchParams.thickness)}
               initialZipType={normalizeWetsuitZipParam(searchParams.zipType)}
               initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

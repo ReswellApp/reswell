@@ -4,6 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { AddToCartButton } from "@/components/add-to-cart-button"
+import { listingProductCardClassName } from "@/lib/listing-card-styles"
 
 export interface MarketplaceNewItem {
   id: string
@@ -19,10 +20,7 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {items.map((item) => (
-        <Card
-          key={item.id}
-          className="group overflow-hidden hover:shadow-lg transition-shadow"
-        >
+        <Card key={item.id} className={listingProductCardClassName}>
           <Link href={`/shop/${item.id}`}>
             <div className="aspect-square relative bg-muted">
               {item.image_url ? (

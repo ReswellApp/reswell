@@ -22,18 +22,11 @@ const conditions = [
   { value: "fair", label: "Fair" },
 ]
 
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-]
-
 interface LeashesListingsFiltersProps {
   initialQ?: string
   initialLeashLength?: string
   initialLeashThickness?: string
   initialCondition?: string
-  initialSort?: string
 }
 
 export function LeashesListingsFilters({
@@ -41,7 +34,6 @@ export function LeashesListingsFilters({
   initialLeashLength = "all",
   initialLeashThickness = "all",
   initialCondition = "all",
-  initialSort = "newest",
 }: LeashesListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -50,7 +42,6 @@ export function LeashesListingsFilters({
   const [leashLength, setLeashLength] = useState(initialLeashLength)
   const [leashThickness, setLeashThickness] = useState(initialLeashThickness)
   const [condition, setCondition] = useState(initialCondition)
-  const [sort, setSort] = useState(initialSort)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -59,7 +50,6 @@ export function LeashesListingsFilters({
     if (leashLength && leashLength !== "all") params.set("leashLength", leashLength)
     if (leashThickness && leashThickness !== "all") params.set("leashThickness", leashThickness)
     if (condition && condition !== "all") params.set("condition", condition)
-    if (sort && sort !== "newest") params.set("sort", sort)
     params.set("page", "1")
     startTransition(() => {
       router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`)
@@ -124,20 +114,6 @@ export function LeashesListingsFilters({
             {conditions.map((cond) => (
               <SelectItem key={cond.value} value={cond.value}>
                 {cond.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="w-full min-w-0 md:w-[150px] md:shrink-0">
-        <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
-            <SelectValue placeholder="Newest First" />
-          </SelectTrigger>
-          <SelectContent>
-            {sortOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>

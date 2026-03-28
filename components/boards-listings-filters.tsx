@@ -34,19 +34,11 @@ const conditions = [
   { value: "fair", label: "Fair" },
 ]
 
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
-  { value: "nearest", label: "Distance (Nearest)" },
-]
-
 type FilterSnapshot = {
   q: string
   location: string
   type: string
   condition: string
-  sort: string
   userLat: number | null
   userLng: number | null
 }
@@ -56,7 +48,6 @@ interface BoardsListingsFiltersProps {
   initialLocation?: string
   initialType?: string
   initialCondition?: string
-  initialSort?: string
 }
 
 const DEBOUNCE_MS = 320
@@ -66,7 +57,6 @@ export function BoardsListingsFilters({
   initialLocation = "",
   initialType = "all",
   initialCondition = "all",
-  initialSort = "newest",
 }: BoardsListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -79,18 +69,16 @@ export function BoardsListingsFilters({
   const [locationLoading, setLocationLoading] = useState(false)
   const [type, setType] = useState(initialType)
   const [condition, setCondition] = useState(initialCondition)
-  const [sort, setSort] = useState(initialSort)
 
   const filtersRef = useRef<FilterSnapshot>({
     q: initialQ,
     location: initialLocation,
     type: initialType,
     condition: initialCondition,
-    sort: initialSort,
     userLat: null,
     userLng: null,
   })
-  filtersRef.current = { q, location, type, condition, sort, userLat, userLng }
+  filtersRef.current = { q, location, type, condition, userLat, userLng }
 
   const skipTextDebounceRef = useRef(true)
   const skipSelectApplyRef = useRef(true)
@@ -103,7 +91,6 @@ export function BoardsListingsFilters({
       if (f.location.trim()) params.set("location", f.location.trim())
       if (f.type && f.type !== "all") params.set("type", f.type)
       if (f.condition && f.condition !== "all") params.set("condition", f.condition)
-      if (f.sort && f.sort !== "newest") params.set("sort", f.sort)
       params.set("page", "1")
 
       let lat = f.userLat
@@ -152,7 +139,7 @@ export function BoardsListingsFilters({
       return
     }
     void pushSearchParams()
-  }, [type, condition, sort, pushSearchParams])
+  }, [type, condition, pushSearchParams])
 
   async function handleUseMyLocation() {
     if (!navigator.geolocation) {
@@ -282,20 +269,6 @@ export function BoardsListingsFilters({
             {conditions.map((cond) => (
               <SelectItem key={cond.value} value={cond.value}>
                 {cond.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="w-full min-w-0 md:w-[130px] md:shrink-0">
-        <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
-            <SelectValue placeholder="Newest First" />
-          </SelectTrigger>
-          <SelectContent>
-            {sortOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>

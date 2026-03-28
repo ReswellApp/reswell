@@ -40,7 +40,6 @@ export default async function UsedLeashesPage(props: {
               initialLeashLength={normalizeLeashLengthParam(searchParams.leashLength)}
               initialLeashThickness={normalizeLeashThicknessParam(searchParams.leashThickness)}
               initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
             />
           </div>
         </section>

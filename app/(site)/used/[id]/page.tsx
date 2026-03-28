@@ -32,6 +32,7 @@ import { wetsuitZipLabel } from "@/lib/wetsuit-options"
 import { leashLengthLabel } from "@/lib/leash-options"
 import { collectibleTypeLabel, collectibleEraLabel, collectibleConditionLabel } from "@/lib/collectible-options"
 import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
+import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { Truck } from "lucide-react"
 
 function getPrimaryImageUrl(
@@ -486,8 +487,8 @@ export default async function UsedListingPage(props: {
                 {sellerListings.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
                   return (
-                    <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-                      <Link href={`/used/${item.slug || item.id}`} className="flex-1 flex flex-col">
+                    <Card key={item.id} className={listingProductCardGridClassName}>
+                      <Link href={`/used/${item.slug || item.id}`} className="min-w-0 flex-1 flex flex-col">
                         <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                           {primaryImage?.url ? (
                             <Image
@@ -508,8 +509,8 @@ export default async function UsedListingPage(props: {
                             isLoggedIn={!!user}
                           />
                         </div>
-                        <CardContent className="p-3">
-                          <h3 className="font-medium line-clamp-1">{capitalizeWords(item.title)}</h3>
+                        <CardContent className="min-w-0 p-3">
+                          <h3 className="text-sm font-medium break-words">{capitalizeWords(item.title)}</h3>
                           <p className="text-base font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>
