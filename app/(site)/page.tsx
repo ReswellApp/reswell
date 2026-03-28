@@ -35,7 +35,7 @@ function HomeListingScrollRow({
   uniformCardHeights,
 }: {
   children: ReactNode
-  /** Stretch all cards to the row height (surfboards + Featured Used Gear). */
+  /** Stretch all cards to the row height (surfboards, Featured Used Gear, Browse by Category). */
   uniformCardHeights?: boolean
 }) {
   return (
@@ -80,7 +80,7 @@ const homeListingScrollMetaLinesClass =
 
 const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
 
-/** Equal-height cards: Recently added surfboards + Featured Used Gear (fixed title band, flex stretch). */
+/** Equal-height cards: surfboards row, Featured Used Gear, Browse by Category (fixed title band, flex stretch). */
 const homeUniformScrollCardClass = cn(
   listingProductCardGridClassName,
   "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
@@ -92,6 +92,17 @@ const homeUniformScrollBodyClass =
 const homeUniformScrollTitleSlotClass =
   "flex h-[6.25rem] max-h-[6.25rem] min-h-0 shrink-0 flex-col overflow-hidden sm:h-[5.75rem] sm:max-h-[5.75rem]"
 const homeUniformScrollMetaFooterClass = "mt-auto w-full shrink-0 pt-1"
+
+/** Browse by Category: same bottom height as the Browse button on placeholder cards. */
+const homeUniformCategoryBrowseSlotClass =
+  "flex min-h-9 shrink-0 items-center px-3 pb-3 pt-0"
+
+/**
+ * Browse by Category seller + badge row: fixed height on all breakpoints so used (multi-line seller)
+ * matches surfboard cards (mobile used `homeListingScrollMetaLinesClass` only; sm+ was unbounded).
+ */
+const homeBrowseCategoryMetaLinesClass =
+  "h-[2.625rem] max-h-[2.625rem] min-h-0 overflow-hidden sm:h-[2.75rem] sm:max-h-[2.75rem]"
 
 function HomeListingTitleSlot({ children }: { children: ReactNode }) {
   return <div className={homeListingScrollTitleSlotClass}>{children}</div>
@@ -627,24 +638,24 @@ export default async function HomePage() {
                 </Link>
               </Button>
             </div>
-            <HomeListingScrollRow>
+            <HomeListingScrollRow uniformCardHeights>
               {categories.map((category) => {
                 const listing = categoryLatest.get(category.name)
 
                 if (!listing) {
                   return (
-                    <Card key={category.href} className={homeListingScrollCardClass}>
-                      <Link href={category.href} className={homeListingScrollLinkClass}>
+                    <Card key={category.href} className={homeUniformScrollCardClass}>
+                      <Link href={category.href} className={homeUniformScrollLinkClass}>
                         <div className="relative aspect-[3/4] w-full shrink-0 bg-muted overflow-hidden">
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                             No Image
                           </div>
                         </div>
-                        <CardContent className={homeListingScrollBodyClass}>
-                          <HomeListingTitleSlot>
+                        <CardContent className={homeUniformScrollBodyClass}>
+                          <div className={homeUniformScrollTitleSlotClass}>
                             <h3 className={homeListingScrollHeadingClass}>{category.name}</h3>
-                          </HomeListingTitleSlot>
-                          <div className={homeListingScrollMetaFooterClass}>
+                          </div>
+                          <div className={homeUniformScrollMetaFooterClass}>
                             <p
                               className="text-base font-bold text-black dark:text-white invisible select-none pointer-events-none"
                               aria-hidden
@@ -652,22 +663,24 @@ export default async function HomePage() {
                               $0.00
                             </p>
                             <div
-                              className={`mt-1 flex items-center justify-between ${homeListingScrollMetaLinesClass}`}
+                              className={`mt-1 flex items-start justify-between gap-1 ${homeBrowseCategoryMetaLinesClass}`}
                             >
-                              <p
-                                className="text-xs text-muted-foreground flex items-center gap-1 invisible"
-                                aria-hidden
+                              <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1 overflow-hidden">
+                                <span className="invisible line-clamp-2 text-xs leading-snug" aria-hidden>
+                                  &nbsp;
+                                </span>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="shrink-0 self-start text-[10px] px-1.5 py-0"
                               >
-                                .
-                              </p>
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 self-end">
                                 {formatCategory(category.name)}
                               </Badge>
                             </div>
                           </div>
                         </CardContent>
                       </Link>
-                      <div className="shrink-0 px-3 pb-3 pt-0">
+                      <div className={homeUniformCategoryBrowseSlotClass}>
                         <Button variant="outline" size="sm" className="bg-transparent" asChild>
                           <Link href={category.href}>Browse</Link>
                         </Button>
@@ -678,51 +691,11 @@ export default async function HomePage() {
 
                 const href = listingPublicHref(listing)
                 const imgUrl = primaryListingImageUrl(listing.listing_images)
-
-                if (listing.section === "surfboards") {
-                  return (
-                    <Card key={category.href} className={homeListingScrollCardClass}>
-                      <Link href={href} className={homeListingScrollLinkClass}>
-                        <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
-                          <Image
-                            src={listingCardSrc(imgUrl)}
-                            alt={capitalizeWords(listing.title)}
-                            fill
-                            sizes={homeListingScrollImageSizes}
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <FavoriteButtonCardOverlay
-                            listingId={listing.id}
-                            initialFavorited={favoritedIds.includes(listing.id)}
-                            isLoggedIn={!!user}
-                          />
-                        </div>
-                        <CardContent className={homeListingScrollBodyClass}>
-                          <HomeListingTitleSlot>
-                            <h3 className={homeListingScrollHeadingClass}>
-                              {capitalizeWords(listing.title)}
-                            </h3>
-                            <p
-                              className={`mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words ${listing.board_length ? "" : "invisible"}`}
-                              aria-hidden={!listing.board_length}
-                            >
-                              {listing.board_length ?? "\u00a0"}
-                            </p>
-                          </HomeListingTitleSlot>
-                          <div className={homeListingScrollMetaFooterClass}>
-                            <p className="text-base font-bold text-black dark:text-white">
-                              ${Number(listing.price).toFixed(2)}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Link>
-                    </Card>
-                  )
-                }
+                const showBoardLength = listing.section === "surfboards"
 
                 return (
-                  <Card key={category.href} className={homeListingScrollCardClass}>
-                    <Link href={href} className={homeListingScrollLinkClass}>
+                  <Card key={category.href} className={homeUniformScrollCardClass}>
+                    <Link href={href} className={homeUniformScrollLinkClass}>
                       <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
                         <Image
                           src={listingCardSrc(imgUrl)}
@@ -737,18 +710,26 @@ export default async function HomePage() {
                           isLoggedIn={!!user}
                         />
                       </div>
-                      <CardContent className={homeListingScrollBodyClass}>
-                        <HomeListingTitleSlot>
+                      <CardContent className={homeUniformScrollBodyClass}>
+                        <div className={homeUniformScrollTitleSlotClass}>
                           <h3 className={homeListingScrollHeadingClass}>
                             {capitalizeWords(listing.title)}
                           </h3>
-                        </HomeListingTitleSlot>
-                        <div className={homeListingScrollMetaFooterClass}>
+                          {showBoardLength ? (
+                            <p
+                              className={`mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words ${listing.board_length ? "" : "invisible"}`}
+                              aria-hidden={!listing.board_length}
+                            >
+                              {listing.board_length ?? "\u00a0"}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className={homeUniformScrollMetaFooterClass}>
                           <p className="text-base font-bold text-black dark:text-white">
                             ${Number(listing.price).toFixed(2)}
                           </p>
                           <div
-                            className={`mt-1 flex items-start justify-between gap-1 ${homeListingScrollMetaLinesClass}`}
+                            className={`mt-1 flex items-start justify-between gap-1 ${homeBrowseCategoryMetaLinesClass}`}
                           >
                             <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1 overflow-hidden">
                               <span className="min-w-0 flex-1 break-words text-xs text-muted-foreground line-clamp-2 leading-snug">
@@ -768,6 +749,7 @@ export default async function HomePage() {
                         </div>
                       </CardContent>
                     </Link>
+                    <div className={homeUniformCategoryBrowseSlotClass} aria-hidden />
                   </Card>
                 )
               })}
