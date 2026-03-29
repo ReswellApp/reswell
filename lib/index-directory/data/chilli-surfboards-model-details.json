@@ -1,0 +1,2516 @@
+{
+  "grom": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "grom",
+    "descriptionParagraphs": [
+      "Say hello to our new little friend the new improved Grom Plus. Available in PU and Twin Tech.",
+      "This board has evolved from a mixture of Project Black models we have made over the years for our team rider Kobi Clements. Kobi has progressed onto high performance models but the DNA in this board is fast, forgiving and reliable for any grom from the intermediate to advanced level.",
+      "We have basically squashed the nose and tail slightly together, widened the outline that brings us a board allowing you to ride 1-3 inches smaller then a regular shortboard. Having width under the front foot with a pulled in squash tail allows for a quick acceleration surfboard but with enough foam to get through those dead sections. Having a more rounded outline (which is the main difference from our previous Grom model) means turning is a lot easier and can take your shredding to the next level also don't be fooled it's very user friendly for all ages and levels of surfing. Groms, come and get em.",
+      "Board type: Grom Youth.",
+      "Tail: Round Square Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: FCS Performer (XS, S or Grom) FUTURES JJF Techflex (Grom or S)."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/2906358165b989.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/2906358165b989.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 4'10\", Width: 17 3/4\", Thickness: 1 3/4\", Volume: 15.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'0\", Width: 17 7/8\", Thickness: 1 7/8\", Volume: 17.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'1\", Width: 18\", Thickness: 2\", Volume: 18.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 18\", Thickness: 2 1/16\", Volume: 19.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'3\", Width: 18 1/16\", Thickness: 2 1/16\", Volume: 19.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 18 1/8\", Thickness: 2 1/8\", Volume: 20.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 18 1/4\", Thickness: 2 1/8\", Volume: 21.40, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 18 3/8\", Thickness: 2 3/16\", Volume: 22.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 18 1/2\", Thickness: 2 3/16\", Volume: 22.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 1/2\", Thickness: 2 3/16\", Volume: 23.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "grom-two": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "grom-two",
+    "descriptionParagraphs": [
+      "Board type: Grom Youth.",
+      "Tail: Squash Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/12365570035b98.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/12365570035b98.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 4'10\", Width: 17 3/4\", Thickness: 1 7/8\", Volume: 16.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'0\", Width: 17 3/4\", Thickness: 2\", Volume: 17.80, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'1\", Width: 17 7/8\", Thickness: 2\", Volume: 18.60, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 18\", Thickness: 2 1/16\", Volume: 19.30, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'3\", Width: 18 1/16\", Thickness: 2 1/16\", Volume: 19.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 18 1/8\", Thickness: 2 1/8\", Volume: 20.60, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 18 3/16\", Thickness: 2 1/8\", Volume: 21.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 18 1/4\", Thickness: 2 3/16\", Volume: 22.00, Tail: Squash, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "mini-bird": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "mini-bird",
+    "descriptionParagraphs": [
+      "The bird collection grows. This one is for the groms, it covers all levels of surfer. Absolutely perfect for anyone starting out and looking for the transition from a softboard or mini mal to there first surfboard that will allow them to progress there performance. The other end of the scale is it's a performance board for the intermediate to excellent surfers to have a lot of fun on. Drop 2-3 inches from your Grom + / Spawn Mini and you got yourself a small wave ripper. The 'Rare Bird' is our most populer surfboard in all conditons, loved by all levels of surfer.",
+      "Neat thumb tail, thruster set up, paddle power under the chest but performance off the back foot. The outline is curvey and the rocker is low, these two features combined create an outline to turn tight off and low rocker to gain speed. This thing absolutely fly's!",
+      "Board type: Grom Youth.",
+      "Tail: Thumb Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/200954575b9896.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/200954575b9896.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Beginner"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 4'10\", Width: 18 1/8\", Thickness: 2 1/16\", Volume: 19.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 4'11\", Width: 18 1/4\", Thickness: 2 1/16\", Volume: 19.80, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'0\", Width: 18 3/8\", Thickness: 2 1/8\", Volume: 20.80, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'1\", Width: 18 1/2\", Thickness: 2 1/8\", Volume: 21.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 18 5/8\", Thickness: 2 3/16\", Volume: 22.40, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'3\", Width: 18 3/4\", Thickness: 2 3/16\", Volume: 22.90, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 18 7/8\", Thickness: 2 3/16\", Volume: 23.40, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19\", Thickness: 2 3/16\", Volume: 23.90, Tail: Thumb, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "spawn-mini": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "spawn-mini",
+    "descriptionParagraphs": [
+      "This board is designed off the pro model we made with team rider Mitch Coleborn called the Spawn. It's a high performance shortboard but simply made in smaller dimensions for smaller people.",
+      "What's the difference compared to the Grom Plus? Well, it features more rocker through the whole board, a tighter outline, lower rail, pulled in squash tail and a single concave. All of these features are for performance. We worked on this with young team rider Kobi Clements and we noticed a huge improvement in the progression of his surfing. Kobi tested this board in places from Sydney's northern beaches to France and Hawaii.",
+      "If your ready for that next step in your surfing, the Spawn Mini is the next new board for you.",
+      "All boards come with a free spray on the tail and in a custom order it's your choice of colour. We also do multi coloured fin boxes with Futures and FCS 2 systems.",
+      "Board type: Grom Youth.",
+      "Tail: Squash Tail.",
+      "Rails: Low Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/5150364545b989.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/5150364545b989.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 4'10\", Width: 16 7/8\", Thickness: 1 3/4\", Volume: 14.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'0\", Width: 17 1/4\", Thickness: 1 7/8\", Volume: 16.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'1\", Width: 17 3/8\", Thickness: 1 7/8\", Volume: 16.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 17 1/2\", Thickness: 2\", Volume: 18.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'3\", Width: 17 3/4\", Thickness: 2\", Volume: 18.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 17 7/8\", Thickness: 2 1/16\", Volume: 19.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 18\", Thickness: 2 1/16\", Volume: 20.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 18 1/8\", Thickness: 2 1/8\", Volume: 21.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 18 1/4\", Thickness: 2 1/8\", Volume: 21.50, Tail: Squash, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "bv2": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "bv2",
+    "descriptionParagraphs": [
+      "The BV2 is made for summer. This is a new model developed from the popular Black Vulture. The BV2 sits in the summer board category and has been designed with increased speed and higher performance than the original. With smaller, weaker waves in mind when designing this board, we’ve blended features from the original Black Vulture to create a speed generating board with a generous sweet spot.",
+      "OUTLINE: The outline has a full nose for paddle power and speed in flat/fat surf. The middle section is curvey (nice rail line to turn from) with the wide point slightly more forward than a regular board. Through the tail, we removed the semi flyer from the original Black Vulture and in doing so, added a straighter rail line into the swallow that gives this board hold and control through turns.",
+      "ROCKER: The board has a flat-medium entry and a flat-medium tail exit. It has slightly less rocker in the tail than the original Black Vulture which has given the BV2 a speed generating bottom.",
+      "CONTOURS: Bottom contour is single concave from the nose down to the bottom 1/3 of the board. It then goes into a very slight double concave that runs out through the tail behind the fins. A balanced and forgiving bottom.",
+      "PERFORMANCE: Through the R & D of this model, the Black Vulture already had great attributes. Performance matched with a friendly forgiving outline. The BV2 is noticeably faster. To handle that speed we removed the semi flyer which gives that tail the hold and drive that is necessary. When testing with the team it was popular when surfed with a Twin + stabiliser setup. The tail having a straighter outline into a swallow complements the 2 + 1 fin template giving it unmatched control and release when needed. A regular thruster fin setup also works great giving you more hold through turns and allowing you to get vertical in the pocket.",
+      "Board type: Groveller.",
+      "Tail: Swallow Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: Twin + stabiliser setup or regular thruster fin setup."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1558607815f863.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1558607815f863.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'5\", Width: 19\", Thickness: 2 1/4\", Volume: 25.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 3/8\", Thickness: 2 5/16\", Volume: 27.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 7/16\", Thickness: 2 3/8\", Volume: 28.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 1/2\", Thickness: 2 7/16\", Volume: 29.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 5/8\", Thickness: 2 7/16\", Volume: 30.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 3/4\", Thickness: 2 1/2\", Volume: 31.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 7/8\", Thickness: 2 1/2\", Volume: 32.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20\", Thickness: 2 9/16\", Volume: 33.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 20 1/8\", Thickness: 2 9/16\", Volume: 34.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 1/4\", Thickness: 2 5/8\", Volume: 36.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20 3/8\", Thickness: 2 5/8\", Volume: 37.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 39.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 20 5/8\", Thickness: 2 3/4\", Volume: 41.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "fire-chief": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "fire-chief",
+    "descriptionParagraphs": [
+      "When designing the Sugar James had the urge to go down a different path and the Fire Chief is the result. A friendly, forgiving style of twin fin with increased paddle power. The slightly further back position of the fins provides added drive.",
+      "BOTTOM CONTOURS Features a pronounced vee running the length of the board, which makes for smooth transitions from rail-to-rail and it´s uber fast.",
+      "OUTLINE Features a full nose, wide round tail.",
+      "ROCKER Very relaxed rocker with a slight kick in the nose and tail to assist with steeper sections and turning.",
+      "FINS FCS ll Power Twins // FUTURES EN",
+      "Ride it four inches shorter than your shortboard or desired volume.",
+      "Board type: Groveller.",
+      "Tail: Round Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 2 Fins.",
+      "Fin recommendation: FCS ll Power Twins // FUTURES EN."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/8144041925e99e.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/8144041925e99e.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "Size: 5'4\", Width: 19 1/2\", Thickness: 2 5/16\", Volume: 27.80, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19 3/4\", Thickness: 2 3/8\", Volume: 28.90, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 20\", Thickness: 2 7/16\", Volume: 30.90, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 20 1/4\", Thickness: 2 1/2\", Volume: 32.60, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 20 1/2\", Thickness: 2 1/2\", Volume: 33.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 20 3/4\", Thickness: 2 9/16\", Volume: 35.20, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 21\", Thickness: 2 9/16\", Volume: 36.20, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 21 1/4\", Thickness: 2 5/8\", Volume: 38.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 21 3/4\", Thickness: 2 5/8\", Volume: 39.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 22\", Thickness: 2 3/4\", Volume: 42.40, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 22 1/2\", Thickness: 3\", Volume: 47.80, Tail: Round, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "hkii": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "hkii",
+    "descriptionParagraphs": [
+      "Chilli Surfboards presents the HKII. Seamlessly updating our much-loved Hot Knife, the HKII becomes a well-rounded, step-down shortboard. This board is incredibly user-friendly and exhibits forgiveness across all types of conditions. With the outline still providing the rail-to-rail transitions with ease, the HKII boasts speed and control.",
+      "Outline The HKII features a classic, slightly fuller shortboard outline in the front. We removed the hip through the fins, creating a more fluid ride rail to rail. This facilitates the straighter rail along the tail, enhancing speed, while a nice pulled in swallow tail allows for tight transitions when the section presents itself.",
+      "Rocker Profile Continuing from the Hot Knife, the HK2 has a moderately flat entry rocker, transitioning into a smooth exit. The boards primary focus is maintaining its speed over flat sections while also allowing for tight transitions.",
+      "Contours Continuing with the Hot Knife contours, the HK2 has a single through the nose into a double through the feet, that blends into a vee through the tail. This combo creates a fast board of the take-off that has a super forgiving feeling rail-to-rail and control while you finish your turns.",
+      "Board type: Groveller.",
+      "Tail: Swallow Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: To complement this model, the fins should fall in the raked template. Either the Carver family in FCS II, or the Raked family with FUTURES. The AM series works well with this board, just choose your size based on your weight.."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/10635579066670.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/10635579066670.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'5\", Width: 19\", Thickness: 2 3/8\", Volume: 25.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 1/8\", Thickness: 2 3/8\", Volume: 26.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 1/4\", Thickness: 2 7/16\", Volume: 27.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 3/8\", Thickness: 2 7/16\", Volume: 28.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 1/2\", Thickness: 2 1/2\", Volume: 29.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 5/8\", Thickness: 2 9/16\", Volume: 30.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 3/4\", Thickness: 2 9/16\", Volume: 31.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 13/16\", Thickness: 2 5/8\", Volume: 32.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 7/8\", Thickness: 2 11/16\", Volume: 33.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20\", Thickness: 2 3/4\", Volume: 35.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20 1/4\", Thickness: 2 7/8\", Volume: 38.00, Tail: Swallow, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "miami-spice": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "miami-spice",
+    "descriptionParagraphs": [
+      "This board takes small wave surfing to a whole new level. A 'fun' level for beginners, a 'progressive' level for intermediate surfers and a 'shredding' level for advanced surfers when the conditions aren't looking to flash.",
+      "Having width in the outline for paddle power and carry through the flat sections of the wave. A new Double Bump (or aka double flyer) into a Chilli signature Thumb Tail. This allows the tail end of the board to be neatly pulled in so it performs in the pocket part of the wave very nicely, very easily. A slight Single Concave between the feet for speed and Vee out behind the back fin for easy transition from rail to rail. Choose your Thruster or Quad setup (it comes with 5 plugs for your convenience), your desired volume (we recommend 2-3 Litres higher then your general shortboard) and your away. You have to experience the Miami Spice!",
+      "Board type: Groveller.",
+      "Tail: Round Tail.",
+      "Rails: Medium/Full Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: Choose your Thruster or Quad setup (it comes with 5 plugs for your convenience)."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/3459575575ba06.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/3459575575ba06.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Beginner",
+      "Intermediate",
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'1\", Width: 19 3/4\", Thickness: 2 3/16\", Volume: 24.90, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 19 7/8\", Thickness: 2 1/4\", Volume: 25.90, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'3\", Width: 20\", Thickness: 2 1/4\", Volume: 26.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 20 1/4\", Thickness: 2 5/16\", Volume: 28.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 20 1/2\", Thickness: 2 5/16\", Volume: 28.90, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 20 3/4\", Thickness: 2 3/8\", Volume: 30.60, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 20 7/8\", Thickness: 2 3/8\", Volume: 31.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 21\", Thickness: 2 7/16\", Volume: 32.60, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 21 1/4\", Thickness: 2 7/16\", Volume: 33.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 21 1/2\", Thickness: 2 1/2\", Volume: 35.40, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 21 3/4\", Thickness: 2 1/2\", Volume: 36.30, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 22\", Thickness: 2 5/8\", Volume: 38.70, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 22 1/4\", Thickness: 2 5/8\", Volume: 39.60, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 22 1/2\", Thickness: 2 3/4\", Volume: 42.20, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 22 5/8\", Thickness: 2 3/4\", Volume: 43.10, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 22 3/4\", Thickness: 2 7/8\", Volume: 46.10, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 22 7/8\", Thickness: 2 7/8\", Volume: 48.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 22 7/8\", Thickness: 3\", Volume: 51.00, Tail: Round, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "pi-a-colada": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "pi-a-colada",
+    "descriptionParagraphs": [
+      "The piña colada is a sweet cocktail made with rum, cream of coconut, and pineapple juice, served blended or shaken with ice. It may be garnished with a pineapple wedge and a novelty umbrella.",
+      "Just as tasty as the drink itself this new board is designed to put the fun back into summer slush, point breaks and if you dress it with the right fins almost all conditions. It's got area through the whole body of the board making the deck flat but nice and low in the rail line. The wide nose is for paddling and pushing through flat sections. The tail end is heavily inspired from the classic twin fin era. Single flyers level with the side fins creating the break in the outline and allows curve into the narrower swallow tail so it can perform in the pocket. The ultimate blend!",
+      "We recommend riding it 3-4 litres more then your desired volume or dropping 3-5 inches from your desired shortboard.",
+      "Board type: Groveller.",
+      "Tail: Wing Swallow Tail.",
+      "Rails: Medium/Full Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 845,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/17443637086113.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/17443637086113.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "Size: 5'2\", Width: 19 1/8\", Thickness: 2 1/4\", Volume: 25.40, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'3\", Width: 19 1/4\", Thickness: 2 5/16\", Volume: 26.30, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 19 1/2\", Thickness: 2 5/16\", Volume: 27.20, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19 3/4\", Thickness: 2 3/8\", Volume: 28.50, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 20\", Thickness: 2 7/16\", Volume: 31.00, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 20 1/4\", Thickness: 2 1/2\", Volume: 31.70, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 20 1/2\", Thickness: 2 1/2\", Volume: 32.40, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 20 3/4\", Thickness: 2 9/16\", Volume: 34.30, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 21\", Thickness: 2 9/16\", Volume: 34.90, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 21 1/4\", Thickness: 2 5/8\", Volume: 36.90, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 21 3/4\", Thickness: 2 5/8\", Volume: 37.90, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 22\", Thickness: 2 3/4\", Volume: 40.80, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 22 1/2\", Thickness: 2 3/4\", Volume: 42.20, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "popper": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "popper",
+    "descriptionParagraphs": [
+      "The \"Popper\" is the brainchild of James (Chilli) wanting to create the most user friendly, fun, and easy to ride Twin Fin (or 2 + 1) on the market. Based on a design Chilli has made for himself over the years, as the name suggests, the \"Popper\" is bound to spice up your summer! Perfect for a beginner to intermediate surfer looking to downsize or an advanced surfer reluctant to go longer, the Popper offers all the wave catching attributes of a much longer board, packed into a short, flat and forgiving speed machine!",
+      "Rocker A flat entry and flat exit can only mean 1 thing: SPEED. The flattened rocker provides a big generous sweet spot that’s complimented by the bottom contours.",
+      "Bottom Contour Relatively flat top 1/3 of the board, into a double concave through the middle. The bottom 1/3 features a deeper double concave/vee bottom allowing for easy rail-to-rail transition.",
+      "Outline The outline is wide, rounded and forgiving. This larger surface area and contact with the wave face provides stability and increased flow when riding, two attributes that any surfer will love. The round tail and twin fin combination allows the board to both pivot in the pocket and glide over a flatter wave face with ease.",
+      "Board type: Groveller.",
+      "Tail: Round Tail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: FCS 2:\nMR or Power Twin: Both can be used with the smaller rear stabiliser; these two templates are more 'upright' giving you 'pivot' and performance.\nModern Keel: Will provide increased 'down the line drive'. Great option for point breaks, no need for a stabiliser.\n\nFUTURES:\nEN: This template is an 'upright' fin giving you a pivot/performance feel.\nRob Machado: Can be used with or without the smaller rear stabiliser; this fin template is also more 'upright' giving you a pivot/performance feel.\nK2: Will provide increased 'down the line drive'. Great option for point breaks, no need for a stabiliser.."
+    ],
+    "priceUsd": 845,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/168832588260dd.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/168832588260dd.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Beginner"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'2\", Width: 19 1/4\", Thickness: 2 3/16\", Volume: 25.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 19 1/2\", Thickness: 2 1/4\", Volume: 27.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 20\", Thickness: 2 5/16\", Volume: 30.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 20 1/2\", Thickness: 2 7/16\", Volume: 33.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 21\", Thickness: 2 1/2\", Volume: 36.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 21 1/2\", Thickness: 2 9/16\", Volume: 38.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 22\", Thickness: 2 5/8\", Volume: 41.40, Tail: Round, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "pretty-sweet": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "pretty-sweet",
+    "descriptionParagraphs": [
+      "Pretty short and pretty sweet. This board is designed to make you get out of the car, throw your board shorts on and go surf when everyone else is sent home to read the paper.",
+      "This board has an aggressive bottom contour. Single to double to a spiralling vee out between the back fins allow you to get up and planing on the waves face in small, sub par, surf conditions. The outline is squashed down so it’s wide and has a lot of surface area for paddle power. The rocker is… flat, but has a little kick in the nose area to dig you out of the shorebreak if it pops up on you.",
+      "This board is an easy going, fun surfboard to ride when the conditions are not great. Ideal for beginners coming off a soft board, intermediate surfers that want to surf when the waves are poor and advanced surfers that want to zoom along tiny waves and not have to resort to a long board.",
+      "Board type: Groveller.",
+      "Tail: Round Square Tail.",
+      "Rails: Low Rail.",
+      "Fin setup: FCS 2x 5 Fins."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/21315866075ba0.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/21315866075ba0.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Beginner",
+      "Intermediate",
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 4'10\", Width: 20 1/4\", Thickness: 2 1/4\", Volume: 25.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'0\", Width: 20 1/2\", Thickness: 2 5/16\", Volume: 26.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 20 3/4\", Thickness: 2 5/16\", Volume: 28.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 21\", Thickness: 2 3/8\", Volume: 30.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 21 1/4\", Thickness: 2 7/16\", Volume: 32.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 21 1/2\", Thickness: 2 1/2\", Volume: 34.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 21 3/4\", Thickness: 2 5/8\", Volume: 37.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 22\", Thickness: 2 3/4\", Volume: 40.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 22 1/2\", Thickness: 2 7/8\", Volume: 44.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 22 7/8\", Thickness: 3\", Volume: 48.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "black-vulture": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "black-vulture",
+    "descriptionParagraphs": [
+      "The Black Vulture is a versatile model that team rider Lee Wilson put to the test. Lee fell in love with his 5'5 Black Vulture and claims its one of the fastest boards he has ever ridden. Let's break it down:",
+      "The Black Vulture has a fuller nose, added foam under the chest and a wider outline. The wide point is a little further forward too, giving it great foam under the chest and front foot when your surfing, also making it a wave catching machine (much similar foam distribution to the Rare Bird). We then gave it a bump swallow tail to pull the tail in and give it drive. Combined with a single concave to vee out through the tail. Resulting in a wave catching machine that turns on a dime.",
+      "We recommend riding it the same or slightly shorter than the Rare Bird, or your desired volume.",
+      "Our team has surfed it as a twin w/ center stabiliser and with a traditional thruster set up and found gold in both.",
+      "Board type: All Rounder.",
+      "Tail: Wing Swallow Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: Our team has surfed it as a twin w/ center stabiliser and with a traditional thruster set up and found gold in both.."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/20884859446113.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/20884859446113.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'4\", Width: 19 1/8\", Thickness: 2 1/4\", Volume: 24.50, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19 1/4\", Thickness: 2 5/16\", Volume: 26.00, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 3/8\", Thickness: 2 5/16\", Volume: 27.00, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 1/2\", Thickness: 2 3/8\", Volume: 28.00, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 5/8\", Thickness: 2 7/16\", Volume: 29.00, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 3/4\", Thickness: 2 1/2\", Volume: 30.20, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 7/8\", Thickness: 2 1/2\", Volume: 31.00, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 20\", Thickness: 2 9/16\", Volume: 32.50, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20 1/8\", Thickness: 2 9/16\", Volume: 33.50, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 20 1/4\", Thickness: 2 5/8\", Volume: 34.50, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 1/2\", Thickness: 2 5/8\", Volume: 35.80, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 20 3/4\", Thickness: 2 5/8\", Volume: 36.60, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 21\", Thickness: 2 3/4\", Volume: 38.60, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 21 1/2\", Thickness: 2 3/4\", Volume: 41.50, Tail: Wing Swallow, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "churro": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "churro",
+    "descriptionParagraphs": [
+      "WE NEEDED A BOARD TO FIT IN OUR RANGE THAT CATERS SMALL WAVES, IS FORGIVING, HAS A BIG GENEROUS SWEET SPOT AND PERFORMS.",
+      "We had the perfect board right under our nose for over the past year. Its designed mainly from Mitch Coleborns WQS small wave contest board (as we all know the quality of waves on the World Qualifying Series are poor). Its like a squashed down Spawn (the outline that is) and combined with a much flatter faster rocker.",
+      "Lets break it down - The Churro has a semi wide outline with a rounded square tail (we offer a swallow too) but not too wide that it cant be surfed with performance, just enough to be paddle friendly in the small stuff and carry momentum through the fat sections. The rocker is gentle through the nose all the way to the tail, enough curve in the board to fit the curl of a small wave and still generate speed when doing so. Single concave under the front foot all the way back through to behind the rear fin its FAST. All paired with a neat 5 fin set up.",
+      "If you've ridden the Rare Bird, the dimensions on the Churro are almost identical so go off that or drop 3 inches from your short board",
+      "Board type: All Rounder.",
+      "Tail: Round Square Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1870167049639a.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1870167049639a.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'5\", Width: 19 1/8\", Thickness: 2 3/16\", Volume: 24.10, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 1/4\", Thickness: 2 3/16\", Volume: 24.60, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 3/8\", Thickness: 2 1/4\", Volume: 25.80, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 1/2\", Thickness: 2 5/16\", Volume: 27.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 5/8\", Thickness: 2 3/8\", Volume: 28.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 3/4\", Thickness: 2 7/16\", Volume: 29.80, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 7/8\", Thickness: 2 7/16\", Volume: 30.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20\", Thickness: 2 1/2\", Volume: 31.60, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 20 1/4\", Thickness: 2 1/2\", Volume: 32.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 1/2\", Thickness: 2 5/8\", Volume: 34.80, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 20 3/4\", Thickness: 2 3/4\", Volume: 37.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 21\", Thickness: 2 3/4\", Volume: 38.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 21 1/4\", Thickness: 2 3/4\", Volume: 39.10, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 21 1/2\", Thickness: 2 7/8\", Volume: 41.80, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 21 1/4\", Thickness: 2 7/8\", Volume: 42.40, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 21 3/8\", Thickness: 2 7/8\", Volume: 42.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 21 1/2\", Thickness: 2 7/8\", Volume: 44.10, Tail: Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "churro-2": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "churro-2",
+    "descriptionParagraphs": [
+      "The Churro got an upgrade! Our new 'daily driver' model, the Churro 2 has next-level small wave performance features that is an essential board to add to your quiver to dominate conditions from 2-foot slop through to 5-foot pumping surf. With a focus on super user-friendly, performance surfing and everyday conditions in mind, James blended all the favourite features of the original board (fast and forgiving) with a few updated tweaks, and we've arrived with an essential daily driver that will connect all the dots from beach break junk to long point breaks (and everything in between), this board will bring you the stoke!",
+      "The outline has been pulled in slightly at the nose and tail (around the 12' mark, losing the hips & shoulders) from the original Churro and has really given the Churro 2 a smoother, less catchy feel. The wide point is relatively neutral in the centre of the board (providing a 'massive' sweet spot) continuing down into a neat round square tail with enough width to carry you through any slower section that gets thrown your way.",
+      "The rockers very forgiving much like the original. The moderate entry, flattish middle and moderate exit out the tail gives you unlimited down the line speed. Simple single to very slight double concave out the fins bottom contour keeps this board incredibly user friendly in all conditions.",
+      "Board type: All Rounder.",
+      "Tail: Round Square Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: In FCS 2 the Performer template and in FUTURES the F6 template work well, just select your size to fit.."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/7407864806261f.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/7407864806261f.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'7\", Width: 18 7/8\", Thickness: 2 1/4\", Volume: 24.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19\", Thickness: 2 5/16\", Volume: 26.10, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 1/8\", Thickness: 2 3/8\", Volume: 27.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 1/4\", Thickness: 2 7/16\", Volume: 29.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 1/2\", Thickness: 2 1/2\", Volume: 30.20, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 3/4\", Thickness: 2 9/16\", Volume: 31.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 20\", Thickness: 2 5/8\", Volume: 33.40, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 1/4\", Thickness: 2 3/4\", Volume: 35.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20 3/4\", Thickness: 2 7/8\", Volume: 39.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 21 1/4\", Thickness: 2 7/8\", Volume: 41.80, Tail: Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "hot-knife": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "hot-knife",
+    "descriptionParagraphs": [
+      "The Chilli Hot Knife is the combination of two popular surfboard models (Peri Peri & Stepdown 2) resulting in what can only be described as a full-figured 'all rounder' shortboard. This particular model was tried and tested with one of Chilli's bigger built team riders, Jay Davies. \"This board is super easy to ride and feels forgiving in all conditions\".",
+      "OUTLINE: Classic, slightly fuller shortboard outline up front, with the main feature being a slight hip at the side fin mark. This creates a straighter rail down towards the tail for driving speed, and a slightly wider rounded squaretail pod compliments the hip for fast yet predictable turns.",
+      "ROCKER: Fast medium entry through to a smooth/flat exit, the focus for this model being speed with just the right amount of curve to perform smooth adjustments between turns.",
+      "CONTOURS: (Derived from the much loved Peri Peri model), single concave through the nose into a double concave between the feet with blended vee exiting the tail. This combo creates great speed from the take-off, super forgiving rail-to-rail transitions, and a feeling of control as you finish your turns.",
+      "PERFORMANCE: There are two standout attributes with this model. Firstly, the flatter tail rocker with exit vee promotes continual speed and forgiving rail transitions. And secondly, the hip in the outline makes it super drivey and responsive off the back foot. All together the Hot Knife will hold its speed well and respond with a feeling of predictability and control making it a pleasure to ride in general day-to-day conditions.",
+      "Board type: All Rounder.",
+      "Tail: Round Square Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: FCS II Carver (To compliment this model and surfers pushing harder and faster they need a fin with higher sweep/rake)."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1490910027639a.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1490910027639a.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'6\", Width: 19\", Thickness: 2 5/16\", Volume: 25.70, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 1/8\", Thickness: 2 3/8\", Volume: 27.00, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 1/4\", Thickness: 2 7/16\", Volume: 28.20, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 3/8\", Thickness: 2 1/2\", Volume: 29.80, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 1/2\", Thickness: 2 9/16\", Volume: 31.30, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 5/8\", Thickness: 2 5/8\", Volume: 32.30, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 3/4\", Thickness: 2 5/8\", Volume: 33.00, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 13/16\", Thickness: 2 3/4\", Volume: 35.00, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 7/8\", Thickness: 2 3/4\", Volume: 35.50, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20\", Thickness: 2 7/8\", Volume: 38.50, Tail: Hip Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "middy": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "middy",
+    "descriptionParagraphs": [
+      "After numerous custom orders, we’re now offering the Mid Strength in a smaller size range from 6’4 down to 5’10. Like the Mid Strength, the paddling power of the Middy is unmatched with plenty of volume under your chest. The more compact length of the “Middy” now allows an even more heighten level of performance. Stand on the tail and the Middy turns on a dime, shift your weight forward and you’ll be flying down the line!",
+      "James (Chilli) designed this surfboard over the summer of 2018/19 whilst he had a niggling knee injury and couldn’t surf to his full ability on his standard shortboard. “I just wanted something that paddled easy, catches waves and surfed without too much effort”, so the Mid Strength was created. Essentially, this is a performance mid-length that should be a consideration for anyone who can competently stand and navigate along a wave.",
+      "OUTLINE: Outline has a full-ish nose to help with paddling. This flows down to an accentuated curve between your feet and into the back third of the board where the business gets done. The soft round tail intentionally creates a very forgiving and smooth turning arc for a longer board.",
+      "ROCKER: Turning and holding a rail on a bigger board must feel effortless, so Chilli combined a lower entry with a medium exit rocker out the tail. The aim here was to create a fast paddler that would pick up waves with minimal effort and still feel reactive on the turns.",
+      "CONTOURS: Slight single concave for speed up the front blending to a deep single/double concave through the side fins to loosen it up under the rear foot. An effortless combination in this mid-length model that’s sensibly related to a mid strength beer; all the fun with half the effort!",
+      "PERFORMANCE: Getting a little older, maybe not as fit, or your surf time has simply decreased? Sometimes you just need the board to do the work for you. The Mid Strength is made to paddle and catch waves easy in the top end, and once up and riding; trim, pivot and turn super easy with a little bit of release when needed. The curvy outline and rocker combo helps the board not feel long and straight like most mid-lengths, so it actually surfs like a much shorter board. Ride it, and guaranteed you’ll be converted.",
+      "Board type: All Rounder.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: Thruster – FCS II Accelerator, Quad – FCS II Accelerator Sides + Performer Quad Rears. These all-round templates with a little extra area work perfectly for the bigger crew on this board.."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/90792072064057.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/90792072064057.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'10\", Width: 20\", Thickness: 2 3/8\", Volume: 30.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20 5/8\", Thickness: 2 7/16\", Volume: 33.20, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 3/4\", Thickness: 2 1/2\", Volume: 35.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 21\", Thickness: 2 9/16\", Volume: 37.30, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "rare-bird": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "rare-bird",
+    "descriptionParagraphs": [
+      "The Rare Bird, Chilli's best all-round surfboard, is an evolution of the popular Toucan and Birdseye models. It has become Chilli Surfboards' best-selling and most favored board of all time. The design is based on Mitch Coleborn's favorite Toucan, featuring a single concave under the front foot that transitions into a double concave and a slight vee through the back fin for easy rail-to-rail transitions. The wide point is positioned slightly forward, allowing for smooth flow in smaller waves. Combined with a medium rail and a pulled-in thumb tail, this board offers versatility and forgiveness. The quin fin setup further enhances its performance, making it suitable for small waves up to head-high barrels. It is recommended to ride this board 2-4 inches shorter than your standard shortboard, fitting nicely between the Sugar and A2 models.",
+      "Board type: All Rounder.",
+      "Tail: Thumb Tail.",
+      "Rails: Medium/Full Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/79053261461148.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/79053261461148.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'4\", Width: 19\", Thickness: 2 3/16\", Volume: 23.70, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19 1/8\", Thickness: 2 1/4\", Volume: 24.80, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 1/4\", Thickness: 2 1/4\", Volume: 25.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 3/8\", Thickness: 2 5/16\", Volume: 26.50, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 1/2\", Thickness: 2 3/8\", Volume: 27.70, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 5/8\", Thickness: 2 7/16\", Volume: 28.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 3/4\", Thickness: 2 1/2\", Volume: 30.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 7/8\", Thickness: 2 1/2\", Volume: 31.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20\", Thickness: 2 5/8\", Volume: 33.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 20 1/8\", Thickness: 2 5/8\", Volume: 33.70, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 1/4\", Thickness: 2 3/4\", Volume: 35.70, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 20 3/8\", Thickness: 2 3/4\", Volume: 36.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 37.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'5\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 37.50, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 1/2\", Thickness: 2 7/8\", Volume: 38.60, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 22\", Thickness: 2 7/8\", Volume: 44.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 22 1/2\", Thickness: 2 7/8\", Volume: 46.70, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 23\", Thickness: 3\", Volume: 51.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "rare-bird-evo": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "rare-bird-evo",
+    "descriptionParagraphs": [
+      "The Rare Bird, Chilli's best all around board, just got an upgrade! It's our best-selling model of ALL time. We decided to incorporate the bottom that our Mid Strength, Twin Strength, Full Strength, and Middy all share. We start with a single concave under the front foot back to a deeper double concave through the fins and a slight vee off the tail for easy transition rail to rail. The wide point is a little further forward allowing a smooth flow in smaller waves. Combining that with a medium/low rail and pulled in thumb tail, making the EVO one of our most versatile and forgiving models in our line up. We suggest you ride this 2-4 inches shorter than your standard shortboard.",
+      "Board type: All Rounder.",
+      "Tail: Thumb Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/98424154366e11.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/98424154366e11.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'0\", Width: 18 1/2\", Thickness: 2 1/8\", Volume: 20.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'1\", Width: 18 5/8\", Thickness: 2 1/8\", Volume: 21.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 18 3/4\", Thickness: 2 3/16\", Volume: 22.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'3\", Width: 18 7/8\", Thickness: 2 3/16\", Volume: 23.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 19\", Thickness: 2 3/16\", Volume: 24.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19 1/8\", Thickness: 2 1/4\", Volume: 25.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 1/4\", Thickness: 2 5/16\", Volume: 26.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 3/8\", Thickness: 2 5/16\", Volume: 27.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 1/2\", Thickness: 2 3/8\", Volume: 28.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19 5/8\", Thickness: 2 7/16\", Volume: 29.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 3/4\", Thickness: 2 1/2\", Volume: 30.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 7/8\", Thickness: 2 1/2\", Volume: 31.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20\", Thickness: 2 9/16\", Volume: 32.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 20 1/8\", Thickness: 2 5/8\", Volume: 33.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 1/4\", Thickness: 2 3/4\", Volume: 35.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 20 3/8\", Thickness: 2 3/4\", Volume: 36.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 37.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'5\", Width: 20 5/8\", Thickness: 2 3/4\", Volume: 38.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 3/4\", Thickness: 2 3/4\", Volume: 39.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 22\", Thickness: 2 3/4\", Volume: 43.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 22 1/2\", Thickness: 2 3/4\", Volume: 46.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 23\", Thickness: 3\", Volume: 51.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "rarest-bird": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "rarest-bird",
+    "descriptionParagraphs": [
+      "Back in 2015 we designed the Rare Bird. It started out in the category of 'small wave performance' but quickly appealed to an audience of surfers who rode it in small onshore summer slop through to 6 foot barrelling waves in Indonesia. The feedback was always, \"This is the most versatile surfboard ever, it just works\"! From here the Rarest Bird emerged… with more volume and foam, this versatile hybrid appeals to a wide range of surfers looking for a performance surfboard that does it all.",
+      "OUTLINE: The wide point is pushed further forward than most boards to create more curve under the chest and front foot for ease of paddling and speed in dead sections. The classic round tail traverses easily from beach to reef and point waves while producing a feeling of sturdiness under your back foot.",
+      "ROCKER: Medium entry and a fast exit provides, what we feel, is the perfect balance of speed and flow for surfers wanting a board that will react quickly and fulfil their expectations as they execute turns on a wave. I.e. This board does the work for you!",
+      "CONTOURS: The single to double concave is a very effective combination that compliments the outline and rocker and gives you a fast and responsive board in conditions that are not only sub-par but have more power and size.",
+      "PERFORMANCE: Designed to be ridden 1 inch shorter than your typical shorty, the Rarest Bird can be classified as a one board 'take anywhere' quiver. It has all the attributes of a performance board; speed, responsiveness and control, but the main difference is the extra buoyancy and floatation that makes it more forgiving and usable for the everyday surfer. For the intermediates, this is a great board to take your surfing to the next step without loosing paddle power or speed. Advanced surfers can take it around the world and feel comfortable in any conditions on offer.",
+      "Board type: All Rounder.",
+      "Tail: Round Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: Thruster – FCS II Performer, Quad – FCS II Accelerator Sides + Performer Quad Rears. These 'all-round' fin options suit the rounded narrower tail and produce a neutral feel that won't discriminate against anyone.."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1673261749637a.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/1673261749637a.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'4\", Width: 19 1/2\", Thickness: 2 3/16\", Volume: 24.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19 5/8\", Thickness: 2 1/4\", Volume: 25.90, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 3/4\", Thickness: 2 5/16\", Volume: 27.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 7/8\", Thickness: 2 3/8\", Volume: 28.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 20\", Thickness: 2 3/8\", Volume: 29.80, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 20 1/8\", Thickness: 2 7/16\", Volume: 31.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 20 1/4\", Thickness: 2 1/2\", Volume: 32.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 20 3/8\", Thickness: 2 1/2\", Volume: 33.30, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20 1/2\", Thickness: 2 1/2\", Volume: 34.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 20 5/8\", Thickness: 2 9/16\", Volume: 35.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 20 3/4\", Thickness: 2 9/16\", Volume: 36.30, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 20 7/8\", Thickness: 2 5/8\", Volume: 37.80, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 21\", Thickness: 2 5/8\", Volume: 38.60, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 21 1/4\", Thickness: 2 3/4\", Volume: 41.80, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 22\", Thickness: 2 3/4\", Volume: 44.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 22 1/4\", Thickness: 2 7/8\", Volume: 47.80, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 22 1/2\", Thickness: 3\", Volume: 51.50, Tail: Round, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "volume-ii": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "volume-ii",
+    "descriptionParagraphs": [
+      "James has designed countless boards for WQS surfers over the years, where surfing at the highest level in below average wave conditions is the aim of the game! This is where the Volume II originated.",
+      "Over time, James ever so slightly modified the 'Spawn', the performance board preferred by our team at the time. He added volume throughout and slightly flattened the rocker and the bottom contour has a double concave through the fins…..the result; a trusted, fast, no frills all round shortboard that excels in 1-4 foot conditions.",
+      "CONTOUR: A single concave starting 12 cm down from the nose and runs down to just above the side fins. It then has a slight double concave (allowing for the perfect amount of release) through the side fins then back to a single exit through the tail.",
+      "ROCKER: A normal entry through to a flat/moderate exit allowing for maximum speed. The volume holds throughout the board with plenty under the chest for optimal paddle power if the conditions are weaker. A medium to slightly lower rail provides a forgiving ride, but with enough hold so you can trust it in more critical sections on the wave.",
+      "We recommend riding the Volume II anywhere from 1 – 2 inches below your more performance orientated shortboard.",
+      "Board type: All Rounder.",
+      "Tail: Squash Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: FCS II - Accelerator or Performer family\nFUTURES – AM family."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/15496643745db1.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/15496643745db1.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'6\", Width: 18 7/16\", Thickness: 2 1/4\", Volume: 23.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 18 3/4\", Thickness: 2 5/16\", Volume: 25.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 7/8\", Thickness: 2 3/8\", Volume: 26.30, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 19\", Thickness: 2 7/16\", Volume: 27.80, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 28.90, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 1/4\", Thickness: 2 9/16\", Volume: 30.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 31.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 5/8\", Thickness: 2 5/8\", Volume: 32.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 3/4\", Thickness: 2 3/4\", Volume: 34.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 13/16\", Thickness: 2 3/4\", Volume: 35.30, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 7/8\", Thickness: 2 3/4\", Volume: 36.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20\", Thickness: 2 7/8\", Volume: 38.90, Tail: Squash, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "shortie": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "shortie",
+    "descriptionParagraphs": [
+      "The Shortie is a new shortboard by James 'Chilli' Cheal. As described by Jack Robbo from the 2021 Stab In The Dark, \"this board is easy to ride. You don't have to think, you just jump on it and surf.\" Our new performance driver packs high-performance surfing into a forgiving shortboard that caters to intermediate and advanced surfers. The Shortie was refined throughout 2021 with Adriano de Souza (and Chilli team riders) during his final year on the WSL championship tour, and James saw it a fit for this year's Stab In The Dark with Jack Robinson.",
+      "James had 'user friendly' mixed with 'high performance' in his brief. He went to work combining a balanced rocker from nose to tail (creating a wide generous sweet spot), a moderate single concave (speed generating with drive), and a semi-rounded pin tail (control in the pocket at high speed). This created a forgiving performance shortie that is easy for surfers to jump on and immediately gel with (the most challenging part of Stab In The Dark, no second chances!).",
+      "The generous sweet spot is the product of a unique extra bit of foam designed into the stringer line, making it an excellent paddler. You may notice the thickness in the dimensions compared to the length and width seems a bit high, but this strategic design concept creates a board that allows you to surf without thinking too much. The thickness is balanced out by a medium performance rail, allowing full control when surfed in critical parts of the wave.",
+      "The Shortie fits into the Chilli range as a good wave driver for 3-6 feet. Choose your volume and this is the board for your next surf trip overseas, a great winter board, or your board for when it's pumping at home.",
+      "Board type: Premium Performance.",
+      "Tail: Round Pin Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/7872575136231a.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/7872575136231a.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate",
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'7\", Width: 18 1/4\", Thickness: 2 3/16\", Volume: 23.30, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 1/2\", Thickness: 2 1/4\", Volume: 24.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 5/8\", Thickness: 2 3/8\", Volume: 26.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 3/4\", Thickness: 2 7/16\", Volume: 27.70, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 18 7/8\", Thickness: 2 1/2\", Volume: 29.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 1/8\", Thickness: 2 9/16\", Volume: 30.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/4\", Thickness: 2 5/8\", Volume: 32.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 3/8\", Thickness: 2 3/4\", Volume: 33.90, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 1/2\", Thickness: 2 3/4\", Volume: 34.60, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 3/4\", Thickness: 2 7/8\", Volume: 37.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 7/8\", Thickness: 2 7/8\", Volume: 38.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "a2": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "a2",
+    "descriptionParagraphs": [
+      "A board that has been slightly modified over the past year through our Project Black program. Tried, tested and loved by our team, we were excited to release it and knew you were going to love it too.",
+      "The original cad file was named 'ai8curve.cet' and has a creation date of 12/02/2003 - it sat in the archives of James' Macbook. This model back then (named A2 Curve) was developed with the help of Andy Irons who rode and loved the board throughout 03' & 04'. Since then, machines and software quickly became outdated. With new technology James has resurrected some old faithful files, this being one of them. We tweaked it with a modern day outline, concave and with a few minor adjustments by our team, the board came to life.",
+      "It sits in our Premium Performance category for a reason, the A2 likes to be pushed hard, it drives through critical sections with precision and is as smooth on rail through turns as you'd expect from a board ridden by AI. With a reasonably gentle rocker, single concave and tight squash with tail lift you can really give it some.",
+      "The A2, a shortboard you need in your quiver.",
+      "Board type: Premium Performance.",
+      "Tail: Squash Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/3714680775b989.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/3714680775b989.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'7\", Width: 18 7/16\", Thickness: 2 1/8\", Volume: 22.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 3/8\", Thickness: 2 1/8\", Volume: 22.90, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 1/2\", Thickness: 2 3/16\", Volume: 23.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 1/2\", Thickness: 2 1/4\", Volume: 24.80, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 5/8\", Thickness: 2 1/4\", Volume: 25.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 5/8\", Thickness: 2 1/4\", Volume: 25.40, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 3/4\", Thickness: 2 5/16\", Volume: 26.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 18 7/8\", Thickness: 2 5/16\", Volume: 26.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19\", Thickness: 2 3/8\", Volume: 27.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19\", Thickness: 2 7/16\", Volume: 28.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 29.50, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 29.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/4\", Thickness: 2 1/2\", Volume: 30.20, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 1/4\", Thickness: 2 9/16\", Volume: 31.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 3/8\", Thickness: 2 9/16\", Volume: 31.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 32.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 1/2\", Thickness: 2 5/8\", Volume: 33.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 5/8\", Thickness: 2 5/8\", Volume: 33.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 3/4\", Thickness: 2 3/4\", Volume: 35.30, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 3/4\", Thickness: 2 3/4\", Volume: 36.40, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 7/8\", Thickness: 2 7/8\", Volume: 38.20, Tail: Squash, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "fad3r": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "fad3r",
+    "descriptionParagraphs": [
+      "The FAD3R is a refined evolution of the original Fader, blending its predecessor’s smooth glide and versatility with enhanced performance and paddle power. This updated model is designed for surfers seeking a balance between easy wave entry and responsive manoeuvrability, making it the model for a variety of conditions. When you’re planning a trip, you can’t always pack all your boards. The FAD3R can serve as a one size fits all, capable of handling both mid-sized waves and the heavier waves typical of many overseas surf spots. Ideal for medium to bigger wave sized waves. The FAD3R maintains its ability to perform in the pocket, while exceeding in more powerful waves.",
+      "Key Features: - Improved Paddle Power: A refined outline and volume distribution provides better float where you need it while paddling, making it easier to catch waves. - Enhanced Performance: Sharper rails provide a more dynamic rocker line allowing for quicker transition in the pocket and responsiveness in critical sections of the wave. - Versatility across conditions: Ideal for medium to bigger wave sized waves. The Fad3r maintains its ability to perform in the pocket, while exceeding in more powerful waves. - Practicality for Travel: When travelling, you can’t always pack multiple boards. The FAD3R can serve as a one size fits all, capable of handling both mid-sized waves and the heavier waves typical of many overseas surf spots.",
+      "This board was R&D’d by many of our surfers, from Moana at Pipeline, Balaram at Teahupoo, to Kobi and Saxon competing on the Australian regional WQS. It was the board these surfers gravitated to when the waves got a bit too big for their regular shortboard.",
+      "The FAD3R is to be ridden slightly up from your shortboard in volume and length. If you normally ride a 29L shortboard, the stock 6’1” FAD3R at 30.5L will be the go. As we know, larger waves demand respect and the right equipment to handle their power and speed. Surfing a bigger-volumed surfboard helps you rise to the challenge with greater confidence, efficiency and control.",
+      "The FAD3R is the perfect companion for intermediate to advanced surfers looking for a board that elevates their experience without compromising comfort or ease.",
+      "CONCAVE: Single to slight Double RAIL: Low-medium. Good for holding a line in fast, hollow waves. WAVE HEIGHT: 3 – 10 foot. SURFER SKILL LEVEL: Intermediate to advanced.",
+      "Board type: Premium Performance.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: Thruster - FCS II Carver Template\nQuad - FCS II Carver Template quad Rear\nThruster – FUTURES JJF template\nQuad – FUTURES QD4 template."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://www.chillisurfboards.com/?h=450",
+    "galleryImages": [
+      {
+        "url": "https://www.chillisurfboards.com/?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'9\", Width: 18 3/4\", Thickness: 2 5/16\", Volume: 25.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 7/8\", Thickness: 2 3/8\", Volume: 27.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19\", Thickness: 2 7/16\", Volume: 28.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 29.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/4\", Thickness: 2 9/16\", Volume: 30.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 31.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 7/16\", Thickness: 2 5/8\", Volume: 32.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 1/2\", Thickness: 2 11/16\", Volume: 33.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 3/4\", Thickness: 2 3/4\", Volume: 35.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 20\", Thickness: 2 7/8\", Volume: 38.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 20 1/2\", Thickness: 2 7/8\", Volume: 40.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "faded": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "faded",
+    "descriptionParagraphs": [
+      "A new model we have created from the Fader. Designed to be ridden 1 inch shorted then your Fader. This is a board you can trust, if you had an around the world trip booked and only room for 1 surfboard, this your board.",
+      "Let's break down the key strength elements - a strong board plays a huge part in having trust in your board when the waves are good. This board is glassed with 6 oz x 4 oz deck / 4 oz + Innegra + twin carbon strip bottom. The Twin carbon is designed to reinforce the body of the board down the centre and the Innegra is woven into the bottom roll of 4 oz fibreglass and assists with flex so your board still performs at a high level. It's designed to be strong and perform. We did R&D through Project Black over the past 12 months this board with riders Jay Davies and Luke Egan both big builds and heavy footed surfers.",
+      "The design - we've taken the Fader (a popular Chilli model for good to excellent wave types) and added more foam in the centre of the board, allowing more paddle power. The rocker is a very smooth entry in the nose with a flow all the way out through the tail, it's rides silky smooth out on the face and tight in the pocket. A med/low rail to bite into the water but not too low, it's very forgiving. Bottom con- tour is a shallow single concave right through the board, enough for speed but shallow enough to keep flow in all conditions. Having the continuous outline into a neat round tail it's a pleasure to ride.",
+      "Board type: Premium Performance.",
+      "Tail: Round Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/2275718665b989.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/2275718665b989.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'8\", Width: 18 5/8\", Thickness: 2 1/4\", Volume: 24.40, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 3/4\", Thickness: 2 5/16\", Volume: 25.60, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 7/8\", Thickness: 2 3/8\", Volume: 26.70, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19\", Thickness: 2 3/8\", Volume: 27.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 1/8\", Thickness: 2 7/16\", Volume: 28.70, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 3/8\", Thickness: 2 7/16\", Volume: 29.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/4\", Thickness: 2 7/16\", Volume: 29.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 1/2\", Thickness: 2 1/2\", Volume: 31.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 3/4\", Thickness: 2 1/2\", Volume: 32.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 3/4\", Thickness: 2 9/16\", Volume: 32.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20\", Thickness: 2 5/8\", Volume: 34.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20 1/4\", Thickness: 2 5/8\", Volume: 34.80, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 1/4\", Thickness: 2 5/8\", Volume: 35.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 37.80, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 38.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 20 3/4\", Thickness: 2 3/4\", Volume: 39.50, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 20 3/4\", Thickness: 2 3/4\", Volume: 40.00, Tail: Round, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 21\", Thickness: 2 7/8\", Volume: 43.00, Tail: Round, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "faded-2-0": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "faded-2-0",
+    "descriptionParagraphs": [
+      "Need a 'good wave', one board quiver? Well, this is the board you're after. The second incarnation of the Faded is designed for hollow, heavier waves, this board paddles like a step-up and surfs like a shortboard. Designed with Jay Davies with both overseas travel and pumping waves at home in mind, this board has been put through its paces in places from Costa Rica to West Oz. While it's primarily designed for hollow tubes, don't worry, it'll glide like butter in good waves anywhere from 3 foot to 8-plus.",
+      "OUTLINE: The Faded 2.0 has a full nose (paddle power) and smooth middle to relatively straight bottom 1/3 of the board which gives the board drive out through the rounded pin-tail.",
+      "ROCKER: The board has a flat-medium entry, and a smooth medium tail rocker. This compliments the double concave and vee bottom contour. In essence, it's fast with a lot of control in tight situations.",
+      "CONTOURS: Bottom contour is single concave from 12 inches down to middle of the board, a slight double concave from the midpoint runs down into a vee out through the tail. This gives the board hold and drive when you're in hollow, fast waves where control is necessary.",
+      "RAIL: Low-medium. Good for holding a line in fast, hollow waves.",
+      "WAVE HEIGHT: 3 - 8 foot.",
+      "SURFER SKILL LEVEL: Intermediate to advanced.",
+      "FINS: Comes as a 5-fin set-up. The thruster set-up is standard with the quad rears placed slightly more together. As a result, this board as a quad is fast and has crazy amounts of hold. Fin Recommendations: Control comes to mind with a board like this, so these are the fins we recommend:",
+      "Thruster - FCS II Carver Template Quad - FCS II Carver Template quad Rear Thruster - FUTURES JJF template Quad - FUTURES QD4 template",
+      "PERFORMANCE: When designing a 'good wave' board you need to ensure the performance attributes complement each other. The Faded 2.0 was built to do exactly that. Explicitly, it is the boards outline, rocker, and bottom contours which make this board work so well.",
+      "The top 1/3 has a full-ish outline and is packed with volume, combine this with a flat entry rocker and you'll find chipping into big waves a breeze. Whether the waves are fast and hollow, or big and chunky, this board has the ability to paddle into it (insanity not included).",
+      "Through the middle section the board 'mellows out' with a single concave, straight outline and low rail bite give this board both speed, and bite to hold a line. The back-third of the board is where the control is generated. The double concave into a vee out the tail gives this board great rail-to-rail transition and also helps the board hold a line when you're racing across the face, drawing a controlled bottom turn, or aiming to strike noon off the lip.",
+      "All in all this board is a paddle machine at the front and controlled fun-park at the rear.",
+      "Board type: Premium Performance.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: Thruster - FCS II Carver Template\nQuad - FCS II Carver Template quad Rear\nThruster - FUTURES JJF template\nQuad - FUTURES QD4 template."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9322702695ebde.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9322702695ebde.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'8\", Width: 18 1/2\", Thickness: 2 1/4\", Volume: 25.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 3/4\", Thickness: 2 5/16\", Volume: 26.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 7/8\", Thickness: 2 3/8\", Volume: 27.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19\", Thickness: 2 7/16\", Volume: 28.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 29.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/4\", Thickness: 2 9/16\", Volume: 31.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 1/2\", Thickness: 2 5/8\", Volume: 32.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 3/4\", Thickness: 2 5/8\", Volume: 33.30, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20\", Thickness: 2 11/16\", Volume: 35.20, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 1/2\", Thickness: 2 7/8\", Volume: 39.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 20 3/4\", Thickness: 2 7/8\", Volume: 41.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "faded-2-0-gun": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "faded-2-0-gun",
+    "descriptionParagraphs": [
+      "James initially designed this board for Jay Davies to handle the heavy water of the West Oz outer reefs. Since then, this board has been R&D’d through-out the epic Australian east coast winter of 2020 and Hawaii.",
+      "We’ve designed this board with maximum attention to detail. A 9mm hardwood cedar stringer and double leash plug gives the rider full confidence in challenging conditions.",
+      "OUTLINE: The Faded 2.0 Gun outline is fast. The nose holds enough outline area to have an incredible amount of paddle power. This is amplified with the 'beak' nose that holds more foam from under the chest right up to the nose tip. From the middle down to the pin tail is foiled together with the deck and bottom rocker to create an insane amount of hold. Just what this board requires.",
+      "ROCKER: The board has a medium entry, and a smooth medium tail rocker. These compliment the ‘Vee Double Concave’ bottom contour. The rocker plays a big part in the paddling momentum that’s needed when surfing big waves. The water is moves much faster and gaining speed in a few strokes is essential.",
+      "CONTOURS: ‘Vee Double Concave’ runs down the full bottom of the board (nose to tail). It gives the board complete traction onto the wave face. This board is guaranteed to hold in waves on consequence.",
+      "RAIL: Full rail to add to the paddle power in the top 1/3 of the board, evens out in the middle which tapers down low towards the bottom 1/3 of the board providing maximum hold.",
+      "WAVE HEIGHT: 8 – 20 ft",
+      "Board type: Step Up / Gun.",
+      "Tail: Pin Tail.",
+      "Rails: Full Rail.",
+      "Fin setup: FCS 2x 4 Fins.",
+      "Fin recommendation: Thruster – FUTURES Twiggy 5-Fin OR EA Control Series (Big Wave)\nQuad – FUTURES Paddle Quad G10 OR PYZEL Padillac Quad."
+    ],
+    "priceUsd": 845,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/19673842315fd0.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/19673842315fd0.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 7'0\", Width: 19 5/8\", Thickness: 3\", Volume: 42.00, Tail: Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'2\", Width: 19 11/16\", Thickness: 3\", Volume: 43.30, Tail: Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'4\", Width: 19 3/4\", Thickness: 3\", Volume: 44.60, Tail: Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'6\", Width: 19 3/4\", Thickness: 3\", Volume: 46.00, Tail: Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 8'0\", Width: 20 1/8\", Thickness: 3 1/4\", Volume: 54.00, Tail: Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 8'6\", Width: 20 1/2\", Thickness: 3 3/8\", Volume: 60.00, Tail: Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "faded-2-0-step-up": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "faded-2-0-step-up",
+    "descriptionParagraphs": [
+      "Alongside its brother (Faded 2.0 regular) we have designed, tested and delivered a heavy water Step-Up version. With feedback from team, we ´grew´ the Faded 2.0 in length, lowered the rail, pulled in the tail and kept the width to a minimum. You can pull this board out when the swell charts are looking extra punchy, the period is longer and your thinking about that 8ft heavy water leg rope that rarely gets used. Jay Davies rides this board in the raw West Oz swell (also Hawaii) in sizes from 6´4 to 7´0 and approves. Need a Step-Up? This is your board.",
+      "OUTLINE The Faded 2.0 Step-Up has a slightly fuller nose and holds some foam under the chest for paddle power. The bottom 2/3 of the board are a simple smooth fast outline into a Pin tail.",
+      "ROCKER The board has a flat-medium entry, and a smooth medium tail rocker. This compliments the double concave and vee bottom contour. In essence, it´s fast with a lot of control in tight situations.",
+      "CONTOURS Bottom contour is single concave from 12 inches down to middle of the board, a slight double concave from the midpoint runs down into a vee out through the tail. This gives the board hold and drive when you´re in hollow, fast waves where control is necessary.",
+      "RAIL Low rail. Good for holding a line in fast, hollow waves.",
+      "FINS: Comes as a 5-fin set-up. Fin Recommendations: Control comes to mind with a board like this, so these are the fins we recommend:",
+      "Thruster - FCS II Carver Template Quad - FCS II Carver Template quad Rear Thruster - FUTURES JJF template Quad - FUTURES QD4 template",
+      "PERFORMANCE When designing the Step-Up version of this board we had heavy water in mind. To trust your equipment in these conditions you want the following attributes packed into one board.",
+      "The top 1/3 has a full-ish outline and is packed with volume, combine this with a flat entry rocker and you´ll find chipping into heavy waves a breeze. Whether the waves are fast and hollow, or big and chunky, this board has the ability to paddle into it (insanity not included).",
+      "Through the middle section the board ´mellows out´ with a single concave, straight outline and low rail bite give this board both speed, and bite to hold a line.",
+      "The back-third of the board is where the control and most importantly hold is generated. The double concave into a vee out the tail gives this board a simple rail-to-rail transition and also helps the board hold a line when youre racing across the face, drawing a controlled bottom turn, or knifing directly under the lip into the pit.",
+      "All in all, this board is a paddle machine at the front matched with a pin tail to hold in the rear.",
+      "Board type: Step Up / Gun.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: Thruster - FCS II Carver Template\nQuad - FCS II Carver Template quad Rear\nThruster - FUTURES JJF template\nQuad - FUTURES QD4 template."
+    ],
+    "priceUsd": 800,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/16364009406051.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/16364009406051.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 6'4\", Width: 19\", Thickness: 2 11/16\", Volume: 32.90, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 1/8\", Thickness: 2 3/4\", Volume: 34.20, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 19 1/4\", Thickness: 2 13/16\", Volume: 36.20, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 19 3/8\", Thickness: 2 7/8\", Volume: 38.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 19 1/2\", Thickness: 2 15/16\", Volume: 39.60, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "peppa-twin": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "peppa-twin",
+    "descriptionParagraphs": [
+      "The Peppa Twin is the result from 18 months of R&D fine tuning through our 'Project Black' program testing and tweaking various rockers, outlines and bottom contours with staff and team to create our new top of the line and incredibly user-friendly performance twin fin. Delivering a board that elevates your wave count, generates speed and is an easy to ride twinny that covers a range from 2ft to 6ft surf, both frontside and backside for intermediate and advanced surfers. This board does most of the work for you. The Peppa Twin surfs smarter, not harder!",
+      "ROCKER: The rocker is moderate on the entry into a balanced curve in the middle and a relatively flat exit, just enough on both ends to fly down the line when you put the pressure on the front foot and release through turns when the pressure is shifted to the back foot. The sweet spot in this board is large.",
+      "BOTTOM CONTOUR: Relatively flat bottom 2/3's of the board. The bottom 1/3 features vee bottom out through the fins allowing for easy rail-to-rail transition. Fast and forgiving are two words that sums up the bottom contours.",
+      "OUTLINE: The top 2/3's of outline is just wide enough in all the right spots = stable, forgiving with paddle power for increased wave count. The tail (the business end) comes down into a medium width swallow tail that will hold when pushed hard. This board is very balanced at both ends to suit performance surfing or just when you want to take it easy and let the board do the work for you.",
+      "DECK ROCKER: A standout feature that is noticeable as soon as you pick it up is the flat deck that holds foam out to the rail then steps down into a beautifully designed performance rail. This attribute keeps volume of foam packed into a shorter board to keep that wave count up!",
+      "Board type: Classic Twin.",
+      "Tail: Swallow Tail.",
+      "Rails: Medium/Full Rail.",
+      "Fin setup: FCS 2x 2 Fins."
+    ],
+    "priceUsd": 845,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9541600986351b.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9541600986351b.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate",
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'4\", Width: 19\", Thickness: 2 1/4\", Volume: 25.20, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'5\", Width: 19 1/8\", Thickness: 2 5/16\", Volume: 26.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 19 1/4\", Thickness: 2 3/8\", Volume: 27.80, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 19 1/2\", Thickness: 2 7/16\", Volume: 29.20, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 19 3/4\", Thickness: 2 1/2\", Volume: 30.80, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 20\", Thickness: 2 9/16\", Volume: 32.40, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 20 1/4\", Thickness: 2 5/8\", Volume: 33.90, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 20 3/8\", Thickness: 2 5/8\", Volume: 34.80, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 20 1/2\", Thickness: 2 5/8\", Volume: 35.40, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 21\", Thickness: 2 3/4\", Volume: 39.30, Tail: Swallow, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 21 1/2\", Thickness: 2 3/4\", Volume: 41.50, Tail: Swallow, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "sugar": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "sugar",
+    "descriptionParagraphs": [
+      "Need to sweeten your quiver? The Sugar twin fin is Chilli's latest candy, combining a retro look with a modern twist. The Sugar's straight outline loves to draw long, fast lines and is not shy off the lip.",
+      "Let's break it down:",
+      "- The beak nose allows foam through the top end of the board for paddle power and a really nice foiled out tail in the bottom end for performance. - Low rail to bite the waves surface. - A 3.5 inch deep swallow/fish tail, with width for speed in flat sections - The fin position is a traditional twin fin set-up designed for large style twin fins or twin keels.",
+      "Board type: Classic Twin.",
+      "Tail: Fish Tail.",
+      "Rails: Low Rail.",
+      "Fin setup: FCS 2x 2 Fins."
+    ],
+    "priceUsd": 855,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/10817822345ba0.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/10817822345ba0.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "Size: 5'0\", Width: 20\", Thickness: 2 1/4\", Volume: 25.50, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'2\", Width: 20 1/4\", Thickness: 2 5/16\", Volume: 27.50, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 20 1/2\", Thickness: 2 3/8\", Volume: 29.00, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 20 3/4\", Thickness: 2 7/16\", Volume: 31.20, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 21\", Thickness: 2 1/2\", Volume: 33.30, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 21 1/2\", Thickness: 2 3/4\", Volume: 38.60, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 21 3/4\", Thickness: 2 3/4\", Volume: 36.60, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 22\", Thickness: 2 7/8\", Volume: 42.40, Tail: Fish, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 22 1/2\", Thickness: 3\", Volume: 46.40, Tail: Fish, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "full-strength": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "full-strength",
+    "descriptionParagraphs": [
+      "Introducing the Full Strength designed by James Cheal. The next generation in our 'mid-length' category was inspired by James' journey to the Mentawai Islands, Indonesia with his son. With a quiver of the popular Mid Strength that is used mainly in the east coast of Australia conditions, he thought it would be good to create something different with a progressive performance outline, but still have the attributes of his much-loved Mid Strength.",
+      "James refined and designed a 6'6 and 6'10 Project Black Full Strength to R&D on his trip, both with subtle tweaks and variances to find a perfect performance mid-length. James found the 6'6 Full Strength to be a perfect all-rounder in 3ft - 6ft conditions. James is 52 years old and 85kg. The 6'10 got ridden when James wanted to take it easy, catch more waves, and found it fit in the pocket on good waves and still able to turn on a dime.",
+      "What is the difference between the Mid Strength and Full Strength?",
+      "1. The Full Strength's outline is pulled in at the nose by 1/8\" decreasing drag up front. The back end is also narrower creating a nice, rounded pin tail giving it more of a shortboard feel. This allows the board to perform better in the pocket, and at higher speeds on the face while maintaining that paddle power the Mid Strength possesses.",
+      "2. The Full Strength's rail is lower with a more rolled deck, allowing for more progressive surfing and greater bite on the wave face, again, at higher speeds for when the surf is good.",
+      "The rocker and bottom contours of this updated board are very similar to the Mid Strength (if it ain't broke, don't fix it). The Full Strength paddles well, yet has a more refined outline, increasing the level of performance it has to offer.",
+      "If you love the Mid Strength, we highly recommend you indulge in the Full Strength for those bigger, more powerful waves or just better days. This duo will ultimately keep you covered across all types of conditions and sizes of waves. To size yourself up, compare with your current Mid Strength and ride the same length or drop down 2 inches to gain that extra level of performance in a board that still keeps your wave count high!",
+      "Board type: Mid Length.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: FCS II: Thruster – Accelerator family – Medium or Large, Quad – Performer Quad Rears - Large\nFUTURES: Thruster – Legacy Series Rake – Medium or Large, Quad – Rasta HC - Large."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/21222888806670.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/21222888806670.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 6'2\", Width: 19 1/2\", Thickness: 2 1/2\", Volume: 32.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 3/4\", Thickness: 2 9/16\", Volume: 34.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20\", Thickness: 2 5/8\", Volume: 36.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 20 1/4\", Thickness: 2 5/8\", Volume: 38.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 41.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 20 3/4\", Thickness: 2 13/16\", Volume: 43.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'2\", Width: 21\", Thickness: 2 13/16\", Volume: 45.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'4\", Width: 21 1/4\", Thickness: 2 7/8\", Volume: 47.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'6\", Width: 21 1/2\", Thickness: 3\", Volume: 52.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'10\", Width: 21 1/2\", Thickness: 3\", Volume: 54.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 8'0\", Width: 21 3/4\", Thickness: 3\", Volume: 56.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "mid-strength": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "mid-strength",
+    "descriptionParagraphs": [
+      "James (Chilli) designed this surfboard over the summer of 2018/19 whilst he had a niggling knee injury and couldnt surf to his full ability on his standard shortboard. I just wanted something that paddled easy, catches waves and surfed without too much effort, so the Mid Strength was created. Essentially, this is a performance mid-length that should be a consideration for anyone who can competently stand and navigate along a wave.",
+      "OUTLINE: Outline has a full-ish nose to help with paddling. This flows down to an accentuated curve between your feet and into the back third of the board where the business gets done. The soft round tail intentionally creates a very forgiving and smooth turning arc for a longer board.",
+      "ROCKER: Turning and holding a rail on a bigger board must feel effortless, so Chilli combined a lower entry with a medium exit rocker out the tail. The aim here was to create a fast paddler that would pick up waves with minimal effort and still feel reactive on the turns.",
+      "CONTOURS: Slight single concave for speed up the front blending to a deep single/double concave through the side fins to loosen it up under the rear foot. An effortless combination in this mid-length model thats sensibly related to a mid strength beer; all the fun with half the effort!",
+      "PERFORMANCE: Getting a little older, maybe not as fit, or your surf time has simply decreased? Sometimes you just need the board to do the work for you. The Mid Strength is made to paddle and catch waves easy in the top end, and once up and riding; trim, pivot and turn super easy with a little bit of release when needed. The curvy outline and rocker combo helps the board not feel long and straight like most mid-lengths, so it actually surfs like a much shorter board. Ride it, and guaranteed youll be converted.",
+      "Board type: Mid Length.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins.",
+      "Fin recommendation: Thruster  FCS II Accelerator, Quad  FCS II Accelerator Sides + Performer Quad Rears. These all-round templates with a little extra area work perfectly for the bigger crew on this board.."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/4236934945dc24.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/4236934945dc24.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 6'6\", Width: 21 1/4\", Thickness: 2 5/8\", Volume: 39.51, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 21 3/8\", Thickness: 2 5/8\", Volume: 40.90, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 21 1/2\", Thickness: 2 3/4\", Volume: 44.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 21 3/4\", Thickness: 2 3/4\", Volume: 45.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'2\", Width: 22\", Thickness: 2 7/8\", Volume: 50.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'4\", Width: 22 1/8\", Thickness: 2 15/16\", Volume: 52.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'6\", Width: 22 1/4\", Thickness: 3\", Volume: 55.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 8'0\", Width: 22 3/8\", Thickness: 3\", Volume: 60.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "twin-strength": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "twin-strength",
+    "descriptionParagraphs": [
+      "The Twin Strength is a new model designed by James Cheal for the mid-length lover with the added flare of a winged pin tail. Designed for more fun in smaller, weaker conditions, The Twin Strength is built for those beach days where having fun and catching waves takes precedence over your high performance shortboard.",
+      "OUTLINE: The outline has a relatively full nose for paddle power and speed in flat/fat surf. The middle section is curvey (nice rail line to turn from) with the wide point fairly centre. Through the tail, we continue the curve which gets broken up by a wing that pulls into a rounded pin tail, allowing for increased pivot in bottom turns.",
+      "ROCKER: Following on from the Mid Strength, the Twin Strength has a medium entry rocker and a medium tail exit. Combining the farmiliar curve under foot from the Mid Strength, the Twin Strength will feel loose in the pocket yet solid and engaged on the face.",
+      "CONTOURS: The bottom consists of a single in the nose and under the front foot, into a double through the fins and out the tail. This combination has been known in the Mid Strength line of surfboards to make a longer board feel a lot lighter and shorter under foot. A well balanced and forgiving bottom for all surfers",
+      "PERFORMANCE: Through the R & D of this model, the Twin Stregnth was noticably faster down the line as there is less fin resistance. combigning that with the loose feeling winged pin tail, the Twin Strength flyes down the line but manouvers in transition with ease.",
+      "When testing with the team, there were 2 different styles of surfing that can be done with two variants of twin fins. A more uproght twin feel will feel loose in the pocket and in turns and will work better in short and sharp conditions where transistion manouvers are a big factor. Comparing that to a keel styled twin, the Twin Strength will have more glide and down the line hold which can be very beneficial for people who are looking for speed and control",
+      "Board type: Mid Length.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 2 Fins.",
+      "Fin recommendation: FUTURES - EN Fiberglass / K2 Keel\nFCS 2 - Power Twin / Modern Keel."
+    ],
+    "priceUsd": 865,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/133794294866d5.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/133794294866d5.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "Size: 6'3\", Width: 20 1/2\", Thickness: 2 1/2\", Volume: 35.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'5\", Width: 20 3/4\", Thickness: 2 9/16\", Volume: 37.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'7\", Width: 21\", Thickness: 2 5/8\", Volume: 39.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'9\", Width: 21 1/4\", Thickness: 2 5/8\", Volume: 41.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'11\", Width: 21 1/2\", Thickness: 2 11/16\", Volume: 43.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'1\", Width: 21 3/4\", Thickness: 2 11/16\", Volume: 45.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'3\", Width: 22\", Thickness: 2 3/4\", Volume: 47.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'5\", Width: 22 1/8\", Thickness: 2 13/16\", Volume: 50.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "cherry-peppa": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "cherry-peppa",
+    "descriptionParagraphs": [
+      "Keeping the Peppa series alive we have the Cherry Peppa. It features a similar bottom to the Red Peppa, slight single down to a very strong double concave and vee out through the tail. The vee bottom really compliments this board as it has a very flat rocker (which allows it to be uber fast) making the transition from rail to rail nice and simple. Think, the days you rock up and it's 1 foot summer slop, you won't be driving home without salty hair a a smile on your face if you have this board in the quiver. It's the ultimate summer pal. Equiped with a 5 fin option for your choice of a quad set-up (which we highly recommend on a point break), or a thruster set-up for that shorey bash we all love to go for. Drop 5-6 inches from your shortboard (or 2-3 inches from your Rare Bird), this board has area for paddle power and stability for all levels of surfing.",
+      "Board type: Archive.",
+      "Tail: Round Square Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/20966820755b98.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/20966820755b98.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'2\", Width: 20\", Thickness: 2 3/16\", Volume: 25.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'4\", Width: 20 1/4\", Thickness: 2 1/4\", Volume: 27.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 20 1/2\", Thickness: 2 5/16\", Volume: 29.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 20 3/4\", Thickness: 2 3/8\", Volume: 31.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 21\", Thickness: 2 7/16\", Volume: 34.20, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 21 1/4\", Thickness: 2 1/2\", Volume: 36.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 21 1/2\", Thickness: 2 5/8\", Volume: 39.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 22\", Thickness: 2 3/4\", Volume: 43.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 22 1/2\", Thickness: 2 3/4\", Volume: 44.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 22 1/2\", Thickness: 2 7/8\", Volume: 47.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "fader": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "fader",
+    "descriptionParagraphs": [
+      "Welcome your new model to fit the much needed 5 fin round tail board in the quiver. Fresh with a thumb tail (not too wide for bigger stuff and not too pinny for the smaller stuff, a perfect balance), very fast outline with no break, all drive and speed for this one.",
+      "With a new rocker changing the sweet spot allowing you to get up in the trickiest take offs and be smack bang on target for the whole wave. This board works really well in the pocket. We kept a single concave in the mid section, allowing it to hold through turns when your out on the face. Just behind the back fin it goes to a flat bottom for release and an easy transition from rail to rail.",
+      "Complete with a 5 fin set up, makes it well rounded in all conditions. With the new FCS II system we have found the Performer template to well in the pocket and Carver template for down the line drive. In Futures we found the JJF template to work best in the pocket and the AM2 template for drive.",
+      "Accompanying the Fader will be The Fader Step Up in a pin tail.",
+      "Board type: Archive.",
+      "Tail: Thumb Tail.",
+      "Rails: Low Rail.",
+      "Fin setup: FCS 2x 3 Fins.",
+      "Fin recommendation: FCS II: Performer template (in the pocket), Carver template (down the line drive)\nFutures: JJF template (in the pocket), AM2 template (drive)."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/8032326415b989.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/8032326415b989.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'8\", Width: 18 3/8\", Thickness: 2 1/8\", Volume: 22.50, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 1/2\", Thickness: 2 1/8\", Volume: 23.10, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 5/8\", Thickness: 2 3/16\", Volume: 24.50, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 18 3/4\", Thickness: 2 1/4\", Volume: 25.80, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 18 7/8\", Thickness: 2 3/8\", Volume: 27.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19\", Thickness: 2 7/16\", Volume: 28.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 29.40, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 1/4\", Thickness: 2 9/16\", Volume: 30.60, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 31.90, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'5\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 32.30, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 1/2\", Thickness: 2 5/8\", Volume: 33.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "fader-step-up": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "fader-step-up",
+    "descriptionParagraphs": [
+      "This model was designed from the last few years of Mitch Coleborn and Tiago Pires coming home from there Hawaii seasons and giving feedback from the older model 'Heavy Water'. It is a very simple, smooth outline which drives through any tough situation where you want the board to hold in. It's got a steady rocker through out, it's a medium entry under the chest to paddle into waves easy and a round pin tail. The bottom is a slight single concave to flat bottom out through the back fins. You don't need speed in the bigger boards so a flat bottom really compliments turning this board with ease. Combined with 5 fins for the use of a quad set up or thruster, this board will suit big winter south swells in Australia, Indonesia trips all the way to the real testing grounds in Hawaii. All dimensions available in custom as well.",
+      "Board type: Archive.",
+      "Tail: Round Pin Tail.",
+      "Rails: Low/Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/17043476785ba0.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/17043476785ba0.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Advanced"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 6'2\", Width: 18 3/4\", Thickness: 2 5/16\", Volume: 27.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 18 7/8\", Thickness: 2 3/8\", Volume: 28.20, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19\", Thickness: 2 7/16\", Volume: 29.40, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 31.00, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 19 1/4\", Thickness: 2 9/16\", Volume: 32.80, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 34.50, Tail: Round Pin, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 7'0\", Width: 19 1/2\", Thickness: 2 5/8\", Volume: 35.60, Tail: Round Pin, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "nevada": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "nevada",
+    "descriptionParagraphs": [
+      "Our latest creation for high performance shortboard with two size breaks. We wanted to create something from the Spawn (our current high performance shortboard) that is an easy transition from your small wave boards, catches waves easy, carries through dead sections and does all that with performance and ease.",
+      "This model has volume distributed throughout the whole board nose to tail (where as the Spawn has the majority in the centre). A new simple neat feeling rail allows carving to be easy and forgiving. Round square tail giving you a little bit of area (as apposed to the narrower squash tail) and the rocker starts off a little flatter in the top third (speed) gradually builds through the middle and continues steadily out the tail giving you performance in the steep sections. Concave was a major player in testing this board. It starts under the chest medium depth and through out the tail it shallows out giving you a release when needed through turns.",
+      "Board type: Archive.",
+      "Tail: Round Square Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/6130552595b989.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/6130552595b989.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'8\", Width: 18 1/2\", Thickness: 2 3/16\", Volume: 23.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 3/4\", Thickness: 2 1/4\", Volume: 25.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 7/8\", Thickness: 2 5/16\", Volume: 26.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19\", Thickness: 2 3/8\", Volume: 27.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 1/8\", Thickness: 2 7/16\", Volume: 29.10, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/4\", Thickness: 2 1/2\", Volume: 30.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 1/2\", Thickness: 2 9/16\", Volume: 31.70, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 3/4\", Thickness: 2 5/8\", Volume: 33.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 7/8\", Thickness: 2 5/8\", Volume: 34.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 1/4\", Thickness: 2 3/4\", Volume: 36.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'8\", Width: 20 1/2\", Thickness: 2 3/4\", Volume: 38.00, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'10\", Width: 21\", Thickness: 2 7/8\", Volume: 41.10, Tail: Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "nevada-hp": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "nevada-hp",
+    "descriptionParagraphs": [
+      "This set of dimensions are more 'High Performance' dimensions. We suggest riding the dimensions of your favourite shortboard from the past (or up 1 inch from the 'Standard' NEVADA) and this board should amplify your surf when the waves are 3 - 6 feet, hollow or just have a good pocket with a bit of power. Designed to perform. Also this board comes standard with Innegra fibre cloth on the bottom of each board to add strength and flex performance.",
+      "Board type: Archive.",
+      "Tail: Squash Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/18954167125b98.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/18954167125b98.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "Size: 5'8\", Width: 18 1/4\", Thickness: 2 1/8\", Volume: 22.90, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 3/8\", Thickness: 2 3/16\", Volume: 24.10, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 1/2\", Thickness: 2 1/4\", Volume: 25.20, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 18 3/4\", Thickness: 2 5/16\", Volume: 26.60, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 18 7/8\", Thickness: 2 3/8\", Volume: 27.90, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19\", Thickness: 2 7/16\", Volume: 29.20, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 30.40, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 1/4\", Thickness: 2 9/16\", Volume: 31.60, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 33.00, Tail: Squash, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "oh-one": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "oh-one",
+    "descriptionParagraphs": [
+      "Chilli Surfboards latest creation is the Oh One. Combining 3 key elements from a few of our most favourite models we have the ultimate all round, all condition shortboard.",
+      "We've added the volume in the centre (stringer) of the board for a much similar feel to the Rare Bird for paddle power and foam under the front foot to keep you moving through the flat sections but kept the rail low so it doesn't feel like a big board.",
+      "We have taken the bottom contours (very similar rocker and concaves) from the Spawn and Fader to create a high performance ride in critical steeper sections.",
+      "Throw a thumb tail similar to the Fader (touch wider) accompanied with a 5 fin set up. When ridden thruster it's sharp and accurate and super fast and flow when ridden with a quad set up.",
+      "Drop 1-2 inches from your Spawn (or rise 1 from your Peri Peri) or select your preferred litres. This board excels in 2-6 foot surf.",
+      "Board type: Archive.",
+      "Tail: Thumb Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 5 Fins."
+    ],
+    "priceUsd": 860,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9921328325b98a.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9921328325b98a.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [],
+    "stockDims": [
+      {
+        "raw": "Size: 5'6\", Width: 18 1/2\", Thickness: 2 1/8\", Volume: 22.40, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 18 5/8\", Thickness: 2 3/16\", Volume: 23.50, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 3/4\", Thickness: 2 3/16\", Volume: 24.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 7/8\", Thickness: 2 1/4\", Volume: 25.20, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19\", Thickness: 2 5/16\", Volume: 26.40, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 1/8\", Thickness: 2 3/8\", Volume: 27.60, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 1/4\", Thickness: 2 7/16\", Volume: 28.80, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 3/8\", Thickness: 2 1/2\", Volume: 30.00, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 5/8\", Thickness: 2 9/16\", Volume: 31.50, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 3/4\", Thickness: 2 5/8\", Volume: 32.70, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 7/8\", Thickness: 2 5/8\", Volume: 33.50, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'5\", Width: 20\", Thickness: 2 3/4\", Volume: 35.40, Tail: Thumb, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 20 1/8\", Thickness: 2 7/8\", Volume: 37.70, Tail: Thumb, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "peri-peri": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "peri-peri",
+    "descriptionParagraphs": [
+      "Combining a high performance shortboard with a small wave board never felt so good! This is the board that fits right between our Spawn and Rare Bird models. It’s the board you will ride 80% of the time over summer. Designed for 2-5 feet surf and it’s smooth outline with no bumps or hips allows hold in a little heavier surf, contrasted with a unique single concave to 'vee' bottom in the tail area makes speed/drive with looseness. This is a high performance small/medium wave board. A must have.",
+      "Board type: Archive.",
+      "Tail: Round Square Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/5296911535ba09.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/5296911535ba09.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'5\", Width: 18 3/8\", Thickness: 2 1/8\", Volume: 22.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'6\", Width: 18 1/2\", Thickness: 2 3/16\", Volume: 23.60, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 18 5/8\", Thickness: 2 3/16\", Volume: 24.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 3/4\", Thickness: 2 1/4\", Volume: 25.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 7/8\", Thickness: 2 5/16\", Volume: 26.60, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 19\", Thickness: 2 3/8\", Volume: 27.80, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 19 1/4\", Thickness: 2 7/16\", Volume: 29.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19 3/8\", Thickness: 2 1/2\", Volume: 30.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/2\", Thickness: 2 9/16\", Volume: 31.80, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 3/4\", Thickness: 2 5/8\", Volume: 33.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 7/8\", Thickness: 2 3/4\", Volume: 35.30, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 20\", Thickness: 2 3/4\", Volume: 35.90, Tail: Round Square, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'5\", Width: 20 1/8\", Thickness: 2 3/4\", Volume: 36.50, Tail: Round Square, Fin Options: FCS II / Futures"
+      }
+    ]
+  },
+  "spawn": {
+    "brandSlug": "chilli-surfboards",
+    "modelSlug": "spawn",
+    "descriptionParagraphs": [
+      "The Spawn features a continuous rail line rocker, pulled in squash tail, single concave and a medium to low rail that allows the board to hold in when put on rail. Mitch weighs 75 kilos and rides his 5'10\" in 80 percent of conditions. We suggest riding it an inch shorter than your normal shortboard and a more upright right will give you release as it has a lot of drive you.",
+      "Board type: Archive.",
+      "Tail: Squash Tail.",
+      "Rails: Medium Rail.",
+      "Fin setup: FCS 2x 3 Fins."
+    ],
+    "priceUsd": 835,
+    "marketingImageUrl": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9815967225b98a.png?h=450",
+    "galleryImages": [
+      {
+        "url": "https://d3iswawdztsslu.cloudfront.net/92/surfboards/9815967225b98a.png?h=450",
+        "caption": "Model"
+      }
+    ],
+    "waveSizeLabels": [],
+    "skillLevelLabels": [
+      "Intermediate"
+    ],
+    "stockDims": [
+      {
+        "raw": "Size: 5'6\", Width: 18 1/2\", Thickness: 2 1/8\", Volume: 22.00, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'7\", Width: 18 1/2\", Thickness: 2 1/2\", Volume: 22.60, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'8\", Width: 18 1/2\", Thickness: 2 1/8\", Volume: 23.10, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'9\", Width: 18 5/8\", Thickness: 2 3/16\", Volume: 24.20, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'10\", Width: 18 3/4\", Thickness: 2 1/4\", Volume: 25.40, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 5'11\", Width: 18 7/8\", Thickness: 2 5/16\", Volume: 26.60, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'0\", Width: 19\", Thickness: 2 3/8\", Volume: 27.90, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'1\", Width: 19 1/8\", Thickness: 2 1/2\", Volume: 29.70, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'2\", Width: 19 1/4\", Thickness: 2 1/2\", Volume: 30.40, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'3\", Width: 19 3/8\", Thickness: 2 5/8\", Volume: 32.40, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'4\", Width: 19 1/2\", Thickness: 2 5/8\", Volume: 33.40, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'5\", Width: 19 1/2\", Thickness: 2 5/8\", Volume: 34.10, Tail: Squash, Fin Options: FCS II / Futures"
+      },
+      {
+        "raw": "Size: 6'6\", Width: 19 3/4\", Thickness: 2 5/8\", Volume: 35.00, Tail: Squash, Fin Options: FCS II / Futures"
+      }
+    ]
+  }
+}

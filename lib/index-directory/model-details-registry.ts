@@ -3,6 +3,7 @@ import { getAllBrandSlugs, getBrandProfileBySlug } from "@/lib/index-directory/r
 import albumSurfModelDetailsBySlug from "@/lib/index-directory/data/album-surf-model-details.json"
 import bingSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/bing-surfboards-model-details.json"
 import theSolutionDetail from "@/lib/index-directory/data/model-details/channel-islands-surfboards-the-solution.json"
+import chilliSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/chilli-surfboards-model-details.json"
 import lovelaceTwrpDetail from "@/lib/index-directory/data/model-details/lovelace-machine-twrp.json"
 import lovelaceTheMachineDetail from "@/lib/index-directory/data/model-details/lovelace-machine-the-machine.json"
 import lovelaceBigpinDetail from "@/lib/index-directory/data/model-details/lovelace-machine-bigpin.json"
@@ -11,6 +12,8 @@ import lovelaceBurnerDetail from "@/lib/index-directory/data/model-details/lovel
 import lovelaceEveningstarDetail from "@/lib/index-directory/data/model-details/lovelace-machine-eveningstar.json"
 import { sharpeyeSurfboardsModelDetailsBySlug } from "@/lib/index-directory/sharpeye-model-details.generated"
 import lostSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/lost-surfboards-model-details.json"
+import pyzelSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/pyzel-surfboards-model-details.json"
+import robertsSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/roberts-surfboards-model-details.json"
 import haydenShapesModelDetailsBySlug from "@/lib/index-directory/data/hayden-shapes-model-details.json"
 import jsSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/js-surfboards-model-details.json"
 import dhdSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/dhd-surfboards-model-details.json"
@@ -21,6 +24,7 @@ const DETAILS: Record<string, Record<string, BoardModelDetail>> = {
   "channel-islands-surfboards": {
     "the-solution": theSolutionDetail as BoardModelDetail,
   },
+  "chilli-surfboards": chilliSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,
   "lovelace-machine": {
     twrp: lovelaceTwrpDetail as BoardModelDetail,
     "the-machine": lovelaceTheMachineDetail as BoardModelDetail,
@@ -31,6 +35,8 @@ const DETAILS: Record<string, Record<string, BoardModelDetail>> = {
   },
   "sharpeye-surfboards": sharpeyeSurfboardsModelDetailsBySlug,
   "lost-surfboards": lostSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,
+  "pyzel-surfboards": pyzelSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,
+  "roberts-surfboards": robertsSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,
   "hayden-shapes": haydenShapesModelDetailsBySlug as Record<string, BoardModelDetail>,
   "js-surfboards": jsSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,
   "dhd-surfboards": dhdSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,

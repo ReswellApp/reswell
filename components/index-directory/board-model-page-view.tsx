@@ -7,6 +7,7 @@ import { extractDeckBottomPair } from "@/lib/index-directory/extract-deck-bottom
 import { resolveModelGallery } from "@/lib/index-directory/resolve-model-gallery"
 import { Button } from "@/components/ui/button"
 import { BoardModelDeckBottomHero } from "@/components/index-directory/board-model-deck-bottom-hero"
+import { BoardModelProductGallery } from "@/components/index-directory/board-model-product-gallery"
 import { BoardModelStockDimsCollapsible } from "@/components/index-directory/board-model-stock-dims-collapsible"
 import { BoardModelRatingSection } from "@/components/index-directory/board-model-rating-section"
 import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
@@ -14,10 +15,6 @@ import { cn } from "@/lib/utils"
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n)
-}
-
-function primaryHeroImage(gallery: BoardModelGalleryImage[], model: BoardModel): { url: string; caption: string } {
-  return gallery[0] ?? { url: model.imageUrl, caption: "Board" }
 }
 
 function galleryExcludingDeckBottom(
@@ -141,8 +138,11 @@ export function BoardModelPageView({
   const priceLabel = detail?.priceUsd != null ? formatUsd(detail.priceUsd) : null
   const gallery = resolveModelGallery(model, detail)
   const deckBottom = extractDeckBottomPair(gallery, model, detail)
-  const heroFallback = primaryHeroImage(gallery, model)
-  const galleryRest = galleryExcludingDeckBottom(gallery, deckBottom)
+  /** First five images: interactive gallery; rest in More angles. */
+  const productGalleryItems = !deckBottom ? gallery.slice(0, 5) : []
+  const galleryRest = deckBottom
+    ? galleryExcludingDeckBottom(gallery, deckBottom)
+    : gallery.slice(5)
 
   return (
     <main className="flex-1 bg-background">
@@ -201,21 +201,11 @@ export function BoardModelPageView({
                   </p>
                 </div>
               ) : (
-                <div className="rounded-2xl bg-gradient-to-b from-muted/50 to-background p-1 ring-1 ring-black/[0.04]">
-                  <div className="relative mx-auto aspect-[4/5] w-full overflow-hidden rounded-[0.875rem] bg-background/90">
-                    <Image
-                      src={heroFallback.url}
-                      alt={`${model.name} — ${heroFallback.caption}`}
-                      fill
-                      className="object-contain object-center p-6 sm:p-8"
-                      sizes="(max-width: 1024px) 85vw, 24rem"
-                      priority
-                    />
-                  </div>
-                  <p className="mt-3 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    {heroFallback.caption}
-                  </p>
-                </div>
+                <BoardModelProductGallery
+                  modelName={model.name}
+                  items={productGalleryItems}
+                  hidePillTabs={brand.slug === "pyzel-surfboards"}
+                />
               )}
             </div>
             <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:items-stretch sm:gap-3">
@@ -252,7 +242,7 @@ export function BoardModelPageView({
           </div>
         </section>
 
-        {galleryRest.length > 0 ? (
+        {galleryRest.length > 0 && brand.slug !== "pyzel-surfboards" ? (
           <section className="py-12 sm:py-16">
             <div className="mb-6 flex items-end justify-between gap-4 border-b border-border/30 pb-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">More angles</h2>

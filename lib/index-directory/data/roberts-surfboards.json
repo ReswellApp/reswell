@@ -1,0 +1,620 @@
+{
+  "slug": "roberts-surfboards",
+  "kind": "brand",
+  "name": "Roberts Surfboards",
+  "shortDescription": "Pat Roberts’ California shapes — from White Diamond grovelers and Diamond family twins to performance everyday boards trusted from Ventura to worldwide lineups.",
+  "websiteUrl": "https://www.robertssurf.com",
+  "logoUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/rwsd-logo-footer-148x78-v2_orig.png",
+  "founderName": "Pat Roberts",
+  "leadShaperName": "Pat Roberts",
+  "locationLabel": "Ventura, California",
+  "aboutParagraphs": [
+    "Roberts Surfboards builds versatile shortboards and hybrids from Ventura — known for the White Diamond and a full quiver of small-wave, mid-length, and high-performance templates.",
+    "Model pages on Reswell mirror Roberts’ public specs: rocker, rails, bottom contours, fin options, wave ranges, size guides, and sizing notes."
+  ],
+  "models": [
+    {
+      "slug": "flyinghippie",
+      "name": "FLYING HIPPIE",
+      "productUrl": "https://www.robertssurf.com/flyinghippie.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/fh-5_orig.png",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "white-diamond",
+      "name": "WHITE DIAMOND",
+      "productUrl": "https://www.robertssurf.com/white-diamond.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-whitediamond-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "white-diamond-2",
+      "name": "WHITE DIAMOND 2",
+      "productUrl": "https://www.robertssurf.com/white-diamond-2.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-wd2-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "wd3",
+      "name": "WD3",
+      "productUrl": "https://www.robertssurf.com/wd3.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-wd3-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "diamond-fish",
+      "name": "DIAMOND FISH",
+      "productUrl": "https://www.robertssurf.com/diamond-fish.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-diamondfish-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "disco-diamond",
+      "name": "DISCO DIAMOND",
+      "productUrl": "https://www.robertssurf.com/disco-diamond.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-discodiamond-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hope-diamond",
+      "name": "HOPE DIAMOND",
+      "productUrl": "https://www.robertssurf.com/hope-diamond.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-hopediamond-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "3df",
+      "name": "3DF",
+      "productUrl": "https://www.robertssurf.com/3df.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-3df-web-wht-orig.jpg?1716739826",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dream-machine",
+      "name": "DREAM MACHINE",
+      "productUrl": "https://www.robertssurf.com/dream-machine.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-dreammachine-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "floaty",
+      "name": "FLOATY",
+      "productUrl": "https://www.robertssurf.com/floaty.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-floaty-web-wht_2.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "mush-machine",
+      "name": "MUSH MACHINE",
+      "productUrl": "https://www.robertssurf.com/mush-machine.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mushmachine-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "mutant",
+      "name": "MUTANT",
+      "productUrl": "https://www.robertssurf.com/mutant.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mutant-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pool-toy",
+      "name": "POOL TOY",
+      "productUrl": "https://www.robertssurf.com/pool-toy.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-pooltoy-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-dreamcatcher",
+      "name": "DREAMCATCHER",
+      "productUrl": "https://www.robertssurf.com/the-dreamcatcher.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-dreamcatcher-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-anything",
+      "name": "ANYTHING",
+      "productUrl": "https://www.robertssurf.com/the-anything.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-anything-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-dreamcatcher-plus",
+      "name": "DREAMCATCHER PLUS",
+      "productUrl": "https://www.robertssurf.com/the-dreamcatcher-plus.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-dreamcatcherplus-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "bro-fish",
+      "name": "BRO FISH",
+      "productUrl": "https://www.robertssurf.com/bro-fish.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-brofish-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dream-maker",
+      "name": "DREAM MAKER",
+      "productUrl": "https://www.robertssurf.com/dream-maker.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-dreammaker-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "disco-hippy",
+      "name": "DISCO HIPPY",
+      "productUrl": "https://www.robertssurf.com/disco-hippy.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/disco-hippy_1.png?1716738851",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dream-maker-plus",
+      "name": "DREAM MAKER PLUS",
+      "productUrl": "https://www.robertssurf.com/dream-maker-plus.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-dreammaker-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "metamorph",
+      "name": "METAMORPH",
+      "productUrl": "https://www.robertssurf.com/metamorph.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/roberts-metamorph-web-wht.jpg?1702780817",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "jackal",
+      "name": "JACKAL",
+      "productUrl": "https://www.robertssurf.com/jackal.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-jackal-web-wht_2.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "metatwin",
+      "name": "METATWIN",
+      "productUrl": "https://www.robertssurf.com/metatwin.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-metatwin-web-wht_1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "armyknife",
+      "name": "ARMY KNIFE",
+      "productUrl": "https://www.robertssurf.com/armyknife.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-armyknife-web-wht_2.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "biodiesel",
+      "name": "BIODIESEL",
+      "productUrl": "https://www.robertssurf.com/biodiesel.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-biodiesel-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cg",
+      "name": "CG",
+      "productUrl": "https://www.robertssurf.com/cg.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/roberts-cg-web-wht.jpg?1590777607",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dirty-bird",
+      "name": "DIRTY BIRD",
+      "productUrl": "https://www.robertssurf.com/dirty-bird.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-dirtybird-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "el-tormentor",
+      "name": "EL TORMENTOR",
+      "productUrl": "https://www.robertssurf.com/el-tormentor.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-tormentor-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "fish-paco",
+      "name": "FISH PACO",
+      "productUrl": "https://www.robertssurf.com/fish-paco.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-fishpaco-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-lip",
+      "name": "LIP",
+      "productUrl": "https://www.robertssurf.com/the-lip.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/roberts-thelip-web-wht.jpg?1592422266",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "meat-cleaver",
+      "name": "MEAT CLEAVER",
+      "productUrl": "https://www.robertssurf.com/meat-cleaver.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-meatcleaver-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "modern-80s",
+      "name": "MODERN 80'S",
+      "productUrl": "https://www.robertssurf.com/modern-80s.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mod80s-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "modern-gem",
+      "name": "MODERN GEM",
+      "productUrl": "https://www.robertssurf.com/modern-gem.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-moderngem-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "star-chip",
+      "name": "STAR CHIP",
+      "productUrl": "https://www.robertssurf.com/star-chip.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-starchip-web-wht-orig_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-goods",
+      "name": "THE GOODS",
+      "productUrl": "https://www.robertssurf.com/the-goods.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/thegoodsbymick2_orig.png",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-vindicator",
+      "name": "VINDICATOR",
+      "productUrl": "https://www.robertssurf.com/the-vindicator.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-vindicator-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "vlad",
+      "name": "VLAD",
+      "productUrl": "https://www.robertssurf.com/vlad.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-vlad-web-wht-orig_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "black-cobra",
+      "name": "BLACK COBRA",
+      "productUrl": "https://www.robertssurf.com/black-cobra.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-blackcobra-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "black-diamond",
+      "name": "BLACK DIAMOND",
+      "productUrl": "https://www.robertssurf.com/black-diamond.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-blackdiamond-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "black-dump-truck",
+      "name": "BLACK DUMPTRUCK",
+      "productUrl": "https://www.robertssurf.com/black-dump-truck.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-blackdumptruck-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-black-punt",
+      "name": "BLACK PUNT",
+      "productUrl": "https://www.robertssurf.com/the-black-punt.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-punter-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "black-thumb",
+      "name": "BLACK THUMB",
+      "productUrl": "https://www.robertssurf.com/black-thumb.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-blackthumb-temp_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "gsd",
+      "name": "GSD",
+      "productUrl": "https://www.robertssurf.com/gsd.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-gsd-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "t33",
+      "name": "T-33",
+      "productUrl": "https://www.robertssurf.com/t33.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-t33-web-wht_1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "mm-16",
+      "name": "MM-16",
+      "productUrl": "https://www.robertssurf.com/mm-16.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mm16-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-ill",
+      "name": "THE ILL",
+      "productUrl": "https://www.robertssurf.com/the-ill.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-theill-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-beaver",
+      "name": "BEAVER",
+      "productUrl": "https://www.robertssurf.com/the-beaver.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/roberts-beaver-web-wht.jpg?1716736915",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "mp3",
+      "name": "MP3",
+      "productUrl": "https://www.robertssurf.com/mp3.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mp3-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-rap",
+      "name": "THE RAP",
+      "productUrl": "https://www.robertssurf.com/the-rap.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-therap-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cruze",
+      "name": "CRUZEE",
+      "productUrl": "https://www.robertssurf.com/cruze.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-cruzee-web-wht_1.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "redneck",
+      "name": "REDNECK",
+      "productUrl": "https://www.robertssurf.com/redneck.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-redneck-web-wht_2.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "turbo-diesel",
+      "name": "TURBO DIESEL",
+      "productUrl": "https://www.robertssurf.com/turbo-diesel.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-turbodiesel-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "robs-big-boy-tri",
+      "name": "ROB'S BIG BOY TRI",
+      "productUrl": "https://www.robertssurf.com/robs-big-boy-tri.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-robsbigboytri-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "g-step-up",
+      "name": "G STEP UP",
+      "productUrl": "https://www.robertssurf.com/g-step-up.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-gstepup-web-wht.jpg?1716742120",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "ob-pin",
+      "name": "OB PIN",
+      "productUrl": "https://www.robertssurf.com/ob-pin.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-obpin-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pin-master",
+      "name": "PIN MASTER",
+      "productUrl": "https://www.robertssurf.com/pin-master.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-pinmaster-web-wht_orig.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "turbo-charger",
+      "name": "TURBO CHARGER",
+      "productUrl": "https://www.robertssurf.com/turbo-charger.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/turbo-charger_orig.png",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "woolly-mammoth",
+      "name": "WOOLLY MAMMOTH",
+      "productUrl": "https://www.robertssurf.com/woolly-mammoth.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-woollymammoth-web-wht.jpg?1716742110",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hplb",
+      "name": "HPLB",
+      "productUrl": "https://www.robertssurf.com/hplb.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-hplb-web-wht.jpg?1716744804",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "classiclb",
+      "name": "CLASSIC LB",
+      "productUrl": "https://www.robertssurf.com/classiclb.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/roberts-classiclb-web-wht.jpg?1716743785",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "modern-mid",
+      "name": "MODERN MID",
+      "productUrl": "https://www.robertssurf.com/modern-mid.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/mod-mid_1.png?1716744794",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "classic-mid-pin",
+      "name": "CLASSIC MID PIN",
+      "productUrl": "https://www.robertssurf.com/classic-mid-pin.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/cmp_3.png?1716743780",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "invader",
+      "name": "INVADER",
+      "productUrl": "https://www.robertssurf.com/invader.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/editor/roberts-invader-web-wht_1.jpg?1716744661",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "classic-single-2",
+      "name": "CLASSIC SINGLE + 2",
+      "productUrl": "https://www.robertssurf.com/classic-single--2.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/classicsingle2mick_orig.png",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "twinvader",
+      "name": "TWINVADER",
+      "productUrl": "https://www.robertssurf.com/twinvader.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-twinvader-web-wht_2.jpg",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "classic-fish",
+      "name": "CLASSIC FISH",
+      "productUrl": "https://www.robertssurf.com/classic-fish.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/classicfishmick_orig.png",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-fun-1",
+      "name": "THE FUN 1",
+      "productUrl": "https://www.robertssurf.com/the-fun-1.html",
+      "imageUrl": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-funone-web-wht.jpg?1716744255",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    }
+  ]
+}

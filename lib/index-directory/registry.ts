@@ -2,9 +2,12 @@ import type { BrandProfile, DirectoryListEntry } from "@/lib/index-directory/typ
 import albumSurfData from "@/lib/index-directory/data/album-surf.json"
 import bingSurfboardsData from "@/lib/index-directory/data/bing-surfboards.json"
 import channelIslandsData from "@/lib/index-directory/data/channel-islands.json"
+import chilliSurfboardsData from "@/lib/index-directory/data/chilli-surfboards.json"
 import lovelaceMachineData from "@/lib/index-directory/data/lovelace-machine.json"
 import sharpeyeSurfboardsData from "@/lib/index-directory/data/sharpeye-surfboards.json"
 import lostSurfboardsData from "@/lib/index-directory/data/lost-surfboards.json"
+import pyzelSurfboardsData from "@/lib/index-directory/data/pyzel-surfboards.json"
+import robertsSurfboardsData from "@/lib/index-directory/data/roberts-surfboards.json"
 import haydenShapesData from "@/lib/index-directory/data/hayden-shapes.json"
 import jsSurfboardsData from "@/lib/index-directory/data/js-surfboards.json"
 import dhdSurfboardsData from "@/lib/index-directory/data/dhd-surfboards.json"
@@ -12,9 +15,12 @@ import dhdSurfboardsData from "@/lib/index-directory/data/dhd-surfboards.json"
 const albumSurf = albumSurfData as BrandProfile
 const bingSurfboards = bingSurfboardsData as BrandProfile
 const channelIslands = channelIslandsData as BrandProfile
+const chilliSurfboards = chilliSurfboardsData as BrandProfile
 const lovelaceMachine = lovelaceMachineData as BrandProfile
 const sharpeyeSurfboards = sharpeyeSurfboardsData as BrandProfile
 const lostSurfboards = lostSurfboardsData as BrandProfile
+const pyzelSurfboards = pyzelSurfboardsData as BrandProfile
+const robertsSurfboards = robertsSurfboardsData as BrandProfile
 const haydenShapes = haydenShapesData as BrandProfile
 const jsSurfboards = jsSurfboardsData as BrandProfile
 const dhdSurfboards = dhdSurfboardsData as BrandProfile
@@ -23,9 +29,12 @@ const BRAND_BY_SLUG: Record<string, BrandProfile> = {
   [albumSurf.slug]: albumSurf,
   [bingSurfboards.slug]: bingSurfboards,
   [channelIslands.slug]: channelIslands,
+  [chilliSurfboards.slug]: chilliSurfboards,
   [lovelaceMachine.slug]: lovelaceMachine,
   [sharpeyeSurfboards.slug]: sharpeyeSurfboards,
   [lostSurfboards.slug]: lostSurfboards,
+  [pyzelSurfboards.slug]: pyzelSurfboards,
+  [robertsSurfboards.slug]: robertsSurfboards,
   [haydenShapes.slug]: haydenShapes,
   [jsSurfboards.slug]: jsSurfboards,
   [dhdSurfboards.slug]: dhdSurfboards,
@@ -70,6 +79,15 @@ export function getDirectoryListEntries(): DirectoryListEntry[] {
       modelCount: channelIslands.models.length,
     },
     {
+      slug: chilliSurfboards.slug,
+      kind: "brand",
+      name: chilliSurfboards.name,
+      shortDescription: chilliSurfboards.shortDescription,
+      logoUrl: chilliSurfboards.logoUrl,
+      locationLabel: chilliSurfboards.locationLabel,
+      modelCount: chilliSurfboards.models.length,
+    },
+    {
       slug: lovelaceMachine.slug,
       kind: "brand",
       name: lovelaceMachine.name,
@@ -95,6 +113,24 @@ export function getDirectoryListEntries(): DirectoryListEntry[] {
       logoUrl: lostSurfboards.logoUrl,
       locationLabel: lostSurfboards.locationLabel,
       modelCount: lostSurfboards.models.length,
+    },
+    {
+      slug: pyzelSurfboards.slug,
+      kind: "brand",
+      name: pyzelSurfboards.name,
+      shortDescription: pyzelSurfboards.shortDescription,
+      logoUrl: pyzelSurfboards.logoUrl,
+      locationLabel: pyzelSurfboards.locationLabel,
+      modelCount: pyzelSurfboards.models.length,
+    },
+    {
+      slug: robertsSurfboards.slug,
+      kind: "brand",
+      name: robertsSurfboards.name,
+      shortDescription: robertsSurfboards.shortDescription,
+      logoUrl: robertsSurfboards.logoUrl,
+      locationLabel: robertsSurfboards.locationLabel,
+      modelCount: robertsSurfboards.models.length,
     },
     {
       slug: haydenShapes.slug,
