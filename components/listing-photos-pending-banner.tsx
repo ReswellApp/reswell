@@ -48,8 +48,11 @@ function ListingPhotosPendingBannerInner({
 
   if (!showBanner) return null
 
+  // CLS-FIX: render as a fixed overlay so the banner never pushes page
+  // content down — the null→visible transition is position-fixed and
+  // therefore outside the document flow.
   return (
-    <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+    <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 flex max-w-sm items-center gap-2 rounded-xl border border-border bg-background/95 px-4 py-3 text-sm text-muted-foreground shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
       <span>Your listing is live. Photos are still uploading — this usually takes a few seconds.</span>
     </div>

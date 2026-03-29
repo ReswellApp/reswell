@@ -12,17 +12,24 @@ import type { Locale } from '@/lib/translations'
 
 import './globals.css'
 
+// CLS-FIX: next/font automatically generates a size-adjusted fallback font
+// (adjustFontFallback) so that when the real font swaps in, the line heights
+// and spacing are identical — eliminating any text-reflow layout shift.
+// preload: true ensures the primary weight is fetched early via <link rel=preload>.
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
   adjustFontFallback: true,
+  preload: true,
+  weight: ['400', '500', '600', '700', '800', '900'],
 })
 const caveat = Caveat({
   subsets: ['latin'],
   variable: '--font-caveat',
   display: 'swap',
   adjustFontFallback: true,
+  preload: true,
 })
 
 export const metadata: Metadata = {

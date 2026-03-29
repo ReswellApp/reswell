@@ -24,10 +24,13 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
           <Link href={`/shop/${item.id}`}>
             <div className="aspect-square relative bg-muted">
               {item.image_url ? (
+                // CLS-FIX: sizes matches the grid breakpoints so the browser
+                // fetches the right resolution without layout recalculation.
                 <Image
                   src={item.image_url}
                   alt={item.title}
                   fill
+                  sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
                   className="object-contain group-hover:scale-105 transition-transform duration-300"
                   style={{ objectFit: "contain" }}
                 />

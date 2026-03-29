@@ -3,6 +3,7 @@
 import React, { Suspense } from "react"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -2022,17 +2023,15 @@ function SellPageContent() {
                         key={image.id ?? index}
                         className="relative aspect-square rounded-lg overflow-hidden bg-muted"
                       >
-                        <img
+                        {/* CLS-FIX: use next/image fill so the browser never
+                            needs to compute intrinsic dimensions; the parent
+                            aspect-square container pre-reserves all the space. */}
+                        <Image
                           src={image.url || "/placeholder.svg"}
                           alt={`Photo ${index + 1}`}
-                          className="w-full h-full"
-                          style={{ objectFit: "contain" }}
-                          onError={(e) => {
-                            const target = e.currentTarget
-                            if (target.src !== "/placeholder.svg") {
-                              target.src = "/placeholder.svg"
-                            }
-                          }}
+                          fill
+                          className="object-contain"
+                          unoptimized
                         />
                         <button
                           type="button"

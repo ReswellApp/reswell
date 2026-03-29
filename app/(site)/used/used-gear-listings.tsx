@@ -321,10 +321,13 @@ export async function UsedGearListings({
               <Link href={`/used/${listing.slug || listing.id}`} className="min-w-0 flex-1 flex flex-col">
                 <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
+                    // CLS-FIX: sizes prevents the browser fetching at full
+                    // viewport width for a card that only spans 50% on mobile.
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}
                       alt={capitalizeWords(listing.title)}
                       fill
+                      sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                       placeholder="blur"
                       blurDataURL={portraitShimmer}

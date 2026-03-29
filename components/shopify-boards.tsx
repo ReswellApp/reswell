@@ -14,7 +14,6 @@ import {
   ShoppingCart,
   ExternalLink,
   CheckCircle2,
-  Loader2,
   MapPin,
   Store,
   Truck,
@@ -87,9 +86,29 @@ export function ShopifyBoardsGrid() {
   }
 
   if (loading) {
+    // CLS-FIX: skeleton grid reserves the same space as the loaded board grid
+    // so the section height never jumps when products arrive.
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <div className="flex gap-3">
+          <div className="h-10 flex-1 rounded-xl bg-muted animate-pulse" />
+          <div className="h-10 w-24 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="h-14 rounded-lg bg-muted/40 animate-pulse border" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="overflow-hidden rounded-sm border border-border">
+              <div className="aspect-[3/4] bg-muted animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 rounded bg-muted animate-pulse" style={{ width: `${55 + (i % 4) * 10}%` }} />
+                <div className="h-3 rounded bg-muted animate-pulse" style={{ width: `${35 + (i % 3) * 12}%` }} />
+                <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+                <div className="h-8 w-full rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -175,12 +194,14 @@ export function ShopifyBoardsGrid() {
                 >
                   <div className="aspect-[3/4] w-full relative bg-muted">
                     {product.featuredImage ? (
+                      // CLS-FIX: sizes matches board grid column widths
                       <Image
                         src={product.featuredImage.url || "/placeholder.svg"}
                         alt={
                           product.featuredImage.altText || product.title
                         }
                         fill
+                        sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
                         className="object-contain group-hover:scale-105 transition-transform duration-300"
                         style={{ objectFit: "contain" }}
                       />

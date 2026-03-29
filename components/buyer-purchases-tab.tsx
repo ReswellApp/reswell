@@ -6,7 +6,7 @@ import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, Package, ChevronRight, Receipt } from "lucide-react"
+import { Package, ChevronRight, Receipt } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 
 type Row = {
@@ -84,9 +84,27 @@ export function BuyerPurchasesTab() {
   }, [load])
 
   if (loading) {
+    // CLS-FIX: skeleton list reserves the same vertical space as the loaded
+    // purchase rows, preventing the page from shifting when data arrives.
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="h-4 w-48 rounded bg-muted animate-pulse" />
+          <div className="h-8 w-28 rounded bg-muted animate-pulse" />
+        </div>
+        <ul className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <li key={i} className="flex items-center gap-3 rounded-lg border bg-card p-3">
+              <div className="h-12 w-12 flex-shrink-0 rounded-md bg-muted animate-pulse" />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+                <div className="h-4 rounded bg-muted animate-pulse" style={{ width: `${50 + i * 12}%` }} />
+                <div className="h-3 w-32 rounded bg-muted animate-pulse" />
+              </div>
+              <div className="h-5 w-5 rounded bg-muted animate-pulse shrink-0" />
+            </li>
+          ))}
+        </ul>
       </div>
     )
   }

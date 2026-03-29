@@ -218,10 +218,12 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
               <Link href={`/boards/${board.slug || board.id}`} className="min-w-0 flex-1 flex flex-col">
                 <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
                   {primaryImage?.url ? (
+                    // CLS-FIX: sizes matches the 5-column card grid breakpoints
                     <Image
                       src={primaryImage.url || "/placeholder.svg"}
                       alt={capitalizeWords(board.title)}
                       fill
+                      sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                       placeholder="blur"
                       blurDataURL={portraitShimmer}

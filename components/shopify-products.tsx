@@ -15,7 +15,6 @@ import {
   ShoppingCart,
   ExternalLink,
   CheckCircle2,
-  Loader2,
   Store,
 } from "lucide-react"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
@@ -93,10 +92,26 @@ export function ShopifyProducts() {
   }
 
   if (loading) {
+    // CLS-FIX: skeleton grid reserves the same space as the loaded product grid,
+    // preventing a large height jump when products arrive.
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex gap-3">
+          <div className="h-10 flex-1 rounded-xl bg-muted animate-pulse" />
+          <div className="h-10 w-24 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="overflow-hidden rounded-sm border border-border">
+              <div className="aspect-square bg-muted animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 rounded bg-muted animate-pulse" style={{ width: `${55 + (i % 4) * 10}%` }} />
+                <div className="h-3 rounded bg-muted animate-pulse" style={{ width: `${35 + (i % 3) * 12}%` }} />
+                <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                <div className="h-8 w-full rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )
@@ -165,10 +180,12 @@ export function ShopifyProducts() {
                 <a href={shopifyUrl} target="_blank" rel="noopener noreferrer">
                   <div className="aspect-square relative bg-muted">
                     {product.featuredImage ? (
+                      // CLS-FIX: sizes matches the grid column widths
                       <Image
                         src={product.featuredImage.url || "/placeholder.svg"}
                         alt={product.featuredImage.altText || product.title}
                         fill
+                        sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
                         className="object-contain group-hover:scale-105 transition-transform duration-300"
                         style={{ objectFit: "contain" }}
                       />

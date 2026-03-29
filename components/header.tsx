@@ -299,6 +299,10 @@ export function Header() {
   const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  // CLS-FIX: track when auth check has resolved so we can reserve the
+  // correct amount of space for auth-dependent action buttons before they
+  // appear, preventing the search bar from shifting horizontally.
+  const [authLoaded, setAuthLoaded] = useState(false)
   const mobileSearchRef = useRef<HTMLInputElement>(null)
   const pathname = usePathname()
   const router = useRouter()
@@ -354,6 +358,9 @@ export function Header() {
         setUnreadMessages(0)
         setWalletBalance(null)
       }
+      // CLS-FIX: mark auth as resolved so the reserved placeholder space collapses
+      // and the real action buttons render with no further layout shift.
+      setAuthLoaded(true)
     }
 
     getUser()
@@ -418,8 +425,10 @@ export function Header() {
         .cat-link { color: #6E6E6E !important; text-decoration: none !important; }
         .cat-link:hover { color: #000000 !important; text-decoration: none !important; }
       `}</style>
+      {/* CLS-FIX: explicit min-h locks the header row height before fonts and
+          auth state resolve, so content below never shifts vertically. */}
       <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto flex min-w-0 items-center gap-2 py-2 sm:py-2.5 md:py-3 md:gap-4">
+        <div className="container mx-auto flex min-w-0 items-center gap-2 py-2 sm:py-2.5 md:py-3 md:gap-4 min-h-[56px] sm:min-h-[64px] md:min-h-[80px]">
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link
             href="/"
@@ -440,7 +449,9 @@ export function Header() {
             <HeaderNavSearch />
           </Suspense>
 
-          {/* Actions */}
+          {/* CLS-FIX: actions area keeps a stable minimum width while auth loads.
+              The invisible placeholder reserves space equal to the logged-in
+              desktop layout so the search bar never shifts horizontally. */}
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5 text-black">
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
@@ -520,7 +531,20 @@ export function Header() {
               </Button>
             </Link>
 
-            {user ? (
+            {/* CLS-FIX: invisible placeholder ghost buttons reserve the same horizontal
+                space as the logged-in action cluster while the auth check is in-flight.
+                This prevents the search bar from shifting once the real buttons appear. */}
+            {!authLoaded && (
+              <div className="hidden sm:flex items-center gap-1 md:gap-0.5 pointer-events-none select-none" aria-hidden>
+                <div className="h-11 w-11 rounded-full" />
+                <div className="h-11 w-11 rounded-full" />
+                <div className="h-11 w-11 rounded-full" />
+                <div className="h-11 w-11 rounded-full" />
+                <div className="h-6 w-10 rounded" />
+              </div>
+            )}
+
+            {authLoaded && user ? (
               <>
                 <Link href="/messages" className="relative hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
@@ -628,13 +652,13 @@ export function Header() {
                   Sell
                 </Link>
               </>
-            ) : (
+            ) : authLoaded ? (
               <div className="flex items-center gap-1">
                 <Link href="/auth/login" className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2">
                   Log in
                 </Link>
               </div>
-            )}
+            ) : null}
 
             {/* Mobile menu toggle: two-line hamburger when closed, X when open */}
             <button

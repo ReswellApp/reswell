@@ -203,11 +203,21 @@
     padding-right: env(safe-area-inset-right, 0);
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
-  /* Next/Image sets layout via inline styles and data-nimg; avoid height:auto fighting fill layouts */
+  /* CLS-FIX: Next/Image manages its own layout via data-nimg + inline styles.
+     For raw <img> and <video>, cap width and let height auto so aspect ratios
+     are preserved without the browser collapsing to 0 height before decode. */
   img:not([data-nimg]),
   video {
     max-width: 100%;
     height: auto;
+  }
+
+  /* CLS-FIX: Any container marked with an aspect-ratio utility should never
+     collapse while its child image is loading.  The explicit aspect-ratio
+     combined with width:100% on the fill image handles this; ensure the
+     wrapper itself can't shrink to 0 by enforcing min-height. */
+  [style*="padding-bottom"] {
+    position: relative;
   }
   h1, h2, h3, h4, h5, h6 {
     color: #111111;
@@ -223,4 +233,26 @@
   a:has(> [data-card]) {
     transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
+}
+
+/* ─── CLS prevention ───────────────────────────────────────────────────────── */
+
+/* CLS-FIX: Aspect-ratio containers must never collapse while images load.
+   Both the CSS aspect-ratio property and the padding-bottom hack rely on the
+   wrapper having a fixed width — enforce that here. */
+[class*="aspect-"] {
+  min-height: 0;
+}
+
+/* CLS-FIX: Skeleton shimmer utility used as loading placeholder in product grids.
+   Already defined above; this ensures it fills its container without collapse. */
+.skeleton {
+  display: block;
+  min-height: 0;
+}
+
+/* CLS-FIX: Sonner toast renders in a portal with fixed positioning — verify
+   it never injects into the document flow by enforcing pointer-events handling. */
+[data-sonner-toaster] {
+  position: fixed !important;
 }

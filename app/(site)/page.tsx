@@ -332,8 +332,9 @@ export default async function HomePage() {
 
   return (
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative min-h-[420px] md:min-h-[520px] flex items-center overflow-hidden">
+        {/* CLS-FIX: hero has explicit min-height so the section never reflows
+            while the slideshow images decode or fonts swap in. */}
+        <section className="relative min-h-[420px] sm:min-h-[480px] md:min-h-[540px] flex items-center overflow-hidden">
           <HeroSlideshow />
           <div className="absolute inset-0 bg-white/55" aria-hidden />
           <div className="container mx-auto relative z-10 py-20 md:py-32">
