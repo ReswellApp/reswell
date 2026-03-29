@@ -55,13 +55,13 @@ function HomeListingScrollRow({
   )
 }
 
-/** ~3 full cards + peek of 4th on mobile; fixed width from `sm` up. */
+/** ~2 full cards + peek of 3rd on mobile; fixed width from `sm` up. */
 const homeListingScrollCardClass = cn(
   listingProductCardGridClassName,
-  "shrink-0 snap-start w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
+  "shrink-0 snap-start w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
 )
 
-const homeListingScrollImageSizes = "(max-width: 639px) 30vw, 208px"
+const homeListingScrollImageSizes = "(max-width: 639px) 44vw, 208px"
 
 /** Equal row height + meta pinned to bottom so price/location align across cards. */
 const homeListingScrollLinkClass = "min-w-0 flex flex-1 flex-col min-h-0"
@@ -86,7 +86,7 @@ const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
 /** Equal-height cards: surfboards row, Featured Used Gear, Browse by Category (fixed title band, flex stretch). */
 const homeUniformScrollCardClass = cn(
   listingProductCardGridClassName,
-  "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/3.25)] sm:w-52",
+  "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
 )
 const homeUniformScrollLinkClass =
   "flex min-h-0 h-full min-w-0 flex-1 flex-col"
