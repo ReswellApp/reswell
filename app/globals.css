@@ -2,6 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Page entrance animation ─────────────────────────────────────────────── */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
+
+/* ─── Route progress bar ───────────────────────────────────────────────────── */
+@keyframes route-progress-fill {
+  0%   { width: 0%; }
+  10%  { width: 20%; }
+  30%  { width: 48%; }
+  60%  { width: 70%; }
+  100% { width: 86%; }
+}
+
+.route-progress-bar-loading {
+  height: 2px;
+  width: 0%;
+  background-color: #111111;
+  animation: route-progress-fill 8s ease-out forwards;
+}
+
+.route-progress-bar-completing {
+  height: 2px;
+  width: 100%;
+  background-color: #111111;
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+}
+
+/* ─── Skeleton shimmer ─────────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e8e8e8 50%,
+    #f0f0f0 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* ─── Scroll fade-in ───────────────────────────────────────────────────────── */
+@keyframes fade-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-section {
+  opacity: 0;
+}
+
+.fade-in-section.is-visible {
+  animation: fade-up-in 500ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-section,
+  .fade-in-section.is-visible {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* ─── Tailwind utilities ───────────────────────────────────────────────────── */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -97,6 +190,7 @@
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
   body {
     overflow-x: hidden;
@@ -117,5 +211,16 @@
   }
   h1, h2, h3, h4, h5, h6 {
     color: #111111;
+  }
+  /* Smooth transitions on all interactive elements */
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  /* Card hover lift */
+  a:has(> [data-card]) {
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
+import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -39,10 +40,11 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
             src={selectedImage.url || "/placeholder.svg"}
             alt={`${title} - Image ${selectedIndex + 1}`}
             fill
-            className="object-contain"
-            style={{ objectFit: "contain" }}
+            className="object-contain transition-opacity duration-300"
             priority
             sizes="(max-width: 1024px) 100vw, 50vw"
+            placeholder="blur"
+            blurDataURL={portraitShimmer}
           />
         </div>
 
@@ -103,8 +105,9 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
                     alt={`${title} - Thumbnail ${index + 1}`}
                     fill
                     className="object-contain"
-                    style={{ objectFit: "contain" }}
                     sizes="64px"
+                    placeholder="blur"
+                    blurDataURL={squareShimmer}
                   />
                 </span>
               </span>

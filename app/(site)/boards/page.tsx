@@ -1,11 +1,12 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { portraitShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
-import { BoardsListingsFilters } from "@/components/boards-listings-filters"
+import { BoardsBrowseClient } from "./boards-browse-client"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { MapPin, Users } from "lucide-react"
 import { MessageListingButton } from "@/components/message-listing-button"
@@ -222,7 +223,8 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                       alt={capitalizeWords(board.title)}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      style={{ objectFit: "cover" }}
+                      placeholder="blur"
+                      blurDataURL={portraitShimmer}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -306,38 +308,31 @@ export default async function BoardsPage(props: {
 
         <section className="py-4 min-w-0">
           <div className="container mx-auto min-w-0">
-            <div className="border-b py-4 mb-6 min-w-0 overflow-x-auto overflow-y-hidden px-1 sm:px-2">
-              <div className="min-w-0">
-                <BoardsListingsFilters
-                  initialQ={searchParams.q ?? ""}
-                  initialLocation={searchParams.location ?? ""}
-                  initialType={searchParams.type ?? "all"}
-                  initialCondition={searchParams.condition ?? "all"}
-                  initialMinPrice={searchParams.minPrice ?? ""}
-                  initialMaxPrice={searchParams.maxPrice ?? ""}
-                  initialRadius={searchParams.radius ?? ""}
-                />
-              </div>
-            </div>
-
-            <Suspense
-              fallback={
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <Card key={i} className="overflow-hidden">
-                      <div className="aspect-[3/4] w-full bg-muted animate-pulse" />
-                      <CardContent className="p-3 space-y-2">
-                        <div className="h-4 bg-muted rounded animate-pulse" />
-                        <div className="h-6 w-20 bg-muted rounded animate-pulse" />
-                        <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              }
+            <BoardsBrowseClient
+              initialQ={searchParams.q ?? ""}
+              initialLocation={searchParams.location ?? ""}
+              initialType={searchParams.type ?? "all"}
+              initialCondition={searchParams.condition ?? "all"}
             >
-              <BoardListings searchParams={searchParams} />
-            </Suspense>
+              <Suspense
+                fallback={
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <Card key={i} className="overflow-hidden">
+                        <div className="aspect-[3/4] w-full skeleton" />
+                        <CardContent className="p-3 space-y-2">
+                          <div className="h-3.5 skeleton" style={{ width: `${60 + (i % 3) * 15}%` }} />
+                          <div className="h-3 skeleton" style={{ width: `${40 + (i % 4) * 10}%` }} />
+                          <div className="h-5 w-16 skeleton" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                }
+              >
+                <BoardListings searchParams={searchParams} />
+              </Suspense>
+            </BoardsBrowseClient>
           </div>
         </section>
       </main>

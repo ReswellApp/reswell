@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
+import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 
 const footerLinks = {
   marketplace: [
@@ -43,6 +44,7 @@ export function Footer() {
                 src={reswellFooterLogo}
                 alt="Reswell logo"
                 className="h-28 w-auto sm:h-32 md:h-40"
+                placeholder="blur"
               />
             </Link>
             <p className="mt-4 text-sm text-midgray">
@@ -58,6 +60,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
+                    prefetch={boardsBrowseLinkPrefetch(link.href)}
                     className="text-sm text-midgray hover:text-black dark:hover:text-white transition-colors duration-smooth"
                   >
                     {link.name}

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { portraitShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -325,7 +326,8 @@ export async function UsedGearListings({
                       alt={capitalizeWords(listing.title)}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      style={{ objectFit: "cover" }}
+                      placeholder="blur"
+                      blurDataURL={portraitShimmer}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

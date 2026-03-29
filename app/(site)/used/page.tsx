@@ -95,12 +95,13 @@ export default async function UsedGearPage(props: {
             <Suspense
               fallback={
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {Array.from({ length: 8 }).map((_, i) => (
+                  {Array.from({ length: 10 }).map((_, i) => (
                     <Card key={i} className="overflow-hidden">
-                      <div className="aspect-[3/4] w-full bg-muted animate-pulse" />
+                      <div className="aspect-[3/4] w-full skeleton" />
                       <CardContent className="p-3 space-y-2">
-                        <div className="h-4 bg-muted rounded animate-pulse" />
-                        <div className="h-6 w-20 bg-muted rounded animate-pulse" />
+                        <div className="h-3.5 skeleton" style={{ width: `${60 + (i % 3) * 15}%` }} />
+                        <div className="h-3 skeleton" style={{ width: `${40 + (i % 4) * 10}%` }} />
+                        <div className="h-5 w-16 skeleton" />
                       </CardContent>
                     </Card>
                   ))}

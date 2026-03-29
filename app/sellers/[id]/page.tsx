@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { wideShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -126,12 +127,17 @@ export default async function SellerProfilePage({
   return (
       <main className="flex-1">
         {/* Banner */}
-        <div className="relative h-40 sm:h-56 bg-offwhite">
+        <div className="relative h-40 sm:h-56 bg-offwhite overflow-hidden">
           {shop.shop_banner_url && (
-            <img
-              src={shop.shop_banner_url || "/placeholder.svg"}
+            <Image
+              src={shop.shop_banner_url}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              placeholder="blur"
+              blurDataURL={wideShimmer}
+              priority
             />
           )}
         </div>

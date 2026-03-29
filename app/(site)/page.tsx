@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { wideShimmer, portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import { HeroSlideshow } from "@/components/hero-slideshow"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,6 +26,8 @@ import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-ove
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName, listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
+import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
+import { FadeInSection } from "@/components/fade-in-section"
 import type { ReactNode } from "react"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
@@ -362,6 +365,7 @@ export default async function HomePage() {
 
         {/* Featured Surfboards */}
         {featuredBoards && featuredBoards.length > 0 && (
+          <FadeInSection>
           <section className="py-16">
             <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
@@ -370,7 +374,7 @@ export default async function HomePage() {
                   <p className="text-muted-foreground">In-person pickup only</p>
                 </div>
                 <Button variant="outline" asChild>
-                  <Link href="/boards">
+                  <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                     Find More
                     <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -390,6 +394,8 @@ export default async function HomePage() {
                           fill
                           sizes={homeListingScrollImageSizes}
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          placeholder="blur"
+                          blurDataURL={portraitShimmer}
                         />
                         <FavoriteButtonCardOverlay
                           listingId={board.id}
@@ -415,6 +421,7 @@ export default async function HomePage() {
               </HomeListingScrollRow>
             </div>
           </section>
+          </FadeInSection>
         )}
 
         {/* Features CTA */}
@@ -437,6 +444,7 @@ export default async function HomePage() {
 
         {/* Featured Used Gear */}
         {featuredUsed && featuredUsed.length > 0 && (
+          <FadeInSection>
           <section className="py-16">
             <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
@@ -465,6 +473,8 @@ export default async function HomePage() {
                           fill
                           sizes={homeListingScrollImageSizes}
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          placeholder="blur"
+                          blurDataURL={portraitShimmer}
                         />
                         <FavoriteButtonCardOverlay
                           listingId={listing.id}
@@ -500,6 +510,7 @@ export default async function HomePage() {
               </HomeListingScrollRow>
             </div>
           </section>
+          </FadeInSection>
         )}
 
         {/* Confidence banner */}
@@ -522,6 +533,7 @@ export default async function HomePage() {
 
         {/* Recently verified sellers — top-priced listing + profile */}
         {verifiedSpotlight.length > 0 && (
+          <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
@@ -556,6 +568,8 @@ export default async function HomePage() {
                             fill
                             sizes={homeListingScrollImageSizes}
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            placeholder="blur"
+                            blurDataURL={portraitShimmer}
                           />
                           <FavoriteButtonCardOverlay
                             listingId={listing.id}
@@ -606,6 +620,7 @@ export default async function HomePage() {
               </HomeListingScrollRow>
             </div>
           </section>
+          </FadeInSection>
         )}
 
         {/* CTA */}
@@ -627,6 +642,7 @@ export default async function HomePage() {
         </section>
 
         {/* Categories */}
+        <FadeInSection>
         <section className="py-16 bg-offwhite">
           <div className="container mx-auto">
             <div className="flex items-center justify-between mb-8">
@@ -645,7 +661,11 @@ export default async function HomePage() {
                 if (!listing) {
                   return (
                     <Card key={category.href} className={homeUniformScrollCardClass}>
-                      <Link href={category.href} className={homeUniformScrollLinkClass}>
+                      <Link
+                        href={category.href}
+                        prefetch={boardsBrowseLinkPrefetch(category.href)}
+                        className={homeUniformScrollLinkClass}
+                      >
                         <div className="relative aspect-[3/4] w-full shrink-0 bg-muted overflow-hidden">
                           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                             No Image
@@ -682,7 +702,9 @@ export default async function HomePage() {
                       </Link>
                       <div className={homeUniformCategoryBrowseSlotClass}>
                         <Button variant="outline" size="sm" className="bg-transparent" asChild>
-                          <Link href={category.href}>Browse</Link>
+                          <Link href={category.href} prefetch={boardsBrowseLinkPrefetch(category.href)}>
+                            Browse
+                          </Link>
                         </Button>
                       </div>
                     </Card>
@@ -703,6 +725,8 @@ export default async function HomePage() {
                           fill
                           sizes={homeListingScrollImageSizes}
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          placeholder="blur"
+                          blurDataURL={portraitShimmer}
                         />
                         <FavoriteButtonCardOverlay
                           listingId={listing.id}
@@ -756,9 +780,11 @@ export default async function HomePage() {
             </HomeListingScrollRow>
           </div>
         </section>
+        </FadeInSection>
 
         {/* Featured Sellers */}
         {featuredShops && featuredShops.length > 0 && (
+          <FadeInSection>
           <section className="py-16">
             <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
@@ -777,12 +803,16 @@ export default async function HomePage() {
                 {featuredShops.map((shop) => (
                   <Link key={shop.id} href={`/sellers/${shop.id}`}>
                     <Card className={cn(listingProductCardClassName, "h-full")}>
-                      <div className="h-20 bg-offwhite relative">
+                      <div className="h-20 bg-offwhite relative overflow-hidden">
                         {shop.shop_banner_url && (
-                          <img
-                            src={shop.shop_banner_url || "/placeholder.svg"}
+                          <Image
+                            src={shop.shop_banner_url}
                             alt=""
-                            className="absolute inset-0 h-full w-full object-cover"
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                            className="object-cover"
+                            placeholder="blur"
+                            blurDataURL={wideShimmer}
                           />
                         )}
                       </div>
@@ -819,10 +849,12 @@ export default async function HomePage() {
               </div>
             </div>
           </section>
+          </FadeInSection>
         )}
 
         {/* Featured New Gear */}
         {featuredNew && featuredNew.length > 0 && (
+          <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
               <div className="flex items-center justify-between mb-8">
@@ -848,6 +880,8 @@ export default async function HomePage() {
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           className="object-contain group-hover:scale-105 transition-transform duration-300"
+                          placeholder="blur"
+                          blurDataURL={squareShimmer}
                         />
                       </div>
                       <CardContent className="p-4">
@@ -869,6 +903,7 @@ export default async function HomePage() {
               </div>
             </div>
           </section>
+          </FadeInSection>
         )}
 
       </main>

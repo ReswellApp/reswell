@@ -50,6 +50,7 @@ import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
 import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
+import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 /** Desktop + mobile primary nav (Apparel / Leashes / Vintage last before Categories dropdown). */
@@ -183,6 +184,7 @@ function HeaderDesktopCategoryBar({
             <Link
               key={item.href}
               href={item.href}
+              prefetch={boardsBrowseLinkPrefetch(item.href)}
               className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
                 navItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
               }`}
@@ -202,7 +204,7 @@ function HeaderDesktopCategoryBar({
             >
               {overflowNav.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
-                  <Link href={item.href} className="w-full">
+                  <Link href={item.href} prefetch={boardsBrowseLinkPrefetch(item.href)} className="w-full">
                     {item.name}
                   </Link>
                 </DropdownMenuItem>
@@ -217,7 +219,11 @@ function HeaderDesktopCategoryBar({
                         {section.title}
                       </DropdownMenuLabel>
                       <DropdownMenuItem asChild>
-                        <Link href={section.browseAllHref} className="w-full font-medium">
+                        <Link
+                          href={section.browseAllHref}
+                          prefetch={boardsBrowseLinkPrefetch(section.browseAllHref)}
+                          className="w-full font-medium"
+                        >
                           {section.browseAllLabel}
                         </Link>
                       </DropdownMenuItem>
@@ -230,7 +236,7 @@ function HeaderDesktopCategoryBar({
                       </DropdownMenuLabel>
                       {group.links.map((link) => (
                         <DropdownMenuItem key={`${link.href}-${link.label}`} asChild>
-                          <Link href={link.href} className="w-full">
+                          <Link href={link.href} prefetch={boardsBrowseLinkPrefetch(link.href)} className="w-full">
                             {link.label}
                           </Link>
                         </DropdownMenuItem>
@@ -242,7 +248,7 @@ function HeaderDesktopCategoryBar({
               <DropdownMenuSeparator />
               {dropdownCategories.map((cat) => (
                 <DropdownMenuItem key={cat.label} asChild>
-                  <Link href={cat.href} className="w-full">
+                  <Link href={cat.href} prefetch={boardsBrowseLinkPrefetch(cat.href)} className="w-full">
                     {cat.label}
                   </Link>
                 </DropdownMenuItem>
@@ -679,6 +685,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={boardsBrowseLinkPrefetch(item.href)}
                   onClick={onMobileDrawerLinkClick}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >

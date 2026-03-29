@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +17,7 @@ import {
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
+import { wideShimmer } from "@/lib/image-shimmer"
 
 export const metadata = {
   title: "Sellers - Reswell",
@@ -137,12 +139,16 @@ export default async function SellersPage({
                       )}
                     >
                       {/* Banner */}
-                      <div className="relative h-28 bg-offwhite">
+                      <div className="relative h-28 bg-offwhite overflow-hidden">
                         {shop.shop_banner_url && (
-                          <img
-                            src={shop.shop_banner_url || "/placeholder.svg"}
+                          <Image
+                            src={shop.shop_banner_url}
                             alt=""
-                            className="absolute inset-0 h-full w-full object-cover"
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="object-cover"
+                            placeholder="blur"
+                            blurDataURL={wideShimmer}
                           />
                         )}
                         {/* Avatar overlapping banner */}

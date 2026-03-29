@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
+import { portraitShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatCondition, formatBoardType, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
@@ -519,7 +520,8 @@ export default async function BoardDetailPage(props: {
                               alt={item.title}
                               fill
                               className="object-contain group-hover:scale-105 transition-transform duration-300"
-                              style={{ objectFit: "contain" }}
+                              placeholder="blur"
+                              blurDataURL={portraitShimmer}
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

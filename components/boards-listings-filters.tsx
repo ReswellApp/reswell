@@ -48,6 +48,11 @@ interface BoardsListingsFiltersProps {
   initialLocation?: string
   initialType?: string
   initialCondition?: string
+  /**
+   * When provided, URL updates from filters run inside this transition so a parent can show
+   * pending UI (Next.js `loading.tsx` does not run for search-param-only navigations).
+   */
+  transitionStart?: (cb: () => void) => void
 }
 
 const DEBOUNCE_MS = 320
@@ -57,11 +62,13 @@ export function BoardsListingsFilters({
   initialLocation = "",
   initialType = "all",
   initialCondition = "all",
+  transitionStart: transitionStartProp,
 }: BoardsListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
-  const [, startTransition] = useTransition()
+  const [, internalStartTransition] = useTransition()
+  const startTransition = transitionStartProp ?? internalStartTransition
   const [q, setQ] = useState(initialQ)
   const [location, setLocation] = useState(initialLocation)
   const [userLat, setUserLat] = useState<number | null>(null)
@@ -119,8 +126,17 @@ export function BoardsListingsFilters({
         router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`)
       })
     },
-    [pathname, router],
+    [pathname, router, startTransition],
   )
+
+  useEffect(() => {
+    skipTextDebounceRef.current = true
+    skipSelectApplyRef.current = true
+    setQ(initialQ)
+    setLocation(initialLocation)
+    setType(initialType)
+    setCondition(initialCondition)
+  }, [initialQ, initialLocation, initialType, initialCondition])
 
   useEffect(() => {
     if (skipTextDebounceRef.current) {
