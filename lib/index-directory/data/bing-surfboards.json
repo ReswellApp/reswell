@@ -1,0 +1,611 @@
+{
+  "slug": "bing-surfboards",
+  "kind": "brand",
+  "name": "Bing Surfboards",
+  "shortDescription": "Classic California longboards and noseriders from Encinitas — shaped by Matt Calvani with decades of Bing heritage.",
+  "websiteUrl": "https://bingsurf.com",
+  "logoUrl": "https://bingsurf.com/cdn/shop/files/bing-surfboards-logo_87cc03af-4e3f-4034-a036-03fb3a23dcca_1200x1200.png?v=1613158442",
+  "founderName": "Bing Copeland",
+  "leadShaperName": "Matt Calvani",
+  "locationLabel": "Encinitas, California",
+  "aboutParagraphs": [
+    "Bing Surfboards is one of California’s most storied longboard labels, known for noseriders like the Continental, versatile logs, and refined outlines rooted in Malibu and North County shaping tradition.",
+    "Today’s Bing lineup — developed with shaper Matt Calvani — spans classic noseriders, pig-inspired models, and performance-oriented longboards, with detailed stock sizing and custom options direct from the factory."
+  ],
+  "models": [
+    {
+      "slug": "sidewinder",
+      "name": "Sidewinder",
+      "productUrl": "https://bingsurf.com/collections/sidewinder",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/PUFFERFISH-HERO_1024x1024.jpg?v=1769819715",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "hi-pro",
+      "name": "Hi-Pro",
+      "productUrl": "https://bingsurf.com/collections/hi-pro",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/HiPro_Demo_1024x1024.jpg?v=1751069679",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "original-lightweight",
+      "name": "Original Lightweight",
+      "productUrl": "https://bingsurf.com/collections/izzy-rider-type-2-copy",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/PUFFERFISH-HERO_5ed76a7f-0f69-4520-ac17-9b719337a8b3_1024x1024.jpg?v=1771461932",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "deluxe",
+      "name": "Deluxe",
+      "productUrl": "https://bingsurf.com/collections/deluxe",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/DELUXE-HERO_1024x1024.jpg?v=1750273816",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "the-majestic",
+      "name": "The Majestic",
+      "productUrl": "https://bingsurf.com/collections/the-majestic",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/MAJESTIC_HERO_1024x1024.jpg?v=1726103047",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "derringer",
+      "name": "Derringer",
+      "productUrl": "https://bingsurf.com/collections/derringer",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/Board_template_copy_1024x1024.jpg?v=1729725376",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "aussie-square",
+      "name": "Aussie Square",
+      "productUrl": "https://bingsurf.com/collections/aussie-square-tail",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/AUSSIE_SQUARE_CLIP_1024x1024.jpg?v=1737505109",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "izzy-rider-type-ii",
+      "name": "Izzy Rider Type II",
+      "productUrl": "https://bingsurf.com/collections/izzy-rider-type-2",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/PUFFERFISH-HERO_a1b0c267-7a7b-416d-9dfd-b8f11dc7ca7e_1024x1024.jpg?v=1771453533",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "california-square-type-ii",
+      "name": "California Square Type II",
+      "productUrl": "https://bingsurf.com/collections/california-square-tail-type-2",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/CALI_SQ_2_CLIP_1024x1024.jpg?v=1737504329",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "california-pintail-type-ii",
+      "name": "California Pintail Type II",
+      "productUrl": "https://bingsurf.com/collections/california-pintail-type-2",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/CALI_PIN_TYPE_2_CLIP_1024x1024.jpg?v=1694045950",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "spoiler",
+      "name": "Spoiler",
+      "productUrl": "https://bingsurf.com/collections/spoiler",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/Spoiler_clip_1024x1024.jpg?v=1729730049",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "levitator-type-ii",
+      "name": "Levitator Type II",
+      "productUrl": "https://bingsurf.com/collections/levitator-type-2",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-levitator-type-2_1024x1024.jpg?v=1729729416",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pintail-lightweight-type-ii",
+      "name": "Pintail Lightweight Type II",
+      "productUrl": "https://bingsurf.com/collections/pintail-lightweight-type-2",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-pintail-lightweight-type2_1024x1024.png?v=1634849057",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "continental",
+      "name": "Continental",
+      "productUrl": "https://bingsurf.com/collections/continental",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-continental-longboard-model_1024x1024.jpg?v=1729728126",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "beacon",
+      "name": "Beacon",
+      "productUrl": "https://bingsurf.com/collections/beacon",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-beacon-model_1024x1024.jpg?v=1769819813",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "glider",
+      "name": "Glider",
+      "productUrl": "https://bingsurf.com/collections/glider",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-glider-model_1024x1024.jpg?v=1579110567",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "silver-spoon",
+      "name": "Silver Spoon",
+      "productUrl": "https://bingsurf.com/collections/silver-spoon",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-silverspoon_1024x1024.jpg?v=1550521622",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "levitator",
+      "name": "Levitator",
+      "productUrl": "https://bingsurf.com/collections/levitator",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-levitator_1024x1024.jpg?v=1517194880",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "elevator",
+      "name": "Elevator",
+      "productUrl": "https://bingsurf.com/collections/elevator",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-elevator_1024x1024.jpg?v=1517194715",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "bueno-life-model",
+      "name": "Bueno Life Model",
+      "productUrl": "https://bingsurf.com/collections/bueno-life",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-bueno-life_1024x1024.jpg?v=1517201706",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "trimulux",
+      "name": "Trimulux",
+      "productUrl": "https://bingsurf.com/collections/trimulux",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-trimulux_1024x1024.jpg?v=1549928506",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "high-5",
+      "name": "High 5",
+      "productUrl": "https://bingsurf.com/collections/high-five",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-high5_1024x1024.jpg?v=1517195509",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "lovebird",
+      "name": "Lovebird",
+      "productUrl": "https://bingsurf.com/collections/lovebird",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-lovebird_1024x1024.jpg?v=1550521428",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "classic-3-stringer",
+      "name": "Classic 3 Stringer",
+      "productUrl": "https://bingsurf.com/collections/classic-3-stringer",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-classic3_1024x1024.jpg?v=1543954220",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "original-noserider",
+      "name": "Original Noserider",
+      "productUrl": "https://bingsurf.com/collections/original-noserider",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-ognoserider_1024x1024.jpg?v=1517195153",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "bn-lightweight",
+      "name": "BN Lightweight",
+      "productUrl": "https://bingsurf.com/collections/bn-lightweight",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-bnlw_1024x1024.jpg?v=1550521813",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pipeliner",
+      "name": "Pipeliner",
+      "productUrl": "https://bingsurf.com/collections/pipeliner",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-pipeliner_1024x1024.jpg?v=1517195713",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "classic-pig",
+      "name": "Classic Pig",
+      "productUrl": "https://bingsurf.com/collections/classic-pig",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-classic-pig_1024x1024.jpg?v=1517195828",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pork-chop",
+      "name": "Pork Chop",
+      "productUrl": "https://bingsurf.com/collections/pork-chop",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-pork-chop_1024x1024.jpg?v=1517195917",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "feral-pig",
+      "name": "Feral Pig",
+      "productUrl": "https://bingsurf.com/collections/feral-pig",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-longboards-feral-pig_1024x1024.jpg?v=1517196022",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "long-fish",
+      "name": "Long Fish",
+      "productUrl": "https://bingsurf.com/collections/long-fish",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/Longfish_Demo_1024x1024.jpg?v=1769820014",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "stubbie",
+      "name": "Stubbie",
+      "productUrl": "https://bingsurf.com/collections/stubbie",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-stubbie-midlength_1024x1024.jpg?v=1729823248",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "collector",
+      "name": "Collector",
+      "productUrl": "https://bingsurf.com/collections/collector",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-collector-model_1024x1024.jpg?v=1769820084",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "alpha-pin",
+      "name": "Alpha Pin",
+      "productUrl": "https://bingsurf.com/collections/alpha-pin",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-alpha-pin_1024x1024.jpg?v=1769820158",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "seeker",
+      "name": "Seeker",
+      "productUrl": "https://bingsurf.com/collections/seeker",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-seeker-model_1024x1024.jpg?v=1729822488",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pintail-mini",
+      "name": "Pintail Mini",
+      "productUrl": "https://bingsurf.com/collections/pintail-mini",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-pintail-mini_1024x1024.jpg?v=1549923913",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "raven",
+      "name": "Raven",
+      "productUrl": "https://bingsurf.com/collections/raven",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-raven-surfboard-model_1024x1024.jpg?v=1759879108",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "foil",
+      "name": "Foil",
+      "productUrl": "https://bingsurf.com/collections/foil-2017",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/foil-2017_1024x1024.jpg?v=1550522277",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "maui-foil",
+      "name": "Maui Foil",
+      "productUrl": "https://bingsurf.com/collections/maui-foil",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-maui-foil-model_1024x1024.jpg?v=1516252025",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "australian-foil",
+      "name": "Australian Foil",
+      "productUrl": "https://bingsurf.com/collections/australian-foil",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-australian-foil_1024x1024.jpg?v=1516253266",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "mini-lovebird",
+      "name": "Mini Lovebird",
+      "productUrl": "https://bingsurf.com/collections/mini-lovebird",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-mini-lovebird_cdd19d80-64ca-42f8-9f4d-366cc5b7b755_1024x1024.jpg?v=1550522107",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "karma",
+      "name": "Karma",
+      "productUrl": "https://bingsurf.com/collections/karma",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-karma_1024x1024.jpg?v=1516258930",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "slalom",
+      "name": "Slalom",
+      "productUrl": "https://bingsurf.com/collections/slalom-new-model",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-slalom-model-2021_1024x1024.png?v=1729813520",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "omega",
+      "name": "Omega",
+      "productUrl": "https://bingsurf.com/collections/omega",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-omega-surfboard-model_1024x1024.jpg?v=1737505395",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "pufferfish",
+      "name": "Pufferfish",
+      "productUrl": "https://bingsurf.com/collections/pufferfish",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/PUFFERFISH-HERO_1024x1024.webp?v=1764192037",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "alpha-mini",
+      "name": "Alpha Mini",
+      "productUrl": "https://bingsurf.com/collections/alpha-mini",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/AlphaMini_1024x1024.jpg?v=1732067817",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "jet-fish",
+      "name": "Jet Fish",
+      "productUrl": "https://bingsurf.com/collections/jet-fish-1",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/JETFISHHERO_480x480_54c0adb1-ba0c-42fa-9779-87cee99c8c4e_1024x1024.jpg?v=1729824653",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "cypress",
+      "name": "Cypress",
+      "productUrl": "https://bingsurf.com/collections/cypress",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-cypress-shortboard-model_1024x1024.jpg?v=1550863840",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dart-swallowtail",
+      "name": "Dart Swallowtail",
+      "productUrl": "https://bingsurf.com/collections/dart-swallowtail-1",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/DARTTWINHERO_480x480_e3aad3d2-1d1b-47bf-92e6-253e28c78603_1024x1024.jpg?v=1729825347",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dart",
+      "name": "Dart",
+      "productUrl": "https://bingsurf.com/collections/dart-round-pin",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-dart-surfboard-model_1024x1024.jpg?v=1707176699",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dharma",
+      "name": "Dharma",
+      "productUrl": "https://bingsurf.com/collections/dharma",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-DHARMA_bbdd3cb8-b588-46e6-8e41-3545075be55a_1024x1024.jpg?v=1512434166",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dharma-2-0",
+      "name": "Dharma 2.0",
+      "productUrl": "https://bingsurf.com/collections/dharma-2-0",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-DHARMA2_be75b7ea-d38b-4376-8948-6b0414b644c8_1024x1024.jpg?v=1512425335",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "dharma-mod",
+      "name": "Dharma Mod",
+      "productUrl": "https://bingsurf.com/collections/dharma-mod",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-DHARMA-MOD_1024x1024.jpg?v=1653667952",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "concave-keel",
+      "name": "Concave Keel",
+      "productUrl": "https://bingsurf.com/collections/concave-keel",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-CONCAVE-KEEL_1024x1024.jpg?v=1512420683",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "sunfish",
+      "name": "Sunfish",
+      "productUrl": "https://bingsurf.com/collections/sunfish",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-SUNFISH_1024x1024.jpg?v=1512421669",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "twin-fin-fish",
+      "name": "Twin Fin Fish",
+      "productUrl": "https://bingsurf.com/collections/twin-fin-fish",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-TWIN-FISH_1024x1024.jpg?v=1729826145",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "quad-fish",
+      "name": "Quad Fish",
+      "productUrl": "https://bingsurf.com/collections/quad-fish",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-QUAD-FISH_1024x1024.jpg?v=1512423525",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "swee-pea",
+      "name": "Swee Pea",
+      "productUrl": "https://bingsurf.com/collections/swee-pea",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-SWEE-PEA_1024x1024.jpg?v=1517540295",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "puck",
+      "name": "Puck",
+      "productUrl": "https://bingsurf.com/collections/puck",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-PUCK_1024x1024.jpg?v=1512432771",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "puck-2-0",
+      "name": "Puck 2.0",
+      "productUrl": "https://bingsurf.com/collections/puck-2-0",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/12024-56-PUCK2_1024x1024.jpg?v=1531176199",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "speed-square",
+      "name": "Speed Square",
+      "productUrl": "https://bingsurf.com/collections/speed-square",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-speed-square_1024x1024.jpg?v=1517538605",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "spork",
+      "name": "Spork",
+      "productUrl": "https://bingsurf.com/collections/spork",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/bing-spork-shortboard_1024x1024.jpg?v=1516305414",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "lotus",
+      "name": "Lotus",
+      "productUrl": "https://bingsurf.com/collections/lotus",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/lotus_1024x1024.jpg?v=1549924943",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "synchronizer",
+      "name": "Synchronizer",
+      "productUrl": "https://bingsurf.com/collections/synchronizer",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/static1.squarespace-11_1024x1024.jpg?v=1577938173",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "bulb",
+      "name": "Bulb",
+      "productUrl": "https://bingsurf.com/collections/bulb",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/BING-BULB_1024x1024.jpg?v=1512432034",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    },
+    {
+      "slug": "q4",
+      "name": "Q4",
+      "productUrl": "https://bingsurf.com/collections/q4",
+      "imageUrl": "https://bingsurf.com/cdn/shop/collections/static1.squarespace-2_1024x1024.jpg?v=1505619635",
+      "entryRocker": null,
+      "exitRocker": null,
+      "rockerStyle": null
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import type { BoardModelDetail, BrandProfile, BoardModel } from "@/lib/index-directory/types"
 import { getAllBrandSlugs, getBrandProfileBySlug } from "@/lib/index-directory/registry"
 import albumSurfModelDetailsBySlug from "@/lib/index-directory/data/album-surf-model-details.json"
+import bingSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/bing-surfboards-model-details.json"
 import theSolutionDetail from "@/lib/index-directory/data/model-details/channel-islands-surfboards-the-solution.json"
 import lovelaceTwrpDetail from "@/lib/index-directory/data/model-details/lovelace-machine-twrp.json"
 import lovelaceTheMachineDetail from "@/lib/index-directory/data/model-details/lovelace-machine-the-machine.json"
@@ -16,6 +17,7 @@ import dhdSurfboardsModelDetailsBySlug from "@/lib/index-directory/data/dhd-surf
 
 const DETAILS: Record<string, Record<string, BoardModelDetail>> = {
   "album-surf": albumSurfModelDetailsBySlug as Record<string, BoardModelDetail>,
+  "bing-surfboards": bingSurfboardsModelDetailsBySlug as Record<string, BoardModelDetail>,
   "channel-islands-surfboards": {
     "the-solution": theSolutionDetail as BoardModelDetail,
   },

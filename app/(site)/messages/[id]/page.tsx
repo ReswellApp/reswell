@@ -11,6 +11,7 @@ import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { listingDetailPath } from '@/lib/listing-query'
 
 interface Message {
   id: string
@@ -67,7 +68,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .from('conversations')
         .select(`
           *,
-          listing:listings(id, title, price, section, listing_images(url)),
+          listing:listings(id, title, price, section, slug, listing_images(url)),
           buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
           seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
         `)
@@ -233,7 +234,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               </p>
               {conversation.listing && (
                 <Link 
-                  href={`/${conversation.listing.section}/${conversation.listing.id}`}
+                  href={listingDetailPath(conversation.listing)}
                   className="text-sm text-primary hover:underline"
                 >
                   {capitalizeWords(conversation.listing?.title)}
@@ -245,7 +246,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
         {/* Listing Preview */}
         {conversation.listing && (
-          <Link href={`/${conversation.listing.section}/${conversation.listing.id}`}>
+          <Link href={listingDetailPath(conversation.listing)}>
             <Card className="mt-4 hover:bg-muted/50 transition-colors">
               <CardContent className="p-3 flex gap-3">
                 <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">

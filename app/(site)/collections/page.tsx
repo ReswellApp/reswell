@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { fetchPublishedSurfCollections } from "@/lib/surf-collections"
 import { CollectionsFeaturedGrid } from "@/components/collections/collections-featured-grid"
 import { CollectionSpotRequestForm } from "@/components/collections/collection-spot-request-form"
+import { CollectionsPressSection } from "@/components/collections/collections-press-section"
 
 export const revalidate = 120
 
@@ -39,6 +40,8 @@ export default async function CollectionsPage() {
 
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <CollectionsFeaturedGrid collections={collections} />
+
+        <CollectionsPressSection />
 
         <div className="mx-auto mt-14 max-w-xl lg:mt-20">
           <CollectionSpotRequestForm isLoggedIn={!!auth.data.user} loginRedirectPath="/collections" />

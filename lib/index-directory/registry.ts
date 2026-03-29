@@ -1,5 +1,6 @@
 import type { BrandProfile, DirectoryListEntry } from "@/lib/index-directory/types"
 import albumSurfData from "@/lib/index-directory/data/album-surf.json"
+import bingSurfboardsData from "@/lib/index-directory/data/bing-surfboards.json"
 import channelIslandsData from "@/lib/index-directory/data/channel-islands.json"
 import lovelaceMachineData from "@/lib/index-directory/data/lovelace-machine.json"
 import sharpeyeSurfboardsData from "@/lib/index-directory/data/sharpeye-surfboards.json"
@@ -9,6 +10,7 @@ import jsSurfboardsData from "@/lib/index-directory/data/js-surfboards.json"
 import dhdSurfboardsData from "@/lib/index-directory/data/dhd-surfboards.json"
 
 const albumSurf = albumSurfData as BrandProfile
+const bingSurfboards = bingSurfboardsData as BrandProfile
 const channelIslands = channelIslandsData as BrandProfile
 const lovelaceMachine = lovelaceMachineData as BrandProfile
 const sharpeyeSurfboards = sharpeyeSurfboardsData as BrandProfile
@@ -19,6 +21,7 @@ const dhdSurfboards = dhdSurfboardsData as BrandProfile
 
 const BRAND_BY_SLUG: Record<string, BrandProfile> = {
   [albumSurf.slug]: albumSurf,
+  [bingSurfboards.slug]: bingSurfboards,
   [channelIslands.slug]: channelIslands,
   [lovelaceMachine.slug]: lovelaceMachine,
   [sharpeyeSurfboards.slug]: sharpeyeSurfboards,
@@ -47,6 +50,15 @@ export function getDirectoryListEntries(): DirectoryListEntry[] {
       logoUrl: albumSurf.logoUrl,
       locationLabel: albumSurf.locationLabel,
       modelCount: albumSurf.models.length,
+    },
+    {
+      slug: bingSurfboards.slug,
+      kind: "brand",
+      name: bingSurfboards.name,
+      shortDescription: bingSurfboards.shortDescription,
+      logoUrl: bingSurfboards.logoUrl,
+      locationLabel: bingSurfboards.locationLabel,
+      modelCount: bingSurfboards.models.length,
     },
     {
       slug: channelIslands.slug,
