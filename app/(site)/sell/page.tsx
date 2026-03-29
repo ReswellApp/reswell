@@ -2,13 +2,14 @@
 
 import React, { Suspense } from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -20,7 +21,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { ArrowLeft, Upload, Loader2, X, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  ArrowLeft,
+  Upload,
+  Loader2,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react"
 import { LocationPicker } from "@/components/location-picker"
 import {
   boardFulfillmentFromFlags,
@@ -67,6 +78,11 @@ import {
   titleFromIndexModelPick,
 } from "@/components/surfboard-title-index-input"
 import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
+import {
+  listingObjectPublicUrl,
+  uploadStorageObjectWithProgress,
+} from "@/lib/supabase/storage-upload-xhr"
+import { cn } from "@/lib/utils"
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
 const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
@@ -115,6 +131,23 @@ const boardTypes = [
   { value: "other", label: "Other" },
 ]
 
+const LISTING_UPLOAD_STEP_LABELS = [
+  "Uploading your photos...",
+  "Saving listing details...",
+  "Publishing your listing...",
+  "Almost there...",
+] as const
+
+type PublishPreviewState = {
+  title: string
+  price: string
+  coverUrl: string
+  status: "publishing" | "live" | "error"
+  detailHref?: string
+  errorMessage?: string
+  failedStepLabel?: string
+}
+
 type EditableImage = {
   id?: string
   url: string
@@ -137,8 +170,35 @@ function SellPageContent() {
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   useEffect(() => { setImpersonation(getImpersonation()) }, [])
+
   const [loading, setLoading] = useState(false)
+  const [submitStepIndex, setSubmitStepIndex] = useState(0)
+  const submitStepIndexRef = useRef(0)
+  const [imageUploadProgress, setImageUploadProgress] = useState<{
+    current: number
+    total: number
+    bytesLoaded: number
+    bytesTotal: number
+  } | null>(null)
+  const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const uploadSessionCacheRef = useRef<Map<number, string>>(new Map())
+  const uploadToastIdRef = useRef<string | number | null>(null)
+  const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
+  const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
+    ...LISTING_UPLOAD_STEP_LABELS,
+  ])
   const [editLoading, setEditLoading] = useState(!!editId)
+
+  useEffect(() => {
+    if (!loading) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ""
+    }
+    window.addEventListener("beforeunload", onBeforeUnload)
+    return () => window.removeEventListener("beforeunload", onBeforeUnload)
+  }, [loading])
   const [listingType, setListingType] = useState<"used" | "board">("used")
   const [images, setImages] = useState<EditableImage[]>([])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
@@ -525,8 +585,38 @@ function SellPageContent() {
     }
   }
 
-  async function uploadImagesToStorage(userId: string): Promise<string[]> {
+  const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+
+  async function storageUploadListingJpeg(args: {
+    accessToken: string
+    userId: string
+    file: File
+    uniqueSuffix: string
+    onProgress?: (loaded: number, total: number) => void
+  }): Promise<string> {
+    const { accessToken, userId, file, uniqueSuffix, onProgress } = args
+    const baseName = file.name.replace(/\.[^.]+$/i, "") || "image"
+    const pathInBucket = `${userId}/${Date.now()}-${uniqueSuffix}-${baseName}.jpg`
+    const { pathInBucket: storedPath } = await uploadStorageObjectWithProgress({
+      supabaseUrl: supabaseProjectUrl,
+      accessToken,
+      anonKey: supabaseAnonKey,
+      bucket: "listings",
+      pathInBucket,
+      body: file,
+      contentType: "image/jpeg",
+      upsert: false,
+      onProgress: onProgress ? (p) => onProgress(p.loaded, p.total) : undefined,
+    })
+    return listingObjectPublicUrl(supabaseProjectUrl, storedPath)
+  }
+
+  async function uploadImagesToStorage(userId: string, accessToken: string): Promise<string[]> {
     const urls: string[] = []
+    const uploadsTotal = images.filter((im) => !!im.file).length
+    let uploadDone = 0
+
     for (let i = 0; i < images.length; i++) {
       const img = images[i]
       if (img.url && !img.file) {
@@ -534,36 +624,50 @@ function SellPageContent() {
         continue
       }
       if (!img.file) continue
+
+      const cached = uploadSessionCacheRef.current.get(i)
+      if (cached) {
+        urls.push(cached)
+        uploadDone++
+        setImageUploadProgress({
+          current: uploadDone,
+          total: Math.max(1, uploadsTotal),
+          bytesLoaded: 1,
+          bytesTotal: 1,
+        })
+        continue
+      }
+
       let fileToUpload: File
       try {
         fileToUpload = await preparePhotoForStorage(img.file)
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Unknown error"
-        toast.error(`Photo ${i + 1} could not be processed: ${msg}`)
-        continue
+        throw new Error(`Photo ${i + 1} could not be processed: ${msg}`)
       }
-      const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
-      const fileName = `${userId}/${Date.now()}-${i}-${baseName}.jpg`
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("listings")
-        .upload(fileName, fileToUpload, {
-          contentType: "image/jpeg",
-          upsert: false,
-        })
-      if (uploadError) {
-        console.error("Upload error:", uploadError)
-        toast.error(`Photo ${i + 1} failed to upload: ${uploadError.message}`)
-        continue
-      }
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("listings").getPublicUrl(uploadData.path)
+
+      const publicUrl = await storageUploadListingJpeg({
+        accessToken,
+        userId,
+        file: fileToUpload,
+        uniqueSuffix: String(i),
+        onProgress: (loaded, total) => {
+          setImageUploadProgress({
+            current: uploadDone + 1,
+            total: Math.max(1, uploadsTotal),
+            bytesLoaded: loaded,
+            bytesTotal: total,
+          })
+        },
+      })
+      uploadSessionCacheRef.current.set(i, publicUrl)
       urls.push(publicUrl)
+      uploadDone++
     }
     return urls
   }
 
-  async function syncListingImages(listingId: string, userId: string) {
+  async function syncListingImages(listingId: string, userId: string, accessToken: string) {
     if (removedImageIds.length) {
       await supabase
         .from("listing_images")
@@ -572,74 +676,104 @@ function SellPageContent() {
         .eq("listing_id", listingId)
     }
 
-    await Promise.all(
-      images.map(async (img, index) => {
-        const isPrimary = index === 0
+    const uploadsTotal = images.filter((im) => !!im.file).length
+    let uploadDone = 0
 
-        if (img.id) {
-          const { error } = await supabase
-            .from("listing_images")
-            .update({
-              sort_order: index,
-              is_primary: isPrimary,
-            })
-            .eq("id", img.id)
-            .eq("listing_id", listingId)
-          if (error) console.error("listing_images update:", error)
-          return
-        }
+    for (let index = 0; index < images.length; index++) {
+      const img = images[index]
+      const isPrimary = index === 0
 
-        if (!img.file) return
-
-        let fileToUpload: File
-        try {
-          fileToUpload = await preparePhotoForStorage(img.file)
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : "Unknown error"
-          toast.error(`Photo ${index + 1} could not be processed: ${msg}`)
-          return
-        }
-        const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
-        const fileName = `${userId}/${Date.now()}-${index}-${baseName}.jpg`
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("listings")
-          .upload(fileName, fileToUpload, {
-            contentType: "image/jpeg",
-            upsert: false,
+      if (img.id) {
+        const { error } = await supabase
+          .from("listing_images")
+          .update({
+            sort_order: index,
+            is_primary: isPrimary,
           })
-
-        if (uploadError) {
-          console.error("Upload error:", uploadError)
-          toast.error(`Photo ${index + 1} failed to upload: ${uploadError.message}`)
-          return
+          .eq("id", img.id)
+          .eq("listing_id", listingId)
+        if (error) {
+          console.error("listing_images update:", error)
+          throw new Error(`Could not update photo order (image ${index + 1}).`)
         }
+        continue
+      }
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("listings").getPublicUrl(uploadData.path)
+      if (!img.file) continue
 
-        const { error: insertError } = await supabase.from("listing_images").insert({
+      let fileToUpload: File
+      try {
+        fileToUpload = await preparePhotoForStorage(img.file)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unknown error"
+        throw new Error(`Photo ${index + 1} could not be processed: ${msg}`)
+      }
+
+      const publicUrl = await storageUploadListingJpeg({
+        accessToken,
+        userId,
+        file: fileToUpload,
+        uniqueSuffix: `sync-${index}`,
+        onProgress: (loaded, total) => {
+          setImageUploadProgress({
+            current: uploadDone + 1,
+            total: Math.max(1, uploadsTotal),
+            bytesLoaded: loaded,
+            bytesTotal: total,
+          })
+        },
+      })
+
+      const { data: inserted, error: insertError } = await supabase
+        .from("listing_images")
+        .insert({
           listing_id: listingId,
           url: publicUrl,
           is_primary: isPrimary,
           sort_order: index,
         })
-        if (insertError) {
-          console.error("listing_images insert:", insertError)
-          toast.error(`Photo ${index + 1} could not be saved.`)
-        }
-      }),
-    )
+        .select("id")
+        .single()
+
+      if (insertError || !inserted?.id) {
+        console.error("listing_images insert:", insertError)
+        throw new Error(
+          insertError?.message || `Photo ${index + 1} could not be saved to your listing.`,
+        )
+      }
+
+      setImages((prev) =>
+        prev.map((p, i) =>
+          i === index ? { ...p, id: inserted.id, url: publicUrl, file: undefined } : p,
+        ),
+      )
+      uploadDone++
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const goSubmitStep = (n: number) => {
+      submitStepIndexRef.current = n
+      setSubmitStepIndex(n)
+    }
     setLoading(true)
+    goSubmitStep(0)
+    setImageUploadProgress(null)
+    uploadToastIdRef.current = null
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         toast.error("Please sign in to create a listing")
+        router.push("/auth/login?redirect=/sell")
+        return
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) {
+        toast.error("Your session expired. Please sign in again.")
         router.push("/auth/login?redirect=/sell")
         return
       }
@@ -721,6 +855,46 @@ function SellPageContent() {
         listingType === "board" && formData.boardLength.trim()
           ? listingTitleWithBoardLength(formData.title, formData.boardLength)
           : formData.title.trim()
+
+      const flowImpersonation = !!impersonation
+      if (!editId && !flowImpersonation) {
+        const labels = [
+          "Preparing your listing...",
+          "Saving listing details...",
+          "Publishing your listing...",
+          "Almost there...",
+        ]
+        uploadPhaseLabelsRef.current = labels
+        setUploadPhaseLabels(labels)
+      } else if (editId && !flowImpersonation) {
+        const labels = [
+          "Saving listing details...",
+          "Uploading your photos...",
+          "Publishing your listing...",
+          "Almost there...",
+        ]
+        uploadPhaseLabelsRef.current = labels
+        setUploadPhaseLabels(labels)
+      } else {
+        const labels = [...LISTING_UPLOAD_STEP_LABELS]
+        uploadPhaseLabelsRef.current = labels
+        setUploadPhaseLabels(labels)
+      }
+
+      setPublishPreview({
+        title: resolvedListingTitle,
+        price: formData.price,
+        coverUrl: images[0]?.url || "/placeholder.svg",
+        status: "publishing",
+      })
+      uploadToastIdRef.current = toast.loading("Your listing is being uploaded...", {
+        duration: 600_000,
+      })
+
+      if (!editId && !flowImpersonation) {
+        await new Promise((r) => setTimeout(r, 450))
+        goSubmitStep(1)
+      }
 
       let listingId = editId
       let listingSlug: string | null = null
@@ -891,6 +1065,9 @@ function SellPageContent() {
           listingSlug = updated?.slug ?? null
         } else if (adminImpersonatesListingOwner) {
           usedImpersonationListingApi = true
+          goSubmitStep(0)
+          const uploadsTotal = images.filter((im) => !!im.file).length
+          let uploadDone = 0
           const imageOps: { id?: string; url?: string; is_primary: boolean; sort_order: number }[] = []
           for (let i = 0; i < images.length; i++) {
             const img = images[i]
@@ -904,22 +1081,27 @@ function SellPageContent() {
               fileToUpload = await preparePhotoForStorage(img.file)
             } catch (err: unknown) {
               const msg = err instanceof Error ? err.message : "Unknown error"
-              toast.error(`Photo ${i + 1} could not be processed: ${msg}`)
-              continue
+              throw new Error(`Photo ${i + 1} could not be processed: ${msg}`)
             }
-            const baseName = fileToUpload.name.replace(/\.[^.]+$/i, "") || "image"
-            const fileName = `${user.id}/${Date.now()}-${i}-${baseName}.jpg`
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from("listings")
-              .upload(fileName, fileToUpload, { contentType: "image/jpeg", upsert: false })
-            if (uploadError) {
-              toast.error(`Photo ${i + 1} failed to upload: ${uploadError.message}`)
-              continue
-            }
-            const { data: { publicUrl } } = supabase.storage.from("listings").getPublicUrl(uploadData.path)
+            const publicUrl = await storageUploadListingJpeg({
+              accessToken,
+              userId: user.id,
+              file: fileToUpload,
+              uniqueSuffix: `imp-admin-${i}`,
+              onProgress: (loaded, total) => {
+                setImageUploadProgress({
+                  current: uploadDone + 1,
+                  total: Math.max(1, uploadsTotal),
+                  bytesLoaded: loaded,
+                  bytesTotal: total,
+                })
+              },
+            })
             imageOps.push({ url: publicUrl, is_primary: i === 0, sort_order: i })
+            uploadDone++
           }
 
+          goSubmitStep(1)
           const res = await fetch("/api/admin/impersonate/update-listing", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -933,6 +1115,7 @@ function SellPageContent() {
           const data = await res.json()
           if (!res.ok) throw new Error(data.error || "Failed to update listing")
           listingSlug = data.slug
+          goSubmitStep(2)
           if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
             impersonationSellerLabel = data.seller_display_name.trim()
           }
@@ -1067,7 +1250,9 @@ function SellPageContent() {
 
         if (impersonation) {
           usedImpersonationListingApi = true
-          const imageUrls = await uploadImagesToStorage(user.id)
+          goSubmitStep(0)
+          const imageUrls = await uploadImagesToStorage(user.id, accessToken)
+          goSubmitStep(1)
           const res = await fetch("/api/admin/impersonate/create-listing", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1077,6 +1262,7 @@ function SellPageContent() {
           if (!res.ok) throw new Error(data.error || "Failed to create listing")
           listingId = data.listing_id
           listingSlug = data.slug
+          goSubmitStep(2)
           if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
             impersonationSellerLabel = data.seller_display_name.trim()
           }
@@ -1096,6 +1282,7 @@ function SellPageContent() {
           if (listingError || !listing) throw listingError
           listingId = listing.id
           listingSlug = listing.slug ?? newSlug
+          goSubmitStep(2)
         }
       }
 
@@ -1104,9 +1291,19 @@ function SellPageContent() {
 
       if (listingId) {
         if (!editId && !impersonation) {
-          toast.success("Your listing is live")
+          goSubmitStep(3)
+          setPublishPreview((p) =>
+            p ? { ...p, status: "live", detailHref: `${detailPath}?photos=pending` } : null,
+          )
+          const tid = uploadToastIdRef.current
+          if (tid != null) {
+            toast.success("Your listing is live! 🎉", { id: tid })
+          } else {
+            toast.success("Your listing is live! 🎉")
+          }
+          uploadSessionCacheRef.current.clear()
           router.push(`${detailPath}?photos=pending`)
-          void syncListingImages(listingId, user.id).catch((err: unknown) => {
+          void syncListingImages(listingId, user.id, accessToken).catch((err: unknown) => {
             console.error("Background photo upload:", err)
             toast.error(
               "Some photos may not have uploaded. Open your listing to retry from edit, or add photos again.",
@@ -1115,26 +1312,81 @@ function SellPageContent() {
           return
         }
         if (editId && !usedImpersonationListingApi) {
-          await syncListingImages(listingId, user.id)
+          const willUploadNewPhotos = images.some((im) => !!im.file)
+          if (willUploadNewPhotos) goSubmitStep(1)
+          await syncListingImages(listingId, user.id, accessToken)
+          goSubmitStep(2)
         }
       }
 
+      goSubmitStep(3)
+      setPublishPreview((p) => (p ? { ...p, status: "live", detailHref: detailPath } : null))
+
+      const tidDone = uploadToastIdRef.current
       if (impersonationSellerLabel) {
-        toast.success(
-          editId
-            ? `Listing updated for ${impersonationSellerLabel}`
-            : `Listing created for ${impersonationSellerLabel}`,
-        )
+        const msg = editId
+          ? `Listing updated for ${impersonationSellerLabel}`
+          : `Listing created for ${impersonationSellerLabel}`
+        if (tidDone != null) toast.success(`${msg} 🎉`, { id: tidDone })
+        else toast.success(msg)
       } else {
-        toast.success(editId ? "Listing updated" : "Listing created successfully!")
+        const msg = editId ? "Listing updated!" : "Your listing is live! 🎉"
+        if (tidDone != null) toast.success(msg, { id: tidDone })
+        else toast.success(editId ? "Listing updated!" : "Your listing is live! 🎉")
       }
+      uploadSessionCacheRef.current.clear()
       router.push(detailPath)
-    } catch (error: any) {
-      console.error("Error creating listing:", error?.message || error)
-      toast.error(error?.message || "Failed to create listing")
+    } catch (error: unknown) {
+      console.error("Error creating listing:", error instanceof Error ? error.message : error)
+      const msg = error instanceof Error ? error.message : "Failed to create listing"
+      const failedLabel =
+        uploadPhaseLabelsRef.current[submitStepIndexRef.current] ?? "This step"
+      setPublishPreview((p) =>
+        p
+          ? {
+              ...p,
+              status: "error",
+              errorMessage: msg,
+              failedStepLabel: failedLabel,
+            }
+          : null,
+      )
+      const tid = uploadToastIdRef.current
+      if (tid != null) {
+        toast.error("Something went wrong. Please try again.", {
+          id: tid,
+          description: msg,
+          action: {
+            label: "Retry",
+            onClick: () => formRef.current?.requestSubmit(),
+          },
+        })
+      } else {
+        toast.error(msg, {
+          action: {
+            label: "Retry",
+            onClick: () => formRef.current?.requestSubmit(),
+          },
+        })
+      }
     } finally {
       setLoading(false)
+      setImageUploadProgress(null)
     }
+  }
+
+  const imageProgress = imageUploadProgress
+  let listingSubmitProgressValue: number
+  if (imageProgress && imageProgress.total > 0) {
+    const frac =
+      (imageProgress.current - 1 +
+        (imageProgress.bytesTotal > 0
+          ? imageProgress.bytesLoaded / imageProgress.bytesTotal
+          : 0)) /
+      imageProgress.total
+    listingSubmitProgressValue = Math.min(99, submitStepIndex * 25 + frac * 25)
+  } else {
+    listingSubmitProgressValue = Math.min(99, ((submitStepIndex + 0.35) / 4) * 100)
   }
 
   return (
@@ -1161,7 +1413,7 @@ function SellPageContent() {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" aria-busy={loading}>
                 {/* Listing Type */}
                 <div className="space-y-3">
                   <Label>What are you selling?</Label>
@@ -2097,17 +2349,136 @@ function SellPageContent() {
                   )}
                 </div>
 
-                {/* Submit */}
-                <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {editId ? "Saving..." : "Creating Listing..."}
-                    </>
-                  ) : (
-                    editId ? "Save changes" : "Create Listing"
-                  )}
-                </Button>
+                {/* Optimistic preview + submit / progress */}
+                {publishPreview && (
+                  <div
+                    className={cn(
+                      "rounded-xl border p-4 flex gap-4 transition-colors",
+                      publishPreview.status === "publishing" && "border-primary/25 bg-primary/[0.04]",
+                      publishPreview.status === "live" && "border-emerald-500/30 bg-emerald-500/[0.06]",
+                      publishPreview.status === "error" && "border-destructive/40 bg-destructive/[0.06]",
+                    )}
+                  >
+                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
+                      <Image
+                        src={publishPreview.coverUrl || "/placeholder.svg"}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-foreground truncate">{publishPreview.title}</p>
+                        {publishPreview.status === "publishing" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Publishing...
+                          </span>
+                        )}
+                        {publishPreview.status === "live" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Live ✓
+                          </span>
+                        )}
+                        {publishPreview.status === "error" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
+                            <AlertCircle className="h-3 w-3" />
+                            Failed
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        ${publishPreview.price}
+                        {publishPreview.detailHref && publishPreview.status === "live" && (
+                          <>
+                            {" · "}
+                            <Link
+                              href={publishPreview.detailHref}
+                              className="text-primary underline-offset-4 hover:underline"
+                            >
+                              View listing
+                            </Link>
+                          </>
+                        )}
+                      </p>
+                      {publishPreview.status === "error" && (
+                        <div className="pt-2 space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            {publishPreview.failedStepLabel ? (
+                              <>
+                                <span className="font-medium text-foreground">
+                                  {publishPreview.failedStepLabel}
+                                </span>
+                                {" — "}
+                              </>
+                            ) : null}
+                            {publishPreview.errorMessage}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => formRef.current?.requestSubmit()}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Retry
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {loading ? (
+                  <div
+                    className={cn(
+                      "relative w-full overflow-hidden rounded-xl border border-primary/20 bg-muted/40 p-5 space-y-4 shadow-sm",
+                      "motion-safe:animate-pulse",
+                    )}
+                  >
+                    <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+                      {uploadPhaseLabels[submitStepIndex] ?? "Working..."}
+                    </p>
+                    <Progress value={listingSubmitProgressValue} className="h-2" />
+                    <div className="flex gap-1.5">
+                      {uploadPhaseLabels.map((label, i) => (
+                        <div
+                          key={i}
+                          className={cn(
+                            "h-1.5 flex-1 rounded-full transition-colors",
+                            i <= submitStepIndex ? "bg-primary" : "bg-muted-foreground/20",
+                          )}
+                          title={label}
+                        />
+                      ))}
+                    </div>
+                    {imageUploadProgress && imageUploadProgress.total > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Uploading images: {imageUploadProgress.current} of {imageUploadProgress.total}
+                        {imageUploadProgress.bytesTotal > 0
+                          ? ` (${Math.round((100 * imageUploadProgress.bytesLoaded) / imageUploadProgress.bytesTotal)}%)`
+                          : null}
+                      </p>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground">
+                      {editId ? "Save in progress — please keep this tab open." : "Upload in progress — please keep this tab open."}
+                    </p>
+                  </div>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full relative transition-shadow"
+                    disabled={loading}
+                  >
+                    {editId ? "Save changes" : "Create Listing"}
+                  </Button>
+                )}
               </form>
               )}
             </CardContent>
