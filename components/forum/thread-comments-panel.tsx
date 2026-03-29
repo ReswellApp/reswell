@@ -12,7 +12,7 @@ import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { getImpersonation } from "@/lib/impersonation"
+import { clearImpersonation, getImpersonation } from "@/lib/impersonation"
 
 export type ThreadCommentRow = {
   id: string
@@ -170,31 +170,39 @@ export function ThreadCommentsPanel({
       })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Could not post comment as this user.")
+        // Stale impersonation in localStorage — clear it and fall through to post as the logged-in user.
+        if (isLoggedIn && (res.status === 400 || res.status === 401 || res.status === 403)) {
+          setImpersonation(null)
+          clearImpersonation()
+          // fall through to regular post below
+        } else {
+          toast.error(data.error || "Could not post comment as this user.")
+          setSubmitting(false)
+          return
+        }
+      } else {
+        const sb = createClient()
+        const { data: profile } = await sb
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", impersonation.userId)
+          .single()
+        const newId = data.comment.id
+        setComments((prev) => [
+          ...prev,
+          {
+            ...data.comment,
+            parent_id: data.comment.parent_id ?? null,
+            profiles: profile ?? { display_name: null, avatar_url: null },
+            forum_comment_likes: [{ count: 0 }],
+          },
+        ])
+        setBody("")
         setSubmitting(false)
+        toast.success(`Comment posted as ${impersonation.displayName}`)
+        scrollPostedCommentIntoView(newId, composerBarRef.current)
         return
       }
-      const sb = createClient()
-      const { data: profile } = await sb
-        .from("profiles")
-        .select("display_name, avatar_url")
-        .eq("id", impersonation.userId)
-        .single()
-      const newId = data.comment.id
-      setComments((prev) => [
-        ...prev,
-        {
-          ...data.comment,
-          parent_id: data.comment.parent_id ?? null,
-          profiles: profile ?? { display_name: null, avatar_url: null },
-          forum_comment_likes: [{ count: 0 }],
-        },
-      ])
-      setBody("")
-      setSubmitting(false)
-      toast.success(`Comment posted as ${impersonation.displayName}`)
-      scrollPostedCommentIntoView(newId, composerBarRef.current)
-      return
     }
 
     const supabase = createClient()
@@ -258,32 +266,40 @@ export function ThreadCommentsPanel({
       })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Could not post reply as this user.")
+        // Stale impersonation in localStorage — clear it and fall through to post as the logged-in user.
+        if (isLoggedIn && (res.status === 400 || res.status === 401 || res.status === 403)) {
+          setImpersonation(null)
+          clearImpersonation()
+          // fall through to regular post below
+        } else {
+          toast.error(data.error || "Could not post reply as this user.")
+          setReplySubmitting(false)
+          return
+        }
+      } else {
+        const sb = createClient()
+        const { data: profile } = await sb
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", impersonation.userId)
+          .single()
+        const newId = data.comment.id
+        setComments((prev) => [
+          ...prev,
+          {
+            ...data.comment,
+            parent_id: data.comment.parent_id ?? parentId,
+            profiles: profile ?? { display_name: null, avatar_url: null },
+            forum_comment_likes: [{ count: 0 }],
+          },
+        ])
+        setReplyBody("")
+        setReplyingToId(null)
         setReplySubmitting(false)
+        toast.success(`Reply posted as ${impersonation.displayName}`)
+        scrollPostedCommentIntoView(newId, composerBarRef.current)
         return
       }
-      const sb = createClient()
-      const { data: profile } = await sb
-        .from("profiles")
-        .select("display_name, avatar_url")
-        .eq("id", impersonation.userId)
-        .single()
-      const newId = data.comment.id
-      setComments((prev) => [
-        ...prev,
-        {
-          ...data.comment,
-          parent_id: data.comment.parent_id ?? parentId,
-          profiles: profile ?? { display_name: null, avatar_url: null },
-          forum_comment_likes: [{ count: 0 }],
-        },
-      ])
-      setReplyBody("")
-      setReplyingToId(null)
-      setReplySubmitting(false)
-      toast.success(`Reply posted as ${impersonation.displayName}`)
-      scrollPostedCommentIntoView(newId, composerBarRef.current)
-      return
     }
 
     const supabase = createClient()
