@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripeOptional } from "@/lib/stripe-client"
-import { stripeContextForConnectedAccount } from "@/lib/stripe-connect-context"
+import {
+  isStripeConnectAccountAccessError,
+  stripeContextForConnectedAccount,
+} from "@/lib/stripe-connect-context"
 import {
   persistSellerAccountFromV2Account,
   v2OnboardingComplete,
@@ -90,13 +93,23 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
     console.error("[connect/account-status] Stripe V2 retrieve failed:", e)
+    const wrongEnvironment = isStripeConnectAccountAccessError(msg)
+
     return NextResponse.json({
       connected: true,
       account: owned,
       readyToReceivePayments: owned.payouts_enabled,
       onboardingComplete: owned.details_submitted,
       requirementsStatus: undefined as string | undefined,
+      stripeSyncError: wrongEnvironment
+        ? {
+            code: "connect_account_wrong_environment" as const,
+            message:
+              "Stored Connect account ID is not visible to this Stripe secret key (test vs live or different platform). Delete the row in seller_stripe_accounts for this user and set up payouts again.",
+          }
+        : undefined,
     })
   }
 }

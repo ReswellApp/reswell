@@ -1,15 +1,11 @@
 import type Stripe from "stripe"
 
 /**
- * Request options so V2 Connect API calls run in the connected account's context.
- * Without this, production can return: "Permission denied ... supply Account ID in the Stripe-Context header".
+ * Stripe-Context for V2 **read** operations on a connected account (`accounts.retrieve`, `accounts.close`).
+ * Do **not** use this for `v2.core.accountLinks.create` — that call uses the platform key and passes
+ * `account` in the body; adding context there often triggers "key does not have access to account".
  *
  * @see https://docs.stripe.com/context
- *
- * Standard platform secret key: use the connected account id alone (`acct_xxx`).
- * If your secret key belongs to a parent org (not the platform), set
- * `STRIPE_PLATFORM_ACCOUNT_ID` to your platform account id so context becomes
- * `platform_acct/connected_acct`.
  */
 export function stripeContextForConnectedAccount(
   connectedAccountId: string
@@ -20,4 +16,13 @@ export function stripeContextForConnectedAccount(
     : connectedAccountId
 
   return { stripeContext }
+}
+
+export function isStripeConnectAccountAccessError(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes("does not have access to account") ||
+    m.includes("application access may have been revoked") ||
+    m.includes("no such account")
+  )
 }

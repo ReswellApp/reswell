@@ -53,6 +53,7 @@ type ConnectStatusApi = {
   readyToReceivePayments?: boolean
   onboardingComplete?: boolean
   requirementsStatus?: string
+  stripeSyncError?: { code: string; message: string }
 }
 
 interface SellerBalance {
@@ -179,6 +180,10 @@ export default function PayoutsPage() {
 
   const [connectLoading, setConnectLoading] = useState(false)
   const [connectError, setConnectError] = useState("")
+  const [connectStripeMismatch, setConnectStripeMismatch] = useState<{
+    code: string
+    message: string
+  } | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null)
 
@@ -213,6 +218,7 @@ export default function PayoutsPage() {
       if (accountRes.ok) {
         const accountData = (await accountRes.json()) as ConnectStatusApi
         setStripeAccount(accountData.account ?? null)
+        setConnectStripeMismatch(accountData.stripeSyncError ?? null)
         setConnectReadyToReceivePayments(
           accountData.readyToReceivePayments ?? accountData.account?.payouts_enabled ?? false
         )
@@ -220,6 +226,8 @@ export default function PayoutsPage() {
           accountData.onboardingComplete ?? accountData.account?.details_submitted ?? false
         )
         setConnectRequirementsStatus(accountData.requirementsStatus)
+      } else {
+        setConnectStripeMismatch(null)
       }
     } finally {
       setLoading(false)
@@ -260,7 +268,12 @@ export default function PayoutsPage() {
       })
       const linkData = await linkRes.json()
       if (!linkRes.ok) {
-        setConnectError(linkData.error ?? "Failed to generate onboarding link")
+        const base = linkData.error ?? "Failed to generate onboarding link"
+        const hint =
+          typeof linkData.hint === "string" && linkData.hint.length > 0
+            ? ` ${linkData.hint}`
+            : ""
+        setConnectError(base + hint)
         return
       }
 
@@ -333,6 +346,16 @@ export default function PayoutsPage() {
             <p className="text-sm text-green-700 mt-0.5">
               Your Stripe account is active. You can now cash out your earnings.
             </p>
+          </div>
+        </div>
+      )}
+
+      {connectStripeMismatch && (
+        <div className="rounded-lg bg-red-50 border border-red-200 p-4 flex items-start gap-3">
+          <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-900">Stripe Connect account mismatch</p>
+            <p className="text-sm text-red-800 mt-1">{connectStripeMismatch.message}</p>
           </div>
         </div>
       )}
