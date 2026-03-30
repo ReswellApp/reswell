@@ -252,8 +252,12 @@ export default function PayoutsPage() {
         accountId = stripeAccount.stripe_account_id
       }
 
-      // Step 2: get onboarding link
-      const linkRes = await fetch("/api/stripe/connect/onboarding-link", { method: "POST" })
+      // Step 2: get onboarding link (optional explicit accountId for debugging)
+      const linkRes = await fetch("/api/stripe/connect/onboarding-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId }),
+      })
       const linkData = await linkRes.json()
       if (!linkRes.ok) {
         setConnectError(linkData.error ?? "Failed to generate onboarding link")
