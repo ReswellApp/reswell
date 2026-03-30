@@ -77,7 +77,10 @@ export async function POST(_request: NextRequest) {
       console.error("[connect/create-account] DB insert failed:", insertError)
       // Clean up Stripe account if DB insert fails
       await stripe.accounts.del(account.id).catch(() => null)
-      return NextResponse.json({ error: "Failed to save account" }, { status: 500 })
+      return NextResponse.json(
+        { error: `Database error: ${insertError.message}` },
+        { status: 500 }
+      )
     }
 
     // Ensure seller_balances row exists
@@ -85,7 +88,11 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({ stripe_account_id: account.id })
   } catch (err) {
-    console.error("[connect/create-account] Stripe error:", err)
-    return NextResponse.json({ error: "Failed to create Stripe account" }, { status: 500 })
+    const stripeErr = err as { message?: string; code?: string; type?: string }
+    console.error("[connect/create-account] Stripe error:", stripeErr)
+    return NextResponse.json(
+      { error: stripeErr.message ?? "Failed to create Stripe account" },
+      { status: 500 }
+    )
   }
 }
