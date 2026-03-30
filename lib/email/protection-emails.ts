@@ -116,7 +116,7 @@ Refund details:
   Approved amount: ${formatUSD(opts.approvedAmount)}
   Sent to: ${methodLabel}
 
-Note: Our protection policy covers up to $500 for this claim type.
+You received a full refund — every dollar you paid, item price and shipping. Guaranteed.
 
 View your claim: https://reswell.com/dashboard/claims/${opts.claimId}
 

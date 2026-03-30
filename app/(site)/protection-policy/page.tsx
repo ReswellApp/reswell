@@ -5,7 +5,7 @@ import { ShieldCheck, Package, Tag, AlertTriangle, HelpCircle, CheckCircle2, XCi
 export const metadata: Metadata = {
   title: 'Reswell Purchase Protection | Safe Surf Gear Marketplace',
   description:
-    'Every order on Reswell is backed by Purchase Protection. Lost shipments are refunded 100%. Damaged or misrepresented items covered up to $500.',
+    'Every order on Reswell is backed by Purchase Protection. Every dollar you paid — item price and shipping — is guaranteed back. No caps. No limits. No exceptions.',
 }
 
 function Section({
@@ -48,8 +48,8 @@ export default function ProtectionPolicyPage() {
           Reswell Purchase Protection
         </h1>
         <p className="text-muted-foreground max-w-lg mx-auto text-base">
-          Every order placed on Reswell is backed by our Purchase Protection. Here&apos;s exactly
-          what you&apos;re covered for — no fine print.
+          Every order placed on Reswell is backed by our Purchase Protection. Every customer gets
+          back every dollar they paid. No caps. No limits. No exceptions.
         </p>
       </div>
 
@@ -60,11 +60,11 @@ export default function ProtectionPolicyPage() {
           title="If your item never arrives"
         >
           <p>
-            You get <strong>100% of your money back</strong> — the full item price plus shipping.
+            If your item never arrives, you get back <strong>every dollar you paid</strong> — item
+            price and shipping. No cap, no return needed. Guaranteed.
           </p>
-          <p>
-            <strong>No cap. No questions asked</strong> if tracking confirms non-delivery.
-            This is our strongest guarantee, and it applies in full.
+          <p className="text-muted-foreground text-xs">
+            No questions asked if tracking confirms non-delivery.
           </p>
         </Section>
 
@@ -73,8 +73,10 @@ export default function ProtectionPolicyPage() {
           title="If your item is not as described"
         >
           <p>
-            You&apos;re covered up to <strong>$500</strong> if the item is significantly different
-            from the listing — wrong size, hidden damage, different model, or missing components.
+            If your item is significantly different from what was listed, you get back{' '}
+            <strong>every dollar you paid</strong> — item price and shipping. We&apos;ll send you a
+            free prepaid return label. Your refund is released the moment the seller confirms
+            receipt.
           </p>
           <p className="text-muted-foreground text-xs">
             Note: &ldquo;Significantly different&rdquo; means a material mismatch from the listing
@@ -87,8 +89,9 @@ export default function ProtectionPolicyPage() {
           title="If your item arrives damaged"
         >
           <p>
-            You&apos;re covered up to <strong>$500</strong> if the item was damaged during
-            shipping.
+            If your item arrives damaged, you get back <strong>every dollar you paid</strong> —
+            item price and shipping. We&apos;ll send you a free prepaid return label. Your refund is
+            released the moment the seller confirms receipt.
           </p>
           <p className="text-muted-foreground text-xs">
             Photo evidence of the damage is required. Damage must be visible and clearly related to

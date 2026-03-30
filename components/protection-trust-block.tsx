@@ -32,7 +32,7 @@ export function ProtectionTrustBlock() {
               {' '}→{' '}
             </span>
             <span className="text-xs font-semibold text-green-900 dark:text-green-300">
-              100% of your money back, guaranteed
+              every dollar back, no return needed
             </span>
           </div>
         </div>
@@ -46,8 +46,8 @@ export function ProtectionTrustBlock() {
             <span className="text-xs text-green-700 dark:text-green-500">
               {' '}→{' '}
             </span>
-            <span className="text-xs text-green-900 dark:text-green-300">
-              covered up to $500
+            <span className="text-xs font-semibold text-green-900 dark:text-green-300">
+              every dollar back, return required
             </span>
           </div>
         </div>
@@ -61,8 +61,8 @@ export function ProtectionTrustBlock() {
             <span className="text-xs text-green-700 dark:text-green-500">
               {' '}→{' '}
             </span>
-            <span className="text-xs text-green-900 dark:text-green-300">
-              covered up to $500
+            <span className="text-xs font-semibold text-green-900 dark:text-green-300">
+              every dollar back, return required
             </span>
           </div>
         </div>

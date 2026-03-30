@@ -552,14 +552,14 @@ export default async function BoardDetailPage(props: {
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-sm font-medium mb-2">
                   <Info className="h-4 w-4 text-primary" />
-                  Meeting Tips for Board Pickups
+                  Tips for Board Pickups
                 </div>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li>Meet in a public place like a beach parking lot</li>
                   <li>Bring a friend if possible</li>
                   <li>Check for cracks, dings, and delamination</li>
                   <li>Test the flex and check fin boxes</li>
-                  <li>Use cash or a secure payment app</li>
+                  <li>Always complete payment through the platform — off-platform transactions are not covered by Purchase Protection</li>
                 </ul>
               </div>
             </div>

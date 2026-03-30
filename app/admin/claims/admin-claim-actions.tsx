@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  PROTECTION_COVERAGE_CAP,
   PROTECTION_FUND_MINIMUM_RESERVE,
   type ClaimType,
 } from '@/lib/protection-constants'
@@ -30,8 +29,8 @@ export function AdminClaimActions({
   const [isPending, startTransition] = useTransition()
   const [mode, setMode] = useState<'idle' | 'approve' | 'deny'>('idle')
   const [approvedAmount, setApprovedAmount] = useState<string>(() => {
-    if (claimType === 'NOT_RECEIVED') return orderAmount.toFixed(2)
-    return Math.min(claimedAmount, PROTECTION_COVERAGE_CAP).toFixed(2)
+    // Full refund — every dollar the customer paid — no cap per Reswell guarantee policy
+    return orderAmount.toFixed(2)
   })
   const [denialReason, setDenialReason] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -97,12 +96,7 @@ export function AdminClaimActions({
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-foreground">
             Approved amount
-            {claimType === 'NOT_RECEIVED' && (
-              <span className="ml-1 text-green-600 dark:text-green-400">(no cap — full refund)</span>
-            )}
-            {claimType !== 'NOT_RECEIVED' && (
-              <span className="ml-1 text-muted-foreground">(max ${PROTECTION_COVERAGE_CAP})</span>
-            )}
+            <span className="ml-1 text-green-600 dark:text-green-400">(full refund — every dollar paid)</span>
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
@@ -110,7 +104,6 @@ export function AdminClaimActions({
               type="number"
               step="0.01"
               min="0.01"
-              max={claimType === 'NOT_RECEIVED' ? undefined : PROTECTION_COVERAGE_CAP}
               value={approvedAmount}
               onChange={(e) => setApprovedAmount(e.target.value)}
               className="w-full rounded-lg border bg-background pl-7 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -121,7 +114,7 @@ export function AdminClaimActions({
         {fundWillRunLow && (
           <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
-            Fund will drop to ${fundAfterPayout.toFixed(2)} — below $500 reserve.
+            Fund will drop to ${fundAfterPayout.toFixed(2)} — below minimum reserve.
           </p>
         )}
 

@@ -14,9 +14,6 @@ export const PROTECTION_FUND_RATE = 0.02
 /** Minimum protection fund reserve before payouts are paused (USD) */
 export const PROTECTION_FUND_MINIMUM_RESERVE = 500
 
-/** Coverage cap for all claim types except NOT_RECEIVED (USD) */
-export const PROTECTION_COVERAGE_CAP = 500
-
 /** Protection window duration in days (from delivery confirmation) */
 export const PROTECTION_WINDOW_DAYS = 30
 
@@ -108,21 +105,18 @@ export function getProtectedSellerPayout(saleTotal: number, cardPayment = false)
 
 /**
  * Calculate the approved payout amount for a claim.
- * NOT_RECEIVED: full item price + shipping (no cap).
- * All others: capped at PROTECTION_COVERAGE_CAP ($500).
+ * Full refund — every dollar the customer paid — for all claim types.
+ * No cap per Reswell guarantee policy.
  */
 export function calculateApprovedAmount(
-  claimType: ClaimType,
-  claimedAmount: number,
+  _claimType: ClaimType,
+  _claimedAmount: number,
   orderItemPrice: number,
   orderShippingCost: number
 ): number {
-  if (claimType === 'NOT_RECEIVED') {
-    // No cap — approve full item price + shipping cost
-    return Math.round((orderItemPrice + orderShippingCost) * 100) / 100
-  }
-  // All other claim types capped at $500
-  return Math.min(Math.round(claimedAmount * 100) / 100, PROTECTION_COVERAGE_CAP)
+  // Full refund — every dollar the customer paid
+  // No cap per Reswell guarantee policy
+  return Math.round((orderItemPrice + orderShippingCost) * 100) / 100
 }
 
 /**

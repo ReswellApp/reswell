@@ -5,7 +5,6 @@ import {
   detectFraudFlags,
   FRAUD_FLAG_MAX_CLAIMS_90_DAYS,
   MIN_DESCRIPTION_CHARS,
-  PROTECTION_COVERAGE_CAP,
   type ClaimType,
 } from '@/lib/protection-constants'
 

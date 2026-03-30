@@ -12,7 +12,6 @@ import {
   CLAIM_TYPE_DESCRIPTIONS,
   MIN_DESCRIPTION_CHARS,
   MAX_EVIDENCE_FILES,
-  PROTECTION_COVERAGE_CAP,
   type ClaimType,
 } from '@/lib/protection-constants'
 import { cn } from '@/lib/utils'
@@ -195,8 +194,8 @@ export function ClaimForm({ purchase }: ClaimFormProps) {
                         </Badge>
                       )}
                       {type !== 'NOT_RECEIVED' && (
-                        <Badge variant="outline" className="text-xs">
-                          up to $500
+                        <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/40 text-xs">
+                          every dollar back
                         </Badge>
                       )}
                     </div>
@@ -286,26 +285,15 @@ export function ClaimForm({ purchase }: ClaimFormProps) {
                 type="number"
                 step="0.01"
                 min="0.01"
-                max={
-                  claimType === 'NOT_RECEIVED'
-                    ? purchase.amount
-                    : PROTECTION_COVERAGE_CAP
-                }
+                max={purchase.amount}
                 value={claimedAmount}
                 onChange={(e) => setClaimedAmount(e.target.value)}
                 className="w-full rounded-lg border bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            {claimType !== 'NOT_RECEIVED' && (
-              <p className="text-xs text-muted-foreground">
-                Maximum covered: $500 for this claim type.
-              </p>
-            )}
-            {claimType === 'NOT_RECEIVED' && (
-              <p className="text-xs text-green-600 dark:text-green-400">
-                Full refund — item price + shipping. No cap applies.
-              </p>
-            )}
+            <p className="text-xs text-green-600 dark:text-green-400">
+              Full refund — every dollar you paid, item price and shipping. No cap.
+            </p>
           </div>
 
           {/* Evidence */}
@@ -399,22 +387,12 @@ export function ClaimForm({ purchase }: ClaimFormProps) {
                 <span className="text-muted-foreground">Amount claimed</span>
                 <span className="font-semibold">${parseFloat(claimedAmount).toFixed(2)}</span>
               </div>
-              {claimType !== 'NOT_RECEIVED' && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Coverage cap</span>
-                  <span className="text-muted-foreground">
-                    Max ${PROTECTION_COVERAGE_CAP.toFixed(2)}
-                  </span>
-                </div>
-              )}
-              {claimType === 'NOT_RECEIVED' && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-green-600 dark:text-green-400">Coverage</span>
-                  <span className="text-green-600 dark:text-green-400 font-medium">
-                    Full refund — no cap
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between text-xs">
+                <span className="text-green-600 dark:text-green-400">Coverage</span>
+                <span className="text-green-600 dark:text-green-400 font-medium">
+                  Full refund — every dollar paid
+                </span>
+              </div>
               <div className="border-t pt-3">
                 <p className="text-muted-foreground mb-1">Description</p>
                 <p className="text-foreground text-xs leading-relaxed">{description}</p>
