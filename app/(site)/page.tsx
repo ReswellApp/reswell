@@ -140,16 +140,22 @@ function listingPublicHref(listing: {
 /** Match `used-gear-listings` / seller grids: primary flag first, else first image. */
 function primaryListingImageUrl(
   images?:
-    | { url: string; is_primary?: boolean | null; sort_order?: number | null }[]
+    | {
+        url: string
+        thumbnail_url?: string | null
+        is_primary?: boolean | null
+        sort_order?: number | null
+      }[]
     | null
 ): string | undefined {
   if (!images?.length) return undefined
   const flagged = images.find((img) => img.is_primary)
-  if (flagged?.url) return flagged.url
-  const sorted = [...images].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  )
-  return sorted[0]?.url
+  const pick =
+    flagged ||
+    [...images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]
+  if (!pick?.url) return undefined
+  const thumb = pick.thumbnail_url?.trim()
+  return thumb || pick.url
 }
 
 const features = [
@@ -183,7 +189,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url, sort_order, is_primary),
+      listing_images (url, thumbnail_url, sort_order, is_primary),
       profiles (display_name, avatar_url, sales_count, shop_verified)
     `)
     .eq("status", "active")
@@ -229,7 +235,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url, sort_order, is_primary),
+      listing_images (url, thumbnail_url, sort_order, is_primary),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)
     .eq("status", "active")
@@ -264,7 +270,7 @@ export default async function HomePage() {
       .select(
         `
         *,
-        listing_images (url, sort_order, is_primary),
+        listing_images (url, thumbnail_url, sort_order, is_primary),
         profiles (display_name, avatar_url, sales_count, shop_verified)
       `
       )
@@ -295,7 +301,7 @@ export default async function HomePage() {
     .from("listings")
     .select(`
       *,
-      listing_images (url, sort_order, is_primary),
+      listing_images (url, thumbnail_url, sort_order, is_primary),
       categories (slug),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)

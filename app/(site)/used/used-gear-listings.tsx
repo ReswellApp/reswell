@@ -99,7 +99,7 @@ export async function UsedGearListings({
     .select(
       `
       *,
-      listing_images (url, is_primary),
+      listing_images (url, thumbnail_url, is_primary),
       profiles (display_name, avatar_url, sales_count, shop_verified),
       categories (name, slug)
     `,
@@ -324,7 +324,11 @@ export async function UsedGearListings({
                     // CLS-FIX: sizes prevents the browser fetching at full
                     // viewport width for a card that only spans 50% on mobile.
                     <Image
-                      src={primaryImage.url || "/placeholder.svg"}
+                      src={
+                        (primaryImage as { thumbnail_url?: string | null }).thumbnail_url?.trim() ||
+                        primaryImage.url ||
+                        "/placeholder.svg"
+                      }
                       alt={capitalizeWords(listing.title)}
                       fill
                       sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"

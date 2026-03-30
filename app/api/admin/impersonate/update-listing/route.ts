@@ -49,7 +49,13 @@ export async function PUT(request: NextRequest) {
     listingId: string
     listing: Record<string, unknown>
     removedImageIds: string[]
-    images: { id?: string; url?: string; is_primary: boolean; sort_order: number }[]
+    images: {
+      id?: string
+      url?: string
+      thumbnail_url?: string | null
+      is_primary: boolean
+      sort_order: number
+    }[]
   }
 
   if (!listingId || !listingData) {
@@ -117,6 +123,7 @@ export async function PUT(request: NextRequest) {
       await service.from("listing_images").insert({
         listing_id: listingId,
         url: img.url,
+        thumbnail_url: img.thumbnail_url ?? null,
         is_primary: img.is_primary,
         sort_order: img.sort_order,
       })

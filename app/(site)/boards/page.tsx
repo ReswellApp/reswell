@@ -69,7 +69,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     .from("listings")
     .select(`
       *,
-      listing_images (url, is_primary),
+      listing_images (url, thumbnail_url, is_primary),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `, { count: "exact" })
     .eq("status", "active")
@@ -220,7 +220,11 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                   {primaryImage?.url ? (
                     // CLS-FIX: sizes matches the 5-column card grid breakpoints
                     <Image
-                      src={primaryImage.url || "/placeholder.svg"}
+                      src={
+                        (primaryImage as { thumbnail_url?: string | null }).thumbnail_url?.trim() ||
+                        primaryImage.url ||
+                        "/placeholder.svg"
+                      }
                       alt={capitalizeWords(board.title)}
                       fill
                       sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"

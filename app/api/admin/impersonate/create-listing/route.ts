@@ -86,9 +86,12 @@ export async function POST(request: NextRequest) {
   }
 
   if (images.length > 0) {
-    const imageInserts = images.map((url: string, index: number) => ({
+    const imageInserts = (
+      images as { url: string; thumbnail_url?: string | null }[]
+    ).map((row, index: number) => ({
       listing_id: listing.id,
-      url,
+      url: row.url,
+      thumbnail_url: row.thumbnail_url ?? null,
       is_primary: index === 0,
       sort_order: index,
     }))

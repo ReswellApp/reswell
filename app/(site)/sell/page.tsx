@@ -79,9 +79,12 @@ import {
 } from "@/components/surfboard-title-index-input"
 import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 import {
-  listingObjectPublicUrl,
-  uploadStorageObjectWithProgress,
-} from "@/lib/supabase/storage-upload-xhr"
+  assertListingOriginalSize,
+  browserCanDecodeImage as pipelineCanDecodeImage,
+  prepareListingImagePairFromFile,
+  type PreparedListingImagePair,
+} from "@/lib/listing-image-pipeline"
+import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import {
   buildSellListingDraft,
   clearSellListingDraft,
@@ -139,7 +142,6 @@ const boardTypes = [
 ]
 
 const LISTING_UPLOAD_STEP_LABELS = [
-  "Uploading your photos...",
   "Saving listing details...",
   "Publishing your listing...",
   "Almost there...",
@@ -155,10 +157,20 @@ type PublishPreviewState = {
   failedStepLabel?: string
 }
 
-type EditableImage = {
+type ListingPhotoSlot = {
+  clientId: string
+  /** Local preview (blob URL) until we can show uploaded thumb */
+  previewUrl: string
   id?: string
-  url: string
-  file?: File
+  url?: string
+  thumbnailUrl?: string
+  optimizePhase: "idle" | "running" | "done" | "error"
+  uploadPhase: "idle" | "uploading" | "done" | "error"
+  progressFull: number
+  progressThumb: number
+  errorMessage?: string
+  sourceFile?: File
+  prepared?: PreparedListingImagePair
 }
 
 function shippingPriceToFormValue(v: unknown): string {
@@ -181,15 +193,8 @@ function SellPageContent() {
   const [loading, setLoading] = useState(false)
   const [submitStepIndex, setSubmitStepIndex] = useState(0)
   const submitStepIndexRef = useRef(0)
-  const [imageUploadProgress, setImageUploadProgress] = useState<{
-    current: number
-    total: number
-    bytesLoaded: number
-    bytesTotal: number
-  } | null>(null)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
-  const uploadSessionCacheRef = useRef<Map<number, string>>(new Map())
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
@@ -208,7 +213,11 @@ function SellPageContent() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload)
   }, [loading])
   const [listingType, setListingType] = useState<"used" | "board">("used")
-  const [images, setImages] = useState<EditableImage[]>([])
+  const [images, setImages] = useState<ListingPhotoSlot[]>([])
+  const imagesRef = useRef<ListingPhotoSlot[]>([])
+  useEffect(() => {
+    imagesRef.current = images
+  }, [images])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
   const [formData, setFormData] = useState({
     title: "",
@@ -247,11 +256,15 @@ function SellPageContent() {
   const sellDraftLatestRef = useRef({
     listingType: "used" as "used" | "board",
     formData: {} as SellListingDraftFormSnapshot,
-    images: [] as EditableImage[],
+    images: [] as ListingPhotoSlot[],
     editId: null as string | null,
     draftHydrated: false,
   })
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
+  const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+
   sellDraftLatestRef.current = {
     listingType,
     formData: formData as SellListingDraftFormSnapshot,
@@ -276,14 +289,25 @@ function SellPageContent() {
       const lt = draft.listingType === "board" ? "board" : "used"
       setListingType(lt)
       setFormData((prev) => ({ ...prev, ...(draft.formData as Partial<typeof prev>) }))
-      const restored: EditableImage[] = []
+      const restored: ListingPhotoSlot[] = []
       for (const b of draft.imageBlobs) {
         const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
-        restored.push({ file, url: URL.createObjectURL(file) })
+        const clientId = crypto.randomUUID()
+        restored.push({
+          clientId,
+          previewUrl: URL.createObjectURL(file),
+          optimizePhase: "running",
+          uploadPhase: "idle",
+          progressFull: 0,
+          progressThumb: 0,
+          sourceFile: file,
+        })
       }
-      if (restored.length) setImages(restored)
+      if (restored.length) {
+        draftPhotosPendingRef.current = restored
+        setImages(restored)
+      }
       setDraftHydrated(true)
-      toast.info("Restored your listing draft (photos and details).")
     })()
     return () => {
       cancelled = true
@@ -298,7 +322,11 @@ function SellPageContent() {
       void (async () => {
         const r = sellDraftLatestRef.current
         if (r.editId || !r.draftHydrated) return
-        const built = await buildSellListingDraft(r.listingType, r.formData, r.images)
+        const built = await buildSellListingDraft(
+          r.listingType,
+          r.formData,
+          r.images.map((i) => ({ file: i.sourceFile })),
+        )
         if (built) await saveSellListingDraft(built)
         else await clearSellListingDraft()
       })()
@@ -313,7 +341,11 @@ function SellPageContent() {
       const r = sellDraftLatestRef.current
       if (r.editId || !r.draftHydrated) return
       void (async () => {
-        const built = await buildSellListingDraft(r.listingType, r.formData, r.images)
+        const built = await buildSellListingDraft(
+          r.listingType,
+          r.formData,
+          r.images.map((i) => ({ file: i.sourceFile })),
+        )
         if (built) await saveSellListingDraft(built)
         else await clearSellListingDraft()
       })()
@@ -382,7 +414,7 @@ function SellPageContent() {
           collectible_type,
           collectible_era,
           collectible_condition,
-          listing_images (id, url, is_primary, sort_order)
+          listing_images (id, url, thumbnail_url, is_primary, sort_order)
         `
         )
         .eq("id", editId)
@@ -494,10 +526,21 @@ function SellPageContent() {
             (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
             (a.sort_order ?? 0) - (b.sort_order ?? 0)
         )
-        .map((img: any) => ({
-          id: img.id as string,
-          url: img.url as string,
-        }))
+        .map((img: any) => {
+          const url = img.url as string
+          const tid = img.id as string
+          return {
+            clientId: tid,
+            previewUrl: url,
+            id: tid,
+            url,
+            thumbnailUrl: (img.thumbnail_url as string | null) || url,
+            optimizePhase: "done" as const,
+            uploadPhase: "done" as const,
+            progressFull: 100,
+            progressThumb: 100,
+          }
+        })
       setImages(existingImages)
       setRemovedImageIds([])
       setEditLoading(false)
@@ -520,125 +563,6 @@ function SellPageContent() {
       }
       img.src = url
     })
-  }
-
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files) return
-    const newFiles = Array.from(e.target.files)
-    if (images.length + newFiles.length > 12) {
-      toast.error("Maximum 12 photos allowed. You have " + images.length + ".")
-      e.target.value = ""
-      return
-    }
-    const next: EditableImage[] = []
-    for (const originalFile of newFiles) {
-      try {
-        const file = await toJpegIfUnsupported(originalFile)
-        let dims: { width: number; height: number } | null = null
-        try {
-          dims = await getImageDimensions(file)
-        } catch { /* accept */ }
-
-        if (dims && dims.height <= dims.width) {
-          toast.error(`"${file.name}" is not vertical. Please upload portrait (vertical) photos only — height must be greater than width.`)
-          continue
-        }
-
-        next.push({ file, url: URL.createObjectURL(file) })
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Conversion failed"
-        toast.error(`Could not convert "${originalFile.name}" to JPEG: ${msg}`)
-      }
-    }
-    if (next.length) {
-      setImages((prev) => [...prev, ...next])
-    }
-    e.target.value = ""
-  }
-
-  function removeImage(index: number) {
-    setImages((prev) => {
-      const toRemove = prev[index]
-      if (toRemove?.id) {
-        setRemovedImageIds((ids) => [...ids, toRemove.id!])
-      }
-      return prev.filter((_, i) => i !== index)
-    })
-  }
-
-  function moveImage(index: number, delta: number) {
-    setImages((prev) => {
-      const newIndex = index + delta
-      if (newIndex < 0 || newIndex >= prev.length) return prev
-      const copy = [...prev]
-      const [item] = copy.splice(index, 1)
-      copy.splice(newIndex, 0, item)
-      return copy
-    })
-  }
-
-  async function browserCanDecodeImage(file: File): Promise<boolean> {
-    try {
-      const b = await createImageBitmap(file)
-      b.close()
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  /** If the browser cannot decode this file (HEIC, odd formats), convert to JPEG on the server. */
-  async function toJpegIfUnsupported(file: File): Promise<File> {
-    if (await browserCanDecodeImage(file)) return file
-    return convertViaServer(file)
-  }
-
-  /**
-   * Resize images >12 MP down to 12 MP keeping aspect ratio, then
-   * progressively compress to JPEG until the file fits comfortably
-   * within typical storage limits (~4.5 MB).  Uses multi-step
-   * downscaling for best visual quality on large reductions.
-   */
-  async function compressImage(file: File): Promise<File> {
-    const MAX_PIXELS = 12_000_000
-    const MAX_BYTES  = 4.5 * 1024 * 1024
-
-    const bitmap = await createImageBitmap(file)
-    let { width, height } = bitmap
-    const totalPixels = width * height
-
-    if (totalPixels > MAX_PIXELS) {
-      const scale = Math.sqrt(MAX_PIXELS / totalPixels)
-      width  = Math.round(width * scale)
-      height = Math.round(height * scale)
-    }
-
-    const canvas  = document.createElement("canvas")
-    canvas.width  = width
-    canvas.height = height
-    const ctx = canvas.getContext("2d")!
-    ctx.imageSmoothingEnabled = true
-    ctx.imageSmoothingQuality = "high"
-    ctx.drawImage(bitmap, 0, 0, width, height)
-    bitmap.close()
-
-    const baseName = file.name.replace(/\.[^.]+$/, "") || "image"
-
-    let quality = 0.92
-    while (quality >= 0.5) {
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/jpeg", quality),
-      )
-      if (blob.size <= MAX_BYTES || quality <= 0.5) {
-        return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" })
-      }
-      quality -= 0.05
-    }
-
-    const finalBlob = await new Promise<Blob>((resolve) =>
-      canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.5),
-    )
-    return new File([finalBlob], `${baseName}.jpg`, { type: "image/jpeg" })
   }
 
   async function convertViaServer(file: File): Promise<File> {
@@ -667,100 +591,212 @@ function SellPageContent() {
     return new File([blob], `${base}.jpg`, { type: "image/jpeg" })
   }
 
-  /** Decode unsupported formats via server, then resize/compress for storage. */
-  async function preparePhotoForStorage(file: File): Promise<File> {
-    const decoded = await toJpegIfUnsupported(file)
+  async function toJpegIfUnsupported(file: File): Promise<File> {
+    if (await pipelineCanDecodeImage(file)) return file
+    return convertViaServer(file)
+  }
+
+  async function optimizeAndUploadSlot(slot: ListingPhotoSlot) {
+    const clientId = slot.clientId
+    const previewUrl = slot.previewUrl
+    let prepared = slot.prepared
+
     try {
-      return await compressImage(decoded)
-    } catch {
-      const again = await convertViaServer(file)
-      return await compressImage(again)
-    }
-  }
-
-  const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-
-  async function storageUploadListingJpeg(args: {
-    accessToken: string
-    userId: string
-    file: File
-    uniqueSuffix: string
-    onProgress?: (loaded: number, total: number) => void
-  }): Promise<string> {
-    const { accessToken, userId, file, uniqueSuffix, onProgress } = args
-    const baseName = file.name.replace(/\.[^.]+$/i, "") || "image"
-    const pathInBucket = `${userId}/${Date.now()}-${uniqueSuffix}-${baseName}.jpg`
-    const { pathInBucket: storedPath } = await uploadStorageObjectWithProgress({
-      supabaseUrl: supabaseProjectUrl,
-      accessToken,
-      anonKey: supabaseAnonKey,
-      bucket: "listings",
-      pathInBucket,
-      body: file,
-      contentType: "image/jpeg",
-      upsert: false,
-      onProgress: onProgress ? (p) => onProgress(p.loaded, p.total) : undefined,
-    })
-    return listingObjectPublicUrl(supabaseProjectUrl, storedPath)
-  }
-
-  async function uploadImagesToStorage(userId: string, accessToken: string): Promise<string[]> {
-    const urls: string[] = []
-    const uploadsTotal = images.filter((im) => !!im.file).length
-    let uploadDone = 0
-
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i]
-      if (img.url && !img.file) {
-        urls.push(img.url)
-        continue
-      }
-      if (!img.file) continue
-
-      const cached = uploadSessionCacheRef.current.get(i)
-      if (cached) {
-        urls.push(cached)
-        uploadDone++
-        setImageUploadProgress({
-          current: uploadDone,
-          total: Math.max(1, uploadsTotal),
-          bytesLoaded: 1,
-          bytesTotal: 1,
-        })
-        continue
+      if (!prepared) {
+        const src = slot.sourceFile
+        if (!src) return
+        let file = await toJpegIfUnsupported(src)
+        const dims = await getImageDimensions(file)
+        if (dims.height <= dims.width) {
+          if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl)
+          setImages((prev) => prev.filter((s) => s.clientId !== clientId))
+          toast.error(
+            `"${src.name}" is not vertical. Portrait only — height must be greater than width.`,
+          )
+          return
+        }
+        prepared = await prepareListingImagePairFromFile(file)
+        setImages((prev) =>
+          prev.map((s) =>
+            s.clientId === clientId
+              ? { ...s, optimizePhase: "done", prepared, sourceFile: undefined }
+              : s,
+          ),
+        )
       }
 
-      let fileToUpload: File
-      try {
-        fileToUpload = await preparePhotoForStorage(img.file)
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Unknown error"
-        throw new Error(`Photo ${i + 1} could not be processed: ${msg}`)
+      if (!prepared) return
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setImages((prev) =>
+          prev.map((s) =>
+            s.clientId === clientId
+              ? {
+                  ...s,
+                  uploadPhase: "error",
+                  errorMessage: "Sign in to upload photos.",
+                }
+              : s,
+          ),
+        )
+        return
+      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setImages((prev) =>
+          prev.map((s) =>
+            s.clientId === clientId
+              ? { ...s, uploadPhase: "error", errorMessage: "Sign in to upload photos." }
+              : s,
+          ),
+        )
+        return
       }
 
-      const publicUrl = await storageUploadListingJpeg({
-        accessToken,
-        userId,
-        file: fileToUpload,
-        uniqueSuffix: String(i),
-        onProgress: (loaded, total) => {
-          setImageUploadProgress({
-            current: uploadDone + 1,
-            total: Math.max(1, uploadsTotal),
-            bytesLoaded: loaded,
-            bytesTotal: total,
-          })
+      setImages((prev) =>
+        prev.map((s) =>
+          s.clientId === clientId
+            ? {
+                ...s,
+                uploadPhase: "uploading",
+                progressFull: 0,
+                progressThumb: 0,
+                errorMessage: undefined,
+              }
+            : s,
+        ),
+      )
+
+      const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
+        supabaseUrl: supabaseProjectUrl,
+        accessToken: session.access_token,
+        anonKey: supabaseAnonKey,
+        userId: user.id,
+        clientId,
+        prepared,
+        onProgressFull: (loaded, total) => {
+          const pct = total ? Math.round((100 * loaded) / total) : 0
+          setImages((prev) =>
+            prev.map((s) => (s.clientId === clientId ? { ...s, progressFull: pct } : s)),
+          )
+        },
+        onProgressThumb: (loaded, total) => {
+          const pct = total ? Math.round((100 * loaded) / total) : 0
+          setImages((prev) =>
+            prev.map((s) => (s.clientId === clientId ? { ...s, progressThumb: pct } : s)),
+          )
         },
       })
-      uploadSessionCacheRef.current.set(i, publicUrl)
-      urls.push(publicUrl)
-      uploadDone++
+
+      setImages((prev) =>
+        prev.map((s) =>
+          s.clientId === clientId
+            ? {
+                ...s,
+                uploadPhase: "done",
+                url: fullUrl,
+                thumbnailUrl: thumbUrl,
+                progressFull: 100,
+                progressThumb: 100,
+                prepared: undefined,
+              }
+            : s,
+        ),
+      )
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Photo processing failed"
+      setImages((prev) =>
+        prev.map((s) => {
+          if (s.clientId !== clientId) return s
+          if (s.prepared) {
+            return { ...s, uploadPhase: "error", errorMessage: msg }
+          }
+          return {
+            ...s,
+            optimizePhase: "error",
+            uploadPhase: "idle",
+            errorMessage: msg,
+          }
+        }),
+      )
+      toast.error(msg)
     }
-    return urls
   }
 
-  async function syncListingImages(listingId: string, userId: string, accessToken: string) {
+  function retryListingPhotoUpload(clientId: string) {
+    const live = imagesRef.current.find((s) => s.clientId === clientId)
+    if (!live) return
+    void optimizeAndUploadSlot({
+      ...live,
+      errorMessage: undefined,
+    })
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files) return
+    const newFiles = Array.from(e.target.files)
+    if (images.length + newFiles.length > 12) {
+      toast.error("Maximum 12 photos allowed. You have " + images.length + ".")
+      e.target.value = ""
+      return
+    }
+    for (const originalFile of newFiles) {
+      try {
+        assertListingOriginalSize(originalFile)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "File too large")
+        continue
+      }
+      const clientId = crypto.randomUUID()
+      const previewUrl = URL.createObjectURL(originalFile)
+      const slot: ListingPhotoSlot = {
+        clientId,
+        previewUrl,
+        optimizePhase: "running",
+        uploadPhase: "idle",
+        progressFull: 0,
+        progressThumb: 0,
+        sourceFile: originalFile,
+      }
+      setImages((prev) => [...prev, slot])
+      void optimizeAndUploadSlot(slot)
+    }
+    e.target.value = ""
+  }
+
+  function removeImage(index: number) {
+    setImages((prev) => {
+      const toRemove = prev[index]
+      if (toRemove?.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(toRemove.previewUrl)
+      }
+      if (toRemove?.id) {
+        setRemovedImageIds((ids) => [...ids, toRemove.id!])
+      }
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
+  function moveImage(index: number, delta: number) {
+    setImages((prev) => {
+      const newIndex = index + delta
+      if (newIndex < 0 || newIndex >= prev.length) return prev
+      const copy = [...prev]
+      const [item] = copy.splice(index, 1)
+      copy.splice(newIndex, 0, item)
+      return copy
+    })
+  }
+
+  function listingImagesPayloadForApi(): { url: string; thumbnail_url: string | null }[] {
+    return images.map((im) => ({
+      url: im.url!,
+      thumbnail_url: im.thumbnailUrl ?? null,
+    }))
+  }
+
+  async function syncListingImages(listingId: string) {
     if (removedImageIds.length) {
       await supabase
         .from("listing_images")
@@ -769,19 +805,49 @@ function SellPageContent() {
         .eq("listing_id", listingId)
     }
 
-    const uploadsTotal = images.filter((im) => !!im.file).length
-    let uploadDone = 0
+    const newRows = images
+      .map((img, index) => ({ img, index }))
+      .filter(({ img }) => !img.id && img.url)
 
-    for (let index = 0; index < images.length; index++) {
-      const img = images[index]
-      const isPrimary = index === 0
+    const insertResults = await Promise.all(
+      newRows.map(async ({ img, index }) => {
+        const { data: inserted, error: insertError } = await supabase
+          .from("listing_images")
+          .insert({
+            listing_id: listingId,
+            url: img.url!,
+            thumbnail_url: img.thumbnailUrl ?? null,
+            is_primary: index === 0,
+            sort_order: index,
+          })
+          .select("id")
+          .single()
 
-      if (img.id) {
+        if (insertError || !inserted?.id) {
+          throw new Error(
+            insertError?.message || `Photo ${index + 1} could not be saved to your listing.`,
+          )
+        }
+        return { index, id: inserted.id as string }
+      }),
+    )
+
+    let working = [...images]
+    if (insertResults.length) {
+      for (const { index, id } of insertResults) {
+        working[index] = { ...working[index], id }
+      }
+      setImages(working)
+    }
+
+    await Promise.all(
+      working.map(async (img, index) => {
+        if (!img.id) return
         const { error } = await supabase
           .from("listing_images")
           .update({
             sort_order: index,
-            is_primary: isPrimary,
+            is_primary: index === 0,
           })
           .eq("id", img.id)
           .eq("listing_id", listingId)
@@ -789,60 +855,19 @@ function SellPageContent() {
           console.error("listing_images update:", error)
           throw new Error(`Could not update photo order (image ${index + 1}).`)
         }
-        continue
-      }
-
-      if (!img.file) continue
-
-      let fileToUpload: File
-      try {
-        fileToUpload = await preparePhotoForStorage(img.file)
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Unknown error"
-        throw new Error(`Photo ${index + 1} could not be processed: ${msg}`)
-      }
-
-      const publicUrl = await storageUploadListingJpeg({
-        accessToken,
-        userId,
-        file: fileToUpload,
-        uniqueSuffix: `sync-${index}`,
-        onProgress: (loaded, total) => {
-          setImageUploadProgress({
-            current: uploadDone + 1,
-            total: Math.max(1, uploadsTotal),
-            bytesLoaded: loaded,
-            bytesTotal: total,
-          })
-        },
-      })
-
-      const { data: inserted, error: insertError } = await supabase
-        .from("listing_images")
-        .insert({
-          listing_id: listingId,
-          url: publicUrl,
-          is_primary: isPrimary,
-          sort_order: index,
-        })
-        .select("id")
-        .single()
-
-      if (insertError || !inserted?.id) {
-        console.error("listing_images insert:", insertError)
-        throw new Error(
-          insertError?.message || `Photo ${index + 1} could not be saved to your listing.`,
-        )
-      }
-
-      setImages((prev) =>
-        prev.map((p, i) =>
-          i === index ? { ...p, id: inserted.id, url: publicUrl, file: undefined } : p,
-        ),
-      )
-      uploadDone++
-    }
+      }),
+    )
   }
+
+  useEffect(() => {
+    if (!draftHydrated || editId) return
+    const pending = draftPhotosPendingRef.current
+    if (!pending?.length) return
+    draftPhotosPendingRef.current = null
+    for (const s of pending) {
+      void optimizeAndUploadSlot(s)
+    }
+  }, [draftHydrated, editId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -852,7 +877,6 @@ function SellPageContent() {
     }
     setLoading(true)
     goSubmitStep(0)
-    setImageUploadProgress(null)
     uploadToastIdRef.current = null
 
     try {
@@ -916,6 +940,22 @@ function SellPageContent() {
         return
       }
 
+      if (listingType === "used" || listingType === "board") {
+        const notReady = images.some(
+          (im) =>
+            im.uploadPhase !== "done" ||
+            !im.url?.trim() ||
+            !im.thumbnailUrl?.trim(),
+        )
+        if (notReady) {
+          toast.error(
+            "Wait for all photos to finish uploading, or tap Retry on any that failed.",
+          )
+          setLoading(false)
+          return
+        }
+      }
+
       const fulfillmentFlags =
         listingType === "used"
           ? { shipping_available: true, local_pickup: false }
@@ -952,18 +992,16 @@ function SellPageContent() {
       const flowImpersonation = !!impersonation
       if (!editId && !flowImpersonation) {
         const labels = [
-          "Preparing your listing...",
-          "Saving listing details...",
-          "Publishing your listing...",
+          "Saving your listing...",
+          "Attaching photos...",
           "Almost there...",
         ]
         uploadPhaseLabelsRef.current = labels
         setUploadPhaseLabels(labels)
       } else if (editId && !flowImpersonation) {
         const labels = [
-          "Saving listing details...",
-          "Uploading your photos...",
-          "Publishing your listing...",
+          "Saving your listing...",
+          "Saving photo changes...",
           "Almost there...",
         ]
         uploadPhaseLabelsRef.current = labels
@@ -977,7 +1015,11 @@ function SellPageContent() {
       setPublishPreview({
         title: resolvedListingTitle,
         price: formData.price,
-        coverUrl: images[0]?.url || "/placeholder.svg",
+        coverUrl:
+          images[0]?.thumbnailUrl ||
+          images[0]?.url ||
+          images[0]?.previewUrl ||
+          "/placeholder.svg",
         status: "publishing",
       })
       uploadToastIdRef.current = toast.loading("Your listing is being uploaded...", {
@@ -985,8 +1027,7 @@ function SellPageContent() {
       })
 
       if (!editId && !flowImpersonation) {
-        await new Promise((r) => setTimeout(r, 450))
-        goSubmitStep(1)
+        await new Promise((r) => setTimeout(r, 200))
       }
 
       let listingId = editId
@@ -1159,39 +1200,28 @@ function SellPageContent() {
         } else if (adminImpersonatesListingOwner) {
           usedImpersonationListingApi = true
           goSubmitStep(0)
-          const uploadsTotal = images.filter((im) => !!im.file).length
-          let uploadDone = 0
-          const imageOps: { id?: string; url?: string; is_primary: boolean; sort_order: number }[] = []
+          const imageOps: {
+            id?: string
+            url?: string
+            thumbnail_url?: string | null
+            is_primary: boolean
+            sort_order: number
+          }[] = []
           for (let i = 0; i < images.length; i++) {
             const img = images[i]
-            if (img.id && !img.file) {
+            if (img.id) {
               imageOps.push({ id: img.id, is_primary: i === 0, sort_order: i })
               continue
             }
-            if (!img.file) continue
-            let fileToUpload: File
-            try {
-              fileToUpload = await preparePhotoForStorage(img.file)
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : "Unknown error"
-              throw new Error(`Photo ${i + 1} could not be processed: ${msg}`)
+            if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
+              throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
             }
-            const publicUrl = await storageUploadListingJpeg({
-              accessToken,
-              userId: user.id,
-              file: fileToUpload,
-              uniqueSuffix: `imp-admin-${i}`,
-              onProgress: (loaded, total) => {
-                setImageUploadProgress({
-                  current: uploadDone + 1,
-                  total: Math.max(1, uploadsTotal),
-                  bytesLoaded: loaded,
-                  bytesTotal: total,
-                })
-              },
+            imageOps.push({
+              url: img.url,
+              thumbnail_url: img.thumbnailUrl,
+              is_primary: i === 0,
+              sort_order: i,
             })
-            imageOps.push({ url: publicUrl, is_primary: i === 0, sort_order: i })
-            uploadDone++
           }
 
           goSubmitStep(1)
@@ -1344,12 +1374,15 @@ function SellPageContent() {
         if (impersonation) {
           usedImpersonationListingApi = true
           goSubmitStep(0)
-          const imageUrls = await uploadImagesToStorage(user.id, accessToken)
+          const imagePayload = listingImagesPayloadForApi()
+          if (imagePayload.length !== images.length) {
+            throw new Error("Finish uploading all photos before submitting.")
+          }
           goSubmitStep(1)
           const res = await fetch("/api/admin/impersonate/create-listing", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ listing: listingFields, images: imageUrls }),
+            body: JSON.stringify({ listing: listingFields, images: imagePayload }),
           })
           const data = await res.json()
           if (!res.ok) throw new Error(data.error || "Failed to create listing")
@@ -1375,6 +1408,20 @@ function SellPageContent() {
           if (listingError || !listing) throw listingError
           listingId = listing.id
           listingSlug = listing.slug ?? newSlug
+          goSubmitStep(1)
+          const imageRows = images.map((im, index) => ({
+            listing_id: listingId,
+            url: im.url!,
+            thumbnail_url: im.thumbnailUrl ?? null,
+            is_primary: index === 0,
+            sort_order: index,
+          }))
+          const { error: imagesInsertError } = await supabase
+            .from("listing_images")
+            .insert(imageRows)
+          if (imagesInsertError) {
+            throw new Error(imagesInsertError.message || "Failed to save listing photos")
+          }
           goSubmitStep(2)
         }
       }
@@ -1384,9 +1431,8 @@ function SellPageContent() {
 
       if (listingId) {
         if (!editId && !impersonation) {
-          goSubmitStep(3)
           setPublishPreview((p) =>
-            p ? { ...p, status: "live", detailHref: `${detailPath}?photos=pending` } : null,
+            p ? { ...p, status: "live", detailHref: detailPath } : null,
           )
           const tid = uploadToastIdRef.current
           if (tid != null) {
@@ -1394,26 +1440,19 @@ function SellPageContent() {
           } else {
             toast.success("Your listing is live! 🎉")
           }
-          uploadSessionCacheRef.current.clear()
           void clearSellListingDraft()
-          router.push(`${detailPath}?photos=pending`)
-          void syncListingImages(listingId, user.id, accessToken).catch((err: unknown) => {
-            console.error("Background photo upload:", err)
-            toast.error(
-              "Some photos may not have uploaded. Open your listing to retry from edit, or add photos again.",
-            )
-          })
+          router.push(detailPath)
           return
         }
         if (editId && !usedImpersonationListingApi) {
-          const willUploadNewPhotos = images.some((im) => !!im.file)
-          if (willUploadNewPhotos) goSubmitStep(1)
-          await syncListingImages(listingId, user.id, accessToken)
+          const willSyncNewPhotos = images.some((im) => !im.id && im.url)
+          if (willSyncNewPhotos) goSubmitStep(1)
+          await syncListingImages(listingId)
           goSubmitStep(2)
         }
       }
 
-      goSubmitStep(3)
+      goSubmitStep(2)
       setPublishPreview((p) => (p ? { ...p, status: "live", detailHref: detailPath } : null))
 
       const tidDone = uploadToastIdRef.current
@@ -1428,7 +1467,6 @@ function SellPageContent() {
         if (tidDone != null) toast.success(msg, { id: tidDone })
         else toast.success(editId ? "Listing updated!" : "Your listing is live! 🎉")
       }
-      uploadSessionCacheRef.current.clear()
       void clearSellListingDraft()
       router.push(detailPath)
     } catch (error: unknown) {
@@ -1466,23 +1504,16 @@ function SellPageContent() {
       }
     } finally {
       setLoading(false)
-      setImageUploadProgress(null)
     }
   }
 
-  const imageProgress = imageUploadProgress
-  let listingSubmitProgressValue: number
-  if (imageProgress && imageProgress.total > 0) {
-    const frac =
-      (imageProgress.current - 1 +
-        (imageProgress.bytesTotal > 0
-          ? imageProgress.bytesLoaded / imageProgress.bytesTotal
-          : 0)) /
-      imageProgress.total
-    listingSubmitProgressValue = Math.min(99, submitStepIndex * 25 + frac * 25)
-  } else {
-    listingSubmitProgressValue = Math.min(99, ((submitStepIndex + 0.35) / 4) * 100)
-  }
+  const stepCount = Math.max(1, uploadPhaseLabels.length)
+  const listingSubmitProgressValue = Math.min(
+    99,
+    ((submitStepIndex + 0.35) / stepCount) * 100,
+  )
+
+  const optimizingAny = images.some((im) => im.optimizePhase === "running")
 
   return (
       <main className="flex-1 py-8">
@@ -2364,58 +2395,100 @@ function SellPageContent() {
                 {/* Images */}
                 <div className="space-y-2">
                   <Label>Photos (3–12 required)</Label>
+                  {optimizingAny ? (
+                    <p className="text-xs text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                      Optimizing images…
+                    </p>
+                  ) : null}
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {images.map((image, index) => (
                       <div
-                        key={image.id ?? index}
-                        className="relative aspect-square rounded-lg overflow-hidden bg-muted"
+                        key={image.clientId}
+                        className="relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col"
                       >
-                        {/* CLS-FIX: use next/image fill so the browser never
-                            needs to compute intrinsic dimensions; the parent
-                            aspect-square container pre-reserves all the space. */}
-                        <Image
-                          src={image.url || "/placeholder.svg"}
-                          alt={`Photo ${index + 1}`}
-                          fill
-                          className="object-contain"
-                          unoptimized
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 p-1 rounded-full bg-background/80 hover:bg-background"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                        <div className="absolute bottom-1 left-1 flex items-center gap-1">
-                          {index === 0 && (
-                            <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
-                              Main
-                            </span>
-                          )}
+                        <div className="relative flex-1 min-h-0">
+                          <Image
+                            src={
+                              image.thumbnailUrl ||
+                              image.url ||
+                              image.previewUrl ||
+                              "/placeholder.svg"
+                            }
+                            alt={`Photo ${index + 1}`}
+                            fill
+                            className="object-contain"
+                            unoptimized
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-background/80 hover:bg-background z-10"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          <div className="absolute bottom-6 left-1 flex items-center gap-1 z-10">
+                            {index === 0 && (
+                              <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
+                                Main
+                              </span>
+                            )}
+                          </div>
+                          <div className="absolute bottom-6 right-1 flex gap-1 z-10">
+                            {index > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, -1)}
+                                className="p-1 rounded-full bg-background/80 hover:bg-background"
+                                aria-label="Move left"
+                              >
+                                <ChevronLeft className="h-3 w-3" />
+                              </button>
+                            )}
+                            {index < images.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, 1)}
+                                className="p-1 rounded-full bg-background/80 hover:bg-background"
+                                aria-label="Move right"
+                              >
+                                <ChevronRight className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="absolute bottom-1 right-1 flex gap-1">
-                          {index > 0 && (
-                            <button
+                        {image.optimizePhase === "running" && image.uploadPhase === "idle" ? (
+                          <div className="shrink-0 px-1 py-1 bg-background/90 border-t border-border/60">
+                            <p className="text-[9px] text-muted-foreground text-center leading-tight">
+                              Optimizing…
+                            </p>
+                          </div>
+                        ) : image.uploadPhase === "uploading" ? (
+                          <div className="shrink-0 px-1 pb-1 pt-0.5 space-y-0.5 bg-background/90 border-t border-border/60">
+                            <p className="text-[9px] text-muted-foreground text-center leading-tight">
+                              Uploading
+                            </p>
+                            <Progress value={image.progressFull} className="h-1" title="Full size" />
+                            <Progress value={image.progressThumb} className="h-1" title="Thumbnail" />
+                          </div>
+                        ) : null}
+                        {image.uploadPhase === "error" || image.optimizePhase === "error" ? (
+                          <div className="shrink-0 p-1 bg-destructive/10 border-t border-destructive/20 space-y-1">
+                            <p className="text-[9px] text-destructive line-clamp-2">
+                              {image.errorMessage || "Failed"}
+                            </p>
+                            <Button
                               type="button"
-                              onClick={() => moveImage(index, -1)}
-                              className="p-1 rounded-full bg-background/80 hover:bg-background"
-                              aria-label="Move left"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 w-full text-[10px] px-1"
+                              onClick={() => retryListingPhotoUpload(image.clientId)}
                             >
-                              <ChevronLeft className="h-3 w-3" />
-                            </button>
-                          )}
-                          {index < images.length - 1 && (
-                            <button
-                              type="button"
-                              onClick={() => moveImage(index, 1)}
-                              className="p-1 rounded-full bg-background/80 hover:bg-background"
-                              aria-label="Move right"
-                            >
-                              <ChevronRight className="h-3 w-3" />
-                            </button>
-                          )}
-                        </div>
+                              <RefreshCw className="h-3 w-3 mr-0.5" />
+                              Retry
+                            </Button>
+                          </div>
+                        ) : null}
                       </div>
                     ))}
                     {images.length < 12 && (
@@ -2553,14 +2626,6 @@ function SellPageContent() {
                         />
                       ))}
                     </div>
-                    {imageUploadProgress && imageUploadProgress.total > 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        Uploading images: {imageUploadProgress.current} of {imageUploadProgress.total}
-                        {imageUploadProgress.bytesTotal > 0
-                          ? ` (${Math.round((100 * imageUploadProgress.bytesLoaded) / imageUploadProgress.bytesTotal)}%)`
-                          : null}
-                      </p>
-                    ) : null}
                     <p className="text-xs text-muted-foreground">
                       {editId ? "Save in progress — please keep this tab open." : "Upload in progress — please keep this tab open."}
                     </p>

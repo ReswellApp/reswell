@@ -107,12 +107,20 @@ export async function POST(request: NextRequest) {
   }
 
   if (images.length > 0) {
-    const imageInserts = images.map((url: string, index: number) => ({
-      listing_id: listing.id,
-      url,
-      is_primary: index === 0,
-      sort_order: index,
-    }))
+    const imageInserts = (
+      images as (string | { url: string; thumbnail_url?: string | null })[]
+    ).map((entry, index: number) => {
+      const url = typeof entry === 'string' ? entry : entry.url
+      const thumbnail_url =
+        typeof entry === 'string' ? null : entry.thumbnail_url ?? null
+      return {
+        listing_id: listing.id,
+        url,
+        thumbnail_url,
+        is_primary: index === 0,
+        sort_order: index,
+      }
+    })
     await supabase.from('listing_images').insert(imageInserts)
   }
 
