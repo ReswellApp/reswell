@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
+import { STRIPE_PAYOUT_GENERIC_ERROR } from "@/lib/stripe-connect-user-messages"
 import { headers } from "next/headers"
 
 export const runtime = "nodejs"
@@ -220,10 +221,9 @@ export async function POST(request: NextRequest) {
     } else if (method === "RESWELL_CREDIT") {
       status = "PAID"
     }
-  } catch (err) {
-    const stripeErr = err as { message?: string }
-    console.error("[payouts] Stripe payout error:", stripeErr)
-    failureReason = stripeErr.message ?? "Payout failed"
+  } catch (error) {
+    console.error("[payouts] Stripe payout error:", error)
+    failureReason = STRIPE_PAYOUT_GENERIC_ERROR
     status = "FAILED"
   }
 
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
 
   if (status === "FAILED") {
     return NextResponse.json(
-      { error: failureReason ?? "Payout failed", payout: payoutRecord },
+      { error: STRIPE_PAYOUT_GENERIC_ERROR, payout: payoutRecord },
       { status: 422 }
     )
   }

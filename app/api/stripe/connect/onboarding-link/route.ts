@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
+import { STRIPE_CONNECT_GENERIC_ERROR } from "@/lib/stripe-connect-user-messages"
 
 export const runtime = "nodejs"
 
@@ -14,7 +15,8 @@ export async function POST(_request: NextRequest) {
 
   const stripe = getStripe()
   if (!stripe) {
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 })
+    console.error("[connect/onboarding-link] STRIPE_SECRET_KEY missing or invalid")
+    return NextResponse.json({ error: STRIPE_CONNECT_GENERIC_ERROR }, { status: 503 })
   }
 
   const { data: account } = await supabase
@@ -38,8 +40,8 @@ export async function POST(_request: NextRequest) {
     })
 
     return NextResponse.json({ url: accountLink.url })
-  } catch (err) {
-    console.error("[connect/onboarding-link] Stripe error:", err)
-    return NextResponse.json({ error: "Failed to create onboarding link" }, { status: 500 })
+  } catch (error) {
+    console.error("[connect/onboarding-link] Stripe Connect error:", error)
+    return NextResponse.json({ error: STRIPE_CONNECT_GENERIC_ERROR }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
+import { STRIPE_CONNECT_GENERIC_ERROR } from "@/lib/stripe-connect-user-messages"
 
 export const runtime = "nodejs"
 
@@ -14,7 +15,8 @@ export async function POST(_request: NextRequest) {
 
   const stripe = getStripe()
   if (!stripe) {
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 })
+    console.error("[connect/create-account] STRIPE_SECRET_KEY missing or invalid")
+    return NextResponse.json({ error: STRIPE_CONNECT_GENERIC_ERROR }, { status: 503 })
   }
 
   // Check if already has a Connect account
@@ -77,22 +79,21 @@ export async function POST(_request: NextRequest) {
       console.error("[connect/create-account] DB insert failed:", insertError)
       // Clean up Stripe account if DB insert fails
       await stripe.accounts.del(account.id).catch(() => null)
-      return NextResponse.json(
-        { error: `Database error: ${insertError.message}` },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: STRIPE_CONNECT_GENERIC_ERROR }, { status: 500 })
     }
 
     // Ensure seller_balances row exists
-    await supabase.rpc("ensure_seller_balance", { p_user_id: user.id })
+    const { error: rpcError } = await supabase.rpc("ensure_seller_balance", {
+      p_user_id: user.id,
+    })
+    if (rpcError) {
+      console.error("[connect/create-account] ensure_seller_balance failed:", rpcError)
+    }
 
     return NextResponse.json({ stripe_account_id: account.id })
-  } catch (err) {
-    const stripeErr = err as { message?: string; code?: string; type?: string }
-    console.error("[connect/create-account] Stripe error:", stripeErr)
-    return NextResponse.json(
-      { error: stripeErr.message ?? "Failed to create Stripe account" },
-      { status: 500 }
-    )
+  } catch (error) {
+    // Never expose raw Stripe errors to the client (may mention keys, permissions, internal IDs)
+    console.error("[connect/create-account] Stripe Connect error:", error)
+    return NextResponse.json({ error: STRIPE_CONNECT_GENERIC_ERROR }, { status: 500 })
   }
 }
