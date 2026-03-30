@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripeOptional } from "@/lib/stripe-client"
+import { stripeContextForConnectedAccount } from "@/lib/stripe-connect-context"
 import {
   persistSellerAccountFromV2Account,
   v2OnboardingComplete,
@@ -60,9 +61,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const account = await stripe.v2.core.accounts.retrieve(stripeAccountId, {
-      include: ["configuration.recipient", "requirements"],
-    })
+    const account = await stripe.v2.core.accounts.retrieve(
+      stripeAccountId,
+      {
+        include: ["configuration.recipient", "requirements"],
+      },
+      stripeContextForConnectedAccount(stripeAccountId)
+    )
 
     const readyToReceivePayments = v2RecipientTransfersActive(account)
     const requirementsStatus = v2RequirementsSummaryStatus(account)

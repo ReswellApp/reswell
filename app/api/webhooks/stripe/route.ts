@@ -7,6 +7,7 @@ import {
   isPeerListingCheckoutMode,
 } from "@/lib/checkout/surfboard-stripe-completion"
 import { completeCartCheckoutFromSession } from "@/lib/checkout/cart-stripe-completion"
+import { stripeContextForConnectedAccount } from "@/lib/stripe-connect-context"
 import { persistSellerAccountFromV2Account } from "@/lib/stripe-connect-v2-sync"
 
 export const runtime = "nodejs"
@@ -29,9 +30,13 @@ async function handleV2CoreWebhookEvent(
         : null
 
     if (accountId) {
-      const account = await stripe.v2.core.accounts.retrieve(accountId, {
-        include: ["configuration.recipient", "requirements"],
-      })
+      const account = await stripe.v2.core.accounts.retrieve(
+        accountId,
+        {
+          include: ["configuration.recipient", "requirements"],
+        },
+        stripeContextForConnectedAccount(accountId)
+      )
       await persistSellerAccountFromV2Account(supabase, account)
     }
   }

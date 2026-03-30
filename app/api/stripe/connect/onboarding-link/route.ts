@@ -5,6 +5,7 @@ import {
   originIsLocalhost,
   stripeSecretKeyIsLiveMode,
 } from "@/lib/checkout-app-origin"
+import { stripeContextForConnectedAccount } from "@/lib/stripe-connect-context"
 import { getStripeOptional } from "@/lib/stripe-client"
 import { STRIPE_CONNECT_GENERIC_ERROR } from "@/lib/stripe-connect-user-messages"
 import Stripe from "stripe"
@@ -100,10 +101,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const accountLink = await stripe.v2.core.accountLinks.create({
-      account: accountId,
-      use_case: useCase,
-    })
+    const accountLink = await stripe.v2.core.accountLinks.create(
+      {
+        account: accountId,
+        use_case: useCase,
+      },
+      stripeContextForConnectedAccount(accountId)
+    )
 
     console.log("[connect/onboarding-link] Onboarding link created:", accountLink.url)
     return NextResponse.json({ url: accountLink.url })

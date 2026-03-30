@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripeOptional } from "@/lib/stripe-client"
+import { stripeContextForConnectedAccount } from "@/lib/stripe-connect-context"
 import { STRIPE_CONNECT_GENERIC_ERROR } from "@/lib/stripe-connect-user-messages"
 import type Stripe from "stripe"
 
@@ -97,9 +98,11 @@ export async function POST(_request: NextRequest) {
 
   if (insertError) {
     console.error("[connect/create-account] DB insert failed:", insertError)
-    await stripe.v2.core.accounts.close(account.id).catch((e) => {
-      console.error("[connect/create-account] Failed to close orphaned V2 account:", e)
-    })
+    await stripe.v2.core.accounts
+      .close(account.id, stripeContextForConnectedAccount(account.id))
+      .catch((e) => {
+        console.error("[connect/create-account] Failed to close orphaned V2 account:", e)
+      })
     return NextResponse.json({ error: STRIPE_CONNECT_GENERIC_ERROR }, { status: 500 })
   }
 
