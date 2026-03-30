@@ -42,8 +42,10 @@ import {
   Wallet,
   Clock,
   ChevronDown,
+  Users,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { NotificationDrawer } from "@/components/follows/notification-drawer"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
@@ -546,6 +548,11 @@ export function Header() {
 
             {authLoaded && user ? (
               <>
+                {/* Follow notifications bell */}
+                <div className="hidden sm:inline-flex">
+                  <NotificationDrawer />
+                </div>
+
                 <Link href="/messages" className="relative hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                     <MessageSquare className="h-6 w-6" />
@@ -621,6 +628,12 @@ export function Header() {
                       <Link href="/dashboard/favorites" className="flex items-center">
                         <Heart className="mr-2 h-4 w-4" />
                         Favorites
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/following" className="flex items-center">
+                        <Users className="mr-2 h-4 w-4" />
+                        My Feed
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

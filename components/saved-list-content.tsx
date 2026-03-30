@@ -9,7 +9,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Heart, MapPin, Truck } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
-import { MessageListingButton } from '@/components/message-listing-button'
 import { FavoriteButtonCardOverlay } from '@/components/favorite-button-card-overlay'
 import {
   capitalizeWords,
@@ -207,7 +206,7 @@ export function SavedListContent() {
                     )}
                   </div>
                   <CardContent className="min-w-0 p-3">
-                    <h3 className="text-sm font-medium break-words">{capitalizeWords(listing.title)}</h3>
+                    <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
                     {listing.section === 'surfboards' && boardLength && (
                       <p className="text-xs text-muted-foreground mt-0.5">{boardLength}</p>
                     )}
@@ -229,13 +228,6 @@ export function SavedListContent() {
                     </div>
                   </CardContent>
                 </Link>
-                <div className="px-3 pb-3 pt-0">
-                  <MessageListingButton
-                    listingId={listing.id}
-                    sellerId={listing.user_id}
-                    redirectPath={href}
-                  />
-                </div>
               </Card>
             )
           })}

@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCategory, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
-import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
@@ -348,7 +347,7 @@ export async function UsedGearListings({
                   />
                 </div>
                 <CardContent className="min-w-0 p-3">
-                  <h3 className="text-sm font-medium break-words">{capitalizeWords(listing.title)}</h3>
+                  <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
                   <p className="text-base font-bold text-black dark:text-white mt-1">${listing.price.toFixed(2)}</p>
                   <div className="flex items-center justify-between mt-1">
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -363,13 +362,6 @@ export async function UsedGearListings({
                   </div>
                 </CardContent>
               </Link>
-              <div className="px-3 pb-3 pt-0">
-                <MessageListingButton
-                  listingId={listing.id}
-                  sellerId={listing.user_id}
-                  redirectPath={`/used/${listing.slug || listing.id}`}
-                />
-              </div>
             </Card>
           )
         })}

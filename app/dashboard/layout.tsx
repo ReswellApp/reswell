@@ -18,14 +18,20 @@ import {
   Flag,
   Receipt,
   ShieldCheck,
+  Tag,
+  Users,
+  Rss,
 } from "lucide-react"
 
 const sidebarLinks = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Archived", href: "/dashboard/listings/archived", icon: Archive },
+  { name: "Offers", href: "/dashboard/offers", icon: Tag },
   { name: "Reswell Bucks", href: "/dashboard/wallet", icon: Wallet },
   { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
+  { name: "Following", href: "/dashboard/following", icon: Rss },
+  { name: "My Followers", href: "/dashboard/followers", icon: Users },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Purchases", href: "/dashboard/purchases", icon: Receipt },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },

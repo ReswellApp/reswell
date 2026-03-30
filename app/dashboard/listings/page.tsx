@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from 'lucide-react'
+import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -204,6 +204,11 @@ export default function MyListingsPage() {
                     <DropdownMenuItem asChild>
                       <Link href={`/sell?edit=${listing.id}`}>
                         <Edit className="h-4 w-4 mr-2" /> Edit
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/dashboard/listings/${listing.id}/offer-settings`}>
+                        <Tag className="h-4 w-4 mr-2" /> Offer settings
                       </Link>
                     </DropdownMenuItem>
                     {listing.status === 'active' && (

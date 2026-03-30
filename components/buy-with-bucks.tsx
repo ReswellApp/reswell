@@ -24,6 +24,7 @@ interface BuyWithBucksProps {
   fulfillment?: "pickup" | "shipping" | null
   itemPrice?: number
   shippingAmount?: number
+  offerId?: string
 }
 
 export function BuyWithBucks({
@@ -34,6 +35,7 @@ export function BuyWithBucks({
   fulfillment,
   itemPrice,
   shippingAmount = 0,
+  offerId,
 }: BuyWithBucksProps) {
   const [open, setOpen] = useState(false)
   const [balance, setBalance] = useState<number | null>(null)
@@ -75,6 +77,7 @@ export function BuyWithBucks({
         body: JSON.stringify({
           listing_id: listingId,
           ...(fulfillment ? { fulfillment } : {}),
+          ...(offerId ? { offer_id: offerId } : {}),
         }),
       })
 

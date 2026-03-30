@@ -13,6 +13,8 @@ import {
   ArrowRight,
   Wallet,
   Flag,
+  Users,
+  Lightbulb,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
@@ -31,6 +33,8 @@ export default async function DashboardPage() {
     reportsAgg,
     walletRes,
     profileRes,
+    followersRes,
+    newFollowersRes,
   ] = await Promise.all([
     supabase
       .from("listings")
@@ -62,6 +66,12 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .single(),
     supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("profiles").select("follower_count").eq("id", user.id).single(),
+    supabase
+      .from("seller_follows")
+      .select("id", { count: "exact", head: true })
+      .eq("seller_id", user.id)
+      .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
   ])
 
   const listings = listingsAgg.data
@@ -75,6 +85,8 @@ export default async function DashboardPage() {
   const reportsCount = reportsAgg.count
   const walletRow = walletRes.data
   const profile = profileRes.data
+  const followerCount = followersRes.data?.follower_count ?? 0
+  const newFollowersThisMonth = newFollowersRes.count ?? 0
 
   let walletBalance = 0
   if (walletRow) {
@@ -168,6 +180,49 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {/* Follower stats (shown when user has followers OR is a seller) */}
+      {(followerCount > 0 || newFollowersThisMonth > 0) && (
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Your followers
+            </CardTitle>
+            <Link
+              href="/dashboard/followers"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              View stats
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-6">
+              <div>
+                <p className="text-3xl font-bold text-foreground">
+                  {followerCount.toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">followers total</p>
+              </div>
+              {newFollowersThisMonth > 0 && (
+                <div>
+                  <p className="text-xl font-semibold text-green-600">
+                    +{newFollowersThisMonth.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-0.5">this month</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2.5">
+              <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">
+                Post new listings regularly to keep your followers engaged and coming back.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Listings */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -208,7 +263,7 @@ export default async function DashboardPage() {
                         {listing.status}
                       </Badge>
                     </div>
-                    <h3 className="font-medium break-words group-hover:text-primary transition-colors">
+                    <h3 className="font-medium line-clamp-2 min-h-[2.8em] group-hover:text-primary transition-colors">
                       {capitalizeWords(listing.title)}
                     </h3>
                     <p className="text-sm font-bold text-black dark:text-white">

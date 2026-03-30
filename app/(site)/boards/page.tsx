@@ -10,7 +10,6 @@ import { createClient } from "@/lib/supabase/server"
 import { BoardsBrowseClient } from "./boards-browse-client"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { MapPin, Users } from "lucide-react"
-import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
@@ -290,7 +289,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                   />
                 </div>
                 <CardContent className="min-w-0 p-3">
-                  <h3 className="text-sm font-medium break-words">{capitalizeWords(board.title)}</h3>
+                  <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(board.title)}</h3>
                   {board.board_length && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {board.board_length}
@@ -307,13 +306,6 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
                   </div>
                 </CardContent>
               </Link>
-              <div className="px-3 pb-3 pt-0">
-                <MessageListingButton
-                  listingId={board.id}
-                  sellerId={board.user_id}
-                  redirectPath={`/boards/${board.slug || board.id}`}
-                />
-              </div>
             </Card>
           )
         })}

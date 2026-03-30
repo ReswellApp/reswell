@@ -24,6 +24,8 @@ import dynamic from "next/dynamic"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
+import { MakeOfferButton } from "@/components/offers/make-offer-button"
+import type { Offer } from "@/lib/offers/types"
 
 // Split Leaflet map into its own chunk. ssr:false is not allowed in Server Components
 // (Next.js 16), but LocationMap is already SSR-safe — Leaflet only runs inside useEffect.
@@ -199,6 +201,33 @@ export default async function BoardDetailPage(props: {
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
 
+  // Offer system
+  const { data: boardOfferSettings } = await supabase
+    .from("offer_settings")
+    .select("offers_enabled, minimum_offer_pct")
+    .eq("listing_id", board.id)
+    .maybeSingle()
+
+  const boardOffersEnabled = boardOfferSettings ? boardOfferSettings.offers_enabled : true
+
+  let boardBuyerActiveOffer = null
+  if (user && !isOwnListing && boardOffersEnabled) {
+    const { data: existingOffer } = await supabase
+      .from("offers")
+      .select("*")
+      .eq("listing_id", board.id)
+      .eq("buyer_id", user.id)
+      .in("status", ["PENDING", "COUNTERED", "ACCEPTED", "DECLINED", "EXPIRED", "WITHDRAWN"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    boardBuyerActiveOffer = existingOffer
+  }
+
+  const boardPickupCity = board.profiles?.location
+    ? (board.profiles.location as string).split(",")[0]?.trim()
+    : null
+
   const indexBrandSlug = (board as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? ""
   const indexModelSlug = (board as { index_model_slug?: string | null }).index_model_slug?.trim() ?? ""
   const indexModelPage =
@@ -327,7 +356,7 @@ export default async function BoardDetailPage(props: {
               ) : null}
 
               {!isOwnListing && board.status === "active" && (
-                <div className="hidden lg:block">
+                <div className="hidden lg:block space-y-2">
                   <Button size="lg" className="w-full gap-2" asChild>
                     <Link
                       href={
@@ -339,6 +368,27 @@ export default async function BoardDetailPage(props: {
                       Buy now — ${Number(board.price).toFixed(2)}
                     </Link>
                   </Button>
+                  {boardOffersEnabled && (
+                    <MakeOfferButton
+                      listingId={board.id}
+                      listingTitle={capitalizeWords(board.title)}
+                      listingSlug={boardSlug}
+                      listingSection="boards"
+                      askingPrice={Number(board.price)}
+                      sellerId={board.user_id}
+                      categorySlug="surfboards"
+                      condition={(board as { condition?: string }).condition ?? null}
+                      localPickupCity={pickupOffered ? boardPickupCity : null}
+                      offersEnabled={boardOffersEnabled}
+                      isLoggedIn={!!user}
+                      activeOffer={boardBuyerActiveOffer as Offer | null}
+                    />
+                  )}
+                  {boardOffersEnabled && !boardBuyerActiveOffer && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Offers accepted · Sellers typically respond within a few hours
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -546,7 +596,7 @@ export default async function BoardDetailPage(props: {
                           )}
                         </div>
                         <CardContent className="min-w-0 p-3">
-                          <h3 className="text-sm font-medium break-words">{item.title}</h3>
+                          <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{item.title}</h3>
                           {item.board_length && (
                             <p className="text-sm text-muted-foreground">{item.board_length}</p>
                           )}

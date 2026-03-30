@@ -43,6 +43,8 @@ import { collectibleTypeLabel, collectibleEraLabel, collectibleConditionLabel } 
 import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { Truck } from "lucide-react"
+import { MakeOfferButton } from "@/components/offers/make-offer-button"
+import type { Offer } from "@/lib/offers/types"
 
 function getPrimaryImageUrl(
   images: Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }> | null | undefined,
@@ -206,6 +208,52 @@ export default async function UsedListingPage(props: {
   const shippingOffered = !!listing.shipping_available
   const shippingPrice = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
 
+  // Offer system: load settings + buyer's active offer
+  let offerSettings: { offers_enabled: boolean; minimum_offer_pct: number } | null = null
+  let buyerActiveOffer: Offer | null = null
+
+  const { data: settings } = await supabase
+    .from("offer_settings")
+    .select("offers_enabled, minimum_offer_pct")
+    .eq("listing_id", listing.id)
+    .maybeSingle()
+
+  // Default: offers enabled if no settings row
+  offerSettings = settings ?? { offers_enabled: true, minimum_offer_pct: 70 }
+
+  if (user && !isOwnListing && offerSettings.offers_enabled) {
+    const { data: existingOffer } = await supabase
+      .from("offers")
+      .select("*")
+      .eq("listing_id", listing.id)
+      .eq("buyer_id", user.id)
+      .in("status", ["PENDING", "COUNTERED", "ACCEPTED"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    buyerActiveOffer = existingOffer as Offer | null
+
+    // Also fetch most recent declined/expired if no active (to show "make new offer")
+    if (!buyerActiveOffer) {
+      const { data: pastOffer } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("listing_id", listing.id)
+        .eq("buyer_id", user.id)
+        .in("status", ["DECLINED", "EXPIRED", "WITHDRAWN"])
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      buyerActiveOffer = pastOffer as Offer | null
+    }
+  }
+
+  const pickupCity = listing.profiles?.location
+    ? (listing.profiles.location as string).split(",")[0]?.trim()
+    : null
+
   return (
       <main className="flex-1 py-8">
         <div className="container mx-auto">
@@ -286,6 +334,31 @@ export default async function UsedListingPage(props: {
                     </Link>
                   </Button>
                 )
+              )}
+
+              {/* Make an offer — shown when offers are enabled on this listing */}
+              {!isOwnListing && listing.status === "active" && offerSettings?.offers_enabled && (
+                <MakeOfferButton
+                  listingId={listing.id}
+                  listingTitle={capitalizeWords(listing.title)}
+                  listingSlug={listingSlug}
+                  listingSection="used"
+                  askingPrice={listing.price}
+                  sellerId={listing.user_id}
+                  categorySlug={listing.categories?.slug ?? null}
+                  condition={(listing as { condition?: string }).condition ?? null}
+                  localPickupCity={pickupOffered ? pickupCity : null}
+                  offersEnabled={offerSettings.offers_enabled}
+                  isLoggedIn={!!user}
+                  activeOffer={buyerActiveOffer}
+                />
+              )}
+
+              {/* Offer status hint below the CTA buttons */}
+              {!isOwnListing && listing.status === "active" && offerSettings?.offers_enabled && !buyerActiveOffer && (
+                <p className="text-xs text-center text-muted-foreground -mt-1">
+                  Offers accepted · Sellers typically respond within a few hours
+                </p>
               )}
 
               <p className="text-sm text-muted-foreground">
@@ -523,7 +596,7 @@ export default async function UsedListingPage(props: {
                           />
                         </div>
                         <CardContent className="min-w-0 p-3">
-                          <h3 className="text-sm font-medium break-words">{capitalizeWords(item.title)}</h3>
+                          <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(item.title)}</h3>
                           <p className="text-base font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>

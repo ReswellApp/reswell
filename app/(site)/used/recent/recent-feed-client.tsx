@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCondition, formatCategory, formatBoardType, capitalizeWords } from "@/lib/listing-labels"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
-import { MessageListingButton } from "@/components/message-listing-button"
 import { MapPin, Truck } from "lucide-react"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
@@ -100,7 +99,7 @@ export function RecentFeedClient({
                 />
               </div>
               <CardContent className="min-w-0 p-3">
-                <h3 className="text-sm font-medium break-words">{capitalizeWords(listing.title)}</h3>
+                <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
                 {listing.section === "surfboards" && listing.board_length && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {listing.board_length}
@@ -115,13 +114,6 @@ export function RecentFeedClient({
                 </div>
               </CardContent>
             </Link>
-            <div className="px-3 pb-3 pt-0">
-              <MessageListingButton
-                listingId={listing.id}
-                sellerId={listing.user_id}
-                redirectPath={href}
-              />
-            </div>
           </Card>
         )
       })}

@@ -20,10 +20,10 @@ import {
   Package,
   ArrowLeft,
 } from "lucide-react"
-import { MessageListingButton } from "@/components/message-listing-button"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { FollowButton } from "@/components/follows/follow-button"
 
 export async function generateMetadata({
   params,
@@ -102,6 +102,20 @@ export default async function SellerProfilePage({
       .eq("user_id", user.id)
       .in("listing_id", listings.map((l: any) => l.id))
     favoritedIds = (favs ?? []).map((f) => f.listing_id)
+  }
+
+  // Follow status for the current user
+  const isOwnProfile = user?.id === id
+  let isFollowing = false
+  const followerCount = (shop as any).follower_count ?? 0
+  if (user && !isOwnProfile) {
+    const { data: follow } = await supabase
+      .from("seller_follows")
+      .select("id")
+      .eq("follower_id", user.id)
+      .eq("seller_id", id)
+      .maybeSingle()
+    isFollowing = !!follow
   }
 
   const allListings = listings || []
@@ -209,8 +223,19 @@ export default async function SellerProfilePage({
                   </p>
                 )}
 
-                {/* Contact info */}
+                {/* Follow + contact row */}
                 <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <FollowButton
+                    sellerId={shop.id}
+                    sellerName={displayName}
+                    sellerCity={shop.city || undefined}
+                    initialFollowing={isFollowing}
+                    initialFollowerCount={followerCount}
+                    isLoggedIn={!!user}
+                    isOwnProfile={isOwnProfile}
+                    showCount={true}
+                  />
+
                   {shop.shop_website && (
                     <Button variant="outline" size="sm" asChild>
                       <a
@@ -402,7 +427,7 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
                 />
               </div>
               <CardContent className="min-w-0 p-3">
-                <h3 className="text-sm font-medium break-words">{capitalizeWords(listing.title)}</h3>
+                <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
                 <p className="text-base font-bold text-black dark:text-white mt-2">
                   ${Number(listing.price).toFixed(2)}
                 </p>
@@ -424,13 +449,6 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
                 )}
               </CardContent>
             </Link>
-            <div className="px-3 pb-3 pt-0">
-              <MessageListingButton
-                listingId={listing.id}
-                sellerId={listing.user_id}
-                redirectPath={getListingHref(listing)}
-              />
-            </div>
           </Card>
         )
       })}

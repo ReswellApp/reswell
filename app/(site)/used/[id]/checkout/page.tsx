@@ -15,8 +15,10 @@ const USED_CHECKOUT_COPY = {
 
 export default async function UsedCheckoutPage(props: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ offer_id?: string }>
 }) {
   const { id } = await props.params
+  const { offer_id } = await props.searchParams
   const supabase = await createClient()
 
   const {
@@ -36,16 +38,16 @@ export default async function UsedCheckoutPage(props: {
     },
   )
 
-  if (!listing || listing.status !== "active") {
+  if (!listing || (listing.status !== "active" && listing.status !== "pending_sale")) {
     notFound()
   }
 
   if (canonicalPath) {
-    redirect(`${canonicalPath}/checkout`)
+    redirect(`${canonicalPath}/checkout${offer_id ? `?offer_id=${offer_id}` : ''}`)
   }
 
   if (redirectSlug) {
-    redirect(`/used/${redirectSlug}/checkout`)
+    redirect(`/used/${redirectSlug}/checkout${offer_id ? `?offer_id=${offer_id}` : ''}`)
   }
 
   const usedSlug = listing.slug || listing.id
@@ -60,6 +62,30 @@ export default async function UsedCheckoutPage(props: {
     notFound()
   }
 
+  // Load accepted offer if offer_id param is present
+  let acceptedOfferAmount: number | null = null
+  let acceptedOfferId: string | null = null
+
+  if (offer_id) {
+    const { data: offer } = await supabase
+      .from("offers")
+      .select("id, status, current_amount, buyer_id, listing_id, expires_at")
+      .eq("id", offer_id)
+      .eq("listing_id", listing.id)
+      .eq("buyer_id", user.id)
+      .eq("status", "ACCEPTED")
+      .single()
+
+    if (offer) {
+      // Check it hasn't expired (24hr payment window)
+      const expired = new Date(offer.expires_at).getTime() < Date.now()
+      if (!expired) {
+        acceptedOfferAmount = Number(offer.current_amount)
+        acceptedOfferId = offer.id
+      }
+    }
+  }
+
   return (
       <main className="flex-1 py-8">
         <div className="container mx-auto max-w-lg">
@@ -71,7 +97,36 @@ export default async function UsedCheckoutPage(props: {
           </Button>
           <h1 className="text-2xl font-bold mb-1">Checkout</h1>
           <p className="text-muted-foreground mb-6">{capitalizeWords(listing.title)}</p>
-          <BoardCheckoutClient listing={listing} copy={USED_CHECKOUT_COPY} />
+
+          {acceptedOfferAmount !== null && (
+            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 px-4 py-3 text-sm">
+              <p className="font-medium text-emerald-800 dark:text-emerald-300">Offer accepted — negotiated price applied</p>
+              <div className="mt-1 space-y-0.5 text-emerald-700 dark:text-emerald-400">
+                <div className="flex justify-between">
+                  <span>Original price</span>
+                  <span className="line-through">${Number(listing.price).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Your offer</span>
+                  <span>${acceptedOfferAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-500">
+                  <span>You saved</span>
+                  <span>${(Number(listing.price) - acceptedOfferAmount).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <BoardCheckoutClient
+            listing={{
+              ...listing,
+              // Override listing price with agreed offer amount when present
+              price: acceptedOfferAmount ?? listing.price,
+            }}
+            copy={USED_CHECKOUT_COPY}
+            offerId={acceptedOfferId ?? undefined}
+          />
         </div>
       </main>
   )

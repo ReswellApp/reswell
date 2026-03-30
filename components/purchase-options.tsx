@@ -14,6 +14,8 @@ interface PurchaseOptionsProps {
   fulfillment?: "pickup" | "shipping" | null
   itemPrice?: number
   shippingAmount?: number
+  /** When purchasing from an accepted offer, pass the offer ID. */
+  offerId?: string
 }
 
 export function PurchaseOptions({
@@ -24,6 +26,7 @@ export function PurchaseOptions({
   fulfillment,
   itemPrice,
   shippingAmount,
+  offerId,
 }: PurchaseOptionsProps) {
   return (
     <div className="space-y-3">
@@ -33,6 +36,7 @@ export function PurchaseOptions({
         listingTitle={listingTitle}
         price={price}
         fulfillment={fulfillment}
+        offerId={offerId}
       />
       <div className="relative">
         <Separator className="absolute inset-0 flex items-center" />
@@ -48,6 +52,7 @@ export function PurchaseOptions({
         fulfillment={fulfillment}
         itemPrice={itemPrice}
         shippingAmount={shippingAmount}
+        offerId={offerId}
       />
     </div>
   )

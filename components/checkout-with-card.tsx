@@ -10,6 +10,7 @@ interface CheckoutWithCardProps {
   listingTitle: string
   price: number
   fulfillment?: "pickup" | "shipping" | null
+  offerId?: string
 }
 
 export function CheckoutWithCard({
@@ -17,6 +18,7 @@ export function CheckoutWithCard({
   listingTitle,
   price,
   fulfillment,
+  offerId,
 }: CheckoutWithCardProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -31,6 +33,7 @@ export function CheckoutWithCard({
         body: JSON.stringify({
           listing_id: listingId,
           ...(fulfillment ? { fulfillment } : {}),
+          ...(offerId ? { offer_id: offerId } : {}),
         }),
       })
 
