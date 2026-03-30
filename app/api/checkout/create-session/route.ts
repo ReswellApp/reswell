@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getStripe } from "@/lib/stripe-server"
+
+/** Platform fee + protection fund on item subtotal only (Connect application fee). */
+const RESWELL_FEE = 0.07
+const PROTECTION_FUND_RATE = 0.02
+const CONNECT_APPLICATION_FEE_RATE = RESWELL_FEE + PROTECTION_FUND_RATE
 import {
   SURFBOARD_CHECKOUT_MODE,
   USED_LISTING_CHECKOUT_MODE,
@@ -117,6 +122,16 @@ export async function POST(request: NextRequest) {
     }
 
     const expectedTotalCents = Math.round(resolved.total * 100)
+    const itemPriceInCents = Math.round(resolved.itemPrice * 100)
+    const applicationFeeInCents = Math.round(itemPriceInCents * CONNECT_APPLICATION_FEE_RATE)
+
+    const { data: sellerConnect } = await supabase
+      .from("seller_stripe_accounts")
+      .select("stripe_account_id")
+      .eq("user_id", listing.user_id)
+      .maybeSingle()
+
+    const destinationAccountId = sellerConnect?.stripe_account_id?.trim() || null
 
     const collectShipping = surfboardCheckoutCollectsShipping(listing, fulfillment)
 
@@ -132,10 +147,22 @@ export async function POST(request: NextRequest) {
         ? `${origin}/used/${slugOrId}/checkout?canceled=1`
         : `${origin}/boards/${slugOrId}/checkout?canceled=1`
 
+    const useConnectDestination = Boolean(destinationAccountId)
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
+      ...(useConnectDestination && destinationAccountId
+        ? {
+            payment_intent_data: {
+              application_fee_amount: applicationFeeInCents,
+              transfer_data: {
+                destination: destinationAccountId,
+              },
+            },
+          }
+        : {}),
       ...(collectShipping
         ? {
             shipping_address_collection: {
@@ -153,6 +180,12 @@ export async function POST(request: NextRequest) {
         shipping: resolved.shipping.toFixed(2),
         total_cents: String(expectedTotalCents),
         collect_shipping: collectShipping ? "1" : "0",
+        ...(useConnectDestination
+          ? {
+              connect_destination: "1",
+              application_fee_cents: String(applicationFeeInCents),
+            }
+          : {}),
       },
       success_url: successUrl,
       cancel_url: cancelUrl,

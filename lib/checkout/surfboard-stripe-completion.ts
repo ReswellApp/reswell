@@ -127,9 +127,20 @@ export async function completeSurfboardCheckoutFromSession(
   }
 
   const price = resolved.total
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, {
-    cardPayment: true,
-  })
+  const connectDestination = meta.connect_destination === "1"
+  const applicationFeeCents = parseInt(String(meta.application_fee_cents ?? "0"), 10) || 0
+
+  let platformFee: number
+  let sellerEarnings: number
+
+  if (connectDestination) {
+    platformFee = applicationFeeCents / 100
+    sellerEarnings = (expectedCents - applicationFeeCents) / 100
+  } else {
+    const earnings = getSellerEarnings(price, { cardPayment: true })
+    platformFee = earnings.marketplaceFee
+    sellerEarnings = earnings.sellerEarnings
+  }
 
   let { data: sellerWallet } = await supabase
     .from("wallets")
@@ -150,7 +161,9 @@ export async function completeSurfboardCheckoutFromSession(
     return { ok: false, error: "Seller wallet error" }
   }
 
-  const newSellerBalance = parseFloat(String(sellerWallet.balance)) + sellerEarnings
+  const newSellerBalance = connectDestination
+    ? parseFloat(String(sellerWallet.balance))
+    : parseFloat(String(sellerWallet.balance)) + sellerEarnings
 
   const collectShipping = surfboardCheckoutCollectsShipping(listing, fulfillment)
   const shippingPayload = collectShipping ? sessionToShippingAddressRecord(session) : null
@@ -190,25 +203,46 @@ export async function completeSurfboardCheckoutFromSession(
     }
   }
 
-  await supabase
-    .from("wallets")
-    .update({
-      balance: newSellerBalance,
-      lifetime_earned: parseFloat(String(sellerWallet.lifetime_earned)) + sellerEarnings,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", sellerWallet.id)
+  if (!connectDestination) {
+    await supabase
+      .from("wallets")
+      .update({
+        balance: newSellerBalance,
+        lifetime_earned: parseFloat(String(sellerWallet.lifetime_earned)) + sellerEarnings,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sellerWallet.id)
 
-  await supabase.from("wallet_transactions").insert({
-    wallet_id: sellerWallet.id,
-    user_id: listing.user_id,
-    type: "sale",
-    amount: sellerEarnings,
-    balance_after: newSellerBalance,
-    description: `Sold "${listing.title}" (card, ${MARKETPLACE_FEE_PERCENT}% + processing fee)`,
-    reference_id: purchase?.id,
-    reference_type: "listing",
-  })
+    await supabase.from("wallet_transactions").insert({
+      wallet_id: sellerWallet.id,
+      user_id: listing.user_id,
+      type: "sale",
+      amount: sellerEarnings,
+      balance_after: newSellerBalance,
+      description: `Sold "${listing.title}" (card, ${MARKETPLACE_FEE_PERCENT}% + processing fee)`,
+      reference_id: purchase?.id,
+      reference_type: "listing",
+    })
+  } else {
+    await supabase
+      .from("wallets")
+      .update({
+        lifetime_earned: parseFloat(String(sellerWallet.lifetime_earned)) + sellerEarnings,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sellerWallet.id)
+
+    await supabase.from("wallet_transactions").insert({
+      wallet_id: sellerWallet.id,
+      user_id: listing.user_id,
+      type: "sale",
+      amount: sellerEarnings,
+      balance_after: newSellerBalance,
+      description: `Sold "${listing.title}" (paid to your Stripe Connect balance; not added to Reswell Bucks)`,
+      reference_id: purchase?.id,
+      reference_type: "listing",
+    })
+  }
 
   await supabase.from("listings").update({ status: "sold" }).eq("id", listing.id)
 

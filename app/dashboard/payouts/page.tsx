@@ -47,6 +47,14 @@ interface StripeAccount {
   details_submitted: boolean
 }
 
+type ConnectStatusApi = {
+  connected?: boolean
+  account?: StripeAccount | null
+  readyToReceivePayments?: boolean
+  onboardingComplete?: boolean
+  requirementsStatus?: string
+}
+
 interface SellerBalance {
   available_balance: number
   pending_balance: number
@@ -163,6 +171,9 @@ export default function PayoutsPage() {
     lifetime_paid_out: 0,
   })
   const [stripeAccount, setStripeAccount] = useState<StripeAccount | null>(null)
+  const [connectReadyToReceivePayments, setConnectReadyToReceivePayments] = useState(false)
+  const [connectOnboardingComplete, setConnectOnboardingComplete] = useState(false)
+  const [connectRequirementsStatus, setConnectRequirementsStatus] = useState<string | undefined>()
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [payouts, setPayouts] = useState<Payout[]>([])
 
@@ -173,6 +184,8 @@ export default function PayoutsPage() {
 
   const [payoutModalOpen, setPayoutModalOpen] = useState(false)
   const [addMethodOpen, setAddMethodOpen] = useState(false)
+
+  const accountIdParam = searchParams.get("accountId")
 
   const fetchData = useCallback(async () => {
     try {
@@ -192,16 +205,26 @@ export default function PayoutsPage() {
         setPayouts(data.payouts ?? [])
       }
 
-      // Fetch Connect account status (refreshes from Stripe)
-      const accountRes = await fetch("/api/stripe/connect/account-status")
+      // Fetch Connect account status (always live from Stripe V2 when configured)
+      const statusUrl = accountIdParam
+        ? `/api/stripe/connect/account-status?accountId=${encodeURIComponent(accountIdParam)}`
+        : "/api/stripe/connect/account-status"
+      const accountRes = await fetch(statusUrl)
       if (accountRes.ok) {
-        const accountData = await accountRes.json()
+        const accountData = (await accountRes.json()) as ConnectStatusApi
         setStripeAccount(accountData.account ?? null)
+        setConnectReadyToReceivePayments(
+          accountData.readyToReceivePayments ?? accountData.account?.payouts_enabled ?? false
+        )
+        setConnectOnboardingComplete(
+          accountData.onboardingComplete ?? accountData.account?.details_submitted ?? false
+        )
+        setConnectRequirementsStatus(accountData.requirementsStatus)
       }
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [accountIdParam])
 
   useEffect(() => {
     fetchData()
@@ -224,7 +247,7 @@ export default function PayoutsPage() {
           setConnectError(createData.error ?? "Failed to create account")
           return
         }
-        accountId = createData.stripe_account_id
+        accountId = createData.accountId ?? createData.stripe_account_id
       } else {
         accountId = stripeAccount.stripe_account_id
       }
@@ -276,9 +299,10 @@ export default function PayoutsPage() {
   }
 
   const available = balance.available_balance
-  const isFullySetUp = stripeAccount?.payouts_enabled ?? false
   const hasAccount = Boolean(stripeAccount)
-  const isRestricted = hasAccount && !isFullySetUp && stripeAccount?.details_submitted
+  const isFullySetUp = connectReadyToReceivePayments && connectOnboardingComplete
+  const needsOnboarding = hasAccount && !connectOnboardingComplete
+  const awaitingActivation = hasAccount && connectOnboardingComplete && !connectReadyToReceivePayments
 
   if (loading) {
     return (
@@ -324,8 +348,31 @@ export default function PayoutsPage() {
         </div>
       )}
 
+      {/* Awaiting Stripe capability activation (onboarding done, transfers not active yet) */}
+      {awaitingActivation && (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardContent className="p-6 flex flex-col sm:flex-row gap-4 items-start">
+            <Clock className="h-10 w-10 text-amber-700 flex-shrink-0" />
+            <div className="flex-1">
+              <h2 className="font-semibold text-lg text-amber-950">Awaiting activation</h2>
+              <p className="text-sm text-amber-900/80 mt-1 max-w-lg">
+                Your onboarding is complete. Stripe is finishing activation for payouts and transfers.
+                This usually resolves within a short time — refresh this page or check your Stripe Express dashboard.
+              </p>
+              {connectRequirementsStatus && (
+                <p className="text-xs text-amber-800 mt-2">Requirements: {connectRequirementsStatus}</p>
+              )}
+            </div>
+            <Button variant="outline" onClick={fetchData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Check status
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stripe Connect setup prompt */}
-      {!isFullySetUp && (
+      {!isFullySetUp && (needsOnboarding || !hasAccount) && (
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4 items-start">
@@ -347,19 +394,12 @@ export default function PayoutsPage() {
                       <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-green-600" />Tax forms (1099)</span>
                     </div>
                   </>
-                ) : isRestricted ? (
-                  <>
-                    <h2 className="font-semibold text-lg">Complete your payout setup</h2>
-                    <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-                      Stripe needs a bit more information before payouts can be enabled. This usually
-                      takes just a few minutes to complete.
-                    </p>
-                  </>
                 ) : (
                   <>
-                    <h2 className="font-semibold text-lg">Finish connecting your payout account</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Your account is being set up. Click below to continue the onboarding process.
+                    <h2 className="font-semibold text-lg">Complete your setup</h2>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-lg">
+                      Stripe still needs information before you can receive payouts. Continue the
+                      guided setup — it usually takes just a few minutes.
                     </p>
                   </>
                 )}

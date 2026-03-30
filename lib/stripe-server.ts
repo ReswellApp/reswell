@@ -1,13 +1,15 @@
-import Stripe from "stripe"
+/**
+ * @deprecated Prefer `import stripeClient from "@/lib/stripe-client"` for new code.
+ */
+export {
+  default as stripeClient,
+  getStripeOptional,
+  isStripeConfigured,
+} from "./stripe-client"
 
-/** True when Stripe Checkout can be used (server-side secret key set). */
-export function isStripeConfigured(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY?.trim())
-}
+import { getStripeOptional } from "./stripe-client"
 
-/** Stripe client for server routes. Returns null if STRIPE_SECRET_KEY is missing. */
-export function getStripe(): Stripe | null {
-  const key = process.env.STRIPE_SECRET_KEY?.trim()
-  if (!key) return null
-  return new Stripe(key)
+/** Same as {@link getStripeOptional} — kept for existing imports. */
+export function getStripe() {
+  return getStripeOptional()
 }
