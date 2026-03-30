@@ -32,7 +32,14 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react"
-import { LocationPicker } from "@/components/location-picker"
+import dynamic from "next/dynamic"
+const LocationPicker = dynamic(
+  () => import("@/components/location-picker").then((m) => ({ default: m.LocationPicker })),
+  {
+    ssr: false,
+    loading: () => <div className="h-64 rounded-lg bg-muted animate-pulse" />,
+  },
+)
 import {
   boardFulfillmentFromFlags,
   flagsFromBoardFulfillment,
@@ -548,6 +555,16 @@ function SellPageContent() {
     return () => { mounted = false }
   }, [editId, supabase, router])
 
+  useEffect(() => {
+    if (!draftHydrated || editId) return
+    const pending = draftPhotosPendingRef.current
+    if (!pending?.length) return
+    draftPhotosPendingRef.current = null
+    for (const s of pending) {
+      void optimizeAndUploadSlot(s)
+    }
+  }, [draftHydrated, editId])
+
   /** Get image dimensions from a file (vertical = height > width). */
   function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
     return new Promise((resolve, reject) => {
@@ -858,16 +875,6 @@ function SellPageContent() {
       }),
     )
   }
-
-  useEffect(() => {
-    if (!draftHydrated || editId) return
-    const pending = draftPhotosPendingRef.current
-    if (!pending?.length) return
-    draftPhotosPendingRef.current = null
-    for (const s of pending) {
-      void optimizeAndUploadSlot(s)
-    }
-  }, [draftHydrated, editId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

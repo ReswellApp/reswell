@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 const INTERVAL_MS = 60_000
@@ -14,7 +14,7 @@ async function ping() {
 }
 
 export function PresenceHeartbeat() {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -37,16 +37,22 @@ export function PresenceHeartbeat() {
       }, INTERVAL_MS)
     }
 
-    void startIfSignedIn()
+    let subscription: { unsubscribe: () => void } | null = null
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    // Defer setup by 5 s so presence polling doesn't compete with initial page
+    // hydration and layout/paint. Auth state changes are still caught once the
+    // listener is registered.
+    const startupTimeout = setTimeout(() => {
       void startIfSignedIn()
-    })
+      const { data } = supabase.auth.onAuthStateChange(() => {
+        void startIfSignedIn()
+      })
+      subscription = data.subscription
+    }, 5_000)
 
     return () => {
-      subscription.unsubscribe()
+      clearTimeout(startupTimeout)
+      subscription?.unsubscribe()
       clear()
     }
   }, [supabase])

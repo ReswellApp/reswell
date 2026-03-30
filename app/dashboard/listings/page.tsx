@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -48,7 +48,7 @@ export default function MyListingsPage() {
   const [loading, setLoading] = useState(true)
   const [endListingId, setEndListingId] = useState<string | null>(null)
   const [endChoice, setEndChoice] = useState<'sold' | 'removed' | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     fetchListings()
@@ -202,7 +202,7 @@ export default function MyListingsPage() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href={`/sell/edit/${listing.id}`}>
+                      <Link href={`/sell?edit=${listing.id}`}>
                         <Edit className="h-4 w-4 mr-2" /> Edit
                       </Link>
                     </DropdownMenuItem>

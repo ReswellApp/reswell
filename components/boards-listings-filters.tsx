@@ -221,11 +221,11 @@ export function BoardsListingsFilters({
           listboxId="boards-search-suggestions"
           showTypeLabels={false}
           className="w-full"
-          inputClassName="w-full box-border"
+          inputClassName="w-full box-border rounded-lg"
         />
       </div>
       <div className="col-span-2 flex items-center gap-2 min-w-[200px] md:col-auto md:w-[360px] md:min-w-[360px] md:shrink-0">
-        <div className="relative flex-1 min-w-[180px] overflow-hidden">
+        <div className="relative flex-1 min-w-[180px]">
           <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 z-[1] h-4 w-4 text-muted-foreground pointer-events-none" />
           <LocationInputSuggest
             name="location"
@@ -247,7 +247,7 @@ export function BoardsListingsFilters({
               })
             }}
             listboxId="boards-location-suggest"
-            inputClassName="pl-9 w-full min-w-0 h-10 min-h-[2.5rem]"
+            inputClassName="pl-9 w-full min-w-0 h-10 min-h-[2.5rem] rounded-lg"
           />
         </div>
         <Button
@@ -257,14 +257,14 @@ export function BoardsListingsFilters({
           title="Use my location"
           disabled={locationLoading}
           onClick={handleUseMyLocation}
-          className="shrink-0 h-10 w-10"
+          className="shrink-0 h-10 w-10 rounded-lg"
         >
           <LocateFixed className={`h-4 w-4 ${userLat != null ? "text-primary" : ""}`} />
         </Button>
       </div>
       <div className="w-full min-w-0 md:w-[140px] md:shrink-0">
         <Select name="type" value={type} onValueChange={setType}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem] rounded-lg">
             <SelectValue placeholder="All Board Types" />
           </SelectTrigger>
           <SelectContent>
@@ -278,7 +278,7 @@ export function BoardsListingsFilters({
       </div>
       <div className="w-full min-w-0 md:w-[120px] md:shrink-0">
         <Select name="condition" value={condition} onValueChange={setCondition}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
+          <SelectTrigger className="w-full h-10 min-h-[2.5rem] rounded-lg">
             <SelectValue placeholder="Any Condition" />
           </SelectTrigger>
           <SelectContent>

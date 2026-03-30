@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { usePathname } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -28,7 +29,9 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <RouteProgressBar />
-      <Header />
+      <Suspense fallback={<header className="sticky top-0 z-50 min-h-[56px] border-b border-lightgray bg-white" aria-hidden />}>
+        <Header />
+      </Suspense>
       <NavigationPageGate>{children}</NavigationPageGate>
       <Footer />
     </div>

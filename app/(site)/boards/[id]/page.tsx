@@ -20,11 +20,27 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react"
-import { ImageGallery } from "@/components/image-gallery"
+import dynamic from "next/dynamic"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { LocationMap } from "@/components/location-map"
+
+// Split Leaflet map into its own chunk. ssr:false is not allowed in Server Components
+// (Next.js 16), but LocationMap is already SSR-safe — Leaflet only runs inside useEffect.
+const LocationMap = dynamic(
+  () => import("@/components/location-map").then((m) => ({ default: m.LocationMap })),
+  { loading: () => <div className="h-[280px] rounded-lg bg-muted animate-pulse" /> },
+)
+
+// Gallery JS is deferred; the server renders the static first image wrapper
+const ImageGallery = dynamic(
+  () => import("@/components/image-gallery").then((m) => ({ default: m.ImageGallery })),
+  {
+    loading: () => (
+      <div className="relative w-full rounded-lg overflow-hidden bg-muted" style={{ paddingBottom: "133.33%" }} />
+    ),
+  },
+)
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"

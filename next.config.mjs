@@ -1,3 +1,9 @@
+import bundleAnalyzer from '@next/bundle-analyzer'
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -5,6 +11,15 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+  },
+  experimental: {
+    // Tree-shake icon/component libraries so only imported symbols end up in the
+    // bundle — biggest win for lucide-react (hundreds of icons) and Radix UI.
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      'date-fns',
+    ],
   },
   async redirects() {
     return [
@@ -21,4 +36,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig)

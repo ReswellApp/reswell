@@ -20,7 +20,16 @@ import {
   Clock,
   Shield,
 } from "lucide-react"
-import { ImageGallery } from "@/components/image-gallery"
+import dynamic from "next/dynamic"
+
+const ImageGallery = dynamic(
+  () => import("@/components/image-gallery").then((m) => ({ default: m.ImageGallery })),
+  {
+    loading: () => (
+      <div className="relative w-full rounded-lg overflow-hidden bg-muted" style={{ paddingBottom: "133.33%" }} />
+    ),
+  },
+)
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
