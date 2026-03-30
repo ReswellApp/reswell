@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, MessageCircle, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { OrderProtectionWidget } from "@/components/order-protection-widget"
+import { isProtectionWindowActive, daysRemainingInWindow } from "@/lib/protection-constants"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -117,6 +119,20 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
     .from("profiles")
     .select("display_name")
     .eq("id", purchase.seller_id)
+    .maybeSingle()
+
+  // Fetch protection eligibility for this purchase
+  const { data: eligibility } = await supabase
+    .from("protection_eligibility")
+    .select("is_eligible, reason, window_closes")
+    .eq("order_id", id)
+    .maybeSingle()
+
+  const { data: existingClaim } = await supabase
+    .from("purchase_protection_claims")
+    .select("id, status")
+    .eq("order_id", id)
+    .eq("buyer_id", user.id)
     .maybeSingle()
 
   const sellerName =
@@ -231,6 +247,21 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
           </CardContent>
         </Card>
       )}
+
+      {/* Purchase Protection Widget */}
+      <OrderProtectionWidget
+        purchaseId={purchase.id}
+        windowCloses={eligibility?.window_closes ?? null}
+        isEligible={
+          eligibility
+            ? eligibility.is_eligible && isProtectionWindowActive(eligibility.window_closes)
+            : fulfill !== "Local pickup"
+        }
+        ineligibleReason={eligibility?.reason ?? null}
+        existingClaimId={existingClaim?.id ?? null}
+        existingClaimStatus={existingClaim?.status ?? null}
+        isLocalPickup={fulfill === "Local pickup"}
+      />
 
       <div className="flex flex-wrap gap-3">
         <Button asChild>

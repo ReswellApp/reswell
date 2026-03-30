@@ -1,9 +1,27 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 import { FinsListingsFilters } from "@/components/fins-listings-filters"
+import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { UsedGearListings, type UsedGearSearchParams } from "../used-gear-listings"
 import { normalizeUsedGearSizeParam } from "@/lib/used-gear-filter-options"
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: "New", like_new: "Like-New", good: "Good Condition", fair: "Fair Condition",
+}
+
+export async function generateMetadata(props: {
+  searchParams: Promise<UsedGearSearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const cond = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
+  const brand = sp.brand && sp.brand !== "all" ? sp.brand : ""
+  const titleParts = [cond, brand, "Fins"].filter(Boolean).join(" ")
+  const title = `${titleParts} For Sale | Reswell`
+  const description = `Shop ${cond ? cond.toLowerCase() + " " : ""}surf fins${brand ? " by " + brand : ""} on Reswell. Find Futures, FCS, single fins and more.`
+  return { title, description, openGraph: { title, description } }
+}
 
 const FINS_SLUG = "fins"
 
@@ -74,6 +92,18 @@ export default async function UsedFinsPage(props: { searchParams: Promise<UsedGe
             />
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <div className="container mx-auto px-4 pt-3 pb-1">
+            <ActiveFilterChips
+              clearHref="/used/fins"
+              ignore={["page", "minPrice", "maxPrice"]}
+              quoteValues={["q"]}
+              valuePrefixes={{ size: "Size " }}
+              valueLookups={{ condition: CONDITION_LABELS }}
+            />
+          </div>
+        </Suspense>
 
         <section className="py-8">
           <div className="container mx-auto">

@@ -1,14 +1,33 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { CollectiblesListingsFilters } from "@/components/collectibles-listings-filters"
+import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { UsedGearListings, type UsedGearSearchParams } from "../used-gear-listings"
 import {
+  COLLECTIBLE_TYPE_OPTIONS,
+  COLLECTIBLE_ERA_OPTIONS,
   normalizeCollectibleTypeParam,
   normalizeCollectibleEraParam,
   normalizeCollectibleConditionParam,
 } from "@/lib/collectible-options"
 
 const COLLECTIBLES_SLUG = "collectibles-vintage"
+
+export async function generateMetadata(props: {
+  searchParams: Promise<UsedGearSearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const typeLabel = sp.collectibleType && sp.collectibleType !== "all"
+    ? COLLECTIBLE_TYPE_OPTIONS.find((o) => o.value === sp.collectibleType)?.label ?? ""
+    : ""
+  const eraLabel = sp.collectibleEra && sp.collectibleEra !== "all"
+    ? COLLECTIBLE_ERA_OPTIONS.find((o) => o.value === sp.collectibleEra)?.label ?? ""
+    : ""
+  const title = `${[eraLabel, typeLabel, "Vintage Surf Collectibles"].filter(Boolean).join(" ")} | Reswell`
+  const description = `Find rare vintage surf collectibles${typeLabel ? " — " + typeLabel : ""} on Reswell. Classic surf culture from ${eraLabel || "every era"}.`
+  return { title, description, openGraph: { title, description } }
+}
 
 export default async function UsedCollectiblesVintagePage(props: {
   searchParams: Promise<UsedGearSearchParams>
@@ -47,6 +66,20 @@ export default async function UsedCollectiblesVintagePage(props: {
             />
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <div className="container mx-auto px-4 pt-3 pb-1">
+            <ActiveFilterChips
+              clearHref="/used/collectibles-vintage"
+              ignore={["page", "minPrice", "maxPrice"]}
+              quoteValues={["q"]}
+              valueLookups={{
+                collectibleType: Object.fromEntries(COLLECTIBLE_TYPE_OPTIONS.map((o) => [o.value, o.label])),
+                collectibleEra: Object.fromEntries(COLLECTIBLE_ERA_OPTIONS.map((o) => [o.value, o.label])),
+              }}
+            />
+          </div>
+        </Suspense>
 
         <section className="py-8">
           <div className="container mx-auto">

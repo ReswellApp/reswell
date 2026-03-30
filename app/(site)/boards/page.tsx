@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import { portraitShimmer } from "@/lib/image-shimmer"
@@ -46,6 +47,51 @@ interface SearchParams {
   radius?: string
   lat?: string
   lng?: string
+}
+
+const BOARD_TYPE_LABELS: Record<string, string> = {
+  shortboard: "Shortboards",
+  longboard: "Longboards",
+  funboard: "Funboards",
+  fish: "Fish Boards",
+  gun: "Gun Boards",
+  foamie: "Foam / Soft-Top Boards",
+  other: "Surfboards",
+}
+const CONDITION_LABELS: Record<string, string> = {
+  new: "New",
+  like_new: "Like-New",
+  good: "Good Condition",
+  fair: "Fair Condition",
+}
+
+export async function generateMetadata(props: {
+  searchParams: Promise<SearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const typeLabel = sp.type && sp.type !== "all" ? BOARD_TYPE_LABELS[sp.type] ?? "Surfboards" : "Surfboards"
+  const condLabel = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
+  const locationLabel = sp.location ? ` in ${sp.location}` : ""
+
+  const titleParts = [condLabel, typeLabel].filter(Boolean).join(" ")
+  const title = `${titleParts}${locationLabel} For Sale | Reswell`
+  const description = [
+    `Browse ${condLabel ? condLabel.toLowerCase() + " " : ""}${typeLabel.toLowerCase()} for sale${locationLabel}.`,
+    "Find shortboards, longboards, fish, and more from local surfers on Reswell.",
+  ].join(" ")
+
+  const canonical = new URL("https://reswellsurf.com/boards")
+  if (sp.type && sp.type !== "all") canonical.searchParams.set("type", sp.type)
+  if (sp.condition && sp.condition !== "all") canonical.searchParams.set("condition", sp.condition)
+  if (sp.location) canonical.searchParams.set("location", sp.location)
+  if (sp.sort && sp.sort !== "newest") canonical.searchParams.set("sort", sp.sort)
+
+  return {
+    title,
+    description,
+    alternates: { canonical: canonical.toString() },
+    openGraph: { title, description, type: "website" },
+  }
 }
 
 async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
@@ -319,6 +365,7 @@ export default async function BoardsPage(props: {
               initialLocation={searchParams.location ?? ""}
               initialType={searchParams.type ?? "all"}
               initialCondition={searchParams.condition ?? "all"}
+              initialSort={searchParams.sort ?? "newest"}
             >
               <Suspense
                 fallback={

@@ -1,8 +1,7 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
-import { useState, useTransition } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useTransition, useEffect, useRef, useCallback } from "react"
 import {
   Select,
   SelectContent,
@@ -10,10 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, SlidersHorizontal } from "lucide-react"
+import { Search } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 
-const conditions = [
+export const usedConditions = [
   { value: "all", label: "Any Condition" },
   { value: "new", label: "New" },
   { value: "like_new", label: "Like New" },
@@ -28,6 +27,8 @@ interface UsedListingsFiltersProps {
   initialCondition?: string
 }
 
+const DEBOUNCE_MS = 350
+
 export function UsedListingsFilters({
   categoryOptions,
   initialQ = "",
@@ -36,26 +37,52 @@ export function UsedListingsFilters({
 }: UsedListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
+
   const [q, setQ] = useState(initialQ)
   const [category, setCategory] = useState(initialCategory)
   const [condition, setCondition] = useState(initialCondition)
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const params = new URLSearchParams()
-    if (q.trim()) params.set("q", q.trim())
-    if (category && category !== "all") params.set("category", category)
-    if (condition && condition !== "all") params.set("condition", condition)
-    params.set("page", "1")
-    startTransition(() => {
-      router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`)
-    })
-  }
+  const stateRef = useRef({ q, category, condition })
+  stateRef.current = { q, category, condition }
+
+  // Sync filter UI when server re-renders with new searchParams (back/forward nav)
+  const skipQ = useRef(true)
+  useEffect(() => {
+    skipQ.current = true
+    setQ(initialQ)
+    setCategory(initialCategory)
+    setCondition(initialCondition)
+  }, [initialQ, initialCategory, initialCondition])
+
+  const pushFilters = useCallback(
+    (override?: Partial<typeof stateRef.current>) => {
+      const f = { ...stateRef.current, ...override }
+      const params = new URLSearchParams()
+      if (f.q.trim()) params.set("q", f.q.trim())
+      if (f.category && f.category !== "all") params.set("category", f.category)
+      if (f.condition && f.condition !== "all") params.set("condition", f.condition)
+      params.set("page", "1")
+      startTransition(() => {
+        router.replace(
+          `${pathname}${params.toString() ? `?${params.toString()}` : ""}`,
+          { scroll: false },
+        )
+      })
+    },
+    [pathname, router, startTransition],
+  )
+
+  // Debounced text search
+  useEffect(() => {
+    if (skipQ.current) { skipQ.current = false; return }
+    const t = setTimeout(() => pushFilters(), DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [q, pushFilters])
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={(e) => { e.preventDefault(); pushFilters() }}
       className="grid grid-cols-2 gap-2 items-end md:flex md:flex-nowrap md:gap-2 md:items-end md:justify-center w-full max-w-4xl mx-auto"
     >
       <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[400px] md:min-w-[400px]">
@@ -73,7 +100,11 @@ export function UsedListingsFilters({
         />
       </div>
       <div className="w-full min-w-0 md:w-[160px] md:shrink-0">
-        <Select name="category" value={category} onValueChange={setCategory}>
+        <Select
+          name="category"
+          value={category}
+          onValueChange={(v) => { setCategory(v); pushFilters({ category: v }) }}
+        >
           <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
@@ -87,12 +118,16 @@ export function UsedListingsFilters({
         </Select>
       </div>
       <div className="w-full min-w-0 md:w-[130px] md:shrink-0">
-        <Select name="condition" value={condition} onValueChange={setCondition}>
+        <Select
+          name="condition"
+          value={condition}
+          onValueChange={(v) => { setCondition(v); pushFilters({ condition: v }) }}
+        >
           <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
             <SelectValue placeholder="Any Condition" />
           </SelectTrigger>
           <SelectContent>
-            {conditions.map((cond) => (
+            {usedConditions.map((cond) => (
               <SelectItem key={cond.value} value={cond.value}>
                 {cond.label}
               </SelectItem>
@@ -100,10 +135,6 @@ export function UsedListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" disabled={isPending} className="col-span-2 h-10 px-4 md:col-auto md:shrink-0">
-        <SlidersHorizontal className="h-4 w-4 mr-2" />
-        {isPending ? "Applying..." : "Apply"}
-      </Button>
     </form>
   )
 }

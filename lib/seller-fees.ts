@@ -6,6 +6,9 @@
 /** Marketplace fee: 7% of sale price (platform fee) */
 export const MARKETPLACE_FEE_PERCENT = 7
 
+/** Seller protection fund contribution: 2% of sale price (withheld from seller payout) */
+export const PROTECTION_FUND_PERCENT = 2
+
 /** Payment processing: ~2.9% + $0.30 (Stripe; applied only for card payments) */
 export const PAYMENT_PROCESSING_PERCENT = 2.9
 export const PAYMENT_PROCESSING_FIXED = 0.3

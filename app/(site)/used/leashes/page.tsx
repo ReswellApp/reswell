@@ -1,10 +1,26 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { LeashesListingsFilters } from "@/components/leashes-listings-filters"
+import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { UsedGearListings, type UsedGearSearchParams } from "../used-gear-listings"
 import { normalizeLeashLengthParam, normalizeLeashThicknessParam } from "@/lib/leash-options"
 
 const LEASHES_SLUG = "leashes"
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: "New", like_new: "Like-New", good: "Good Condition", fair: "Fair Condition",
+}
+
+export async function generateMetadata(props: {
+  searchParams: Promise<UsedGearSearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const cond = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
+  const title = `${[cond, "Surf Leashes"].filter(Boolean).join(" ")} For Sale | Reswell`
+  const description = `Shop ${cond ? cond.toLowerCase() + " " : ""}surf leashes on Reswell. Find great deals from local surfers.`
+  return { title, description, openGraph: { title, description } }
+}
 
 export default async function UsedLeashesPage(props: {
   searchParams: Promise<UsedGearSearchParams>
@@ -43,6 +59,18 @@ export default async function UsedLeashesPage(props: {
             />
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <div className="container mx-auto px-4 pt-3 pb-1">
+            <ActiveFilterChips
+              clearHref="/used/leashes"
+              ignore={["page", "minPrice", "maxPrice"]}
+              quoteValues={["q"]}
+              valueSuffixes={{ leashLength: "ft", leashThickness: '" cord' }}
+              valueLookups={{ condition: CONDITION_LABELS }}
+            />
+          </div>
+        </Suspense>
 
         <section className="py-8">
           <div className="container mx-auto">

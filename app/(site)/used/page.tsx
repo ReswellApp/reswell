@@ -1,9 +1,25 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatCategory } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { UsedListingsFilters } from "@/components/used-listings-filters"
+import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { UsedGearListings, type UsedGearSearchParams } from "./used-gear-listings"
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: "New", like_new: "Like-New", good: "Good Condition", fair: "Fair Condition",
+}
+
+export async function generateMetadata(props: {
+  searchParams: Promise<UsedGearSearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const cond = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
+  const title = `${[cond, "Used Surf Gear"].filter(Boolean).join(" ")} For Sale | Reswell`
+  const description = `Shop ${cond ? cond.toLowerCase() + " " : ""}used surf gear on Reswell — fins, wetsuits, leashes, apparel and more.`
+  return { title, description, openGraph: { title, description } }
+}
 
 export default async function UsedGearPage(props: {
   searchParams: Promise<UsedGearSearchParams>
@@ -88,6 +104,17 @@ export default async function UsedGearPage(props: {
             />
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <div className="container mx-auto px-4 pt-3 pb-1">
+            <ActiveFilterChips
+              clearHref="/used"
+              ignore={["page", "minPrice", "maxPrice"]}
+              quoteValues={["q"]}
+              valueLookups={{ condition: CONDITION_LABELS }}
+            />
+          </div>
+        </Suspense>
 
         {/* Listings */}
         <section className="py-8">

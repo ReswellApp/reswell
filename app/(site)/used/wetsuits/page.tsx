@@ -1,6 +1,8 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { WetsuitsListingsFilters } from "@/components/wetsuits-listings-filters"
+import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { UsedGearListings, type UsedGearSearchParams } from "../used-gear-listings"
 import {
   normalizeWetsuitSizeParam,
@@ -9,6 +11,22 @@ import {
 } from "@/lib/wetsuit-options"
 
 const WETSUITS_SLUG = "wetsuits"
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: "New", like_new: "Like-New", good: "Good Condition", fair: "Fair Condition",
+}
+
+export async function generateMetadata(props: {
+  searchParams: Promise<UsedGearSearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const cond = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
+  const size = sp.size && sp.size !== "all" ? `Size ${sp.size}` : ""
+  const titleParts = [cond, size, "Wetsuits"].filter(Boolean).join(" ")
+  const title = `${titleParts} For Sale | Reswell`
+  const description = `Shop ${cond ? cond.toLowerCase() + " " : ""}used wetsuits${size ? " in " + size : ""} on Reswell. Find great deals from local surfers.`
+  return { title, description, openGraph: { title, description } }
+}
 
 export default async function UsedWetsuitsPage(props: {
   searchParams: Promise<UsedGearSearchParams>
@@ -49,6 +67,18 @@ export default async function UsedWetsuitsPage(props: {
             />
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <div className="container mx-auto px-4 pt-3 pb-1">
+            <ActiveFilterChips
+              clearHref="/used/wetsuits"
+              ignore={["page", "minPrice", "maxPrice"]}
+              quoteValues={["q"]}
+              valuePrefixes={{ size: "Size " }}
+              valueLookups={{ condition: CONDITION_LABELS }}
+            />
+          </div>
+        </Suspense>
 
         <section className="py-8">
           <div className="container mx-auto">

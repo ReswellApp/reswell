@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { ShieldCheck } from "lucide-react"
 import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 
@@ -9,6 +10,7 @@ const footerLinks = {
     { name: "All Gear", href: "/used" },
     { name: "Sell Your Gear", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
+    { name: "Purchase Protection", href: "/protection-policy" },
   ],
   categories: [
     { name: "Surfboards", href: "/used?category=surfboards" },
@@ -122,7 +124,16 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-lightgray pt-8">
+        <div className="mt-12 border-t border-lightgray pt-8 space-y-4">
+          <div className="flex justify-center">
+            <Link
+              href="/protection-policy"
+              className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors dark:border-green-800/50 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-950/50"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+              Every order protected by Reswell Purchase Protection
+            </Link>
+          </div>
           <p className="text-center text-sm text-midgray">
             {new Date().getFullYear()} Reswell. All rights reserved.
           </p>

@@ -1,10 +1,27 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { BoardBagsListingsFilters } from "@/components/board-bags-listings-filters"
+import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { UsedGearListings, type UsedGearSearchParams } from "../used-gear-listings"
 import { normalizeBoardBagSizeParam } from "@/lib/board-bag-length-options"
 
 const BOARD_BAGS_SLUG = "board-bags"
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: "New", like_new: "Like-New", good: "Good Condition", fair: "Fair Condition",
+}
+
+export async function generateMetadata(props: {
+  searchParams: Promise<UsedGearSearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const cond = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
+  const kind = sp.boardBag === "day" ? "Day Bags" : sp.boardBag === "travel" ? "Travel Bags" : "Board Bags"
+  const title = `${[cond, kind].filter(Boolean).join(" ")} For Sale | Reswell`
+  const description = `Shop ${cond ? cond.toLowerCase() + " " : ""}used surfboard bags on Reswell. Day bags and travel bags available.`
+  return { title, description, openGraph: { title, description } }
+}
 
 const BOARD_BAG_KIND_OPTIONS = ["day", "travel"] as const
 
@@ -51,6 +68,20 @@ export default async function UsedBoardBagsPage(props: {
             />
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <div className="container mx-auto px-4 pt-3 pb-1">
+            <ActiveFilterChips
+              clearHref="/used/board-bags"
+              ignore={["page", "minPrice", "maxPrice"]}
+              quoteValues={["q"]}
+              valueLookups={{
+                boardBag: { day: "Day Bags", travel: "Travel Bags" },
+                condition: CONDITION_LABELS,
+              }}
+            />
+          </div>
+        </Suspense>
 
         <section className="py-8">
           <div className="container mx-auto">

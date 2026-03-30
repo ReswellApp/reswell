@@ -1,8 +1,7 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
-import { useState, useTransition } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useTransition, useEffect, useRef, useCallback } from "react"
 import {
   Select,
   SelectContent,
@@ -10,11 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, SlidersHorizontal } from "lucide-react"
+import { Search } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { LEASH_LENGTH_FT_OPTIONS, LEASH_THICKNESS_OPTIONS, leashLengthLabel } from "@/lib/leash-options"
 
-const conditions = [
+export const leashConditions = [
   { value: "all", label: "Any Condition" },
   { value: "new", label: "New" },
   { value: "like_new", label: "Like New" },
@@ -29,6 +28,8 @@ interface LeashesListingsFiltersProps {
   initialCondition?: string
 }
 
+const DEBOUNCE_MS = 350
+
 export function LeashesListingsFilters({
   initialQ = "",
   initialLeashLength = "all",
@@ -37,28 +38,55 @@ export function LeashesListingsFilters({
 }: LeashesListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
+
   const [q, setQ] = useState(initialQ)
   const [leashLength, setLeashLength] = useState(initialLeashLength)
   const [leashThickness, setLeashThickness] = useState(initialLeashThickness)
   const [condition, setCondition] = useState(initialCondition)
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const params = new URLSearchParams()
-    if (q.trim()) params.set("q", q.trim())
-    if (leashLength && leashLength !== "all") params.set("leashLength", leashLength)
-    if (leashThickness && leashThickness !== "all") params.set("leashThickness", leashThickness)
-    if (condition && condition !== "all") params.set("condition", condition)
-    params.set("page", "1")
-    startTransition(() => {
-      router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`)
-    })
-  }
+  const stateRef = useRef({ q, leashLength, leashThickness, condition })
+  stateRef.current = { q, leashLength, leashThickness, condition }
+
+  // Sync filter UI when server re-renders with new searchParams (back/forward nav)
+  const skipQ = useRef(true)
+  useEffect(() => {
+    skipQ.current = true
+    setQ(initialQ)
+    setLeashLength(initialLeashLength)
+    setLeashThickness(initialLeashThickness)
+    setCondition(initialCondition)
+  }, [initialQ, initialLeashLength, initialLeashThickness, initialCondition])
+
+  const pushFilters = useCallback(
+    (override?: Partial<typeof stateRef.current>) => {
+      const f = { ...stateRef.current, ...override }
+      const params = new URLSearchParams()
+      if (f.q.trim()) params.set("q", f.q.trim())
+      if (f.leashLength && f.leashLength !== "all") params.set("leashLength", f.leashLength)
+      if (f.leashThickness && f.leashThickness !== "all") params.set("leashThickness", f.leashThickness)
+      if (f.condition && f.condition !== "all") params.set("condition", f.condition)
+      params.set("page", "1")
+      startTransition(() => {
+        router.replace(
+          `${pathname}${params.toString() ? `?${params.toString()}` : ""}`,
+          { scroll: false },
+        )
+      })
+    },
+    [pathname, router, startTransition],
+  )
+
+  // Debounced text search
+  useEffect(() => {
+    if (skipQ.current) { skipQ.current = false; return }
+    const t = setTimeout(() => pushFilters(), DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [q, pushFilters])
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={(e) => { e.preventDefault(); pushFilters() }}
       className="grid grid-cols-2 gap-2 items-end md:flex md:flex-nowrap md:gap-2 md:items-end md:justify-center w-full max-w-4xl mx-auto"
     >
       <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[400px] md:min-w-[400px]">
@@ -76,53 +104,55 @@ export function LeashesListingsFilters({
         />
       </div>
       <div className="w-full min-w-0 md:w-[130px] md:shrink-0">
-        <Select name="leashLength" value={leashLength} onValueChange={setLeashLength}>
+        <Select
+          name="leashLength"
+          value={leashLength}
+          onValueChange={(v) => { setLeashLength(v); pushFilters({ leashLength: v }) }}
+        >
           <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
             <SelectValue placeholder="Length" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Any length</SelectItem>
             {LEASH_LENGTH_FT_OPTIONS.map((ft) => (
-              <SelectItem key={ft} value={ft}>
-                {leashLengthLabel(ft)}
-              </SelectItem>
+              <SelectItem key={ft} value={ft}>{leashLengthLabel(ft)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="w-full min-w-0 md:w-[130px] md:shrink-0">
-        <Select name="leashThickness" value={leashThickness} onValueChange={setLeashThickness}>
+        <Select
+          name="leashThickness"
+          value={leashThickness}
+          onValueChange={(v) => { setLeashThickness(v); pushFilters({ leashThickness: v }) }}
+        >
           <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
             <SelectValue placeholder="Thickness" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Any thickness</SelectItem>
             {LEASH_THICKNESS_OPTIONS.map((t) => (
-              <SelectItem key={t} value={t}>
-                {`${t}"`}
-              </SelectItem>
+              <SelectItem key={t} value={t}>{`${t}"`}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div className="w-full min-w-0 md:w-[130px] md:shrink-0">
-        <Select name="condition" value={condition} onValueChange={setCondition}>
+        <Select
+          name="condition"
+          value={condition}
+          onValueChange={(v) => { setCondition(v); pushFilters({ condition: v }) }}
+        >
           <SelectTrigger className="w-full h-10 min-h-[2.5rem]">
             <SelectValue placeholder="Any Condition" />
           </SelectTrigger>
           <SelectContent>
-            {conditions.map((cond) => (
-              <SelectItem key={cond.value} value={cond.value}>
-                {cond.label}
-              </SelectItem>
+            {leashConditions.map((cond) => (
+              <SelectItem key={cond.value} value={cond.value}>{cond.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" disabled={isPending} className="col-span-2 h-10 px-4 md:col-auto md:shrink-0">
-        <SlidersHorizontal className="h-4 w-4 mr-2" />
-        {isPending ? "Applying..." : "Apply"}
-      </Button>
     </form>
   )
 }

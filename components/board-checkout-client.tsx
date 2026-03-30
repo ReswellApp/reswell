@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { PurchaseOptions } from "@/components/purchase-options"
+import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { resolvePayableAmount, type PayableListing } from "@/lib/purchase-amount"
@@ -169,6 +170,8 @@ export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY }: BoardChe
           <span className="tabular-nums text-black dark:text-white">${resolved.total.toFixed(2)}</span>
         </div>
       </div>
+
+      {impliedFulfillment === "shipping" && <ProtectionTrustBlock />}
 
       <PurchaseOptions
         listingId={listing.id}

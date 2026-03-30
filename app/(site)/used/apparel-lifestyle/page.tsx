@@ -1,10 +1,29 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { ApparelLifestyleListingsFilters } from "@/components/apparel-lifestyle-listings-filters"
+import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { UsedGearListings, type UsedGearSearchParams } from "../used-gear-listings"
-import { normalizeApparelKindParam, normalizeApparelSizeParam } from "@/lib/apparel-lifestyle-options"
+import { APPAREL_KIND_OPTIONS, normalizeApparelKindParam, normalizeApparelSizeParam } from "@/lib/apparel-lifestyle-options"
 
 const APPAREL_LIFESTYLE_SLUG = "apparel-lifestyle"
+
+const CONDITION_LABELS: Record<string, string> = {
+  new: "New", like_new: "Like-New", good: "Good Condition", fair: "Fair Condition",
+}
+
+export async function generateMetadata(props: {
+  searchParams: Promise<UsedGearSearchParams>
+}): Promise<Metadata> {
+  const sp = await props.searchParams
+  const cond = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
+  const apparelLabel = sp.apparel && sp.apparel !== "all"
+    ? APPAREL_KIND_OPTIONS.find((o) => o.value === sp.apparel)?.label ?? sp.apparel
+    : ""
+  const title = `${[cond, apparelLabel, "Surf Apparel"].filter(Boolean).join(" ")} For Sale | Reswell`
+  const description = `Shop ${cond ? cond.toLowerCase() + " " : ""}used surf apparel and lifestyle gear on Reswell.`
+  return { title, description, openGraph: { title, description } }
+}
 
 export default async function UsedApparelLifestylePage(props: {
   searchParams: Promise<UsedGearSearchParams>
@@ -43,6 +62,21 @@ export default async function UsedApparelLifestylePage(props: {
             />
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <div className="container mx-auto px-4 pt-3 pb-1">
+            <ActiveFilterChips
+              clearHref="/used/apparel-lifestyle"
+              ignore={["page", "minPrice", "maxPrice"]}
+              quoteValues={["q"]}
+              valuePrefixes={{ size: "Size " }}
+              valueLookups={{
+                apparel: Object.fromEntries(APPAREL_KIND_OPTIONS.map((o) => [o.value, o.label])),
+                condition: CONDITION_LABELS,
+              }}
+            />
+          </div>
+        </Suspense>
 
         <section className="py-8">
           <div className="container mx-auto">
