@@ -3,23 +3,17 @@
 import React from "react"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   Wallet,
   ArrowUpRight,
@@ -31,9 +25,7 @@ import {
   XCircle,
   Loader2,
   Banknote,
-  AlertCircle,
 } from "lucide-react"
-import { getPayoutFee, getPayoutNetAmount, type PayoutType } from "@/lib/payout-fees"
 import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 
 interface WalletData {
@@ -65,20 +57,11 @@ interface CashoutRequest {
   created_at: string
 }
 
-const MIN_CASHOUT = 10
-
 export default function WalletPage() {
   const [wallet, setWallet] = useState<WalletData | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [pendingCashouts, setPendingCashouts] = useState<CashoutRequest[]>([])
   const [loading, setLoading] = useState(true)
-  const [cashoutOpen, setCashoutOpen] = useState(false)
-  const [cashoutAmount, setCashoutAmount] = useState("")
-  const [cashoutPayoutType, setCashoutPayoutType] = useState<PayoutType>("standard")
-  const [cashoutMethod, setCashoutMethod] = useState("")
-  const [cashoutEmail, setCashoutEmail] = useState("")
-  const [cashoutLoading, setCashoutLoading] = useState(false)
-  const [cashoutError, setCashoutError] = useState("")
 
   const fetchWallet = useCallback(async () => {
     try {
@@ -98,49 +81,10 @@ export default function WalletPage() {
     fetchWallet()
   }, [fetchWallet])
 
-  const handleCashout = async () => {
-    setCashoutError("")
-    setCashoutLoading(true)
-
-    try {
-      const res = await fetch("/api/wallet/cashout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: parseFloat(cashoutAmount),
-          payout_type: cashoutPayoutType,
-          payment_method: cashoutMethod,
-          payment_email: cashoutEmail,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setCashoutError(data.error || "Failed to process cash-out")
-        return
-      }
-
-      setCashoutOpen(false)
-      setCashoutAmount("")
-      setCashoutPayoutType("standard")
-      setCashoutMethod("")
-      setCashoutEmail("")
-      fetchWallet()
-    } catch {
-      setCashoutError("An unexpected error occurred")
-    } finally {
-      setCashoutLoading(false)
-    }
-  }
-
   const balance = wallet ? parseFloat(wallet.balance) : 0
   const earned = wallet ? parseFloat(wallet.lifetime_earned) : 0
   const spent = wallet ? parseFloat(wallet.lifetime_spent) : 0
   const cashedOut = wallet ? parseFloat(wallet.lifetime_cashed_out) : 0
-  const cashoutAmountNum = parseFloat(cashoutAmount) || 0
-  const cashoutFee = getPayoutFee(cashoutAmountNum, cashoutPayoutType)
-  const cashoutNet = getPayoutNetAmount(cashoutAmountNum, cashoutPayoutType)
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -254,157 +198,39 @@ export default function WalletPage() {
         </Card>
       </div>
 
-      {/* Cash Out Button */}
-      <div className="flex gap-3">
-        <Dialog open={cashoutOpen} onOpenChange={setCashoutOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg" disabled={balance < MIN_CASHOUT}>
-              <Banknote className="h-4 w-4 mr-2" />
-              Cash Out to Real Currency
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Cash Out Reswell Bucks</DialogTitle>
-              <DialogDescription>
-                0% standard payout; 1% instant payout. Minimum R${MIN_CASHOUT}.00.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="rounded-lg bg-muted/50 p-4">
-                <p className="text-sm text-muted-foreground">Available Balance</p>
-                <p className="text-2xl font-bold text-primary">R${balance.toFixed(2)}</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Payout speed</Label>
-                <Select value={cashoutPayoutType} onValueChange={(v: PayoutType) => setCashoutPayoutType(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard — 0% fee</SelectItem>
-                    <SelectItem value="instant">Instant — 1% fee</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cashout-amount">Amount to Cash Out</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
-                  <Input
-                    id="cashout-amount"
-                    type="number"
-                    step="0.01"
-                    min={MIN_CASHOUT}
-                    max={balance}
-                    value={cashoutAmount}
-                    onChange={(e) => setCashoutAmount(e.target.value)}
-                    className="pl-9"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-xs p-0 h-auto"
-                    onClick={() => setCashoutAmount(balance.toFixed(2))}
-                  >
-                    Cash out all
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <Select value={cashoutMethod} onValueChange={setCashoutMethod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payout method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="paypal">PayPal</SelectItem>
-                    <SelectItem value="venmo">Venmo</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cashout-email">
-                  {cashoutMethod === "venmo" ? "Venmo Username" : cashoutMethod === "bank_transfer" ? "Bank Email" : "PayPal Email"}
-                </Label>
-                <Input
-                  id="cashout-email"
-                  type={cashoutMethod === "venmo" ? "text" : "email"}
-                  value={cashoutEmail}
-                  onChange={(e) => setCashoutEmail(e.target.value)}
-                  placeholder={cashoutMethod === "venmo" ? "@username" : "email@example.com"}
-                />
-              </div>
-
-              {cashoutAmountNum >= MIN_CASHOUT && (
-                <div className="rounded-lg border p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Amount</span>
-                    <span>R${cashoutAmountNum.toFixed(2)}</span>
-                  </div>
-                  {cashoutFee > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Fee (1% instant)</span>
-                      <span className="text-neutral-600">-R${cashoutFee.toFixed(2)}</span>
-                    </div>
+      {/* Cash Out Button — links to full payouts page */}
+      <div className="flex items-center gap-3">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button size="lg" asChild={balance > 0} disabled={balance <= 0}>
+                  {balance > 0 ? (
+                    <Link href="/dashboard/payouts">
+                      <Banknote className="h-4 w-4 mr-2" />
+                      Cash out — R${balance.toFixed(2)} available
+                    </Link>
+                  ) : (
+                    <>
+                      <Banknote className="h-4 w-4 mr-2" />
+                      Cash out
+                    </>
                   )}
-                  <Separator />
-                  <div className="flex justify-between font-medium">
-                    <span>You receive</span>
-                    <span className="text-neutral-900">${cashoutNet.toFixed(2)} USD</span>
-                  </div>
-                </div>
-              )}
-
-              {cashoutError && (
-                <div className="flex items-center gap-2 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  {cashoutError}
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCashoutOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCashout}
-                disabled={
-                  cashoutLoading ||
-                  cashoutAmountNum < MIN_CASHOUT ||
-                  cashoutAmountNum > balance ||
-                  !cashoutMethod ||
-                  !cashoutEmail
-                }
-              >
-                {cashoutLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  `Cash Out $${cashoutNet.toFixed(2)}`
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {balance < MIN_CASHOUT && balance > 0 && (
-          <p className="text-sm text-muted-foreground self-center">
-            You need at least R${MIN_CASHOUT}.00 to cash out
-          </p>
-        )}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {balance <= 0 && (
+              <TooltipContent className="max-w-xs text-center">
+                No available balance yet. Earnings are released after the buyer&apos;s 30-day protection window closes.
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+        <Button variant="outline" size="lg" asChild>
+          <Link href="/dashboard/payouts">
+            Payout settings
+          </Link>
+        </Button>
       </div>
 
       {/* Pending Cash-outs */}
@@ -510,7 +336,7 @@ export default function WalletPage() {
                 Cash Out
               </div>
               <p className="text-sm text-muted-foreground">
-                Cash out to real currency via PayPal, Venmo, or bank transfer. 0% standard payout; 1% instant payout. Minimum R$10.00.
+                Transfer earnings to your bank account (2–5 days, free), debit card (~30 min, 1.5% fee), or PayPal (1–3 days, free). Or keep as Reswell credit.
               </p>
             </div>
           </div>
