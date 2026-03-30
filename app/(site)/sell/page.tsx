@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -82,6 +82,13 @@ import {
   listingObjectPublicUrl,
   uploadStorageObjectWithProgress,
 } from "@/lib/supabase/storage-upload-xhr"
+import {
+  buildSellListingDraft,
+  clearSellListingDraft,
+  loadSellListingDraft,
+  saveSellListingDraft,
+  type SellListingDraftFormSnapshot,
+} from "@/lib/sell-listing-draft-idb"
 import { cn } from "@/lib/utils"
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
@@ -164,7 +171,7 @@ function shippingPriceToFormValue(v: unknown): string {
 function SellPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const editId = searchParams.get("edit")
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
@@ -189,6 +196,7 @@ function SellPageContent() {
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
   const [editLoading, setEditLoading] = useState(!!editId)
+  const [draftHydrated, setDraftHydrated] = useState(!!editId)
 
   useEffect(() => {
     if (!loading) return
@@ -235,6 +243,91 @@ function SellPageContent() {
     locationState: "",
     locationDisplay: "",
   })
+
+  const sellDraftLatestRef = useRef({
+    listingType: "used" as "used" | "board",
+    formData: {} as SellListingDraftFormSnapshot,
+    images: [] as EditableImage[],
+    editId: null as string | null,
+    draftHydrated: false,
+  })
+  const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  sellDraftLatestRef.current = {
+    listingType,
+    formData: formData as SellListingDraftFormSnapshot,
+    images,
+    editId,
+    draftHydrated,
+  }
+
+  useEffect(() => {
+    if (editId) {
+      setDraftHydrated(true)
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const draft = await loadSellListingDraft()
+      if (cancelled) return
+      if (!draft) {
+        setDraftHydrated(true)
+        return
+      }
+      const lt = draft.listingType === "board" ? "board" : "used"
+      setListingType(lt)
+      setFormData((prev) => ({ ...prev, ...(draft.formData as Partial<typeof prev>) }))
+      const restored: EditableImage[] = []
+      for (const b of draft.imageBlobs) {
+        const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
+        restored.push({ file, url: URL.createObjectURL(file) })
+      }
+      if (restored.length) setImages(restored)
+      setDraftHydrated(true)
+      toast.info("Restored your listing draft (photos and details).")
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [editId])
+
+  useEffect(() => {
+    if (editId || !draftHydrated) return
+    if (sellDraftPersistTimerRef.current) clearTimeout(sellDraftPersistTimerRef.current)
+    sellDraftPersistTimerRef.current = setTimeout(() => {
+      sellDraftPersistTimerRef.current = null
+      void (async () => {
+        const r = sellDraftLatestRef.current
+        if (r.editId || !r.draftHydrated) return
+        const built = await buildSellListingDraft(r.listingType, r.formData, r.images)
+        if (built) await saveSellListingDraft(built)
+        else await clearSellListingDraft()
+      })()
+    }, 600)
+    return () => {
+      if (sellDraftPersistTimerRef.current) clearTimeout(sellDraftPersistTimerRef.current)
+    }
+  }, [editId, draftHydrated, listingType, formData, images])
+
+  useEffect(() => {
+    const flush = () => {
+      const r = sellDraftLatestRef.current
+      if (r.editId || !r.draftHydrated) return
+      void (async () => {
+        const built = await buildSellListingDraft(r.listingType, r.formData, r.images)
+        if (built) await saveSellListingDraft(built)
+        else await clearSellListingDraft()
+      })()
+    }
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flush()
+    }
+    window.addEventListener("pagehide", flush)
+    document.addEventListener("visibilitychange", onVis)
+    return () => {
+      window.removeEventListener("pagehide", flush)
+      document.removeEventListener("visibilitychange", onVis)
+    }
+  }, [])
 
   useEffect(() => {
     if (!editId) {
@@ -1302,6 +1395,7 @@ function SellPageContent() {
             toast.success("Your listing is live! 🎉")
           }
           uploadSessionCacheRef.current.clear()
+          void clearSellListingDraft()
           router.push(`${detailPath}?photos=pending`)
           void syncListingImages(listingId, user.id, accessToken).catch((err: unknown) => {
             console.error("Background photo upload:", err)
@@ -1335,6 +1429,7 @@ function SellPageContent() {
         else toast.success(editId ? "Listing updated!" : "Your listing is live! 🎉")
       }
       uploadSessionCacheRef.current.clear()
+      void clearSellListingDraft()
       router.push(detailPath)
     } catch (error: unknown) {
       console.error("Error creating listing:", error instanceof Error ? error.message : error)
@@ -2324,15 +2419,16 @@ function SellPageContent() {
                       </div>
                     ))}
                     {images.length < 12 && (
-                      <label className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground mt-1">Add</span>
+                      <label className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors overflow-hidden">
+                        <Upload className="h-6 w-6 text-muted-foreground pointer-events-none" />
+                        <span className="text-xs text-muted-foreground mt-1 pointer-events-none">Add</span>
                         <input
                           type="file"
                           accept="image/*"
                           multiple
                           onChange={handleImageChange}
-                          className="hidden"
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          aria-label="Add photos"
                         />
                       </label>
                     )}
