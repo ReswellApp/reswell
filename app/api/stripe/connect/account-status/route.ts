@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getStripeOptional } from "@/lib/stripe-client"
 import {
   isStripeConnectAccountAccessError,
+  isStripeContextPermissionDenied,
   stripeContextForConnectedAccount,
 } from "@/lib/stripe-connect-context"
 import {
@@ -96,6 +97,24 @@ export async function GET(request: NextRequest) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[connect/account-status] Stripe V2 retrieve failed:", e)
     const wrongEnvironment = isStripeConnectAccountAccessError(msg)
+    const permissionContext = isStripeContextPermissionDenied(msg)
+
+    let stripeSyncError:
+      | { code: string; message: string }
+      | undefined
+    if (wrongEnvironment) {
+      stripeSyncError = {
+        code: "connect_account_wrong_environment",
+        message:
+          "Stored Connect account ID is not visible to this Stripe secret key (test vs live or different platform). Delete the row in seller_stripe_accounts for this user and set up payouts again.",
+      }
+    } else if (permissionContext) {
+      stripeSyncError = {
+        code: "connect_stripe_permission",
+        message:
+          "Stripe blocked account sync: use the Connect platform secret key, or set STRIPE_PLATFORM_ACCOUNT_ID if your key is from a parent organization. Restricted keys need Connect V2 permissions.",
+      }
+    }
 
     return NextResponse.json({
       connected: true,
@@ -103,13 +122,7 @@ export async function GET(request: NextRequest) {
       readyToReceivePayments: owned.payouts_enabled,
       onboardingComplete: owned.details_submitted,
       requirementsStatus: undefined as string | undefined,
-      stripeSyncError: wrongEnvironment
-        ? {
-            code: "connect_account_wrong_environment" as const,
-            message:
-              "Stored Connect account ID is not visible to this Stripe secret key (test vs live or different platform). Delete the row in seller_stripe_accounts for this user and set up payouts again.",
-          }
-        : undefined,
+      stripeSyncError,
     })
   }
 }

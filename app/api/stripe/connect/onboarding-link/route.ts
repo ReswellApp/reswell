@@ -5,7 +5,11 @@ import {
   originIsLocalhost,
   stripeSecretKeyIsLiveMode,
 } from "@/lib/checkout-app-origin"
-import { isStripeConnectAccountAccessError } from "@/lib/stripe-connect-context"
+import {
+  isStripeConnectAccountAccessError,
+  isStripeContextPermissionDenied,
+  stripeContextForConnectedAccount,
+} from "@/lib/stripe-connect-context"
 import { getStripeOptional } from "@/lib/stripe-client"
 import { STRIPE_CONNECT_GENERIC_ERROR } from "@/lib/stripe-connect-user-messages"
 import Stripe from "stripe"
@@ -101,10 +105,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const accountLink = await stripe.v2.core.accountLinks.create({
-      account: accountId,
-      use_case: useCase,
-    })
+    const accountLink = await stripe.v2.core.accountLinks.create(
+      {
+        account: accountId,
+        use_case: useCase,
+      },
+      stripeContextForConnectedAccount(accountId)
+    )
 
     console.log("[connect/onboarding-link] Onboarding link created:", accountLink.url)
     return NextResponse.json({ url: accountLink.url })
@@ -138,6 +145,19 @@ export async function POST(request: NextRequest) {
           code: "connect_account_wrong_environment",
           hint:
             "Test keys only see test connected accounts (`acct_…` created while using sk_test). Live keys only see live accounts. Mixing modes or changing the Stripe account in Dashboard causes this.",
+        },
+        { status: 400 }
+      )
+    }
+
+    if (isStripeContextPermissionDenied(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "Stripe rejected this request: the API key needs the right scope to act on the connected account.",
+          code: "connect_stripe_permission",
+          hint:
+            "Use the Connect platform’s **secret key** from Dashboard → Developers → API keys (the same account where Connect is enabled). If the secret is from a **parent organization** account instead, set `STRIPE_PLATFORM_ACCOUNT_ID` to your **platform** `acct_…` (see Stripe docs: Stripe-Context). If you use a **restricted key**, grant all required permissions for Connect V2 and account links.",
         },
         { status: 400 }
       )
