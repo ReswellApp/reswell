@@ -293,17 +293,42 @@ export default async function BoardDetailPage(props: {
               <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               <ImageGallery images={images} title={capitalizeWords(board.title)} />
               {!isOwnListing && board.status === "active" && (
-                <Button size="lg" className="mt-4 w-full gap-2 lg:hidden" asChild>
-                  <Link
-                    href={
-                      user
-                        ? `/boards/${boardSlug}/checkout`
-                        : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
-                    }
-                  >
-                    Buy now — ${Number(board.price).toFixed(2)}
-                  </Link>
-                </Button>
+                <>
+                  <Button size="lg" className="mt-4 w-full gap-2 lg:hidden" asChild>
+                    <Link
+                      href={
+                        user
+                          ? `/boards/${boardSlug}/checkout`
+                          : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
+                      }
+                    >
+                      Buy now — ${Number(board.price).toFixed(2)}
+                    </Link>
+                  </Button>
+                  {boardOffersEnabled && (
+                    <div className="mt-2 space-y-2 lg:hidden">
+                      <MakeOfferButton
+                        listingId={board.id}
+                        listingTitle={capitalizeWords(board.title)}
+                        listingSlug={boardSlug}
+                        listingSection="boards"
+                        askingPrice={Number(board.price)}
+                        sellerId={board.user_id}
+                        categorySlug="surfboards"
+                        condition={(board as { condition?: string }).condition ?? null}
+                        localPickupCity={pickupOffered ? boardPickupCity : null}
+                        offersEnabled={boardOffersEnabled}
+                        isLoggedIn={!!user}
+                        activeOffer={boardBuyerActiveOffer as Offer | null}
+                      />
+                      {!boardBuyerActiveOffer && (
+                        <p className="text-xs text-center text-muted-foreground">
+                          Offers accepted · Sellers typically respond within a few hours
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
