@@ -188,10 +188,10 @@ export default function ProtectionPolicyPage() {
       <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
         <h2 className="text-base font-bold mb-2">How protection is funded</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          A small 2% contribution is automatically withheld from each seller&apos;s payout and
-          added to the Reswell Protection Fund. This fund is used exclusively to pay approved
-          claims. Sellers can see this line item clearly in their earnings dashboard — it&apos;s
-          never hidden.
+          Reswell funds buyer protection directly from our 7% platform fee — no extra charges
+          to sellers, ever. When you sell on Reswell, you keep 93% of your sale price. That&apos;s
+          it. No hidden fees, no protection fund deductions, no surprises. Reswell funds all
+          buyer protection from our platform fee — it&apos;s included in the marketplace service.
         </p>
       </div>
 

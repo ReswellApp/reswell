@@ -5,10 +5,10 @@
  * Never hardcode raw numbers elsewhere.
  */
 
-import { RESWELL_FEE, PROTECTION_FUND_RATE } from '@/lib/protection-constants'
+import { RESWELL_FEE } from '@/lib/protection-constants'
 import type { DisputeReason, DisputeStatus, DisputeResolution } from './types'
 
-export { RESWELL_FEE, PROTECTION_FUND_RATE }
+export { RESWELL_FEE }
 
 /** Days from delivery that buyer can open a dispute */
 export const DISPUTE_WINDOW_DAYS = 30

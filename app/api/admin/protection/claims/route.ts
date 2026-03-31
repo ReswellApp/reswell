@@ -56,11 +56,5 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: 'Failed to load claims.' }, { status: 500 })
   }
 
-  // Fund balance
-  const { data: fund } = await adminDb
-    .from('seller_protection_fund')
-    .select('balance, last_updated')
-    .single()
-
-  return NextResponse.json({ claims: claims ?? [], fund })
+  return NextResponse.json({ claims: claims ?? [] })
 }

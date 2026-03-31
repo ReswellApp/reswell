@@ -8,7 +8,6 @@ import {
   CLAIM_TYPE_LABELS,
   CLAIM_STATUS_LABELS,
   CLAIM_STATUS_COLORS,
-  PROTECTION_FUND_MINIMUM_RESERVE,
   type ClaimStatus,
   type ClaimType,
 } from '@/lib/protection-constants'
@@ -88,11 +87,6 @@ export default async function AdminClaimsPage() {
     // PENDING first, then oldest
     .order('created_at', { ascending: true })
 
-  const { data: fund } = await adminDb
-    .from('seller_protection_fund')
-    .select('balance, last_updated')
-    .single()
-
   const allClaims = (claims ?? []) as unknown as AdminClaimRow[]
 
   // Sort: PENDING first, then by created_at asc
@@ -103,8 +97,6 @@ export default async function AdminClaimsPage() {
   })
 
   const pendingCount = sorted.filter((c) => c.status === 'PENDING').length
-  const fundBalance = fund?.balance ?? 0
-  const fundLow = fundBalance < PROTECTION_FUND_MINIMUM_RESERVE
 
   return (
     <div className="space-y-6">
@@ -118,30 +110,8 @@ export default async function AdminClaimsPage() {
         </p>
       </div>
 
-      {/* Fund balance widget */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className={fundLow ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20' : 'border-green-200 bg-green-50/60 dark:border-green-800/40 dark:bg-green-950/20'}>
-          <CardContent className="pt-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Protection Fund Balance
-            </p>
-            <p className={`mt-1 text-2xl font-bold tabular-nums ${fundLow ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-300'}`}>
-              ${fundBalance.toFixed(2)}
-            </p>
-            {fundLow && (
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Below $500 reserve — payouts paused
-              </p>
-            )}
-            {!fundLow && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Min reserve: $500
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
+      {/* Summary widgets */}
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="pt-5">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -274,7 +244,6 @@ export default async function AdminClaimsPage() {
                       claimType={claim.claim_type}
                       claimedAmount={Number(claim.claimed_amount)}
                       orderAmount={orderAmount}
-                      fundBalance={fundBalance}
                     />
                   )}
 

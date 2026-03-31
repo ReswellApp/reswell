@@ -4,10 +4,12 @@ import Stripe from "stripe"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getStripe } from "@/lib/stripe-server"
 
-/** Platform fee + protection fund on item subtotal only (Connect application fee). */
+/**
+ * Reswell platform fee: 7% of item subtotal (Connect application fee).
+ * Buyer protection is funded from this fee — no extra charge to sellers.
+ */
+// TODO: Confirm whether Stripe processing fee (2.9% + $0.30) is passed to buyer or absorbed by Reswell
 const RESWELL_FEE = 0.07
-const PROTECTION_FUND_RATE = 0.02
-const CONNECT_APPLICATION_FEE_RATE = RESWELL_FEE + PROTECTION_FUND_RATE
 import {
   SURFBOARD_CHECKOUT_MODE,
   USED_LISTING_CHECKOUT_MODE,
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     const expectedTotalCents = Math.round(resolved.total * 100)
     const itemPriceInCents = Math.round(resolved.itemPrice * 100)
-    const applicationFeeInCents = Math.round(itemPriceInCents * CONNECT_APPLICATION_FEE_RATE)
+    const applicationFeeInCents = Math.round(itemPriceInCents * RESWELL_FEE)
 
     const { data: sellerConnect } = await supabase
       .from("seller_stripe_accounts")

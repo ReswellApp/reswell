@@ -121,6 +121,60 @@ const categories = [
   { value: "a3000003-0000-4000-8000-000000000003", label: "Vintage" },
 ]
 
+type DimMode = "decimal" | "fraction"
+
+function formatDecimalDimension(value: number): string {
+  if (!Number.isFinite(value)) return ""
+  return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(3)))
+}
+
+function parseDimension(input: string): number | null {
+  const normalized = input.trim()
+  if (!normalized) return null
+  if (/^\d*\.?\d+$/.test(normalized)) {
+    const decimal = Number.parseFloat(normalized)
+    return Number.isFinite(decimal) ? decimal : null
+  }
+
+  const mixedFraction = normalized.match(/^(\d+)\s+(\d+)\/(\d+)$/)
+  if (mixedFraction) {
+    const whole = Number.parseInt(mixedFraction[1], 10)
+    const numerator = Number.parseInt(mixedFraction[2], 10)
+    const denominator = Number.parseInt(mixedFraction[3], 10)
+    if (!denominator || numerator >= denominator) return null
+    return whole + numerator / denominator
+  }
+
+  const fraction = normalized.match(/^(\d+)\/(\d+)$/)
+  if (fraction) {
+    const numerator = Number.parseInt(fraction[1], 10)
+    const denominator = Number.parseInt(fraction[2], 10)
+    if (!denominator || numerator >= denominator) return null
+    return numerator / denominator
+  }
+
+  return null
+}
+
+function formatDimension(value: number): string {
+  if (!Number.isFinite(value)) return ""
+  const whole = Math.floor(value)
+  const fraction = value - whole
+  if (fraction < 0.0001) return String(whole)
+  const denominator = 16
+  const numerator = Math.round(fraction * denominator)
+  if (numerator === 0) return String(whole)
+  if (numerator === denominator) return String(whole + 1)
+
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+  const divisor = gcd(numerator, denominator)
+  const reducedNumerator = numerator / divisor
+  const reducedDenominator = denominator / divisor
+  return whole > 0
+    ? `${whole} ${reducedNumerator}/${reducedDenominator}`
+    : `${reducedNumerator}/${reducedDenominator}`
+}
+
 // Board type to category UUID mapping
 const boardCategoryMap: Record<string, string> = {
   shortboard: "7e434a96-f3f7-4a73-b733-704a769195e6",
@@ -268,6 +322,16 @@ function SellPageContent() {
     locationState: "",
     locationDisplay: "",
   })
+  const [dimMode, setDimMode] = useState<DimMode>("decimal")
+  const [widthFractionInput, setWidthFractionInput] = useState("")
+  const [thicknessFractionInput, setThicknessFractionInput] = useState("")
+  const [inchesFractionInput, setInchesFractionInput] = useState("")
+  const [widthFractionError, setWidthFractionError] = useState("")
+  const [thicknessFractionError, setThicknessFractionError] = useState("")
+  const [inchesFractionError, setInchesFractionError] = useState("")
+  const [widthParsedHint, setWidthParsedHint] = useState("")
+  const [thicknessParsedHint, setThicknessParsedHint] = useState("")
+  const [inchesParsedHint, setInchesParsedHint] = useState("")
 
   const sellDraftLatestRef = useRef({
     listingType: "used" as "used" | "board",
@@ -291,14 +355,34 @@ function SellPageContent() {
 
   const boardLengthFormatted = useMemo(() => {
     const ft = formData.boardLengthFt.trim()
-    if (!ft || isNaN(parseInt(ft))) return ""
-    const inn = parseInt(formData.boardLengthIn) || 0
-    return `${parseInt(ft)}'${inn}"`
+    if (!ft || isNaN(parseInt(ft, 10))) return ""
+    const inn = parseFloat(formData.boardLengthIn)
+    return `${parseInt(ft, 10)}'${formatDecimalDimension(Number.isFinite(inn) ? inn : 0)}"`
   }, [formData.boardLengthFt, formData.boardLengthIn])
 
+  const boardLengthPreview = useMemo(() => {
+    const ft = formData.boardLengthFt.trim()
+    if (!ft || isNaN(parseInt(ft, 10))) return ""
+    const inches = parseFloat(formData.boardLengthIn)
+    if (!Number.isFinite(inches)) return `${parseInt(ft, 10)}'0"`
+    return dimMode === "fraction"
+      ? `${parseInt(ft, 10)}'${formatDimension(inches)}"`
+      : `${parseInt(ft, 10)}'${formatDecimalDimension(inches)}"`
+  }, [dimMode, formData.boardLengthFt, formData.boardLengthIn])
+
+  const fractionWidthPreview = useMemo(() => {
+    const width = parseFloat(formData.boardWidthInches)
+    return Number.isFinite(width) ? formatDimension(width) : ""
+  }, [formData.boardWidthInches])
+
+  const fractionThicknessPreview = useMemo(() => {
+    const thickness = parseFloat(formData.boardThicknessInches)
+    return Number.isFinite(thickness) ? formatDimension(thickness) : ""
+  }, [formData.boardThicknessInches])
+
   const estimatedVolume = useMemo(() => {
-    const ft = parseInt(formData.boardLengthFt)
-    const inn = parseInt(formData.boardLengthIn) || 0
+    const ft = parseInt(formData.boardLengthFt, 10)
+    const inn = parseFloat(formData.boardLengthIn) || 0
     const w = parseFloat(formData.boardWidthInches)
     const t = parseFloat(formData.boardThicknessInches)
     if (!formData.boardLengthFt || isNaN(ft) || isNaN(w) || isNaN(t)) return null
@@ -322,6 +406,71 @@ function SellPageContent() {
       formData.description.trim(),
     ].filter(Boolean).length
   }, [listingType, images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
+
+  const commitFractionField = (
+    rawValue: string,
+    setRaw: (next: string) => void,
+    applyDecimal: (decimalValue: string) => void,
+    setError: (value: string) => void,
+    setHint: (value: string) => void,
+    unitLabel: string
+  ) => {
+    const trimmed = rawValue.trim()
+    if (!trimmed) {
+      applyDecimal("")
+      setError("")
+      setHint("")
+      return
+    }
+    const parsed = parseDimension(trimmed)
+    if (parsed == null) {
+      setError("Enter a measurement like 19 1/2 or 19.5")
+      setHint("")
+      return
+    }
+    const normalized = formatDimension(parsed)
+    setRaw(normalized)
+    applyDecimal(formatDecimalDimension(parsed))
+    setError("")
+    setHint(`= ${formatDecimalDimension(parsed)} ${unitLabel}`)
+  }
+
+  const switchMode = (newMode: DimMode) => {
+    if (newMode === dimMode) return
+
+    if (newMode === "fraction") {
+      const width = parseFloat(formData.boardWidthInches)
+      const thickness = parseFloat(formData.boardThicknessInches)
+      const inches = parseFloat(formData.boardLengthIn)
+      setWidthFractionInput(Number.isFinite(width) ? formatDimension(width) : "")
+      setThicknessFractionInput(Number.isFinite(thickness) ? formatDimension(thickness) : "")
+      setInchesFractionInput(Number.isFinite(inches) ? formatDimension(inches) : "")
+      setWidthFractionError("")
+      setThicknessFractionError("")
+      setInchesFractionError("")
+      setWidthParsedHint("")
+      setThicknessParsedHint("")
+      setInchesParsedHint("")
+    } else {
+      const parsedWidth = parseDimension(widthFractionInput)
+      const parsedThickness = parseDimension(thicknessFractionInput)
+      const parsedInches = parseDimension(inchesFractionInput)
+      setFormData((prev) => ({
+        ...prev,
+        boardWidthInches: parsedWidth != null ? formatDecimalDimension(parsedWidth) : "",
+        boardThicknessInches: parsedThickness != null ? formatDecimalDimension(parsedThickness) : "",
+        boardLengthIn: parsedInches != null ? formatDecimalDimension(parsedInches) : "",
+      }))
+      setWidthFractionError("")
+      setThicknessFractionError("")
+      setInchesFractionError("")
+      setWidthParsedHint("")
+      setThicknessParsedHint("")
+      setInchesParsedHint("")
+    }
+
+    setDimMode(newMode)
+  }
 
   // Smart title suggestion when brand + model index + length are all filled
   const suggestedTitle = useMemo(() => {
@@ -1056,7 +1205,7 @@ function SellPageContent() {
       }
 
       const boardLengthFmt = formData.boardLengthFt.trim()
-        ? `${parseInt(formData.boardLengthFt)}'${parseInt(formData.boardLengthIn) || 0}"`
+        ? `${parseInt(formData.boardLengthFt, 10)}'${formatDecimalDimension(parseFloat(formData.boardLengthIn) || 0)}"`
         : ""
       const resolvedListingTitle =
         listingType === "board" && boardLengthFmt
@@ -1157,7 +1306,7 @@ function SellPageContent() {
               : null,
           length_inches:
             listingType === "board" && formData.boardLengthFt
-              ? parseInt(formData.boardLengthIn) || 0
+              ? parseFloat(formData.boardLengthIn) || 0
               : null,
           width: listingType === "board" && formData.boardWidthInches ? parseFloat(formData.boardWidthInches) : null,
           thickness: listingType === "board" && formData.boardThicknessInches ? parseFloat(formData.boardThicknessInches) : null,
@@ -1346,7 +1495,7 @@ function SellPageContent() {
               : null,
           length_inches:
             listingType === "board" && formData.boardLengthFt
-              ? parseInt(formData.boardLengthIn) || 0
+              ? parseFloat(formData.boardLengthIn) || 0
               : null,
           width: listingType === "board" && formData.boardWidthInches ? parseFloat(formData.boardWidthInches) : null,
           thickness: listingType === "board" && formData.boardThicknessInches ? parseFloat(formData.boardThicknessInches) : null,
@@ -1699,7 +1848,7 @@ function SellPageContent() {
                         onSelectModel={(opt: IndexBoardModelSelection) => {
                           setFormData((f) => {
                             const lenStr = f.boardLengthFt.trim()
-                              ? `${parseInt(f.boardLengthFt)}'${parseInt(f.boardLengthIn) || 0}"`
+                              ? `${parseInt(f.boardLengthFt, 10)}'${formatDecimalDimension(parseFloat(f.boardLengthIn) || 0)}"`
                               : ""
                             return {
                               ...f,
@@ -2293,7 +2442,35 @@ function SellPageContent() {
 
                     {/* Board Dimensions */}
                     <div className="space-y-3 rounded-lg border border-border/60 bg-muted/15 p-4">
-                      <p className="text-sm font-medium text-foreground">Board dimensions</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-foreground">Board dimensions</p>
+                        <div className="inline-flex gap-0.5 rounded-lg bg-muted p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => switchMode("decimal")}
+                            className={cn(
+                              "rounded-md px-3 py-1 text-xs transition-colors",
+                              dimMode === "decimal"
+                                ? "bg-background font-medium text-foreground shadow-sm"
+                                : "bg-transparent text-muted-foreground"
+                            )}
+                          >
+                            Decimals
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => switchMode("fraction")}
+                            className={cn(
+                              "rounded-md px-3 py-1 text-xs transition-colors",
+                              dimMode === "fraction"
+                                ? "bg-background font-medium text-foreground shadow-sm"
+                                : "bg-transparent text-muted-foreground"
+                            )}
+                          >
+                            Fractions
+                          </button>
+                        </div>
+                      </div>
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
                         <div className="space-y-1.5">
@@ -2313,20 +2490,48 @@ function SellPageContent() {
                             />
                             <span className="text-xs text-muted-foreground shrink-0">ft</span>
                             <Input
-                              type="number"
-                              min={0}
-                              max={11}
-                              step={1}
-                              placeholder="2"
-                              value={formData.boardLengthIn === "0" ? "" : formData.boardLengthIn}
-                              onChange={(e) => setFormData({ ...formData, boardLengthIn: e.target.value || "0" })}
+                              type={dimMode === "fraction" ? "text" : "number"}
+                              min={dimMode === "decimal" ? 0 : undefined}
+                              max={dimMode === "decimal" ? 11.875 : undefined}
+                              step={dimMode === "decimal" ? 0.125 : undefined}
+                              placeholder={dimMode === "fraction" ? "e.g. 2 1/2" : "2"}
+                              value={
+                                dimMode === "fraction"
+                                  ? inchesFractionInput
+                                  : formData.boardLengthIn === "0"
+                                    ? ""
+                                    : formData.boardLengthIn
+                              }
+                              onChange={(e) => {
+                                if (dimMode === "fraction") {
+                                  setInchesFractionInput(e.target.value)
+                                  setInchesFractionError("")
+                                } else {
+                                  setFormData({ ...formData, boardLengthIn: e.target.value || "0" })
+                                }
+                              }}
+                              onBlur={() => {
+                                if (dimMode !== "fraction") return
+                                commitFractionField(
+                                  inchesFractionInput,
+                                  setInchesFractionInput,
+                                  (decimal) => setFormData((prev) => ({ ...prev, boardLengthIn: decimal })),
+                                  setInchesFractionError,
+                                  setInchesParsedHint,
+                                  "inches"
+                                )
+                              }}
                               className="w-14 text-center px-2"
                               aria-label="Inches"
                             />
                             <span className="text-xs text-muted-foreground shrink-0">in</span>
                           </div>
-                          {boardLengthFormatted && (
-                            <p className="text-xs text-muted-foreground">{boardLengthFormatted}</p>
+                          {inchesFractionError && <p className="text-xs text-red-600">{inchesFractionError}</p>}
+                          {!inchesFractionError && inchesParsedHint && dimMode === "fraction" && (
+                            <p className="text-xs text-muted-foreground">{inchesParsedHint}</p>
+                          )}
+                          {boardLengthPreview && (
+                            <p className="text-xs text-muted-foreground">{boardLengthPreview}</p>
                           )}
                         </div>
 
@@ -2335,17 +2540,39 @@ function SellPageContent() {
                           <Label className="text-xs text-muted-foreground">Width</Label>
                           <div className="flex items-center gap-1">
                             <Input
-                              type="number"
-                              min={14}
-                              max={24}
-                              step={0.25}
-                              placeholder="19.5"
-                              value={formData.boardWidthInches}
-                              onChange={(e) => setFormData({ ...formData, boardWidthInches: e.target.value })}
+                              type={dimMode === "fraction" ? "text" : "number"}
+                              min={dimMode === "decimal" ? 14 : undefined}
+                              max={dimMode === "decimal" ? 24 : undefined}
+                              step={dimMode === "decimal" ? 0.25 : undefined}
+                              placeholder={dimMode === "fraction" ? "e.g. 19 1/2" : "19.5"}
+                              value={dimMode === "fraction" ? widthFractionInput : formData.boardWidthInches}
+                              onChange={(e) => {
+                                if (dimMode === "fraction") {
+                                  setWidthFractionInput(e.target.value)
+                                  setWidthFractionError("")
+                                } else {
+                                  setFormData({ ...formData, boardWidthInches: e.target.value })
+                                }
+                              }}
+                              onBlur={() => {
+                                if (dimMode !== "fraction") return
+                                commitFractionField(
+                                  widthFractionInput,
+                                  setWidthFractionInput,
+                                  (decimal) => setFormData((prev) => ({ ...prev, boardWidthInches: decimal })),
+                                  setWidthFractionError,
+                                  setWidthParsedHint,
+                                  "inches"
+                                )
+                              }}
                               className="w-20 text-center px-2"
                             />
                             <span className="text-xs text-muted-foreground shrink-0">in</span>
                           </div>
+                          {widthFractionError && <p className="text-xs text-red-600">{widthFractionError}</p>}
+                          {!widthFractionError && widthParsedHint && dimMode === "fraction" && (
+                            <p className="text-xs text-muted-foreground">{widthParsedHint}</p>
+                          )}
                         </div>
 
                         {/* Thickness */}
@@ -2353,17 +2580,39 @@ function SellPageContent() {
                           <Label className="text-xs text-muted-foreground">Thickness</Label>
                           <div className="flex items-center gap-1">
                             <Input
-                              type="number"
-                              min={1.5}
-                              max={4}
-                              step={0.125}
-                              placeholder="2.5"
-                              value={formData.boardThicknessInches}
-                              onChange={(e) => setFormData({ ...formData, boardThicknessInches: e.target.value })}
+                              type={dimMode === "fraction" ? "text" : "number"}
+                              min={dimMode === "decimal" ? 1.5 : undefined}
+                              max={dimMode === "decimal" ? 4 : undefined}
+                              step={dimMode === "decimal" ? 0.125 : undefined}
+                              placeholder={dimMode === "fraction" ? "e.g. 2 1/2" : "2.5"}
+                              value={dimMode === "fraction" ? thicknessFractionInput : formData.boardThicknessInches}
+                              onChange={(e) => {
+                                if (dimMode === "fraction") {
+                                  setThicknessFractionInput(e.target.value)
+                                  setThicknessFractionError("")
+                                } else {
+                                  setFormData({ ...formData, boardThicknessInches: e.target.value })
+                                }
+                              }}
+                              onBlur={() => {
+                                if (dimMode !== "fraction") return
+                                commitFractionField(
+                                  thicknessFractionInput,
+                                  setThicknessFractionInput,
+                                  (decimal) => setFormData((prev) => ({ ...prev, boardThicknessInches: decimal })),
+                                  setThicknessFractionError,
+                                  setThicknessParsedHint,
+                                  "inches"
+                                )
+                              }}
                               className="w-20 text-center px-2"
                             />
                             <span className="text-xs text-muted-foreground shrink-0">in</span>
                           </div>
+                          {thicknessFractionError && <p className="text-xs text-red-600">{thicknessFractionError}</p>}
+                          {!thicknessFractionError && thicknessParsedHint && dimMode === "fraction" && (
+                            <p className="text-xs text-muted-foreground">{thicknessParsedHint}</p>
+                          )}
                         </div>
 
                         {/* Volume */}
@@ -2387,11 +2636,13 @@ function SellPageContent() {
                           )}
                         </div>
                       </div>
-                      {boardLengthFormatted && (
+                      {boardLengthPreview && (
                         <p className="text-xs text-muted-foreground font-medium">
-                          {boardLengthFormatted}
-                          {formData.boardWidthInches && ` × ${formData.boardWidthInches}`}
-                          {formData.boardThicknessInches && ` × ${formData.boardThicknessInches}`}
+                          {boardLengthPreview}
+                          {formData.boardWidthInches &&
+                            ` × ${dimMode === "fraction" ? fractionWidthPreview : formData.boardWidthInches}`}
+                          {formData.boardThicknessInches &&
+                            ` × ${dimMode === "fraction" ? fractionThicknessPreview : formData.boardThicknessInches}`}
                           {(formData.boardVolumeL || estimatedVolume) && ` — ${formData.boardVolumeL || `~${estimatedVolume}`}L`}
                         </p>
                       )}

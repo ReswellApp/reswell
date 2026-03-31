@@ -4,10 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  PROTECTION_FUND_MINIMUM_RESERVE,
-  type ClaimType,
-} from '@/lib/protection-constants'
+import type { ClaimType } from '@/lib/protection-constants'
 import { cn } from '@/lib/utils'
 
 interface AdminClaimActionsProps {
@@ -15,7 +12,6 @@ interface AdminClaimActionsProps {
   claimType: ClaimType
   claimedAmount: number
   orderAmount: number
-  fundBalance: number
 }
 
 export function AdminClaimActions({
@@ -23,7 +19,6 @@ export function AdminClaimActions({
   claimType,
   claimedAmount,
   orderAmount,
-  fundBalance,
 }: AdminClaimActionsProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -34,9 +29,6 @@ export function AdminClaimActions({
   })
   const [denialReason, setDenialReason] = useState('')
   const [error, setError] = useState<string | null>(null)
-
-  const fundAfterPayout = fundBalance - parseFloat(approvedAmount || '0')
-  const fundWillRunLow = fundAfterPayout < PROTECTION_FUND_MINIMUM_RESERVE
 
   async function submit(action: 'approve' | 'deny') {
     setError(null)
@@ -110,13 +102,6 @@ export function AdminClaimActions({
             />
           </div>
         </div>
-
-        {fundWillRunLow && (
-          <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
-            <AlertCircle className="h-3 w-3" />
-            Fund will drop to ${fundAfterPayout.toFixed(2)} — below minimum reserve.
-          </p>
-        )}
 
         {error && (
           <p className="text-xs text-destructive flex items-center gap-1">

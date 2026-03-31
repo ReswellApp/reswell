@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import {
   calculateApprovedAmount,
-  PROTECTION_FUND_MINIMUM_RESERVE,
   type ClaimType,
 } from '@/lib/protection-constants'
 
@@ -78,29 +77,10 @@ export async function PATCH(
         0 // shipping cost — use 0 if not tracked separately
       )
 
-    // Check protection fund balance before approving
-    const { data: fund } = await adminDb
-      .from('seller_protection_fund')
-      .select('id, balance')
-      .single()
-
-    if (!fund) {
-      return NextResponse.json({ error: 'Protection fund not found.' }, { status: 500 })
-    }
-
-    if (fund.balance - finalApprovedAmount < PROTECTION_FUND_MINIMUM_RESERVE) {
-      return NextResponse.json(
-        {
-          error: `Fund balance too low. Current: $${fund.balance.toFixed(2)}. Payout: $${finalApprovedAmount.toFixed(2)}. Reserve required: $${PROTECTION_FUND_MINIMUM_RESERVE}.`,
-          fund_low: true,
-        },
-        { status: 422 }
-      )
-    }
-
     const now = new Date().toISOString()
 
     // Update the claim
+    // Buyer protection is funded from Reswell's 7% platform fee — no fund deduction needed
     const { error: updateError } = await adminDb
       .from('purchase_protection_claims')
       .update({
@@ -114,19 +94,6 @@ export async function PATCH(
 
     if (updateError) {
       return NextResponse.json({ error: 'Failed to update claim.' }, { status: 500 })
-    }
-
-    // Deduct from protection fund
-    const { error: fundError } = await adminDb
-      .from('seller_protection_fund')
-      .update({
-        balance: fund.balance - finalApprovedAmount,
-        last_updated: now,
-      })
-      .eq('id', fund.id)
-
-    if (fundError) {
-      console.error('[admin/protection] Failed to deduct from fund:', fundError)
     }
 
     return NextResponse.json({

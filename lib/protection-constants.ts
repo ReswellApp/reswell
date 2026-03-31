@@ -5,13 +5,18 @@
  * Never hardcode raw numbers elsewhere in the codebase.
  */
 
-/** Reswell marketplace fee: 7% of sale price */
+/** Reswell marketplace fee: 7% of sale price — buyer protection is funded from this fee */
 export const RESWELL_FEE = 0.07
 
-/** Seller protection fund contribution rate: 2% of sale price */
-export const PROTECTION_FUND_RATE = 0.02
+/** Stripe processing rate (card payments only) */
+export const STRIPE_PROCESSING_RATE = 0.029
+/** Stripe processing fixed fee in USD (card payments only) */
+export const STRIPE_PROCESSING_FIXED = 0.30
 
-/** Minimum protection fund reserve before payouts are paused (USD) */
+/**
+ * Minimum Reswell operating reserve (USD) — used for internal monitoring only.
+ * No longer tied to a seller-funded pool; buyer protection is funded from the 7% platform fee.
+ */
 export const PROTECTION_FUND_MINIMUM_RESERVE = 500
 
 /** Protection window duration in days (from delivery confirmation) */
@@ -82,25 +87,27 @@ export type ProtectionEligibility = {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Calculate seller payout breakdown including protection fund contribution.
+ * Calculate seller payout breakdown.
+ * Reswell takes 7%. Seller keeps 93%. No protection fund deduction.
+ * Buyer protection is funded entirely from Reswell's 7% platform fee.
+ *
+ * @param cardPayment - If true, also calculates Stripe processing fee (2.9% + $0.30).
+ *   Note: Stripe processing is charged separately and does not reduce seller payout directly
+ *   when using Stripe Connect — it is deducted from the platform's application fee share.
+ *   // TODO: Confirm whether Stripe processing fee is passed to buyer or absorbed by Reswell
  */
 export function getProtectedSellerPayout(saleTotal: number, cardPayment = false): {
   saleTotal: number
   reswellFee: number
-  protectionContribution: number
   stripeProcessingFee: number
   sellerPayout: number
 } {
   const reswellFee = Math.round(saleTotal * RESWELL_FEE * 100) / 100
-  const protectionContribution = Math.round(saleTotal * PROTECTION_FUND_RATE * 100) / 100
-  // Stripe: ~2.9% + $0.30 (only for card payments)
   const stripeProcessingFee = cardPayment
-    ? Math.round((saleTotal * 0.029 + 0.3) * 100) / 100
+    ? Math.round((saleTotal * STRIPE_PROCESSING_RATE + STRIPE_PROCESSING_FIXED) * 100) / 100
     : 0
-  const sellerPayout = Math.round(
-    (saleTotal - reswellFee - protectionContribution - stripeProcessingFee) * 100
-  ) / 100
-  return { saleTotal, reswellFee, protectionContribution, stripeProcessingFee, sellerPayout }
+  const sellerPayout = Math.round((saleTotal - reswellFee) * 100) / 100
+  return { saleTotal, reswellFee, stripeProcessingFee, sellerPayout }
 }
 
 /**

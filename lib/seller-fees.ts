@@ -1,17 +1,19 @@
 /**
  * Standard fees for used gear sales on the platform.
  * Applied consistently to Reswell Bucks and card (Stripe) purchases.
+ *
+ * Fee structure: Reswell takes 7%. Sellers keep 93%. No protection fund deduction.
+ * Buyer protection is funded from Reswell's 7% platform fee — not charged to sellers.
  */
 
-/** Marketplace fee: 7% of sale price (platform fee) */
+/** Marketplace fee: 7% of sale price (platform fee). Seller keeps 93%. */
 export const MARKETPLACE_FEE_PERCENT = 7
 
-/** Seller protection fund contribution: 2% of sale price (withheld from seller payout) */
-export const PROTECTION_FUND_PERCENT = 2
-
-/** Payment processing: ~2.9% + $0.30 (Stripe; applied only for card payments) */
+/** Stripe processing rate: 2.9% (card payments only) */
 export const PAYMENT_PROCESSING_PERCENT = 2.9
+/** Stripe processing fixed fee: $0.30 (card payments only) */
 export const PAYMENT_PROCESSING_FIXED = 0.3
+// TODO: Confirm whether Stripe processing fee is passed to buyer at checkout or absorbed by Reswell
 
 /**
  * Compute marketplace (platform) fee for a sale price.

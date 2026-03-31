@@ -706,22 +706,19 @@ export default function PayoutsPage() {
               <span>100%</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Reswell marketplace fee</span>
+              <span>Reswell platform fee</span>
               <span>−7%</span>
-            </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>Buyer protection fund</span>
-              <span>−2%</span>
             </div>
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Your earnings</span>
-              <span>91%</span>
+              <span>93%</span>
             </div>
             <p className="text-xs text-muted-foreground pt-1">
-              Card payments also include Stripe processing (~2.9% + $0.30). Earnings
-              are held for 2 days then move to pending. After the 30-day buyer protection
-              window closes, funds become available to cash out.
+              That&apos;s it — one simple fee. Reswell funds buyer protection from our 7% platform fee,
+              so there are no extra deductions from your payout. Card payments via Stripe also include
+              a processing fee (~2.9% + $0.30). Earnings are held during the 30-day buyer protection
+              window, then become available to cash out.
             </p>
           </div>
         </CardContent>
