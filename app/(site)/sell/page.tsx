@@ -31,6 +31,7 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Sparkles,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 const LocationPicker = dynamic(
@@ -199,6 +200,8 @@ function SellPageContent() {
 
   const [loading, setLoading] = useState(false)
   const [submitStepIndex, setSubmitStepIndex] = useState(0)
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [descriptionGenerated, setDescriptionGenerated] = useState(false)
   const submitStepIndexRef = useRef(0)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -249,7 +252,13 @@ function SellPageContent() {
     boardFulfillment: "shipping_only" as BoardFulfillmentChoice,
     boardShippingPrice: "0",
     boardType: "",
-    boardLength: "",
+    boardLengthFt: "",
+    boardLengthIn: "0",
+    boardWidthInches: "",
+    boardThicknessInches: "",
+    boardVolumeL: "",
+    boardFins: "",
+    boardTail: "",
     boardIndexBrandSlug: "",
     boardIndexModelSlug: "",
     boardIndexLabel: "",
@@ -279,6 +288,50 @@ function SellPageContent() {
     editId,
     draftHydrated,
   }
+
+  const boardLengthFormatted = useMemo(() => {
+    const ft = formData.boardLengthFt.trim()
+    if (!ft || isNaN(parseInt(ft))) return ""
+    const inn = parseInt(formData.boardLengthIn) || 0
+    return `${parseInt(ft)}'${inn}"`
+  }, [formData.boardLengthFt, formData.boardLengthIn])
+
+  const estimatedVolume = useMemo(() => {
+    const ft = parseInt(formData.boardLengthFt)
+    const inn = parseInt(formData.boardLengthIn) || 0
+    const w = parseFloat(formData.boardWidthInches)
+    const t = parseFloat(formData.boardThicknessInches)
+    if (!formData.boardLengthFt || isNaN(ft) || isNaN(w) || isNaN(t)) return null
+    const lengthIn = ft * 12 + inn
+    return Math.round(lengthIn * w * t * 0.554 * 10) / 10
+  }, [formData.boardLengthFt, formData.boardLengthIn, formData.boardWidthInches, formData.boardThicknessInches])
+
+  // Count completed board fields for progress indicator
+  const boardFieldsCompleted = useMemo(() => {
+    if (listingType !== "board") return 0
+    return [
+      images.length >= 3,
+      formData.title.trim(),
+      formData.boardLengthFt.trim(),
+      formData.boardWidthInches.trim(),
+      formData.boardThicknessInches.trim(),
+      formData.boardFins,
+      formData.boardTail,
+      formData.condition,
+      formData.price.trim(),
+      formData.description.trim(),
+    ].filter(Boolean).length
+  }, [listingType, images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
+
+  // Smart title suggestion when brand + model index + length are all filled
+  const suggestedTitle = useMemo(() => {
+    if (listingType !== "board") return null
+    if (!formData.boardIndexLabel || !boardLengthFormatted) return null
+    const suggested = `${formData.boardIndexLabel} - ${boardLengthFormatted}`
+    const currentTitle = formData.title.trim()
+    if (currentTitle.toLowerCase() === suggested.toLowerCase()) return null
+    return suggested
+  }, [listingType, formData.boardIndexLabel, boardLengthFormatted, formData.title])
 
   useEffect(() => {
     if (editId) {
@@ -397,6 +450,11 @@ function SellPageContent() {
           board_type,
           length_feet,
           length_inches,
+          width,
+          thickness,
+          volume,
+          fins_setup,
+          tail_shape,
           latitude,
           longitude,
           city,
@@ -516,7 +574,13 @@ function SellPageContent() {
         boardFulfillment: loadedFulfillment,
         boardShippingPrice,
         boardType: listing.board_type ?? "",
-        boardLength: lengthFeet && lengthInches ? `${lengthFeet}'${lengthInches}"` : "",
+        boardLengthFt: lengthFeet ? lengthFeet : "",
+        boardLengthIn: lengthInches ? lengthInches : "0",
+        boardWidthInches: (listing as { width?: number | null }).width != null ? String((listing as { width?: number | null }).width) : "",
+        boardThicknessInches: (listing as { thickness?: number | null }).thickness != null ? String((listing as { thickness?: number | null }).thickness) : "",
+        boardVolumeL: (listing as { volume?: number | null }).volume != null ? String((listing as { volume?: number | null }).volume) : "",
+        boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
+        boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardIndexBrandSlug: (listing as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? "",
         boardIndexModelSlug: (listing as { index_model_slug?: string | null }).index_model_slug?.trim() ?? "",
         boardIndexLabel: (listing as { index_model_label?: string | null }).index_model_label?.trim() ?? "",
@@ -929,7 +993,7 @@ function SellPageContent() {
       }
 
       if (listingType === "board") {
-        if (!formData.boardLength?.trim()) {
+        if (!formData.boardLengthFt?.trim()) {
           toast.error("Board length is required for surfboards")
           setLoading(false)
           return
@@ -991,9 +1055,12 @@ function SellPageContent() {
           : null,
       }
 
+      const boardLengthFmt = formData.boardLengthFt.trim()
+        ? `${parseInt(formData.boardLengthFt)}'${parseInt(formData.boardLengthIn) || 0}"`
+        : ""
       const resolvedListingTitle =
-        listingType === "board" && formData.boardLength.trim()
-          ? listingTitleWithBoardLength(formData.title, formData.boardLength)
+        listingType === "board" && boardLengthFmt
+          ? listingTitleWithBoardLength(formData.title, boardLengthFmt)
           : formData.title.trim()
 
       const flowImpersonation = !!impersonation
@@ -1085,13 +1152,18 @@ function SellPageContent() {
               : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
           board_type: listingType === "board" ? formData.boardType : null,
           length_feet:
-            listingType === "board" && formData.boardLength
-              ? parseInt(formData.boardLength.split("'")[0])
+            listingType === "board" && formData.boardLengthFt
+              ? parseInt(formData.boardLengthFt)
               : null,
           length_inches:
-            listingType === "board" && formData.boardLength
-              ? parseInt(formData.boardLength.split("'")[1] || "0")
+            listingType === "board" && formData.boardLengthFt
+              ? parseInt(formData.boardLengthIn) || 0
               : null,
+          width: listingType === "board" && formData.boardWidthInches ? parseFloat(formData.boardWidthInches) : null,
+          thickness: listingType === "board" && formData.boardThicknessInches ? parseFloat(formData.boardThicknessInches) : null,
+          volume: listingType === "board" && formData.boardVolumeL ? parseFloat(formData.boardVolumeL) : null,
+          fins_setup: listingType === "board" && formData.boardFins ? formData.boardFins : null,
+          tail_shape: listingType === "board" && formData.boardTail ? formData.boardTail : null,
           latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
           longitude:
             fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
@@ -1269,13 +1341,18 @@ function SellPageContent() {
               : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
           board_type: listingType === "board" ? formData.boardType : null,
           length_feet:
-            listingType === "board" && formData.boardLength
-              ? parseInt(formData.boardLength.split("'")[0])
+            listingType === "board" && formData.boardLengthFt
+              ? parseInt(formData.boardLengthFt)
               : null,
           length_inches:
-            listingType === "board" && formData.boardLength
-              ? parseInt(formData.boardLength.split("'")[1] || "0")
+            listingType === "board" && formData.boardLengthFt
+              ? parseInt(formData.boardLengthIn) || 0
               : null,
+          width: listingType === "board" && formData.boardWidthInches ? parseFloat(formData.boardWidthInches) : null,
+          thickness: listingType === "board" && formData.boardThicknessInches ? parseFloat(formData.boardThicknessInches) : null,
+          volume: listingType === "board" && formData.boardVolumeL ? parseFloat(formData.boardVolumeL) : null,
+          fins_setup: listingType === "board" && formData.boardFins ? formData.boardFins : null,
+          tail_shape: listingType === "board" && formData.boardTail ? formData.boardTail : null,
           latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
           longitude:
             fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
@@ -1597,27 +1674,60 @@ function SellPageContent() {
                 </div>
 
                 {/* Title */}
+                {listingType === "board" && (
+                  <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
+                    <span>{boardFieldsCompleted} of 10 fields complete</span>
+                    <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-300"
+                        style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="title">Title *</Label>
                   {listingType === "board" ? (
-                    <SurfboardTitleIndexInput
-                      id="title"
-                      placeholder={`e.g., Channel Islands Dumpster Diver - 5'6"`}
-                      value={formData.title}
-                      onChange={(title) => setFormData((f) => ({ ...f, title }))}
-                      boardLength={formData.boardLength}
-                      onSelectModel={(opt: IndexBoardModelSelection) => {
-                        setFormData((f) => ({
-                          ...f,
-                          title: titleFromIndexModelPick(opt, f.boardLength),
-                          boardIndexBrandSlug: opt.brandSlug,
-                          boardIndexModelSlug: opt.modelSlug,
-                          boardIndexLabel: opt.label,
-                          brand: opt.brandName,
-                        }))
-                      }}
-                      required
-                    />
+                    <>
+                      <SurfboardTitleIndexInput
+                        id="title"
+                        placeholder={`e.g., Channel Islands Dumpster Diver - 5'6"`}
+                        value={formData.title}
+                        onChange={(title) => setFormData((f) => ({ ...f, title }))}
+                        boardLength={boardLengthFormatted}
+                        onSelectModel={(opt: IndexBoardModelSelection) => {
+                          setFormData((f) => {
+                            const lenStr = f.boardLengthFt.trim()
+                              ? `${parseInt(f.boardLengthFt)}'${parseInt(f.boardLengthIn) || 0}"`
+                              : ""
+                            return {
+                              ...f,
+                              title: titleFromIndexModelPick(opt, lenStr),
+                              boardIndexBrandSlug: opt.brandSlug,
+                              boardIndexModelSlug: opt.modelSlug,
+                              boardIndexLabel: opt.label,
+                              brand: opt.brandName,
+                            }
+                          })
+                        }}
+                        required
+                      />
+                      {suggestedTitle && (
+                        <p className="text-xs text-muted-foreground">
+                          Suggested:{" "}
+                          <span className="font-medium text-foreground">{suggestedTitle}</span>
+                          {" — "}
+                          <button
+                            type="button"
+                            className="text-primary underline-offset-2 hover:underline"
+                            onClick={() => setFormData((f) => ({ ...f, title: suggestedTitle }))}
+                          >
+                            Use this
+                          </button>
+                        </p>
+                      )}
+                    </>
                   ) : (
                     <Input
                       id="title"
@@ -2123,6 +2233,7 @@ function SellPageContent() {
                   </>
                 ) : (
                   <>
+                    {/* Board Type + Brand */}
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label>Board Type *</Label>
@@ -2143,52 +2254,209 @@ function SellPageContent() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="boardLength">Board Length *</Label>
-                        <Input
-                          id="boardLength"
-                          placeholder={`e.g., 6'2"`}
-                          value={formData.boardLength}
-                          onChange={(e) => setFormData({ ...formData, boardLength: e.target.value })}
-                          required={listingType === "board"}
-                        />
+                        <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
+                        {formData.boardIndexBrandSlug && formData.boardIndexModelSlug ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="surf-brand"
+                              value={formData.brand}
+                              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 shrink-0 text-xs text-muted-foreground"
+                              onClick={() =>
+                                setFormData((f) => ({
+                                  ...f,
+                                  boardIndexBrandSlug: "",
+                                  boardIndexModelSlug: "",
+                                  boardIndexLabel: "",
+                                }))
+                              }
+                            >
+                              Clear link
+                            </Button>
+                          </div>
+                        ) : (
+                          <Input
+                            id="surf-brand"
+                            placeholder="e.g., Channel Islands"
+                            value={formData.brand}
+                            onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                          />
+                        )}
                       </div>
                     </div>
+
+                    {/* Board Dimensions */}
                     <div className="space-y-3 rounded-lg border border-border/60 bg-muted/15 p-4">
-                      {formData.boardIndexBrandSlug && formData.boardIndexModelSlug ? (
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/80 bg-background/80 px-3 py-2 text-sm">
-                          <span className="text-muted-foreground">
-                            Linked to index:{" "}
-                            <span className="font-medium text-foreground">
-                              {formData.boardIndexLabel ||
-                                `${formData.boardIndexModelSlug} — ${formData.boardIndexBrandSlug}`}
-                            </span>
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 shrink-0 text-muted-foreground"
-                            onClick={() =>
-                              setFormData((f) => ({
-                                ...f,
-                                boardIndexBrandSlug: "",
-                                boardIndexModelSlug: "",
-                                boardIndexLabel: "",
-                              }))
-                            }
-                          >
-                            Clear link
-                          </Button>
+                      <p className="text-sm font-medium text-foreground">Board dimensions</p>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {/* Length */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Length *</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={4}
+                              max={12}
+                              step={1}
+                              placeholder="6"
+                              value={formData.boardLengthFt}
+                              onChange={(e) => setFormData({ ...formData, boardLengthFt: e.target.value })}
+                              className="w-14 text-center px-2"
+                              required={listingType === "board"}
+                              aria-label="Feet"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">ft</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={11}
+                              step={1}
+                              placeholder="2"
+                              value={formData.boardLengthIn === "0" ? "" : formData.boardLengthIn}
+                              onChange={(e) => setFormData({ ...formData, boardLengthIn: e.target.value || "0" })}
+                              className="w-14 text-center px-2"
+                              aria-label="Inches"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">in</span>
+                          </div>
+                          {boardLengthFormatted && (
+                            <p className="text-xs text-muted-foreground">{boardLengthFormatted}</p>
+                          )}
                         </div>
-                      ) : null}
-                      <div className="space-y-2">
-                        <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
-                        <Input
-                          id="surf-brand"
-                          placeholder="Pre-filled when you pick a directory model from the title; edit anytime"
-                          value={formData.brand}
-                          onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                        />
+
+                        {/* Width */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Width</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={14}
+                              max={24}
+                              step={0.25}
+                              placeholder="19.5"
+                              value={formData.boardWidthInches}
+                              onChange={(e) => setFormData({ ...formData, boardWidthInches: e.target.value })}
+                              className="w-20 text-center px-2"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">in</span>
+                          </div>
+                        </div>
+
+                        {/* Thickness */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Thickness</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={1.5}
+                              max={4}
+                              step={0.125}
+                              placeholder="2.5"
+                              value={formData.boardThicknessInches}
+                              onChange={(e) => setFormData({ ...formData, boardThicknessInches: e.target.value })}
+                              className="w-20 text-center px-2"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">in</span>
+                          </div>
+                        </div>
+
+                        {/* Volume */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Volume</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={10}
+                              max={100}
+                              step={0.1}
+                              placeholder={estimatedVolume ? String(estimatedVolume) : "32.5"}
+                              value={formData.boardVolumeL}
+                              onChange={(e) => setFormData({ ...formData, boardVolumeL: e.target.value })}
+                              className="w-20 text-center px-2"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">L</span>
+                          </div>
+                          {!formData.boardVolumeL && estimatedVolume && (
+                            <p className="text-xs text-muted-foreground">~{estimatedVolume}L (est.)</p>
+                          )}
+                        </div>
+                      </div>
+                      {boardLengthFormatted && (
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {boardLengthFormatted}
+                          {formData.boardWidthInches && ` × ${formData.boardWidthInches}`}
+                          {formData.boardThicknessInches && ` × ${formData.boardThicknessInches}`}
+                          {(formData.boardVolumeL || estimatedVolume) && ` — ${formData.boardVolumeL || `~${estimatedVolume}`}L`}
+                        </p>
+                      )}
+                      {!formData.boardVolumeL && (
+                        <p className="text-xs text-muted-foreground">
+                          Not sure of volume? Leave blank and we&apos;ll estimate based on your other dimensions.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Fins Setup */}
+                    <div className="space-y-2">
+                      <Label>Fin setup</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "single", label: "Single" },
+                          { value: "twin", label: "Twin (2+1)" },
+                          { value: "thruster", label: "Thruster" },
+                          { value: "quad", label: "Quad" },
+                          { value: "five", label: "5-fin" },
+                          { value: "other", label: "Other" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, boardFins: formData.boardFins === opt.value ? "" : opt.value })}
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-sm transition-colors",
+                              formData.boardFins === opt.value
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover:border-primary/50",
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tail Shape */}
+                    <div className="space-y-2">
+                      <Label>Tail shape</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "round", label: "Round" },
+                          { value: "squash", label: "Squash" },
+                          { value: "square", label: "Square" },
+                          { value: "pin", label: "Pin" },
+                          { value: "swallow", label: "Swallow" },
+                          { value: "fish", label: "Fish" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, boardTail: formData.boardTail === opt.value ? "" : opt.value })}
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-sm transition-colors",
+                              formData.boardTail === opt.value
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover:border-primary/50",
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </>
@@ -2379,14 +2647,160 @@ function SellPageContent() {
                   <Label htmlFor="description">
                     Description{(listingType === "used" || listingType === "board") ? " *" : ""}
                   </Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe your item - include details about size, wear, included accessories, etc."
-                    rows={4}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required={listingType === "used" || listingType === "board"}
-                  />
+                  <div className={cn(
+                    "relative rounded-md transition-all",
+                    isGeneratingDescription && "ring-2 ring-primary/40 ring-offset-1 animate-pulse",
+                  )}>
+                    <Textarea
+                      id="description"
+                      placeholder={
+                        listingType === "board"
+                          ? "Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
+                          : "Describe your item - include details about size, wear, included accessories, etc."
+                      }
+                      className="min-h-[120px] resize-none"
+                      value={formData.description}
+                      onChange={(e) => {
+                        setFormData({ ...formData, description: e.target.value })
+                        setDescriptionGenerated(false)
+                      }}
+                      required={listingType === "used" || listingType === "board"}
+                      disabled={isGeneratingDescription}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {formData.description.length} / 1000
+                    </span>
+                    {descriptionGenerated && (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Description written — feel free to edit
+                      </span>
+                    )}
+                  </div>
+
+                  {/* AI Generate button (board listings only) */}
+                  {listingType === "board" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isGeneratingDescription}
+                          onClick={async () => {
+                            if (formData.description.trim()) {
+                              if (!window.confirm("This will replace your current description. Continue?")) return
+                            }
+                            setIsGeneratingDescription(true)
+                            setDescriptionGenerated(false)
+                            setFormData((f) => ({ ...f, description: "" }))
+                            try {
+                              const listingData = {
+                                brand: formData.brand || formData.boardIndexLabel?.split(" ")[0] || "",
+                                model: formData.boardIndexLabel || "",
+                                condition: formData.condition,
+                                length: boardLengthFormatted,
+                                width: formData.boardWidthInches,
+                                thickness: formData.boardThicknessInches,
+                                volume: formData.boardVolumeL || (estimatedVolume ? String(estimatedVolume) : ""),
+                                fins: formData.boardFins,
+                                tail: formData.boardTail,
+                                price: formData.price,
+                                location: formData.locationDisplay || formData.locationCity || "",
+                              }
+                              const response = await fetch("/api/listings/generate-description", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ listingData }),
+                              })
+                              if (!response.ok) throw new Error("Failed to generate description")
+                              const reader = response.body!.getReader()
+                              const decoder = new TextDecoder()
+                              while (true) {
+                                const { done, value } = await reader.read()
+                                if (done) break
+                                const chunk = decoder.decode(value)
+                                const lines = chunk.split("\n")
+                                for (const line of lines) {
+                                  if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                                    try {
+                                      const data = JSON.parse(line.slice(6)) as { text?: string; error?: string }
+                                      if (data.error) throw new Error(data.error)
+                                      if (data.text) {
+                                        setFormData((prev) => ({ ...prev, description: prev.description + data.text }))
+                                      }
+                                    } catch { /* ignore malformed lines */ }
+                                  }
+                                }
+                              }
+                              setDescriptionGenerated(true)
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : "Failed to generate description")
+                            } finally {
+                              setIsGeneratingDescription(false)
+                            }
+                          }}
+                          className="gap-1.5"
+                        >
+                          {isGeneratingDescription ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Writing...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              {formData.description.trim() ? "Rewrite description" : "Write description for me"}
+                            </>
+                          )}
+                        </Button>
+                        {formData.description.trim() && !isGeneratingDescription && (
+                          <span className="text-xs text-muted-foreground">
+                            Will replace your current description
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Quick add chips */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground">Quick add:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            "Has been reglassed",
+                            "No pressure dings",
+                            "Fresh wax",
+                            "Comes with board bag",
+                            "Fin boxes in great shape",
+                            "Minor heel dents",
+                            "Good for beginners",
+                            "Great for small waves",
+                            "Rides bigger than it looks",
+                          ].map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => {
+                                setFormData((f) => {
+                                  const desc = f.description.trimEnd()
+                                  const append = desc.endsWith(".")
+                                    ? ` ${chip}.`
+                                    : desc
+                                      ? `, ${chip.toLowerCase()}`
+                                      : chip
+                                  return { ...f, description: desc + append }
+                                })
+                              }}
+                              className="rounded-full border border-border px-2.5 py-0.5 text-xs hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                            >
+                              + {chip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Used items are shipping only — no toggle; always shipped */}
