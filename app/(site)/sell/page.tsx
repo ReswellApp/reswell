@@ -2696,6 +2696,8 @@ function SellPageContent() {
                             setIsGeneratingDescription(true)
                             setDescriptionGenerated(false)
                             setFormData((f) => ({ ...f, description: "" }))
+                            let fullText = ""
+                            let buffer = ""
                             try {
                               const listingData = {
                                 brand: formData.brand || formData.boardIndexLabel?.split(" ")[0] || "",
@@ -2721,21 +2723,30 @@ function SellPageContent() {
                               while (true) {
                                 const { done, value } = await reader.read()
                                 if (done) break
-                                const chunk = decoder.decode(value)
-                                const lines = chunk.split("\n")
+                                // Accumulate into buffer so lines split across chunks are reassembled
+                                buffer += decoder.decode(value, { stream: true })
+                                const lines = buffer.split("\n")
+                                // Keep the incomplete trailing line in the buffer
+                                buffer = lines.pop() ?? ""
                                 for (const line of lines) {
-                                  if (line.startsWith("data: ") && line !== "data: [DONE]") {
-                                    try {
-                                      const data = JSON.parse(line.slice(6)) as { text?: string; error?: string }
-                                      if (data.error) throw new Error(data.error)
-                                      if (data.text) {
-                                        setFormData((prev) => ({ ...prev, description: prev.description + data.text }))
-                                      }
-                                    } catch { /* ignore malformed lines */ }
+                                  if (!line.startsWith("data: ")) continue
+                                  const raw = line.slice(6).trim()
+                                  if (raw === "[DONE]") continue
+                                  // Parse JSON separately so malformed lines are skipped but real errors propagate
+                                  let parsed: { text?: string; error?: string }
+                                  try {
+                                    parsed = JSON.parse(raw)
+                                  } catch {
+                                    continue
+                                  }
+                                  if (parsed.error) throw new Error(parsed.error)
+                                  if (parsed.text) {
+                                    fullText += parsed.text
+                                    setFormData((f) => ({ ...f, description: fullText }))
                                   }
                                 }
                               }
-                              setDescriptionGenerated(true)
+                              if (fullText.length > 0) setDescriptionGenerated(true)
                             } catch (err) {
                               toast.error(err instanceof Error ? err.message : "Failed to generate description")
                             } finally {

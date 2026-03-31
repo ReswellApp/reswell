@@ -61,7 +61,7 @@ Location: ${location || "Not specified"}
 Write 3-4 sentences. Sound like a real surfer, not a salesperson. Mention the dims, condition honestly, what type of surfer or waves it suits, and anything a buyer would want to know. Do not use exclamation marks or hype language. Keep it natural and conversational. Do not include a title — just the description body.`
 
   const stream = await client.messages.stream({
-    model: "claude-sonnet-4-6",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 300,
     messages: [{ role: "user", content: prompt }],
   })
