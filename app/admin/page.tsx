@@ -164,7 +164,7 @@ export default async function AdminDashboard() {
                     Platform fees
                   </p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    R${platformPurchaseFees.totalFees.toFixed(2)}
+                    ${platformPurchaseFees.totalFees.toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -180,7 +180,7 @@ export default async function AdminDashboard() {
                     Gross sale volume
                   </p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    R${platformPurchaseFees.totalSaleVolume.toFixed(2)}
+                    ${platformPurchaseFees.totalSaleVolume.toFixed(2)}
                   </p>
                 </div>
               </div>

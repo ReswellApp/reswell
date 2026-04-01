@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     type: "purchase",
     amount: -price,
     balance_after: newBuyerBalance,
-    description: `Purchased "${listing.title}"${resolved.shipping > 0 ? ` (incl. shipping R$${resolved.shipping.toFixed(2)})` : ""}`,
+    description: `Purchased "${listing.title}"${resolved.shipping > 0 ? ` (incl. shipping $${resolved.shipping.toFixed(2)})` : ""}`,
     reference_id: purchase?.id,
     reference_type: "listing",
   })
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     type: "sale",
     amount: sellerEarnings,
     balance_after: newSellerBalance,
-    description: `Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: R$${platformFee.toFixed(2)})`,
+    description: `Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)})`,
     reference_id: purchase?.id,
     reference_type: "listing",
   })

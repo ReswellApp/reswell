@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button"
 interface ImageGalleryProps {
   images: Array<{ id: string; url: string; is_primary: boolean }>
   title: string
+  /** Sold listings: muted imagery + SOLD badge (no change to carousel behavior). */
+  sold?: boolean
 }
 
-export function ImageGallery({ images, title }: ImageGalleryProps) {
+export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   if (images.length === 0) {
@@ -40,13 +42,27 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
             src={selectedImage.url || "/placeholder.svg"}
             alt={`${title} - Image ${selectedIndex + 1}`}
             fill
-            className="object-contain transition-opacity duration-300"
+            className={cn(
+              "object-contain transition-opacity duration-300",
+              sold && "[filter:grayscale(30%)]",
+            )}
             priority
             sizes="(max-width: 1024px) 100vw, 50vw"
             placeholder="blur"
             blurDataURL={portraitShimmer}
           />
         </div>
+        {sold && (
+          <>
+            <div className="pointer-events-none absolute inset-0 z-[5] bg-black/[0.08]" aria-hidden />
+            <div
+              className="absolute left-3 top-3 z-20 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white"
+              style={{ backgroundColor: "#111" }}
+            >
+              Sold
+            </div>
+          </>
+        )}
 
         {/* Navigation arrows */}
         {images.length > 1 && (
@@ -104,7 +120,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
                     src={image.url || "/placeholder.svg"}
                     alt={`${title} - Thumbnail ${index + 1}`}
                     fill
-                    className="object-contain"
+                    className={cn("object-contain", sold && "[filter:grayscale(30%)]")}
                     sizes="64px"
                     placeholder="blur"
                     blurDataURL={squareShimmer}

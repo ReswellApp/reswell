@@ -101,6 +101,7 @@ import {
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
 import { cn } from "@/lib/utils"
+import { listingDetailPath } from "@/lib/listing-query"
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
 const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
@@ -589,8 +590,10 @@ function SellPageContent() {
         .select(
           `
           id,
+          slug,
           user_id,
           section,
+          status,
           title,
           description,
           price,
@@ -640,6 +643,18 @@ function SellPageContent() {
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
         router.replace("/sell")
+        setEditLoading(false)
+        return
+      }
+      if ((listing as { status?: string }).status === "sold") {
+        toast.message("This listing has sold — it can’t be edited.")
+        router.replace(
+          listingDetailPath({
+            section: String(listing.section),
+            slug: (listing as { slug?: string | null }).slug ?? null,
+            id: String(listing.id),
+          }),
+        )
         setEditLoading(false)
         return
       }

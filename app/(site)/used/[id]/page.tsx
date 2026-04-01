@@ -45,6 +45,10 @@ import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { Truck } from "lucide-react"
 import { MakeOfferButton } from "@/components/offers/make-offer-button"
 import type { Offer } from "@/lib/offers/types"
+import {
+  ListingSoldDetailNotice,
+  ListingSoldOwnerNotice,
+} from "@/components/listing-sold-detail-notice"
 
 function getPrimaryImageUrl(
   images: Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }> | null | undefined,
@@ -65,7 +69,7 @@ export async function generateMetadata(props: {
   const supabase = await createClient()
   const { listing } = await findListingByParam(supabase, params.id, {
     select:
-      "id, slug, title, description, listing_images (url, is_primary, sort_order), categories (name), section",
+      "id, slug, title, description, status, listing_images (url, is_primary, sort_order), categories (name), section",
     section: "used",
   })
 
@@ -73,7 +77,8 @@ export async function generateMetadata(props: {
     return { title: "Used Gear Listing" }
   }
 
-  const title = capitalizeWords(listing.title || "Used Gear Listing")
+  const sold = listing.status === "sold"
+  const title = `${capitalizeWords(listing.title || "Used Gear Listing")}${sold ? " · Sold" : ""}`
   const category = listing.categories?.name ? `${formatCategory(listing.categories.name)} - ` : ""
   const description = (
     listing.description ||
@@ -204,6 +209,7 @@ export default async function UsedListingPage(props: {
   ) || []
 
   const isOwnListing = user?.id === listing.user_id
+  const isSold = listing.status === "sold"
   const pickupOffered = listing.local_pickup !== false
   const shippingOffered = !!listing.shipping_available
   const shippingPrice = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
@@ -292,11 +298,23 @@ export default async function UsedListingPage(props: {
             )}
           </div>
 
+          {isSold && (
+            <div className="max-w-5xl mx-auto mb-6">
+              <ListingSoldDetailNotice />
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Images */}
             <div>
-              <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
-              <ImageGallery images={images} title={capitalizeWords(listing.title)} />
+              {!(isSold && isOwnListing) && (
+                <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
+              )}
+              <ImageGallery
+                images={images}
+                title={capitalizeWords(listing.title)}
+                sold={isSold}
+              />
             </div>
 
             {/* Details */}
@@ -313,9 +331,15 @@ export default async function UsedListingPage(props: {
                     <ShareButton title={capitalizeWords(listing.title)} />
                   </div>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
-                  ${listing.price.toFixed(2)}
-                </p>
+                {isSold ? (
+                  <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
+                    Sold for ${listing.price.toFixed(2)}
+                  </p>
+                ) : (
+                  <p className="text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
+                    ${listing.price.toFixed(2)}
+                  </p>
+                )}
               </div>
 
               {/* Purchase item — requires login; checkout lets user choose card, Apple Pay, or Reswell Bucks */}
@@ -482,7 +506,7 @@ export default async function UsedListingPage(props: {
                         />
                       </div>
                     </Link>
-                    {!isOwnListing && (
+                    {!isOwnListing && !isSold && (
                       <div className="flex flex-row gap-2">
                         <Button
                           variant="outline"
@@ -518,7 +542,7 @@ export default async function UsedListingPage(props: {
               </Card>
 
               {/* Contact Form */}
-              {!isOwnListing && (
+              {!isOwnListing && !isSold && (
                 <Card className="bg-offwhite">
                   <CardContent className="p-4">
                     <ContactSellerForm
@@ -534,7 +558,18 @@ export default async function UsedListingPage(props: {
                 </Card>
               )}
 
-              {isOwnListing && (
+              {isOwnListing && isSold && (
+                <Card className="bg-muted/20 border-border">
+                  <CardContent className="p-4">
+                    <ListingSoldOwnerNotice
+                      dashboardListingsHref="/dashboard/listings"
+                      sectionLabel="listing"
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {isOwnListing && !isSold && (
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="p-4 text-center">
                     <p className="text-sm text-muted-foreground mb-2">This is your listing</p>

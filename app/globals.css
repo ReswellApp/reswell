@@ -256,3 +256,27 @@
 [data-sonner-toaster] {
   position: fixed !important;
 }
+
+/* Feed page — sold activity ticker (marquee) */
+@keyframes feed-ticker-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.feed-ticker-marquee-track {
+  animation: feed-ticker-marquee 45s linear infinite;
+}
+
+.feed-ticker-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-ticker-marquee-track {
+    animation: none;
+  }
+}

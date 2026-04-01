@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   if (cashoutAmount < MIN_CASHOUT) {
     return NextResponse.json(
-      { error: `Minimum cash-out is R$${MIN_CASHOUT}.00` },
+      { error: `Minimum cash-out is $${MIN_CASHOUT}.00` },
       { status: 400 }
     )
   }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     type: "cashout",
     amount: -cashoutAmount,
     balance_after: newBalance,
-    description: `Cash-out R$${cashoutAmount.toFixed(2)} via ${payment_method} (${payout_type}, fee: R$${fee.toFixed(2)}, payout: $${netAmount.toFixed(2)})`,
+    description: `Cash-out $${cashoutAmount.toFixed(2)} via ${payment_method} (${payout_type}, fee: $${fee.toFixed(2)}, payout: $${netAmount.toFixed(2)})`,
     reference_id: cashout?.id,
     reference_type: "cashout_request",
     status: "pending",

@@ -102,7 +102,7 @@ export function BuyWithBucks({
       <DialogTrigger asChild>
         <Button size="lg" className="w-full gap-2">
           <Wallet className="h-4 w-4" />
-          Buy with Reswell Bucks - R${price.toFixed(2)}
+          Buy with Earnings - ${price.toFixed(2)}
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -120,9 +120,9 @@ export function BuyWithBucks({
             <div className="space-y-4 py-4">
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 space-y-2">
                 <p className="text-sm text-muted-foreground">Amount Paid</p>
-                <p className="text-xl font-bold text-black dark:text-white">R${price.toFixed(2)}</p>
+                <p className="text-xl font-bold text-black dark:text-white">${price.toFixed(2)}</p>
                 <p className="text-sm text-muted-foreground">
-                  Remaining balance: R${(balance ?? 0).toFixed(2)}
+                  Remaining balance: ${(balance ?? 0).toFixed(2)}
                 </p>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -131,7 +131,7 @@ export function BuyWithBucks({
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" asChild>
-                <Link href="/dashboard/wallet">View Wallet</Link>
+                <Link href="/dashboard/earnings">View Earnings</Link>
               </Button>
               <Button asChild>
                 <Link href={`/messages`}>
@@ -146,7 +146,7 @@ export function BuyWithBucks({
             <DialogHeader>
               <DialogTitle>Confirm Purchase</DialogTitle>
               <DialogDescription>
-                Buy &quot;{listingTitle}&quot; with Reswell Bucks
+                Buy &quot;{listingTitle}&quot; with your earnings balance
               </DialogDescription>
             </DialogHeader>
 
@@ -171,7 +171,7 @@ export function BuyWithBucks({
                   <div className="rounded-lg bg-muted/50 p-4 flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Your Balance</p>
-                      <p className="text-xl font-bold text-primary">R${(balance ?? 0).toFixed(2)}</p>
+                      <p className="text-xl font-bold text-primary">${(balance ?? 0).toFixed(2)}</p>
                     </div>
                     {canAfford ? (
                       <Badge className="bg-neutral-100 text-neutral-900 border-neutral-200">
@@ -189,25 +189,25 @@ export function BuyWithBucks({
                   <div className="rounded-lg border p-4 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Item</span>
-                      <span>R${lineItem.toFixed(2)}</span>
+                      <span>${lineItem.toFixed(2)}</span>
                     </div>
                     {shippingAmount > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Shipping</span>
-                        <span>R${shippingAmount.toFixed(2)}</span>
+                        <span>${shippingAmount.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-medium border-t pt-2">
                       <span>Total</span>
-                      <span>R${price.toFixed(2)}</span>
+                      <span>${price.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm pt-1">
                       <span className="text-muted-foreground">Platform Fee ({MARKETPLACE_FEE_PERCENT}%)</span>
-                      <span className="text-muted-foreground">R${platformFee.toFixed(2)}</span>
+                      <span className="text-muted-foreground">${platformFee.toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between text-sm">
                       <span className="text-muted-foreground">Seller receives</span>
-                      <span>R${sellerGets.toFixed(2)}</span>
+                      <span>${sellerGets.toFixed(2)}</span>
                     </div>
                   </div>
 
@@ -215,7 +215,7 @@ export function BuyWithBucks({
                     <div className="flex items-start gap-2 text-sm text-destructive">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <p>
-                        You need R${(price - (balance ?? 0)).toFixed(2)} more. Earn Reswell Bucks by selling items on the marketplace.
+                        You need ${(price - (balance ?? 0)).toFixed(2)} more. Earn by selling items on the marketplace.
                       </p>
                     </div>
                   )}
@@ -242,7 +242,7 @@ export function BuyWithBucks({
                       Processing...
                     </>
                   ) : (
-                    `Pay R$${price.toFixed(2)}`
+                    `Pay $${price.toFixed(2)}`
                   )}
                 </Button>
               </DialogFooter>

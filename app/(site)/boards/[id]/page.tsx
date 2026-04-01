@@ -26,6 +26,10 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { MakeOfferButton } from "@/components/offers/make-offer-button"
 import type { Offer } from "@/lib/offers/types"
+import {
+  ListingSoldDetailNotice,
+  ListingSoldOwnerNotice,
+} from "@/components/listing-sold-detail-notice"
 
 // Split Leaflet map into its own chunk. ssr:false is not allowed in Server Components
 // (Next.js 16), but LocationMap is already SSR-safe — Leaflet only runs inside useEffect.
@@ -71,7 +75,7 @@ export async function generateMetadata(props: {
   const params = await props.params
   const supabase = await createClient()
   const { listing: board } = await findListingByParam(supabase, params.id, {
-    select: "id, slug, title, description, listing_images (url, is_primary, sort_order), section",
+    select: "id, slug, title, description, status, listing_images (url, is_primary, sort_order), section",
     section: "surfboards",
   })
 
@@ -79,7 +83,8 @@ export async function generateMetadata(props: {
     return { title: "Surfboard Listing" }
   }
 
-  const title = capitalizeWords(board.title || "Surfboard Listing")
+  const soldMeta = board.status === "sold"
+  const title = `${capitalizeWords(board.title || "Surfboard Listing")}${soldMeta ? " · Sold" : ""}`
   const description = (board.description || "View this surfboard listing on Reswell marketplace.").slice(0, 180)
   const imageUrl = getPrimaryImageUrl(board.listing_images)
 
@@ -197,6 +202,7 @@ export default async function BoardDetailPage(props: {
   ) || []
 
   const isOwnListing = user?.id === board.user_id
+  const isSold = board.status === "sold"
 
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
@@ -257,6 +263,12 @@ export default async function BoardDetailPage(props: {
             )}
           </div>
 
+          {isSold && (
+            <div className="max-w-5xl mx-auto mb-6">
+              <ListingSoldDetailNotice />
+            </div>
+          )}
+
           {/* Mobile heading + actions above images */}
           <div className="mb-2 lg:hidden flex items-start justify-between gap-3">
             <h1 className="text-xl font-bold break-words flex-1">
@@ -274,9 +286,15 @@ export default async function BoardDetailPage(props: {
 
           {/* Mobile price + tags above images */}
           <div className="mb-4 lg:hidden">
-            <p className="text-2xl font-bold text-black dark:text-white">
-              ${board.price.toFixed(2)}
-            </p>
+            {isSold ? (
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                Sold for ${board.price.toFixed(2)}
+              </p>
+            ) : (
+              <p className="text-2xl font-bold text-black dark:text-white">
+                ${board.price.toFixed(2)}
+              </p>
+            )}
             <p className="mt-1 text-sm text-muted-foreground">
               {[
                 formatCondition(board.condition),
@@ -290,8 +308,10 @@ export default async function BoardDetailPage(props: {
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Images */}
             <div>
-              <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
-              <ImageGallery images={images} title={capitalizeWords(board.title)} />
+              {!(isSold && isOwnListing) && (
+                <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
+              )}
+              <ImageGallery images={images} title={capitalizeWords(board.title)} sold={isSold} />
               {!isOwnListing && board.status === "active" && (
                 <>
                   <Button size="lg" className="mt-4 w-full gap-2 lg:hidden" asChild>
@@ -348,9 +368,15 @@ export default async function BoardDetailPage(props: {
                     <ShareButton title={capitalizeWords(board.title)} />
                   </div>
                 </div>
-                <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
-                  ${board.price.toFixed(2)}
-                </p>
+                {isSold ? (
+                  <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
+                    Sold for ${board.price.toFixed(2)}
+                  </p>
+                ) : (
+                  <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
+                    ${board.price.toFixed(2)}
+                  </p>
+                )}
               </div>
 
               <p className="hidden lg:block text-sm text-muted-foreground">
@@ -463,7 +489,7 @@ export default async function BoardDetailPage(props: {
               </Card>
 
               {/* Contact Form */}
-              {!isOwnListing && (
+              {!isOwnListing && !isSold && (
                 <Card className="bg-offwhite">
                   <CardContent className="p-4">
                     <ContactSellerForm
@@ -522,7 +548,7 @@ export default async function BoardDetailPage(props: {
                         />
                       </div>
                     </Link>
-                    {!isOwnListing && (
+                    {!isOwnListing && !isSold && (
                       <div className="flex flex-row gap-2">
                         <Button
                           variant="outline"
@@ -557,7 +583,18 @@ export default async function BoardDetailPage(props: {
                 </CardContent>
               </Card>
 
-              {isOwnListing && (
+              {isOwnListing && isSold && (
+                <Card className="bg-muted/20 border-border">
+                  <CardContent className="p-4">
+                    <ListingSoldOwnerNotice
+                      dashboardListingsHref="/dashboard/listings"
+                      sectionLabel="board"
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {isOwnListing && !isSold && (
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="p-4 text-center">
                     <p className="text-sm text-muted-foreground mb-2">This is your listing</p>

@@ -40,6 +40,7 @@ import {
   Settings,
   LayoutDashboard,
   Wallet,
+  Banknote,
   Clock,
   ChevronDown,
   Users,
@@ -520,8 +521,13 @@ export function Header() {
               </PopoverContent>
             </Popover>
 
-            <Link href="/used/recent">
-              <Button variant="ghost" size="icon" className="hidden sm:flex h-11 w-11 text-black hover:bg-pacific/5" aria-label="Recently added used items">
+            <Link href="/feed">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden sm:flex h-11 w-11 text-black hover:bg-pacific/5"
+                aria-label="Feed — new listings and recently sold"
+              >
                 <Clock className="h-6 w-6" />
               </Button>
             </Link>
@@ -606,14 +612,14 @@ export function Header() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard/wallet" className="flex items-center justify-between">
+                      <Link href="/dashboard/earnings" className="flex items-center justify-between">
                         <span className="flex items-center">
-                          <Wallet className="mr-2 h-4 w-4" />
-                          Reswell Bucks
+                          <Banknote className="mr-2 h-4 w-4" />
+                          Earnings
                         </span>
                         {walletBalance !== null && (
                           <span className="text-xs font-medium text-black dark:text-white ml-2 tabular-nums">
-                            R${walletBalance.toFixed(2)}
+                            ${walletBalance.toFixed(2)}
                           </span>
                         )}
                       </Link>
@@ -758,12 +764,12 @@ export function Header() {
                 </Link>
               ))}
               <Link
-                href="/used/recent"
+                href="/feed"
                 onClick={onMobileDrawerLinkClick}
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
               >
                 <Clock className="h-5 w-5 shrink-0" />
-                Recently added
+                Feed
               </Link>
               <hr className="my-2 border-border" />
               <div className="flex min-w-0 gap-2">

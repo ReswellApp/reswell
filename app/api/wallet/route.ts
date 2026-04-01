@@ -36,7 +36,7 @@ export async function GET() {
   const agg = reconcileWalletAggregates(wallet)
   if (agg.needsPersist) {
     const s = walletAggregateStrings(agg)
-    const { error: fixError } = await supabase
+    await supabase
       .from("wallets")
       .update({
         balance: s.balance,
@@ -44,12 +44,12 @@ export async function GET() {
         updated_at: new Date().toISOString(),
       })
       .eq("id", wallet.id)
-    if (!fixError) {
-      wallet = {
-        ...wallet,
-        balance: s.balance,
-        lifetime_cashed_out: s.lifetime_cashed_out,
-      }
+    // Always return the reconciled values so the client sees the correct balance,
+    // even if the DB write fails (e.g. a transient error).
+    wallet = {
+      ...wallet,
+      balance: s.balance,
+      lifetime_cashed_out: s.lifetime_cashed_out,
     }
   }
 
