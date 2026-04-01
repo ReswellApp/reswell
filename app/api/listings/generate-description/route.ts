@@ -1,8 +1,20 @@
 import Anthropic from "@anthropic-ai/sdk"
-
-const client = new Anthropic()
+import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
+  if (!apiKey) {
+    return NextResponse.json(
+      {
+        error:
+          "AI descriptions are not configured. Add ANTHROPIC_API_KEY to .env.local (local) or your host’s environment variables, then restart the dev server. Create a key at https://console.anthropic.com/settings/keys",
+      },
+      { status: 503 },
+    )
+  }
+
+  const client = new Anthropic({ apiKey })
+
   const { listingData } = await req.json()
 
   const {

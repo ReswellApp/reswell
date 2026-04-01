@@ -3032,7 +3032,15 @@ function SellPageContent() {
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ listingData }),
                               })
-                              if (!response.ok) throw new Error("Failed to generate description")
+                              if (!response.ok) {
+                                const errBody = await response.json().catch(() => null) as {
+                                  error?: string
+                                } | null
+                                throw new Error(
+                                  errBody?.error ||
+                                    "Failed to generate description. Check that ANTHROPIC_API_KEY is set on the server.",
+                                )
+                              }
                               const reader = response.body!.getReader()
                               const decoder = new TextDecoder()
                               while (true) {
