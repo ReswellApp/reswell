@@ -107,7 +107,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
   const lat = searchParams.lat ? Number(searchParams.lat) : undefined
   const lng = searchParams.lng ? Number(searchParams.lng) : undefined
   const page = parseInt(searchParams.page || "1")
-  const limit = 12
+  const limit = 30
   const offset = (page - 1) * limit
 
   let dbQuery = supabase
