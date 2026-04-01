@@ -1167,6 +1167,11 @@ function SellPageContent() {
           setLoading(false)
           return
         }
+        if (!formData.locationCity?.trim() || !formData.locationState?.trim()) {
+          toast.error("Set a location on the map for your surfboard (pickup area or where you ship from)")
+          setLoading(false)
+          return
+        }
       }
 
       if ((listingType === "used" || listingType === "board") && images.length < 3) {
@@ -1218,6 +1223,15 @@ function SellPageContent() {
           ? parseFloat(formData.boardShippingPrice.trim())
           : null,
       }
+
+      const boardLocationLat =
+        listingType === "board" && formData.locationLat ? formData.locationLat : null
+      const boardLocationLng =
+        listingType === "board" && formData.locationLng ? formData.locationLng : null
+      const boardLocationCity =
+        listingType === "board" ? formData.locationCity.trim() || null : null
+      const boardLocationState =
+        listingType === "board" ? formData.locationState.trim() || null : null
 
       const boardLengthFmt = formData.boardLengthFt.trim()
         ? `${parseInt(formData.boardLengthFt, 10)}'${formatDecimalDimension(parseFloat(formData.boardLengthIn) || 0)}"`
@@ -1328,11 +1342,30 @@ function SellPageContent() {
           volume: listingType === "board" && formData.boardVolumeL ? parseFloat(formData.boardVolumeL) : null,
           fins_setup: listingType === "board" && formData.boardFins ? formData.boardFins : null,
           tail_shape: listingType === "board" && formData.boardTail ? formData.boardTail : null,
-          latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
+          latitude:
+            listingType === "board"
+              ? boardLocationLat
+              : fulfillmentRow.local_pickup && formData.locationLat
+                ? formData.locationLat
+                : null,
           longitude:
-            fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
-          city: fulfillmentRow.local_pickup ? formData.locationCity : null,
-          state: fulfillmentRow.local_pickup ? formData.locationState : null,
+            listingType === "board"
+              ? boardLocationLng
+              : fulfillmentRow.local_pickup && formData.locationLng
+                ? formData.locationLng
+                : null,
+          city:
+            listingType === "board"
+              ? boardLocationCity
+              : fulfillmentRow.local_pickup
+                ? formData.locationCity
+                : null,
+          state:
+            listingType === "board"
+              ? boardLocationState
+              : fulfillmentRow.local_pickup
+                ? formData.locationState
+                : null,
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
@@ -1517,11 +1550,30 @@ function SellPageContent() {
           volume: listingType === "board" && formData.boardVolumeL ? parseFloat(formData.boardVolumeL) : null,
           fins_setup: listingType === "board" && formData.boardFins ? formData.boardFins : null,
           tail_shape: listingType === "board" && formData.boardTail ? formData.boardTail : null,
-          latitude: fulfillmentRow.local_pickup && formData.locationLat ? formData.locationLat : null,
+          latitude:
+            listingType === "board"
+              ? boardLocationLat
+              : fulfillmentRow.local_pickup && formData.locationLat
+                ? formData.locationLat
+                : null,
           longitude:
-            fulfillmentRow.local_pickup && formData.locationLng ? formData.locationLng : null,
-          city: fulfillmentRow.local_pickup ? formData.locationCity : null,
-          state: fulfillmentRow.local_pickup ? formData.locationState : null,
+            listingType === "board"
+              ? boardLocationLng
+              : fulfillmentRow.local_pickup && formData.locationLng
+                ? formData.locationLng
+                : null,
+          city:
+            listingType === "board"
+              ? boardLocationCity
+              : fulfillmentRow.local_pickup
+                ? formData.locationCity
+                : null,
+          state:
+            listingType === "board"
+              ? boardLocationState
+              : fulfillmentRow.local_pickup
+                ? formData.locationState
+                : null,
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
@@ -2790,8 +2842,8 @@ function SellPageContent() {
                     <div className="space-y-2">
                       <Label>How can buyers get this board? *</Label>
                       <p className="text-xs text-muted-foreground">
-                        Pickup uses the map location below. If you ship, set a flat shipping price (use 0
-                        for free shipping).
+                        Every surfboard needs a map location (pickup area or where you ship from). If you
+                        ship, set a flat shipping price (use 0 for free shipping).
                       </p>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {(
@@ -2850,26 +2902,23 @@ function SellPageContent() {
                     )}
                   </div>
 
-                  {(formData.boardFulfillment === "pickup_only" ||
-                    formData.boardFulfillment === "pickup_and_shipping") && (
-                    <LocationPicker
-                      onLocationSelect={(loc) => {
-                        setFormData({
-                          ...formData,
-                          locationLat: loc.lat,
-                          locationLng: loc.lng,
-                          locationCity: loc.city,
-                          locationState: loc.state,
-                          locationDisplay: loc.displayName,
-                        })
-                      }}
-                      initialLat={formData.locationLat || undefined}
-                      initialLng={formData.locationLng || undefined}
-                      initialCity={formData.locationCity || undefined}
-                      initialState={formData.locationState || undefined}
-                      initialDisplay={formData.locationDisplay || undefined}
-                    />
-                  )}
+                  <LocationPicker
+                    onLocationSelect={(loc) => {
+                      setFormData({
+                        ...formData,
+                        locationLat: loc.lat,
+                        locationLng: loc.lng,
+                        locationCity: loc.city,
+                        locationState: loc.state,
+                        locationDisplay: loc.displayName,
+                      })
+                    }}
+                    initialLat={formData.locationLat || undefined}
+                    initialLng={formData.locationLng || undefined}
+                    initialCity={formData.locationCity || undefined}
+                    initialState={formData.locationState || undefined}
+                    initialDisplay={formData.locationDisplay || undefined}
+                  />
                   </>
                 )}
 

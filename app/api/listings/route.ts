@@ -47,6 +47,19 @@ export async function POST(request: NextRequest) {
     images = [],
   } = body
 
+  if (
+    section === 'surfboards' &&
+    (typeof city !== 'string' ||
+      !city.trim() ||
+      typeof state !== 'string' ||
+      !state.trim())
+  ) {
+    return NextResponse.json(
+      { error: 'City and state are required for surfboard listings' },
+      { status: 400 },
+    )
+  }
+
   const feetParsed = length_feet != null && length_feet !== '' ? parseInt(String(length_feet), 10) : NaN
   const inchParsed =
     length_inches != null && length_inches !== '' ? parseInt(String(length_inches), 10) : NaN

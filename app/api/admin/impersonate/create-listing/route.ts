@@ -49,6 +49,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required listing fields" }, { status: 400 })
   }
 
+  if (
+    listingData.section === "surfboards" &&
+    (typeof listingData.city !== "string" ||
+      !listingData.city.trim() ||
+      typeof listingData.state !== "string" ||
+      !listingData.state.trim())
+  ) {
+    return NextResponse.json(
+      { error: "City and state are required for surfboard listings" },
+      { status: 400 },
+    )
+  }
+
   const baseSlug = slugify(listingData.title)
   let slug = baseSlug
   const { count } = await service

@@ -57,6 +57,19 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  if (
+    section === 'surfboards' &&
+    (typeof city !== 'string' ||
+      !city.trim() ||
+      typeof state !== 'string' ||
+      !state.trim())
+  ) {
+    return NextResponse.json(
+      { error: 'City and state are required for surfboard listings' },
+      { status: 400 },
+    )
+  }
+
   const baseSlug = slugify(title)
   let slug = baseSlug
   const { count } = await supabase
