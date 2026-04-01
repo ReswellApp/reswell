@@ -73,7 +73,7 @@ export function SellerResponseForm({ claimId }: SellerResponseFormProps) {
             {
               value: 'accept' as const,
               label: 'Accept the claim',
-              desc: 'I agree to the refund. Reswell will process it from the protection fund.',
+              desc: 'I agree to the refund. Reswell will process it per our buyer protection policy.',
             },
             {
               value: 'respond' as const,

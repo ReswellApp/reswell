@@ -1,6 +1,6 @@
 -- Purchase Protection System
--- Adds: purchase_protection_claims, protection_eligibility,
---       seller_protection_fund, seller_protection_contributions
+-- Adds: purchase_protection_claims, protection_eligibility
+-- (seller_protection_fund / seller_protection_contributions removed — see supabase/migrations)
 
 -- ─────────────────────────────────────────────────────────────
 -- Enums
@@ -32,49 +32,6 @@ DO $$ BEGIN
     'BANK_TRANSFER'
   );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
--- ─────────────────────────────────────────────────────────────
--- seller_protection_fund (singleton row — balance ledger)
--- ─────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS public.seller_protection_fund (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  balance      DECIMAL(12, 2) NOT NULL DEFAULT 0,
-  last_updated TIMESTAMPTZ    NOT NULL DEFAULT NOW()
-);
-
--- Seed with a single row if empty
-INSERT INTO public.seller_protection_fund (balance)
-SELECT 0
-WHERE NOT EXISTS (SELECT 1 FROM public.seller_protection_fund);
-
--- ─────────────────────────────────────────────────────────────
--- seller_protection_contributions (2% withheld per sale)
--- ─────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS public.seller_protection_contributions (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id   UUID REFERENCES public.purchases(id) ON DELETE SET NULL,
-  seller_id  UUID REFERENCES public.profiles(id)  ON DELETE SET NULL,
-  amount     DECIMAL(10, 2) NOT NULL,
-  created_at TIMESTAMPTZ    NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE public.seller_protection_contributions ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "spcontrib_admin_all"   ON public.seller_protection_contributions;
-DROP POLICY IF EXISTS "spcontrib_seller_read" ON public.seller_protection_contributions;
-
-CREATE POLICY "spcontrib_admin_all" ON public.seller_protection_contributions
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND (is_admin = true OR is_employee = true)
-    )
-  );
-
-CREATE POLICY "spcontrib_seller_read" ON public.seller_protection_contributions
-  FOR SELECT USING (seller_id = auth.uid());
 
 -- ─────────────────────────────────────────────────────────────
 -- protection_eligibility (one row per purchase, created on sale)
@@ -179,4 +136,3 @@ CREATE INDEX IF NOT EXISTS idx_ppc_buyer_id   ON public.purchase_protection_clai
 CREATE INDEX IF NOT EXISTS idx_ppc_seller_id  ON public.purchase_protection_claims (seller_id);
 CREATE INDEX IF NOT EXISTS idx_ppc_status     ON public.purchase_protection_claims (status);
 CREATE INDEX IF NOT EXISTS idx_pe_order_id    ON public.protection_eligibility (order_id);
-CREATE INDEX IF NOT EXISTS idx_spc_seller_id  ON public.seller_protection_contributions (seller_id);
