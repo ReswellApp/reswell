@@ -20,7 +20,16 @@ import {
   ExternalLink,
   ShieldCheck,
   AlertCircle,
+  HelpCircle,
 } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import PayoutModal from "@/components/PayoutModal"
+import { toast } from "sonner"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +67,14 @@ interface ConnectStatus {
   account?: { payouts_enabled: boolean; details_submitted: boolean } | null
 }
 
+interface PayPalPayoutHistoryItem {
+  id: string
+  amount: string | number
+  paypal_email: string
+  status: string
+  created_at: string
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
@@ -78,6 +95,43 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
+function PayPalPayoutStatusBadge({ status }: { status: string }) {
+  const u = status.toUpperCase()
+  if (u === "SUCCESS") {
+    return (
+      <Badge className="bg-emerald-600 hover:bg-emerald-600/90 text-white border-transparent">
+        Paid
+      </Badge>
+    )
+  }
+  if (u === "FAILED") {
+    return <Badge variant="destructive">Failed</Badge>
+  }
+  if (u === "UNCLAIMED") {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1">
+            <Badge variant="secondary" className="bg-muted text-muted-foreground cursor-help">
+              Unclaimed
+            </Badge>
+            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>PayPal email not claimed</TooltipContent>
+      </Tooltip>
+    )
+  }
+  return (
+    <Badge
+      variant="secondary"
+      className="bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/50 dark:text-amber-100 dark:border-amber-800"
+    >
+      Processing
+    </Badge>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function EarningsPage() {
@@ -91,12 +145,20 @@ export default function EarningsPage() {
   const [connectLoading, setConnectLoading] = useState(false)
   const [connectError, setConnectError] = useState<string | null>(null)
 
+  const [paypalEmail, setPaypalEmail] = useState("")
+  const [paypalDisplayName, setPaypalDisplayName] = useState("")
+  const [paypalPayerId, setPaypalPayerId] = useState("")
+  const [paypalModalOpen, setPaypalModalOpen] = useState(false)
+  const [paypalDisplayBalance, setPaypalDisplayBalance] = useState(0)
+  const [paypalHistory, setPaypalHistory] = useState<PayPalPayoutHistoryItem[]>([])
+
   const fetchData = useCallback(async () => {
     try {
-      const [earningsRes, stripeBalanceRes, connectRes] = await Promise.all([
+      const [earningsRes, stripeBalanceRes, connectRes, paypalRes] = await Promise.all([
         fetch("/api/earnings"),
         fetch("/api/stripe/connect/balance"),
         fetch("/api/stripe/connect/account-status"),
+        fetch("/api/payouts/paypal"),
       ])
 
       if (earningsRes.ok) {
@@ -112,12 +174,33 @@ export default function EarningsPage() {
       if (connectRes.ok) {
         setConnectStatus(await connectRes.json())
       }
+
+      if (paypalRes.ok) {
+        const p = await paypalRes.json()
+        setPaypalHistory((p.history as PayPalPayoutHistoryItem[]) ?? [])
+        setPaypalEmail((p.paypalEmail as string) ?? "")
+        setPaypalDisplayName((p.paypalDisplayName as string) ?? "")
+        setPaypalPayerId((p.paypalPayerId as string) ?? "")
+      }
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const paypal = params.get("paypal")
+    if (paypal === "connected") {
+      toast.success("PayPal connected successfully!")
+      window.history.replaceState({}, "", "/dashboard/earnings")
+      void fetchData()
+    } else if (paypal === "error") {
+      toast.error("PayPal connection failed. Please try again.")
+      window.history.replaceState({}, "", "/dashboard/earnings")
+    }
+  }, [fetchData])
 
   // Real-time wallet updates
   useEffect(() => {
@@ -195,6 +278,21 @@ export default function EarningsPage() {
   const displayPending = stripeBalance?.connected && !stripeBalance?.stripeUnavailable && !stripeBalance?.error
     ? stripeBalance.pending
     : 0
+
+  useEffect(() => {
+    setPaypalDisplayBalance(displayAvailable)
+  }, [displayAvailable])
+
+  const handlePayPalModalSuccess = useCallback(
+    (amount: number, email: string) => {
+      setPaypalDisplayBalance((prev) =>
+        Math.round(Math.max(0, prev - amount) * 100) / 100,
+      )
+      setPaypalEmail(email)
+      void fetchData()
+    },
+    [fetchData],
+  )
 
   if (loading) {
     return (
@@ -314,6 +412,80 @@ export default function EarningsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── PayPal payout ───────────────────────────────────────────────────── */}
+      <TooltipProvider delayDuration={200}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Pay out via PayPal</CardTitle>
+            <p className="text-sm text-muted-foreground font-normal">
+              Funds are sent from Reswell&apos;s PayPal business account. Complete the flow in one place — no new tabs.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              type="button"
+              className="w-full sm:w-auto bg-[#0070ba] hover:bg-[#005ea6] text-white font-medium"
+              disabled={paypalDisplayBalance < 10}
+              onClick={() => setPaypalModalOpen(true)}
+            >
+              Cash out via PayPal — ${paypalDisplayBalance.toFixed(2)}
+            </Button>
+            {paypalDisplayBalance < 10 && (
+              <p className="text-xs text-muted-foreground">
+                Minimum PayPal cash out is $10.00.
+              </p>
+            )}
+
+            <PayoutModal
+              isOpen={paypalModalOpen}
+              onClose={() => setPaypalModalOpen(false)}
+              availableBalance={paypalDisplayBalance}
+              savedPaypalEmail={paypalEmail}
+              savedPaypalDisplayName={paypalDisplayName}
+              savedPaypalPayerId={paypalPayerId}
+              onSuccess={handlePayPalModalSuccess}
+              onPaypalConnectionChange={fetchData}
+            />
+
+            <div className="pt-2 border-t">
+              <h3 className="text-sm font-semibold mb-3">PayPal payout history</h3>
+              {paypalHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No PayPal payouts yet.</p>
+              ) : (
+                <ul className="space-y-2.5">
+                  {paypalHistory.map((row) => {
+                    const amt = typeof row.amount === "string" ? parseFloat(row.amount) : row.amount
+                    return (
+                      <li
+                        key={row.id}
+                        className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm border-b border-border/60 pb-2 last:border-0 last:pb-0"
+                      >
+                        <span className="text-muted-foreground tabular-nums w-[7.5rem] shrink-0">
+                          {new Date(row.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span className="font-medium tabular-nums shrink-0">
+                          ${Number.isFinite(amt) ? amt.toFixed(2) : row.amount}
+                        </span>
+                        <span className="text-muted-foreground truncate min-w-0">
+                          → {row.paypal_email}
+                        </span>
+                        <span className="ml-auto shrink-0">
+                          <PayPalPayoutStatusBadge status={row.status} />
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </TooltipProvider>
 
       {/* ── Lifetime stats ──────────────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2">
