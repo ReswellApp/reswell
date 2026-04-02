@@ -30,10 +30,12 @@ export async function GET() {
   const appUrl = getPayPalPublicAppUrl()
   const redirectUri = `${appUrl}/api/auth/paypal/callback`
 
+  // flowEntry=static is required for Log in with PayPal (see PayPal build-button docs).
   const params = new URLSearchParams({
+    flowEntry: "static",
     client_id: clientId,
     response_type: "code",
-    scope: "openid email profile",
+    scope: "openid profile email",
     redirect_uri: redirectUri,
     state,
   })
