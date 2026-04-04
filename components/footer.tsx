@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ShieldCheck } from "lucide-react"
+import { Heart, ShieldCheck } from "lucide-react"
 import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 
@@ -134,9 +134,19 @@ export function Footer() {
               Every order protected by Reswell Purchase Protection
             </Link>
           </div>
-          <p className="text-center text-sm text-midgray">
-            {new Date().getFullYear()} Reswell. All rights reserved.
-          </p>
+          <div className="text-center text-sm text-midgray space-y-1">
+            <p>
+              Copyright {new Date().getFullYear()} Reswell. All rights reserved.
+            </p>
+            <p className="inline-flex w-full flex-wrap items-center justify-center gap-1">
+              <span>Made with</span>
+              <Heart
+                className="h-4 w-4 shrink-0 fill-red-500 text-red-500"
+                aria-hidden
+              />
+              <span>in Santa Barbara.</span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
