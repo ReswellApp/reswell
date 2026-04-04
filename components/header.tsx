@@ -70,9 +70,9 @@ const navigation = [
 
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
+  { name: "Sellers", href: "/sellers" },
   { name: "Field notes", href: "/blog" },
   { name: "Index", href: INDEX_DIRECTORY_BASE },
-  { name: "Collections", href: "/collections" },
   { name: "Board Talk", href: "/board-talk" },
 ]
 

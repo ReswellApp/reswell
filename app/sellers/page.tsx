@@ -1,28 +1,49 @@
 import Link from "next/link"
 import Image from "next/image"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import {
-  MapPin,
-  Store,
-  ExternalLink,
-  Search,
-  ArrowRight,
-  Package,
-} from "lucide-react"
+import { MapPin, Store, Search, ArrowRight, Package } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { wideShimmer } from "@/lib/image-shimmer"
+import { listingDetailHref } from "@/lib/listing-href"
+import { listingCardImageSrc } from "@/lib/listing-image-display"
+
+const PLACEHOLDER_IMAGE = "/placeholder.svg"
+const THUMB_PER_SELLER = 6
+const LISTINGS_FETCH_CAP = 4000
 
 export const metadata = {
   title: "Sellers - Reswell",
   description:
-    "Browse local surf sellers and retail stores on Reswell. Find verified sellers near you.",
+    "Browse local surf sellers on Reswell. See their gear and shop profiles.",
+}
+
+type ListingThumb = {
+  id: string
+  user_id: string
+  title: string
+  price: number | string | null
+  slug: string | null
+  section: string
+  created_at: string
+  listing_images: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
+}
+
+/**
+ * Public directory reads: use the service role when configured so anonymous visitors
+ * still see sellers even if RLS only allows authenticated `profiles` / `listings` reads.
+ * Falls back to the cookie-aware anon client (logged-in users) when the key is missing.
+ */
+async function getSupabaseForPublicSellersDirectory() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return createServiceRoleClient()
+  }
+  return createClient()
 }
 
 export default async function SellersPage({
@@ -31,218 +52,277 @@ export default async function SellersPage({
   searchParams: Promise<{ q?: string }>
 }) {
   const { q } = await searchParams
-  const supabase = await createClient()
+  const supabase = await getSupabaseForPublicSellersDirectory()
 
-  // Public fields only; never expose email or role flags
   const profilePublicFields =
     "id, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
-  let query = supabase
-    .from("profiles")
-    .select(profilePublicFields)
-    .eq("is_shop", true)
-    .order("sales_count", { ascending: false })
-    .order("shop_verified", { ascending: false })
-    .order("created_at", { ascending: false })
 
-  if (q) {
-    query = query.or(
-      `shop_name.ilike.%${q}%,shop_description.ilike.%${q}%,city.ilike.%${q}%,shop_address.ilike.%${q}%`
-    )
+  const [{ data: shopRows, error: shopIdsError }, { data: listingRows, error: listingIdsError }] =
+    await Promise.all([
+      supabase.from("profiles").select("id").eq("is_shop", true),
+      supabase
+        .from("listings")
+        .select("user_id")
+        .eq("status", "active")
+        .is("archived_at", null),
+    ])
+
+  if (shopIdsError) console.error("[sellers] profiles (is_shop) ids:", shopIdsError)
+  if (listingIdsError) console.error("[sellers] listings seller ids:", listingIdsError)
+
+  const sellerIdSet = new Set<string>()
+  for (const row of shopRows ?? []) sellerIdSet.add(row.id)
+  for (const row of listingRows ?? []) sellerIdSet.add(row.user_id)
+  const sellerIds = [...sellerIdSet]
+
+  const shops =
+    sellerIds.length === 0
+      ? []
+      : await (async () => {
+          let query = supabase
+            .from("profiles")
+            .select(profilePublicFields)
+            .in("id", sellerIds)
+            .order("sales_count", { ascending: false })
+            .order("shop_verified", { ascending: false })
+            .order("created_at", { ascending: false })
+
+          if (q) {
+            query = query.or(
+              `shop_name.ilike.%${q}%,shop_description.ilike.%${q}%,display_name.ilike.%${q}%,city.ilike.%${q}%,shop_address.ilike.%${q}%`
+            )
+          }
+
+          const { data, error } = await query
+          if (error) {
+            console.error("[sellers] profiles fetch:", error)
+            return []
+          }
+          return data ?? []
+        })()
+
+  /** Up to THUMB_PER_SELLER most recent active listings per seller (by global recency pass). */
+  const thumbsBySeller = new Map<string, ListingThumb[]>()
+  if (shops.length > 0 && sellerIds.length > 0) {
+    const { data: invRows, error: invError } = await supabase
+      .from("listings")
+      .select(
+        "id, user_id, title, price, slug, section, created_at, listing_images (url, thumbnail_url, is_primary)"
+      )
+      .in(
+        "user_id",
+        shops.map((s) => s.id)
+      )
+      .eq("status", "active")
+      .is("archived_at", null)
+      .order("created_at", { ascending: false })
+      .limit(LISTINGS_FETCH_CAP)
+
+    if (invError) {
+      console.error("[sellers] inventory thumbnails:", invError)
+    } else {
+      for (const row of (invRows ?? []) as ListingThumb[]) {
+        const cur = thumbsBySeller.get(row.user_id) ?? []
+        if (cur.length >= THUMB_PER_SELLER) continue
+        cur.push(row)
+        thumbsBySeller.set(row.user_id, cur)
+      }
+    }
   }
 
-  const { data: shops } = await query
-
   return (
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="bg-offwhite py-12">
-          <div className="container mx-auto">
-            <div className="mx-auto max-w-2xl text-center">
-              <div className="mb-4 flex items-center justify-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Store className="h-6 w-6" />
-                </div>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
-                Sellers
-              </h1>
-              <p className="mt-3 text-muted-foreground text-pretty">
-                Browse retail surf sellers listing their inventory on Reswell.
-                Find gear from verified local stores.
-              </p>
+    <main className="flex-1">
+      <section className="border-b border-border/60 bg-offwhite py-10">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Store className="h-5 w-5" aria-hidden />
             </div>
-
-            {/* Search */}
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl text-balance">
+              Sellers
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground text-pretty sm:text-base">
+              Browse seller profiles and a sample of what they have listed right now.
+            </p>
             <form
               action="/sellers"
               method="GET"
-              className="mx-auto mt-8 flex max-w-lg items-center gap-2"
+              className="mx-auto mt-6 flex max-w-lg flex-col gap-2 sm:flex-row sm:items-center"
             >
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
                 <Input
                   name="q"
                   defaultValue={q || ""}
-                  placeholder="Search sellers by name or location..."
-                  className="pl-10"
+                  placeholder="Search by name or location…"
+                  className="pl-9"
                 />
               </div>
-              <Button type="submit">Search</Button>
+              <Button type="submit" className="sm:w-auto">
+                Search
+              </Button>
             </form>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Results */}
-        <section className="py-12">
-          <div className="container mx-auto">
-            {q && (
-              <div className="mb-6 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {shops?.length || 0} seller{shops?.length !== 1 ? "s" : ""}{" "}
-                  found{q ? ` for "${q}"` : ""}
-                </p>
-                {q && (
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/sellers">Clear search</Link>
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {!shops || shops.length === 0 ? (
-              <div className="mx-auto max-w-md text-center py-16">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                  <Store className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h2 className="text-xl font-semibold text-foreground">
-                  No sellers found
-                </h2>
-                <p className="mt-2 text-muted-foreground">
-                  {q
-                    ? "Try adjusting your search terms."
-                    : "No sellers have registered yet. Be the first!"}
-                </p>
-                {!q && (
-                  <Button className="mt-6" asChild>
-                    <Link href="/dashboard/settings">Register as a Seller</Link>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {shops.map((shop) => (
-                  <Link key={shop.id} href={`/sellers/${shop.id}`}>
-                    <Card
-                      className={cn(
-                        listingProductCardClassName,
-                        "h-full transition-all hover:border-primary/30",
-                      )}
-                    >
-                      {/* Banner */}
-                      <div className="relative h-28 bg-offwhite overflow-hidden">
-                        {shop.shop_banner_url && (
-                          <Image
-                            src={shop.shop_banner_url}
-                            alt=""
-                            fill
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="object-cover"
-                            placeholder="blur"
-                            blurDataURL={wideShimmer}
-                          />
-                        )}
-                        {/* Avatar overlapping banner */}
-                        <div className="absolute -bottom-8 left-4">
-                          <Avatar className="h-16 w-16 border-4 border-card">
-                            <AvatarImage
-                              src={shop.shop_logo_url || shop.avatar_url || ""}
-                            />
-                            <AvatarFallback className="text-lg bg-primary text-primary-foreground">
-                              {(shop.shop_name || shop.display_name || "S")
-                                .charAt(0)
-                                .toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                      </div>
-
-                      <CardContent className="pt-10 pb-5 px-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="font-semibold text-foreground truncate">
-                                {shop.shop_name || shop.display_name}
-                              </h3>
-                              {shop.shop_verified && (
-                                <VerifiedBadge size="md" />
-                              )}
-                            </div>
-                            {(shop.city || shop.shop_address) && (
-                              <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground truncate">
-                                <MapPin className="h-3 w-3 flex-shrink-0" />
-                                {shop.shop_address || shop.city}
-                              </p>
-                            )}
-                          </div>
-                          {shop.shop_verified && (
-                            <Badge
-                              variant="secondary"
-                              className="flex-shrink-0 bg-blue-50 text-blue-700 border-blue-200"
-                            >
-                              <VerifiedBadge size="sm" className="mr-1" />
-                              Verified
-                            </Badge>
-                          )}
-                        </div>
-
-                        {shop.shop_description && (
-                          <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
-                            {shop.shop_description}
-                          </p>
-                        )}
-
-                        <div className="mt-4 flex items-center justify-between">
-                          {shop.shop_website && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <ExternalLink className="h-3 w-3" />
-                              Website
-                            </span>
-                          )}
-                          <span className="ml-auto flex items-center gap-1 text-sm font-medium text-primary group-hover:underline">
-                            View Seller
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* CTA for shop owners */}
-        <section className="py-16 bg-offwhite">
-          <div className="container mx-auto">
-            <div className="mx-auto max-w-2xl text-center">
-              <Package className="mx-auto mb-4 h-10 w-10 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground">
-                Want to Sell on Reswell?
-              </h2>
-              <p className="mt-3 text-muted-foreground text-pretty">
-                List your store inventory on Reswell and reach thousands of
-                local surfers. Set up your seller profile in minutes.
+      <section className="py-10">
+        <div className="container mx-auto px-4">
+          {q ? (
+            <div className="mx-auto mb-6 flex max-w-3xl flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                {shops?.length || 0} seller{shops?.length !== 1 ? "s" : ""} found
+                {q ? ` for “${q}”` : ""}
               </p>
-              <Button className="mt-6" size="lg" asChild>
-                <Link href="/dashboard/settings">
-                  Become a Seller
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/sellers">Clear</Link>
               </Button>
             </div>
+          ) : null}
+
+          {!shops || shops.length === 0 ? (
+            <div className="mx-auto max-w-md py-14 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                <Store className="h-7 w-7 text-muted-foreground" aria-hidden />
+              </div>
+              <h2 className="text-lg font-semibold text-foreground">No sellers found</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {q ? "Try different search terms." : "Check back soon as more sellers join Reswell."}
+              </p>
+              {!q ? (
+                <Button className="mt-6" asChild>
+                  <Link href="/auth/sign-up">Join Reswell</Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="mx-auto flex max-w-3xl flex-col gap-5">
+              {shops.map((shop) => {
+                const label = shop.shop_name?.trim() || shop.display_name || "Seller"
+                const thumbs = thumbsBySeller.get(shop.id) ?? []
+                return (
+                  <Card
+                    key={shop.id}
+                    className={cn(listingProductCardClassName, "overflow-hidden border-border/80")}
+                  >
+                    <CardContent className="p-0">
+                      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                        <Link
+                          href={`/sellers/${shop.id}`}
+                          className="flex min-w-0 flex-1 gap-3 rounded-lg outline-none ring-offset-background transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <Avatar className="h-14 w-14 shrink-0 border border-border">
+                            <AvatarImage src={shop.shop_logo_url || shop.avatar_url || ""} alt="" />
+                            <AvatarFallback className="bg-primary text-lg text-primary-foreground">
+                              {label.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-semibold text-foreground">{label}</span>
+                              {shop.shop_verified ? <VerifiedBadge size="md" /> : null}
+                            </div>
+                            {(shop.city || shop.shop_address) && (
+                              <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+                                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                <span className="truncate">{shop.shop_address || shop.city}</span>
+                              </p>
+                            )}
+                            {shop.shop_description ? (
+                              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                                {shop.shop_description}
+                              </p>
+                            ) : null}
+                          </div>
+                        </Link>
+                        <Button variant="outline" size="sm" className="shrink-0 self-start" asChild>
+                          <Link href={`/sellers/${shop.id}`}>
+                            Profile
+                            <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
+                          </Link>
+                        </Button>
+                      </div>
+
+                      {thumbs.length > 0 ? (
+                        <div className="border-t border-border/60 bg-muted/20 px-3 py-3">
+                          <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            Inventory
+                          </p>
+                          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                            {thumbs.map((listing) => {
+                              const href = listingDetailHref(listing)
+                              const src =
+                                listingCardImageSrc(listing.listing_images) || PLACEHOLDER_IMAGE
+                              const price =
+                                listing.price != null && listing.price !== ""
+                                  ? Number(listing.price).toFixed(0)
+                                  : null
+                              return (
+                                <li key={listing.id} className="min-w-0">
+                                  <Link
+                                    href={href}
+                                    className="group block overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm transition hover:border-primary/30 hover:shadow-md"
+                                  >
+                                    <div className="relative aspect-square w-full bg-muted">
+                                      <Image
+                                        src={src}
+                                        alt={listing.title}
+                                        fill
+                                        sizes="(max-width: 640px) 33vw, 120px"
+                                        className="object-cover transition group-hover:scale-[1.03]"
+                                        placeholder="blur"
+                                        blurDataURL={wideShimmer}
+                                      />
+                                    </div>
+                                    {price ? (
+                                      <p className="truncate px-1.5 py-1 text-center text-[11px] font-semibold text-foreground">
+                                        ${price}
+                                      </p>
+                                    ) : (
+                                      <p className="truncate px-1.5 py-1 text-center text-[11px] text-muted-foreground">
+                                        View
+                                      </p>
+                                    )}
+                                  </Link>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </div>
+                      ) : (
+                        <div className="border-t border-border/60 px-4 py-3 text-sm text-muted-foreground">
+                          No active listings right now.
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="border-t border-border/60 bg-offwhite py-12">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-lg text-center">
+            <Package className="mx-auto mb-3 h-9 w-9 text-primary" aria-hidden />
+            <h2 className="text-xl font-bold text-foreground">Sell on Reswell</h2>
+            <p className="mt-2 text-sm text-muted-foreground text-pretty">
+              List your gear and reach local surfers. Set up your seller profile in minutes.
+            </p>
+            <Button className="mt-5" size="lg" asChild>
+              <Link href="/dashboard/settings">
+                Become a seller
+                <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+              </Link>
+            </Button>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
+    </main>
   )
 }
