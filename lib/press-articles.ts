@@ -417,7 +417,7 @@ export const pressArticles: PressArticle[] = [
     publishedDate: "March 2026",
     author: "Reswell Editorial",
     sourceLabel: "Reswell",
-    sourceUrl: "https://reswell.com/collections/press/george-greenough-most-influential",
+    sourceUrl: "https://reswell.app/collections/press/george-greenough-most-influential",
     heroImage:
       "https://shredsledz.net/wp-content/uploads/2021/06/george-greenough-spoon-john-grissim-1024x639.jpg",
     content: [

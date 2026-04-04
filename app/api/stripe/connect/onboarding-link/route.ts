@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Stripe live mode requires HTTPS return URLs on a public domain, not localhost. Set NEXT_PUBLIC_URL (or NEXT_PUBLIC_APP_URL) to your site, e.g. https://reswellsurf.com. For local testing, use test keys (sk_test_… / pk_test_…).",
+          "Stripe live mode requires HTTPS return URLs on a public domain, not localhost. Set NEXT_PUBLIC_URL (or NEXT_PUBLIC_APP_URL) to your site, e.g. https://reswell.app. For local testing, use test keys (sk_test_… / pk_test_…).",
         code: "connect_localhost_with_live_key",
       },
       { status: 400 }

@@ -1,3 +1,5 @@
+import { publicSiteOrigin } from '@/lib/public-site-origin'
+
 /**
  * Reswell Dispute Resolution — email notification templates.
  * Returns { subject, text } — wire to your email provider as needed.
@@ -44,7 +46,7 @@ How to respond:
   • Dispute the claim → submit counter-evidence and enter negotiation
 
 Respond now:
-https://reswell.com/dashboard/disputes/${opts.disputeId}
+${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 If you do not respond within 48 hours, the dispute will be escalated to our team.
 
@@ -84,7 +86,7 @@ Steps:
   2. Affix the label to the outside of the package
   3. Drop off at any carrier location
   4. Enter your tracking number in the dispute page:
-     https://reswell.com/dashboard/disputes/${opts.disputeId}
+     ${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 Your refund will be released after the seller confirms receipt of the item.
 
@@ -113,7 +115,7 @@ If you do not ship the item by tomorrow, the dispute will close in the seller's 
 Download return label: ${opts.labelUrl}
 
 Enter tracking number after shipping:
-https://reswell.com/dashboard/disputes/${opts.disputeId}
+${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 — The Reswell Team`,
   }
@@ -141,7 +143,7 @@ If you believe this is an error, please contact our support team.`
 
 ${opts.role === 'buyer' ? buyerText : sellerText}
 
-Dispute reference: https://reswell.com/dashboard/disputes/${opts.disputeId}
+Dispute reference: ${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 — The Reswell Team`,
   }
@@ -175,7 +177,7 @@ When the item arrives, confirm receipt in your dashboard. You'll have two option
   • "Item received — condition issue" → escalates to our team with your photos
 
 Confirm receipt:
-https://reswell.com/dashboard/disputes/${opts.disputeId}
+${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 IMPORTANT: If you do not confirm within 3 days of delivery, the refund will be automatically released to the buyer using tracking proof.
 
@@ -205,7 +207,7 @@ Please confirm receipt in your dashboard within ${opts.daysBeforeAutoRelease} da
   • "Item received — condition issue" → escalates to our team
 
 Confirm now:
-https://reswell.com/dashboard/disputes/${opts.disputeId}
+${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 If you do not confirm within ${opts.daysBeforeAutoRelease} days, the refund will be automatically released to the buyer.
 
@@ -239,7 +241,7 @@ Refund amount: ${usd(opts.refundAmount)}
 ${notReceivedNote}
 Your refund will appear on your original payment method within 3–5 business days.
 
-Dispute reference: https://reswell.com/dashboard/disputes/${opts.disputeId}
+Dispute reference: ${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 Thank you for your patience through this process.
 
@@ -271,7 +273,7 @@ export function disputeResolvedSellerEmail(opts: {
 ${outcomeText}
 
 View dispute:
-https://reswell.com/dashboard/disputes/${opts.disputeId}
+${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 — The Reswell Team`,
   }
@@ -297,7 +299,7 @@ Our team will review all messages, evidence, and order details and issue a final
 
 Our target resolution time is 2–3 business days.
 
-Dispute reference: https://reswell.com/dashboard/disputes/${opts.disputeId}
+Dispute reference: ${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 — The Reswell Team`,
   }
@@ -324,7 +326,7 @@ You can:
   • Reject → continue negotiation or escalate to our team
 
 Respond now:
-https://reswell.com/dashboard/disputes/${opts.disputeId}
+${publicSiteOrigin()}/dashboard/disputes/${opts.disputeId}
 
 — The Reswell Team`,
   }

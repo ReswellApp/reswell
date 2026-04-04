@@ -9,6 +9,7 @@ import { SiteChrome } from '@/components/site-chrome'
 import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { LOCALE_COOKIE_NAME } from '@/lib/translations'
 import type { Locale } from '@/lib/translations'
+import { publicSiteOrigin } from '@/lib/public-site-origin'
 
 import './globals.css'
 
@@ -33,7 +34,7 @@ const caveat = Caveat({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://reswellsurf.com'),
+  metadataBase: new URL(publicSiteOrigin()),
   title: 'Reswell - Buy & Sell Surfing Gear',
   description: 'The peer-to-peer marketplace for surfing accessories and surfboards. Buy used gear, shop new items, or find surfboards for in-person pickup.',
   keywords: ['surfing', 'surfboard', 'marketplace', 'used surf gear', 'wetsuit', 'fins'],

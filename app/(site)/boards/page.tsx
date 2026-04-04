@@ -12,6 +12,7 @@ import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filte
 import { MapPin, Users } from "lucide-react"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 
 function haversineMi(
   lat1: number,
@@ -79,7 +80,7 @@ export async function generateMetadata(props: {
     "Find shortboards, longboards, fish, and more from local surfers on Reswell.",
   ].join(" ")
 
-  const canonical = new URL("https://reswellsurf.com/boards")
+  const canonical = new URL("/boards", publicSiteOrigin() + "/")
   if (sp.type && sp.type !== "all") canonical.searchParams.set("type", sp.type)
   if (sp.condition && sp.condition !== "all") canonical.searchParams.set("condition", sp.condition)
   if (sp.location) canonical.searchParams.set("location", sp.location)

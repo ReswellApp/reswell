@@ -1,3 +1,5 @@
+import { publicSiteOrigin } from '@/lib/public-site-origin'
+
 /**
  * Reswell Offer & Negotiation — email notification templates.
  * Returns { subject, text } — wire to your email provider as needed.
@@ -43,7 +45,7 @@ ${opts.buyerNote ? `Buyer's note: "${opts.buyerNote}"` : ''}
 Expires:     ${expiryStr}
 
 Respond to this offer within 48 hours:
-https://reswell.com/offers/${opts.offerId}
+${publicSiteOrigin()}/offers/${opts.offerId}
 
 Options: Accept · Decline · Counter with a different price
 
@@ -83,7 +85,7 @@ ${opts.sellerNote ? `Seller's note: "${opts.sellerNote}"` : ''}
 Expires:         ${expiryStr}
 
 Respond within 48 hours — this counter expires soon:
-https://reswell.com/offers/${opts.offerId}
+${publicSiteOrigin()}/offers/${opts.offerId}
 
 Options: Accept the counter · Decline · Send your own counter
 
@@ -105,7 +107,7 @@ export function offerAcceptedEmail(opts: {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
-  const checkoutUrl = `https://reswell.com/${opts.listingSection}/${opts.listingSlug}/checkout?offer_id=${opts.offerId}`
+  const checkoutUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}/checkout?offer_id=${opts.offerId}`
 
   return {
     subject: `Your offer was accepted! Complete your purchase on "${opts.listingTitle}"`,
@@ -139,7 +141,7 @@ export function offerDeclinedEmail(opts: {
   offeredAmount: number
   sellerNote: string | null
 }): { subject: string; text: string } {
-  const listingUrl = `https://reswell.com/${opts.listingSection}/${opts.listingSlug}`
+  const listingUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}`
 
   return {
     subject: `Your offer on "${opts.listingTitle}" was declined`,
@@ -162,7 +164,7 @@ export function offerExpiredEmail(opts: {
   offeredAmount: number
   role: 'buyer' | 'seller'
 }): { subject: string; text: string } {
-  const listingUrl = `https://reswell.com/${opts.listingSection}/${opts.listingSlug}`
+  const listingUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}`
 
   const buyerText = `The offer of ${usd(opts.offeredAmount)} on "${opts.listingTitle}" has expired with no response.
 
@@ -199,7 +201,7 @@ export function offerExpiringEmail(opts: {
 Your ${opts.role === 'buyer' ? 'offer' : "buyer's offer"} of ${usd(opts.currentAmount)} on "${opts.listingTitle}" expires in ${opts.hoursLeft} hours.
 
 Don't miss out — respond now:
-https://reswell.com/offers/${opts.offerId}
+${publicSiteOrigin()}/offers/${opts.offerId}
 
 — The Reswell Team`,
   }
@@ -214,7 +216,7 @@ export function paymentDeadlineWarningEmail(opts: {
   agreedAmount: number
   hoursLeft: number
 }): { subject: string; text: string } {
-  const checkoutUrl = `https://reswell.com/${opts.listingSection}/${opts.listingSlug}/checkout?offer_id=${opts.offerId}`
+  const checkoutUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}/checkout?offer_id=${opts.offerId}`
 
   return {
     subject: `${opts.hoursLeft} hours left to complete your purchase on "${opts.listingTitle}"`,

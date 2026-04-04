@@ -6,6 +6,7 @@
  */
 
 import type { ClaimType } from '@/lib/protection-constants'
+import { publicSiteOrigin } from '@/lib/public-site-origin'
 
 function formatUSD(amount: number): string {
   return `$${amount.toFixed(2)}`
@@ -46,7 +47,7 @@ What happens next:
   3. You'll receive an email once a decision is made.
 
 You can track your claim status at:
-  https://reswell.com/dashboard/claims/${opts.claimId}
+  ${publicSiteOrigin()}/dashboard/claims/${opts.claimId}
 
 If you have additional evidence to add, reply to this email or
 upload it directly from your claims dashboard.
@@ -85,7 +86,7 @@ Refund details:
 This is a full, no-questions-asked refund under Reswell's 100%
 guarantee for undelivered items. No cap. No deductions.
 
-View your claim: https://reswell.com/dashboard/claims/${opts.claimId}
+View your claim: ${publicSiteOrigin()}/dashboard/claims/${opts.claimId}
 
 — The Reswell Team`,
   }
@@ -118,7 +119,7 @@ Refund details:
 
 You received a full refund — every dollar you paid, item price and shipping. Guaranteed.
 
-View your claim: https://reswell.com/dashboard/claims/${opts.claimId}
+View your claim: ${publicSiteOrigin()}/dashboard/claims/${opts.claimId}
 
 — The Reswell Team`,
   }
@@ -146,9 +147,9 @@ any additional evidence within 7 days and our team will
 take a second look.
 
 You can also contact our support team directly at:
-  https://reswell.com/contact
+  ${publicSiteOrigin()}/contact
 
-View your claim: https://reswell.com/dashboard/claims/${opts.claimId}
+View your claim: ${publicSiteOrigin()}/dashboard/claims/${opts.claimId}
 
 — The Reswell Team`,
   }
@@ -189,7 +190,7 @@ What you should do:
   - Provide counter-evidence (photos, tracking, messages)
   - Mark as already resolved (if you've already refunded the buyer)
 
-Respond here: https://reswell.com/dashboard/claims/${opts.claimId}
+Respond here: ${publicSiteOrigin()}/dashboard/claims/${opts.claimId}
 
 Ignoring this notice may result in the claim being automatically
 approved in the buyer's favour.
@@ -220,9 +221,9 @@ Outcome: ${opts.outcome}
 
 ${outcomeText}
 
-View claim details: https://reswell.com/dashboard/claims/${opts.claimId}
+View claim details: ${publicSiteOrigin()}/dashboard/claims/${opts.claimId}
 
-Questions? Contact us at https://reswell.com/contact
+Questions? Contact us at ${publicSiteOrigin()}/contact
 
 — The Reswell Team`,
   }

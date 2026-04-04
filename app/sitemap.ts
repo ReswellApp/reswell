@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 
-const BASE = "https://reswellsurf.com"
+const BASE = publicSiteOrigin()
 
 /** Priority filter combos worth indexing for long-tail SEO. */
 const BOARD_TYPE_FILTERS = [
