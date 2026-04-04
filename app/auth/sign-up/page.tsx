@@ -66,9 +66,11 @@ export default function Page() {
     }
 
     try {
+      // Use the current origin (e.g. http://localhost:3000) so email confirm links match where
+      // the user signed up. Do not prefer NEXT_PUBLIC_APP_URL here — it often points at prod when
+      // pulled from Vercel and would send people to reswell.app from local dev.
       const redirectTo =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL?.trim() ||
         window.location.origin
       const { error } = await supabase.auth.signUp({
         email,
