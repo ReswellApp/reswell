@@ -54,6 +54,7 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
 import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
+import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 type ProfileAvatarFields = {
@@ -332,12 +333,26 @@ export function Header() {
   // correct amount of space for auth-dependent action buttons before they
   // appear, preventing the search bar from shifting horizontally.
   const [authLoaded, setAuthLoaded] = useState(false)
+  /** When the image URL is set but fails to load (403, blocked, bad URL), hide img so fallback letter shows. */
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false)
   const mobileSearchRef = useRef<HTMLInputElement>(null)
   const pathname = usePathname()
   const router = useRouter()
   const headerSearchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
 
+  const resolvedDisplayName = useMemo(
+    () => (user ? headerDisplayName(profileDisplayName, user) : ""),
+    [user, profileDisplayName],
+  )
+  const resolvedInitial = useMemo(
+    () => headerInitialFromDisplayName(resolvedDisplayName || "User"),
+    [resolvedDisplayName],
+  )
+
+  useEffect(() => {
+    setAvatarImageFailed(false)
+  }, [profileAvatarUrl])
 
   useEffect(() => {
     if (searchOpen) {
@@ -637,33 +652,36 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-black hover:bg-pacific/5">
                       <Avatar className="h-9 w-9">
-                        {profileAvatarUrl ? (
-                          <AvatarImage src={profileAvatarUrl} alt="Profile" />
+                        {profileAvatarUrl && !avatarImageFailed ? (
+                          <AvatarImage
+                            src={profileAvatarUrl}
+                            alt="Profile"
+                            onLoadingStatusChange={(status) => {
+                              if (status === "error") setAvatarImageFailed(true)
+                            }}
+                          />
                         ) : null}
-                        <AvatarFallback>
-                          {(profileDisplayName || user.user_metadata?.full_name || "User").charAt(0).toUpperCase()}
-                        </AvatarFallback>
+                        <AvatarFallback className="text-foreground">{resolvedInitial}</AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="flex items-center gap-3 px-2 py-2">
                       <Avatar className="h-10 w-10 shrink-0 border border-border">
-                        {profileAvatarUrl ? (
+                        {profileAvatarUrl && !avatarImageFailed ? (
                           <AvatarImage
                             src={profileAvatarUrl}
                             alt=""
+                            onLoadingStatusChange={(status) => {
+                              if (status === "error") setAvatarImageFailed(true)
+                            }}
                           />
                         ) : null}
-                        <AvatarFallback className="text-sm">
-                          {(profileDisplayName || user.user_metadata?.full_name || "User")
-                            .charAt(0)
-                            .toUpperCase()}
-                        </AvatarFallback>
+                        <AvatarFallback className="text-sm text-foreground">{resolvedInitial}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">
-                          {profileDisplayName || user.user_metadata?.full_name || "User"}
+                          {resolvedDisplayName}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                       </div>
@@ -790,18 +808,20 @@ export function Header() {
                 className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
               >
                 <Avatar className="h-12 w-12 shrink-0 border border-border">
-                  {profileAvatarUrl ? (
-                    <AvatarImage src={profileAvatarUrl} alt="" />
+                  {profileAvatarUrl && !avatarImageFailed ? (
+                    <AvatarImage
+                      src={profileAvatarUrl}
+                      alt=""
+                      onLoadingStatusChange={(status) => {
+                        if (status === "error") setAvatarImageFailed(true)
+                      }}
+                    />
                   ) : null}
-                  <AvatarFallback className="text-lg">
-                    {(profileDisplayName || user.user_metadata?.full_name || "User")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </AvatarFallback>
+                  <AvatarFallback className="text-lg text-foreground">{resolvedInitial}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-foreground">
-                    {profileDisplayName || user.user_metadata?.full_name || "User"}
+                    {resolvedDisplayName}
                   </p>
                   <p className="truncate text-sm text-muted-foreground">{user.email}</p>
                 </div>
