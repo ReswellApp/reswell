@@ -4,6 +4,8 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 })
 
+// No-op comment: trigger a fresh deploy after Vercel env changes.
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
