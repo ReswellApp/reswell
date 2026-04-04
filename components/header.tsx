@@ -56,6 +56,32 @@ import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
+type ProfileAvatarFields = {
+  avatar_url: string | null
+  shop_logo_url: string | null
+  is_shop: boolean | null
+}
+
+/**
+ * Shop logo when `is_shop`; else `profiles.avatar_url`; else Google OAuth `avatar_url` / `picture` in user_metadata.
+ */
+function resolveHeaderAvatarUrl(
+  user: SupabaseUser,
+  profile: ProfileAvatarFields | null
+): string | null {
+  const trim = (s: string | null | undefined) => (s?.trim() ? s.trim() : null)
+  const meta = user.user_metadata as Record<string, unknown> | undefined
+  const oauth =
+    (typeof meta?.avatar_url === "string" && meta.avatar_url.trim()) ||
+    (typeof meta?.picture === "string" && meta.picture.trim()) ||
+    null
+
+  if (profile?.is_shop && trim(profile.shop_logo_url)) {
+    return trim(profile.shop_logo_url)
+  }
+  return trim(profile?.avatar_url) || oauth
+}
+
 /** Desktop + mobile primary nav (Apparel / Leashes / Vintage last before Categories dropdown). */
 const navigation = [
   { name: "Surfboards", href: "/boards" },
@@ -330,11 +356,11 @@ export function Header() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_admin, avatar_url, display_name")
+          .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
           .eq("id", user.id)
           .single()
         setIsAdmin(profile?.is_admin || false)
-        setProfileAvatarUrl(profile?.avatar_url || null)
+        setProfileAvatarUrl(resolveHeaderAvatarUrl(user, profile))
         setProfileDisplayName(profile?.display_name || null)
 
         const cart = JSON.parse(localStorage.getItem("cart") || "[]")
@@ -389,8 +415,23 @@ export function Header() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const next = session?.user ?? null
+      setUser(next)
+      if (next) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
+          .eq("id", next.id)
+          .single()
+        setIsAdmin(profile?.is_admin ?? false)
+        setProfileAvatarUrl(resolveHeaderAvatarUrl(next, profile))
+        setProfileDisplayName(profile?.display_name ?? null)
+      } else {
+        setIsAdmin(false)
+        setProfileAvatarUrl(null)
+        setProfileDisplayName(null)
+      }
     })
 
     return () => {
@@ -521,6 +562,14 @@ export function Header() {
               </PopoverContent>
             </Popover>
 
+            <Button
+              asChild
+              size="sm"
+              className="hidden h-10 shrink-0 rounded-xl px-4 sm:inline-flex"
+            >
+              <Link href="/sell">Sell your Board</Link>
+            </Button>
+
             <Link href="/feed">
               <Button
                 variant="ghost"
@@ -598,11 +647,26 @@ export function Header() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium">
-                        {profileDisplayName || user.user_metadata?.full_name || "User"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <div className="flex items-center gap-3 px-2 py-2">
+                      <Avatar className="h-10 w-10 shrink-0 border border-border">
+                        {profileAvatarUrl ? (
+                          <AvatarImage
+                            src={profileAvatarUrl}
+                            alt=""
+                          />
+                        ) : null}
+                        <AvatarFallback className="text-sm">
+                          {(profileDisplayName || user.user_metadata?.full_name || "User")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {profileDisplayName || user.user_metadata?.full_name || "User"}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                      </div>
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
@@ -666,10 +730,6 @@ export function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
-                <Link href="/sell" className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-2">
-                  Sell
-                </Link>
               </>
             ) : authLoaded ? (
               <div className="flex items-center gap-1">
@@ -716,13 +776,37 @@ export function Header() {
           />
           {/* Panel */}
           <div className="fixed inset-y-0 right-0 w-[min(400px,100vw)] max-w-full bg-background border-l shadow-xl p-4 sm:p-6 overflow-y-auto overflow-x-hidden animate-in slide-in-from-right duration-300 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] [padding-top:max(1rem,env(safe-area-inset-top))]">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               <span className="text-lg font-semibold text-foreground">Menu</span>
               <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
                 <X className="h-5 w-5" />
                 <span className="sr-only">Close menu</span>
               </Button>
             </div>
+            {user && authLoaded && (
+              <Link
+                href="/dashboard"
+                onClick={onMobileDrawerLinkClick}
+                className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
+              >
+                <Avatar className="h-12 w-12 shrink-0 border border-border">
+                  {profileAvatarUrl ? (
+                    <AvatarImage src={profileAvatarUrl} alt="" />
+                  ) : null}
+                  <AvatarFallback className="text-lg">
+                    {(profileDisplayName || user.user_metadata?.full_name || "User")
+                      .charAt(0)
+                      .toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-foreground">
+                    {profileDisplayName || user.user_metadata?.full_name || "User"}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                </div>
+              </Link>
+            )}
             <nav className="flex flex-col gap-1">
               {navigation.map((item) => (
                 <Link
@@ -763,6 +847,15 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
+              <Button
+                asChild
+                size="sm"
+                className="h-10 w-full shrink-0 justify-center rounded-xl px-4"
+              >
+                <Link href="/sell" onClick={onMobileDrawerLinkClick}>
+                  Sell your Board
+                </Link>
+              </Button>
               <Link
                 href="/feed"
                 onClick={onMobileDrawerLinkClick}
@@ -825,15 +918,6 @@ export function Header() {
                 <Heart className="h-5 w-5 shrink-0" />
                 Saved
               </Link>
-              {user && (
-                <Link
-                  href="/sell"
-                  onClick={onMobileDrawerLinkClick}
-                  className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch"
-                >
-                  Sell Your Gear
-                </Link>
-              )}
               {!user && (
                 <>
                   <Link
