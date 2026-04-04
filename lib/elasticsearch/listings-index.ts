@@ -52,13 +52,19 @@ export async function ensureListingsIndex(): Promise<void> {
   const es = getElasticsearchClient()
   if (!es) return
 
-  const exists = await es.indices.exists({ index: ELASTICSEARCH_LISTINGS_INDEX })
-  if (!exists) {
-    await es.indices.create({
-      index: ELASTICSEARCH_LISTINGS_INDEX,
-      settings: INDEX_SETTINGS,
-      mappings: INDEX_MAPPINGS,
-    })
+  try {
+    const exists = await es.indices.exists({ index: ELASTICSEARCH_LISTINGS_INDEX })
+    if (!exists) {
+      await es.indices.create({
+        index: ELASTICSEARCH_LISTINGS_INDEX,
+        settings: INDEX_SETTINGS,
+        mappings: INDEX_MAPPINGS,
+      })
+    }
+  } catch (e) {
+    // Cluster unreachable, bad credentials, TLS, etc. — don’t crash callers; search falls back to DB.
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] ensureListingsIndex failed:", msg, e)
   }
 }
 
@@ -226,41 +232,47 @@ export async function searchListingIdsFromElasticsearch(
   const es = getElasticsearchClient()
   if (!es) return []
 
-  await ensureListingsIndex()
+  try {
+    await ensureListingsIndex()
 
-  const sections =
-    section === "used"
-      ? ["used"]
-      : section === "boards"
-        ? ["surfboards"]
-        : ["used", "surfboards"]
+    const sections =
+      section === "used"
+        ? ["used"]
+        : section === "boards"
+          ? ["surfboards"]
+          : ["used", "surfboards"]
 
-  const filter: object[] = [
-    { term: { status: "active" } },
-    { terms: { section: sections } },
-  ]
+    const filter: object[] = [
+      { term: { status: "active" } },
+      { terms: { section: sections } },
+    ]
 
-  const q = rawQuery.trim()
+    const q = rawQuery.trim()
 
-  const res = q
-    ? await es.search({
-        index: ELASTICSEARCH_LISTINGS_INDEX,
-        size: limit,
-        _source: false,
-        query: buildListingsSearchQueryBody(filter, q),
-        sort: [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
-      })
-    : await es.search({
-        index: ELASTICSEARCH_LISTINGS_INDEX,
-        size: limit,
-        _source: false,
-        query: { bool: { filter } },
-        sort: [{ created_at: { order: "desc" } }],
-      })
+    const res = q
+      ? await es.search({
+          index: ELASTICSEARCH_LISTINGS_INDEX,
+          size: limit,
+          _source: false,
+          query: buildListingsSearchQueryBody(filter, q),
+          sort: [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
+        })
+      : await es.search({
+          index: ELASTICSEARCH_LISTINGS_INDEX,
+          size: limit,
+          _source: false,
+          query: { bool: { filter } },
+          sort: [{ created_at: { order: "desc" } }],
+        })
 
-  return (res.hits.hits ?? [])
-    .map((h) => h._id)
-    .filter((id): id is string => typeof id === "string" && id.length > 0)
+    return (res.hits.hits ?? [])
+      .map((h) => h._id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] searchListingIdsFromElasticsearch failed:", msg, e)
+    return []
+  }
 }
 
 /** Load listing + category name from Supabase and build ES document. */

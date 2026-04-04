@@ -168,8 +168,8 @@ export async function POST(request: NextRequest) {
       mode: CART_CHECKOUT_MODE,
       user_id: user.id,
     },
-    success_url: `${origin}/shop/checkout/success?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/shop/checkout?canceled=1`,
+    success_url: `${origin}/checkout/success?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/checkout?canceled=1`,
   })
 
   return NextResponse.json({ url: session.url, orderId: order.id })

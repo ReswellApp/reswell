@@ -45,7 +45,10 @@ export async function POST(request: NextRequest) {
 
   if (!isElasticsearchConfigured()) {
     return NextResponse.json(
-      { error: "Elasticsearch is not configured (set ELASTICSEARCH_URL)" },
+      {
+        error:
+          "Elasticsearch is not configured. Set ELASTICSEARCH_URL plus ELASTICSEARCH_API_KEY (or username/password), or ELASTICSEARCH_ALLOW_ANONYMOUS=true for a local unsecured cluster.",
+      },
       { status: 503 },
     )
   }

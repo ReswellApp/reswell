@@ -1,14 +1,9 @@
 import Link from "next/link"
-import Image from "next/image"
-import { portraitShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { formatCategory, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
+import { capitalizeWords, formatListingTileCategoryPillText, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
-import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
-import { VerifiedBadge } from "@/components/verified-badge"
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { ListingTile } from "@/components/listing-tile"
 
 export interface UsedGearSearchParams {
   category?: string
@@ -312,57 +307,34 @@ export async function UsedGearListings({
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {listings.map((listing) => {
-          const primaryImage =
-            listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
-            listing.listing_images?.[0]
+          const slug = listing.slug || listing.id
+          const checkoutPath = `/used/${slug}/checkout`
           return (
-            <Card key={listing.id} className={listingProductCardGridClassName}>
-              <Link href={`/used/${listing.slug || listing.id}`} className="min-w-0 flex-1 flex flex-col">
-                <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-                  {primaryImage?.url ? (
-                    // CLS-FIX: sizes prevents the browser fetching at full
-                    // viewport width for a card that only spans 50% on mobile.
-                    <Image
-                      src={
-                        (primaryImage as { thumbnail_url?: string | null }).thumbnail_url?.trim() ||
-                        primaryImage.url ||
-                        "/placeholder.svg"
-                      }
-                      alt={capitalizeWords(listing.title)}
-                      fill
-                      sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      placeholder="blur"
-                      blurDataURL={portraitShimmer}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                      No Image
-                    </div>
-                  )}
-                  <FavoriteButtonCardOverlay
-                    listingId={listing.id}
-                    initialFavorited={favoritedIds.includes(listing.id)}
-                    isLoggedIn={!!user}
-                  />
-                </div>
-                <CardContent className="min-w-0 p-3">
-                  <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
-                  <p className="text-base font-bold text-black dark:text-white mt-1">${listing.price.toFixed(2)}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      {getPublicSellerDisplayName(listing.profiles)}
-                      {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
-                    </p>
-                    {listing.categories?.name && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {formatCategory(listing.categories.name)}
-                      </Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Link>
-            </Card>
+            <ListingTile
+              key={listing.id}
+              href={`/used/${slug}`}
+              listingId={listing.id}
+              title={capitalizeWords(listing.title)}
+              imageAlt={capitalizeWords(listing.title)}
+              listingImages={listing.listing_images}
+              price={Number(listing.price)}
+              cardContentClassName="flex min-w-0 flex-1 flex-col p-3"
+              priceAction={{
+                type: "checkout",
+                checkoutPath,
+                isLoggedIn: !!user,
+              }}
+              meta={{
+                variant: "seller",
+                name: getPublicSellerDisplayName(listing.profiles),
+                verified: !!listing.profiles?.shop_verified,
+              }}
+              categoryPill={formatListingTileCategoryPillText(listing)}
+              favorites={{
+                initialFavorited: favoritedIds.includes(listing.id),
+                isLoggedIn: !!user,
+              }}
+            />
           )
         })}
       </div>

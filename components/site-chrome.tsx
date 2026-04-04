@@ -6,6 +6,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { NavigationPageGate } from "@/components/navigation-page-gate"
 import { RouteProgressBar } from "@/components/route-progress-bar"
+import { AuthModalProvider } from "@/components/auth/auth-modal-context"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
@@ -20,20 +21,24 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   if (hideSiteChrome(pathname)) {
     return (
-      <div className="flex min-h-dvh flex-col">
-        <RouteProgressBar />
-        <NavigationPageGate>{children}</NavigationPageGate>
-      </div>
+      <AuthModalProvider>
+        <div className="flex min-h-dvh flex-col">
+          <RouteProgressBar />
+          <NavigationPageGate>{children}</NavigationPageGate>
+        </div>
+      </AuthModalProvider>
     )
   }
   return (
-    <div className="flex min-h-dvh flex-col">
-      <RouteProgressBar />
-      <Suspense fallback={<header className="sticky top-0 z-50 min-h-[56px] border-b border-lightgray bg-white" aria-hidden />}>
-        <Header />
-      </Suspense>
-      <NavigationPageGate>{children}</NavigationPageGate>
-      <Footer />
-    </div>
+    <AuthModalProvider>
+      <div className="flex min-h-dvh flex-col">
+        <RouteProgressBar />
+        <Suspense fallback={<header className="sticky top-0 z-50 min-h-[56px] border-b border-lightgray bg-white" aria-hidden />}>
+          <Header />
+        </Suspense>
+        <NavigationPageGate>{children}</NavigationPageGate>
+        <Footer />
+      </div>
+    </AuthModalProvider>
   )
 }

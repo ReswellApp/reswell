@@ -41,6 +41,7 @@ import { wetsuitZipLabel } from "@/lib/wetsuit-options"
 import { leashLengthLabel } from "@/lib/leash-options"
 import { collectibleTypeLabel, collectibleEraLabel, collectibleConditionLabel } from "@/lib/collectible-options"
 import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
+import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { Truck } from "lucide-react"
 import { MakeOfferButton } from "@/components/offers/make-offer-button"
@@ -605,41 +606,25 @@ export default async function UsedListingPage(props: {
             <section className="mt-16">
               <h2 className="text-xl font-bold mb-6">More from this Seller</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {sellerListings.map((item) => {
-                  const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
-                  return (
-                    <Card key={item.id} className={listingProductCardGridClassName}>
-                      <Link href={`/used/${item.slug || item.id}`} className="min-w-0 flex-1 flex flex-col">
-                        <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-                          {primaryImage?.url ? (
-                            <Image
-                              src={primaryImage.url || "/placeholder.svg"}
-                              alt={capitalizeWords(item.title)}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                              style={{ objectFit: "cover" }}
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                              No Image
-                            </div>
-                          )}
-                          <FavoriteButtonCardOverlay
-                            listingId={item.id}
-                            initialFavorited={sellerListingFavIds.includes(item.id)}
-                            isLoggedIn={!!user}
-                          />
-                        </div>
-                        <CardContent className="min-w-0 p-3">
-                          <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(item.title)}</h3>
-                          <p className="text-base font-bold text-black dark:text-white mt-1">
-                            ${item.price.toFixed(2)}
-                          </p>
-                        </CardContent>
-                      </Link>
-                    </Card>
-                  )
-                })}
+                {sellerListings.map((item) => (
+                  <ListingTile
+                    key={item.id}
+                    href={`/used/${item.slug || item.id}`}
+                    listingId={item.id}
+                    title={capitalizeWords(item.title)}
+                    imageAlt={capitalizeWords(item.title)}
+                    listingImages={item.listing_images}
+                    price={Number(item.price)}
+                    linkLayout="unified"
+                    useBlurPlaceholder={false}
+                    cardClassName={listingProductCardGridClassName}
+                    cardContentClassName="min-w-0 p-3"
+                    favorites={{
+                      initialFavorited: sellerListingFavIds.includes(item.id),
+                      isLoggedIn: !!user,
+                    }}
+                  />
+                ))}
               </div>
             </section>
           )}

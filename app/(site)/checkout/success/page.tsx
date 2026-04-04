@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle2, Loader2, AlertCircle } from "lucide-react"
 
-function ShopCheckoutSuccessInner() {
+function CartCheckoutSuccessInner() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get("order_id")
   const sessionId = searchParams.get("session_id")
@@ -123,7 +123,7 @@ export default function CheckoutSuccessPage() {
         </main>
       }
     >
-      <ShopCheckoutSuccessInner />
+      <CartCheckoutSuccessInner />
     </Suspense>
   )
 }

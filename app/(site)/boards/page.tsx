@@ -1,17 +1,14 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
-import { portraitShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { capitalizeWords } from "@/lib/listing-labels"
+import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsBrowseClient } from "./boards-browse-client"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
-import { MapPin, Users } from "lucide-react"
-import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { Users } from "lucide-react"
+import { ListingTile } from "@/components/listing-tile"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 
 function haversineMi(
@@ -116,6 +113,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     .select(`
       *,
       listing_images (url, thumbnail_url, is_primary),
+      categories (name),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `, { count: "exact" })
     .eq("status", "active")
@@ -258,56 +256,39 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {boards.map((board) => {
-          const primaryImage = board.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || board.listing_images?.[0]
+          const slug = board.slug || board.id
+          const checkoutPath = `/boards/${slug}/checkout`
+          const locationText =
+            board.city && board.state
+              ? `${board.city}, ${board.state}`
+              : board.profiles?.location || "Location not set"
           return (
-            <Card key={board.id} className={listingProductCardGridClassName}>
-              <Link href={`/boards/${board.slug || board.id}`} className="min-w-0 flex-1 flex flex-col">
-                <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-                  {primaryImage?.url ? (
-                    // CLS-FIX: sizes matches the 5-column card grid breakpoints
-                    <Image
-                      src={
-                        (primaryImage as { thumbnail_url?: string | null }).thumbnail_url?.trim() ||
-                        primaryImage.url ||
-                        "/placeholder.svg"
-                      }
-                      alt={capitalizeWords(board.title)}
-                      fill
-                      sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      placeholder="blur"
-                      blurDataURL={portraitShimmer}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                      No Image
-                    </div>
-                  )}
-                  <FavoriteButtonCardOverlay
-                    listingId={board.id}
-                    initialFavorited={favoritedIds.includes(board.id)}
-                    isLoggedIn={!!user}
-                  />
-                </div>
-                <CardContent className="min-w-0 p-3">
-                  <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(board.title)}</h3>
-                  {board.board_length && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {board.board_length}
-                    </p>
-                  )}
-                  <p className="text-base font-bold text-black dark:text-white mt-1">
-                    ${board.price.toFixed(2)}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <MapPin className="h-3 w-3" />
-                    {board.city && board.state
-                      ? `${board.city}, ${board.state}`
-                      : board.profiles?.location || "Location not set"}
-                  </div>
-                </CardContent>
-              </Link>
-            </Card>
+            <ListingTile
+              key={board.id}
+              href={`/boards/${slug}`}
+              listingId={board.id}
+              title={capitalizeWords(board.title)}
+              imageAlt={capitalizeWords(board.title)}
+              listingImages={board.listing_images}
+              price={Number(board.price)}
+              cardContentClassName="flex min-w-0 flex-1 flex-col p-3"
+              subtitle={
+                board.board_length ? (
+                  <p className="text-xs text-muted-foreground mt-0.5">{board.board_length}</p>
+                ) : null
+              }
+              priceAction={{
+                type: "checkout",
+                checkoutPath,
+                isLoggedIn: !!user,
+              }}
+              meta={{ variant: "location", text: locationText }}
+              categoryPill={formatListingTileCategoryPillText(board)}
+              favorites={{
+                initialFavorited: favoritedIds.includes(board.id),
+                isLoggedIn: !!user,
+              }}
+            />
           )
         })}
       </div>

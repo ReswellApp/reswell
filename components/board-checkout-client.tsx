@@ -178,10 +178,7 @@ export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY, offerId }:
       <PurchaseOptions
         listingId={listing.id}
         listingTitle={listing.title}
-        sellerId={listing.user_id}
         price={resolved.total}
-        itemPrice={resolved.itemPrice}
-        shippingAmount={resolved.shipping}
         fulfillment={fulfillmentForApi}
         offerId={offerId}
       />

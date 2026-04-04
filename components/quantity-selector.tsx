@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Minus, Plus, ShoppingCart, Check, Loader2 } from "lucide-react"
+import { mergeIntoCart } from "@/lib/cart-storage"
 
 interface QuantitySelectorProps {
   productId: string
@@ -65,30 +66,21 @@ export function QuantitySelector({ productId, maxQuantity, item: itemProp }: Qua
     setLoading(true)
 
     try {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]")
-      
-      const existingIndex = cart.findIndex((i: { id: string }) => i.id === productId)
-      
-      if (existingIndex >= 0) {
-        const newQuantity = cart[existingIndex].quantity + quantity
-        if (newQuantity > maxQuantity) {
-          toast.error("Not enough stock available")
-          setLoading(false)
-          return
-        }
-        cart[existingIndex].quantity = newQuantity
-      } else {
-        cart.push({
+      const result = mergeIntoCart(
+        {
           id: productId,
           name: product?.name || "Product",
           price: product?.price || 0,
-          image_url: product?.image_url || null,
-          quantity,
-        })
+          image_url: product?.image_url ?? null,
+        },
+        quantity,
+        maxQuantity,
+      )
+      if (!result.ok) {
+        toast.error("Not enough stock available")
+        setLoading(false)
+        return
       }
-
-      localStorage.setItem("cart", JSON.stringify(cart))
-      window.dispatchEvent(new CustomEvent("cartUpdated"))
 
       setAdded(true)
       toast.success(`Added ${quantity} item${quantity > 1 ? "s" : ""} to cart`)

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -20,7 +19,6 @@ interface CartItem {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -98,7 +96,7 @@ export default function CheckoutPage() {
           <div className="container mx-auto text-center">
             <p className="text-muted-foreground mb-4">Please sign in to checkout.</p>
             <Button asChild>
-              <Link href="/login?redirect=/shop/checkout">Sign in</Link>
+              <Link href={`/auth/login?redirect=${encodeURIComponent("/checkout")}`}>Sign in</Link>
             </Button>
           </div>
         </main>
@@ -123,7 +121,7 @@ export default function CheckoutPage() {
         <div className="container mx-auto max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link
-              href="/shop/cart"
+              href="/cart"
               className="text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -203,7 +201,7 @@ export default function CheckoutPage() {
                 Pay with Card
               </Button>
               <Button variant="outline" className="w-full bg-transparent" asChild>
-                <Link href="/shop/cart">Back to Cart</Link>
+                <Link href="/cart">Back to Cart</Link>
               </Button>
             </CardContent>
           </Card>
