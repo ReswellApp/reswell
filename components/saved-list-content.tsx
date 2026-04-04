@@ -2,21 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Heart, MapPin, Truck } from 'lucide-react'
+import { Heart, MapPin } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
-import { FavoriteButtonCardOverlay } from '@/components/favorite-button-card-overlay'
 import {
   capitalizeWords,
-  formatCondition,
-  formatCategory,
-  formatBoardType,
+  formatListingTileCategoryPillText,
   getPublicSellerDisplayName,
 } from '@/lib/listing-labels'
+import { ListingTile } from '@/components/listing-tile'
 import { listingProductCardGridClassName } from '@/lib/listing-card-styles'
 import { toast } from 'sonner'
 
@@ -154,14 +150,11 @@ export function SavedListContent() {
             const listing = favorite.listing
             if (!listing) return null
 
-            const primaryImage =
-              listing.listing_images?.find(img => img.is_primary) || listing.listing_images?.[0]
             const href = getListingHref(listing)
             const locationText =
               listing.city && listing.state
                 ? `${listing.city}, ${listing.state}`
                 : 'Location not set'
-            const isInPersonOnly = listing.section === 'surfboards' || !listing.shipping_available
             const boardLength =
               listing.length_feet != null && listing.length_inches != null
                 ? `${listing.length_feet}'${listing.length_inches}"`
@@ -170,49 +163,33 @@ export function SavedListContent() {
                   : null
 
             return (
-              <Card
+              <ListingTile
                 key={favorite.id}
-                className={listingProductCardGridClassName}
-              >
-                <Link href={href} className="min-w-0 flex-1 flex flex-col">
-                  <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-                    {primaryImage?.url ? (
-                      // CLS-FIX: sizes prevents browser choosing wrong resolution
-                      <Image
-                        src={primaryImage.url || '/placeholder.svg'}
-                        alt={capitalizeWords(listing.title)}
-                        fill
-                        sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        style={{ objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        No Image
-                      </div>
-                    )}
-                    <FavoriteButtonCardOverlay
-                      listingId={listing.id}
-                      initialFavorited
-                      isLoggedIn
-                      onFavoritedChange={(favorited) => {
-                        if (!favorited) handleRemoveFromList(listing.id)
-                      }}
-                    />
-                    {listing.status === 'sold' && (
-                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-foreground">SOLD</span>
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="min-w-0 p-3">
-                    <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
-                    {listing.section === 'surfboards' && boardLength && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{boardLength}</p>
-                    )}
-                    <p className="text-base font-bold text-black dark:text-white mt-1">
-                      ${Number(listing.price).toFixed(2)}
-                    </p>
+                href={href}
+                listingId={listing.id}
+                title={capitalizeWords(listing.title)}
+                imageAlt={capitalizeWords(listing.title)}
+                listingImages={listing.listing_images}
+                price={Number(listing.price)}
+                linkLayout="unified"
+                useBlurPlaceholder={false}
+                cardClassName={listingProductCardGridClassName}
+                cardContentClassName="min-w-0 p-3"
+                soldOverlay={listing.status === 'sold'}
+                subtitle={
+                  listing.section === 'surfboards' && boardLength ? (
+                    <p className="text-xs text-muted-foreground mt-0.5">{boardLength}</p>
+                  ) : null
+                }
+                favorites={{
+                  initialFavorited: true,
+                  isLoggedIn: true,
+                  onFavoritedChange: (favorited) => {
+                    if (!favorited) handleRemoveFromList(listing.id)
+                  },
+                }}
+                afterPriceSlot={
+                  <>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                       {getPublicSellerDisplayName(listing.profiles)}
                       {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
@@ -221,14 +198,12 @@ export function SavedListContent() {
                       <MapPin className="h-3 w-3 shrink-0" />
                       {locationText}
                     </div>
-                    <div className="mt-1">
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {getSectionLabel(listing.section)}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Link>
-              </Card>
+                  </>
+                }
+                categoryPill={
+                  formatListingTileCategoryPillText(listing) ?? getSectionLabel(listing.section)
+                }
+              />
             )
           })}
         </div>

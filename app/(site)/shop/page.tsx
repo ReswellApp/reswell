@@ -1,6 +1,7 @@
 import { ShopifyProducts } from "@/components/shopify-products"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
 import { createClient } from "@/lib/supabase/server"
+import { formatCategory } from "@/lib/listing-labels"
 
 export default async function ShopPage() {
   const supabase = await createClient()
@@ -13,7 +14,8 @@ export default async function ShopPage() {
       title,
       price,
       listing_images (url, is_primary),
-      inventory (quantity)
+      inventory (quantity),
+      categories (name)
     `)
     .eq("section", "new")
     .eq("status", "active")
@@ -31,12 +33,16 @@ export default async function ShopPage() {
         const quantity = inv ? Number((inv as { quantity: number }).quantity) : 0
         const images = (l.listing_images as { url: string; is_primary: boolean }[]) || []
         const primary = images.find((i) => i.is_primary) || images[0]
+        const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
+        const catRow = Array.isArray(cat) ? cat[0] : cat
+        const categoryLabel = catRow?.name?.trim() ? formatCategory(catRow.name) : null
         return {
           id: l.id,
           title: l.title,
           price: Number(l.price),
           image_url: primary?.url ?? null,
           stock_quantity: quantity,
+          categoryLabel,
         }
       }) ?? []
 

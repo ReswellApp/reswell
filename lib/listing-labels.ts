@@ -57,3 +57,18 @@ export function formatBoardType(boardType: string | null | undefined): string {
   if (!boardType) return ""
   return BOARD_TYPE_LABELS[boardType] ?? boardType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
+
+/** Text for the small category pill on listing tiles: DB category first, then surfboard type. */
+export function formatListingTileCategoryPillText(listing: {
+  section: string
+  board_type?: string | null
+  categories?: { name?: string | null } | null | { name?: string | null }[]
+}): string | null {
+  const cat = listing.categories
+  const row = Array.isArray(cat) ? cat?.[0] : cat
+  if (row?.name?.trim()) return formatCategory(row.name)
+  if (listing.section === "surfboards" && listing.board_type?.trim()) {
+    return formatBoardType(listing.board_type)
+  }
+  return null
+}

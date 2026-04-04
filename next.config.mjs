@@ -23,6 +23,9 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/shop/cart", destination: "/cart", permanent: true },
+      { source: "/shop/checkout/success", destination: "/checkout/success", permanent: true },
+      { source: "/shop/checkout", destination: "/checkout", permanent: true },
       // `/index` is often treated like the site root; canonical directory lives at `/directory`.
       { source: "/index", destination: "/directory", permanent: true },
       { source: "/index/:path*", destination: "/directory/:path*", permanent: true },

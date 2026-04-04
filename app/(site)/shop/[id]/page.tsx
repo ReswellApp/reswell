@@ -11,6 +11,7 @@ import { ArrowLeft, Package, Truck, Shield, RotateCcw } from "lucide-react"
 import { AddToCartButton } from "@/components/add-to-cart-button"
 import { QuantitySelector } from "@/components/quantity-selector"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
+import { formatCategory } from "@/lib/listing-labels"
 
 export default async function ProductPage(props: {
   params: Promise<{ id: string }>
@@ -32,7 +33,8 @@ export default async function ProductPage(props: {
       price,
       user_id,
       listing_images (url, is_primary),
-      inventory (quantity)
+      inventory (quantity),
+      categories (name)
     `)
     .eq("id", params.id)
     .eq("section", "new")
@@ -66,7 +68,8 @@ export default async function ProductPage(props: {
       title,
       price,
       listing_images (url, is_primary),
-      inventory (quantity)
+      inventory (quantity),
+      categories (name)
     `)
     .eq("section", "new")
     .eq("status", "active")
@@ -85,12 +88,16 @@ export default async function ProductPage(props: {
         const qty = invRel ? Number((invRel as { quantity: number }).quantity) : 0
         const imgs = (l.listing_images as { url: string; is_primary: boolean }[]) || []
         const prim = imgs.find((i) => i.is_primary) || imgs[0]
+        const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
+        const catRow = Array.isArray(cat) ? cat[0] : cat
+        const categoryLabel = catRow?.name?.trim() ? formatCategory(catRow.name) : null
         return {
           id: l.id,
           title: l.title,
           price: Number(l.price),
           image_url: prim?.url ?? null,
           stock_quantity: qty,
+          categoryLabel,
         }
       })
       .slice(0, 4) ?? []

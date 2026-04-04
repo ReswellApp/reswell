@@ -6,7 +6,8 @@ import { wideShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatCategory, capitalizeWords } from "@/lib/listing-labels"
+import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
+import { ListingTile, type ListingTilePriceAction } from "@/components/listing-tile"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
@@ -20,7 +21,6 @@ import {
   Package,
   ArrowLeft,
 } from "lucide-react"
-import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { FollowButton } from "@/components/follows/follow-button"
@@ -74,7 +74,8 @@ export default async function SellerProfilePage({
       `
       *,
       listing_images (url, is_primary),
-      categories (name, slug)
+      categories (name, slug),
+      inventory (quantity)
     `
     )
     .eq("user_id", id)
@@ -372,6 +373,48 @@ export default async function SellerProfilePage({
   )
 }
 
+function sellerListingPriceAction(
+  listing: any,
+  isLoggedIn: boolean,
+): ListingTilePriceAction | null {
+  if (listing.status && listing.status !== "active") return null
+  const slug = listing.slug || listing.id
+  if (listing.section === "used") {
+    return {
+      type: "checkout",
+      checkoutPath: `/used/${slug}/checkout`,
+      isLoggedIn,
+    }
+  }
+  if (listing.section === "surfboards") {
+    return {
+      type: "checkout",
+      checkoutPath: `/boards/${slug}/checkout`,
+      isLoggedIn,
+    }
+  }
+  if (listing.section === "new") {
+    const inv = Array.isArray(listing.inventory) ? listing.inventory[0] : listing.inventory
+    const qty = inv ? Number((inv as { quantity: number }).quantity) : 0
+    if (qty <= 0) return null
+    const images = listing.listing_images || []
+    const primary = images.find((i: { is_primary?: boolean }) => i.is_primary) || images[0]
+    const image_url =
+      typeof primary?.url === "string" && primary.url.trim() !== "" ? primary.url.trim() : null
+    return {
+      type: "addToCart",
+      item: {
+        id: listing.id,
+        name: listing.title,
+        price: Number(listing.price),
+        image_url,
+        stock_quantity: qty,
+      },
+    }
+  }
+  return null
+}
+
 function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; favoritedIds: string[]; isLoggedIn: boolean }) {
   if (listings.length === 0) {
     return (
@@ -399,57 +442,43 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => {
-        const primaryImage = listing.listing_images?.find(
-          (img: any) => img.is_primary
-        ) || listing.listing_images?.[0]
-
+        const href = getListingHref(listing)
+        const loc =
+          listing.city &&
+          `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
+        const pill = formatListingTileCategoryPillText(listing)
+        const statusLabel =
+          !listing.status || listing.status === "active"
+            ? null
+            : listing.status === "sold"
+              ? ("sold" as const)
+              : listing.status === "pending"
+                ? ("pending" as const)
+                : ("ended" as const)
+        const priceAction = sellerListingPriceAction(listing, isLoggedIn)
         return (
-          <Card key={listing.id} className={listingProductCardGridClassName}>
-            <Link href={getListingHref(listing)} className="min-w-0 flex-1 flex flex-col">
-              <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-                {primaryImage?.url ? (
-                  <Image
-                    src={primaryImage.url || "/placeholder.svg"}
-                    alt={capitalizeWords(listing.title)}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    style={{ objectFit: "cover" }}
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                    No Image
-                  </div>
-                )}
-                <FavoriteButtonCardOverlay
-                  listingId={listing.id}
-                  initialFavorited={favoritedIds.includes(listing.id)}
-                  isLoggedIn={isLoggedIn}
-                />
-              </div>
-              <CardContent className="min-w-0 p-3">
-                <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
-                <p className="text-base font-bold text-black dark:text-white mt-2">
-                  ${Number(listing.price).toFixed(2)}
-                </p>
-                {listing.status && listing.status !== "active" && (
-                  <p className="mt-1 text-sm font-medium text-muted-foreground">
-                    {listing.status === "sold"
-                      ? "Sold"
-                      : listing.status === "pending"
-                        ? "Pending"
-                        : "Ended"}
-                  </p>
-                )}
-                {listing.city && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
-                    <MapPin className="h-3 w-3" />
-                    {listing.city}
-                    {listing.state ? `, ${listing.state}` : ""}
-                  </div>
-                )}
-              </CardContent>
-            </Link>
-          </Card>
+          <ListingTile
+            key={listing.id}
+            href={href}
+            listingId={listing.id}
+            title={capitalizeWords(listing.title)}
+            imageAlt={capitalizeWords(listing.title)}
+            listingImages={listing.listing_images}
+            price={Number(listing.price)}
+            linkLayout="split"
+            useBlurPlaceholder={false}
+            cardClassName={listingProductCardGridClassName}
+            cardContentClassName="flex min-w-0 flex-1 flex-col p-3"
+            statusLabel={statusLabel}
+            priceAction={priceAction}
+            meta={loc ? { variant: "location", text: loc, showMapPin: true } : null}
+            metaRowClassName={loc ? "mt-2" : undefined}
+            categoryPill={pill}
+            favorites={{
+              initialFavorited: favoritedIds.includes(listing.id),
+              isLoggedIn,
+            }}
+          />
         )
       })}
     </div>

@@ -46,15 +46,17 @@ import {
   Users,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { NotificationDrawer } from "@/components/follows/notification-drawer"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
+import { cartItemCount, readCart } from "@/lib/cart-storage"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
 import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
+import { useAuthModal } from "@/components/auth/auth-modal-context"
+import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 type ProfileAvatarFields = {
@@ -149,6 +151,11 @@ function computeVisibleNavCount(availableWidth: number, linkWidths: number[], ca
   return 0
 }
 
+/** Ignore sub-pixel noise from getBoundingClientRect */
+function widthsLookReady(widths: number[]): boolean {
+  return widths.length > 0 && widths.some((w) => w >= 0.75)
+}
+
 function HeaderDesktopCategoryBar({
   pathname,
   headerSearchParams,
@@ -158,6 +165,7 @@ function HeaderDesktopCategoryBar({
 }) {
   const leftSlotRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
+  const zeroWidthRetriesRef = useRef(0)
   const [visibleCount, setVisibleCount] = useState(navigation.length)
 
   const recalc = useCallback(() => {
@@ -165,17 +173,45 @@ function HeaderDesktopCategoryBar({
     const measure = measureRef.current
     if (!slot || !measure) return
     const available = slot.clientWidth
-    if (available <= 0) return
+    if (available <= 0) {
+      // Flex slot often reports 0 before first layout — retry on the next frame (bounded).
+      if (zeroWidthRetriesRef.current < 8) {
+        zeroWidthRetriesRef.current += 1
+        requestAnimationFrame(() => recalc())
+      }
+      return
+    }
+    zeroWidthRetriesRef.current = 0
+
     const linkEls = measure.querySelectorAll<HTMLElement>("[data-nav-measure='link']")
     const catEl = measure.querySelector<HTMLElement>("[data-nav-measure='categories']")
     const linkWidths = Array.from(linkEls).map((el) => el.getBoundingClientRect().width)
-    const catW = catEl?.getBoundingClientRect().width ?? 96
-    const next = computeVisibleNavCount(available, linkWidths, catW)
+    const catW = Math.max(catEl?.getBoundingClientRect().width ?? 96, 1)
+
+    // Before fonts / first paint, widths can be 0 — don't collapse the bar to 0 visible links.
+    if (!widthsLookReady(linkWidths)) {
+      return
+    }
+
+    let next = computeVisibleNavCount(available, linkWidths, catW)
+    // Wide desktop slot but algorithm returned 0 → measurement/layout glitch, not a real phone-width bar.
+    if (next === 0 && available >= 360 && linkWidths.length > 0) {
+      next = 1
+    }
     setVisibleCount((prev) => (prev === next ? prev : next))
   }, [])
 
   useLayoutEffect(() => {
-    recalc()
+    const run = () => {
+      recalc()
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => recalc())
+      })
+    }
+    run()
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      void document.fonts.ready.then(() => recalc())
+    }
     const slot = leftSlotRef.current
     if (!slot) return
     const ro = new ResizeObserver(() => recalc())
@@ -323,6 +359,8 @@ export function Header() {
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [cartCount, setCartCount] = useState(0)
+  /** Incremented on each `cartUpdated` so the cart badge replay its emphasis animation. */
+  const [cartBadgePulseKey, setCartBadgePulseKey] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -340,6 +378,7 @@ export function Header() {
   const router = useRouter()
   const headerSearchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
+  const { openLogin, openSignUp } = useAuthModal()
 
   const resolvedDisplayName = useMemo(
     () => (user ? headerDisplayName(profileDisplayName, user) : ""),
@@ -361,97 +400,87 @@ export function Header() {
     }
   }, [searchOpen])
 
+  // Cart count: guests and signed-in users share localStorage; keep header badge in sync on add/remove.
+  useLayoutEffect(() => {
+    function syncCartCount() {
+      setCartCount(cartItemCount(readCart()))
+    }
+    syncCartCount()
+    function onCartUpdated() {
+      syncCartCount()
+      setCartBadgePulseKey((k) => k + 1)
+    }
+    window.addEventListener("cartUpdated", onCartUpdated)
+    return () => window.removeEventListener("cartUpdated", onCartUpdated)
+  }, [])
+
   useEffect(() => {
-    async function getUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+    async function loadHeaderAuth() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        setUser(user)
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
-          .eq("id", user.id)
-          .single()
-        setIsAdmin(profile?.is_admin || false)
-        setProfileAvatarUrl(resolveHeaderAvatarUrl(user, profile))
-        setProfileDisplayName(profile?.display_name || null)
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
+            .eq("id", user.id)
+            .single()
+          setIsAdmin(profile?.is_admin || false)
+          setProfileAvatarUrl(resolveHeaderAvatarUrl(user, profile))
+          setProfileDisplayName(profile?.display_name || null)
 
-        const cart = JSON.parse(localStorage.getItem("cart") || "[]")
-        setCartCount(cart.reduce((sum: number, i: { quantity?: number }) => sum + (i.quantity ?? 1), 0))
+          const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: user.id })
+          setUnreadMessages(Number(unreadMsgCount ?? 0))
 
-        const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: user.id })
-        const { count: unreadNotifCount } = await supabase
-          .from("notifications")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("is_read", false)
-        setUnreadMessages(Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0))
-
-        const { data: wallet } = await supabase
-          .from("wallets")
-          .select("balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
-          .eq("user_id", user.id)
-          .single()
-        setWalletBalance(wallet ? reconcileWalletAggregates(wallet).balance : 0)
-      } else {
-        setIsAdmin(false)
-        setProfileAvatarUrl(null)
-        setProfileDisplayName(null)
-        setUnreadMessages(0)
-        setWalletBalance(null)
+          const { data: wallet } = await supabase
+            .from("wallets")
+            .select("balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+            .eq("user_id", user.id)
+            .single()
+          setWalletBalance(wallet ? reconcileWalletAggregates(wallet).balance : 0)
+        } else {
+          setIsAdmin(false)
+          setProfileAvatarUrl(null)
+          setProfileDisplayName(null)
+          setUnreadMessages(0)
+          setWalletBalance(null)
+        }
+      } finally {
+        // Always resolve auth so the header never stays on the loading skeleton forever
+        // if profile/wallet/RPC throws.
+        setAuthLoaded(true)
       }
-      // CLS-FIX: mark auth as resolved so the reserved placeholder space collapses
-      // and the real action buttons render with no further layout shift.
-      setAuthLoaded(true)
     }
 
-    getUser()
+    void loadHeaderAuth()
+
+    function onHeaderAuthRefresh() {
+      void loadHeaderAuth()
+    }
+    window.addEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
 
     async function refreshUnreadCount() {
-      const { data: { user: u } } = await supabase.auth.getUser()
+      const {
+        data: { user: u },
+      } = await supabase.auth.getUser()
       if (!u) return
       const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: u.id })
-      const { count: unreadNotifCount } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", u.id)
-        .eq("is_read", false)
-      setUnreadMessages(Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0))
+      setUnreadMessages(Number(unreadMsgCount ?? 0))
     }
     window.addEventListener("unreadCountRefresh", refreshUnreadCount)
 
-    function updateCartCount() {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]")
-      setCartCount(cart.reduce((sum: number, i: { quantity?: number }) => sum + (i.quantity ?? 1), 0))
-    }
-    window.addEventListener("cartUpdated", updateCartCount)
-
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const next = session?.user ?? null
-      setUser(next)
-      if (next) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
-          .eq("id", next.id)
-          .single()
-        setIsAdmin(profile?.is_admin ?? false)
-        setProfileAvatarUrl(resolveHeaderAvatarUrl(next, profile))
-        setProfileDisplayName(profile?.display_name ?? null)
-      } else {
-        setIsAdmin(false)
-        setProfileAvatarUrl(null)
-        setProfileDisplayName(null)
-      }
+    } = supabase.auth.onAuthStateChange(() => {
+      void loadHeaderAuth()
     })
 
     return () => {
+      window.removeEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
       window.removeEventListener("unreadCountRefresh", refreshUnreadCount)
-      window.removeEventListener("cartUpdated", updateCartCount)
       subscription.unsubscribe()
     }
   }, [supabase])
@@ -596,10 +625,36 @@ export function Header() {
               </Button>
             </Link>
 
-            <Link href={user ? "/saved" : `/auth/login?redirect=${encodeURIComponent("/saved")}`}>
+            <Link
+              href={user ? "/saved" : `/auth/login?redirect=${encodeURIComponent("/saved")}`}
+              onClick={
+                user
+                  ? undefined
+                  : (e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      openLogin("/saved")
+                    }
+              }
+            >
               <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                 <Heart className="h-6 w-6" />
                 <span className="sr-only">Saved</span>
+              </Button>
+            </Link>
+
+            <Link href="/cart" className="relative hidden sm:inline-flex">
+              <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
+                <ShoppingCart className="h-6 w-6" />
+                {cartCount > 0 && (
+                  <Badge
+                    key={`${cartCount}-${cartBadgePulseKey}`}
+                    className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-black text-white dark:bg-white dark:text-black cart-badge-bump"
+                  >
+                    {cartCount > 9 ? "9+" : cartCount}
+                  </Badge>
+                )}
+                <span className="sr-only">Cart</span>
               </Button>
             </Link>
 
@@ -610,44 +665,28 @@ export function Header() {
               <div className="hidden sm:flex items-center gap-1 md:gap-0.5 pointer-events-none select-none" aria-hidden>
                 <div className="h-11 w-11 rounded-full" />
                 <div className="h-11 w-11 rounded-full" />
-                <div className="h-11 w-11 rounded-full" />
-                <div className="h-11 w-11 rounded-full" />
                 <div className="h-6 w-10 rounded" />
               </div>
             )}
 
             {authLoaded && user ? (
-              <>
-                {/* Follow notifications bell */}
-                <div className="hidden sm:inline-flex">
-                  <NotificationDrawer />
-                </div>
-
+              <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
                 <Link href="/messages" className="relative hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                     <MessageSquare className="h-6 w-6" />
-                    <Badge
-                      variant={unreadMessages > 0 ? "destructive" : "secondary"}
-                      className={`absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center ${unreadMessages > 0 ? "bg-red-500 text-white hover:bg-red-600" : "text-black"}`}
-                    >
-                      {unreadMessages > 9 ? "9+" : unreadMessages}
-                    </Badge>
+                    {unreadMessages > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center bg-red-500 text-white hover:bg-red-600"
+                      >
+                        {unreadMessages > 9 ? "9+" : unreadMessages}
+                      </Badge>
+                    )}
                     <span className="sr-only">Messages</span>
                   </Button>
                 </Link>
 
-                <Link href="/shop/cart" className="relative hidden sm:inline-flex">
-                  <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
-                    <ShoppingCart className="h-6 w-6" />
-                    {cartCount > 0 && (
-                      <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-black text-white dark:bg-white dark:text-black">
-                        {cartCount > 9 ? "9+" : cartCount}
-                      </Badge>
-                    )}
-                    <span className="sr-only">Cart</span>
-                  </Button>
-                </Link>
-
+                <div className="ml-2 shrink-0 sm:ml-3 md:ml-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-black hover:bg-pacific/5">
@@ -748,11 +787,31 @@ export function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </>
+                </div>
+              </div>
             ) : authLoaded ? (
-              <div className="flex items-center gap-1">
-                <Link href="/auth/login" className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2">
+              <div className="flex items-center gap-0">
+                <Link
+                  href="/auth/login"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openLogin()
+                  }}
+                  className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2"
+                >
                   Log in
+                </Link>
+                <Link
+                  href="/auth/sign-up"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openSignUp()
+                  }}
+                  className="hidden sm:flex text-[15px] font-medium text-cerulean hover:text-cerulean/90 transition-colors px-3 py-2"
+                >
+                  Sign up
                 </Link>
               </div>
             ) : null}
@@ -932,7 +991,16 @@ export function Header() {
               </div>
               <Link
                 href={user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved")}
-                onClick={onMobileDrawerLinkClick}
+                onClick={
+                  user
+                    ? onMobileDrawerLinkClick
+                    : (e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                        e.preventDefault()
+                        openLogin("/saved")
+                        queueMicrotask(() => setMobileMenuOpen(false))
+                      }
+                }
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
               >
                 <Heart className="h-5 w-5 shrink-0" />
@@ -942,14 +1010,24 @@ export function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    onClick={onMobileDrawerLinkClick}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      openLogin()
+                      queueMicrotask(() => setMobileMenuOpen(false))
+                    }}
                     className="py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/auth/sign-up"
-                    onClick={onMobileDrawerLinkClick}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      openSignUp()
+                      queueMicrotask(() => setMobileMenuOpen(false))
+                    }}
                     className="py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch block"
                   >
                     Get Started

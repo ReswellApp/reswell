@@ -1,12 +1,7 @@
 "use client"
 
-import Link from "next/link"
-import Image from "next/image"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { formatCondition, formatCategory, formatBoardType, capitalizeWords } from "@/lib/listing-labels"
-import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
-import { MapPin, Truck } from "lucide-react"
+import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
+import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
 export interface RecentListing {
@@ -64,57 +59,36 @@ export function RecentFeedClient({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => {
-        const primaryImage =
-          listing.listing_images?.find((img) => img.is_primary) || listing.listing_images?.[0]
         const href = getListingHref(listing)
         const locationText =
           listing.city && listing.state
             ? `${listing.city}, ${listing.state}`
             : listing.profiles?.location || "Location not set"
-        const isInPersonOnly = listing.section === "surfboards" || !listing.shipping_available
         return (
-          <Card
+          <ListingTile
             key={listing.id}
-            className={listingProductCardGridClassName}
-          >
-            <Link href={href} className="min-w-0 flex-1 flex flex-col">
-              <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-                {primaryImage?.url ? (
-                  <Image
-                    src={primaryImage.url || "/placeholder.svg"}
-                    alt={capitalizeWords(listing.title)}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    style={{ objectFit: "cover" }}
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                    No Image
-                  </div>
-                )}
-                <FavoriteButtonCardOverlay
-                  listingId={listing.id}
-                  initialFavorited={favoritedListingIds.includes(listing.id)}
-                  isLoggedIn={isLoggedIn}
-                />
-              </div>
-              <CardContent className="min-w-0 p-3">
-                <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
-                {listing.section === "surfboards" && listing.board_length && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {listing.board_length}
-                  </p>
-                )}
-                <p className="text-base font-bold text-black dark:text-white mt-2">
-                  ${listing.price.toFixed(2)}
-                </p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
-                  <MapPin className="h-3 w-3" />
-                  {locationText}
-                </div>
-              </CardContent>
-            </Link>
-          </Card>
+            href={href}
+            listingId={listing.id}
+            title={capitalizeWords(listing.title)}
+            imageAlt={capitalizeWords(listing.title)}
+            listingImages={listing.listing_images ?? null}
+            price={listing.price}
+            linkLayout="unified"
+            useBlurPlaceholder={false}
+            cardClassName={listingProductCardGridClassName}
+            cardContentClassName="min-w-0 p-3"
+            subtitle={
+              listing.section === "surfboards" && listing.board_length ? (
+                <p className="text-sm text-muted-foreground mt-1">{listing.board_length}</p>
+              ) : null
+            }
+            meta={{ variant: "location", text: locationText }}
+            categoryPill={formatListingTileCategoryPillText(listing)}
+            favorites={{
+              initialFavorited: favoritedListingIds.includes(listing.id),
+              isLoggedIn,
+            }}
+          />
         )
       })}
     </div>

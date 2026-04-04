@@ -29,9 +29,18 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem("cart") || "[]")
-    setCart(storedCart)
-    setLoading(false)
+    function loadCart() {
+      try {
+        const storedCart = JSON.parse(localStorage.getItem("cart") || "[]")
+        setCart(storedCart)
+      } catch {
+        setCart([])
+      }
+      setLoading(false)
+    }
+    loadCart()
+    window.addEventListener("cartUpdated", loadCart)
+    return () => window.removeEventListener("cartUpdated", loadCart)
   }, [])
 
   function updateCart(newCart: CartItem[]) {
@@ -220,7 +229,7 @@ export default function CartPage() {
                       <span>${total.toFixed(2)}</span>
                     </div>
                     <Button className="w-full" size="lg" asChild>
-                      <Link href="/shop/checkout">
+                      <Link href="/checkout">
                         <CreditCard className="h-4 w-4 mr-2" />
                         Proceed to Checkout
                       </Link>

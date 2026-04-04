@@ -4,15 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { ShoppingCart, Check, Loader2 } from "lucide-react"
+import { mergeIntoCart } from "@/lib/cart-storage"
 import { cn } from "@/lib/utils"
-
-interface CartItem {
-  id: string
-  name: string
-  price: number
-  image_url: string | null
-  quantity: number
-}
 
 interface AddToCartButtonProps {
   item: {
@@ -42,36 +35,20 @@ export function AddToCartButton({
     setLoading(true)
 
     try {
-      // Get current cart from localStorage
-      const cart: CartItem[] = JSON.parse(localStorage.getItem("cart") || "[]")
-      
-      // Check if item already in cart
-      const existingIndex = cart.findIndex((i) => i.id === item.id)
-      
-      if (existingIndex >= 0) {
-        // Update quantity
-        const newQuantity = cart[existingIndex].quantity + quantity
-        if (newQuantity > item.stock_quantity) {
-          toast.error("Not enough stock available")
-          return
-        }
-        cart[existingIndex].quantity = newQuantity
-      } else {
-        // Add new item
-        cart.push({
+      const result = mergeIntoCart(
+        {
           id: item.id,
           name: item.name,
           price: item.price,
           image_url: item.image_url,
-          quantity,
-        })
+        },
+        quantity,
+        item.stock_quantity,
+      )
+      if (!result.ok) {
+        toast.error("Not enough stock available")
+        return
       }
-
-      // Save to localStorage
-      localStorage.setItem("cart", JSON.stringify(cart))
-
-      // Dispatch custom event to update header cart count
-      window.dispatchEvent(new CustomEvent("cartUpdated"))
 
       setAdded(true)
       toast.success("Added to cart")

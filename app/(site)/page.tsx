@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   capitalizeWords,
   formatCategory,
+  formatListingTileCategoryPillText,
   getPublicSellerDisplayName,
 } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
@@ -22,7 +23,8 @@ import {
   Store,
   UserCheck,
 } from "lucide-react"
-import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
+import { ListingTile } from "@/components/listing-tile"
+import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName, listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
@@ -190,7 +192,8 @@ export default async function HomePage() {
     .select(`
       *,
       listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles (display_name, avatar_url, sales_count, shop_verified)
+      profiles (display_name, avatar_url, sales_count, shop_verified),
+      categories (name)
     `)
     .eq("status", "active")
     .eq("section", "used")
@@ -236,7 +239,8 @@ export default async function HomePage() {
     .select(`
       *,
       listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles (display_name, avatar_url, location, sales_count, shop_verified)
+      profiles (display_name, avatar_url, location, sales_count, shop_verified),
+      categories (name)
     `)
     .eq("status", "active")
     .eq("section", "surfboards")
@@ -271,7 +275,8 @@ export default async function HomePage() {
         `
         *,
         listing_images (url, thumbnail_url, sort_order, is_primary),
-        profiles (display_name, avatar_url, sales_count, shop_verified)
+        profiles (display_name, avatar_url, sales_count, shop_verified),
+        categories (name)
       `
       )
       .in("user_id", verifiedProfileIds)
@@ -302,7 +307,7 @@ export default async function HomePage() {
     .select(`
       *,
       listing_images (url, thumbnail_url, sort_order, is_primary),
-      categories (slug),
+      categories (slug, name),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)
     .eq("status", "active")
@@ -389,41 +394,42 @@ export default async function HomePage() {
               </div>
               <HomeListingScrollRow uniformCardHeights>
                 {featuredBoards.map((board) => (
-                  <Card key={board.id} className={homeUniformScrollCardClass}>
-                    <Link
-                      href={`/boards/${board.slug || board.id}`}
-                      className={homeUniformScrollLinkClass}
-                    >
-                      <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
-                        <Image
-                          src={listingCardSrc(primaryListingImageUrl(board.listing_images))}
-                          alt={capitalizeWords(board.title)}
-                          fill
-                          sizes={homeListingScrollImageSizes}
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          placeholder="blur"
-                          blurDataURL={portraitShimmer}
-                        />
-                        <FavoriteButtonCardOverlay
-                          listingId={board.id}
-                          initialFavorited={favoritedIds.includes(board.id)}
-                          isLoggedIn={!!user}
-                        />
+                  <ListingTile
+                    key={board.id}
+                    href={`/boards/${board.slug || board.id}`}
+                    listingId={board.id}
+                    title={board.title}
+                    imageAlt={capitalizeWords(board.title)}
+                    listingImages={board.listing_images}
+                    price={Number(board.price)}
+                    linkLayout="unified"
+                    linkClassName={homeUniformScrollLinkClass}
+                    cardClassName={homeUniformScrollCardClass}
+                    cardContentClassName={homeUniformScrollBodyClass}
+                    imageSizes={homeListingScrollImageSizes}
+                    blurDataURL={portraitShimmer}
+                    titleSlot={
+                      <div className={homeUniformScrollTitleSlotClass}>
+                        <h3 className={homeListingScrollHeadingClass}>
+                          {capitalizeWords(board.title)}
+                        </h3>
                       </div>
-                      <CardContent className={homeUniformScrollBodyClass}>
-                        <div className={homeUniformScrollTitleSlotClass}>
-                          <h3 className={homeListingScrollHeadingClass}>
-                            {capitalizeWords(board.title)}
-                          </h3>
+                    }
+                    footerSlot={
+                      <div className={homeUniformScrollMetaFooterClass}>
+                        <p className="text-base font-bold text-black dark:text-white">
+                          ${board.price.toFixed(2)}
+                        </p>
+                        <div className="mt-1 flex justify-end">
+                          <ListingTileCategoryPill label={formatListingTileCategoryPillText(board)} />
                         </div>
-                        <div className={homeUniformScrollMetaFooterClass}>
-                          <p className="text-base font-bold text-black dark:text-white">
-                            ${board.price.toFixed(2)}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Link>
-                  </Card>
+                      </div>
+                    }
+                    favorites={{
+                      initialFavorited: favoritedIds.includes(board.id),
+                      isLoggedIn: !!user,
+                    }}
+                  />
                 ))}
               </HomeListingScrollRow>
             </div>
@@ -468,40 +474,36 @@ export default async function HomePage() {
               </div>
               <HomeListingScrollRow uniformCardHeights>
                 {featuredUsed.map((listing) => (
-                  <Card key={listing.id} className={homeUniformScrollCardClass}>
-                    <Link
-                      href={`/used/${listing.slug || listing.id}`}
-                      className={homeUniformScrollLinkClass}
-                    >
-                      <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
-                        <Image
-                          src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
-                          alt={capitalizeWords(listing.title)}
-                          fill
-                          sizes={homeListingScrollImageSizes}
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          placeholder="blur"
-                          blurDataURL={portraitShimmer}
-                        />
-                        <FavoriteButtonCardOverlay
-                          listingId={listing.id}
-                          initialFavorited={favoritedIds.includes(listing.id)}
-                          isLoggedIn={!!user}
-                        />
+                  <ListingTile
+                    key={listing.id}
+                    href={`/used/${listing.slug || listing.id}`}
+                    listingId={listing.id}
+                    title={listing.title}
+                    imageAlt={capitalizeWords(listing.title)}
+                    listingImages={listing.listing_images}
+                    price={Number(listing.price)}
+                    linkLayout="unified"
+                    linkClassName={homeUniformScrollLinkClass}
+                    cardClassName={homeUniformScrollCardClass}
+                    cardContentClassName={homeUniformScrollBodyClass}
+                    imageSizes={homeListingScrollImageSizes}
+                    blurDataURL={portraitShimmer}
+                    titleSlot={
+                      <div className={homeUniformScrollTitleSlotClass}>
+                        <h3 className={homeListingScrollHeadingClass}>
+                          {capitalizeWords(listing.title)}
+                        </h3>
                       </div>
-                      <CardContent className={homeUniformScrollBodyClass}>
-                        <div className={homeUniformScrollTitleSlotClass}>
-                          <h3 className={homeListingScrollHeadingClass}>
-                            {capitalizeWords(listing.title)}
-                          </h3>
-                        </div>
-                        <div className={homeUniformScrollMetaFooterClass}>
-                          <p className="text-base font-bold text-black dark:text-white">
-                            ${listing.price.toFixed(2)}
-                          </p>
-                          <div
-                            className={`mt-1 flex items-start gap-1 text-xs text-muted-foreground ${homeListingScrollMetaLinesClass}`}
-                          >
+                    }
+                    footerSlot={
+                      <div className={homeUniformScrollMetaFooterClass}>
+                        <p className="text-base font-bold text-black dark:text-white">
+                          ${listing.price.toFixed(2)}
+                        </p>
+                        <div
+                          className={`mt-1 flex items-start justify-between gap-1 text-xs text-muted-foreground ${homeListingScrollMetaLinesClass}`}
+                        >
+                          <div className="flex min-w-0 flex-1 items-start gap-1">
                             <span className="min-w-0 flex-1 break-words line-clamp-2 leading-snug">
                               {getPublicSellerDisplayName(listing.profiles)}
                             </span>
@@ -509,10 +511,15 @@ export default async function HomePage() {
                               <VerifiedBadge size="sm" className="mt-0.5 shrink-0" />
                             )}
                           </div>
+                          <ListingTileCategoryPill label={formatListingTileCategoryPillText(listing)} />
                         </div>
-                      </CardContent>
-                    </Link>
-                  </Card>
+                      </div>
+                    }
+                    favorites={{
+                      initialFavorited: favoritedIds.includes(listing.id),
+                      isLoggedIn: !!user,
+                    }}
+                  />
                 ))}
               </HomeListingScrollRow>
             </div>
@@ -563,65 +570,68 @@ export default async function HomePage() {
                   const sellerLabel =
                     profile.shop_name?.trim() || getPublicSellerDisplayName(profile)
                   return (
-                    <Card
+                    <ListingTile
                       key={`${profile.id}-${listing.id}`}
-                      className={homeListingScrollCardClass}
-                    >
-                      <Link href={href} className={homeListingScrollLinkClass}>
-                        <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
-                          <Image
-                            src={listingCardSrc(primaryListingImageUrl(listing.listing_images))}
-                            alt={capitalizeWords(listing.title)}
-                            fill
-                            sizes={homeListingScrollImageSizes}
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            placeholder="blur"
-                            blurDataURL={portraitShimmer}
-                          />
-                          <FavoriteButtonCardOverlay
-                            listingId={listing.id}
-                            initialFavorited={favoritedIds.includes(listing.id)}
-                            isLoggedIn={!!user}
-                          />
+                      href={href}
+                      listingId={listing.id}
+                      title={listing.title}
+                      imageAlt={capitalizeWords(listing.title)}
+                      listingImages={listing.listing_images}
+                      price={Number(listing.price)}
+                      linkLayout="unified"
+                      linkClassName={homeListingScrollLinkClass}
+                      cardClassName={homeListingScrollCardClass}
+                      cardContentClassName={homeListingScrollBodyClass}
+                      imageSizes={homeListingScrollImageSizes}
+                      blurDataURL={portraitShimmer}
+                      titleSlot={
+                        <HomeListingTitleSlot>
+                          <h3 className={homeListingScrollHeadingClass}>
+                            {capitalizeWords(listing.title)}
+                          </h3>
+                        </HomeListingTitleSlot>
+                      }
+                      footerSlot={
+                        <div className={homeListingScrollMetaFooterClass}>
+                          <p className="text-base font-bold text-black dark:text-white">
+                            ${Number(listing.price).toFixed(2)}
+                          </p>
+                          <div className="mt-1 flex justify-end">
+                            <ListingTileCategoryPill label={formatListingTileCategoryPillText(listing)} />
+                          </div>
                         </div>
-                        <CardContent className={homeListingScrollBodyClass}>
-                          <HomeListingTitleSlot>
-                            <h3 className={homeListingScrollHeadingClass}>
-                              {capitalizeWords(listing.title)}
-                            </h3>
-                          </HomeListingTitleSlot>
-                          <div className={homeListingScrollMetaFooterClass}>
-                            <p className="text-base font-bold text-black dark:text-white">
-                              ${Number(listing.price).toFixed(2)}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Link>
-                      <div className="shrink-0 border-t border-border/60 bg-muted/40 px-3 py-2">
-                        <Link
-                          href={`/sellers/${profile.id}`}
-                          className="flex items-center gap-3 rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-muted/80"
-                        >
-                          <Avatar className="h-10 w-10 border border-border shrink-0">
-                            <AvatarImage
-                              src={profile.shop_logo_url || profile.avatar_url || ""}
-                              alt=""
-                            />
-                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                              {sellerLabel.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1 text-left">
-                            <p className="font-medium text-sm line-clamp-1 text-foreground">{sellerLabel}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <UserCheck className="h-3 w-3 shrink-0" />
-                              Verified seller
-                            </p>
-                          </div>
-                          <VerifiedBadge size="md" className="shrink-0" />
-                        </Link>
-                      </div>
-                    </Card>
+                      }
+                      favorites={{
+                        initialFavorited: favoritedIds.includes(listing.id),
+                        isLoggedIn: !!user,
+                      }}
+                      trailingInsideCard={
+                        <div className="shrink-0 border-t border-border/60 bg-muted/40 px-3 py-2">
+                          <Link
+                            href={`/sellers/${profile.id}`}
+                            className="flex items-center gap-3 rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-muted/80"
+                          >
+                            <Avatar className="h-10 w-10 border border-border shrink-0">
+                              <AvatarImage
+                                src={profile.shop_logo_url || profile.avatar_url || ""}
+                                alt=""
+                              />
+                              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                                {sellerLabel.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1 text-left">
+                              <p className="font-medium text-sm line-clamp-1 text-foreground">{sellerLabel}</p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <UserCheck className="h-3 w-3 shrink-0" />
+                                Verified seller
+                              </p>
+                            </div>
+                            <VerifiedBadge size="md" className="shrink-0" />
+                          </Link>
+                        </div>
+                      }
+                    />
                   )
                 })}
               </HomeListingScrollRow>
@@ -697,12 +707,7 @@ export default async function HomePage() {
                                   &nbsp;
                                 </span>
                               </div>
-                              <Badge
-                                variant="outline"
-                                className="shrink-0 self-start text-[10px] px-1.5 py-0"
-                              >
-                                {formatCategory(category.name)}
-                              </Badge>
+                              <ListingTileCategoryPill label={formatCategory(category.name)} />
                             </div>
                           </div>
                         </CardContent>
@@ -719,69 +724,66 @@ export default async function HomePage() {
                 }
 
                 const href = listingPublicHref(listing)
-                const imgUrl = primaryListingImageUrl(listing.listing_images)
                 const showBoardLength = listing.section === "surfboards"
 
                 return (
-                  <Card key={category.href} className={homeUniformScrollCardClass}>
-                    <Link href={href} className={homeUniformScrollLinkClass}>
-                      <div className="aspect-[3/4] w-full shrink-0 relative bg-muted overflow-hidden">
-                        <Image
-                          src={listingCardSrc(imgUrl)}
-                          alt={capitalizeWords(listing.title)}
-                          fill
-                          sizes={homeListingScrollImageSizes}
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          placeholder="blur"
-                          blurDataURL={portraitShimmer}
-                        />
-                        <FavoriteButtonCardOverlay
-                          listingId={listing.id}
-                          initialFavorited={favoritedIds.includes(listing.id)}
-                          isLoggedIn={!!user}
-                        />
-                      </div>
-                      <CardContent className={homeUniformScrollBodyClass}>
-                        <div className={homeUniformScrollTitleSlotClass}>
-                          <h3 className={homeListingScrollHeadingClass}>
-                            {capitalizeWords(listing.title)}
-                          </h3>
-                          {showBoardLength ? (
-                            <p
-                              className={`mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words ${listing.board_length ? "" : "invisible"}`}
-                              aria-hidden={!listing.board_length}
-                            >
-                              {listing.board_length ?? "\u00a0"}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className={homeUniformScrollMetaFooterClass}>
-                          <p className="text-base font-bold text-black dark:text-white">
-                            ${Number(listing.price).toFixed(2)}
-                          </p>
-                          <div
-                            className={`mt-1 flex items-start justify-between gap-1 ${homeBrowseCategoryMetaLinesClass}`}
+                  <ListingTile
+                    key={category.href}
+                    href={href}
+                    listingId={listing.id}
+                    title={listing.title}
+                    imageAlt={capitalizeWords(listing.title)}
+                    listingImages={listing.listing_images}
+                    price={Number(listing.price)}
+                    linkLayout="unified"
+                    linkClassName={homeUniformScrollLinkClass}
+                    cardClassName={homeUniformScrollCardClass}
+                    cardContentClassName={homeUniformScrollBodyClass}
+                    imageSizes={homeListingScrollImageSizes}
+                    blurDataURL={portraitShimmer}
+                    titleSlot={
+                      <div className={homeUniformScrollTitleSlotClass}>
+                        <h3 className={homeListingScrollHeadingClass}>
+                          {capitalizeWords(listing.title)}
+                        </h3>
+                        {showBoardLength ? (
+                          <p
+                            className={`mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words ${listing.board_length ? "" : "invisible"}`}
+                            aria-hidden={!listing.board_length}
                           >
-                            <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1 overflow-hidden">
-                              <span className="min-w-0 flex-1 break-words text-xs text-muted-foreground line-clamp-2 leading-snug">
-                                {getPublicSellerDisplayName(listing.profiles)}
-                              </span>
-                              {listing.profiles?.shop_verified && (
-                                <VerifiedBadge size="sm" className="mt-0.5 shrink-0" />
-                              )}
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className="shrink-0 self-start text-[10px] px-1.5 py-0"
-                            >
-                              {formatCategory(category.name)}
-                            </Badge>
+                            {listing.board_length ?? "\u00a0"}
+                          </p>
+                        ) : null}
+                      </div>
+                    }
+                    footerSlot={
+                      <div className={homeUniformScrollMetaFooterClass}>
+                        <p className="text-base font-bold text-black dark:text-white">
+                          ${Number(listing.price).toFixed(2)}
+                        </p>
+                        <div
+                          className={`mt-1 flex items-start justify-between gap-1 ${homeBrowseCategoryMetaLinesClass}`}
+                        >
+                          <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1 overflow-hidden">
+                            <span className="min-w-0 flex-1 break-words text-xs text-muted-foreground line-clamp-2 leading-snug">
+                              {getPublicSellerDisplayName(listing.profiles)}
+                            </span>
+                            {listing.profiles?.shop_verified && (
+                              <VerifiedBadge size="sm" className="mt-0.5 shrink-0" />
+                            )}
                           </div>
+                          <ListingTileCategoryPill
+                            label={formatListingTileCategoryPillText(listing) ?? formatCategory(category.name)}
+                          />
                         </div>
-                      </CardContent>
-                    </Link>
-                    <div className={homeUniformCategoryBrowseSlotClass} aria-hidden />
-                  </Card>
+                      </div>
+                    }
+                    favorites={{
+                      initialFavorited: favoritedIds.includes(listing.id),
+                      isLoggedIn: !!user,
+                    }}
+                    trailingInsideCard={<div className={homeUniformCategoryBrowseSlotClass} aria-hidden />}
+                  />
                 )
               })}
             </HomeListingScrollRow>

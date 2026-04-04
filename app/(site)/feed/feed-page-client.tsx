@@ -1,13 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { formatDistanceToNowStrict } from "date-fns"
-import { Card, CardContent } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
-import { capitalizeWords } from "@/lib/listing-labels"
+import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
+import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { RecentFeedClient, type RecentListing } from "@/app/(site)/used/recent/recent-feed-client"
 import { Package } from "lucide-react"
@@ -79,8 +78,6 @@ function soldRelativeLabel(iso: string): string {
 }
 
 function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
-  const primaryImage =
-    listing.listing_images?.find((img) => img.is_primary) || listing.listing_images?.[0]
   const href = getListingHref(listing)
   const locationText =
     listing.city && listing.state
@@ -89,45 +86,35 @@ function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
   const timeLine = soldRelativeLabel(listing.sold_at)
 
   return (
-    <Card className={listingProductCardGridClassName}>
-      <Link href={href} className="min-w-0 flex-1 flex flex-col">
-        <div className="aspect-[3/4] w-full relative bg-muted overflow-hidden">
-          {primaryImage?.url ? (
-            <Image
-              src={primaryImage.url || "/placeholder.svg"}
-              alt={capitalizeWords(listing.title)}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300 [filter:grayscale(30%)]"
-              style={{ objectFit: "cover" }}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              No Image
-            </div>
-          )}
-          <div
-            className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-            style={{ backgroundColor: "#111" }}
-          >
-            SOLD
-          </div>
-        </div>
-        <CardContent className="min-w-0 p-3">
-          <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{capitalizeWords(listing.title)}</h3>
-          {listing.section === "surfboards" && listing.board_length && (
-            <p className="text-sm text-muted-foreground mt-1">{listing.board_length}</p>
-          )}
-          <p className="text-base font-semibold text-emerald-600 dark:text-emerald-400 mt-2">
-            Sold for ${listing.soldPrice.toFixed(2)}
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            {timeLine}
-            <span className="text-muted-foreground/80"> · </span>
-            {locationText}
-          </p>
-        </CardContent>
-      </Link>
-    </Card>
+    <ListingTile
+      href={href}
+      listingId={listing.id}
+      title={capitalizeWords(listing.title)}
+      imageAlt={capitalizeWords(listing.title)}
+      listingImages={listing.listing_images ?? null}
+      price={listing.price}
+      linkLayout="unified"
+      useBlurPlaceholder={false}
+      imageGrayscale
+      cardClassName={listingProductCardGridClassName}
+      cardContentClassName="min-w-0 p-3"
+      variant="soldFeed"
+      soldPrice={listing.soldPrice}
+      subtitle={
+        listing.section === "surfboards" && listing.board_length ? (
+          <p className="text-sm text-muted-foreground mt-1">{listing.board_length}</p>
+        ) : null
+      }
+      soldFootnote={
+        <>
+          {timeLine}
+          <span className="text-muted-foreground/80"> · </span>
+          {locationText}
+        </>
+      }
+      categoryPill={formatListingTileCategoryPillText(listing)}
+      showFavorites={false}
+    />
   )
 }
 
