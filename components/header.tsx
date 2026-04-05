@@ -626,20 +626,20 @@ export function Header() {
             </Link>
 
             <Link
-              href={user ? "/saved" : `/auth/login?redirect=${encodeURIComponent("/saved")}`}
+              href={user ? "/favorites" : `/auth/login?redirect=${encodeURIComponent("/favorites")}`}
               onClick={
                 user
                   ? undefined
                   : (e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                       e.preventDefault()
-                      openLogin("/saved")
+                      openLogin("/favorites")
                     }
               }
             >
               <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                 <Heart className="h-6 w-6" />
-                <span className="sr-only">Saved</span>
+                <span className="sr-only">Favorites</span>
               </Button>
             </Link>
 
@@ -990,21 +990,21 @@ export function Header() {
                 </Button>
               </div>
               <Link
-                href={user ? "/saved" : "/auth/login?redirect=" + encodeURIComponent("/saved")}
+                href={user ? "/favorites" : "/auth/login?redirect=" + encodeURIComponent("/favorites")}
                 onClick={
                   user
                     ? onMobileDrawerLinkClick
                     : (e) => {
                         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                         e.preventDefault()
-                        openLogin("/saved")
+                        openLogin("/favorites")
                         queueMicrotask(() => setMobileMenuOpen(false))
                       }
                 }
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
               >
                 <Heart className="h-5 w-5 shrink-0" />
-                Saved
+                Favorites
               </Link>
               {!user && (
                 <>

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
@@ -19,30 +19,42 @@ import {
   MessageSquare,
   Calendar,
   Package,
-  ArrowLeft,
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
 import { FollowButton } from "@/components/follows/follow-button"
 
+const PROFILE_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const sellerProfileSelect =
+  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count, follower_count"
+
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
 }) {
-  const { id } = await params
+  const { slug } = await params
   const supabase = await createClient()
-  const { data: shop } = await supabase
-    .from("profiles")
-    .select("shop_name, display_name, shop_description")
-    .eq("id", id)
-    .single()
+  const byId = PROFILE_UUID_RE.test(slug)
+  const { data: shop } = byId
+    ? await supabase
+        .from("profiles")
+        .select("shop_name, display_name, shop_description")
+        .eq("id", slug)
+        .maybeSingle()
+    : await supabase
+        .from("profiles")
+        .select("shop_name, display_name, shop_description")
+        .eq("seller_slug", slug)
+        .maybeSingle()
 
   return {
     title: shop
-? `${shop.shop_name || shop.display_name} - Reswell`
-  : "Seller - Reswell",
+      ? `${shop.shop_name || shop.display_name} - Reswell`
+      : "Seller - Reswell",
     description: shop?.shop_description || "View this seller on Reswell.",
   }
 }
@@ -50,23 +62,60 @@ export async function generateMetadata({
 export default async function SellerProfilePage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
 }) {
-  const { id } = await params
+  const { slug } = await params
   const supabase = await createClient()
 
-  // Fetch the shop profile (public fields only; never expose email or role flags)
-  const { data: shop, error } = await supabase
-    .from("profiles")
-    .select(
-      "id, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
-    )
-    .eq("id", id)
-    .single()
+  const byId = PROFILE_UUID_RE.test(slug)
 
-  if (error || !shop) {
+  let shop: {
+    id: string
+    seller_slug: string
+    display_name: string | null
+    avatar_url: string | null
+    location: string | null
+    city: string | null
+    bio: string | null
+    created_at: string
+    updated_at: string
+    is_shop: boolean | null
+    shop_name: string | null
+    shop_description: string | null
+    shop_banner_url: string | null
+    shop_logo_url: string | null
+    shop_verified: boolean | null
+    shop_website: string | null
+    shop_phone: string | null
+    shop_address: string | null
+    sales_count: number | null
+    follower_count?: number | null
+  } | null = null
+
+  if (byId) {
+    const { data } = await supabase
+      .from("profiles")
+      .select(sellerProfileSelect)
+      .eq("id", slug)
+      .maybeSingle()
+    if (data?.seller_slug) {
+      redirect(`/sellers/${data.seller_slug}`)
+    }
+    shop = data
+  } else {
+    const { data } = await supabase
+      .from("profiles")
+      .select(sellerProfileSelect)
+      .eq("seller_slug", slug)
+      .maybeSingle()
+    shop = data
+  }
+
+  if (!shop) {
     notFound()
   }
+
+  const id = shop.id
 
   // Fetch ALL of the seller's listings (current + past)
   const { data: listings } = await supabase
@@ -109,7 +158,7 @@ export default async function SellerProfilePage({
   // Follow status for the current user
   const isOwnProfile = user?.id === id
   let isFollowing = false
-  const followerCount = (shop as any).follower_count ?? 0
+  const followerCount = (shop as { follower_count?: number }).follower_count ?? 0
   if (user && !isOwnProfile) {
     const { data: follow } = await supabase
       .from("seller_follows")
@@ -230,6 +279,7 @@ export default async function SellerProfilePage({
                   <FollowButton
                     sellerId={shop.id}
                     sellerName={displayName}
+                    sellerSlug={shop.seller_slug}
                     sellerCity={shop.city || undefined}
                     initialFollowing={isFollowing}
                     initialFollowerCount={followerCount}

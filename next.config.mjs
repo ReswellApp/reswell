@@ -81,6 +81,7 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/saved", destination: "/favorites", permanent: true },
       // Legacy /used/* URLs → flat marketplace routes + /gear
       {
         source: "/used/checkout/success",

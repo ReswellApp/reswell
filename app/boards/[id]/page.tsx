@@ -56,6 +56,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
+import { sellerProfileHref } from "@/lib/seller-slug"
 
 function getPrimaryImageUrl(
   images: Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }> | null | undefined,
@@ -119,7 +120,7 @@ export default async function BoardDetailPage(props: {
       select: `
         *,
         listing_images (id, url, is_primary, sort_order),
-        profiles (id, display_name, avatar_url, location, created_at, shop_verified, sales_count)
+        profiles (id, seller_slug, is_shop, shop_name, display_name, avatar_url, location, created_at, shop_verified, sales_count)
       `,
       section: "surfboards",
     },
@@ -142,6 +143,9 @@ export default async function BoardDetailPage(props: {
   if (p && typeof p === "object") {
     board.profiles = {
       id: p.id,
+      seller_slug: p.seller_slug,
+      is_shop: p.is_shop,
+      shop_name: p.shop_name,
       display_name: p.display_name,
       avatar_url: p.avatar_url,
       location: p.location,
@@ -509,7 +513,7 @@ export default async function BoardDetailPage(props: {
                 <CardContent className="p-4">
                   <div className="flex flex-col gap-4">
                     <Link
-                      href={`/sellers/${board.profiles?.id}`}
+                      href={sellerProfileHref(board.profiles)}
                       className="flex items-center gap-4"
                     >
                       <Avatar className="h-12 w-12 shrink-0">
@@ -570,7 +574,7 @@ export default async function BoardDetailPage(props: {
                           asChild
                           className="min-h-touch flex-1 justify-center"
                         >
-                          <Link href={`/sellers/${board.profiles?.id}`}>
+                          <Link href={sellerProfileHref(board.profiles)}>
                             View Profile
                           </Link>
                         </Button>

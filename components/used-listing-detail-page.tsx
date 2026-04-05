@@ -39,6 +39,7 @@ import {
   ListingSoldOwnerNotice,
 } from "@/components/listing-sold-detail-notice"
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
+import { sellerProfileHref } from "@/lib/seller-slug"
 
 const ImageGallery = dynamic(
   () => import("@/components/image-gallery").then((m) => ({ default: m.ImageGallery })),
@@ -63,7 +64,7 @@ export async function UsedListingDetailPage({
     select: `
         *,
         listing_images (id, url, is_primary, sort_order),
-        profiles (id, display_name, avatar_url, location, created_at, shop_verified, sales_count),
+        profiles (id, seller_slug, is_shop, shop_name, display_name, avatar_url, location, created_at, shop_verified, sales_count),
         categories (name, slug)
       `,
     section: "used",
@@ -77,6 +78,9 @@ export async function UsedListingDetailPage({
   if (p && typeof p === "object") {
     listing.profiles = {
       id: p.id,
+      seller_slug: p.seller_slug,
+      is_shop: p.is_shop,
+      shop_name: p.shop_name,
       display_name: p.display_name,
       avatar_url: p.avatar_url,
       location: p.location,
@@ -387,7 +391,7 @@ export async function UsedListingDetailPage({
               <CardContent className="p-4">
                 <div className="flex flex-col gap-4">
                   <Link
-                    href={`/sellers/${listing.profiles?.id}`}
+                    href={sellerProfileHref(listing.profiles)}
                     className="flex items-center gap-4"
                   >
                     <Avatar className="h-12 w-12 shrink-0">
@@ -455,7 +459,7 @@ export async function UsedListingDetailPage({
                         asChild
                         className="min-h-touch flex-1 justify-center"
                       >
-                        <Link href={`/sellers/${listing.profiles?.id}`}>View Profile</Link>
+                        <Link href={sellerProfileHref(listing.profiles)}>View Profile</Link>
                       </Button>
                     </div>
                   )}

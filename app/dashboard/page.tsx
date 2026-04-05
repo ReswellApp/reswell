@@ -121,7 +121,7 @@ export default async function DashboardPage() {
       href: "/dashboard/listings",
     },
     {
-      name: "Saved Items",
+      name: "Favorites",
       value: favoriteCount || 0,
       icon: Heart,
       href: "/dashboard/favorites",
@@ -307,7 +307,7 @@ export default async function DashboardPage() {
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
               <Link href="/dashboard/favorites">
                 <Heart className="h-6 w-6 mb-2" />
-                Saved Items
+                Favorites
               </Link>
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>

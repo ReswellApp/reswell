@@ -45,6 +45,7 @@ export default async function FollowingFeedPage() {
           listing_images (url, is_primary),
           seller:profiles!listings_user_id_fkey (
             id,
+            seller_slug,
             display_name,
             shop_name,
             avatar_url,
@@ -69,6 +70,7 @@ export default async function FollowingFeedPage() {
     .from("profiles")
     .select(`
       id,
+      seller_slug,
       display_name,
       shop_name,
       avatar_url,

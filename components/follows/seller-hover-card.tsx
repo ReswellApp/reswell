@@ -10,9 +10,12 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin, Star, Package, ExternalLink } from "lucide-react"
 import { FollowButton } from "@/components/follows/follow-button"
 import { createClient } from "@/lib/supabase/client"
+import { sellerProfileHref } from "@/lib/seller-slug"
 
 interface SellerHoverCardProps {
   sellerId: string
+  /** When known (e.g. from listing join), avoids waiting on profile fetch for links. */
+  sellerSlug?: string | null
   sellerName: string
   sellerCity?: string
   children: React.ReactNode
@@ -23,8 +26,10 @@ interface SellerHoverCardProps {
 }
 
 interface SellerData {
+  seller_slug: string | null
   display_name: string | null
   shop_name: string | null
+  is_shop: boolean | null
   avatar_url: string | null
   shop_logo_url: string | null
   city: string | null
@@ -50,6 +55,7 @@ interface ReviewStats {
 
 export function SellerHoverCard({
   sellerId,
+  sellerSlug: sellerSlugProp,
   sellerName,
   sellerCity,
   children,
@@ -73,7 +79,7 @@ export function SellerHoverCard({
     const [profileRes, listingsRes, reviewsRes, followStatusRes] = await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name, shop_name, avatar_url, shop_logo_url, city, shop_address, follower_count, shop_verified, created_at")
+        .select("seller_slug, is_shop, display_name, shop_name, avatar_url, shop_logo_url, city, shop_address, follower_count, shop_verified, created_at")
         .eq("id", sellerId)
         .single(),
       supabase
@@ -124,6 +130,9 @@ export function SellerHoverCard({
   const displayName = seller?.shop_name || seller?.display_name || sellerName
   const avatarSrc = seller?.shop_logo_url || seller?.avatar_url || ""
   const location = seller?.shop_address || seller?.city || sellerCity
+  const shopProfilePath = sellerProfileHref({
+    seller_slug: seller?.seller_slug ?? sellerSlugProp,
+  })
 
   function getListingHref(l: RecentListing) {
     const id = l.slug || l.id
@@ -163,7 +172,7 @@ export function SellerHoverCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Link
-                  href={`/sellers/${sellerId}`}
+                  href={shopProfilePath}
                   className="font-semibold text-foreground text-sm hover:underline truncate"
                 >
                   {displayName}
@@ -210,6 +219,7 @@ export function SellerHoverCard({
           <div className="flex gap-2 mt-3">
             <FollowButton
               sellerId={sellerId}
+              sellerSlug={seller?.seller_slug ?? sellerSlugProp}
               sellerName={displayName}
               sellerCity={location}
               initialFollowing={following}
@@ -220,7 +230,7 @@ export function SellerHoverCard({
               className="flex-1"
             />
             <Button variant="outline" size="sm" asChild className="flex-1">
-              <Link href={`/sellers/${sellerId}`}>
+              <Link href={shopProfilePath}>
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 View shop
               </Link>

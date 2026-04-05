@@ -11,6 +11,7 @@ import { FollowButton } from "@/components/follows/follow-button"
 import { MapPin, Users, Loader2, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { sellerProfileHref } from "@/lib/seller-slug"
 
 type Listing = {
   id: string
@@ -24,6 +25,7 @@ type Listing = {
   listing_images?: { url: string; is_primary: boolean }[]
   seller: {
     id: string
+    seller_slug: string | null
     display_name: string | null
     shop_name: string | null
     avatar_url: string | null
@@ -33,6 +35,7 @@ type Listing = {
 
 type SuggestedSeller = {
   id: string
+  seller_slug: string | null
   display_name: string | null
   shop_name: string | null
   avatar_url: string | null
@@ -125,7 +128,14 @@ export function FollowingFeedClient({
   })
 
   // Group by seller for display
-  const grouped: { sellerId: string; sellerName: string; sellerCity: string | null; avatarUrl: string | null; listings: Listing[] }[] = []
+  const grouped: {
+    sellerId: string
+    sellerSlug: string | null
+    sellerName: string
+    sellerCity: string | null
+    avatarUrl: string | null
+    listings: Listing[]
+  }[] = []
   const seen = new Set<string>()
   for (const l of filtered) {
     const sid = l.seller?.id
@@ -134,6 +144,7 @@ export function FollowingFeedClient({
       seen.add(sid)
       grouped.push({
         sellerId: sid,
+        sellerSlug: l.seller.seller_slug,
         sellerName: l.seller.shop_name || l.seller.display_name || "Seller",
         sellerCity: l.seller.city,
         avatarUrl: l.seller.avatar_url,
@@ -144,13 +155,14 @@ export function FollowingFeedClient({
   }
 
   // Re-group properly (above algo is wrong for out-of-order sellers)
-  const groupMap = new Map<string, typeof grouped[0]>()
+  const groupMap = new Map<string, (typeof grouped)[0]>()
   for (const l of filtered) {
     const sid = l.seller?.id
     if (!sid) continue
     if (!groupMap.has(sid)) {
       groupMap.set(sid, {
         sellerId: sid,
+        sellerSlug: l.seller.seller_slug,
         sellerName: l.seller.shop_name || l.seller.display_name || "Seller",
         sellerCity: l.seller.city,
         avatarUrl: l.seller.avatar_url,
@@ -241,7 +253,9 @@ export function FollowingFeedClient({
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <Link
-                      href={`/sellers/${group.sellerId}`}
+                      href={sellerProfileHref({
+                        seller_slug: group.sellerSlug,
+                      })}
                       className="font-semibold text-sm hover:underline"
                     >
                       {group.sellerName}
@@ -385,7 +399,7 @@ function EmptyState({
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <Link
-                      href={`/sellers/${seller.id}`}
+                      href={sellerProfileHref(seller)}
                       className="font-medium text-sm hover:underline truncate block"
                     >
                       {name}
@@ -402,6 +416,7 @@ function EmptyState({
                   </div>
                   <FollowButton
                     sellerId={seller.id}
+                    sellerSlug={seller.seller_slug}
                     sellerName={name}
                     sellerCity={seller.city || undefined}
                     initialFollowing={false}
