@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -6,12 +7,43 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
 import { listingDetailPath } from "@/lib/listing-query"
+import { metadataForListingDetail } from "@/lib/listing-metadata"
 import { isUUID } from "@/lib/slugify"
 import { ArrowLeft, Package, Truck, Shield, RotateCcw } from "lucide-react"
 import { AddToCartButton } from "@/components/add-to-cart-button"
 import { QuantitySelector } from "@/components/quantity-selector"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
 import { formatCategory } from "@/lib/listing-labels"
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const params = await props.params
+  if (!isUUID(params.id)) {
+    return { title: "Product — Reswell" }
+  }
+  const supabase = await createClient()
+  const { data: listing } = await supabase
+    .from("listings")
+    .select(
+      "id, title, description, price, status, section, slug, listing_images (url, is_primary), categories (name, slug)",
+    )
+    .eq("id", params.id)
+    .eq("section", "new")
+    .maybeSingle()
+
+  if (!listing) {
+    return { title: "Product — Reswell" }
+  }
+
+  const price = Number(listing.price)
+  const pricePrefix = Number.isFinite(price) ? `$${price.toFixed(2)}` : undefined
+
+  return metadataForListingDetail(
+    { ...listing, section: "new" as const },
+    { pricePrefix },
+  )
+}
 
 export default async function ProductPage(props: {
   params: Promise<{ id: string }>

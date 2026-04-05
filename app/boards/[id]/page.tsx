@@ -57,18 +57,7 @@ import { getBrandBySlug } from "@/lib/brands/server"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
-
-function getPrimaryImageUrl(
-  images: Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }> | null | undefined,
-): string | undefined {
-  if (!images?.length) return undefined
-  const sorted = images.slice().sort(
-    (a, b) =>
-      (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  )
-  const url = sorted[0]?.url?.trim()
-  return url || undefined
-}
+import { metadataForListingDetail } from "@/lib/listing-metadata"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -76,7 +65,8 @@ export async function generateMetadata(props: {
   const params = await props.params
   const supabase = await createClient()
   const { listing: board } = await findListingByParam(supabase, params.id, {
-    select: "id, slug, title, description, status, listing_images (url, is_primary, sort_order), section",
+    select:
+      "id, slug, title, description, status, listing_images (url, is_primary, sort_order), categories (name, slug), section",
     section: "surfboards",
   })
 
@@ -84,27 +74,7 @@ export async function generateMetadata(props: {
     return { title: "Surfboard Listing" }
   }
 
-  const soldMeta = board.status === "sold"
-  const title = `${capitalizeWords(board.title || "Surfboard Listing")}${soldMeta ? " · Sold" : ""}`
-  const description = (board.description || "View this surfboard listing on Reswell marketplace.").slice(0, 180)
-  const imageUrl = getPrimaryImageUrl(board.listing_images)
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      images: imageUrl ? [{ url: imageUrl }] : undefined,
-    },
-    twitter: {
-      card: imageUrl ? "summary_large_image" : "summary",
-      title,
-      description,
-      images: imageUrl ? [imageUrl] : undefined,
-    },
-  }
+  return metadataForListingDetail(board)
 }
 
 export default async function BoardDetailPage(props: {
