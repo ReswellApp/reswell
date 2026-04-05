@@ -590,7 +590,7 @@ export function Header() {
                         clearNavSearchQuery()
                         setSearchOpen(false)
                       }}
-                      placeholder="Search gear, boards, wetsuits..."
+                      placeholder="Search boards, gear, wetsuits…"
                       section=""
                       listboxId="nav-search-suggestions-tablet"
                       leftIcon={<Search className="h-4 w-4 text-muted-foreground" />}
@@ -948,7 +948,7 @@ export function Header() {
                 <Input
                   ref={mobileSearchRef}
                   type="search"
-                  placeholder="Search..."
+                  placeholder="Search boards, gear, wetsuits…"
                   className="min-w-0 flex-1 rounded-lg border-border min-h-touch"
                   onKeyDown={async (e) => {
                     if (e.key === "Enter") {
