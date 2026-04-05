@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
-import { RecentFeedClient, type RecentListing } from "@/app/(site)/used/recent/recent-feed-client"
+import { RecentFeedClient, type RecentListing } from "@/app/used/recent/recent-feed-client"
 import { Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 

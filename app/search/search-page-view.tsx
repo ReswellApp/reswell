@@ -1,8 +1,8 @@
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { SearchSectionFilters } from "./search-section-filters"
-import type { RecentListing } from "@/app/(site)/used/recent/recent-feed-client"
-import { RecentFeedClient } from "@/app/(site)/used/recent/recent-feed-client"
+import type { RecentListing } from "@/app/used/recent/recent-feed-client"
+import { RecentFeedClient } from "@/app/used/recent/recent-feed-client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import {
   meaningfulSearchTerms,
