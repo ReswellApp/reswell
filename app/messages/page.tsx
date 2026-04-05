@@ -210,7 +210,7 @@ function MessagesContent() {
                           : listing.section === 'used'
                             ? `/${listingSlugOrId}`
                             : `/shop/${n.listing_id}`
-                        : '/saved'
+                        : '/favorites'
                       return (
                         <Link key={n.id} href={href}>
                           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">

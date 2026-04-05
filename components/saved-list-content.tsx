@@ -116,7 +116,7 @@ export function SavedListContent() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground mb-2">Saved Items</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-2">Favorites</h1>
       <p className="text-muted-foreground mb-6">Your collection of favorite gear and boards</p>
 
       {loading ? (
@@ -136,9 +136,9 @@ export function SavedListContent() {
         <Card>
           <CardContent className="p-12 text-center">
             <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No saved items</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No favorites yet</h3>
             <p className="text-muted-foreground mb-4">
-              Items you save will appear here for easy access
+              Items you favorite will appear here for easy access
             </p>
             <Link href="/gear">
               <Button>Browse Listings</Button>
