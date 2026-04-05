@@ -1,4 +1,4 @@
-/** Curated surfpack/bag brands shown in the /used/backpacks filter (plus any brands from live listings). */
+/** Curated surfpack/bag brands shown in the /backpacks filter (plus any brands from live listings). */
 export const SURFPACKS_BAGS_CURATED_BRANDS = ["Channel Islands", "Colby Plus"] as const
 
 export function surfpacksBagsBrandOptions(distinctFromListings: string[]): string[] {

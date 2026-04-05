@@ -63,7 +63,7 @@ export async function POST(req: Request) {
 
   const conditionLabels: Record<string, string> = {
     new: "New (never used)",
-    like_new: "Like New",
+    like_new: "Excellent",
     good: "Good",
     fair: "Fair",
   }

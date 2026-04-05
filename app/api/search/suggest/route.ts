@@ -78,13 +78,16 @@ export async function GET(request: NextRequest) {
       .or(textOr)
       .order("created_at", { ascending: false })
       .limit(TITLE_SUGGEST_FETCH),
-    supabase
-      .from("categories")
-      .select("name, slug")
-      .in("section", sections)
-      .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
-      .order("name", { ascending: true })
-      .limit(MAX_CATEGORIES * 3),
+    (() => {
+      let q = supabase.from("categories").select("name, slug")
+      if (section === "used") q = q.eq("gear", true)
+      else if (section === "surfboards") q = q.eq("board", true)
+      else q = q.or("board.eq.true,gear.eq.true")
+      return q
+        .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+        .order("name", { ascending: true })
+        .limit(MAX_CATEGORIES * 3)
+    })(),
     supabase
       .from("listings")
       .select("brand")

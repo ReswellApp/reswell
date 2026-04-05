@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
-import type { RecentListing } from "@/app/used/recent/recent-feed-client"
+import type { RecentListing } from "@/components/recent-feed-client"
 import { FeedPageClient, type SoldFeedListing, type SoldTickerItem } from "./feed-page-client"
 
 const LIMIT = 50

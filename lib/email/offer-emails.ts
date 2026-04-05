@@ -1,4 +1,5 @@
 import { publicSiteOrigin } from '@/lib/public-site-origin'
+import { listingDetailHref, peerListingCheckoutHref } from '@/lib/listing-href'
 
 /**
  * Reswell Offer & Negotiation — email notification templates.
@@ -107,7 +108,7 @@ export function offerAcceptedEmail(opts: {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
-  const checkoutUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}/checkout?offer_id=${opts.offerId}`
+  const checkoutUrl = `${publicSiteOrigin()}${peerListingCheckoutHref(opts.listingSection, opts.listingSlug, opts.offerId)}`
 
   return {
     subject: `Your offer was accepted! Complete your purchase on "${opts.listingTitle}"`,
@@ -141,7 +142,11 @@ export function offerDeclinedEmail(opts: {
   offeredAmount: number
   sellerNote: string | null
 }): { subject: string; text: string } {
-  const listingUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}`
+  const listingUrl = `${publicSiteOrigin()}${listingDetailHref({
+    section: opts.listingSection,
+    slug: opts.listingSlug,
+    id: opts.listingSlug,
+  })}`
 
   return {
     subject: `Your offer on "${opts.listingTitle}" was declined`,
@@ -164,7 +169,11 @@ export function offerExpiredEmail(opts: {
   offeredAmount: number
   role: 'buyer' | 'seller'
 }): { subject: string; text: string } {
-  const listingUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}`
+  const listingUrl = `${publicSiteOrigin()}${listingDetailHref({
+    section: opts.listingSection,
+    slug: opts.listingSlug,
+    id: opts.listingSlug,
+  })}`
 
   const buyerText = `The offer of ${usd(opts.offeredAmount)} on "${opts.listingTitle}" has expired with no response.
 
@@ -216,7 +225,7 @@ export function paymentDeadlineWarningEmail(opts: {
   agreedAmount: number
   hoursLeft: number
 }): { subject: string; text: string } {
-  const checkoutUrl = `${publicSiteOrigin()}/${opts.listingSection}/${opts.listingSlug}/checkout?offer_id=${opts.offerId}`
+  const checkoutUrl = `${publicSiteOrigin()}${peerListingCheckoutHref(opts.listingSection, opts.listingSlug, opts.offerId)}`
 
   return {
     subject: `${opts.hoursLeft} hours left to complete your purchase on "${opts.listingTitle}"`,

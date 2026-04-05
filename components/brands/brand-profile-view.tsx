@@ -134,7 +134,7 @@ export function BrandProfileView({ brand }: { brand: BrandRow }) {
               Back to Brands
             </Link>
             {" · "}
-            <Link href="/used" className="font-medium text-foreground underline-offset-4 hover:underline">
+            <Link href="/gear" className="font-medium text-foreground underline-offset-4 hover:underline">
               Browse used
             </Link>
           </p>

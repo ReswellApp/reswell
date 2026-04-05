@@ -174,7 +174,7 @@ export default async function FollowingPage() {
                               ? `/boards/${stats.sample.slug || stats.sample.id}`
                               : stats.sample.section === "new"
                                 ? `/shop/${stats.sample.id}`
-                                : `/used/${stats.sample.slug || stats.sample.id}`
+                                : `/${stats.sample.slug || stats.sample.id}`
                           return (
                             <Link href={href} className="flex items-center gap-3 flex-1 min-w-0">
                               {img?.url && (

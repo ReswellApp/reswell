@@ -151,7 +151,7 @@ export default function MyListingsPage() {
     const identifier = slug || id
     if (section === 'surfboards') return `/boards/${identifier}`
     if (section === 'new') return `/shop/${id}`
-    return `/used/${identifier}`
+    return `/${identifier}`
   }
 
   const filterByStatus = (status: string) => {

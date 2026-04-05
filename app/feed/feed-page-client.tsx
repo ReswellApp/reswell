@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
-import { RecentFeedClient, type RecentListing } from "@/app/used/recent/recent-feed-client"
+import { RecentFeedClient, type RecentListing } from "@/components/recent-feed-client"
 import { Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -58,11 +58,11 @@ function getListingHref(listing: { section: string; slug: string | null; id: str
   const id = listing.slug || listing.id
   switch (listing.section) {
     case "used":
-      return `/used/${id}`
+      return `/${id}`
     case "surfboards":
       return `/boards/${id}`
     default:
-      return `/used/${id}`
+      return `/${id}`
   }
 }
 
@@ -130,7 +130,7 @@ function SoldFeedGrid({ listings }: { listings: SoldFeedListing[] }) {
           Be the first to sell something on Reswell.
         </p>
         <Link
-          href="/used"
+          href="/gear"
           className="mt-6 text-sm font-medium text-cerulean hover:underline"
         >
           Browse listings →

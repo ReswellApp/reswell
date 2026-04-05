@@ -8,6 +8,7 @@ export function listingDetailHref(listing: {
   id: string
   slug?: string | null
   section: string
+  categories?: { slug?: string | null } | Array<{ slug?: string | null }> | null
 }): string {
   const identifier = listing.slug || listing.id
   switch (listing.section) {
@@ -15,8 +16,15 @@ export function listingDetailHref(listing: {
       return `/boards/${identifier}`
     case "new":
       return `/shop/${identifier}`
+    case "used": {
+      const c = listing.categories
+      const row = c && (Array.isArray(c) ? c[0] : c)
+      const cat = row?.slug?.trim()
+      if (cat) return `/${cat}/${identifier}`
+      return `/${identifier}`
+    }
     default:
-      return `/used/${identifier}`
+      return `/${identifier}`
   }
 }
 
@@ -24,6 +32,29 @@ export function boardDetailHref(board: { id: string; slug?: string | null }): st
   return `/boards/${board.slug || board.id}`
 }
 
-export function usedDetailHref(listing: { id: string; slug?: string | null }): string {
-  return `/used/${listing.slug || listing.id}`
+export function usedDetailHref(listing: {
+  id: string
+  slug?: string | null
+  categories?: { slug?: string | null } | Array<{ slug?: string | null }> | null
+}): string {
+  return listingDetailHref({ ...listing, section: "used" })
+}
+
+/**
+ * Stripe peer-to-peer checkout URL. Surfboards stay at `/boards/.../checkout`.
+ * Used gear uses `/checkout/listing` so `/checkout` remains the shop cart checkout.
+ */
+export function peerListingCheckoutHref(
+  listingSection: string,
+  listingSlugOrId: string,
+  offerId?: string,
+): string {
+  if (listingSection === "surfboards") {
+    const q = offerId ? `?offer_id=${encodeURIComponent(offerId)}` : ""
+    return `/boards/${listingSlugOrId}/checkout${q}`
+  }
+  const params = new URLSearchParams()
+  params.set("listing", listingSlugOrId)
+  if (offerId) params.set("offer_id", offerId)
+  return `/checkout/listing?${params.toString()}`
 }

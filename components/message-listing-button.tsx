@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 interface MessageListingButtonProps {
   listingId: string
   sellerId: string
-  /** Path back to the listing (e.g. `/used/123` or `/boards/123`) for login redirect */
+  /** Path back to the listing (e.g. `/my-listing-slug` or `/boards/123`) for login redirect */
   redirectPath: string
   size?: 'sm' | 'default' | 'lg'
   variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link'

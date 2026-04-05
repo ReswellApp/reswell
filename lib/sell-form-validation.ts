@@ -77,12 +77,12 @@ export function validateSellListingForm(
     return `Enter a valid price between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
   }
 
-  if (form.listingType === "used" && !form.category) {
+  if (!form.category?.trim()) {
     return "Please select a category."
   }
 
-  if (form.listingType === "board" && !form.boardType) {
-    return "Please select a board type."
+  if (form.listingType === "board" && !form.boardType?.trim()) {
+    return "Please select a board category."
   }
 
   if (form.listingType === "used" && !form.description?.trim()) {

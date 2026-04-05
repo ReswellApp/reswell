@@ -112,7 +112,7 @@ export const CATEGORY_OFFER_HINTS: Record<string, { label: string; range: string
 
 /** Condition-based offer hint text */
 export const CONDITION_OFFER_HINTS: Record<string, string> = {
-  'like_new':  'Offers around 80–90% are common for like-new gear',
+  'like_new':  'Offers around 80–90% are common for excellent-condition gear',
   'good':      'Offers around 70–80% are common for good condition gear',
   'fair':      'Offers around 55–70% are common for fair condition gear',
   'poor':      'Offers around 45–60% are common for well-used gear',

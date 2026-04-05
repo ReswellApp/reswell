@@ -12,13 +12,11 @@ import {
 import { Search } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { SURFPACKS_BAGS_CURATED_BRANDS } from "@/lib/surfpacks-bags-brands"
+import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export const surfpacksConditions = [
   { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like_new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
+  ...listingConditionFilterRows(),
 ]
 
 interface SurfpacksBagsListingsFiltersProps {

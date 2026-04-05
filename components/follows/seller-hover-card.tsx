@@ -129,7 +129,7 @@ export function SellerHoverCard({
     const id = l.slug || l.id
     if (l.section === "surfboards") return `/boards/${id}`
     if (l.section === "new") return `/shop/${l.id}`
-    return `/used/${id}`
+    return `/${id}`
   }
 
   return (

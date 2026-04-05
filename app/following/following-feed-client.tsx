@@ -78,7 +78,7 @@ function getListingHref(listing: Listing): string {
   const id = listing.slug || listing.id
   if (listing.section === "surfboards") return `/boards/${id}`
   if (listing.section === "new") return `/shop/${listing.id}`
-  return `/used/${id}`
+  return `/${id}`
 }
 
 export function FollowingFeedClient({
@@ -359,7 +359,7 @@ function EmptyState({
           When sellers you follow post new gear, it shows up right here — chronological, no algorithm.
         </p>
         <Button asChild variant="outline">
-          <Link href="/used">Browse gear</Link>
+          <Link href="/gear">Browse gear</Link>
         </Button>
       </div>
 

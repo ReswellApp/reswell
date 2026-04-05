@@ -3,6 +3,7 @@
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { listingDetailHref } from "@/lib/listing-href"
 
 export interface RecentListing {
   id: string
@@ -31,15 +32,11 @@ interface RecentFeedClientProps {
 }
 
 function getListingHref(listing: RecentListing): string {
-  const id = listing.slug || listing.id
-  switch (listing.section) {
-    case "used":
-      return `/used/${id}`
-    case "surfboards":
-      return `/boards/${id}`
-    default:
-      return `/used/${id}`
-  }
+  return listingDetailHref({
+    section: listing.section,
+    slug: listing.slug,
+    id: listing.id,
+  })
 }
 
 export function RecentFeedClient({

@@ -12,13 +12,11 @@ import {
 import { Search } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { BOARD_BAG_LENGTH_OPTIONS } from "@/lib/board-bag-length-options"
+import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export const boardBagConditions = [
   { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like_new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
+  ...listingConditionFilterRows(),
 ]
 
 interface BoardBagsListingsFiltersProps {

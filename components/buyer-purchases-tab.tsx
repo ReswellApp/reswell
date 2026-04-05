@@ -129,7 +129,7 @@ export function BuyerPurchasesTab() {
             the full purchases page.
           </p>
           <Button asChild variant="outline">
-            <Link href="/used">Browse used gear</Link>
+            <Link href="/gear">Browse gear</Link>
           </Button>
         </CardContent>
       </Card>

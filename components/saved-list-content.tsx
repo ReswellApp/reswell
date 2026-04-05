@@ -104,12 +104,13 @@ export function SavedListContent() {
   }
 
   const getListingHref = (listing: SavedFavorite['listing']) => {
-    const id = listing.slug || listing.id
     switch (listing.section) {
-      case 'used': return `/used/${id}`
-      case 'new': return `/shop/${listing.id}`
-      case 'surfboards': return `/boards/${id}`
-      default: return `/used/${id}`
+      case 'new':
+        return `/shop/${listing.id}`
+      case 'surfboards':
+        return `/boards/${listing.slug || listing.id}`
+      default:
+        return `/${listing.slug || listing.id}`
     }
   }
 
@@ -139,7 +140,7 @@ export function SavedListContent() {
             <p className="text-muted-foreground mb-4">
               Items you save will appear here for easy access
             </p>
-            <Link href="/used">
+            <Link href="/gear">
               <Button>Browse Listings</Button>
             </Link>
           </CardContent>

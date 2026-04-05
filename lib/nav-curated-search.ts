@@ -8,9 +8,9 @@ export const CURATED_RECENT_SEARCH_PATH = "/search/recent"
 
 export function curatedRecentSearchHref(currentQueryString: string): string {
   const params = new URLSearchParams(currentQueryString)
-  const section = params.get("section")
-  if (section && section !== "all") {
-    return `${CURATED_RECENT_SEARCH_PATH}?section=${encodeURIComponent(section)}`
+  const category = params.get("category")?.trim()
+  if (category) {
+    return `${CURATED_RECENT_SEARCH_PATH}?category=${encodeURIComponent(category)}`
   }
   return CURATED_RECENT_SEARCH_PATH
 }

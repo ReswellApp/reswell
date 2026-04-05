@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import type { Offer, OfferStatus } from '@/lib/offers/types'
 import { CATEGORY_OFFER_HINTS, CONDITION_OFFER_HINTS } from '@/lib/offers/types'
+import { peerListingCheckoutHref } from '@/lib/listing-href'
 
 interface MakeOfferButtonProps {
   listingId: string
@@ -192,7 +193,7 @@ export function MakeOfferButton({
 
       if (action === 'ACCEPT') {
         setOffer({ ...offer, status: 'ACCEPTED', current_amount: data.agreedAmount })
-        router.push(`/${listingSection}/${listingSlug}/checkout?offer_id=${offer.id}`)
+        router.push(peerListingCheckoutHref(listingSection, listingSlug, offer.id))
       } else if (action === 'COUNTER') {
         setOffer({ ...offer, status: 'COUNTERED', current_amount: data.newAmount, counter_count: offer.counter_count + 1 })
         setCounterOpen(false)
@@ -509,7 +510,7 @@ function OfferStatusBanner({
       <div className="flex flex-wrap gap-2">
         {offer.status === 'ACCEPTED' && (
           <Button size="sm" className="flex-1" asChild>
-            <Link href={`/${listingSection}/${listingSlug}/checkout?offer_id=${offer.id}`}>
+            <Link href={peerListingCheckoutHref(listingSection, listingSlug, offer.id)}>
               Checkout — {fmt(offer.current_amount)}
             </Link>
           </Button>

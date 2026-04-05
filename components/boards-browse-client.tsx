@@ -54,7 +54,6 @@ export function BoardsBrowseClient({
         </div>
       </div>
 
-      {/* Active filter chips — shown when any filter is active */}
       <Suspense fallback={null}>
         <div className="px-1 sm:px-2 pt-3 pb-1 min-h-[2rem]">
           <ActiveFilterChips

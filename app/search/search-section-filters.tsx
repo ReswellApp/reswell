@@ -7,31 +7,30 @@ import { SlidersHorizontal, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { curatedRecentSearchHref } from "@/lib/nav-curated-search"
 
-type Section = "all" | "used" | "boards"
+export type MarketplaceCategoryRow = {
+  id: string
+  name: string
+  slug: string
+  board?: boolean | null
+  gear?: boolean | null
+}
 
-interface SearchSectionFiltersProps {
+interface SearchCategoryFiltersProps {
   query: string
-  section: Section
-  usedCount: number
-  boardsCount: number
+  /** `null` = default (all board listings — surfboards section). */
+  selectedSlug: string | null
+  categories: MarketplaceCategoryRow[]
   /** True when showing curated recents (no keyword search). */
   curated?: boolean
 }
 
-const SECTION_OPTIONS: { value: Section; label: string }[] = [
-  { value: "all", label: "All categories" },
-  { value: "used", label: "Used gear" },
-  { value: "boards", label: "Surfboards" },
-]
-
-/** Section filter only — search text lives in the main nav bar. */
-export function SearchSectionFilters({
+/** Marketplace search filter: `public.categories` rows with `board` or `gear` set. Default = all board listings. */
+export function SearchCategoryFilters({
   query,
-  section,
-  usedCount,
-  boardsCount,
+  selectedSlug,
+  categories,
   curated = false,
-}: SearchSectionFiltersProps) {
+}: SearchCategoryFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLFormElement>(null)
@@ -40,27 +39,21 @@ export function SearchSectionFilters({
     e.preventDefault()
     const form = formRef.current
     if (!form) return
-    const sectionValue = (form.section?.value ?? "all") as Section
+    const slug = (form.elements.namedItem("category") as HTMLSelectElement)?.value?.trim() ?? ""
     const q = (searchParams.get("q") ?? query).trim()
     if (q) {
       const params = new URLSearchParams()
       params.set("q", q)
-      if (sectionValue !== "all") params.set("section", sectionValue)
+      if (slug) params.set("category", slug)
       router.push(`/search?${params.toString()}`)
       return
     }
     const base = curatedRecentSearchHref("")
-    if (sectionValue === "all") {
+    if (!slug) {
       router.push(base)
     } else {
-      router.push(`${base}?section=${encodeURIComponent(sectionValue)}`)
+      router.push(`${base}?category=${encodeURIComponent(slug)}`)
     }
-  }
-
-  const getSectionLabel = (opt: (typeof SECTION_OPTIONS)[0]) => {
-    if (opt.value === "used" && usedCount > 0) return `Used gear (${usedCount})`
-    if (opt.value === "boards" && boardsCount > 0) return `Surfboards (${boardsCount})`
-    return opt.label
   }
 
   return (
@@ -73,28 +66,29 @@ export function SearchSectionFilters({
               <span className="hidden sm:inline"> — change keywords in the search bar above</span>
             </>
           ) : curated ? (
-            "Curated recents — filter by used gear or surfboards below, or search from the header."
+            "Curated recents — pick a category below, or search from the header."
           ) : (
             "Browse active listings — use the search bar to narrow results."
           )}
         </p>
         <form
           ref={formRef}
-          key={section}
+          key={selectedSlug ?? ""}
           onSubmit={handleApply}
           className="ml-auto flex flex-wrap items-center gap-2"
         >
           <div className="relative">
             <select
-              name="section"
-              defaultValue={section}
+              name="category"
+              defaultValue={selectedSlug ?? ""}
               className={cn(
-                "h-9 min-w-[160px] appearance-none rounded-md border border-border bg-background pl-3 pr-8 text-sm",
+                "h-9 min-w-[200px] appearance-none rounded-md border border-border bg-background pl-3 pr-8 text-sm",
               )}
             >
-              {SECTION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {getSectionLabel(opt)}
+              <option value="">All board listings</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {c.name}
                 </option>
               ))}
             </select>

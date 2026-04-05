@@ -12,13 +12,11 @@ import {
 import { Search } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { SINGLE_FIN_SIZE_OPTIONS, USED_GEAR_SIZE_OPTIONS } from "@/lib/used-gear-filter-options"
+import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export const finsConditions = [
   { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like_new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
+  ...listingConditionFilterRows(),
 ]
 
 interface FinsListingsFiltersProps {

@@ -7,19 +7,19 @@ import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 const footerLinks = {
   marketplace: [
     { name: "Surfboards", href: "/boards" },
-    { name: "All Gear", href: "/used" },
+    { name: "All Gear", href: "/gear" },
     { name: "Sell Your Gear", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
     { name: "Purchase Protection", href: "/protection-policy" },
   ],
   categories: [
-    { name: "Surfboards", href: "/used?category=surfboards" },
-    { name: "Wetsuits", href: "/used/wetsuits" },
-    { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
-    { name: "Fins", href: "/used/fins" },
-    { name: "Surfpacks & Bags", href: "/used/backpacks" },
-    { name: "Board Bags", href: "/used/board-bags" },
-    { name: "Accessories", href: "/used?category=accessories" },
+    { name: "Surfboards", href: "/gear?category=surfboards" },
+    { name: "Wetsuits", href: "/wetsuits" },
+    { name: "Apparel & Lifestyle", href: "/apparel-lifestyle" },
+    { name: "Fins", href: "/fins" },
+    { name: "Surfpacks & Bags", href: "/backpacks" },
+    { name: "Board Bags", href: "/board-bags" },
+    { name: "Accessories", href: "/gear?category=accessories" },
   ],
   support: [
     { name: "Help Center", href: "/help" },
