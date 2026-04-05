@@ -328,7 +328,7 @@ export function HeaderNavSearch() {
             }}
             onNavigate={clearSearchAndStorage}
             onFocus={handleIdleFocus}
-            placeholder="Search gear, boards, wetsuits…"
+            placeholder="Search boards, gear, wetsuits…"
             section=""
             listboxId="header-nav-search-suggestions"
             inputClassName="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] pl-4"
