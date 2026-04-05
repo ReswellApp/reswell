@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
-import { ListingTile, type ListingTilePriceAction } from "@/components/listing-tile"
+import { ListingTile } from "@/components/listing-tile"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
@@ -23,7 +23,6 @@ import {
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
-import { peerListingCheckoutHref } from "@/lib/listing-href"
 import { FollowButton } from "@/components/follows/follow-button"
 
 const PROFILE_UUID_RE =
@@ -486,48 +485,6 @@ export default async function SellerProfilePage({
   )
 }
 
-function sellerListingPriceAction(
-  listing: any,
-  isLoggedIn: boolean,
-): ListingTilePriceAction | null {
-  if (listing.status && listing.status !== "active") return null
-  const slug = listing.slug || listing.id
-  if (listing.section === "used") {
-    return {
-      type: "checkout",
-      checkoutPath: peerListingCheckoutHref("used", slug),
-      isLoggedIn,
-    }
-  }
-  if (listing.section === "surfboards") {
-    return {
-      type: "checkout",
-      checkoutPath: peerListingCheckoutHref("surfboards", slug),
-      isLoggedIn,
-    }
-  }
-  if (listing.section === "new") {
-    const inv = Array.isArray(listing.inventory) ? listing.inventory[0] : listing.inventory
-    const qty = inv ? Number((inv as { quantity: number }).quantity) : 0
-    if (qty <= 0) return null
-    const images = listing.listing_images || []
-    const primary = images.find((i: { is_primary?: boolean }) => i.is_primary) || images[0]
-    const image_url =
-      typeof primary?.url === "string" && primary.url.trim() !== "" ? primary.url.trim() : null
-    return {
-      type: "addToCart",
-      item: {
-        id: listing.id,
-        name: listing.title,
-        price: Number(listing.price),
-        image_url,
-        stock_quantity: qty,
-      },
-    }
-  }
-  return null
-}
-
 function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; favoritedIds: string[]; isLoggedIn: boolean }) {
   if (listings.length === 0) {
     return (
@@ -568,7 +525,7 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
               : listing.status === "pending"
                 ? ("pending" as const)
                 : ("ended" as const)
-        const priceAction = sellerListingPriceAction(listing, isLoggedIn)
+        const priceAction = sellerListingPriceAction()
         return (
           <ListingTile
             key={listing.id}

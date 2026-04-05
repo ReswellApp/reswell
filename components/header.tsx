@@ -14,7 +14,6 @@ import {
   type MouseEvent,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -31,7 +30,6 @@ import {
   X,
   Menu,
   Search,
-  ShoppingCart,
   MessageSquare,
   User,
   LogOut,
@@ -39,7 +37,6 @@ import {
   Heart,
   Settings,
   LayoutDashboard,
-  Wallet,
   Banknote,
   Clock,
   ChevronDown,
@@ -48,7 +45,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
-import { cartItemCount, readCart } from "@/lib/cart-storage"
+import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
@@ -358,9 +355,6 @@ export function Header() {
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [cartCount, setCartCount] = useState(0)
-  /** Incremented on each `cartUpdated` so the cart badge replay its emphasis animation. */
-  const [cartBadgePulseKey, setCartBadgePulseKey] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -399,20 +393,6 @@ export function Header() {
       clearNavSearchQuery()
     }
   }, [searchOpen])
-
-  // Cart count: guests and signed-in users share localStorage; keep header badge in sync on add/remove.
-  useLayoutEffect(() => {
-    function syncCartCount() {
-      setCartCount(cartItemCount(readCart()))
-    }
-    syncCartCount()
-    function onCartUpdated() {
-      syncCartCount()
-      setCartBadgePulseKey((k) => k + 1)
-    }
-    window.addEventListener("cartUpdated", onCartUpdated)
-    return () => window.removeEventListener("cartUpdated", onCartUpdated)
-  }, [])
 
   useEffect(() => {
     async function loadHeaderAuth() {
@@ -643,21 +623,6 @@ export function Header() {
               </Button>
             </Link>
 
-            <Link href="/cart" className="relative hidden sm:inline-flex">
-              <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
-                <ShoppingCart className="h-6 w-6" />
-                {cartCount > 0 && (
-                  <Badge
-                    key={`${cartCount}-${cartBadgePulseKey}`}
-                    className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-black text-white dark:bg-white dark:text-black cart-badge-bump"
-                  >
-                    {cartCount > 9 ? "9+" : cartCount}
-                  </Badge>
-                )}
-                <span className="sr-only">Cart</span>
-              </Button>
-            </Link>
-
             {/* CLS-FIX: invisible placeholder ghost buttons reserve the same horizontal
                 space as the logged-in action cluster while the auth check is in-flight.
                 This prevents the search bar from shifting once the real buttons appear. */}
@@ -665,7 +630,6 @@ export function Header() {
               <div className="hidden sm:flex items-center gap-1 md:gap-0.5 pointer-events-none select-none" aria-hidden>
                 <div className="h-11 w-11 rounded-full" />
                 <div className="h-11 w-11 rounded-full" />
-                <div className="h-6 w-10 rounded" />
               </div>
             )}
 

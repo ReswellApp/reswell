@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getStripe } from "@/lib/stripe-server"
-import { STRIPE_PAYOUT_GENERIC_ERROR } from "@/lib/stripe-connect-user-messages"
 import { headers } from "next/headers"
 
 export const runtime = "nodejs"
-
-const INSTANT_FEE_PERCENT = 1.5
-const INSTANT_FEE_MIN = 0.5
 
 // ─── GET: balance + payout history + payment methods ────────────────────────
 
@@ -19,7 +14,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const [balanceResult, payoutsResult, methodsResult, accountResult] = await Promise.all([
+  const [balanceResult, payoutsResult, methodsResult] = await Promise.all([
     supabase
       .from("seller_balances")
       .select("*")
@@ -36,11 +31,6 @@ export async function GET(_request: NextRequest) {
       .select("*")
       .eq("user_id", user.id)
       .order("is_default", { ascending: false }),
-    supabase
-      .from("seller_stripe_accounts")
-      .select("*")
-      .eq("user_id", user.id)
-      .single(),
   ])
 
   return NextResponse.json({
@@ -53,7 +43,7 @@ export async function GET(_request: NextRequest) {
     },
     payouts: payoutsResult.data ?? [],
     paymentMethods: methodsResult.data ?? [],
-    stripeAccount: accountResult.data ?? null,
+    stripeAccount: null,
   })
 }
 
@@ -81,12 +71,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  if (method === "ACH" || method === "INSTANT") {
+    return NextResponse.json(
+      { error: "Bank payouts are temporarily unavailable while we update payments." },
+      { status: 503 },
+    )
+  }
+
   // Minimums
   const MINIMUMS: Record<string, number> = { ACH: 10, INSTANT: 1, PAYPAL: 10, RESWELL_CREDIT: 0.01 }
   if (amount < MINIMUMS[method]) {
     return NextResponse.json(
       { error: `Minimum payout for ${method} is $${MINIMUMS[method].toFixed(2)}` },
-      { status: 400 }
+      { status: 400 },
     )
   }
 
@@ -106,34 +103,13 @@ export async function POST(request: NextRequest) {
   if (method !== "RESWELL_CREDIT" && amount > available) {
     return NextResponse.json(
       { error: "Insufficient available balance", available },
-      { status: 400 }
+      { status: 400 },
     )
   }
 
-  // Compute fee
-  let fee = 0
-  if (method === "INSTANT") {
-    fee = Math.max(INSTANT_FEE_MIN, Math.round(amount * INSTANT_FEE_PERCENT) / 100)
-  }
+  // Compute fee (instant ACH was Stripe-backed; removed)
+  const fee = 0
   const netAmount = Math.round((amount - fee) * 100) / 100
-
-  // For real payouts, load Stripe account
-  let stripeAccount: { stripe_account_id: string } | null = null
-  if (method === "ACH" || method === "INSTANT") {
-    const { data: sa } = await supabase
-      .from("seller_stripe_accounts")
-      .select("stripe_account_id, payouts_enabled")
-      .eq("user_id", user.id)
-      .single()
-
-    if (!sa || !sa.payouts_enabled) {
-      return NextResponse.json(
-        { error: "Stripe payouts are not enabled for your account. Complete payout setup first." },
-        { status: 400 }
-      )
-    }
-    stripeAccount = sa
-  }
 
   // Load payment method details for destination label
   let destination = "Reswell credit"
@@ -170,50 +146,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Create the payout record
-  const amountInCents = Math.round(amount * 100)
-  let stripePayout: { id: string } | null = null
   let estimatedArrival: Date | null = null
   let failureReason: string | null = null
   let status: "PENDING" | "IN_TRANSIT" | "PAID" | "FAILED" = "PENDING"
 
-  const stripe = getStripe()
-
   try {
-    if (method === "ACH" && stripeAccount && stripe) {
-      const sp = await stripe.payouts.create(
-        {
-          amount: amountInCents,
-          currency: "usd",
-          method: "standard",
-          statement_descriptor: "RESWELL PAYOUT",
-        },
-        { stripeAccount: stripeAccount.stripe_account_id }
-      )
-      stripePayout = sp
-      status = "IN_TRANSIT"
-      // Standard ACH: 2-5 business days
-      const arrival = new Date()
-      arrival.setDate(arrival.getDate() + 3)
-      estimatedArrival = arrival
-    } else if (method === "INSTANT" && stripeAccount && stripe) {
-      const pm = paymentMethodRecord as Record<string, unknown>
-      const sp = await stripe.payouts.create(
-        {
-          amount: amountInCents,
-          currency: "usd",
-          method: "instant",
-          ...(pm?.stripe_pm_id ? { destination: pm.stripe_pm_id as string } : {}),
-        },
-        { stripeAccount: stripeAccount.stripe_account_id }
-      )
-      stripePayout = sp
-      status = "IN_TRANSIT"
-      const arrival = new Date()
-      arrival.setMinutes(arrival.getMinutes() + 30)
-      estimatedArrival = arrival
-    } else if (method === "PAYPAL") {
-      // PayPal payout — mark as pending for manual processing
-      // In production: call PayPal Payouts API here
+    if (method === "PAYPAL") {
       status = "PENDING"
       const arrival = new Date()
       arrival.setDate(arrival.getDate() + 2)
@@ -222,8 +160,8 @@ export async function POST(request: NextRequest) {
       status = "PAID"
     }
   } catch (error) {
-    console.error("[payouts] Stripe payout error:", error)
-    failureReason = STRIPE_PAYOUT_GENERIC_ERROR
+    console.error("[payouts] payout error:", error)
+    failureReason = "Payout could not be processed. Try again later."
     status = "FAILED"
   }
 
@@ -257,7 +195,7 @@ export async function POST(request: NextRequest) {
       net_amount: netAmount,
       method,
       status,
-      stripe_payout_id: stripePayout?.id ?? null,
+      stripe_payout_id: null,
       destination,
       estimated_arrival: estimatedArrival?.toISOString() ?? null,
       failure_reason: failureReason,
@@ -276,8 +214,8 @@ export async function POST(request: NextRequest) {
 
   if (status === "FAILED") {
     return NextResponse.json(
-      { error: STRIPE_PAYOUT_GENERIC_ERROR, payout: payoutRecord },
-      { status: 422 }
+      { error: failureReason ?? "Payout failed", payout: payoutRecord },
+      { status: 422 },
     )
   }
 

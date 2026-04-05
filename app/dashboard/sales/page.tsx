@@ -83,7 +83,7 @@ export default async function SalesPage() {
   if (!user) return null
 
   const { data: sales, error } = await supabase
-    .from("purchases")
+    .from("orders")
     .select(
       `
       id,

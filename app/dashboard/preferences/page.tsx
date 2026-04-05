@@ -15,7 +15,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Bell, Globe, Loader2, MapPin, Receipt, Shield } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BuyerPurchasesTab } from '@/components/buyer-purchases-tab'
+import { BuyerOrdersTab } from '@/components/buyer-purchases-tab'
 import { toast } from 'sonner'
 import { useLocale } from '@/components/locale-provider'
 import type { Locale } from '@/lib/translations'
@@ -90,19 +90,19 @@ export default function PreferencesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your notifications, privacy, preferences, and purchases</p>
+        <p className="text-muted-foreground">Manage your notifications, privacy, preferences, and orders</p>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="purchases" className="gap-1.5">
+          <TabsTrigger value="orders" className="gap-1.5">
             <Receipt className="h-4 w-4" />
-            Purchases
+            Orders
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="purchases" className="mt-6">
-          <BuyerPurchasesTab />
+        <TabsContent value="orders" className="mt-6">
+          <BuyerOrdersTab />
         </TabsContent>
         <TabsContent value="general" className="mt-6 space-y-6">
       <Card>

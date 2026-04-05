@@ -86,7 +86,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   if (!user) return null
 
   const { data: row, error } = await supabase
-    .from("purchases")
+    .from("orders")
     .select(
       `
       id,

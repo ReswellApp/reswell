@@ -206,7 +206,6 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {boards.map((board) => {
           const slug = board.slug || board.id
-          const checkoutPath = `/boards/${slug}/checkout`
           const locationText =
             board.city && board.state
               ? `${board.city}, ${board.state}`
@@ -226,11 +225,6 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
                   <p className="text-xs text-muted-foreground mt-0.5">{board.board_length}</p>
                 ) : null
               }
-              priceAction={{
-                type: "checkout",
-                checkoutPath,
-                isLoggedIn: !!user,
-              }}
               meta={{ variant: "location", text: locationText }}
               categoryPill={formatListingTileCategoryPillText(board)}
               favorites={{

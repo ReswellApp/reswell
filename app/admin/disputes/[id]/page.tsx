@@ -53,7 +53,7 @@ export default async function AdminDisputeDetailPage({ params }: Props) {
     .select(
       `
       *,
-      purchases (
+      orders (
         id,
         amount,
         fulfillment_method,
@@ -116,18 +116,18 @@ export default async function AdminDisputeDetailPage({ params }: Props) {
       .limit(5),
   ])
 
-  const purchase = Array.isArray(disputeData.purchases)
-    ? disputeData.purchases[0]
-    : disputeData.purchases
-  const listing = purchase
-    ? Array.isArray(purchase.listings)
-      ? purchase.listings[0]
-      : purchase.listings
+  const orderRow = Array.isArray(disputeData.orders)
+    ? disputeData.orders[0]
+    : disputeData.orders
+  const listing = orderRow
+    ? Array.isArray(orderRow.listings)
+      ? orderRow.listings[0]
+      : orderRow.listings
     : null
   const title = listing?.title ? capitalizeWords(listing.title) : 'Dispute'
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { purchases: _purchases, ...dispute } = disputeData as typeof disputeData & { purchases: unknown }
+  const { orders: _orders, ...dispute } = disputeData as typeof disputeData & { orders: unknown }
 
   const isResolved = isDisputeResolved(dispute.status as DisputeStatus)
   const hasFraudFlags = (flags ?? []).length > 0
@@ -484,7 +484,7 @@ export default async function AdminDisputeDetailPage({ params }: Props) {
           </Card>
 
           {/* Order info */}
-          {purchase && (
+          {orderRow && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -496,7 +496,7 @@ export default async function AdminDisputeDetailPage({ params }: Props) {
                   <p className="font-medium">{title}</p>
                   <MetaRow
                     label="Order total"
-                    value={`$${Number(purchase.amount).toFixed(2)}`}
+                    value={`$${Number(orderRow.amount).toFixed(2)}`}
                   />
                   {(listing as { section?: string } | null)?.section && (
                     <MetaRow label="Category" value={(listing as { section: string }).section} />

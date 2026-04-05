@@ -41,8 +41,8 @@ export function usedDetailHref(listing: {
 }
 
 /**
- * Stripe peer-to-peer checkout URL. Surfboards stay at `/boards/.../checkout`.
- * Used gear uses `/checkout/listing` so `/checkout` remains the shop cart checkout.
+ * Peer-to-peer checkout URL. Surfboards use `/boards/.../checkout`;
+ * used gear uses `/checkout/listing`.
  */
 export function peerListingCheckoutHref(
   listingSection: string,

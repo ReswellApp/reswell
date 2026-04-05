@@ -33,7 +33,7 @@ type ClaimDetail = {
   reviewed_at: string | null
   paid_at: string | null
   created_at: string
-  purchases: {
+  orders: {
     id: string
     amount: number
     listings: { id: string; title: string; slug: string | null; section: string } | null
@@ -124,7 +124,7 @@ export default async function ClaimDetailPage(props: { params: Promise<{ claimId
       reviewed_at,
       paid_at,
       created_at,
-      purchases (
+      orders (
         id,
         amount,
         listings ( id, title, slug, section )
@@ -143,10 +143,10 @@ export default async function ClaimDetailPage(props: { params: Promise<{ claimId
   const isBuyer = claim.buyer_id === user.id
   const isSeller = claim.seller_id === user.id
 
-  const purchase = claim.purchases
-  const listing = Array.isArray(purchase?.listings)
-    ? purchase?.listings[0]
-    : purchase?.listings
+  const order = claim.orders
+  const listing = Array.isArray(order?.listings)
+    ? order?.listings[0]
+    : order?.listings
   const title = listing?.title ? capitalizeWords(listing.title) : 'Your order'
 
   return (
@@ -344,9 +344,9 @@ export default async function ClaimDetailPage(props: { params: Promise<{ claimId
 
       {/* Related links */}
       <div className="flex flex-wrap gap-3">
-        {purchase?.id && (
+        {order?.id && (
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/purchases/${purchase.id}`}>View order</Link>
+            <Link href={`/dashboard/orders/${order.id}`}>View order</Link>
           </Button>
         )}
         <Button variant="ghost" size="sm" asChild>

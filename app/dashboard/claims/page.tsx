@@ -24,7 +24,7 @@ type ClaimRow = {
   created_at: string
   reviewed_at: string | null
   paid_at: string | null
-  purchases: {
+  orders: {
     id: string
     amount: number
     listings: { id: string; title: string; slug: string | null; section: string } | null
@@ -55,7 +55,7 @@ export default async function ClaimsDashboardPage() {
       created_at,
       reviewed_at,
       paid_at,
-      purchases (
+      orders (
         id,
         amount,
         listings ( id, title, slug, section )
@@ -99,10 +99,10 @@ export default async function ClaimsDashboardPage() {
       ) : (
         <div className="space-y-4">
           {rows.map((claim) => {
-            const purchase = claim.purchases
-            const listing = Array.isArray(purchase?.listings)
-              ? purchase?.listings[0]
-              : purchase?.listings
+            const order = claim.orders
+            const listing = Array.isArray(order?.listings)
+              ? order?.listings[0]
+              : order?.listings
             const title = listing?.title
               ? capitalizeWords(listing.title)
               : 'Order'
@@ -188,9 +188,9 @@ export default async function ClaimsDashboardPage() {
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`/dashboard/claims/${claim.id}`}>View claim</Link>
                     </Button>
-                    {purchase?.id && (
+                    {order?.id && (
                       <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/dashboard/purchases/${purchase.id}`}>View order</Link>
+                        <Link href={`/dashboard/orders/${order.id}`}>View order</Link>
                       </Button>
                     )}
                   </div>

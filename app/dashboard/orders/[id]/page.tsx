@@ -9,7 +9,7 @@ import { ArrowLeft, MessageCircle, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { OrderProtectionWidget } from "@/components/order-protection-widget"
-import { isProtectionWindowActive, daysRemainingInWindow } from "@/lib/protection-constants"
+import { isProtectionWindowActive } from "@/lib/protection-constants"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -25,7 +25,7 @@ type ShippingAddressJson = {
   } | null
 } | null
 
-type PurchaseDetail = {
+type OrderDetail = {
   id: string
   amount: number | string
   status: string
@@ -70,7 +70,7 @@ function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
   return parts.length ? parts.join("\n") : null
 }
 
-export default async function PurchaseDetailPage(props: { params: Promise<{ id: string }> }) {
+export default async function OrderDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
   const supabase = await createClient()
   const {
@@ -80,7 +80,7 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
   if (!user) return null
 
   const { data: row, error } = await supabase
-    .from("purchases")
+    .from("orders")
     .select(
       `
       id,
@@ -109,8 +109,8 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
     notFound()
   }
 
-  const purchase = row as unknown as PurchaseDetail
-  const listing = Array.isArray(purchase.listings) ? purchase.listings[0] : purchase.listings
+  const order = row as unknown as OrderDetail
+  const listing = Array.isArray(order.listings) ? order.listings[0] : order.listings
   const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
   const img = primaryImage(listing?.listing_images ?? null)
   const listingHref = listing ? listingDetailHref(listing) : null
@@ -118,10 +118,9 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
   const { data: sellerProfile } = await supabase
     .from("profiles")
     .select("display_name")
-    .eq("id", purchase.seller_id)
+    .eq("id", order.seller_id)
     .maybeSingle()
 
-  // Fetch protection eligibility for this purchase
   const { data: eligibility } = await supabase
     .from("protection_eligibility")
     .select("is_eligible, reason, window_closes")
@@ -137,15 +136,15 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
 
   const sellerName =
     sellerProfile?.display_name?.trim() ||
-    `Seller ${purchase.seller_id.slice(0, 8)}…`
+    `Seller ${order.seller_id.slice(0, 8)}…`
 
-  const ship = purchase.shipping_address
+  const ship = order.shipping_address
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
-  const paidWithCard = !!purchase.stripe_checkout_session_id
+  const paidWithCard = !!order.stripe_checkout_session_id
   const fulfill =
-    purchase.fulfillment_method === "shipping"
+    order.fulfillment_method === "shipping"
       ? "Shipping"
-      : purchase.fulfillment_method === "pickup"
+      : order.fulfillment_method === "pickup"
         ? "Local pickup"
         : addrBlock
           ? "Shipping"
@@ -155,19 +154,19 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/dashboard/purchases" className="gap-2">
+          <Link href="/dashboard/orders" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
-            All purchases
+            All orders
           </Link>
         </Button>
       </div>
 
       <div>
         <h1 className="text-2xl font-bold font-mono tracking-tight">
-          Order #{purchase.id.slice(0, 8).toUpperCase()}
+          Order #{order.id.slice(0, 8).toUpperCase()}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {new Date(purchase.created_at).toLocaleString(undefined, {
+          {new Date(order.created_at).toLocaleString(undefined, {
             dateStyle: "long",
             timeStyle: "short",
           })}
@@ -217,7 +216,7 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
           </div>
           <div className="border-t pt-4 flex justify-between text-lg font-semibold">
             <span>Total paid</span>
-            <span className="tabular-nums">${Number(purchase.amount).toFixed(2)}</span>
+            <span className="tabular-nums">${Number(order.amount).toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
@@ -237,7 +236,7 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
         </Card>
       )}
 
-      {!addrBlock && purchase.fulfillment_method === "pickup" && (
+      {!addrBlock && order.fulfillment_method === "pickup" && (
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground">
             <p>
@@ -248,9 +247,8 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
         </Card>
       )}
 
-      {/* Purchase Protection Widget */}
       <OrderProtectionWidget
-        purchaseId={purchase.id}
+        orderId={order.id}
         windowCloses={eligibility?.window_closes ?? null}
         isEligible={
           eligibility
@@ -271,7 +269,7 @@ export default async function PurchaseDetailPage(props: { params: Promise<{ id: 
           </Link>
         </Button>
         <Button variant="outline" asChild>
-          <Link href="/dashboard/purchases">Back to purchases</Link>
+          <Link href="/dashboard/orders">Back to orders</Link>
         </Button>
       </div>
     </div>

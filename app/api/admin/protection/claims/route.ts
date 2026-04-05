@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest) {
       created_at,
       reviewed_at,
       paid_at,
-      purchases (
+      orders (
         id,
         amount,
         fulfillment_method,

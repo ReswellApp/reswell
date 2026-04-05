@@ -47,7 +47,7 @@ export async function PATCH(
       claim_type,
       claimed_amount,
       order_id,
-      purchases ( id, amount, fulfillment_method )
+      orders ( id, amount, fulfillment_method )
     `
     )
     .eq('id', claimId)
@@ -65,7 +65,7 @@ export async function PATCH(
   }
 
   if (action === 'approve') {
-    const purchase = Array.isArray(claim.purchases) ? claim.purchases[0] : claim.purchases
+    const order = Array.isArray(claim.orders) ? claim.orders[0] : claim.orders
 
     // Auto-calculate approved amount using coverage cap logic
     const finalApprovedAmount =
@@ -73,7 +73,7 @@ export async function PATCH(
       calculateApprovedAmount(
         claim.claim_type as ClaimType,
         Number(claim.claimed_amount),
-        Number(purchase?.amount ?? 0),
+        Number(order?.amount ?? 0),
         0 // shipping cost — use 0 if not tracked separately
       )
 

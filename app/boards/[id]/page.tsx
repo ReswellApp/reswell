@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatCondition, formatBoardType, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
@@ -24,8 +23,6 @@ import dynamic from "next/dynamic"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { MakeOfferButton } from "@/components/offers/make-offer-button"
-import type { Offer } from "@/lib/offers/types"
 import {
   ListingSoldDetailNotice,
   ListingSoldOwnerNotice,
@@ -181,29 +178,6 @@ export default async function BoardDetailPage(props: {
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
 
-  // Offer system
-  const { data: boardOfferSettings } = await supabase
-    .from("offer_settings")
-    .select("offers_enabled, minimum_offer_pct")
-    .eq("listing_id", board.id)
-    .maybeSingle()
-
-  const boardOffersEnabled = boardOfferSettings ? boardOfferSettings.offers_enabled : true
-
-  let boardBuyerActiveOffer = null
-  if (user && !isOwnListing && boardOffersEnabled) {
-    const { data: existingOffer } = await supabase
-      .from("offers")
-      .select("*")
-      .eq("listing_id", board.id)
-      .eq("buyer_id", user.id)
-      .in("status", ["PENDING", "COUNTERED", "ACCEPTED", "DECLINED", "EXPIRED", "WITHDRAWN"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    boardBuyerActiveOffer = existingOffer
-  }
-
   const boardPickupCity = board.profiles?.location
     ? (board.profiles.location as string).split(",")[0]?.trim()
     : null
@@ -283,44 +257,6 @@ export default async function BoardDetailPage(props: {
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
               <ImageGallery images={images} title={capitalizeWords(board.title)} sold={isSold} />
-              {!isOwnListing && board.status === "active" && (
-                <>
-                  <Button size="lg" className="mt-4 w-full gap-2 lg:hidden" asChild>
-                    <Link
-                      href={
-                        user
-                          ? `/boards/${boardSlug}/checkout`
-                          : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
-                      }
-                    >
-                      Buy now — ${Number(board.price).toFixed(2)}
-                    </Link>
-                  </Button>
-                  {boardOffersEnabled && (
-                    <div className="mt-2 space-y-2 lg:hidden">
-                      <MakeOfferButton
-                        listingId={board.id}
-                        listingTitle={capitalizeWords(board.title)}
-                        listingSlug={boardSlug}
-                        listingSection="boards"
-                        askingPrice={Number(board.price)}
-                        sellerId={board.user_id}
-                        categorySlug="surfboards"
-                        condition={(board as { condition?: string }).condition ?? null}
-                        localPickupCity={pickupOffered ? boardPickupCity : null}
-                        offersEnabled={boardOffersEnabled}
-                        isLoggedIn={!!user}
-                        activeOffer={boardBuyerActiveOffer as Offer | null}
-                      />
-                      {!boardBuyerActiveOffer && (
-                        <p className="text-xs text-center text-muted-foreground">
-                          Offers accepted · Sellers typically respond within a few hours
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
             </div>
 
             {/* Details */}
@@ -377,108 +313,7 @@ export default async function BoardDetailPage(props: {
                 </div>
               ) : null}
 
-              {!isOwnListing && board.status === "active" && (
-                <div className="hidden lg:block space-y-2">
-                  <Button size="lg" className="w-full gap-2" asChild>
-                    <Link
-                      href={
-                        user
-                          ? `/boards/${boardSlug}/checkout`
-                          : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}/checkout`)}`
-                      }
-                    >
-                      Buy now — ${Number(board.price).toFixed(2)}
-                    </Link>
-                  </Button>
-                  {boardOffersEnabled && (
-                    <MakeOfferButton
-                      listingId={board.id}
-                      listingTitle={capitalizeWords(board.title)}
-                      listingSlug={boardSlug}
-                      listingSection="boards"
-                      askingPrice={Number(board.price)}
-                      sellerId={board.user_id}
-                      categorySlug="surfboards"
-                      condition={(board as { condition?: string }).condition ?? null}
-                      localPickupCity={pickupOffered ? boardPickupCity : null}
-                      offersEnabled={boardOffersEnabled}
-                      isLoggedIn={!!user}
-                      activeOffer={boardBuyerActiveOffer as Offer | null}
-                    />
-                  )}
-                  {boardOffersEnabled && !boardBuyerActiveOffer && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      Offers accepted · Sellers typically respond within a few hours
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Location (map above contact seller) */}
-              <Card className="bg-primary/5 border-primary/20 overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-primary">
-                    <MapPin className="h-5 w-5" />
-                    <span className="font-medium">
-                      {board.city && board.state
-                        ? `${board.city}, ${board.state}`
-                        : board.profiles?.location || "Location not specified"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1 mb-3">
-                    {pickupOffered && shippingOffered &&
-                      "Approximate area for pickup, or the seller can ship this board to you."}
-                    {pickupOffered && !shippingOffered &&
-                      "Approximate pickup area for meeting the seller and inspecting the board."}
-                    {!pickupOffered &&
-                      shippingOffered &&
-                      "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
-                  </p>
-                  {pickupOffered && board.latitude && board.longitude ? (
-                    <LocationMap
-                      lat={parseFloat(board.latitude)}
-                      lng={parseFloat(board.longitude)}
-                      label={
-                        board.city && board.state
-                          ? `${board.city}, ${board.state}`
-                          : "Pickup Location"
-                      }
-                      showDirections
-                      height={280}
-                    />
-                  ) : pickupOffered && board.profiles?.location ? (
-                    <div className="h-[200px] rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-sm">
-                      <MapPin className="h-5 w-5 mr-2" />
-                      {board.profiles.location}
-                    </div>
-                  ) : !pickupOffered ? (
-                    <p className="text-sm text-muted-foreground py-4">
-                      Map is shown when the seller offers local pickup.
-                    </p>
-                  ) : null}
-                </CardContent>
-              </Card>
-
-              {/* Contact Form */}
-              {!isOwnListing && !isSold && (
-                <Card className="bg-offwhite">
-                  <CardContent className="p-4">
-                    <ContactSellerForm
-                      listingId={board.id}
-                      listingSlug={board.slug}
-                      sellerId={board.user_id}
-                      listingTitle={capitalizeWords(board.title)}
-                      isLoggedIn={!!user}
-                      section="surfboards"
-                      shippingAvailable={shippingOffered}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              <Separator />
-
-              {/* Seller Info */}
+              {/* Seller (above map) */}
               <Card>
                 <CardContent className="p-4">
                   <div className="flex flex-col gap-4">
@@ -553,6 +388,68 @@ export default async function BoardDetailPage(props: {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Location (map) */}
+              <Card className="bg-primary/5 border-primary/20 overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <MapPin className="h-5 w-5" />
+                    <span className="font-medium">
+                      {board.city && board.state
+                        ? `${board.city}, ${board.state}`
+                        : board.profiles?.location || "Location not specified"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1 mb-3">
+                    {pickupOffered && shippingOffered &&
+                      "Approximate area for pickup, or the seller can ship this board to you."}
+                    {pickupOffered && !shippingOffered &&
+                      "Approximate pickup area for meeting the seller and inspecting the board."}
+                    {!pickupOffered &&
+                      shippingOffered &&
+                      "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
+                  </p>
+                  {pickupOffered && board.latitude && board.longitude ? (
+                    <LocationMap
+                      lat={parseFloat(board.latitude)}
+                      lng={parseFloat(board.longitude)}
+                      label={
+                        board.city && board.state
+                          ? `${board.city}, ${board.state}`
+                          : "Pickup Location"
+                      }
+                      showDirections
+                      height={280}
+                    />
+                  ) : pickupOffered && board.profiles?.location ? (
+                    <div className="h-[200px] rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-sm">
+                      <MapPin className="h-5 w-5 mr-2" />
+                      {board.profiles.location}
+                    </div>
+                  ) : !pickupOffered ? (
+                    <p className="text-sm text-muted-foreground py-4">
+                      Map is shown when the seller offers local pickup.
+                    </p>
+                  ) : null}
+                </CardContent>
+              </Card>
+
+              {/* Contact Form */}
+              {!isOwnListing && !isSold && (
+                <Card className="bg-offwhite">
+                  <CardContent className="p-4">
+                    <ContactSellerForm
+                      listingId={board.id}
+                      listingSlug={board.slug}
+                      sellerId={board.user_id}
+                      listingTitle={capitalizeWords(board.title)}
+                      isLoggedIn={!!user}
+                      section="surfboards"
+                      shippingAvailable={shippingOffered}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               {isOwnListing && isSold && (
                 <Card className="bg-muted/20 border-border">

@@ -1,6 +1,5 @@
 /**
- * Base URL for Stripe Checkout success/cancel redirects.
- * Stripe requires an absolute URL with scheme (https:// or http://).
+ * Base URL for absolute app links (e.g. redirects, emails).
  */
 export function getCheckoutAppOrigin(): string {
   const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim()
@@ -26,8 +25,7 @@ export function getCheckoutAppOrigin(): string {
 }
 
 /**
- * Public site origin for Stripe Connect onboarding (refresh/return).
- * Prefers `NEXT_PUBLIC_URL`, then the same fallbacks as {@link getCheckoutAppOrigin}.
+ * Public site origin. Prefers `NEXT_PUBLIC_URL`, then the same fallbacks as {@link getCheckoutAppOrigin}.
  */
 export function getPublicAppOrigin(): string {
   const explicitUrl = process.env.NEXT_PUBLIC_URL?.trim()
@@ -46,7 +44,7 @@ export function getPublicAppOrigin(): string {
   return getCheckoutAppOrigin()
 }
 
-/** True when origin host is local (Stripe only allows this with test-mode keys). */
+/** True when origin host is local (localhost / loopback). */
 export function originIsLocalhost(baseUrl: string): boolean {
   try {
     const u = new URL(baseUrl.includes("://") ? baseUrl : `https://${baseUrl}`)
@@ -55,8 +53,4 @@ export function originIsLocalhost(baseUrl: string): boolean {
   } catch {
     return false
   }
-}
-
-export function stripeSecretKeyIsLiveMode(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY?.trim().startsWith("sk_live"))
 }

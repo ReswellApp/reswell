@@ -32,13 +32,11 @@ import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { Truck } from "lucide-react"
-import { MakeOfferButton } from "@/components/offers/make-offer-button"
-import type { Offer } from "@/lib/offers/types"
 import {
   ListingSoldDetailNotice,
   ListingSoldOwnerNotice,
 } from "@/components/listing-sold-detail-notice"
-import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
+import { listingDetailHref } from "@/lib/listing-href"
 import { sellerProfileHref } from "@/lib/seller-slug"
 
 const ImageGallery = dynamic(
@@ -102,8 +100,6 @@ export async function UsedListingDetailPage({
       ? reviewRatings.reduce((sum, r) => sum + r, 0) / sellerReviewCount
       : 0
 
-  const listingSlug = listing.slug || listing.id
-
   const { data: sellerListings } = await supabase
     .from("listings")
     .select(`
@@ -160,45 +156,6 @@ export async function UsedListingDetailPage({
   const pickupOffered = listing.local_pickup !== false
   const shippingOffered = !!listing.shipping_available
   const shippingPrice = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
-
-  let offerSettings: { offers_enabled: boolean; minimum_offer_pct: number } | null = null
-  let buyerActiveOffer: Offer | null = null
-
-  const { data: settings } = await supabase
-    .from("offer_settings")
-    .select("offers_enabled, minimum_offer_pct")
-    .eq("listing_id", listing.id)
-    .maybeSingle()
-
-  offerSettings = settings ?? { offers_enabled: true, minimum_offer_pct: 70 }
-
-  if (user && !isOwnListing && offerSettings.offers_enabled) {
-    const { data: existingOffer } = await supabase
-      .from("offers")
-      .select("*")
-      .eq("listing_id", listing.id)
-      .eq("buyer_id", user.id)
-      .in("status", ["PENDING", "COUNTERED", "ACCEPTED"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    buyerActiveOffer = existingOffer as Offer | null
-
-    if (!buyerActiveOffer) {
-      const { data: pastOffer } = await supabase
-        .from("offers")
-        .select("*")
-        .eq("listing_id", listing.id)
-        .eq("buyer_id", user.id)
-        .in("status", ["DECLINED", "EXPIRED", "WITHDRAWN"])
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      buyerActiveOffer = pastOffer as Offer | null
-    }
-  }
 
   const pickupCity = listing.profiles?.location
     ? (listing.profiles.location as string).split(",")[0]?.trim()
@@ -266,45 +223,6 @@ export async function UsedListingDetailPage({
                 </p>
               )}
             </div>
-
-            {!isOwnListing && listing.status === "active" && (
-              user ? (
-                <Button size="lg" className="w-full gap-2" asChild>
-                  <Link href={peerListingCheckoutHref("used", listingSlug)}>
-                    Purchase item — $
-                    {(listing.price + (shippingOffered && !pickupOffered ? shippingPrice : 0)).toFixed(2)}
-                    {shippingOffered && !pickupOffered && shippingPrice > 0 && " (incl. shipping)"}
-                  </Link>
-                </Button>
-              ) : (
-                <Button size="lg" className="w-full gap-2" asChild>
-                  <Link href={peerListingCheckoutHref("used", listingSlug)}>Add to cart</Link>
-                </Button>
-              )
-            )}
-
-            {!isOwnListing && listing.status === "active" && offerSettings?.offers_enabled && (
-              <MakeOfferButton
-                listingId={listing.id}
-                listingTitle={capitalizeWords(listing.title)}
-                listingSlug={listingSlug}
-                listingSection="used"
-                askingPrice={listing.price}
-                sellerId={listing.user_id}
-                categorySlug={listing.categories?.slug ?? null}
-                condition={(listing as { condition?: string }).condition ?? null}
-                localPickupCity={pickupOffered ? pickupCity : null}
-                offersEnabled={offerSettings.offers_enabled}
-                isLoggedIn={!!user}
-                activeOffer={buyerActiveOffer}
-              />
-            )}
-
-            {!isOwnListing && listing.status === "active" && offerSettings?.offers_enabled && !buyerActiveOffer && (
-              <p className="text-xs text-center text-muted-foreground -mt-1">
-                Offers accepted · Sellers typically respond within a few hours
-              </p>
-            )}
 
             <p className="text-sm text-muted-foreground">
               {[

@@ -29,7 +29,7 @@ function primaryImage(images: Array<{ url: string; is_primary: boolean | null }>
   return (primary ?? images[0]).url
 }
 
-export function BuyerPurchasesTab() {
+export function BuyerOrdersTab() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -44,7 +44,7 @@ export function BuyerPurchasesTab() {
       return
     }
     const { data, error: qErr } = await supabase
-      .from("purchases")
+      .from("orders")
       .select(
         `
         id,
@@ -112,9 +112,8 @@ export function BuyerPurchasesTab() {
   if (error) {
     return (
       <p className="text-sm text-destructive">
-        Could not load purchases. Ask your admin to run{" "}
-        <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/031_purchases_select_as_buyer.sql</code>{" "}
-        in Supabase.
+        Could not load orders. If this persists, check marketplace RLS for the{" "}
+        <code className="rounded bg-muted px-1 py-0.5 text-xs">orders</code> table in Supabase.
       </p>
     )
   }
@@ -126,7 +125,7 @@ export function BuyerPurchasesTab() {
           <Receipt className="h-10 w-10 text-muted-foreground" />
           <p className="text-muted-foreground text-sm max-w-sm">
             You have not bought anything from other members yet. When you do, it will show here and on
-            the full purchases page.
+            the full orders page.
           </p>
           <Button asChild variant="outline">
             <Link href="/gear">Browse gear</Link>
@@ -143,7 +142,7 @@ export function BuyerPurchasesTab() {
           Peer-to-peer buys (used gear, surfboards, Reswell Bucks or card).
         </p>
         <Button asChild size="sm" variant="outline">
-          <Link href="/dashboard/purchases">Open full page</Link>
+          <Link href="/dashboard/orders">Open full page</Link>
         </Button>
       </div>
       <ul className="space-y-2">
@@ -162,7 +161,7 @@ export function BuyerPurchasesTab() {
           return (
             <li key={row.id}>
               <Link
-                href={`/dashboard/purchases/${row.id}`}
+                href={`/dashboard/orders/${row.id}`}
                 className="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/40"
               >
                 <div className="relative h-12 w-12 flex-shrink-0 rounded-md border bg-muted overflow-hidden">

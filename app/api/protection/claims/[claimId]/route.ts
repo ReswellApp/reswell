@@ -34,7 +34,7 @@ export async function GET(
       reviewed_at,
       paid_at,
       created_at,
-      purchases (
+      orders (
         id,
         amount,
         fulfillment_method,

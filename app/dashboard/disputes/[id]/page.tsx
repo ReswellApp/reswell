@@ -24,7 +24,7 @@ export default async function DisputeDetailPage({ params }: Props) {
     .select(
       `
       *,
-      purchases (
+      orders (
         id,
         amount,
         listings ( title, slug, section )
@@ -57,19 +57,19 @@ export default async function DisputeDetailPage({ params }: Props) {
     disputeData.buyer_id === user.id ? 'buyer' : 'seller'
 
   // Extract order info
-  const purchase = Array.isArray(disputeData.purchases)
-    ? disputeData.purchases[0]
-    : disputeData.purchases
-  const listing = purchase
-    ? Array.isArray(purchase.listings)
-      ? purchase.listings[0]
-      : purchase.listings
+  const orderRow = Array.isArray(disputeData.orders)
+    ? disputeData.orders[0]
+    : disputeData.orders
+  const listing = orderRow
+    ? Array.isArray(orderRow.listings)
+      ? orderRow.listings[0]
+      : orderRow.listings
     : null
 
-  const order = purchase
+  const order = orderRow
     ? {
-        id: purchase.id,
-        amount: Number(purchase.amount),
+        id: orderRow.id,
+        amount: Number(orderRow.amount),
         shipping_cost: null,
         listing_title: listing?.title ? capitalizeWords(listing.title) : 'Order',
         listing_slug: listing?.slug ?? null,
@@ -77,9 +77,9 @@ export default async function DisputeDetailPage({ params }: Props) {
       }
     : null
 
-  // Strip purchases from dispute to pass clean type
+  // Strip embedded orders from dispute to pass clean type
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { purchases: _purchases, ...dispute } = disputeData as typeof disputeData & { purchases: unknown }
+  const { orders: _orders, ...dispute } = disputeData as typeof disputeData & { orders: unknown }
 
   return (
     <div className="max-w-2xl space-y-4">
@@ -102,7 +102,7 @@ export default async function DisputeDetailPage({ params }: Props) {
                 <>
                   {' '}·{' '}
                   <Link
-                    href={`/dashboard/purchases/${order.id}`}
+                    href={`/dashboard/orders/${order.id}`}
                     className="underline hover:no-underline"
                   >
                     View order

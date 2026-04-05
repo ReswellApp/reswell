@@ -35,10 +35,16 @@ type AdminDisputeRow = {
   seller_id: string | null
   buyer_name?: string | null
   seller_name?: string | null
-  purchases: {
-    id: string
-    listings: { title: string } | null
-  } | null
+  orders:
+    | {
+        id: string
+        listings: { title: string } | null
+      }
+    | {
+        id: string
+        listings: { title: string } | null
+      }[]
+    | null
 }
 
 type QueueCounts = {
@@ -91,7 +97,7 @@ async function getAdminDisputes(
       deadline_at,
       buyer_id,
       seller_id,
-      purchases (
+      orders (
         id,
         listings ( title )
       )
@@ -285,13 +291,13 @@ export default async function AdminDisputesPage({ searchParams }: Props) {
           </p>
 
           {disputes.map((dispute) => {
-            const purchase = Array.isArray(dispute.purchases)
-              ? dispute.purchases[0]
-              : dispute.purchases
-            const listing = purchase
-              ? Array.isArray(purchase.listings)
-                ? purchase.listings[0]
-                : purchase.listings
+            const order = Array.isArray(dispute.orders)
+              ? dispute.orders[0]
+              : dispute.orders
+            const listing = order
+              ? Array.isArray(order.listings)
+                ? order.listings[0]
+                : order.listings
               : null
             const title = listing?.title ? capitalizeWords(listing.title) : 'Order'
 

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { capitalizeWords, formatListingTileCategoryPillText, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { ListingTile } from "@/components/listing-tile"
-import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
+import { listingDetailHref } from "@/lib/listing-href"
 
 export interface UsedGearSearchParams {
   category?: string
@@ -308,8 +308,6 @@ export async function UsedGearListings({
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {listings.map((listing) => {
-          const slug = listing.slug || listing.id
-          const checkoutPath = peerListingCheckoutHref("used", slug)
           const detailHref = listingDetailHref({
             id: listing.id,
             slug: listing.slug,
@@ -326,11 +324,6 @@ export async function UsedGearListings({
               listingImages={listing.listing_images}
               price={Number(listing.price)}
               cardContentClassName="flex min-w-0 flex-1 flex-col p-3"
-              priceAction={{
-                type: "checkout",
-                checkoutPath,
-                isLoggedIn: !!user,
-              }}
               meta={{
                 variant: "seller",
                 name: getPublicSellerDisplayName(listing.profiles),

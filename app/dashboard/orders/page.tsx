@@ -4,64 +4,33 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, Package } from "lucide-react"
+import { Receipt, Package, ChevronRight } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 
-type ShippingAddressJson = {
-  name?: string | null
-  phone?: string | null
-  email?: string | null
-  address?: {
-    line1?: string | null
-    line2?: string | null
-    city?: string | null
-    state?: string | null
-    postal_code?: string | null
-    country?: string | null
-  } | null
-} | null
-
-type OrderRow = {
+type MarketplaceOrderRow = {
   id: string
+  amount: number | string
   status: string
-  subtotal: number | string
-  shipping: number | string
-  tax: number | string
-  total: number | string
   created_at: string
-  shipping_address: ShippingAddressJson
-  order_items: Array<{
-    id: string
-    quantity: number
-    price: number | string
-    listing_id: string
-    listings: {
-      id: string
-      title: string
-      listing_images: Array<{ url: string; is_primary: boolean | null }> | null
-    } | null
-  }> | null
-}
-
-function statusLabel(status: string): string {
-  const map: Record<string, string> = {
-    pending: "Awaiting payment",
-    paid: "Paid",
-    shipped: "Shipped",
-    delivered: "Delivered",
-    cancelled: "Cancelled",
-    refunded: "Refunded",
-  }
-  return map[status] ?? status
-}
-
-function statusVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "paid" || status === "shipped" || status === "delivered") return "default"
-  if (status === "pending") return "secondary"
-  if (status === "cancelled" || status === "refunded") return "destructive"
-  return "outline"
+  fulfillment_method: string | null
+  stripe_checkout_session_id: string | null
+  seller_id: string
+  listings:
+    | {
+        id: string
+        title: string
+        slug?: string | null
+        section: string
+        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+      }
+    | {
+        id: string
+        title: string
+        slug?: string | null
+        section: string
+        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+      }[]
+    | null
 }
 
 function primaryImage(images: Array<{ url: string; is_primary: boolean | null }> | null | undefined) {
@@ -70,15 +39,8 @@ function primaryImage(images: Array<{ url: string; is_primary: boolean | null }>
   return (primary ?? images[0]).url
 }
 
-function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
-  if (!addr) return null
-  const parts = [
-    addr.line1,
-    addr.line2,
-    [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", "),
-    addr.country,
-  ].filter((p) => p && String(p).trim())
-  return parts.length ? parts.join("\n") : null
+function paymentLabel(stripeSessionId: string | null): string {
+  return stripeSessionId ? "Card" : "Reswell Bucks"
 }
 
 export default async function OrdersPage() {
@@ -94,41 +56,43 @@ export default async function OrdersPage() {
     .select(
       `
       id,
+      amount,
       status,
-      subtotal,
-      shipping,
-      tax,
-      total,
       created_at,
-      shipping_address,
-      order_items (
+      fulfillment_method,
+      stripe_checkout_session_id,
+      seller_id,
+      listings (
         id,
-        quantity,
-        price,
-        listing_id,
-        listings (
-          id,
-          title,
-          listing_images ( url, is_primary )
-        )
+        title,
+        slug,
+        section,
+        listing_images ( url, is_primary )
       )
     `
     )
-    .eq("user_id", user.id)
+    .eq("buyer_id", user.id)
+    .eq("status", "confirmed")
     .order("created_at", { ascending: false })
 
-  const list = (orders ?? []) as OrderRow[]
+  const list = (orders ?? []) as unknown as MarketplaceOrderRow[]
+
+  const sellerIds = [...new Set(list.map((p) => p.seller_id).filter(Boolean))]
+  const { data: sellerProfiles } =
+    sellerIds.length > 0
+      ? await supabase.from("profiles").select("id, display_name").in("id", sellerIds)
+      : { data: [] as { id: string; display_name: string | null }[] }
+
+  const sellerNameById = new Map(
+    (sellerProfiles ?? []).map((p) => [p.id, p.display_name?.trim() || ""]),
+  )
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Orders</h1>
         <p className="text-muted-foreground mt-1">
-          Shop purchases (new gear checkout). Buys from other members are under{" "}
-          <Link href="/dashboard/purchases" className="text-primary underline underline-offset-2">
-            Purchases
-          </Link>
-          ; sales you make are under{" "}
+          Used gear and peer-to-peer buys. Sales you make are under{" "}
           <Link href="/dashboard/sales" className="text-primary underline underline-offset-2">
             Sales
           </Link>
@@ -142,138 +106,84 @@ export default async function OrdersPage() {
 
       {error && (
         <p className="text-sm text-destructive">
-          Could not load orders. Try again later or contact support if this persists.
+          Could not load orders. If this persists, check that marketplace RLS policies for{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">orders</code> are applied in Supabase.
         </p>
       )}
 
       {!error && list.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Package className="h-12 w-12 text-muted-foreground mb-4" />
+            <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4 max-w-sm">
-              You don&apos;t have any shop orders yet. When you buy from the new gear store, they&apos;ll
-              show up here.
+              When you buy from other members, your receipts show up here.
             </p>
             <Button asChild>
-              <Link href="/shop">Browse shop</Link>
+              <Link href="/gear">Browse gear</Link>
             </Button>
           </CardContent>
         </Card>
       )}
 
-      <div className="space-y-4">
-        {list.map((order) => {
-          const items = order.order_items ?? []
-          const ship = order.shipping_address
-          const addrBlock = ship?.address ? formatAddress(ship.address) : null
+      <div className="space-y-3">
+        {list.map((row) => {
+          const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
+          const title = listing?.title
+            ? capitalizeWords(listing.title)
+            : "Item (listing removed)"
+          const img = primaryImage(listing?.listing_images ?? null)
+          const sellerRaw = sellerNameById.get(row.seller_id)?.trim()
+          const sellerName =
+            sellerRaw && sellerRaw.length > 0 ? sellerRaw : `Seller ${row.seller_id.slice(0, 8)}…`
+          const fulfill =
+            row.fulfillment_method === "shipping"
+              ? "Shipping"
+              : row.fulfillment_method === "pickup"
+                ? "Local pickup"
+                : "—"
 
           return (
-            <Card key={order.id}>
-              <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                      Order #{order.id.slice(0, 8)}
+            <Card key={row.id} className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base font-mono text-muted-foreground">
+                      Order #{row.id.slice(0, 8).toUpperCase()}
                     </CardTitle>
                     <CardDescription>
-                      {new Date(order.created_at).toLocaleString(undefined, {
+                      {new Date(row.created_at).toLocaleString(undefined, {
                         dateStyle: "medium",
                         timeStyle: "short",
-                      })}
+                      })}{" "}
+                      · {paymentLabel(row.stripe_checkout_session_id)} · {fulfill}
                     </CardDescription>
                   </div>
-                  <Badge variant={statusVariant(order.status)}>{statusLabel(order.status)}</Badge>
+                  <Badge variant="secondary">Paid</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3">
-                  {items.map((line) => {
-                    const listing = line.listings
-                    const title = listing?.title
-                      ? capitalizeWords(listing.title)
-                      : "Item (listing removed)"
-                    const img = primaryImage(listing?.listing_images ?? null)
-                    const href = listing?.id ? `/shop/${listing.id}` : null
-
-                    return (
-                      <li key={line.id} className="flex gap-3">
-                        <div className="relative h-16 w-16 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
-                          {img ? (
-                            <Image
-                              src={img}
-                              alt=""
-                              fill
-                              className="object-cover"
-                              sizes="64px"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                              <Package className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          {href ? (
-                            <Link
-                              href={href}
-                              className="font-medium text-foreground hover:text-primary line-clamp-2"
-                            >
-                              {title}
-                            </Link>
-                          ) : (
-                            <span className="font-medium text-foreground line-clamp-2">{title}</span>
-                          )}
-                          <p className="text-sm text-black dark:text-white tabular-nums font-medium">
-                            Qty {line.quantity} × ${Number(line.price).toFixed(2)}
-                          </p>
-                        </div>
-                        <div className="text-right text-sm font-medium tabular-nums text-black dark:text-white">
-                          ${(Number(line.price) * line.quantity).toFixed(2)}
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
-
-                <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Subtotal</span>
-                    <span className="tabular-nums">${Number(order.subtotal).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Shipping</span>
-                    <span className="tabular-nums">${Number(order.shipping).toFixed(2)}</span>
-                  </div>
-                  {Number(order.tax) > 0 && (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Tax</span>
-                      <span className="tabular-nums">${Number(order.tax).toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-semibold text-foreground pt-1">
-                    <span>Total</span>
-                    <span className="tabular-nums">${Number(order.total).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {order.status !== "pending" && addrBlock && (
-                  <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                    <p className="font-medium text-foreground mb-1">Ship to</p>
-                    {ship?.name && <p className="text-foreground">{ship.name}</p>}
-                    <p className="text-muted-foreground whitespace-pre-line">{addrBlock}</p>
-                    {ship?.phone && (
-                      <p className="text-muted-foreground mt-1">Phone: {ship.phone}</p>
+              <CardContent className="pt-0">
+                <Link
+                  href={`/dashboard/orders/${row.id}`}
+                  className="flex gap-3 rounded-lg border bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                >
+                  <div className="relative h-16 w-16 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
+                    {img ? (
+                      <Image src={img} alt="" fill className="object-cover" sizes="64px" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Package className="h-6 w-6 text-muted-foreground" />
+                      </div>
                     )}
                   </div>
-                )}
-
-                {order.status === "pending" && (
-                  <p className="text-xs text-muted-foreground">
-                    If checkout wasn&apos;t completed, this order may expire. You can start a new checkout
-                    from your cart.
-                  </p>
-                )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground line-clamp-2">{title}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">From {sellerName}</p>
+                    <p className="text-sm font-semibold tabular-nums mt-1">
+                      ${Number(row.amount).toFixed(2)}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 self-center" />
+                </Link>
               </CardContent>
             </Card>
           )

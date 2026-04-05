@@ -31,16 +31,6 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
           cardClassName={listingProductCardClassName}
           cardContentClassName="p-3"
           titleClassName="text-sm font-medium line-clamp-1 hover:text-primary transition-colors text-foreground"
-          priceAction={{
-            type: "addToCart",
-            item: {
-              id: item.id,
-              name: item.title,
-              price: item.price,
-              image_url: item.image_url,
-              stock_quantity: item.stock_quantity,
-            },
-          }}
           categoryPill={item.categoryLabel}
           showFavorites={false}
         />
