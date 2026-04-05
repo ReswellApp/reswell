@@ -12,7 +12,36 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      // User listing + avatar photos (Supabase project subdomains)
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      // Shopify storefront product images
+      {
+        protocol: 'https',
+        hostname: 'cdn.shopify.com',
+        pathname: '/**',
+      },
+      // Press / collections assets
+      {
+        protocol: 'https',
+        hostname: 'images.squarespace-cdn.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cms-web.seamuseum.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.sea.museum',
+        pathname: '/**',
+      },
+    ],
   },
   experimental: {
     // Tree-shake icon/component libraries so only imported symbols end up in the
