@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, Save, Store, ShoppingBag, CheckCircle2 } from 'lucide-react'
+import { Loader2, Save, Store } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Profile {
@@ -22,7 +22,6 @@ interface Profile {
   shop_phone: string | null
   shop_address: string | null
   shop_verified: boolean
-  shopify_domain: string | null
 }
 
 export default function DashboardProfilePage() {
@@ -38,7 +37,7 @@ export default function DashboardProfilePage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, is_shop, shop_name, shop_description, shop_website, shop_phone, shop_address, shop_verified, shopify_domain')
+        .select('id, is_shop, shop_name, shop_description, shop_website, shop_phone, shop_address, shop_verified')
         .eq('id', user.id)
         .single()
 
@@ -64,7 +63,6 @@ export default function DashboardProfilePage() {
         shop_website: profile.shop_website,
         shop_phone: profile.shop_phone,
         shop_address: profile.shop_address,
-        shopify_domain: profile.shopify_domain,
         updated_at: new Date().toISOString(),
       })
       .eq('id', profile.id)
@@ -201,40 +199,6 @@ export default function DashboardProfilePage() {
                   Your seller profile is verified and will appear with a verified badge.
                 </div>
               )}
-
-              <Separator />
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5 text-accent" />
-                  <h4 className="font-medium text-foreground">Shopify Integration</h4>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Connect your Shopify store to automatically list your products in the New Gear section.
-                  Your products will appear alongside Reswell listings and link back to your Shopify checkout.
-                </p>
-                <div className="space-y-2">
-                  <Label htmlFor="shopify_domain">Shopify Store Domain</Label>
-                  <Input
-                    id="shopify_domain"
-                    value={profile.shopify_domain || ''}
-                    onChange={(e) =>
-                      setProfile({ ...profile, shopify_domain: e.target.value })
-                    }
-                    placeholder="your-store.myshopify.com"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter your Shopify store domain (e.g., my-surf-shop.myshopify.com). Your store must have the Storefront API enabled with public access.
-                  </p>
-                </div>
-                {profile.shopify_domain && (
-                  <div className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 p-3 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0" />
-                    <span className="text-foreground">
-                      Shopify store connected: <span className="font-medium">{profile.shopify_domain}</span>
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
           )}
 

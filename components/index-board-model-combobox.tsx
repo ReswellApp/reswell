@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
+import { BRANDS_BASE } from "@/lib/brands/routes"
 
 export type IndexBoardModelSelection = {
   brandSlug: string
@@ -38,7 +38,7 @@ export function IndexBoardModelCombobox({
 
   React.useEffect(() => {
     let cancelled = false
-    fetch("/api/index-directory/board-models")
+    fetch("/api/brands/board-models")
       .then((r) => {
         if (!r.ok) throw new Error("bad response")
         return r.json()
@@ -70,7 +70,7 @@ export function IndexBoardModelCombobox({
             className="w-full justify-between font-normal min-h-touch"
           >
             <span className={cn("truncate text-left", !value?.label && "text-muted-foreground")}>
-              {value?.label ?? "Search brand index…"}
+              {value?.label ?? "Search brands…"}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -125,18 +125,17 @@ export function IndexBoardModelCombobox({
             Clear
           </Button>
           <a
-            href={`${INDEX_DIRECTORY_BASE}/brands/${value.brandSlug}/models/${value.modelSlug}`}
+            href={`${BRANDS_BASE}/${value.brandSlug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-primary underline-offset-4 hover:underline"
           >
-            Open in index
+            View brand
           </a>
         </div>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Optional. Matches your board to Reswell&apos;s brand directory so buyers can compare models. Skip for
-        one-offs or customs.
+        Optional. Links your listing to a brand profile. Skip for one-offs or customs.
       </p>
     </div>
   )

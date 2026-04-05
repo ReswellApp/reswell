@@ -61,7 +61,7 @@ export function SurfboardTitleIndexInput({
 
   React.useEffect(() => {
     let cancelled = false
-    fetch("/api/index-directory/board-models")
+    fetch("/api/brands/board-models")
       .then((r) => {
         if (!r.ok) throw new Error("bad response")
         return r.json()
@@ -73,7 +73,7 @@ export function SurfboardTitleIndexInput({
         }
       })
       .catch(() => {
-        if (!cancelled) setLoadError("Could not load brand index")
+        if (!cancelled) setLoadError("Could not load brands")
       })
     return () => {
       cancelled = true
@@ -159,7 +159,7 @@ export function SurfboardTitleIndexInput({
           {loadError && items.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">{loadError}</div>
           ) : filtered.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">No matching model in the index.</div>
+            <div className="px-3 py-2 text-sm text-muted-foreground">No matching brand.</div>
           ) : (
             filtered.map((opt, i) => (
               <button
@@ -185,7 +185,7 @@ export function SurfboardTitleIndexInput({
         </div>
       ) : null}
       <p className="text-xs text-muted-foreground mt-1.5">
-        Start typing to match a model from the brand index, then pick a suggestion to link this listing.
+        Start typing to match a brand, then pick a suggestion to link this listing.
       </p>
     </div>
   )

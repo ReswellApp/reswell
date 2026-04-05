@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getBrandModelPagePayload } from "@/lib/index-directory/model-details-registry"
+import { getBrandBySlug } from "@/lib/brands/server"
 import { isBoardModelReviewsUnavailable } from "@/lib/board-model-reviews"
 
 const MAX_COMMENT = 8000
@@ -31,8 +31,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Pick a rating from 1 to 5" }, { status: 400 })
     }
 
-    if (!getBrandModelPagePayload(brand_slug, model_slug)) {
-      return NextResponse.json({ error: "Unknown board model" }, { status: 404 })
+    const brand = await getBrandBySlug(supabase, brand_slug)
+    if (!brand) {
+      return NextResponse.json({ error: "Unknown brand" }, { status: 404 })
     }
 
     const { error } = await supabase.from("board_model_reviews").upsert(

@@ -52,8 +52,8 @@ import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { ListingSellerStats } from "@/components/listing-seller-stats"
-import { getBrandModelPagePayload } from "@/lib/index-directory/model-details-registry"
-import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
+import { BRANDS_BASE } from "@/lib/brands/routes"
+import { getBrandBySlug } from "@/lib/brands/server"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 
@@ -235,11 +235,8 @@ export default async function BoardDetailPage(props: {
     : null
 
   const indexBrandSlug = (board as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? ""
-  const indexModelSlug = (board as { index_model_slug?: string | null }).index_model_slug?.trim() ?? ""
-  const indexModelPage =
-    indexBrandSlug && indexModelSlug
-      ? getBrandModelPagePayload(indexBrandSlug, indexModelSlug)
-      : null
+  const indexBrand =
+    indexBrandSlug ? await getBrandBySlug(supabase, indexBrandSlug) : null
 
   return (
       <main className="flex-1 py-8">
@@ -394,14 +391,14 @@ export default async function BoardDetailPage(props: {
                 <TranslateableDescription text={board.description || ""} />
               </div>
 
-              {indexModelPage ? (
+              {indexBrand ? (
                 <div className="rounded-lg border border-border/50 bg-muted/20 px-4 py-3 text-sm">
-                  <p className="text-muted-foreground mb-1">Brand index</p>
+                  <p className="text-muted-foreground mb-1">Brand</p>
                   <Link
-                    href={`${INDEX_DIRECTORY_BASE}/brands/${indexBrandSlug}/models/${indexModelSlug}`}
+                    href={`${BRANDS_BASE}/${indexBrand.slug}`}
                     className="font-medium text-primary underline-offset-4 hover:underline"
                   >
-                    View {indexModelPage.model.name} ({indexModelPage.brand.name}) in the index
+                    View {indexBrand.name} on Brands
                   </Link>
                 </div>
               ) : null}

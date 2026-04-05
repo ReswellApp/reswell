@@ -8,7 +8,7 @@ type Props = {
   title: string
   description: string
   articles: FieldNoteArticle[]
-  /** Use `div` when nested inside a page that already has `<main>` (e.g. Index). */
+  /** Use `div` when nested inside a page that already has `<main>` (e.g. blog index). */
   wrapper?: "main" | "div"
 }
 

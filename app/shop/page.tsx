@@ -1,4 +1,3 @@
-import { ShopifyProducts } from "@/components/shopify-products"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
 import { createClient } from "@/lib/supabase/server"
 import { formatCategory } from "@/lib/listing-labels"
@@ -47,34 +46,26 @@ export default async function ShopPage() {
       }) ?? []
 
   return (
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="bg-offwhite py-12">
-          <div className="container mx-auto text-center">
-            <h1 className="text-3xl font-bold text-balance">New Gear from Verified Brands</h1>
-            <p className="text-muted-foreground mt-2 max-w-lg mx-auto text-pretty">
-              Shop products directly from verified surf brands and retailers, or buy marketplace new gear with checkout here.
-            </p>
-          </div>
-        </section>
+    <main className="flex-1">
+      {/* Hero */}
+      <section className="bg-offwhite py-12">
+        <div className="container mx-auto text-center">
+          <h1 className="text-3xl font-bold text-balance">New Gear</h1>
+          <p className="text-muted-foreground mt-2 max-w-lg mx-auto text-pretty">
+            Buy new surf gear with checkout on Reswell when sellers list marketplace new inventory.
+          </p>
+        </div>
+      </section>
 
-        {/* Marketplace New (in-app checkout) */}
-        {marketplaceItems.length > 0 && (
-          <section className="py-8 border-b">
-            <div className="container mx-auto">
-              <h2 className="text-xl font-bold mb-6">Marketplace New — Buy here</h2>
-              <MarketplaceNewGrid items={marketplaceItems} />
-            </div>
-          </section>
-        )}
-
-        {/* Brand Products (external Shopify) */}
-        <section className="py-8">
+      {/* Marketplace New (in-app checkout) */}
+      {marketplaceItems.length > 0 && (
+        <section className="py-8 border-b">
           <div className="container mx-auto">
-            <h2 className="text-xl font-bold mb-6">Brand products</h2>
-            <ShopifyProducts />
+            <h2 className="text-xl font-bold mb-6">Marketplace New — Buy here</h2>
+            <MarketplaceNewGrid items={marketplaceItems} />
           </div>
         </section>
-      </main>
+      )}
+    </main>
   )
 }
