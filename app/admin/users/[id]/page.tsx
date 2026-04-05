@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Flag, Mail, User, RotateCcw, CheckCircle2, XCircle, UserCog } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, UserCog } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -54,14 +54,6 @@ interface ListingRow {
   listing_images: { url: string }[]
 }
 
-interface ReportRow {
-  id: string
-  reason: string
-  status: string
-  created_at: string
-  listing: { id: string; title: string; section: string } | null
-}
-
 export default function AdminUserDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -69,8 +61,6 @@ export default function AdminUserDetailPage() {
   const supabase = createClient()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [listings, setListings] = useState<ListingRow[]>([])
-  const [reportsAsReporter, setReportsAsReporter] = useState<ReportRow[]>([])
-  const [reportsAsReported, setReportsAsReported] = useState<ReportRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -88,20 +78,6 @@ export default function AdminUserDetailPage() {
         .eq('user_id', id)
         .order('created_at', { ascending: false })
       setListings((list as ListingRow[]) || [])
-
-      const { data: rep } = await supabase
-        .from('reports')
-        .select('id, reason, status, created_at, listing:listings(id, title, section)')
-        .eq('reporter_id', id)
-        .order('created_at', { ascending: false })
-      setReportsAsReporter((rep as ReportRow[]) || [])
-
-      const { data: reported } = await supabase
-        .from('reports')
-        .select('id, reason, status, created_at, listing:listings(id, title, section)')
-        .eq('reported_user_id', id)
-        .order('created_at', { ascending: false })
-      setReportsAsReported((reported as ReportRow[]) || [])
 
       setLoading(false)
     }
@@ -203,7 +179,7 @@ export default function AdminUserDetailPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">User details</h1>
-          <p className="text-muted-foreground">Profile, listings, and reports</p>
+          <p className="text-muted-foreground">Profile and listings</p>
         </div>
       </div>
 
@@ -405,70 +381,6 @@ export default function AdminUserDetailPage() {
         </CardContent>
       </Card>
 
-      {(reportsAsReporter.length > 0 || reportsAsReported.length > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Flag className="h-5 w-5" />
-              Reports
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {reportsAsReporter.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Reports filed by this user ({reportsAsReporter.length})
-                </p>
-                <ul className="space-y-1 text-sm">
-                  {reportsAsReporter.map((r) => (
-                    <li key={r.id} className="flex items-center gap-2">
-                      <Badge variant="outline">{r.status}</Badge>
-                      <span className="capitalize">{r.reason}</span>
-                      {r.listing && (
-                        <Link
-                          href={`${getSectionHref(r.listing.section)}/${r.listing.id}`}
-                          className="text-primary hover:underline"
-                        >
-                          {capitalizeWords(r.listing?.title)}
-                        </Link>
-                      )}
-                      <span className="text-muted-foreground">
-                        {format(new Date(r.created_at), 'MMM d, yyyy')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {reportsAsReported.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Reports against this user ({reportsAsReported.length})
-                </p>
-                <ul className="space-y-1 text-sm">
-                  {reportsAsReported.map((r) => (
-                    <li key={r.id} className="flex items-center gap-2">
-                      <Badge variant="outline">{r.status}</Badge>
-                      <span className="capitalize">{r.reason}</span>
-                      {r.listing && (
-                        <Link
-                          href={`${getSectionHref(r.listing.section)}/${r.listing.id}`}
-                          className="text-primary hover:underline"
-                        >
-                          {capitalizeWords(r.listing?.title)}
-                        </Link>
-                      )}
-                      <span className="text-muted-foreground">
-                        {format(new Date(r.created_at), 'MMM d, yyyy')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

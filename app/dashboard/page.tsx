@@ -8,11 +8,8 @@ import {
   Package,
   Heart,
   MessageSquare,
-  Eye,
-  TrendingUp,
   ArrowRight,
   Wallet,
-  Flag,
   Users,
   Lightbulb,
 } from "lucide-react"
@@ -30,7 +27,6 @@ export default async function DashboardPage() {
     unreadMsgRes,
     unreadNotifAgg,
     recentListingsRes,
-    reportsAgg,
     walletRes,
     profileRes,
     followersRes,
@@ -57,10 +53,6 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(4),
     supabase
-      .from("reports")
-      .select("*", { count: "exact", head: true })
-      .eq("reporter_id", user.id),
-    supabase
       .from("wallets")
       .select("id, balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
@@ -82,7 +74,6 @@ export default async function DashboardPage() {
   const unreadNotifCount = unreadNotifAgg.count
   const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
   const recentListings = recentListingsRes.data
-  const reportsCount = reportsAgg.count
   const walletRow = walletRes.data
   const profile = profileRes.data
   const followerCount = followersRes.data?.follower_count ?? 0
@@ -131,12 +122,6 @@ export default async function DashboardPage() {
       value: unreadCount || 0,
       icon: MessageSquare,
       href: "/messages",
-    },
-    {
-      name: "My Reports",
-      value: reportsCount || 0,
-      icon: Flag,
-      href: "/dashboard/reports",
     },
   ]
 
@@ -314,12 +299,6 @@ export default async function DashboardPage() {
               <Link href="/dashboard/earnings">
                 <Wallet className="h-6 w-6 mb-2" />
                 Earnings
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/reports">
-                <Flag className="h-6 w-6 mb-2" />
-                Reports
               </Link>
             </Button>
           </div>

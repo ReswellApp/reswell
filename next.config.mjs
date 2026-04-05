@@ -82,6 +82,10 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/saved", destination: "/favorites", permanent: true },
+      { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/reports/:path*", destination: "/dashboard", permanent: true },
+      { source: "/admin/reports", destination: "/admin", permanent: true },
+      { source: "/admin/reports/:path*", destination: "/admin", permanent: true },
       // Legacy /used/* URLs → flat marketplace routes + /gear
       {
         source: "/used/checkout/success",

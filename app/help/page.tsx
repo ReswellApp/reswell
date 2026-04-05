@@ -26,7 +26,7 @@ const faqs = [
   },
   {
     question: "What if I have a problem with a purchase?",
-    answer: "Try to resolve the issue directly with the seller via messages first. If you used Reswell Bucks, our team can help with eligible disputes. For serious issues (e.g. fraud or safety), use the report options on the listing or in Messages and we’ll review.",
+    answer: "Try to resolve the issue directly with the seller via messages first. If you used Reswell Bucks, our team can help with eligible disputes. For serious issues (e.g. fraud or safety), reach out via our Contact page and we’ll review.",
   },
 ]
 

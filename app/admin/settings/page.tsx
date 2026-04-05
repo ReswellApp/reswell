@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Info, LayoutDashboard, Package, Users, Flag, Settings, ArrowRight, Shield, UserCog, Loader2, Search, RefreshCw, Activity } from 'lucide-react'
+import { Info, LayoutDashboard, Package, Users, Settings, ArrowRight, Shield, UserCog, Loader2, Search, RefreshCw, Activity } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -17,7 +17,6 @@ const capabilities = [
   { title: 'Live', description: 'Signed-in users active on the site in the last few minutes', href: '/admin/live', icon: Activity },
   { title: 'Listings', description: 'Search, filter, view, remove, restore, or permanently delete any listing; add listings on behalf of users', href: '/admin/listings', icon: Package },
   { title: 'Users', description: 'View all accounts, grant or revoke admin or employee access', href: '/admin/users', icon: Users },
-  { title: 'Reports', description: 'Review and resolve user reports (listing or user reports)', href: '/admin/reports', icon: Flag },
   { title: 'Settings', description: 'This page', href: '/admin/settings', icon: Settings },
 ] as const
 
@@ -166,7 +165,7 @@ export default function AdminSettingsPage() {
                 Add admin
               </CardTitle>
               <p className="text-sm text-muted-foreground font-normal">
-                Full access: Overview, Listings, Users, Reports, Settings. Can grant or revoke admin and employee.
+                Full access: Overview, Listings, Users, Settings. Can grant or revoke admin and employee.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -214,7 +213,7 @@ export default function AdminSettingsPage() {
                 Add employee
               </CardTitle>
               <p className="text-sm text-muted-foreground font-normal">
-                Limited access: Overview, Listings, Reports only. Cannot manage users or settings.
+                Limited access: Overview and Listings only. Cannot manage users or settings.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
