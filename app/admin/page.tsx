@@ -5,7 +5,6 @@ import {
   Users, 
   TrendingUp,
   ShoppingBag,
-  Flag,
   Coins,
 } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -53,12 +52,10 @@ export default async function AdminDashboard() {
     { count: totalListings },
     { count: activeListings },
     { count: totalUsers },
-    { count: pendingReports },
   ] = await Promise.all([
     supabase.from('listings').select('*', { count: 'exact', head: true }),
     supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
   ])
 
   // Fetch recent listings
@@ -103,12 +100,6 @@ export default async function AdminDashboard() {
       icon: Users,
       description: 'Registered accounts'
     },
-    { 
-      label: 'Pending Reports', 
-      value: pendingReports || 0, 
-      icon: Flag,
-      description: 'Needs review'
-    },
   ]
 
   const sectionStats = [
@@ -125,7 +116,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

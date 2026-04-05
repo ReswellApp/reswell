@@ -516,7 +516,7 @@ export async function UsedListingDetailPage({
               <ul className="text-xs text-muted-foreground space-y-1">
                 <li>Coordinate shipping address and method in messages after purchase</li>
                 <li>Use secure payment methods</li>
-                <li>Report suspicious listings</li>
+                <li>See our <Link href="/safety" className="underline">safety tips</Link> if something feels off</li>
               </ul>
             </div>
           </div>

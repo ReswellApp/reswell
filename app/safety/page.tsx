@@ -70,7 +70,9 @@ export default function SafetyTipsPage() {
           </div>
 
           <p className="mt-8 text-sm text-muted-foreground">
-            If you see something that violates our guidelines or seems like a scam, report it from the listing or in Messages. See our{" "}
+            If you see something that violates our guidelines or seems like a scam, contact us through{" "}
+            <Link href="/contact" className="text-primary underline">Contact</Link>
+            {" "}or use Messages. See our{" "}
             <Link href="/terms" className="text-primary underline">Terms of Service</Link> for more.
           </p>
         </div>
