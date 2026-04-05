@@ -28,6 +28,7 @@ import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName, listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
+import { sellerProfileHref } from "@/lib/seller-slug"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import type { ReactNode } from "react"
@@ -223,7 +224,7 @@ export default async function HomePage() {
 
   // Fetch featured shops - public profile fields only; never expose email or role flags
   const profilePublicFields =
-    "id, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+    "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
   const { data: featuredShops } = await supabase
     .from("profiles")
     .select(profilePublicFields)
@@ -255,7 +256,7 @@ export default async function HomePage() {
 
   // Recently verified sellers: each card shows their single most expensive active listing + profile
   const verifiedForSpotlightFields =
-    "id, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified, shop_verified_at, updated_at"
+    "id, seller_slug, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified, shop_verified_at, updated_at"
   const { data: recentVerifiedProfiles } = await supabase
     .from("profiles")
     .select(verifiedForSpotlightFields)
@@ -608,7 +609,7 @@ export default async function HomePage() {
                       trailingInsideCard={
                         <div className="shrink-0 border-t border-border/60 bg-muted/40 px-3 py-2">
                           <Link
-                            href={`/sellers/${profile.id}`}
+                            href={sellerProfileHref(profile)}
                             className="flex items-center gap-3 rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-muted/80"
                           >
                             <Avatar className="h-10 w-10 border border-border shrink-0">
@@ -810,7 +811,7 @@ export default async function HomePage() {
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredShops.map((shop) => (
-                  <Link key={shop.id} href={`/sellers/${shop.id}`}>
+                  <Link key={shop.id} href={sellerProfileHref(shop)}>
                     <Card className={cn(listingProductCardClassName, "h-full")}>
                       <div className="h-20 bg-offwhite relative overflow-hidden">
                         {shop.shop_banner_url && (

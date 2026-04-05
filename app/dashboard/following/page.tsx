@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MapPin, Package, Users, ExternalLink } from "lucide-react"
 import { UnfollowButton } from "./unfollow-button"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { sellerProfileHref } from "@/lib/seller-slug"
 
 export const metadata = {
   title: "Following — Dashboard",
@@ -37,6 +38,7 @@ export default async function FollowingPage() {
       created_at,
       seller:profiles!seller_follows_seller_id_fkey (
         id,
+        seller_slug,
         display_name,
         shop_name,
         avatar_url,
@@ -126,7 +128,7 @@ export default async function FollowingPage() {
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div>
                         <Link
-                          href={`/sellers/${s.id}`}
+                          href={sellerProfileHref(s)}
                           className="font-semibold text-foreground hover:underline"
                         >
                           {name}
@@ -154,7 +156,7 @@ export default async function FollowingPage() {
 
                       <div className="flex items-center gap-2 shrink-0">
                         <Link
-                          href={`/sellers/${s.id}`}
+                          href={sellerProfileHref(s)}
                           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />

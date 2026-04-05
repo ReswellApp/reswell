@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { sellerProfileHref } from "@/lib/seller-slug"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
 const THUMB_PER_SELLER = 6
@@ -55,7 +56,7 @@ export default async function SellersPage({
   const supabase = await getSupabaseForPublicSellersDirectory()
 
   const profilePublicFields =
-    "id, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+    "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
   const [{ data: shopRows, error: shopIdsError }, { data: listingRows, error: listingIdsError }] =
     await Promise.all([
@@ -211,7 +212,7 @@ export default async function SellersPage({
                     <CardContent className="p-0">
                       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
                         <Link
-                          href={`/sellers/${shop.id}`}
+                          href={sellerProfileHref(shop)}
                           className="flex min-w-0 flex-1 gap-3 rounded-lg outline-none ring-offset-background transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <Avatar className="h-14 w-14 shrink-0 border border-border">
@@ -239,7 +240,7 @@ export default async function SellersPage({
                           </div>
                         </Link>
                         <Button variant="outline" size="sm" className="shrink-0 self-start" asChild>
-                          <Link href={`/sellers/${shop.id}`}>
+                          <Link href={sellerProfileHref(shop)}>
                             Profile
                             <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
                           </Link>

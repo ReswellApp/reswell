@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Button } from "@/components/ui/button"
+import { sellerProfileHref } from "@/lib/seller-slug"
 import {
   LayoutDashboard,
   Package,
@@ -56,7 +57,7 @@ export default async function DashboardLayout({
   // Check if user is a shop
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_shop")
+    .select("is_shop, seller_slug")
     .eq("id", user.id)
     .single()
   
@@ -91,7 +92,7 @@ export default async function DashboardLayout({
                 })}
                 {isShop && (
                   <Link
-                    href={`/sellers/${user.id}`}
+                    href={sellerProfileHref(profile)}
                     className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-primary hover:text-primary hover:bg-primary/5 transition-colors"
                   >
                     <Store className="h-4 w-4" />

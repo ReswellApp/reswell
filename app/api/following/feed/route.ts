@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
       listing_images (url, is_primary),
       seller:profiles!listings_user_id_fkey (
         id,
+        seller_slug,
         display_name,
         shop_name,
         avatar_url,

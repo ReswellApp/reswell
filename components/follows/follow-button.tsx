@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { UserPlus, UserCheck, UserMinus, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { sellerProfileHref } from "@/lib/seller-slug"
 
 interface FollowButtonProps {
   sellerId: string
+  /** Public profile path uses `seller_slug` when present. */
+  sellerSlug?: string | null
   sellerName?: string
   /** Show seller's city on the button label: "[+ Follow — San Diego]" */
   sellerCity?: string
@@ -25,6 +28,7 @@ interface FollowButtonProps {
 
 export function FollowButton({
   sellerId,
+  sellerSlug,
   sellerName,
   sellerCity,
   initialFollowing,
@@ -59,7 +63,12 @@ export function FollowButton({
         {
           action: {
             label: "Sign in",
-            onClick: () => router.push(`/auth/login?redirect=/sellers/${sellerId}`),
+            onClick: () =>
+              router.push(
+                `/auth/login?redirect=${encodeURIComponent(
+                  sellerProfileHref({ seller_slug: sellerSlug }),
+                )}`,
+              ),
           },
         }
       )

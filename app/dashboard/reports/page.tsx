@@ -20,6 +20,7 @@ import { Flag, Loader2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { sellerProfileHref } from '@/lib/seller-slug'
 
 const REPORT_REASONS = [
   { value: 'spam', label: 'Spam' },
@@ -37,7 +38,7 @@ interface MyReport {
   status: string
   created_at: string
   listing: { id: string; title: string; section: string } | null
-  reported_user: { id: string; display_name: string | null } | null
+  reported_user: { id: string; display_name: string | null; seller_slug: string | null } | null
 }
 
 export default function DashboardReportsPage() {
@@ -66,7 +67,7 @@ export default function DashboardReportsPage() {
       .select(`
         id, reason, description, status, created_at,
         listing:listings(id, title, section),
-        reported_user:profiles!reports_reported_user_id_fkey(id, display_name)
+        reported_user:profiles!reports_reported_user_id_fkey(id, display_name, seller_slug)
       `)
       .eq('reporter_id', user.id)
       .order('created_at', { ascending: false })
@@ -87,13 +88,23 @@ export default function DashboardReportsPage() {
     return null
   }
 
-  function parseUserId(input: string): string | null {
+  async function resolveReportedUserId(input: string): Promise<string | null> {
     const trimmed = input.trim()
     if (!trimmed) return null
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (uuidRegex.test(trimmed)) return trimmed
-    const match = trimmed.match(/\/sellers\/([0-9a-f-]{36})/i)
-    return match ? match[1] : null
+    const sellersMatch = trimmed.match(/\/sellers\/([^/?#]+)/i)
+    if (sellersMatch) {
+      const seg = decodeURIComponent(sellersMatch[1])
+      if (uuidRegex.test(seg)) return seg
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("seller_slug", seg)
+        .maybeSingle()
+      return data?.id ?? null
+    }
+    return null
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -137,9 +148,9 @@ export default function DashboardReportsPage() {
       setSubmitting(false)
       return
     }
-    const userId = parseUserId(userInput)
+    const userId = await resolveReportedUserId(userInput)
     if (!userId) {
-      toast.error('Enter a valid user profile link or ID (e.g. /sellers/... or paste the user ID)')
+      toast.error('Enter a valid user profile link or ID (e.g. /sellers/your-shop-slug or paste the user ID)')
       return
     }
     setSubmitting(true)
@@ -246,7 +257,7 @@ export default function DashboardReportsPage() {
                 <Input
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  placeholder="e.g. https://.../sellers/abc-123 or paste user ID"
+                  placeholder="e.g. https://.../sellers/your-shop-slug or paste user ID"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Paste the seller/profile URL or the user ID.
@@ -326,7 +337,7 @@ export default function DashboardReportsPage() {
                       </Link>
                     ) : r.reported_user ? (
                       <Link
-                        href={`/sellers/${r.reported_user.id}`}
+                        href={sellerProfileHref(r.reported_user)}
                         className="text-sm text-primary hover:underline"
                       >
                         User: {r.reported_user.display_name || 'Unknown'}
