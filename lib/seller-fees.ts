@@ -9,7 +9,7 @@
 /** Marketplace fee: 7% of sale price (platform fee). Seller keeps 93%. */
 export const MARKETPLACE_FEE_PERCENT = 7
 
-/** Same fee as a decimal (e.g. disputes, admin math). */
+/** Same fee as a decimal (e.g. admin math). */
 export const RESWELL_FEE = MARKETPLACE_FEE_PERCENT / 100
 
 /** Stripe processing rate: 2.9% (card payments only) */
