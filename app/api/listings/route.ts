@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { slugify } from '@/lib/slugify'
 import { listingTitleWithBoardLength } from '@/lib/listing-title-board-length'
+import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
+import { formatBoardInchesForTitle } from '@/lib/sell-form-validation'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -62,10 +64,10 @@ export async function POST(request: NextRequest) {
 
   const feetParsed = length_feet != null && length_feet !== '' ? parseInt(String(length_feet), 10) : NaN
   const inchParsed =
-    length_inches != null && length_inches !== '' ? parseInt(String(length_inches), 10) : NaN
+    length_inches != null && length_inches !== '' ? parseFloat(String(length_inches)) : NaN
   const boardLenLabel =
     Number.isFinite(feetParsed) && Number.isFinite(inchParsed)
-      ? `${feetParsed}'${inchParsed}"`
+      ? `${feetParsed}'${formatBoardInchesForTitle(inchParsed)}"`
       : Number.isFinite(feetParsed)
         ? `${feetParsed}'`
         : null
@@ -111,8 +113,11 @@ export async function POST(request: NextRequest) {
       city,
       state,
       board_type,
-      length_feet: length_feet ? parseInt(length_feet) : null,
-      length_inches: length_inches ? parseInt(length_inches) : null,
+      length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
+      length_inches:
+        length_inches != null && length_inches !== ''
+          ? parseFloat(String(length_inches))
+          : null,
       width: width ? parseFloat(width) : null,
       thickness: thickness ? parseFloat(thickness) : null,
       volume: volume ? parseFloat(volume) : null,
@@ -151,6 +156,26 @@ export async function POST(request: NextRequest) {
   } catch {
     // ES optional; listing still created
   }
+
+  const firstEntry = images[0] as
+    | string
+    | { url: string; thumbnail_url?: string | null }
+    | undefined
+  const photoUrl =
+    typeof firstEntry === "string"
+      ? firstEntry
+      : firstEntry && typeof firstEntry === "object"
+        ? firstEntry.thumbnail_url?.trim() || firstEntry.url
+        : null
+
+  void trackKlaviyoListingCreated({
+    sellerUserId: user.id,
+    sellerEmail: user.email ?? null,
+    listingId: listing.id,
+    title: resolvedTitle,
+    price: parseFloat(String(price)),
+    photoUrl: photoUrl || null,
+  })
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }

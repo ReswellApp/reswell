@@ -102,6 +102,21 @@ import {
 } from "@/lib/sell-listing-draft-idb"
 import { cn } from "@/lib/utils"
 import { listingDetailPath } from "@/lib/listing-query"
+import {
+  validateSellListingForm,
+  type SellFormValidationInput,
+} from "@/lib/sell-form-validation"
+
+function submitErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message
+  if (error && typeof error === "object") {
+    const o = error as { message?: unknown; details?: unknown; hint?: unknown }
+    if (typeof o.message === "string" && o.message.trim()) return o.message
+    const parts = [o.details, o.hint].filter((x): x is string => typeof x === "string" && x.trim() !== "")
+    if (parts.length) return parts.join(" — ")
+  }
+  return fallback
+}
 
 // Used gear categories (ids match public.categories). Hardware & Accessories and Travel & Storage removed from used section.
 const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
@@ -1130,116 +1145,100 @@ function SellPageContent() {
         return
       }
 
-      if (!formData.title || !formData.price || !formData.condition) {
-        toast.error("Please fill in all required fields")
+      let submitForm = formData
+      if (listingType === "board" && dimMode === "fraction") {
+        const next = { ...formData }
+        let touched = false
+        if (inchesFractionInput.trim()) {
+          const p = parseDimension(inchesFractionInput.trim())
+          if (p == null) {
+            toast.error('Board length (inches): enter a valid value like 2 1/2 or 0.125')
+            setLoading(false)
+            return
+          }
+          next.boardLengthIn = formatDecimalDimension(p)
+          touched = true
+        }
+        if (widthFractionInput.trim()) {
+          const p = parseDimension(widthFractionInput.trim())
+          if (p == null) {
+            toast.error("Board width: enter a valid value like 19 1/2 or 19.5")
+            setLoading(false)
+            return
+          }
+          next.boardWidthInches = formatDecimalDimension(p)
+          touched = true
+        }
+        if (thicknessFractionInput.trim()) {
+          const p = parseDimension(thicknessFractionInput.trim())
+          if (p == null) {
+            toast.error("Board thickness: enter a valid value like 2 1/4 or 2.25")
+            setLoading(false)
+            return
+          }
+          next.boardThicknessInches = formatDecimalDimension(p)
+          touched = true
+        }
+        if (touched) {
+          submitForm = next
+          setFormData(next)
+          setInchesFractionInput("")
+          setWidthFractionInput("")
+          setThicknessFractionInput("")
+        }
+      }
+
+      const imagesUploadReady =
+        listingType !== "used" && listingType !== "board"
+          ? true
+          : !images.some(
+              (im) =>
+                im.uploadPhase !== "done" ||
+                !im.url?.trim() ||
+                !im.thumbnailUrl?.trim(),
+            )
+
+      const validationMessage = validateSellListingForm(
+        { listingType, ...submitForm } as SellFormValidationInput,
+        { imageCount: images.length, imagesUploadReady },
+      )
+      if (validationMessage) {
+        toast.error(validationMessage)
         setLoading(false)
         return
       }
 
-      if (listingType === "used" && !formData.category) {
-        toast.error("Please select a category")
-        setLoading(false)
-        return
-      }
-
-      if (listingType === "board" && !formData.boardType) {
-        toast.error("Please select a board type")
-        setLoading(false)
-        return
-      }
-
-      if (listingType === "used") {
-        if (!formData.description?.trim()) {
-          toast.error("Description is required for used items")
-          setLoading(false)
-          return
-        }
-      }
-
-      if (listingType === "board") {
-        if (!formData.boardLengthFt?.trim()) {
-          toast.error("Board length is required for surfboards")
-          setLoading(false)
-          return
-        }
-        if (!formData.description?.trim()) {
-          toast.error("Description is required for surfboards")
-          setLoading(false)
-          return
-        }
-        if (!formData.locationCity?.trim() || !formData.locationState?.trim()) {
-          toast.error("Set a location on the map for your surfboard (pickup area or where you ship from)")
-          setLoading(false)
-          return
-        }
-      }
-
-      if ((listingType === "used" || listingType === "board") && images.length < 3) {
-        toast.error("At least 3 photos are required for this listing")
-        setLoading(false)
-        return
-      }
-
-      if (listingType === "used" || listingType === "board") {
-        const notReady = images.some(
-          (im) =>
-            im.uploadPhase !== "done" ||
-            !im.url?.trim() ||
-            !im.thumbnailUrl?.trim(),
-        )
-        if (notReady) {
-          toast.error(
-            "Wait for all photos to finish uploading, or tap Retry on any that failed.",
-          )
-          setLoading(false)
-          return
-        }
-      }
+      const fd = submitForm
 
       const fulfillmentFlags =
         listingType === "used"
           ? { shipping_available: true, local_pickup: false }
-          : flagsFromBoardFulfillment(formData.boardFulfillment)
-
-      if (fulfillmentFlags.shipping_available) {
-        const raw = formData.boardShippingPrice.trim()
-        if (!raw) {
-          toast.error("Enter a shipping price when offering shipping (use 0 for free shipping).")
-          setLoading(false)
-          return
-        }
-        const sp = parseFloat(raw)
-        if (Number.isNaN(sp) || sp < 0) {
-          toast.error("Shipping price must be a number ≥ 0.")
-          setLoading(false)
-          return
-        }
-      }
+          : flagsFromBoardFulfillment(fd.boardFulfillment)
 
       const fulfillmentRow = {
         shipping_available: fulfillmentFlags.shipping_available,
         local_pickup: fulfillmentFlags.local_pickup,
         shipping_price: fulfillmentFlags.shipping_available
-          ? parseFloat(formData.boardShippingPrice.trim())
+          ? parseFloat(fd.boardShippingPrice.trim())
           : null,
       }
 
       const boardLocationLat =
-        listingType === "board" && formData.locationLat ? formData.locationLat : null
+        listingType === "board" && fd.locationLat ? fd.locationLat : null
       const boardLocationLng =
-        listingType === "board" && formData.locationLng ? formData.locationLng : null
+        listingType === "board" && fd.locationLng ? fd.locationLng : null
       const boardLocationCity =
-        listingType === "board" ? formData.locationCity.trim() || null : null
+        listingType === "board" ? fd.locationCity.trim() || null : null
       const boardLocationState =
-        listingType === "board" ? formData.locationState.trim() || null : null
+        listingType === "board" ? fd.locationState.trim() || null : null
 
-      const boardLengthFmt = formData.boardLengthFt.trim()
-        ? `${parseInt(formData.boardLengthFt, 10)}'${formatDecimalDimension(parseFloat(formData.boardLengthIn) || 0)}"`
+      const boardLengthFmt = fd.boardLengthFt.trim()
+        ? `${parseInt(fd.boardLengthFt, 10)}'${formatDecimalDimension(parseFloat(fd.boardLengthIn) || 0)}"`
         : ""
       const resolvedListingTitle =
         listingType === "board" && boardLengthFmt
-          ? listingTitleWithBoardLength(formData.title, boardLengthFmt)
-          : formData.title.trim()
+          ? listingTitleWithBoardLength(fd.title, boardLengthFmt)
+          : fd.title.trim()
 
       const flowImpersonation = !!impersonation
       if (!editId && !flowImpersonation) {
@@ -1266,7 +1265,7 @@ function SellPageContent() {
 
       setPublishPreview({
         title: resolvedListingTitle,
-        price: formData.price,
+        price: fd.price,
         coverUrl:
           images[0]?.thumbnailUrl ||
           images[0]?.url ||
@@ -1321,145 +1320,145 @@ function SellPageContent() {
 
         const editListingFields = {
           title: resolvedListingTitle,
-          description: formData.description,
-          price: parseFloat(formData.price),
-          condition: formData.condition,
+          description: fd.description,
+          price: parseFloat(fd.price),
+          condition: fd.condition,
           category_id:
             listingType === "used"
-              ? formData.category
-              : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
-          board_type: listingType === "board" ? formData.boardType : null,
+              ? fd.category
+              : boardCategoryMap[fd.boardType] || boardCategoryMap.other,
+          board_type: listingType === "board" ? fd.boardType : null,
           length_feet:
-            listingType === "board" && formData.boardLengthFt
-              ? parseInt(formData.boardLengthFt)
+            listingType === "board" && fd.boardLengthFt
+              ? parseInt(fd.boardLengthFt)
               : null,
           length_inches:
-            listingType === "board" && formData.boardLengthFt
-              ? parseFloat(formData.boardLengthIn) || 0
+            listingType === "board" && fd.boardLengthFt
+              ? parseFloat(fd.boardLengthIn) || 0
               : null,
-          width: listingType === "board" && formData.boardWidthInches ? parseFloat(formData.boardWidthInches) : null,
-          thickness: listingType === "board" && formData.boardThicknessInches ? parseFloat(formData.boardThicknessInches) : null,
-          volume: listingType === "board" && formData.boardVolumeL ? parseFloat(formData.boardVolumeL) : null,
-          fins_setup: listingType === "board" && formData.boardFins ? formData.boardFins : null,
-          tail_shape: listingType === "board" && formData.boardTail ? formData.boardTail : null,
+          width: listingType === "board" && fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
+          thickness: listingType === "board" && fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
+          volume: listingType === "board" && fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
+          fins_setup: listingType === "board" && fd.boardFins ? fd.boardFins : null,
+          tail_shape: listingType === "board" && fd.boardTail ? fd.boardTail : null,
           latitude:
             listingType === "board"
               ? boardLocationLat
-              : fulfillmentRow.local_pickup && formData.locationLat
-                ? formData.locationLat
+              : fulfillmentRow.local_pickup && fd.locationLat
+                ? fd.locationLat
                 : null,
           longitude:
             listingType === "board"
               ? boardLocationLng
-              : fulfillmentRow.local_pickup && formData.locationLng
-                ? formData.locationLng
+              : fulfillmentRow.local_pickup && fd.locationLng
+                ? fd.locationLng
                 : null,
           city:
             listingType === "board"
               ? boardLocationCity
               : fulfillmentRow.local_pickup
-                ? formData.locationCity
+                ? fd.locationCity
                 : null,
           state:
             listingType === "board"
               ? boardLocationState
               : fulfillmentRow.local_pickup
-                ? formData.locationState
+                ? fd.locationState
                 : null,
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           brand:
-            listingType === "board" && formData.brand.trim()
-              ? formData.brand.trim()
+            listingType === "board" && fd.brand.trim()
+              ? fd.brand.trim()
               : listingType === "used" &&
-                  (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-                  formData.brand.trim()
-                ? formData.brand.trim()
+                  (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
+                  fd.brand.trim()
+                ? fd.brand.trim()
                 : null,
-          index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
-          index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
-          index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
+          index_brand_slug: listingType === "board" ? fd.boardIndexBrandSlug.trim() || null : null,
+          index_model_slug: listingType === "board" ? fd.boardIndexModelSlug.trim() || null : null,
+          index_model_label: listingType === "board" ? fd.boardIndexLabel.trim() || null : null,
           gear_size:
             listingType === "used" &&
-            (formData.category === FINS_CATEGORY_ID ||
-              formData.category === BACKPACK_CATEGORY_ID ||
-              formData.category === BOARD_BAGS_CATEGORY_ID ||
-              formData.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
-            formData.gearSize.trim()
-              ? formData.gearSize.trim()
+            (fd.category === FINS_CATEGORY_ID ||
+              fd.category === BACKPACK_CATEGORY_ID ||
+              fd.category === BOARD_BAGS_CATEGORY_ID ||
+              fd.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
+            fd.gearSize.trim()
+              ? fd.gearSize.trim()
               : null,
           gear_color:
             listingType === "used" &&
-            (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-            formData.gearColor.trim()
-              ? formData.gearColor.trim()
+            (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
+            fd.gearColor.trim()
+              ? fd.gearColor.trim()
               : null,
           pack_kind:
             listingType === "used" &&
-            formData.category === BACKPACK_CATEGORY_ID &&
-            (formData.packKind === "surfpack" || formData.packKind === "bag")
-              ? formData.packKind
+            fd.category === BACKPACK_CATEGORY_ID &&
+            (fd.packKind === "surfpack" || fd.packKind === "bag")
+              ? fd.packKind
               : null,
           board_bag_kind:
             listingType === "used" &&
-            formData.category === BOARD_BAGS_CATEGORY_ID &&
-            (formData.boardBagKind === "day" || formData.boardBagKind === "travel")
-              ? formData.boardBagKind
+            fd.category === BOARD_BAGS_CATEGORY_ID &&
+            (fd.boardBagKind === "day" || fd.boardBagKind === "travel")
+              ? fd.boardBagKind
               : null,
           apparel_kind:
             listingType === "used" &&
-            formData.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
-            APPAREL_KIND_VALUES.includes(formData.apparelKind as ApparelKindValue)
-              ? formData.apparelKind
+            fd.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
+            APPAREL_KIND_VALUES.includes(fd.apparelKind as ApparelKindValue)
+              ? fd.apparelKind
               : null,
           wetsuit_size:
             listingType === "used" &&
-            formData.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(formData.wetsuitSize.trim())
-              ? formData.wetsuitSize.trim()
+            fd.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(fd.wetsuitSize.trim())
+              ? fd.wetsuitSize.trim()
               : null,
           wetsuit_thickness:
             listingType === "used" &&
-            formData.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(formData.wetsuitThickness.trim())
-              ? formData.wetsuitThickness.trim()
+            fd.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(fd.wetsuitThickness.trim())
+              ? fd.wetsuitThickness.trim()
               : null,
           wetsuit_zip_type:
             listingType === "used" &&
-            formData.category === WETSUITS_CATEGORY_ID &&
-            WETSUIT_ZIP_VALUES.includes(formData.wetsuitZipType as WetsuitZipValue)
-              ? formData.wetsuitZipType
+            fd.category === WETSUITS_CATEGORY_ID &&
+            WETSUIT_ZIP_VALUES.includes(fd.wetsuitZipType as WetsuitZipValue)
+              ? fd.wetsuitZipType
               : null,
           leash_length:
             listingType === "used" &&
-            formData.category === LEASHES_CATEGORY_ID &&
-            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(formData.leashLength.trim())
-              ? formData.leashLength.trim()
+            fd.category === LEASHES_CATEGORY_ID &&
+            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(fd.leashLength.trim())
+              ? fd.leashLength.trim()
               : null,
           leash_thickness:
             listingType === "used" &&
-            formData.category === LEASHES_CATEGORY_ID &&
-            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
-              ? formData.leashThickness.trim()
+            fd.category === LEASHES_CATEGORY_ID &&
+            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(fd.leashThickness.trim())
+              ? fd.leashThickness.trim()
               : null,
           collectible_type:
             listingType === "used" &&
-            formData.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(formData.collectibleType)
-              ? formData.collectibleType
+            fd.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(fd.collectibleType)
+              ? fd.collectibleType
               : null,
           collectible_era:
             listingType === "used" &&
-            formData.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(formData.collectibleEra)
-              ? formData.collectibleEra
+            fd.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(fd.collectibleEra)
+              ? fd.collectibleEra
               : null,
           collectible_condition:
             listingType === "used" &&
-            formData.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(formData.collectibleCondition)
-              ? formData.collectibleCondition
+            fd.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(fd.collectibleCondition)
+              ? fd.collectibleCondition
               : null,
         }
 
@@ -1471,7 +1470,7 @@ function SellPageContent() {
             .eq("user_id", user.id)
             .select("slug")
             .single()
-          if (updateError) throw updateError
+          if (updateError) throw new Error(submitErrorMessage(updateError, "Failed to update listing"))
           listingSlug = updated?.slug ?? null
         } else if (adminImpersonatesListingOwner) {
           usedImpersonationListingApi = true
@@ -1528,146 +1527,146 @@ function SellPageContent() {
       } else {
         const listingFields = {
           title: resolvedListingTitle,
-          description: formData.description,
-          price: parseFloat(formData.price),
-          condition: formData.condition,
+          description: fd.description,
+          price: parseFloat(fd.price),
+          condition: fd.condition,
           section: listingType === "board" ? "surfboards" : listingType,
           category_id:
             listingType === "used"
-              ? formData.category
-              : boardCategoryMap[formData.boardType] || boardCategoryMap.other,
-          board_type: listingType === "board" ? formData.boardType : null,
+              ? fd.category
+              : boardCategoryMap[fd.boardType] || boardCategoryMap.other,
+          board_type: listingType === "board" ? fd.boardType : null,
           length_feet:
-            listingType === "board" && formData.boardLengthFt
-              ? parseInt(formData.boardLengthFt)
+            listingType === "board" && fd.boardLengthFt
+              ? parseInt(fd.boardLengthFt)
               : null,
           length_inches:
-            listingType === "board" && formData.boardLengthFt
-              ? parseFloat(formData.boardLengthIn) || 0
+            listingType === "board" && fd.boardLengthFt
+              ? parseFloat(fd.boardLengthIn) || 0
               : null,
-          width: listingType === "board" && formData.boardWidthInches ? parseFloat(formData.boardWidthInches) : null,
-          thickness: listingType === "board" && formData.boardThicknessInches ? parseFloat(formData.boardThicknessInches) : null,
-          volume: listingType === "board" && formData.boardVolumeL ? parseFloat(formData.boardVolumeL) : null,
-          fins_setup: listingType === "board" && formData.boardFins ? formData.boardFins : null,
-          tail_shape: listingType === "board" && formData.boardTail ? formData.boardTail : null,
+          width: listingType === "board" && fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
+          thickness: listingType === "board" && fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
+          volume: listingType === "board" && fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
+          fins_setup: listingType === "board" && fd.boardFins ? fd.boardFins : null,
+          tail_shape: listingType === "board" && fd.boardTail ? fd.boardTail : null,
           latitude:
             listingType === "board"
               ? boardLocationLat
-              : fulfillmentRow.local_pickup && formData.locationLat
-                ? formData.locationLat
+              : fulfillmentRow.local_pickup && fd.locationLat
+                ? fd.locationLat
                 : null,
           longitude:
             listingType === "board"
               ? boardLocationLng
-              : fulfillmentRow.local_pickup && formData.locationLng
-                ? formData.locationLng
+              : fulfillmentRow.local_pickup && fd.locationLng
+                ? fd.locationLng
                 : null,
           city:
             listingType === "board"
               ? boardLocationCity
               : fulfillmentRow.local_pickup
-                ? formData.locationCity
+                ? fd.locationCity
                 : null,
           state:
             listingType === "board"
               ? boardLocationState
               : fulfillmentRow.local_pickup
-                ? formData.locationState
+                ? fd.locationState
                 : null,
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           brand:
-            listingType === "board" && formData.brand.trim()
-              ? formData.brand.trim()
+            listingType === "board" && fd.brand.trim()
+              ? fd.brand.trim()
               : listingType === "used" &&
-                  (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-                  formData.brand.trim()
-                ? formData.brand.trim()
+                  (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
+                  fd.brand.trim()
+                ? fd.brand.trim()
                 : null,
-          index_brand_slug: listingType === "board" ? formData.boardIndexBrandSlug.trim() || null : null,
-          index_model_slug: listingType === "board" ? formData.boardIndexModelSlug.trim() || null : null,
-          index_model_label: listingType === "board" ? formData.boardIndexLabel.trim() || null : null,
+          index_brand_slug: listingType === "board" ? fd.boardIndexBrandSlug.trim() || null : null,
+          index_model_slug: listingType === "board" ? fd.boardIndexModelSlug.trim() || null : null,
+          index_model_label: listingType === "board" ? fd.boardIndexLabel.trim() || null : null,
           gear_size:
             listingType === "used" &&
-            (formData.category === FINS_CATEGORY_ID ||
-              formData.category === BACKPACK_CATEGORY_ID ||
-              formData.category === BOARD_BAGS_CATEGORY_ID ||
-              formData.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
-            formData.gearSize.trim()
-              ? formData.gearSize.trim()
+            (fd.category === FINS_CATEGORY_ID ||
+              fd.category === BACKPACK_CATEGORY_ID ||
+              fd.category === BOARD_BAGS_CATEGORY_ID ||
+              fd.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
+            fd.gearSize.trim()
+              ? fd.gearSize.trim()
               : null,
           gear_color:
             listingType === "used" &&
-            (formData.category === FINS_CATEGORY_ID || formData.category === BACKPACK_CATEGORY_ID) &&
-            formData.gearColor.trim()
-              ? formData.gearColor.trim()
+            (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
+            fd.gearColor.trim()
+              ? fd.gearColor.trim()
               : null,
           pack_kind:
             listingType === "used" &&
-            formData.category === BACKPACK_CATEGORY_ID &&
-            (formData.packKind === "surfpack" || formData.packKind === "bag")
-              ? formData.packKind
+            fd.category === BACKPACK_CATEGORY_ID &&
+            (fd.packKind === "surfpack" || fd.packKind === "bag")
+              ? fd.packKind
               : null,
           board_bag_kind:
             listingType === "used" &&
-            formData.category === BOARD_BAGS_CATEGORY_ID &&
-            (formData.boardBagKind === "day" || formData.boardBagKind === "travel")
-              ? formData.boardBagKind
+            fd.category === BOARD_BAGS_CATEGORY_ID &&
+            (fd.boardBagKind === "day" || fd.boardBagKind === "travel")
+              ? fd.boardBagKind
               : null,
           apparel_kind:
             listingType === "used" &&
-            formData.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
-            APPAREL_KIND_VALUES.includes(formData.apparelKind as ApparelKindValue)
-              ? formData.apparelKind
+            fd.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
+            APPAREL_KIND_VALUES.includes(fd.apparelKind as ApparelKindValue)
+              ? fd.apparelKind
               : null,
           wetsuit_size:
             listingType === "used" &&
-            formData.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(formData.wetsuitSize.trim())
-              ? formData.wetsuitSize.trim()
+            fd.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(fd.wetsuitSize.trim())
+              ? fd.wetsuitSize.trim()
               : null,
           wetsuit_thickness:
             listingType === "used" &&
-            formData.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(formData.wetsuitThickness.trim())
-              ? formData.wetsuitThickness.trim()
+            fd.category === WETSUITS_CATEGORY_ID &&
+            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(fd.wetsuitThickness.trim())
+              ? fd.wetsuitThickness.trim()
               : null,
           wetsuit_zip_type:
             listingType === "used" &&
-            formData.category === WETSUITS_CATEGORY_ID &&
-            WETSUIT_ZIP_VALUES.includes(formData.wetsuitZipType as WetsuitZipValue)
-              ? formData.wetsuitZipType
+            fd.category === WETSUITS_CATEGORY_ID &&
+            WETSUIT_ZIP_VALUES.includes(fd.wetsuitZipType as WetsuitZipValue)
+              ? fd.wetsuitZipType
               : null,
           leash_length:
             listingType === "used" &&
-            formData.category === LEASHES_CATEGORY_ID &&
-            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(formData.leashLength.trim())
-              ? formData.leashLength.trim()
+            fd.category === LEASHES_CATEGORY_ID &&
+            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(fd.leashLength.trim())
+              ? fd.leashLength.trim()
               : null,
           leash_thickness:
             listingType === "used" &&
-            formData.category === LEASHES_CATEGORY_ID &&
-            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(formData.leashThickness.trim())
-              ? formData.leashThickness.trim()
+            fd.category === LEASHES_CATEGORY_ID &&
+            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(fd.leashThickness.trim())
+              ? fd.leashThickness.trim()
               : null,
           collectible_type:
             listingType === "used" &&
-            formData.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(formData.collectibleType)
-              ? formData.collectibleType
+            fd.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(fd.collectibleType)
+              ? fd.collectibleType
               : null,
           collectible_era:
             listingType === "used" &&
-            formData.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(formData.collectibleEra)
-              ? formData.collectibleEra
+            fd.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(fd.collectibleEra)
+              ? fd.collectibleEra
               : null,
           collectible_condition:
             listingType === "used" &&
-            formData.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(formData.collectibleCondition)
-              ? formData.collectibleCondition
+            fd.category === COLLECTIBLES_CATEGORY_ID &&
+            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(fd.collectibleCondition)
+              ? fd.collectibleCondition
               : null,
         }
 
@@ -1705,7 +1704,12 @@ function SellPageContent() {
             .select()
             .single()
 
-          if (listingError || !listing) throw listingError
+          if (listingError) {
+            throw new Error(submitErrorMessage(listingError, "Failed to create listing"))
+          }
+          if (!listing) {
+            throw new Error("No listing returned")
+          }
           listingId = listing.id
           listingSlug = listing.slug ?? newSlug
           goSubmitStep(1)
@@ -1720,8 +1724,30 @@ function SellPageContent() {
             .from("listing_images")
             .insert(imageRows)
           if (imagesInsertError) {
-            throw new Error(imagesInsertError.message || "Failed to save listing photos")
+            throw new Error(submitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
+          void fetch("/api/integrations/klaviyo/listing-created", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ listing_id: listingId }),
+          })
+            .then(async (res) => {
+              if (res.ok) return
+              const text = await res.text().catch(() => "")
+              if (process.env.NODE_ENV === "development") {
+                console.warn(
+                  "[klaviyo] listing-created API:",
+                  res.status,
+                  text.slice(0, 300),
+                )
+              }
+            })
+            .catch((err) => {
+              if (process.env.NODE_ENV === "development") {
+                console.warn("[klaviyo] listing-created fetch failed:", err)
+              }
+            })
           goSubmitStep(2)
         }
       }
@@ -1770,8 +1796,8 @@ function SellPageContent() {
       void clearSellListingDraft()
       router.push(detailPath)
     } catch (error: unknown) {
-      console.error("Error creating listing:", error instanceof Error ? error.message : error)
-      const msg = error instanceof Error ? error.message : "Failed to create listing"
+      const msg = submitErrorMessage(error, "Failed to create listing")
+      console.error("Error creating listing:", msg, error)
       const failedLabel =
         uploadPhaseLabelsRef.current[submitStepIndexRef.current] ?? "This step"
       setPublishPreview((p) =>
