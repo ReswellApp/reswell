@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/slugify'
+import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -104,8 +105,11 @@ export async function POST(request: NextRequest) {
       city: city || null,
       state: state || null,
       board_type: board_type || null,
-      length_feet: length_feet ? parseInt(length_feet) : null,
-      length_inches: length_inches ? parseInt(length_inches) : null,
+      length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
+      length_inches:
+        length_inches != null && length_inches !== ''
+          ? parseFloat(String(length_inches))
+          : null,
       width: width ? parseFloat(width) : null,
       thickness: thickness ? parseFloat(thickness) : null,
       volume: volume ? parseFloat(volume) : null,
@@ -143,6 +147,23 @@ export async function POST(request: NextRequest) {
       quantity: parseInt(String(inventory_quantity), 10),
     })
   }
+
+  const firstEntry = (images as (string | { url: string; thumbnail_url?: string | null })[])[0]
+  const photoUrl =
+    typeof firstEntry === 'string'
+      ? firstEntry
+      : firstEntry && typeof firstEntry === 'object'
+        ? firstEntry.thumbnail_url?.trim() || firstEntry.url
+        : null
+
+  void trackKlaviyoListingCreated({
+    sellerUserId: targetUserId,
+    sellerEmail: null,
+    listingId: listing.id,
+    title: String(title),
+    price: parseFloat(String(price)),
+    photoUrl: photoUrl || null,
+  })
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }

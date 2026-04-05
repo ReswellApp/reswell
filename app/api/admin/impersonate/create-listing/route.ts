@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import { slugify } from "@/lib/slugify"
+import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -122,6 +123,21 @@ export async function POST(request: NextRequest) {
 
   const sellerDisplayName =
     (sellerProfile?.display_name && String(sellerProfile.display_name).trim()) || "Seller"
+
+  const firstImg = (images as { url: string; thumbnail_url?: string | null }[])[0]
+  const photoUrl =
+    firstImg?.thumbnail_url?.trim() || firstImg?.url?.trim() || null
+  void trackKlaviyoListingCreated({
+    sellerUserId: targetUserId,
+    sellerEmail: null,
+    listingId: listing.id,
+    title: String(listingData.title ?? ""),
+    price:
+      typeof listingData.price === "number"
+        ? listingData.price
+        : parseFloat(String(listingData.price)),
+    photoUrl,
+  })
 
   return NextResponse.json({
     success: true,
