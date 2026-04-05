@@ -120,12 +120,12 @@ function listingCardSrc(url?: string | null): string {
 
 const categories = [
   { name: "Surfboards", href: "/boards", section: "surfboards", slug: null },
-  { name: "Wetsuits", href: "/used/wetsuits", section: "used", slug: "wetsuits" },
-  { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle", section: "used", slug: "apparel-lifestyle" },
-  { name: "Fins", href: "/used/fins", section: "used", slug: "fins" },
-  { name: "Leashes", href: "/used/leashes", section: "used", slug: "leashes" },
-  { name: "Board Bags", href: "/used/board-bags", section: "used", slug: "board-bags" },
-  { name: "Vintage", href: "/used/collectibles-vintage", section: "used", slug: "collectibles-vintage" },
+  { name: "Wetsuits", href: "/wetsuits", section: "used", slug: "wetsuits" },
+  { name: "Apparel & Lifestyle", href: "/apparel-lifestyle", section: "used", slug: "apparel-lifestyle" },
+  { name: "Fins", href: "/fins", section: "used", slug: "fins" },
+  { name: "Leashes", href: "/leashes", section: "used", slug: "leashes" },
+  { name: "Board Bags", href: "/board-bags", section: "used", slug: "board-bags" },
+  { name: "Vintage", href: "/collectibles-vintage", section: "used", slug: "collectibles-vintage" },
 ]
 
 function listingPublicHref(listing: {
@@ -136,7 +136,7 @@ function listingPublicHref(listing: {
   const slugOrId = listing.slug || listing.id
   if (listing.section === "surfboards") return `/boards/${slugOrId}`
   if (listing.section === "new") return `/shop/${listing.id}`
-  return `/used/${slugOrId}`
+  return `/${slugOrId}`
 }
 
 /** Match `used-gear-listings` / seller grids: primary flag first, else first image. */
@@ -362,7 +362,7 @@ export default async function HomePage() {
               </p>
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button size="lg" asChild>
-                  <Link href="/used">
+                  <Link href="/gear">
                     Browse Used Gear
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -466,7 +466,7 @@ export default async function HomePage() {
                   <p className="text-muted-foreground">Pre-loved items from the community</p>
                 </div>
                 <Button variant="outline" asChild>
-                  <Link href="/used">
+                  <Link href="/gear">
                     View All
                     <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>
@@ -476,7 +476,7 @@ export default async function HomePage() {
                 {featuredUsed.map((listing) => (
                   <ListingTile
                     key={listing.id}
-                    href={`/used/${listing.slug || listing.id}`}
+                    href={`/${listing.slug || listing.id}`}
                     listingId={listing.id}
                     title={listing.title}
                     imageAlt={capitalizeWords(listing.title)}
@@ -665,7 +665,7 @@ export default async function HomePage() {
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold">Browse by Category</h2>
               <Button variant="ghost" asChild>
-                <Link href="/used">
+                <Link href="/gear">
                   View All
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>

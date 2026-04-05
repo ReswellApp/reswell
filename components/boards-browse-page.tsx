@@ -1,21 +1,20 @@
 import { Suspense } from "react"
-import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
-import { BoardsBrowseClient } from "./boards-browse-client"
+import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { Users } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
-import { publicSiteOrigin } from "@/lib/public-site-origin"
+import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
 
 function haversineMi(
   lat1: number,
   lon1: number,
   lat2: number | null | undefined,
-  lon2: number | null | undefined
+  lon2: number | null | undefined,
 ): number {
   if (lat2 == null || lon2 == null) return Infinity
   const R = 3959
@@ -31,69 +30,9 @@ function haversineMi(
   return R * c
 }
 
-interface SearchParams {
-  type?: string
-  condition?: string
-  sort?: string
-  q?: string
-  location?: string
-  page?: string
-  brand?: string
-  minPrice?: string
-  maxPrice?: string
-  radius?: string
-  lat?: string
-  lng?: string
-}
-
-const BOARD_TYPE_LABELS: Record<string, string> = {
-  shortboard: "Shortboards",
-  longboard: "Longboards",
-  funboard: "Funboards",
-  fish: "Fish Boards",
-  gun: "Gun Boards",
-  foamie: "Foam / Soft-Top Boards",
-  other: "Surfboards",
-}
-const CONDITION_LABELS: Record<string, string> = {
-  new: "New",
-  like_new: "Like-New",
-  good: "Good Condition",
-  fair: "Fair Condition",
-}
-
-export async function generateMetadata(props: {
-  searchParams: Promise<SearchParams>
-}): Promise<Metadata> {
-  const sp = await props.searchParams
-  const typeLabel = sp.type && sp.type !== "all" ? BOARD_TYPE_LABELS[sp.type] ?? "Surfboards" : "Surfboards"
-  const condLabel = sp.condition && sp.condition !== "all" ? CONDITION_LABELS[sp.condition] ?? "" : ""
-  const locationLabel = sp.location ? ` in ${sp.location}` : ""
-
-  const titleParts = [condLabel, typeLabel].filter(Boolean).join(" ")
-  const title = `${titleParts}${locationLabel} For Sale | Reswell`
-  const description = [
-    `Browse ${condLabel ? condLabel.toLowerCase() + " " : ""}${typeLabel.toLowerCase()} for sale${locationLabel}.`,
-    "Find shortboards, longboards, fish, and more from local surfers on Reswell.",
-  ].join(" ")
-
-  const canonical = new URL("/boards", publicSiteOrigin() + "/")
-  if (sp.type && sp.type !== "all") canonical.searchParams.set("type", sp.type)
-  if (sp.condition && sp.condition !== "all") canonical.searchParams.set("condition", sp.condition)
-  if (sp.location) canonical.searchParams.set("location", sp.location)
-  if (sp.sort && sp.sort !== "newest") canonical.searchParams.set("sort", sp.sort)
-
-  return {
-    title,
-    description,
-    alternates: { canonical: canonical.toString() },
-    openGraph: { title, description, type: "website" },
-  }
-}
-
-async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
+async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearchParams }) {
   const supabase = await createClient()
-  
+
   const boardType = searchParams.type || "all"
   const condition = searchParams.condition || "all"
   const sort = searchParams.sort || "newest"
@@ -110,12 +49,15 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
 
   let dbQuery = supabase
     .from("listings")
-    .select(`
+    .select(
+      `
       *,
       listing_images (url, thumbnail_url, is_primary),
       categories (name),
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
-    `, { count: "exact" })
+    `,
+      { count: "exact" },
+    )
     .eq("status", "active")
     .eq("section", "surfboards")
 
@@ -140,7 +82,7 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     const { data: matchingCats } = await supabase
       .from("categories")
       .select("id")
-      .eq("section", "surfboards")
+      .eq("board", true)
       .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
     const categoryIds = (matchingCats ?? []).map((c) => c.id)
     const orParts = [`title.ilike.${pattern}`, `description.ilike.${pattern}`]
@@ -200,14 +142,15 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     const { data: rawBoards, count } = await dbQuery.range(offset, offset + limit - 1)
 
     const isDefaultSort = sort === "newest"
-    boards = isDefaultSort && rawBoards
-      ? [...rawBoards].sort((a, b) => {
-          const salesA = a.profiles?.sales_count ?? 0
-          const salesB = b.profiles?.sales_count ?? 0
-          if (salesB !== salesA) return salesB - salesA
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        })
-      : rawBoards
+    boards =
+      isDefaultSort && rawBoards
+        ? [...rawBoards].sort((a, b) => {
+            const salesA = a.profiles?.sales_count ?? 0
+            const salesB = b.profiles?.sales_count ?? 0
+            if (salesB !== salesA) return salesB - salesA
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          })
+        : rawBoards
 
     totalPages = Math.ceil((count || 0) / limit)
   }
@@ -217,7 +160,8 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     if (searchParams.q) params.set("q", searchParams.q)
     if (searchParams.location) params.set("location", searchParams.location)
     if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
-    if (searchParams.condition && searchParams.condition !== "all") params.set("condition", searchParams.condition)
+    if (searchParams.condition && searchParams.condition !== "all")
+      params.set("condition", searchParams.condition)
     if (searchParams.minPrice) params.set("minPrice", searchParams.minPrice)
     if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice)
     if (searchParams.radius) params.set("radius", searchParams.radius)
@@ -241,14 +185,19 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
     )
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   let favoritedIds: string[] = []
   if (user && boards.length > 0) {
     const { data: favs } = await supabase
       .from("favorites")
       .select("listing_id")
       .eq("user_id", user.id)
-      .in("listing_id", boards.map((b) => b.id))
+      .in(
+        "listing_id",
+        boards.map((b) => b.id),
+      )
     favoritedIds = (favs ?? []).map((f) => f.listing_id)
   }
 
@@ -293,7 +242,6 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
         })}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
@@ -315,53 +263,52 @@ async function BoardListings({ searchParams }: { searchParams: SearchParams }) {
   )
 }
 
-export default async function BoardsPage(props: {
-  searchParams: Promise<SearchParams>
+export async function BoardsBrowsePage(props: {
+  searchParams: Promise<BoardsBrowseSearchParams>
 }) {
   const searchParams = await props.searchParams
-  
-  return (
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="bg-offwhite py-12">
-          <div className="container mx-auto">
-            <h1 className="text-3xl font-bold text-center">Surfboards</h1>
-            <p className="text-center text-muted-foreground mt-2">
-              Find local boards for pickup from sellers in your area
-            </p>
-          </div>
-        </section>
 
-        <section className="py-4 min-w-0">
-          <div className="container mx-auto min-w-0">
-            <BoardsBrowseClient
-              initialQ={searchParams.q ?? ""}
-              initialLocation={searchParams.location ?? ""}
-              initialType={searchParams.type ?? "all"}
-              initialCondition={searchParams.condition ?? "all"}
-              initialSort={searchParams.sort ?? "newest"}
+  return (
+    <main className="flex-1">
+      <section className="bg-offwhite py-12">
+        <div className="container mx-auto">
+          <h1 className="text-3xl font-bold text-center">Surfboards</h1>
+          <p className="text-center text-muted-foreground mt-2">
+            Find local boards for pickup from sellers in your area
+          </p>
+        </div>
+      </section>
+
+      <section className="py-4 min-w-0">
+        <div className="container mx-auto min-w-0">
+          <BoardsBrowseClient
+            initialQ={searchParams.q ?? ""}
+            initialLocation={searchParams.location ?? ""}
+            initialType={searchParams.type ?? "all"}
+            initialCondition={searchParams.condition ?? "all"}
+            initialSort={searchParams.sort ?? "newest"}
+          >
+            <Suspense
+              fallback={
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <div className="aspect-[3/4] w-full skeleton" />
+                      <CardContent className="p-3 space-y-2">
+                        <div className="h-3.5 skeleton" style={{ width: `${60 + (i % 3) * 15}%` }} />
+                        <div className="h-3 skeleton" style={{ width: `${40 + (i % 4) * 10}%` }} />
+                        <div className="h-5 w-16 skeleton" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              }
             >
-              <Suspense
-                fallback={
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <Card key={i} className="overflow-hidden">
-                        <div className="aspect-[3/4] w-full skeleton" />
-                        <CardContent className="p-3 space-y-2">
-                          <div className="h-3.5 skeleton" style={{ width: `${60 + (i % 3) * 15}%` }} />
-                          <div className="h-3 skeleton" style={{ width: `${40 + (i % 4) * 10}%` }} />
-                          <div className="h-5 w-16 skeleton" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                }
-              >
-                <BoardListings searchParams={searchParams} />
-              </Suspense>
-            </BoardsBrowseClient>
-          </div>
-        </section>
-      </main>
+              <BoardListings searchParams={searchParams} />
+            </Suspense>
+          </BoardsBrowseClient>
+        </div>
+      </section>
+    </main>
   )
 }

@@ -27,7 +27,7 @@ function getListingHref(listing: FollowNotification["listing"]): string {
   const id = listing.slug || listing.id
   if (listing.section === "surfboards") return `/boards/${id}`
   if (listing.section === "new") return `/shop/${listing.id}`
-  return `/used/${id}`
+  return `/${id}`
 }
 
 export function NotificationDrawer() {

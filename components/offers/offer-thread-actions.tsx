@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { CheckCircle2, XCircle, Tag, Loader2, AlertCircle } from 'lucide-react'
 import type { OfferRole, OfferStatus } from '@/lib/offers/types'
+import { peerListingCheckoutHref } from '@/lib/listing-href'
 
 interface OfferThreadActionsProps {
   offerId: string
@@ -65,7 +66,7 @@ export function OfferThreadActions({
       }
 
       if (action === 'ACCEPT') {
-        router.push(`/${listingSection}/${listingSlug}/checkout?offer_id=${offerId}`)
+        router.push(peerListingCheckoutHref(listingSection, listingSlug, offerId))
       } else {
         router.refresh()
       }
@@ -253,7 +254,7 @@ export function OfferThreadActions({
   if (status === 'ACCEPTED' && isBuyer) {
     return (
       <Button size="lg" className="w-full" asChild>
-        <Link href={`/${listingSection}/${listingSlug}/checkout?offer_id=${offerId}`}>
+        <Link href={peerListingCheckoutHref(listingSection, listingSlug, offerId)}>
           Complete purchase — {fmt(currentAmount)}
         </Link>
       </Button>

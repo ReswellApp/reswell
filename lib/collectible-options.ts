@@ -1,4 +1,4 @@
-/** Stored in listings.collectible_type — subcategory for Vintage (/used/collectibles-vintage) */
+/** Stored in listings.collectible_type — subcategory for Vintage (/collectibles-vintage) */
 export const COLLECTIBLE_TYPE_OPTIONS = [
   { value: "vintage_surfboards", label: "Vintage Surfboards" },
   { value: "vintage_apparel", label: "Vintage Apparel" },

@@ -142,11 +142,11 @@ export async function POST(request: NextRequest) {
     const slugOrId = listing.slug || listing.id
     const successUrl =
       listing.section === "used"
-        ? `${origin}/used/checkout/success?session_id={CHECKOUT_SESSION_ID}`
+        ? `${origin}/checkout/listing/success?session_id={CHECKOUT_SESSION_ID}`
         : `${origin}/boards/checkout/success?session_id={CHECKOUT_SESSION_ID}`
     const cancelUrl =
       listing.section === "used"
-        ? `${origin}/used/${slugOrId}/checkout?canceled=1`
+        ? `${origin}/checkout/listing?listing=${encodeURIComponent(slugOrId)}&canceled=1`
         : `${origin}/boards/${slugOrId}/checkout?canceled=1`
 
     const useConnectDestination = Boolean(destinationAccountId)

@@ -88,13 +88,13 @@ function resolveHeaderAvatarUrl(
 /** Desktop + mobile primary nav (Apparel / Leashes / Vintage last before Categories dropdown). */
 const navigation = [
   { name: "Surfboards", href: "/boards" },
-  { name: "Fins", href: "/used/fins" },
-  { name: "Surfpacks & Bags", href: "/used/backpacks" },
-  { name: "Board Bags", href: "/used/board-bags" },
-  { name: "Wetsuits", href: "/used/wetsuits" },
-  { name: "Apparel & Lifestyle", href: "/used/apparel-lifestyle" },
-  { name: "Leashes", href: "/used/leashes" },
-  { name: "Vintage", href: "/used/collectibles-vintage" },
+  { name: "Fins", href: "/fins" },
+  { name: "Surfpacks & Bags", href: "/backpacks" },
+  { name: "Board Bags", href: "/board-bags" },
+  { name: "Wetsuits", href: "/wetsuits" },
+  { name: "Apparel & Lifestyle", href: "/apparel-lifestyle" },
+  { name: "Leashes", href: "/leashes" },
+  { name: "Vintage", href: "/collectibles-vintage" },
 ]
 
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
@@ -114,8 +114,8 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
   if (!pathname.startsWith(path)) return false
 
   if (!query) {
-    if (path === "/used") {
-      if (pathname !== "/used") return false
+    if (path === "/gear") {
+      if (pathname !== "/gear") return false
       const cat = searchParams.get("category")
       return !cat || cat === "all"
     }
@@ -131,7 +131,7 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
   for (const key of new Set(required.keys())) {
     if (searchParams.get(key) !== required.get(key)) return false
   }
-  return pathname === path || (path === "/used" && pathname.startsWith("/used"))
+  return pathname === path || (path === "/gear" && pathname.startsWith("/gear"))
 }
 
 const mainNavHrefs = new Set(navigation.map((item) => item.href))
@@ -515,7 +515,7 @@ export function Header() {
       `}</style>
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
-      <header className="sticky top-0 z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth pt-[env(safe-area-inset-top)]">
+      <header className="relative z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth">
         <div className="container mx-auto flex min-w-0 items-center gap-2 py-2 sm:py-2.5 md:py-3 md:gap-4 min-h-[56px] sm:min-h-[64px] md:min-h-[80px]">
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link

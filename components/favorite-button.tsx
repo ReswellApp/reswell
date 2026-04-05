@@ -32,7 +32,7 @@ export function FavoriteButton({
   async function toggleFavorite() {
     if (!isLoggedIn) {
       toast.error("Please sign in to save favorites")
-      router.push(`/auth/login?redirect=${redirectPath || `/used/${listingId}`}`)
+      router.push(`/auth/login?redirect=${redirectPath || `/${listingId}`}`)
       return
     }
 

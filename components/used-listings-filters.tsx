@@ -11,13 +11,11 @@ import {
 } from "@/components/ui/select"
 import { Search } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
+import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export const usedConditions = [
   { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like_new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
+  ...listingConditionFilterRows(),
 ]
 
 interface UsedListingsFiltersProps {

@@ -79,8 +79,12 @@ export default function DashboardReportsPage() {
     if (!trimmed) return null
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (uuidRegex.test(trimmed)) return trimmed
-    const match = trimmed.match(/\/(used|boards|shop)\/([0-9a-f-]{36})/i)
-    return match ? match[2] : null
+    const matchLegacy = trimmed.match(/\/(boards|shop)\/([0-9a-f-]{36})/i)
+    if (matchLegacy) return matchLegacy[2]
+    const pathOnly = trimmed.split(/[?#]/)[0]
+    const lastSeg = pathOnly.split("/").filter(Boolean).pop()
+    if (lastSeg && uuidRegex.test(lastSeg)) return lastSeg
+    return null
   }
 
   function parseUserId(input: string): string | null {
@@ -101,7 +105,7 @@ export default function DashboardReportsPage() {
     if (type === 'listing') {
       const listingId = parseListingId(listingInput)
       if (!listingId) {
-        toast.error('Enter a valid listing link or ID (e.g. /used/... or paste the listing ID)')
+        toast.error('Enter a valid listing link or ID (e.g. site path /your-listing or paste the listing ID)')
         return
       }
       setSubmitting(true)
@@ -185,7 +189,7 @@ export default function DashboardReportsPage() {
   const getSectionHref = (section: string) => {
     if (section === 'surfboards') return '/boards'
     if (section === 'new') return '/shop'
-    return '/used'
+    return '/gear'
   }
 
   return (
@@ -228,7 +232,7 @@ export default function DashboardReportsPage() {
                 <Input
                   value={listingInput}
                   onChange={(e) => setListingInput(e.target.value)}
-                  placeholder="e.g. https://.../used/abc-123 or paste listing ID"
+                  placeholder="e.g. https://.../your-listing-slug or paste listing ID"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Paste the full listing URL (from Used, Boards, or Shop) or the listing ID.

@@ -66,7 +66,7 @@ interface SearchInputWithSuggestProps {
 
 function listingHref(listing: SuggestListing) {
   const id = listing.slug || listing.id
-  return listing.section === "surfboards" ? `/boards/${id}` : `/used/${id}`
+  return listing.section === "surfboards" ? `/boards/${id}` : `/${id}`
 }
 
 function listingSectionLabel(section: string) {

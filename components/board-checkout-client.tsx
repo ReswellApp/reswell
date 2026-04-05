@@ -33,7 +33,7 @@ export type BoardCheckoutListing = PayableListing & {
 
 interface BoardCheckoutClientProps {
   listing: BoardCheckoutListing
-  /** Surfboard wording by default; pass used-gear labels for `/used/.../checkout`. */
+  /** Surfboard wording by default; pass used-gear labels for `/checkout/listing` (used gear). */
   copy?: PeerListingCheckoutCopy
   /** When checking out from an accepted offer, pass the offer ID to associate with the purchase. */
   offerId?: string

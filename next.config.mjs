@@ -81,6 +81,19 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Legacy /used/* URLs → flat marketplace routes + /gear
+      {
+        source: "/used/checkout/success",
+        destination: "/checkout/listing/success",
+        permanent: true,
+      },
+      {
+        source: "/used/:id/checkout",
+        destination: "/checkout/listing?listing=:id",
+        permanent: true,
+      },
+      { source: "/used", destination: "/gear", permanent: true },
+      { source: "/used/:path*", destination: "/:path*", permanent: true },
       { source: "/shop/cart", destination: "/cart", permanent: true },
       { source: "/shop/checkout/success", destination: "/checkout/success", permanent: true },
       { source: "/shop/checkout", destination: "/checkout", permanent: true },

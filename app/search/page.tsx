@@ -3,7 +3,7 @@ import { SearchPageView } from "./search-page-view"
 
 interface SearchParams {
   q?: string
-  section?: string
+  category?: string
   view?: string
 }
 
@@ -15,21 +15,18 @@ export default async function SearchPage(props: {
 }) {
   const searchParams = await props.searchParams
   const rawQuery = (searchParams.q ?? "").trim()
-  const sectionParam = (searchParams.section ?? "all") as
-    | "all"
-    | "used"
-    | "boards"
+  const categorySlugFromUrl = (searchParams.category ?? "").trim()
 
   if (!rawQuery) {
     const sp = new URLSearchParams()
-    if (sectionParam !== "all") sp.set("section", sectionParam)
+    if (categorySlugFromUrl) sp.set("category", categorySlugFromUrl)
     permanentRedirect(`/search/recent${sp.size ? `?${sp}` : ""}`)
   }
 
   return (
     <SearchPageView
       rawQuery={rawQuery}
-      sectionParam={sectionParam}
+      categorySlugFromUrl={categorySlugFromUrl}
       showSeoBookmark={false}
     />
   )

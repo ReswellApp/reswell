@@ -14,6 +14,7 @@ import { Search, MapPin, LocateFixed } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
 import { useToast } from "@/hooks/use-toast"
+import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export const boardTypes = [
   { value: "all", label: "All Board Types" },
@@ -28,10 +29,7 @@ export const boardTypes = [
 
 export const boardConditions = [
   { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like_new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
+  ...listingConditionFilterRows(),
 ]
 
 export const boardSortOptions = [

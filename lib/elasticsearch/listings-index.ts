@@ -98,6 +98,7 @@ export async function deleteListingDocument(listingId: string): Promise<void> {
   }
 }
 
+/** @deprecated Legacy search UI; ES listing search defaults to surfboards-only marketplace scope. */
 export type SearchSectionFilter = "all" | "used" | "boards"
 
 const SEARCH_FIELDS = [
@@ -224,10 +225,14 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
 /**
  * Returns listing IDs in relevance order (then created_at).
  */
+/**
+ * Keyword search over listings. Defaults to **surfboards** section only (matches marketplace search default).
+ * Pass `sections` to override (e.g. for legacy callers).
+ */
 export async function searchListingIdsFromElasticsearch(
   rawQuery: string,
-  section: SearchSectionFilter,
   limit: number,
+  options?: { sections?: string[] },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
   if (!es) return []
@@ -235,12 +240,7 @@ export async function searchListingIdsFromElasticsearch(
   try {
     await ensureListingsIndex()
 
-    const sections =
-      section === "used"
-        ? ["used"]
-        : section === "boards"
-          ? ["surfboards"]
-          : ["used", "surfboards"]
+    const sections = options?.sections ?? ["surfboards"]
 
     const filter: object[] = [
       { term: { status: "active" } },

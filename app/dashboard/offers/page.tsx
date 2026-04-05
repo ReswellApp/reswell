@@ -296,7 +296,7 @@ export default async function OffersPage() {
                   You haven&apos;t made any offers yet. Find gear you love and make an offer!
                 </p>
                 <Button asChild>
-                  <Link href="/used">Browse used gear</Link>
+                  <Link href="/gear">Browse gear</Link>
                 </Button>
               </CardContent>
             </Card>

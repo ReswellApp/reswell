@@ -208,7 +208,7 @@ function MessagesContent() {
                         ? listing.section === 'surfboards'
                           ? `/boards/${listingSlugOrId}`
                           : listing.section === 'used'
-                            ? `/used/${listingSlugOrId}`
+                            ? `/${listingSlugOrId}`
                             : `/shop/${n.listing_id}`
                         : '/saved'
                       return (

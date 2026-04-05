@@ -2,7 +2,7 @@
 UPDATE public.categories
 SET name = 'Surfpacks & Bags',
     description = 'Surfpacks and gear bags'
-WHERE slug = 'backpacks' AND section = 'used';
+WHERE slug = 'backpacks' AND gear = true;
 
 -- Surfpack vs bag — used with /used/backpacks filters
 ALTER TABLE public.listings

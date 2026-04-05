@@ -116,7 +116,7 @@ export default async function PurchasesPage() {
               When you buy from other members, your receipts show up here.
             </p>
             <Button asChild>
-              <Link href="/used">Browse used gear</Link>
+              <Link href="/gear">Browse gear</Link>
             </Button>
           </CardContent>
         </Card>

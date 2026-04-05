@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { capitalizeWords, formatListingTileCategoryPillText, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { ListingTile } from "@/components/listing-tile"
+import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
 
 export interface UsedGearSearchParams {
   category?: string
@@ -40,7 +41,7 @@ export interface UsedGearSearchParams {
 
 export async function UsedGearListings({
   searchParams,
-  basePath = "/used",
+  basePath = "/gear",
   fixedCategorySlug,
   clearFiltersHref,
   gearFilters = false,
@@ -107,7 +108,7 @@ export async function UsedGearListings({
       .from("categories")
       .select("id")
       .eq("slug", category)
-      .eq("section", "used")
+      .eq("gear", true)
       .single()
     if (catRow?.id) {
       dbQuery = dbQuery.eq("category_id", catRow.id)
@@ -187,7 +188,7 @@ export async function UsedGearListings({
     const { data: matchingCats } = await supabase
       .from("categories")
       .select("id")
-      .eq("section", "used")
+      .eq("gear", true)
       .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
     const categoryIds = (matchingCats ?? []).map((c) => c.id)
     const orParts = [`title.ilike.${pattern}`, `description.ilike.${pattern}`]
@@ -308,11 +309,17 @@ export async function UsedGearListings({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {listings.map((listing) => {
           const slug = listing.slug || listing.id
-          const checkoutPath = `/used/${slug}/checkout`
+          const checkoutPath = peerListingCheckoutHref("used", slug)
+          const detailHref = listingDetailHref({
+            id: listing.id,
+            slug: listing.slug,
+            section: "used",
+            categories: listing.categories as { slug?: string | null } | null,
+          })
           return (
             <ListingTile
               key={listing.id}
-              href={`/used/${slug}`}
+              href={detailHref}
               listingId={listing.id}
               title={capitalizeWords(listing.title)}
               imageAlt={capitalizeWords(listing.title)}

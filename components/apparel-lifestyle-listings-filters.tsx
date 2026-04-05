@@ -12,13 +12,11 @@ import {
 import { Search } from "lucide-react"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { APPAREL_KIND_OPTIONS, APPAREL_SIZE_OPTIONS } from "@/lib/apparel-lifestyle-options"
+import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export const apparelConditions = [
   { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like_new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
+  ...listingConditionFilterRows(),
 ]
 
 interface ApparelLifestyleListingsFiltersProps {

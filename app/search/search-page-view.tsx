@@ -1,8 +1,8 @@
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
-import { SearchSectionFilters } from "./search-section-filters"
-import type { RecentListing } from "@/app/used/recent/recent-feed-client"
-import { RecentFeedClient } from "@/app/used/recent/recent-feed-client"
+import { SearchCategoryFilters } from "./search-section-filters"
+import type { RecentListing } from "@/components/recent-feed-client"
+import { RecentFeedClient } from "@/components/recent-feed-client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import {
   meaningfulSearchTerms,
@@ -12,15 +12,25 @@ import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 
 const LIMIT = 48
 
-type Section = "all" | "used" | "boards"
+function sortMarketplaceBrowseCategories<T extends { name: string; board?: boolean | null }>(
+  rows: T[],
+): T[] {
+  return [...rows].sort((a, b) => {
+    const sa = a.board === true ? 0 : 1
+    const sb = b.board === true ? 0 : 1
+    if (sa !== sb) return sa - sb
+    return a.name.localeCompare(b.name)
+  })
+}
 
 export async function SearchPageView({
   rawQuery,
-  sectionParam,
+  categorySlugFromUrl,
   showSeoBookmark,
 }: {
   rawQuery: string
-  sectionParam: Section
+  /** Raw `?category=` segment; must match `categories.slug` to apply. */
+  categorySlugFromUrl: string
   /** Shown on the canonical recent-listings URL (`/search/recent`). */
   showSeoBookmark: boolean
 }) {
@@ -28,11 +38,23 @@ export async function SearchPageView({
 
   const supabase = await createClient()
 
-  const [{ data: { user } }, { listings, usedCount, boardsCount }] =
-    await Promise.all([
-      supabase.auth.getUser(),
-      resolveSearchListings(supabase, rawQuery, sectionParam),
-    ])
+  const [{ data: { user } }, { data: categoryRows }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("categories")
+      .select("id, name, slug, board, gear")
+      .or("board.eq.true,gear.eq.true"),
+  ])
+
+  const sortedCategories = sortMarketplaceBrowseCategories(categoryRows ?? [])
+  const requestedSlug = categorySlugFromUrl.trim()
+  const matched = requestedSlug
+    ? sortedCategories.find((c) => c.slug === requestedSlug)
+    : undefined
+  const categoryId = matched?.id ?? null
+  const selectedSlug = matched?.slug ?? null
+
+  const { listings } = await resolveSearchListings(supabase, rawQuery, categoryId)
 
   let favoritedListingIds: string[] = []
   if (user) {
@@ -44,139 +66,108 @@ export async function SearchPageView({
   }
 
   return (
-      <main className="flex-1">
-        <section className="border-b bg-background">
-          <div className="container mx-auto py-6 md:py-8">
-            <h1 className="text-xl font-bold text-foreground md:text-2xl">
-              {rawQuery ? (
-                <>Results for &ldquo;{rawQuery}&rdquo;</>
-              ) : (
-                <>Recently listed for you</>
-              )}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {rawQuery ? (
-                <>
-                  Use the search bar in the header to refine results.
-                  {isElasticsearchConfigured() && (
-                    <span className="mt-1 block text-xs text-muted-foreground/80">
-                      Results use Elasticsearch when the index is populated.
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  A curated mix of new listings, favoring active sellers, then freshest posts. Use
-                  the header search to look up gear and boards.
-                  {showSeoBookmark && (
-                    <span className="mt-1 block text-xs text-muted-foreground/80">
-                      Bookmark this page —{" "}
-                      <code className="rounded bg-muted px-1 py-0.5 text-[11px]">/search/recent</code>
-                    </span>
-                  )}
-                </>
-              )}
-            </p>
-          </div>
-        </section>
+    <main className="flex-1">
+      <section className="border-b bg-background">
+        <div className="container mx-auto py-6 md:py-8">
+          <h1 className="text-xl font-bold text-foreground md:text-2xl">
+            {rawQuery ? (
+              <>Results for &ldquo;{rawQuery}&rdquo;</>
+            ) : (
+              <>Recently listed for you</>
+            )}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {rawQuery ? (
+              <>
+                Use the search bar in the header to refine results.
+                {isElasticsearchConfigured() && (
+                  <span className="mt-1 block text-xs text-muted-foreground/80">
+                    Results use Elasticsearch when the index is populated.
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                A curated mix of new listings, favoring active sellers, then freshest posts. Use the
+                header search to look up listings.
+                {showSeoBookmark && (
+                  <span className="mt-1 block text-xs text-muted-foreground/80">
+                    Bookmark this page —{" "}
+                    <code className="rounded bg-muted px-1 py-0.5 text-[11px]">/search/recent</code>
+                  </span>
+                )}
+              </>
+            )}
+          </p>
+        </div>
+      </section>
 
-        <Suspense fallback={null}>
-          <SearchSectionFilters
-            query={rawQuery}
-            section={sectionParam}
-            usedCount={usedCount}
-            boardsCount={boardsCount}
-            curated={curatedView}
-          />
-        </Suspense>
+      <Suspense fallback={null}>
+        <SearchCategoryFilters
+          query={rawQuery}
+          selectedSlug={selectedSlug}
+          categories={sortedCategories}
+          curated={curatedView}
+        />
+      </Suspense>
 
-        <section className="container mx-auto py-8">
-          <RecentFeedClient
-            listings={listings}
-            favoritedListingIds={favoritedListingIds}
-            isLoggedIn={!!user}
-            emptyMessage={
-              rawQuery
-                ? "No listings match your search. Try different keywords or filters."
-                : "No listings to show yet. Check back soon or browse Used Gear and Surfboards."
-            }
-          />
-        </section>
-      </main>
+      <section className="container mx-auto py-8">
+        <RecentFeedClient
+          listings={listings}
+          favoritedListingIds={favoritedListingIds}
+          isLoggedIn={!!user}
+          emptyMessage={
+            rawQuery
+              ? "No listings match your search. Try different keywords or filters."
+              : "No listings to show yet. Check back soon or browse by category."
+          }
+        />
+      </section>
+    </main>
   )
 }
 
 async function resolveSearchListings(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
-  section: Section,
+  categoryId: string | null,
 ): Promise<{
   listings: RecentListing[]
-  usedCount: number
-  boardsCount: number
 }> {
   if (!rawQuery.trim()) {
-    const r = await fetchCuratedRecentListings(supabase, section, LIMIT)
-    return {
-      listings: r.listings,
-      usedCount: r.used,
-      boardsCount: r.boards,
-    }
+    const r = await fetchCuratedRecentListings(supabase, categoryId, LIMIT)
+    return { listings: r.listings }
   }
 
-  let listings: RecentListing[] = []
-  let usedCount = 0
-  let boardsCount = 0
+  if (categoryId) {
+    const { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
+    return { listings }
+  }
 
   if (isElasticsearchConfigured()) {
     try {
-      const ids = await searchListingIdsFromElasticsearch(rawQuery, section, LIMIT)
+      const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT)
       if (ids.length > 0) {
-        listings = await hydrateListingsByIds(supabase, ids)
-      }
-      if (rawQuery.trim() && ids.length === 0) {
-        listings = []
-      }
-      if (listings.length === 0) {
-        const { listings: dbListings, used: u, boards: b } = await buildSearchFromSupabase(
-          supabase,
-          rawQuery,
-          section,
-          LIMIT,
-        )
-        listings = dbListings
-        usedCount = u
-        boardsCount = b
-      } else {
-        const { used: u, boards: b } = await getSectionCounts(supabase, rawQuery)
-        usedCount = u
-        boardsCount = b
+        const listings = await hydrateListingsByIds(supabase, ids)
+        return { listings }
       }
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)
-      const result = await buildSearchFromSupabase(supabase, rawQuery, section, LIMIT)
-      listings = result.listings
-      usedCount = result.used
-      boardsCount = result.boards
+      const { listings } = await buildSearchFromSupabase(supabase, rawQuery, null, LIMIT)
+      return { listings }
     }
-  } else {
-    const result = await buildSearchFromSupabase(supabase, rawQuery, section, LIMIT)
-    listings = result.listings
-    usedCount = result.used
-    boardsCount = result.boards
   }
 
-  return { listings, usedCount, boardsCount }
+  const { listings } = await buildSearchFromSupabase(supabase, rawQuery, null, LIMIT)
+  return { listings }
 }
 
 async function fetchCuratedRecentListings(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  section: Section,
+  categoryId: string | null,
   limit: number,
 ): Promise<{
   listings: RecentListing[]
-  used: number
-  boards: number
 }> {
   const pool = Math.min(120, Math.max(limit * 4, 48))
   let q = supabase
@@ -204,20 +195,18 @@ async function fetchCuratedRecentListings(
     )
     .eq("status", "active")
 
-  if (section === "used") {
-    q = q.eq("section", "used")
-  } else if (section === "boards") {
-    q = q.eq("section", "surfboards")
+  if (categoryId) {
+    q = q.eq("category_id", categoryId)
   } else {
-    q = q.in("section", ["used", "surfboards"])
+    q = q.eq("section", "surfboards")
   }
 
   q = q.order("created_at", { ascending: false }).limit(pool)
   const { data: rows, error } = await q
 
   if (error || !rows?.length) {
-    const fallback = await buildSearchFromSupabase(supabase, "", section, limit)
-    return { listings: fallback.listings, used: fallback.used, boards: fallback.boards }
+    const fallback = await buildSearchFromSupabase(supabase, "", categoryId, limit)
+    return { listings: fallback.listings }
   }
 
   const sorted = [...rows].sort((a: any, b: any) => {
@@ -227,55 +216,25 @@ async function fetchCuratedRecentListings(
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
-  const [usedRes, boardsRes] = await Promise.all([
-    buildSearchQuery(supabase, "", "used", 1),
-    buildSearchQuery(supabase, "", "boards", 1),
-  ])
-
   return {
     listings: sorted.slice(0, limit).map((row) => rowToRecentListing(row)),
-    used: usedRes.count,
-    boards: boardsRes.count,
-  }
-}
-
-async function getSectionCounts(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  rawQuery: string,
-): Promise<{ used: number; boards: number }> {
-  const [usedRes, boardsRes] = await Promise.all([
-    buildSearchQuery(supabase, rawQuery, "used", 1),
-    buildSearchQuery(supabase, rawQuery, "boards", 1),
-  ])
-  return {
-    used: usedRes.count,
-    boards: boardsRes.count,
   }
 }
 
 async function buildSearchFromSupabase(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
-  section: Section,
+  categoryId: string | null,
   limit: number,
 ): Promise<{
   listings: RecentListing[]
-  used: number
-  boards: number
 }> {
-  const [allRes, usedRes, boardsRes] = await Promise.all([
-    buildSearchQuery(supabase, rawQuery, section, limit),
-    buildSearchQuery(supabase, rawQuery, "used", limit),
-    buildSearchQuery(supabase, rawQuery, "boards", limit),
-  ])
-
+  const allRes = await buildSearchQuery(supabase, rawQuery, categoryId, limit)
   const rows = allRes.data ?? []
   const listings = rows.map((row: any) => rowToRecentListing(row))
 
   return {
     listings,
-    used: usedRes.count,
-    boards: boardsRes.count,
   }
 }
 
@@ -306,11 +265,11 @@ function rowToRecentListing(row: any): RecentListing {
 }
 
 async function buildSearchQuery(
-  supabase: any,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
-  section: Section,
+  categoryId: string | null,
   limit: number,
-): Promise<{ data: any[]; count: number }> {
+): Promise<{ data: any[] }> {
   let query = supabase
     .from("listings")
     .select(
@@ -332,16 +291,13 @@ async function buildSearchQuery(
       profiles (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name, slug)
     `,
-      { count: "exact" },
     )
     .eq("status", "active")
 
-  if (section === "used") {
-    query = query.eq("section", "used")
-  } else if (section === "boards") {
-    query = query.eq("section", "surfboards")
+  if (categoryId) {
+    query = query.eq("category_id", categoryId)
   } else {
-    query = query.in("section", ["used", "surfboards"])
+    query = query.eq("section", "surfboards")
   }
 
   if (rawQuery) {
@@ -374,6 +330,6 @@ async function buildSearchQuery(
   }
 
   query = query.order("created_at", { ascending: false }).limit(limit)
-  const { data, count, error } = await query
-  return { data: data ?? [], count: error ? 0 : (count ?? 0) }
+  const { data, error } = await query
+  return { data: error ? [] : (data ?? []) }
 }

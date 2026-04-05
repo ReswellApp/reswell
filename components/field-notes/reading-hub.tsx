@@ -105,7 +105,7 @@ export function ReadingHub({ title, description, articles, wrapper = "main" }: P
         <footer className="mt-16 border-t border-border/60 pt-10">
           <p className="text-sm text-muted-foreground">
             Looking for gear?{" "}
-            <Link href="/used" className="font-medium text-foreground underline-offset-4 hover:underline">
+            <Link href="/gear" className="font-medium text-foreground underline-offset-4 hover:underline">
               Browse used
             </Link>
             {" · "}

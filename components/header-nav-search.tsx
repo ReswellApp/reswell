@@ -169,12 +169,12 @@ export function HeaderNavSearch() {
       const term = q.trim()
       if (!term) return
       saveRecentSearch(term)
-      const section = isSearchResultsPath(pathname)
-        ? searchParams.get("section")
+      const category = isSearchResultsPath(pathname)
+        ? searchParams.get("category")
         : null
       const params = new URLSearchParams()
       params.set("q", term)
-      if (section && section !== "all") params.set("section", section)
+      if (category?.trim()) params.set("category", category.trim())
       router.push(`/search?${params.toString()}`)
       setQuery("")
       clearNavSearchQuery()

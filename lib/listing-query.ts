@@ -7,22 +7,36 @@ function isListingRow(data: unknown): data is { section: string; id: string; slu
   return typeof row.section === "string" && typeof row.id === "string"
 }
 
+function categorySlugFromListing(listing: {
+  categories?: { slug?: string | null } | Array<{ slug?: string | null }> | null
+}): string | undefined {
+  const c = listing.categories
+  if (!c) return undefined
+  const row = Array.isArray(c) ? c[0] : c
+  return row?.slug?.trim() || undefined
+}
+
 /** Canonical detail URL for a listing (used by section-aware redirects). */
 export function listingDetailPath(listing: {
   section: string
   slug?: string | null
   id: string
+  categories?: { slug?: string | null } | Array<{ slug?: string | null }> | null
 }): string {
   const ident = listing.slug || listing.id
   if (listing.section === "surfboards") return `/boards/${ident}`
   if (listing.section === "new") return `/shop/${listing.id}`
-  return `/used/${ident}`
+  if (listing.section === "used") {
+    const cat = categorySlugFromListing(listing)
+    if (cat) return `/${cat}/${ident}`
+  }
+  return `/${ident}`
 }
 
 /**
  * Look up a listing by its slug (preferred) or UUID (backward compat).
  * - redirectSlug: URL used a UUID and the row belongs on this route; redirect to slug within the same section.
- * - canonicalPath: listing exists but under a different section (e.g. opened /used/… for a surfboard); redirect here.
+ * - canonicalPath: listing exists but under a different section (e.g. opened a used URL for a surfboard); redirect here.
  */
 export async function findListingByParam(
   supabase: SupabaseClient,

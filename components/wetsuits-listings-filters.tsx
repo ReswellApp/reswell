@@ -16,13 +16,11 @@ import {
   WETSUIT_THICKNESS_OPTIONS,
   WETSUIT_ZIP_OPTIONS,
 } from "@/lib/wetsuit-options"
+import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export const wetsuitConditions = [
   { value: "all", label: "Any Condition" },
-  { value: "new", label: "New" },
-  { value: "like_new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
+  ...listingConditionFilterRows(),
 ]
 
 interface WetsuitsListingsFiltersProps {

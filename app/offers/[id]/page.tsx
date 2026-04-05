@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ArrowLeft, Clock, Package } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { OfferThreadActions } from '@/components/offers/offer-thread-actions'
+import { peerListingCheckoutHref } from '@/lib/listing-href'
 import type { OfferAction, OfferStatus } from '@/lib/offers/types'
 
 export const metadata: Metadata = { title: 'Offer Thread — Reswell' }
@@ -290,7 +291,7 @@ export default async function OfferThreadPage({
 
         {offer.status === 'ACCEPTED' && (
           <Button size="lg" className="w-full" asChild>
-            <Link href={`/${listingSection}/${listingSlug}/checkout?offer_id=${offer.id}`}>
+            <Link href={peerListingCheckoutHref(listingSection, listingSlug, offer.id)}>
               Complete purchase — {fmt(offer.current_amount)}
             </Link>
           </Button>

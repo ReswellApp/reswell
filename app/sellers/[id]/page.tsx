@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { peerListingCheckoutHref } from "@/lib/listing-href"
 import { FollowButton } from "@/components/follows/follow-button"
 
 export async function generateMetadata({
@@ -382,14 +383,14 @@ function sellerListingPriceAction(
   if (listing.section === "used") {
     return {
       type: "checkout",
-      checkoutPath: `/used/${slug}/checkout`,
+      checkoutPath: peerListingCheckoutHref("used", slug),
       isLoggedIn,
     }
   }
   if (listing.section === "surfboards") {
     return {
       type: "checkout",
-      checkoutPath: `/boards/${slug}/checkout`,
+      checkoutPath: peerListingCheckoutHref("surfboards", slug),
       isLoggedIn,
     }
   }
@@ -429,13 +430,13 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
     const id = listing.slug || listing.id
     switch (listing.section) {
       case "used":
-        return `/used/${id}`
+        return `/${id}`
       case "new":
         return `/shop/${listing.id}`
       case "surfboards":
         return `/boards/${id}`
       default:
-        return `/used/${id}`
+        return `/${id}`
     }
   }
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { SearchPageView } from "../search-page-view"
 
 interface SearchParams {
-  section?: string
+  category?: string
 }
 
 export const dynamic = "force-dynamic"
@@ -28,15 +28,12 @@ export default async function SearchRecentPage(props: {
   searchParams: Promise<SearchParams>
 }) {
   const searchParams = await props.searchParams
-  const sectionParam = (searchParams.section ?? "all") as
-    | "all"
-    | "used"
-    | "boards"
+  const categorySlugFromUrl = (searchParams.category ?? "").trim()
 
   return (
     <SearchPageView
       rawQuery=""
-      sectionParam={sectionParam}
+      categorySlugFromUrl={categorySlugFromUrl}
       showSeoBookmark
     />
   )

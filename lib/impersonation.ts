@@ -49,9 +49,51 @@ export function getImpersonation(): ImpersonationData | null {
   }
 }
 
+/**
+ * If the admin impersonation cookie is gone but localStorage still has data, drop localStorage.
+ * Admin APIs only trust the cookie for the target user id — stale LS alone caused wrong UX.
+ */
+export function clearImpersonationStorageIfCookieMissing() {
+  if (typeof window === "undefined") return
+  const hasCookie = document.cookie
+    .split(";")
+    .some((c) => c.trim().startsWith(`${IMPERSONATION_COOKIE}=`))
+  if (!hasCookie) {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 /** Clear impersonation from both localStorage and the cookie. */
 export function clearImpersonation() {
   if (typeof window === "undefined") return
   localStorage.removeItem(STORAGE_KEY)
   document.cookie = `${IMPERSONATION_COOKIE}=; path=/; max-age=0`
+}
+
+function readCookieValue(name: string): string | null {
+  if (typeof document === "undefined") return null
+  const prefix = `${name}=`
+  for (const part of document.cookie.split(";")) {
+    const p = part.trim()
+    if (p.startsWith(prefix)) {
+      return p.slice(prefix.length) || null
+    }
+  }
+  return null
+}
+
+/**
+ * Current impersonation target from the admin cookie, after dropping stale localStorage
+ * when the cookie is missing. Use for UI (banner); APIs still validate the cookie server-side.
+ */
+export function getActiveImpersonationClient(): ImpersonationData | null {
+  if (typeof window === "undefined") return null
+  clearImpersonationStorageIfCookieMissing()
+  const raw = readCookieValue(IMPERSONATION_COOKIE)
+  if (!raw) return null
+  return parseImpersonationCookie(raw)
 }

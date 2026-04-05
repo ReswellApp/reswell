@@ -1,6 +1,6 @@
 /**
  * Human-readable labels for listing condition, category, and board type.
- * Use these anywhere we display badges so values like "like_new" show as "Like New".
+ * Stored `listings.condition` values stay `new` | `like_new` | `good` | `fair`; UI shows New / Excellent / Good / Fair.
  */
 
 /**
@@ -19,16 +19,37 @@ export function capitalizeWords(text: string | null | undefined): string {
   return text.trim().replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-const CONDITION_LABELS: Record<string, string> = {
+/** Short labels for tiles, filters, chips, and `formatCondition`. */
+export const LISTING_CONDITION_LABELS: Record<string, string> = {
   new: "New",
-  like_new: "Like New",
+  like_new: "Excellent",
   good: "Good",
   fair: "Fair",
 }
 
 export function formatCondition(condition: string | null | undefined): string {
   if (!condition) return ""
-  return CONDITION_LABELS[condition] ?? condition.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  return (
+    LISTING_CONDITION_LABELS[condition] ?? condition.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  )
+}
+
+/** Sell-form dropdown rows (value is persisted to `listings.condition`). */
+export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] = [
+  { value: "new", label: "New — never used" },
+  { value: "like_new", label: "Excellent — minimal wear" },
+  { value: "good", label: "Good — normal wear" },
+  { value: "fair", label: "Fair — visible wear, still functional" },
+]
+
+const LISTING_CONDITION_ORDER = ["new", "like_new", "good", "fair"] as const
+
+/** Rows for browse filters (values only; pair with `{ value: \"all\", label: \"Any Condition\" }`). */
+export function listingConditionFilterRows(): { value: string; label: string }[] {
+  return LISTING_CONDITION_ORDER.map((v) => ({
+    value: v,
+    label: LISTING_CONDITION_LABELS[v],
+  }))
 }
 
 /** Map legacy DB / canonical names to preferred display labels (URLs & slugs unchanged). */
