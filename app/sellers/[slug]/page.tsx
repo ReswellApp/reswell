@@ -525,7 +525,6 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
               : listing.status === "pending"
                 ? ("pending" as const)
                 : ("ended" as const)
-        const priceAction = sellerListingPriceAction()
         return (
           <ListingTile
             key={listing.id}
@@ -540,7 +539,6 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
             cardClassName={listingProductCardGridClassName}
             cardContentClassName="flex min-w-0 flex-1 flex-col p-3"
             statusLabel={statusLabel}
-            priceAction={priceAction}
             meta={loc ? { variant: "location", text: loc, showMapPin: true } : null}
             metaRowClassName={loc ? "mt-2" : undefined}
             categoryPill={pill}
