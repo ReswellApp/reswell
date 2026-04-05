@@ -42,7 +42,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/shop`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/sell`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/search`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${BASE}/directory`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE}/brands`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/board-talk`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/help`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },

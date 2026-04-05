@@ -6,6 +6,28 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 // No-op comment: trigger a fresh deploy after Vercel env changes.
 
+/** Hostnames for next/image in brand profiles (logos and art from brand sites / CDNs). */
+const brandCatalogImageHosts = [
+  'albumsurf.com',
+  'bingsurf.com',
+  'cisurfboards.com',
+  'd3iswawdztsslu.cloudfront.net',
+  'dhdsurf.com',
+  'i.vimeocdn.com',
+  'i.ytimg.com',
+  'ianc57.sg-host.com',
+  'instafeed.nfcube.com',
+  'lostsurfboards.net',
+  'lovemachinesurfboards.com',
+  'pyzelsurfboards.com',
+  'scontent.cdninstagram.com',
+  'sharpeyesurfboards.com',
+  'us.jsindustries.com',
+  'www.chillisurfboards.com',
+  'www.haydenshapes.com',
+  'www.robertssurf.com',
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -19,12 +41,17 @@ const nextConfig = {
         hostname: '**.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
-      // Shopify storefront product images
+      // Index / brand image URLs (Shopify CDN + custom domains with /cdn/shop/)
       {
         protocol: 'https',
         hostname: 'cdn.shopify.com',
         pathname: '/**',
       },
+      ...brandCatalogImageHosts.map((hostname) => ({
+        protocol: 'https',
+        hostname,
+        pathname: '/**',
+      })),
       // Press / collections assets
       {
         protocol: 'https',
@@ -57,9 +84,16 @@ const nextConfig = {
       { source: "/shop/cart", destination: "/cart", permanent: true },
       { source: "/shop/checkout/success", destination: "/checkout/success", permanent: true },
       { source: "/shop/checkout", destination: "/checkout", permanent: true },
-      // `/index` is often treated like the site root; canonical directory lives at `/directory`.
-      { source: "/index", destination: "/directory", permanent: true },
-      { source: "/index/:path*", destination: "/directory/:path*", permanent: true },
+      { source: "/index", destination: "/brands", permanent: true },
+      { source: "/index/:path*", destination: "/brands", permanent: true },
+      {
+        source: "/directory/brands/:slug/models/:path*",
+        destination: "/brands/:slug",
+        permanent: true,
+      },
+      { source: "/directory/brands/:slug", destination: "/brands/:slug", permanent: true },
+      { source: "/directory", destination: "/brands", permanent: true },
+      { source: "/directory/:path*", destination: "/brands", permanent: true },
       { source: "/threads/new", destination: "/board-talk/new", permanent: true },
       { source: "/wax-room/new", destination: "/board-talk/new", permanent: true },
       { source: "/threads/:slug", destination: "/board-talk/:slug", permanent: true },

@@ -52,7 +52,7 @@ import { cartItemCount, readCart } from "@/lib/cart-storage"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
-import { INDEX_DIRECTORY_BASE } from "@/lib/index-directory/routes"
+import { BRANDS_BASE } from "@/lib/brands/routes"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
@@ -100,8 +100,8 @@ const navigation = [
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
   { name: "Sellers", href: "/sellers" },
+  { name: "Brands", href: BRANDS_BASE },
   { name: "Field notes", href: "/blog" },
-  { name: "Index", href: INDEX_DIRECTORY_BASE },
   { name: "Board Talk", href: "/board-talk" },
 ]
 

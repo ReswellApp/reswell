@@ -37,7 +37,7 @@ const sidebarLinks = [
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "My Claims", href: "/dashboard/claims", icon: ShieldCheck },
   { name: "Reports", href: "/dashboard/reports", icon: Flag },
-  { name: "Shopify Connect", href: "/dashboard/profile", icon: Store },
+  { name: "Seller profile", href: "/dashboard/profile", icon: Store },
   { name: "Profile", href: "/dashboard/settings", icon: UserCircle },
   { name: "Settings", href: "/dashboard/preferences", icon: Settings },
 ]
