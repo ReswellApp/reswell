@@ -36,24 +36,16 @@ export async function GET() {
     wallet = { ...wallet, balance: s.balance, lifetime_cashed_out: s.lifetime_cashed_out }
   }
 
-  const [txResult, cashoutResult] = await Promise.all([
-    supabase
-      .from("wallet_transactions")
-      .select("*")
-      .eq("wallet_id", wallet.id)
-      .order("created_at", { ascending: false })
-      .limit(50),
-    supabase
-      .from("cashout_requests")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
-  ])
+  const { data: txRows } = await supabase
+    .from("wallet_transactions")
+    .select("*")
+    .eq("wallet_id", wallet.id)
+    .order("created_at", { ascending: false })
+    .limit(50)
 
   return NextResponse.json({
     wallet,
-    transactions: txResult.data ?? [],
-    cashoutHistory: cashoutResult.data ?? [],
+    transactions: txRows ?? [],
     paymentMethods: [],
   })
 }

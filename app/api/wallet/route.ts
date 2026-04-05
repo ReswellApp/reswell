@@ -53,7 +53,6 @@ export async function GET() {
     }
   }
 
-  // Fetch recent transactions
   const { data: transactions } = await supabase
     .from("wallet_transactions")
     .select("*")
@@ -61,17 +60,8 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(20)
 
-  // Fetch pending cashout requests
-  const { data: pendingCashouts } = await supabase
-    .from("cashout_requests")
-    .select("*")
-    .eq("user_id", user.id)
-    .in("status", ["pending", "processing"])
-    .order("created_at", { ascending: false })
-
   return NextResponse.json({
     wallet,
     transactions: transactions || [],
-    pendingCashouts: pendingCashouts || [],
   })
 }

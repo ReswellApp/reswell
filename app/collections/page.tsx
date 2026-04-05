@@ -1,19 +1,14 @@
 import type { Metadata } from "next"
-import { createClient } from "@/lib/supabase/server"
-import { CollectionSpotRequestForm } from "@/components/collections/collection-spot-request-form"
 import { CollectionsPressSection } from "@/components/collections/collections-press-section"
 
 export const revalidate = 120
 
 export const metadata: Metadata = {
   title: "Collections",
-  description: "Surf stories and community features on Reswell. Request a spot to showcase your quiver.",
+  description: "Surf stories and community features on Reswell.",
 }
 
-export default async function CollectionsPage() {
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-
+export default function CollectionsPage() {
   return (
     <main className="flex-1">
       <div className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-muted/40 via-background to-background">
@@ -27,18 +22,13 @@ export default async function CollectionsPage() {
             Collections
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Editorial features and press. Request a spot if you&apos;d like your quiver considered for a future
-            feature.
+            Editorial features and press.
           </p>
         </div>
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <CollectionsPressSection />
-
-        <div className="mx-auto mt-14 max-w-xl lg:mt-20">
-          <CollectionSpotRequestForm isLoggedIn={!!auth.user} loginRedirectPath="/collections" />
-        </div>
       </div>
     </main>
   )
