@@ -147,7 +147,7 @@ export default function ProtectionPolicyPage() {
         </ol>
         <div className="mt-4 pt-4 border-t">
           <Link
-            href="/dashboard/purchases"
+            href="/dashboard/orders"
             className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
           >
             <ShieldCheck className="h-4 w-4" />

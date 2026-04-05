@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .select(
       `
       *,
-      purchases (
+      orders (
         id,
         amount,
         fulfillment_method,

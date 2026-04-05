@@ -26,7 +26,7 @@ type DisputeRow = {
   created_at: string
   resolved_at: string | null
   deadline_at: string
-  purchases: {
+  orders: {
     id: string
     amount: number
     listings: { id: string; title: string; slug: string | null; section: string } | null
@@ -59,7 +59,7 @@ export default async function DisputesDashboardPage() {
       created_at,
       resolved_at,
       deadline_at,
-      purchases (
+      orders (
         id,
         amount,
         listings ( id, title, slug, section )
@@ -101,21 +101,21 @@ export default async function DisputesDashboardPage() {
             <div>
               <p className="font-semibold text-foreground">No disputes</p>
               <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                If something goes wrong with an order, you can open a dispute from your purchases page.
+                If something goes wrong with an order, you can open a dispute from your orders page.
               </p>
             </div>
             <Button variant="outline" asChild>
-              <Link href="/dashboard/purchases">View purchases</Link>
+              <Link href="/dashboard/orders">View orders</Link>
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {rows.map((dispute) => {
-            const purchase = dispute.purchases
-            const listing = Array.isArray(purchase?.listings)
-              ? purchase?.listings[0]
-              : purchase?.listings
+            const order = dispute.orders
+            const listing = Array.isArray(order?.listings)
+              ? order?.listings[0]
+              : order?.listings
             const title = listing?.title ? capitalizeWords(listing.title) : 'Order'
             const isResolved = ['RESOLVED_REFUND', 'RESOLVED_NO_REFUND', 'RESOLVED_KEEP_ITEM', 'CLOSED'].includes(dispute.status)
             const needsAction = ['AWAITING_BUYER', 'RETURN_REQUESTED'].includes(dispute.status)
@@ -237,9 +237,9 @@ export default async function DisputesDashboardPage() {
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`/dashboard/disputes/${dispute.id}`}>View dispute</Link>
                     </Button>
-                    {purchase?.id && (
+                    {order?.id && (
                       <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/dashboard/purchases/${purchase.id}`}>View order</Link>
+                        <Link href={`/dashboard/orders/${order.id}`}>View order</Link>
                       </Button>
                     )}
                   </div>

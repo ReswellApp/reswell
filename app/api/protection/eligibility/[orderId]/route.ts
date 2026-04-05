@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import {
-  isProtectionWindowActive,
-  daysRemainingInWindow,
-  type ProtectionEligibility,
-} from '@/lib/protection-constants'
+import { isProtectionWindowActive, daysRemainingInWindow } from '@/lib/protection-constants'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ purchaseId: string }> }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
-  const { purchaseId } = await params
+  const { orderId } = await params
   const supabase = await createClient()
   const {
     data: { user },
@@ -20,29 +16,26 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Verify the purchase belongs to this buyer
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('purchases')
+  const { data: orderRow, error: orderError } = await supabase
+    .from('orders')
     .select('id, buyer_id, status, fulfillment_method, stripe_checkout_session_id')
-    .eq('id', purchaseId)
+    .eq('id', orderId)
     .eq('buyer_id', user.id)
     .maybeSingle()
 
-  if (purchaseError || !purchase) {
-    return NextResponse.json({ error: 'Purchase not found' }, { status: 404 })
+  if (orderError || !orderRow) {
+    return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   }
 
-  // Fetch eligibility record
   const { data: eligibility } = await supabase
     .from('protection_eligibility')
     .select('*')
-    .eq('order_id', purchaseId)
+    .eq('order_id', orderId)
     .maybeSingle()
 
   if (!eligibility) {
-    // No eligibility record yet — derive it dynamically
-    const isLocalPickup = purchase.fulfillment_method === 'pickup'
-    const isPaidThroughReswell = true // All purchases in DB were through Reswell
+    const isLocalPickup = orderRow.fulfillment_method === 'pickup'
+    const isPaidThroughReswell = true
 
     if (isLocalPickup) {
       return NextResponse.json({
@@ -62,7 +55,6 @@ export async function GET(
       })
     }
 
-    // No delivery confirmation yet — window not started
     return NextResponse.json({
       is_eligible: true,
       reason: null,
@@ -75,11 +67,10 @@ export async function GET(
   const active = isProtectionWindowActive(eligibility.window_closes)
   const daysLeft = daysRemainingInWindow(eligibility.window_closes)
 
-  // Check for existing claim on this order
   const { data: existingClaim } = await supabase
     .from('purchase_protection_claims')
     .select('id, status')
-    .eq('order_id', purchaseId)
+    .eq('order_id', orderId)
     .eq('buyer_id', user.id)
     .maybeSingle()
 

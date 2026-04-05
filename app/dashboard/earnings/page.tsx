@@ -17,9 +17,6 @@ import {
   Loader2,
   DollarSign,
   RefreshCw,
-  ExternalLink,
-  ShieldCheck,
-  AlertCircle,
   HelpCircle,
 } from "lucide-react"
 import {
@@ -49,22 +46,6 @@ interface Transaction {
   description: string
   status: string
   created_at: string
-}
-
-interface StripeBalance {
-  available: number
-  pending: number
-  connected: boolean
-  payoutsEnabled?: boolean
-  stripeUnavailable?: boolean
-  error?: string
-}
-
-interface ConnectStatus {
-  connected: boolean
-  readyToReceivePayments?: boolean
-  onboardingComplete?: boolean
-  account?: { payouts_enabled: boolean; details_submitted: boolean } | null
 }
 
 interface PayPalPayoutHistoryItem {
@@ -137,13 +118,7 @@ function PayPalPayoutStatusBadge({ status }: { status: string }) {
 export default function EarningsPage() {
   const [wallet, setWallet] = useState<WalletData | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [stripeBalance, setStripeBalance] = useState<StripeBalance | null>(null)
-  const [connectStatus, setConnectStatus] = useState<ConnectStatus | null>(null)
   const [loading, setLoading] = useState(true)
-
-  // Setup button state
-  const [connectLoading, setConnectLoading] = useState(false)
-  const [connectError, setConnectError] = useState<string | null>(null)
 
   const [paypalEmail, setPaypalEmail] = useState("")
   const [paypalDisplayName, setPaypalDisplayName] = useState("")
@@ -154,10 +129,8 @@ export default function EarningsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [earningsRes, stripeBalanceRes, connectRes, paypalRes] = await Promise.all([
+      const [earningsRes, paypalRes] = await Promise.all([
         fetch("/api/earnings"),
-        fetch("/api/stripe/connect/balance"),
-        fetch("/api/stripe/connect/account-status"),
         fetch("/api/payouts/paypal"),
       ])
 
@@ -165,14 +138,6 @@ export default function EarningsPage() {
         const data = await earningsRes.json()
         setWallet(data.wallet)
         setTransactions(data.transactions)
-      }
-
-      if (stripeBalanceRes.ok) {
-        setStripeBalance(await stripeBalanceRes.json())
-      }
-
-      if (connectRes.ok) {
-        setConnectStatus(await connectRes.json())
       }
 
       if (paypalRes.ok) {
@@ -214,70 +179,12 @@ export default function EarningsPage() {
     return () => { supabase.removeChannel(channel) }
   }, [fetchData])
 
-  // Navigate to the Stripe transition page (which fetches the link and redirects)
-  const handleOpenStripeDashboard = useCallback(() => {
-    window.location.href = "/dashboard/earnings/cashout"
-  }, [])
-
-  // Start / continue Stripe Connect onboarding
-  const handleSetupPayouts = useCallback(async () => {
-    setConnectError(null)
-    setConnectLoading(true)
-    try {
-      // Ensure account exists
-      let accountId: string
-      if (!connectStatus?.account) {
-        const createRes = await fetch("/api/stripe/connect/create-account", { method: "POST" })
-        const createData = await createRes.json()
-        if (!createRes.ok) {
-          setConnectError(createData.error ?? "Failed to create account")
-          return
-        }
-        accountId = createData.accountId ?? createData.stripe_account_id
-      } else {
-        const { data: row } = await fetch("/api/stripe/connect/account-status")
-          .then((r) => r.json())
-          .then((d) => ({ data: d.account }))
-        accountId = (row as { stripe_account_id?: string })?.stripe_account_id ?? ""
-        if (!accountId) {
-          setConnectError("Could not find your Stripe account.")
-          return
-        }
-      }
-
-      const linkRes = await fetch("/api/stripe/connect/onboarding-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountId }),
-      })
-      const linkData = await linkRes.json()
-      if (!linkRes.ok) {
-        setConnectError(linkData.error ?? "Failed to generate onboarding link")
-        return
-      }
-      window.location.href = linkData.url
-    } catch {
-      setConnectError("An unexpected error occurred.")
-    } finally {
-      setConnectLoading(false)
-    }
-  }, [connectStatus])
-
   const walletBalance = wallet ? parseFloat(wallet.balance) : 0
   const lifetimeEarned = wallet ? parseFloat(wallet.lifetime_earned) : 0
   const lifetimeCashedOut = wallet ? parseFloat(wallet.lifetime_cashed_out) : 0
 
-  const hasStripeAccount = connectStatus?.connected && connectStatus?.account
-  const isFullySetUp = connectStatus?.readyToReceivePayments && connectStatus?.onboardingComplete
-  const needsOnboarding = hasStripeAccount && !connectStatus?.onboardingComplete
-  const awaitingActivation = hasStripeAccount && connectStatus?.onboardingComplete && !connectStatus?.readyToReceivePayments
-
-  // Always use wallet DB balance as the source of truth.
-  // Stripe's connected account balance is $0 until actual transfers are made.
   const displayAvailable = walletBalance
-  const displayPending = stripeBalance?.connected && !stripeBalance?.stripeUnavailable && !stripeBalance?.error
-    ? stripeBalance.pending
-    : 0
+  const displayPending = 0
 
   useEffect(() => {
     setPaypalDisplayBalance(displayAvailable)
@@ -317,17 +224,14 @@ export default function EarningsPage() {
         </Button>
       </div>
 
-      {/* ── Cash out section ────────────────────────────────────────────────── */}
+      {/* ── Balance summary ───────────────────────────────────────────────────── */}
       <Card className={displayAvailable > 0 ? "border-primary/30 bg-primary/5" : ""}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Banknote className="h-4 w-4" />
-                Your earnings
-                <Badge variant="outline" className="text-xs font-normal ml-1">
-                  <ShieldCheck className="h-3 w-3 mr-1" />Managed by Stripe
-                </Badge>
+                Your Reswell Bucks balance
               </div>
 
               <div className="flex items-baseline gap-6 mt-2 flex-wrap">
@@ -343,72 +247,12 @@ export default function EarningsPage() {
                 )}
               </div>
             </div>
-
-            {/* Action button — state-driven */}
-            <div className="flex flex-col gap-2 min-w-[200px]">
-              {isFullySetUp ? (
-                <Button
-                  onClick={handleOpenStripeDashboard}
-                  disabled={displayAvailable <= 0}
-                  className="gap-2 font-semibold"
-                >
-                  {displayAvailable > 0
-                    ? <>Cash out ${displayAvailable.toFixed(2)} via Stripe <ExternalLink className="h-3.5 w-3.5" /></>
-                    : <>No balance to cash out</>}
-                </Button>
-              ) : awaitingActivation ? (
-                <Button variant="outline" onClick={fetchData} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Check activation status
-                </Button>
-              ) : (
-                <Button onClick={handleSetupPayouts} disabled={connectLoading} className="gap-2">
-                  {connectLoading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" />Setting up…</>
-                  ) : needsOnboarding ? (
-                    <><ShieldCheck className="h-4 w-4" />Complete verification</>
-                  ) : (
-                    <><ShieldCheck className="h-4 w-4" />Set up payouts</>
-                  )}
-                </Button>
-              )}
-
-              {isFullySetUp && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleOpenStripeDashboard}
-                  className="text-muted-foreground text-xs gap-1.5"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Open Stripe dashboard
-                </Button>
-              )}
-            </div>
           </div>
 
-          {/* Error messages */}
-          {connectError && (
-            <div className="mt-4 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              {connectError}
-            </div>
-          )}
-
-          {/* Context copy based on state */}
           <div className="mt-4 text-sm text-muted-foreground space-y-1">
-            {isFullySetUp ? (
-              <>
-                <p>Bank account and payout settings are managed securely by Stripe.</p>
-                <p>Typical arrival: 2–5 days (standard) · ~30 min (instant, 1.5% fee)</p>
-              </>
-            ) : awaitingActivation ? (
-              <p>Your verification is complete — Stripe is finishing activation. This usually takes a few minutes.</p>
-            ) : needsOnboarding ? (
-              <p>Complete your Stripe verification to enable payouts to your bank account.</p>
-            ) : (
-              <p>Set up your payout account to transfer earnings directly to your bank. Takes about 2 minutes.</p>
-            )}
+            <p>
+              Cash out to PayPal below. Bank transfer options will return when we finish updating payments.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -558,7 +402,7 @@ export default function EarningsPage() {
                 <Banknote className="h-4 w-4" /> Cash out
               </div>
               <p className="text-muted-foreground">
-                Transfer to your bank via Stripe. Standard: 2–5 days, free. Instant: ~30 min, 1.5% fee.
+                Cash out to PayPal from the section above. Minimum $10.
               </p>
             </div>
           </div>

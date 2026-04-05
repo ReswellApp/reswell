@@ -67,21 +67,21 @@ export async function POST(req: NextRequest) {
 
   // ── Fetch purchase ────────────────────────────────────────────
 
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('purchases')
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
     .select('id, buyer_id, seller_id, amount, fulfillment_method, stripe_checkout_session_id')
     .eq('id', order_id)
     .eq('buyer_id', user.id)
     .maybeSingle()
 
-  if (purchaseError || !purchase) {
+  if (orderError || !order) {
     return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
   }
 
   // ── Eligibility checks ────────────────────────────────────────
 
   // Local pickup is not covered
-  if (purchase.fulfillment_method === 'pickup') {
+  if (order.fulfillment_method === 'pickup') {
     return NextResponse.json(
       {
         error:
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Must be paid through Reswell (all DB purchases are, but belt-and-suspenders)
-  if (!purchase.buyer_id) {
+  if (!order.buyer_id) {
     return NextResponse.json(
       { error: 'Only orders paid through Reswell are covered.', ineligible: true },
       { status: 422 }
@@ -161,14 +161,14 @@ export async function POST(req: NextRequest) {
   const { count: sellerDisputeCount } = await supabase
     .from('purchase_protection_claims')
     .select('*', { count: 'exact', head: true })
-    .eq('seller_id', purchase.seller_id)
+    .eq('seller_id', order.seller_id)
 
   const fraudFlags = detectFraudFlags({
     recentClaimCount: recentClaimCount ?? 0,
     accountCreatedAt: buyerProfile?.created_at ?? new Date().toISOString(),
     deliveryConfirmedAt: null, // TODO: pass actual delivery timestamp when tracking is implemented
     claimedAmount: claimed_amount,
-    orderAmount: Number(purchase.amount),
+    orderAmount: Number(order.amount),
     sellerDisputeCount: sellerDisputeCount ?? 0,
   })
 
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
     .insert({
       order_id,
       buyer_id: user.id,
-      seller_id: purchase.seller_id,
+      seller_id: order.seller_id,
       claim_type,
       status: 'PENDING',
       description: description.trim(),
@@ -251,7 +251,7 @@ export async function GET(req: NextRequest) {
       created_at,
       reviewed_at,
       paid_at,
-      purchases (
+      orders (
         id,
         amount,
         listings ( id, title, slug, section )

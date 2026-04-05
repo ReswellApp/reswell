@@ -19,7 +19,7 @@ export default async function OpenDisputePage({ params }: Props) {
   }
 
   const { data: purchase } = await supabase
-    .from('purchases')
+    .from('orders')
     .select(
       `
       id,
@@ -47,10 +47,10 @@ export default async function OpenDisputePage({ params }: Props) {
     return (
       <div className="space-y-4">
         <Link
-          href="/dashboard/purchases"
+          href="/dashboard/orders"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-4 w-4" /> Back to purchases
+          <ChevronLeft className="h-4 w-4" /> Back to orders
         </Link>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 dark:border-amber-800/50 dark:bg-amber-900/20">
           <p className="font-semibold text-amber-800 dark:text-amber-300">
@@ -98,7 +98,7 @@ export default async function OpenDisputePage({ params }: Props) {
     <div className="max-w-xl space-y-6">
       <div>
         <Link
-          href={`/dashboard/purchases/${orderId}`}
+          href={`/dashboard/orders/${orderId}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ChevronLeft className="h-4 w-4" /> Back to order

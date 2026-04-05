@@ -7,8 +7,8 @@ import { isProtectionWindowActive } from '@/lib/protection-constants'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { ClaimForm } from './claim-form'
 
-export default async function NewClaimPage(props: { params: Promise<{ purchaseId: string }> }) {
-  const { purchaseId } = await props.params
+export default async function NewClaimPage(props: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = await props.params
   const supabase = await createClient()
   const {
     data: { user },
@@ -18,9 +18,8 @@ export default async function NewClaimPage(props: { params: Promise<{ purchaseId
     redirect('/auth/login?redirect=/dashboard/claims')
   }
 
-  // Fetch purchase with listing info
-  const { data: purchase, error } = await supabase
-    .from('purchases')
+  const { data: orderRow, error } = await supabase
+    .from('orders')
     .select(
       `
       id,
@@ -30,21 +29,20 @@ export default async function NewClaimPage(props: { params: Promise<{ purchaseId
       listings ( id, title )
     `
     )
-    .eq('id', purchaseId)
+    .eq('id', orderId)
     .eq('buyer_id', user.id)
     .maybeSingle()
 
-  if (error || !purchase) {
+  if (error || !orderRow) {
     notFound()
   }
 
-  // Local pickup not eligible
-  if (purchase.fulfillment_method === 'pickup') {
+  if (orderRow.fulfillment_method === 'pickup') {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href={`/dashboard/purchases/${purchaseId}`} className="gap-2">
+            <Link href={`/dashboard/orders/${orderId}`} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to order
             </Link>
@@ -70,11 +68,10 @@ export default async function NewClaimPage(props: { params: Promise<{ purchaseId
     )
   }
 
-  // Check for existing claim
   const { data: existingClaim } = await supabase
     .from('purchase_protection_claims')
     .select('id, status')
-    .eq('order_id', purchaseId)
+    .eq('order_id', orderId)
     .eq('buyer_id', user.id)
     .maybeSingle()
 
@@ -82,11 +79,10 @@ export default async function NewClaimPage(props: { params: Promise<{ purchaseId
     redirect(`/dashboard/claims/${existingClaim.id}`)
   }
 
-  // Check eligibility window
   const { data: eligibility } = await supabase
     .from('protection_eligibility')
     .select('is_eligible, reason, window_closes')
-    .eq('order_id', purchaseId)
+    .eq('order_id', orderId)
     .maybeSingle()
 
   if (eligibility) {
@@ -96,7 +92,7 @@ export default async function NewClaimPage(props: { params: Promise<{ purchaseId
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild className="-ml-2">
-              <Link href={`/dashboard/purchases/${purchaseId}`} className="gap-2">
+              <Link href={`/dashboard/orders/${orderId}`} className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back to order
               </Link>
@@ -115,13 +111,13 @@ export default async function NewClaimPage(props: { params: Promise<{ purchaseId
     }
   }
 
-  const listing = Array.isArray(purchase.listings)
-    ? purchase.listings[0]
-    : purchase.listings
+  const listing = Array.isArray(orderRow.listings)
+    ? orderRow.listings[0]
+    : orderRow.listings
 
   const purchaseInfo = {
-    id: purchase.id,
-    amount: Number(purchase.amount),
+    id: orderRow.id,
+    amount: Number(orderRow.amount),
     listing_title: listing?.title ? capitalizeWords(listing.title) : 'Your order',
   }
 
@@ -129,7 +125,7 @@ export default async function NewClaimPage(props: { params: Promise<{ purchaseId
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href={`/dashboard/purchases/${purchaseId}`} className="gap-2">
+          <Link href={`/dashboard/orders/${orderId}`} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to order
           </Link>

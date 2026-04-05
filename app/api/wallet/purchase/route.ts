@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
   // Create purchase record
   const { data: purchase } = await supabase
-    .from("purchases")
+    .from("orders")
     .insert({
       listing_id: listing.id,
       buyer_id: user.id,

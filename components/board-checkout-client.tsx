@@ -88,14 +88,14 @@ export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY, offerId }:
                     <span className="text-foreground font-semibold tabular-nums">
                       ${resolved.shipping.toFixed(2)}
                     </span>{" "}
-                    shipping set by the seller — included in your total below. Stripe will collect your
-                    shipping address after you continue.
+                    shipping set by the seller — included in your total below. Coordinate delivery
+                    details with the seller in messages after you pay.
                   </>
                 ) : (
                   <>
                     <span className="text-foreground font-medium">Free shipping</span> from this
-                    seller. Your total below is the {copy.priceContextNoun} price only; Stripe will collect your
-                    shipping address after you continue.
+                    seller. Your total below is the {copy.priceContextNoun} price only; confirm the
+                    shipping address with the seller in messages after you pay.
                   </>
                 )}
               </p>

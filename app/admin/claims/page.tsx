@@ -26,7 +26,7 @@ type AdminClaimRow = {
   fraud_flags: string[]
   created_at: string
   reviewed_at: string | null
-  purchases: {
+  orders: {
     id: string
     amount: number
     fulfillment_method: string | null
@@ -75,7 +75,7 @@ export default async function AdminClaimsPage() {
       fraud_flags,
       created_at,
       reviewed_at,
-      purchases (
+      orders (
         id,
         amount,
         fulfillment_method
@@ -148,8 +148,8 @@ export default async function AdminClaimsPage() {
         <div className="space-y-3">
           {sorted.map((claim) => {
             const daysOpen = daysSince(claim.created_at)
-            const purchase = claim.purchases
-            const orderAmount = Number(purchase?.amount ?? 0)
+            const order = claim.orders
+            const orderAmount = Number(order?.amount ?? 0)
             const isNotReceived = claim.claim_type === 'NOT_RECEIVED'
             const hasFraudFlags = claim.fraud_flags?.length > 0
 

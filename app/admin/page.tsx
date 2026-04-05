@@ -26,15 +26,15 @@ export default async function AdminDashboard() {
   if (adminProfile?.is_admin) {
     try {
       const adminDb = createServiceRoleClient()
-      const { data: purchaseRows, error: purchasesError } = await adminDb
-        .from('purchases')
+      const { data: orderRows, error: ordersError } = await adminDb
+        .from('orders')
         .select('platform_fee, amount')
         .eq('status', 'confirmed')
 
-      if (purchasesError) {
+      if (ordersError) {
         platformFeesError = 'Could not load purchase fee totals.'
       } else {
-        const rows = purchaseRows ?? []
+        const rows = orderRows ?? []
         platformPurchaseFees = {
           totalFees: rows.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0),
           confirmedCount: rows.length,
@@ -43,7 +43,7 @@ export default async function AdminDashboard() {
       }
     } catch {
       platformFeesError =
-        'Add SUPABASE_SERVICE_ROLE_KEY on the server to aggregate platform fees from purchases.'
+        'Add SUPABASE_SERVICE_ROLE_KEY on the server to aggregate platform fees from orders.'
     }
   }
 

@@ -7,7 +7,7 @@ import { isProtectionWindowActive, daysRemainingInWindow } from '@/lib/protectio
 import { cn } from '@/lib/utils'
 
 interface OrderProtectionWidgetProps {
-  purchaseId: string
+  orderId: string
   windowCloses: string | null
   isEligible: boolean
   ineligibleReason?: string | null
@@ -22,7 +22,7 @@ interface OrderProtectionWidgetProps {
  * Displays protection countdown and "File a claim" button when eligible.
  */
 export function OrderProtectionWidget({
-  purchaseId,
+  orderId,
   windowCloses,
   isEligible,
   ineligibleReason,
@@ -172,7 +172,7 @@ export function OrderProtectionWidget({
       {active && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button size="sm" variant="outline" asChild className="border-green-300 text-green-800 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/30">
-            <Link href={`/dashboard/claims/new/${purchaseId}`}>
+            <Link href={`/dashboard/claims/new/${orderId}`}>
               File a claim
             </Link>
           </Button>

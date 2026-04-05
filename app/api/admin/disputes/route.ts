@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       deadline_at,
       buyer_id,
       seller_id,
-      purchases (
+      orders (
         id,
         amount,
         listings ( id, title, slug, section )

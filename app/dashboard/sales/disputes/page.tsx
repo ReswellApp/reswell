@@ -28,7 +28,7 @@ type SellerDisputeRow = {
   seller_partial_amount: number | null
   created_at: string
   deadline_at: string
-  purchases: {
+  orders: {
     id: string
     amount: number
     listings: { id: string; title: string; slug: string | null; section: string } | null
@@ -62,7 +62,7 @@ export default async function SellerDisputesPage() {
       seller_partial_amount,
       created_at,
       deadline_at,
-      purchases (
+      orders (
         id,
         amount,
         listings ( id, title, slug, section )
@@ -137,10 +137,10 @@ export default async function SellerDisputesPage() {
 }
 
 function SellerDisputeCard({ dispute }: { dispute: SellerDisputeRow }) {
-  const purchase = dispute.purchases
-  const listing = Array.isArray(purchase?.listings)
-    ? purchase?.listings[0]
-    : purchase?.listings
+  const order = dispute.orders
+  const listing = Array.isArray(order?.listings)
+    ? order?.listings[0]
+    : order?.listings
   const title = listing?.title ? capitalizeWords(listing.title) : 'Order'
   const isResolved = isDisputeResolved(dispute.status)
 
@@ -260,9 +260,9 @@ function SellerDisputeCard({ dispute }: { dispute: SellerDisputeRow }) {
               {needsSellerAction ? 'Respond now' : 'View dispute'}
             </Link>
           </Button>
-          {purchase?.id && (
+          {order?.id && (
             <Button size="sm" variant="ghost" asChild>
-              <Link href={`/dashboard/purchases/${purchase.id}`}>View order</Link>
+              <Link href={`/dashboard/orders/${order.id}`}>View order</Link>
             </Button>
           )}
         </div>

@@ -82,8 +82,8 @@ export async function POST(req: NextRequest) {
 
   // ── Fetch order ────────────────────────────────────────────────────────────
 
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('purchases')
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
     .select(
       'id, buyer_id, seller_id, amount, fulfillment_method, listings(title, slug, section, board_type)'
     )
@@ -91,11 +91,11 @@ export async function POST(req: NextRequest) {
     .eq('buyer_id', user.id)
     .maybeSingle()
 
-  if (purchaseError || !purchase) {
+  if (orderError || !order) {
     return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
   }
 
-  if (purchase.fulfillment_method === 'pickup') {
+  if (order.fulfillment_method === 'pickup') {
     return NextResponse.json(
       { error: 'Local pickup orders are not covered by the dispute system.', ineligible: true },
       { status: 422 }
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
     abandonedReturnCount: (abandonedReturns as number) ?? 0,
     trackingShowsDelivered: false, // TODO: integrate with tracking API
     reason,
-    orderAmount: Number(purchase.amount),
+    orderAmount: Number(order.amount),
     claimedAmount: claimed_amount,
     accountAgeDays,
   })
@@ -169,9 +169,9 @@ export async function POST(req: NextRequest) {
   // ── Compute return requirement ─────────────────────────────────────────────
 
   const returnRequired = isReturnRequired(reason)
-  const listing = Array.isArray(purchase.listings)
-    ? purchase.listings[0]
-    : purchase.listings
+  const listing = Array.isArray(order.listings)
+    ? order.listings[0]
+    : order.listings
   // Determine large item from section (surfboards) or board_type
   const isLargeItem =
     (listing as { section?: string } | null)?.section === 'surfboards' ||
@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
     .insert({
       order_id,
       buyer_id: user.id,
-      seller_id: purchase.seller_id,
+      seller_id: order.seller_id,
       reason,
       status: 'AWAITING_SELLER',
       description: description.trim(),
@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
   // ── Notify seller in-app ───────────────────────────────────────────────────
 
   await supabase.from('notifications').insert({
-    user_id: purchase.seller_id,
+    user_id: order.seller_id,
     type: 'dispute_opened',
     data: {
       dispute_id: dispute.id,
@@ -286,7 +286,7 @@ export async function GET(req: NextRequest) {
       created_at,
       resolved_at,
       deadline_at,
-      purchases (
+      orders (
         id,
         amount,
         listings ( title, slug, section )
