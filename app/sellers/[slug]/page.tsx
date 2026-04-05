@@ -340,7 +340,7 @@ export default async function SellerProfilePage({
                   <FollowButton
                     sellerId={shop.id}
                     sellerName={displayName}
-                    sellerSlug={shop.seller_slug}
+                    sellerSlug={shop.seller_slug ?? undefined}
                     sellerCity={shop.city || undefined}
                     initialFollowing={isFollowing}
                     initialFollowerCount={followerCount}

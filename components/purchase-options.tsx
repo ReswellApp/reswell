@@ -12,13 +12,10 @@ interface PurchaseOptionsProps {
   listingTitle: string
   /** Total charged (item + shipping when applicable). */
   price: number
-  sellerId: string
   /** Surfboards with pickup + shipping: which option the buyer selected. */
   fulfillment?: "pickup" | "shipping" | null
   itemPrice?: number
   shippingAmount?: number
-  /** When purchasing from an accepted offer, pass the offer ID. */
-  offerId?: string
 }
 
 export function PurchaseOptions({

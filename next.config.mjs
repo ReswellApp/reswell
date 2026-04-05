@@ -83,6 +83,17 @@ const nextConfig = {
     return [
       { source: "/dashboard/purchases", destination: "/dashboard/orders", permanent: true },
       { source: "/dashboard/purchases/:id", destination: "/dashboard/orders/:id", permanent: true },
+      { source: "/dashboard/claims", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/claims/:path*", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/offers", destination: "/dashboard", permanent: true },
+      {
+        source: "/dashboard/listings/:id/offer-settings",
+        destination: "/dashboard/listings",
+        permanent: true,
+      },
+      { source: "/admin/claims", destination: "/admin", permanent: true },
+      { source: "/admin/claims/:path*", destination: "/admin", permanent: true },
+      { source: "/offers/:path*", destination: "/dashboard", permanent: true },
       { source: "/saved", destination: "/favorites", permanent: true },
       { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
       { source: "/dashboard/reports/:path*", destination: "/dashboard", permanent: true },

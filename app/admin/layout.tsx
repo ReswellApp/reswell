@@ -12,7 +12,6 @@ import {
   Settings,
   Activity,
   Library,
-  ShieldCheck,
 } from 'lucide-react'
 
 const adminNavItems = [
@@ -20,7 +19,6 @@ const adminNavItems = [
   { href: '/admin/live', label: 'Live', icon: Activity },
   { href: '/admin/listings', label: 'Listings', icon: Package },
   { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/claims', label: 'Protection claims', icon: ShieldCheck },
   { href: '/admin/contact-messages', label: 'Contact messages', icon: MessageSquare },
   { href: '/admin/collection-requests', label: 'Collection requests', icon: Library },
   { href: '/admin/settings', label: 'Settings', icon: Settings },

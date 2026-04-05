@@ -58,17 +58,3 @@ WITH CHECK (
       AND o.status = 'confirmed'
   )
 );
-
--- ─────────────────────────────────────────────────────────────
--- 5. Purchase protection eligibility: join target is now orders
--- ─────────────────────────────────────────────────────────────
-DROP POLICY IF EXISTS "pe_buyer_read" ON public.protection_eligibility;
-
-CREATE POLICY "pe_buyer_read" ON public.protection_eligibility
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.orders o
-      WHERE o.id = protection_eligibility.order_id
-        AND o.buyer_id = auth.uid()
-    )
-  );
