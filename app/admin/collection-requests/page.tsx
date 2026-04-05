@@ -64,9 +64,8 @@ export default function AdminCollectionRequestsPage() {
           <Link href="/collections" className="text-primary underline-offset-4 hover:underline">
             Collections
           </Link>{" "}
-          page. After you approve someone in principle, create their row in{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">surf_collections</code> (see script{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">037_surf_collections.sql</code>).
+          page. Requests are stored in <code className="rounded bg-muted px-1 py-0.5 text-xs">collection_spot_requests</code>
+          — follow up with the member outside the app if you want to feature their quiver.
         </p>
       </div>
 

@@ -44,17 +44,11 @@ export function usedDetailHref(listing: {
  * Peer-to-peer checkout URL. Surfboards use `/boards/.../checkout`;
  * used gear uses `/checkout/listing`.
  */
-export function peerListingCheckoutHref(
-  listingSection: string,
-  listingSlugOrId: string,
-  offerId?: string,
-): string {
+export function peerListingCheckoutHref(listingSection: string, listingSlugOrId: string): string {
   if (listingSection === "surfboards") {
-    const q = offerId ? `?offer_id=${encodeURIComponent(offerId)}` : ""
-    return `/boards/${listingSlugOrId}/checkout${q}`
+    return `/boards/${listingSlugOrId}/checkout`
   }
   const params = new URLSearchParams()
   params.set("listing", listingSlugOrId)
-  if (offerId) params.set("offer_id", offerId)
   return `/checkout/listing?${params.toString()}`
 }

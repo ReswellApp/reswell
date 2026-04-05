@@ -35,11 +35,9 @@ interface BoardCheckoutClientProps {
   listing: BoardCheckoutListing
   /** Surfboard wording by default; pass used-gear labels for `/checkout/listing` (used gear). */
   copy?: PeerListingCheckoutCopy
-  /** When checking out from an accepted offer, pass the offer ID to associate with the purchase. */
-  offerId?: string
 }
 
-export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY, offerId }: BoardCheckoutClientProps) {
+export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY }: BoardCheckoutClientProps) {
   const canPick = listing.local_pickup !== false
   const canShip = !!listing.shipping_available
 
@@ -180,7 +178,6 @@ export function BoardCheckoutClient({ listing, copy = SURFBOARD_COPY, offerId }:
         listingTitle={listing.title}
         price={resolved.total}
         fulfillment={fulfillmentForApi}
-        offerId={offerId}
       />
     </div>
   )
