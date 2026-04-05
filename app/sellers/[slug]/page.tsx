@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import { notFound, redirect } from "next/navigation"
@@ -31,31 +32,92 @@ const PROFILE_UUID_RE =
 const sellerProfileSelect =
   "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count, follower_count"
 
+function trimUrl(u: string | null | undefined): string | undefined {
+  const t = typeof u === "string" ? u.trim() : ""
+  return t.length > 0 ? t : undefined
+}
+
+/** Logo/avatar first (match profile card + user request); banner as wide fallback for OG. */
+function sellerSocialImage(shop: {
+  is_shop: boolean | null
+  shop_logo_url: string | null
+  avatar_url: string | null
+  shop_banner_url: string | null
+}): { url: string; isSquare: boolean } | undefined {
+  if (shop.is_shop) {
+    const logo = trimUrl(shop.shop_logo_url)
+    if (logo) return { url: logo, isSquare: true }
+  }
+  const avatar = trimUrl(shop.avatar_url)
+  if (avatar) return { url: avatar, isSquare: true }
+  const banner = trimUrl(shop.shop_banner_url)
+  if (banner) return { url: banner, isSquare: false }
+  return undefined
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>
-}) {
+}): Promise<Metadata> {
   const { slug } = await params
   const supabase = await createClient()
   const byId = PROFILE_UUID_RE.test(slug)
+  const metaSelect =
+    "seller_slug, is_shop, shop_name, display_name, shop_description, bio, shop_logo_url, avatar_url, shop_banner_url, city, shop_address, shop_verified"
+
   const { data: shop } = byId
-    ? await supabase
-        .from("profiles")
-        .select("shop_name, display_name, shop_description")
-        .eq("id", slug)
-        .maybeSingle()
-    : await supabase
-        .from("profiles")
-        .select("shop_name, display_name, shop_description")
-        .eq("seller_slug", slug)
-        .maybeSingle()
+    ? await supabase.from("profiles").select(metaSelect).eq("id", slug).maybeSingle()
+    : await supabase.from("profiles").select(metaSelect).eq("seller_slug", slug).maybeSingle()
+
+  if (!shop) {
+    return { title: "Seller — Reswell", description: "View this seller on Reswell." }
+  }
+
+  const displayName = shop.is_shop
+    ? trimUrl(shop.shop_name) || trimUrl(shop.display_name) || "Seller"
+    : trimUrl(shop.display_name) || "Seller"
+
+  const title = `${displayName} · Reswell`
+
+  const loc = trimUrl(shop.shop_address) || trimUrl(shop.city)
+  const descPrimary =
+    trimUrl(shop.shop_description) ||
+    trimUrl(shop.bio) ||
+    (loc
+      ? `${displayName} on Reswell${shop.shop_verified ? " · Verified seller" : ""}. ${loc}.`
+      : `${displayName} on Reswell${shop.shop_verified ? " · Verified seller" : ""}. Shop surf gear and boards.`)
+
+  const description = descPrimary.slice(0, 180)
+
+  const canonicalPath = `/sellers/${shop.seller_slug ?? slug}`
+  const social = sellerSocialImage(shop)
+  const twitterCard = social?.isSquare === false ? "summary_large_image" : social ? "summary" : "summary"
 
   return {
-    title: shop
-      ? `${shop.shop_name || shop.display_name} - Reswell`
-      : "Seller - Reswell",
-    description: shop?.shop_description || "View this seller on Reswell.",
+    title,
+    description,
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      title: displayName,
+      description,
+      type: "profile",
+      url: canonicalPath,
+      images: social
+        ? [
+            {
+              url: social.url,
+              alt: `${displayName} — profile`,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: twitterCard,
+      title: displayName,
+      description,
+      images: social ? [social.url] : undefined,
+    },
   }
 }
 
