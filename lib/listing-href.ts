@@ -29,5 +29,5 @@ export function usedDetailHref(listing: {
 export function peerListingCheckoutHref(_listingSection: string, listingSlugOrId: string): string {
   const params = new URLSearchParams()
   params.set("listing", listingSlugOrId)
-  return `/checkout/listing?${params.toString()}`
+  return `/checkout?${params.toString()}`
 }

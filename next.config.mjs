@@ -110,12 +110,12 @@ const nextConfig = {
       // Legacy /used/* URLs → flat marketplace routes + /gear
       {
         source: "/used/checkout/success",
-        destination: "/checkout/listing/success",
+        destination: "/checkout/success",
         permanent: true,
       },
       {
         source: "/used/:id/checkout",
-        destination: "/checkout/listing?listing=:id",
+        destination: "/checkout?listing=:id",
         permanent: true,
       },
       { source: "/used", destination: "/gear", permanent: true },

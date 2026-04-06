@@ -14,7 +14,7 @@ const tileBtnClass = cn(
 
 /**
  * Same basket styling as {@link ListingTileAddToCartIcon} but navigates to P2P checkout
- * (`/checkout/listing?listing=…`). Shop “new” inventory uses the cart in localStorage instead.
+ * (`/checkout?listing=…`). Shop “new” inventory uses the cart in localStorage instead.
  * Guests open the auth modal with redirect back to `checkoutHref` after sign-in.
  */
 export function ListingTileCheckoutBasketIcon({

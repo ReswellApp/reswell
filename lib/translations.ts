@@ -12,6 +12,7 @@ type Translations = {
   settings: {
     title: string
     subtitle: string
+    profileTab: string
     profile: {
       title: string
       description: string
@@ -44,6 +45,32 @@ type Translations = {
       signOut: string
       signOutDescription: string
     }
+    addresses: {
+      tab: string
+      title: string
+      description: string
+      add: string
+      empty: string
+      defaultBadge: string
+      setDefault: string
+      edit: string
+      delete: string
+      deleteTitle: string
+      deleteDescription: string
+      save: string
+      cancel: string
+      fullName: string
+      phone: string
+      line1: string
+      line2: string
+      city: string
+      state: string
+      postal: string
+      country: string
+      label: string
+      addTitle: string
+      editTitle: string
+    }
   }
 }
 
@@ -51,6 +78,7 @@ const en: Translations = {
   settings: {
     title: 'Settings',
     subtitle: 'Manage your account and public profile',
+    profileTab: 'Profile',
     profile: {
       title: 'Profile Information',
       description: 'Update your public profile details',
@@ -83,6 +111,32 @@ const en: Translations = {
       signOut: 'Sign Out',
       signOutDescription: 'Sign out of your account on this device',
     },
+    addresses: {
+      tab: 'Addresses',
+      title: 'Saved addresses',
+      description: 'Use these at checkout for shipping. You can add several and mark one as default.',
+      add: 'Add address',
+      empty: 'No saved addresses yet. Add one to speed up checkout.',
+      defaultBadge: 'Default',
+      setDefault: 'Set as default',
+      edit: 'Edit',
+      delete: 'Delete',
+      deleteTitle: 'Delete this address?',
+      deleteDescription: 'This cannot be undone. Checkout will ask for a new address if needed.',
+      save: 'Save address',
+      cancel: 'Cancel',
+      fullName: 'Full name',
+      phone: 'Phone',
+      line1: 'Address line 1',
+      line2: 'Address line 2 (optional)',
+      city: 'City',
+      state: 'State / region',
+      postal: 'Postal code',
+      country: 'Country',
+      label: 'Label (optional)',
+      addTitle: 'Add address',
+      editTitle: 'Edit address',
+    },
   },
 }
 
@@ -90,6 +144,7 @@ const es: Translations = {
   settings: {
     title: 'Ajustes',
     subtitle: 'Administra tu cuenta y perfil público',
+    profileTab: 'Perfil',
     profile: {
       title: 'Información del perfil',
       description: 'Actualiza los detalles de tu perfil público',
@@ -121,6 +176,33 @@ const es: Translations = {
       description: 'Administra la configuración de tu cuenta',
       signOut: 'Cerrar sesión',
       signOutDescription: 'Cerrar sesión en este dispositivo',
+    },
+    addresses: {
+      tab: 'Direcciones',
+      title: 'Direcciones guardadas',
+      description:
+        'Úsalas en el checkout para envíos. Puedes añadir varias y marcar una como predeterminada.',
+      add: 'Añadir dirección',
+      empty: 'Aún no hay direcciones. Añade una para agilizar el checkout.',
+      defaultBadge: 'Predeterminada',
+      setDefault: 'Usar como predeterminada',
+      edit: 'Editar',
+      delete: 'Eliminar',
+      deleteTitle: '¿Eliminar esta dirección?',
+      deleteDescription: 'No se puede deshacer. El checkout pedirá una nueva dirección si hace falta.',
+      save: 'Guardar dirección',
+      cancel: 'Cancelar',
+      fullName: 'Nombre completo',
+      phone: 'Teléfono',
+      line1: 'Línea de dirección 1',
+      line2: 'Línea de dirección 2 (opcional)',
+      city: 'Ciudad',
+      state: 'Estado / región',
+      postal: 'Código postal',
+      country: 'País',
+      label: 'Etiqueta (opcional)',
+      addTitle: 'Añadir dirección',
+      editTitle: 'Editar dirección',
     },
   },
 }

@@ -2,8 +2,7 @@ import Link from 'next/link'
 import { ShieldCheck, Package, Tag, AlertTriangle } from 'lucide-react'
 
 /**
- * Checkout trust block — shown above the pay button on checkout pages.
- * Makes the protection guarantee prominent and converts hesitant buyers.
+ * Checkout trust block — shown next to order summary when shipping is selected.
  */
 export function ProtectionTrustBlock() {
   return (

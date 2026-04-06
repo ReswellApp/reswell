@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProfileAddressesManager } from '@/components/profile-addresses-manager'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Save, LogOut, Camera, User } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
@@ -153,6 +155,7 @@ export default function SettingsPage() {
   const s = t('settings')
   const p = s.profile
   const a = s.account
+  const addr = s.addresses
 
   return (
     <div className="space-y-6">
@@ -161,6 +164,13 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">{s.subtitle}</p>
       </div>
 
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="profile">{s.profileTab}</TabsTrigger>
+          <TabsTrigger value="addresses">{addr.tab}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile" className="space-y-6 mt-6">
       <Card>
         <CardHeader>
           <CardTitle>{p.title}</CardTitle>
@@ -282,6 +292,12 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="addresses" className="mt-6">
+          <ProfileAddressesManager copy={addr} />
+        </TabsContent>
+      </Tabs>
 
       <Card>
         <CardHeader>
