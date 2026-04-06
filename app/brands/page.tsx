@@ -7,7 +7,7 @@ import { listBrands } from "@/lib/brands/server"
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: "Brands",
+  title: "Surf Brands",
   description: "Surfboard brands on Reswell — profiles from our catalog.",
 }
 
@@ -24,7 +24,7 @@ export default async function BrandsPage() {
           </div>
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Directory</p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">Brands</h1>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">Surf Brands</h1>
             <p className="mx-auto mt-3 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
               Shapers and labels in the Reswell catalog — locations, story, and links to shop official gear or search
               listings here.
