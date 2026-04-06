@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
@@ -77,41 +76,23 @@ export function ListingTileAddToCartServerIcon({
     }
   }
 
-  if (!isLoggedIn) {
-    return (
-      <Link
-        href={`/auth/login?redirect=${encodeURIComponent(here)}`}
-        prefetch={false}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-          e.preventDefault()
-          openLogin(here)
-        }}
-        className={cn(tileBtnClass, className)}
-        aria-label="Sign in to save to cart"
-      >
-        <ListingTileBasketSvg />
-      </Link>
-    )
-  }
-
   return (
     <button
       type="button"
       onClick={handleClick}
       disabled={loading}
-      aria-label="Add to cart"
+      aria-label={isLoggedIn ? "Add to cart" : "Sign in to save to cart"}
       className={cn(
         tileBtnClass,
-        added &&
+        isLoggedIn &&
+          added &&
           "border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-500 dark:bg-neutral-800 dark:text-neutral-50",
         className,
       )}
     >
-      {loading ? (
+      {isLoggedIn && loading ? (
         <Loader2 className="h-4 w-4 animate-spin text-neutral-900 dark:text-neutral-100" aria-hidden />
-      ) : added ? (
+      ) : isLoggedIn && added ? (
         <CheckSvg />
       ) : (
         <ListingTileBasketSvg />
