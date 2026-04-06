@@ -11,6 +11,7 @@ import { Bell, ExternalLink, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { FollowNotification } from "@/lib/follows/types"
 import { getFollowNotifications, markFollowNotificationsRead } from "@/app/actions/follows"
+import { listingDetailHref } from "@/lib/listing-href"
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -25,10 +26,7 @@ function timeAgo(dateStr: string): string {
 
 function getListingHref(listing: FollowNotification["listing"]): string {
   if (!listing) return "/"
-  const id = listing.slug || listing.id
-  if (listing.section === "surfboards") return `/boards/${id}`
-  if (listing.section === "new") return `/shop/${listing.id}`
-  return `/${id}`
+  return listingDetailHref(listing)
 }
 
 export function NotificationDrawer() {

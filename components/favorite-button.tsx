@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 interface FavoriteButtonProps {
   listingId: string
-  /** Redirect path when not logged in (e.g. /boards/my-board-slug) */
+  /** Redirect path when not logged in (e.g. /l/my-board-slug) */
   redirectPath?: string
   initialFavorited: boolean
   isLoggedIn: boolean
@@ -32,7 +32,7 @@ export function FavoriteButton({
   async function toggleFavorite() {
     if (!isLoggedIn) {
       toast.error("Please sign in to save favorites")
-      router.push(`/auth/login?redirect=${redirectPath || `/${listingId}`}`)
+      router.push(`/auth/login?redirect=${redirectPath || `/l/${listingId}`}`)
       return
     }
 

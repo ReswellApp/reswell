@@ -10,6 +10,7 @@ import { Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
 import { searchSuggest } from "@/app/actions/marketplace"
+import { listingDetailHref } from "@/lib/listing-href"
 
 /** Max rows in the combined Suggestions list (titles / categories / brands). */
 const SUGGEST_COMBINED_CAP = 24
@@ -66,8 +67,7 @@ interface SearchInputWithSuggestProps {
 }
 
 function listingHref(listing: SuggestListing) {
-  const id = listing.slug || listing.id
-  return listing.section === "surfboards" ? `/boards/${id}` : `/${id}`
+  return listingDetailHref(listing)
 }
 
 function listingSectionLabel(section: string) {

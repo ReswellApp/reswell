@@ -8,6 +8,7 @@ import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { Users } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
+import { listingDetailHref } from "@/lib/listing-href"
 import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
 
 function haversineMi(
@@ -205,7 +206,6 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {boards.map((board) => {
-          const slug = board.slug || board.id
           const locationText =
             board.city && board.state
               ? `${board.city}, ${board.state}`
@@ -213,7 +213,11 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
           return (
             <ListingTile
               key={board.id}
-              href={`/boards/${slug}`}
+              href={listingDetailHref({
+                id: board.id,
+                slug: board.slug,
+                section: "surfboards",
+              })}
               listingId={board.id}
               title={capitalizeWords(board.title)}
               imageAlt={capitalizeWords(board.title)}

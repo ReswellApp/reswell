@@ -1,5 +1,4 @@
-import { notFound, redirect } from "next/navigation"
-import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { portraitShimmer } from "@/lib/image-shimmer"
@@ -14,9 +13,7 @@ import {
   ArrowLeft,
   MapPin,
   MessageSquare,
-  Share2,
   Clock,
-  AlertTriangle,
   Info,
 } from "lucide-react"
 import dynamic from "next/dynamic"
@@ -54,55 +51,26 @@ import { getBrandBySlug } from "@/lib/brands/server"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import { metadataForListingDetail } from "@/lib/listing-metadata"
+import { listingDetailHref } from "@/lib/listing-href"
 
-export async function generateMetadata(props: {
-  params: Promise<{ id: string }>
-}): Promise<Metadata> {
-  const params = await props.params
-  const supabase = await createClient()
-  const { listing: board } = await findListingByParam(supabase, params.id, {
-    select:
-      "id, slug, title, description, status, listing_images (url, is_primary, sort_order), categories (name, slug), section",
-    section: "surfboards",
-  })
-
-  if (!board) {
-    return { title: "Surfboard Listing" }
-  }
-
-  return metadataForListingDetail(board)
-}
-
-export default async function BoardDetailPage(props: {
-  params: Promise<{ id: string }>
+export async function SurfboardListingDetailPage({
+  listingParam,
+}: {
+  listingParam: string
 }) {
-  const params = await props.params
   const supabase = await createClient()
-  
-  const { listing: board, redirectSlug, canonicalPath } = await findListingByParam(
-    supabase,
-    params.id,
-    {
-      select: `
+
+  const { listing: board } = await findListingByParam(supabase, listingParam, {
+    select: `
         *,
         listing_images (id, url, is_primary, sort_order),
         profiles (id, seller_slug, is_shop, shop_name, display_name, avatar_url, location, created_at, shop_verified, sales_count)
       `,
-      section: "surfboards",
-    },
-  )
+    section: "surfboards",
+  })
 
   if (!board) {
     notFound()
-  }
-
-  if (canonicalPath) {
-    redirect(canonicalPath)
-  }
-
-  if (redirectSlug) {
-    redirect(`/boards/${redirectSlug}`)
   }
 
   // Ensure seller profile never contains private data (email, etc.) before sending to client
@@ -133,8 +101,6 @@ export default async function BoardDetailPage(props: {
     sellerReviewCount > 0
       ? reviewRatings.reduce((sum, r) => sum + r, 0) / sellerReviewCount
       : 0
-
-  const boardSlug = board.slug || board.id
 
   // Get seller's other boards
   const { data: sellerBoards } = await supabase
@@ -366,7 +332,7 @@ export default async function BoardDetailPage(props: {
                             href={
                               user
                                 ? `/messages?user=${board.user_id}&listing=${board.id}`
-                                : `/auth/login?redirect=${encodeURIComponent(`/boards/${boardSlug}`)}`
+                                : `/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`
                             }
                           >
                             <MessageSquare className="h-4 w-4 mr-2" />
@@ -505,7 +471,11 @@ export default async function BoardDetailPage(props: {
                   return (
                     <Link
                       key={item.id}
-                      href={`/boards/${item.slug || item.id}`}
+                      href={listingDetailHref({
+                        id: item.id,
+                        slug: item.slug,
+                        section: "surfboards",
+                      })}
                       className="min-w-0 block"
                     >
                       <Card className={cn(listingProductCardClassName, "min-w-0")}>

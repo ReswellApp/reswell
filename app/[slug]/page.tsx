@@ -1,12 +1,10 @@
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { findListingByParam } from "@/lib/listing-query"
-import { metadataForListingDetail } from "@/lib/listing-metadata"
 import type { UsedGearSearchParams } from "@/components/used-gear-listings"
 import { UsedAllGearPage } from "@/components/used-all-gear-page"
 import { BoardsBrowsePage } from "@/components/boards-browse-page"
 import { UsedCategoryBrowsePage } from "@/components/used-category-browse-page"
-import { UsedListingDetailPage } from "@/components/used-listing-detail-page"
 import {
   metadataForAllGear,
   metadataForBoardsBrowse,
@@ -52,17 +50,7 @@ export async function generateMetadata(props: {
     return metadataForUsedCategoryBrowse(usedCat.slug, usedCat.name, usedSp)
   }
 
-  const { listing } = await findListingByParam(supabase, slug, {
-    select:
-      "id, slug, title, description, status, listing_images (url, is_primary, sort_order), categories (name, slug), section",
-    section: "used",
-  })
-
-  if (!listing) {
-    return { title: "Listing" }
-  }
-
-  return metadataForListingDetail(listing)
+  return { title: "Reswell" }
 }
 
 export default async function MarketplaceSlugPage(props: {
@@ -97,5 +85,5 @@ export default async function MarketplaceSlugPage(props: {
     return <UsedCategoryBrowsePage category={usedCat} searchParams={searchParamsPromise} />
   }
 
-  return <UsedListingDetailPage listing={slug} />
+  notFound()
 }

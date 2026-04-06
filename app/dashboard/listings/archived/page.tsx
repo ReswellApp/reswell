@@ -11,11 +11,13 @@ import { Package, Archive, ArrowLeft } from 'lucide-react'
 import { formatDistanceToNow, format, addDays } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingProductCardClassName } from '@/lib/listing-card-styles'
+import { listingDetailHref } from '@/lib/listing-href'
 
 const ARCHIVE_DAYS = 30
 
 interface ArchivedListing {
   id: string
+  slug: string | null
   title: string
   price: number
   status: string
@@ -41,7 +43,7 @@ export default function ArchivedListingsPage() {
 
     const { data, error } = await supabase
       .from('listings')
-      .select('id, title, price, status, section, archived_at, listing_images(url, is_primary)')
+      .select('id, slug, title, price, status, section, archived_at, listing_images(url, is_primary)')
       .eq('user_id', user.id)
       .not('archived_at', 'is', null)
       .order('archived_at', { ascending: false })
@@ -126,7 +128,7 @@ export default function ArchivedListingsPage() {
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <Link
-                      href={`/${listing.section === 'surfboards' ? 'boards' : listing.section}/${listing.id}`}
+                      href={listingDetailHref(listing)}
                       className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0"
                     >
                       {primaryImage?.url ? (
@@ -145,7 +147,7 @@ export default function ArchivedListingsPage() {
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link
-                        href={`/${listing.section === 'surfboards' ? 'boards' : listing.section}/${listing.id}`}
+                        href={listingDetailHref(listing)}
                         className="font-semibold text-foreground hover:text-primary block truncate"
                       >
                         {capitalizeWords(listing.title)}

@@ -8,6 +8,7 @@ import { MapPin, Package, Users, ExternalLink } from "lucide-react"
 import { UnfollowButton } from "./unfollow-button"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { listingDetailHref } from "@/lib/listing-href"
 
 export const metadata = {
   title: "Following — Dashboard",
@@ -171,12 +172,7 @@ export default async function FollowingPage() {
                       <div className="mt-3 flex items-center gap-3 p-2.5 rounded-lg bg-muted/50">
                         {(() => {
                           const img = stats.sample.listing_images?.find((i: any) => i.is_primary) || stats.sample.listing_images?.[0]
-                          const href =
-                            stats.sample.section === "surfboards"
-                              ? `/boards/${stats.sample.slug || stats.sample.id}`
-                              : stats.sample.section === "new"
-                                ? `/shop/${stats.sample.id}`
-                                : `/${stats.sample.slug || stats.sample.id}`
+                          const href = listingDetailHref(stats.sample)
                           return (
                             <Link href={href} className="flex items-center gap-3 flex-1 min-w-0">
                               {img?.url && (

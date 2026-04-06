@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { listingDetailHref } from '@/lib/listing-href'
 import { setImpersonation } from '@/lib/impersonation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -149,10 +150,7 @@ export default function AdminListingsPage() {
   }
 
   function getListingViewHref(section: string, id: string, slug?: string | null) {
-    const identifier = slug || id
-    if (section === 'surfboards') return `/boards/${identifier}`
-    if (section === 'new') return `/shop/${id}`
-    return `/${identifier}`
+    return listingDetailHref({ id, slug, section })
   }
 
   return (

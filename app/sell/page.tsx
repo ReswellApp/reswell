@@ -36,6 +36,7 @@ import {
   Package,
 } from "lucide-react"
 import dynamic from "next/dynamic"
+import { listingDetailHref } from "@/lib/listing-href"
 const LocationPicker = dynamic(
   () => import("@/components/location-picker").then((m) => ({ default: m.LocationPicker })),
   {
@@ -1876,9 +1877,13 @@ function SellPageContent() {
       }
 
       const detailPath =
-        listingType === "board"
-          ? `/boards/${listingSlug || listingId}`
-          : `/${listingSlug || listingId}`
+        listingId != null
+          ? listingDetailHref({
+              id: listingId,
+              slug: listingSlug,
+              section: listingType === "board" ? "surfboards" : "used",
+            })
+          : "/gear"
 
       if (listingId) {
         if (!editId && !listingImpersonation) {

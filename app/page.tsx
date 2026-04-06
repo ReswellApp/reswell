@@ -29,6 +29,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName, listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { listingDetailHref } from "@/lib/listing-href"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import type { ReactNode } from "react"
@@ -128,17 +129,6 @@ const categories = [
   { name: "Board Bags", href: "/board-bags", section: "used", slug: "board-bags" },
   { name: "Vintage", href: "/collectibles-vintage", section: "used", slug: "collectibles-vintage" },
 ]
-
-function listingPublicHref(listing: {
-  id: string
-  slug?: string | null
-  section: string
-}): string {
-  const slugOrId = listing.slug || listing.id
-  if (listing.section === "surfboards") return `/boards/${slugOrId}`
-  if (listing.section === "new") return `/shop/${listing.id}`
-  return `/${slugOrId}`
-}
 
 /** Match `used-gear-listings` / seller grids: primary flag first, else first image. */
 function primaryListingImageUrl(
@@ -397,7 +387,11 @@ export default async function HomePage() {
                 {featuredBoards.map((board) => (
                   <ListingTile
                     key={board.id}
-                    href={`/boards/${board.slug || board.id}`}
+                    href={listingDetailHref({
+                      id: board.id,
+                      slug: board.slug,
+                      section: "surfboards",
+                    })}
                     listingId={board.id}
                     title={board.title}
                     imageAlt={capitalizeWords(board.title)}
@@ -477,7 +471,7 @@ export default async function HomePage() {
                 {featuredUsed.map((listing) => (
                   <ListingTile
                     key={listing.id}
-                    href={`/${listing.slug || listing.id}`}
+                    href={listingDetailHref(listing)}
                     listingId={listing.id}
                     title={listing.title}
                     imageAlt={capitalizeWords(listing.title)}
@@ -567,7 +561,7 @@ export default async function HomePage() {
               </div>
               <HomeListingScrollRow>
                 {verifiedSpotlight.map(({ profile, listing }) => {
-                  const href = listingPublicHref(listing)
+                  const href = listingDetailHref(listing)
                   const sellerLabel =
                     profile.shop_name?.trim() || getPublicSellerDisplayName(profile)
                   return (
@@ -724,7 +718,7 @@ export default async function HomePage() {
                   )
                 }
 
-                const href = listingPublicHref(listing)
+                const href = listingDetailHref(listing)
                 const showBoardLength = listing.section === "surfboards"
 
                 return (
@@ -881,7 +875,7 @@ export default async function HomePage() {
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredNew.map((item) => (
-                  <Link key={item.id} href={`/shop/${item.id}`}>
+                  <Link key={item.id} href={listingDetailHref({ id: item.id, section: "new" })}>
                     <Card className={listingProductCardClassName}>
                       <div className="aspect-square relative bg-muted">
                         <Image

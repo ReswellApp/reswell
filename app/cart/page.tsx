@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   CreditCard,
 } from "lucide-react"
+import { listingDetailHref } from "@/lib/listing-href"
 
 interface CartItem {
   id: string
@@ -147,7 +148,7 @@ export default function CartPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <Link
-                            href={`/shop/${item.id}`}
+                            href={listingDetailHref({ id: item.id, section: "new" })}
                             className="font-medium hover:text-primary transition-colors line-clamp-2"
                           >
                             {item.name}

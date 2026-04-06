@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowingFeedPage } from "@/app/actions/follows"
+import { listingDetailHref } from "@/lib/listing-href"
 
 type Listing = {
   id: string
@@ -79,10 +80,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function getListingHref(listing: Listing): string {
-  const id = listing.slug || listing.id
-  if (listing.section === "surfboards") return `/boards/${id}`
-  if (listing.section === "new") return `/shop/${listing.id}`
-  return `/${id}`
+  return listingDetailHref(listing)
 }
 
 export function FollowingFeedClient({

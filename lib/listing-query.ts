@@ -7,15 +7,6 @@ function isListingRow(data: unknown): data is { section: string; id: string; slu
   return typeof row.section === "string" && typeof row.id === "string"
 }
 
-function categorySlugFromListing(listing: {
-  categories?: { slug?: string | null } | Array<{ slug?: string | null }> | null
-}): string | undefined {
-  const c = listing.categories
-  if (!c) return undefined
-  const row = Array.isArray(c) ? c[0] : c
-  return row?.slug?.trim() || undefined
-}
-
 /** Canonical detail URL for a listing (used by section-aware redirects). */
 export function listingDetailPath(listing: {
   section: string
@@ -24,13 +15,7 @@ export function listingDetailPath(listing: {
   categories?: { slug?: string | null } | Array<{ slug?: string | null }> | null
 }): string {
   const ident = listing.slug || listing.id
-  if (listing.section === "surfboards") return `/boards/${ident}`
-  if (listing.section === "new") return `/shop/${listing.id}`
-  if (listing.section === "used") {
-    const cat = categorySlugFromListing(listing)
-    if (cat) return `/${cat}/${ident}`
-  }
-  return `/${ident}`
+  return `/l/${ident}`
 }
 
 /**

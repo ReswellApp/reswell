@@ -13,6 +13,7 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
+import { listingDetailHref } from "@/lib/listing-href"
 
 const RECENT_SEARCHES_KEY = "reswell_recent_searches"
 
@@ -272,7 +273,11 @@ export function HeaderNavSearch() {
               {suggestedListings.map((listing) => (
                 <li key={listing.id}>
                   <Link
-                    href={`/boards/${listing.slug || listing.id}`}
+                    href={listingDetailHref({
+                      id: listing.id,
+                      slug: listing.slug,
+                      section: "surfboards",
+                    })}
                     className="mx-1 flex gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/60"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setIdleOpen(false)}

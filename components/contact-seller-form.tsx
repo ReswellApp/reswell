@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { MessageSquare, Send } from "lucide-react"
 import Link from "next/link"
+import { listingDetailHref } from "@/lib/listing-href"
 
 interface ContactSellerFormProps {
   listingId: string
@@ -125,7 +126,11 @@ export function ContactSellerForm({
         <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground mb-3">Sign in to contact the seller</p>
         <Button asChild>
-          <Link href={`/auth/login?redirect=/${section === "surfboards" ? "boards" : "used"}/${listingSlug || listingId}`}>
+          <Link
+            href={`/auth/login?redirect=${encodeURIComponent(
+              listingDetailHref({ id: listingId, slug: listingSlug, section }),
+            )}`}
+          >
             Sign In to Message
           </Link>
         </Button>

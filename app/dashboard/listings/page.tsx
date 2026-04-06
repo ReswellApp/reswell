@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { listingDetailHref } from '@/lib/listing-href'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -147,12 +148,8 @@ export default function MyListingsPage() {
     }
   }
 
-  const getListingHref = (section: string, id: string, slug?: string | null) => {
-    const identifier = slug || id
-    if (section === 'surfboards') return `/boards/${identifier}`
-    if (section === 'new') return `/shop/${id}`
-    return `/${identifier}`
-  }
+  const getListingHref = (section: string, id: string, slug?: string | null) =>
+    listingDetailHref({ id, slug, section })
 
   const filterByStatus = (status: string) => {
     if (status === 'all') return listings

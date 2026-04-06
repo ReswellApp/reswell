@@ -12,6 +12,7 @@ import { MessageCircle, Search, Heart } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { listingDetailHref } from '@/lib/listing-href'
 
 interface Notification {
   id: string
@@ -203,14 +204,10 @@ function MessagesContent() {
                   <div className="space-y-2">
                     {notifications.map((n) => {
                       const listing = n.listing ?? n.listings
-                      const listingSlugOrId = listing?.slug || n.listing_id
-                      const href = n.listing_id && listing?.section
-                        ? listing.section === 'surfboards'
-                          ? `/boards/${listingSlugOrId}`
-                          : listing.section === 'used'
-                            ? `/${listingSlugOrId}`
-                            : `/shop/${n.listing_id}`
-                        : '/favorites'
+                      const href =
+                        n.listing_id && listing?.section
+                          ? listingDetailHref(listing)
+                          : "/favorites"
                       return (
                         <Link key={n.id} href={href}>
                           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">

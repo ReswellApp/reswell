@@ -24,6 +24,7 @@ import {
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { FollowButton } from "@/components/follows/follow-button"
+import { listingDetailHref } from "@/lib/listing-href"
 
 const PROFILE_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -495,24 +496,10 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
     )
   }
 
-  function getListingHref(listing: any) {
-    const id = listing.slug || listing.id
-    switch (listing.section) {
-      case "used":
-        return `/${id}`
-      case "new":
-        return `/shop/${listing.id}`
-      case "surfboards":
-        return `/boards/${id}`
-      default:
-        return `/${id}`
-    }
-  }
-
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => {
-        const href = getListingHref(listing)
+        const href = listingDetailHref(listing)
         const loc =
           listing.city &&
           `${listing.city}${listing.state ? `, ${listing.state}` : ""}`

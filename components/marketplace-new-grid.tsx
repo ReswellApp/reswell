@@ -1,5 +1,6 @@
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
+import { listingDetailHref } from "@/lib/listing-href"
 
 export interface MarketplaceNewItem {
   id: string
@@ -19,7 +20,7 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
       {items.map((item) => (
         <ListingTile
           key={item.id}
-          href={`/shop/${item.id}`}
+          href={listingDetailHref({ id: item.id, section: "new" })}
           listingId={item.id}
           title={item.title}
           imageAlt={item.title}

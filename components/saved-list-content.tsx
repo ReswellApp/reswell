@@ -14,6 +14,7 @@ import {
 } from '@/lib/listing-labels'
 import { ListingTile } from '@/components/listing-tile'
 import { listingProductCardGridClassName } from '@/lib/listing-card-styles'
+import { listingDetailHref } from '@/lib/listing-href'
 import { toast } from 'sonner'
 
 export interface SavedFavorite {
@@ -103,16 +104,12 @@ export function SavedListContent() {
     }
   }
 
-  const getListingHref = (listing: SavedFavorite['listing']) => {
-    switch (listing.section) {
-      case 'new':
-        return `/shop/${listing.id}`
-      case 'surfboards':
-        return `/boards/${listing.slug || listing.id}`
-      default:
-        return `/${listing.slug || listing.id}`
-    }
-  }
+  const getListingHref = (listing: SavedFavorite['listing']) =>
+    listingDetailHref({
+      id: listing.id,
+      slug: listing.slug,
+      section: listing.section,
+    })
 
   return (
     <div>

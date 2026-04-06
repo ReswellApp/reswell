@@ -12,6 +12,7 @@ import { FollowButton } from "@/components/follows/follow-button"
 import { createClient } from "@/lib/supabase/client"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowStatusForSeller } from "@/app/actions/follows"
+import { listingDetailHref } from "@/lib/listing-href"
 
 interface SellerHoverCardProps {
   sellerId: string
@@ -136,10 +137,7 @@ export function SellerHoverCard({
   })
 
   function getListingHref(l: RecentListing) {
-    const id = l.slug || l.id
-    if (l.section === "surfboards") return `/boards/${id}`
-    if (l.section === "new") return `/shop/${l.id}`
-    return `/${id}`
+    return listingDetailHref(l)
   }
 
   return (

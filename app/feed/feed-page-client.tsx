@@ -11,6 +11,7 @@ import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { RecentFeedClient, type RecentListing } from "@/components/recent-feed-client"
 import { Package } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { listingDetailHref } from "@/lib/listing-href"
 
 export type SoldTickerItem = {
   id: string
@@ -54,18 +55,6 @@ export interface FeedPageClientProps {
   initialTickerItems: SoldTickerItem[]
 }
 
-function getListingHref(listing: { section: string; slug: string | null; id: string }): string {
-  const id = listing.slug || listing.id
-  switch (listing.section) {
-    case "used":
-      return `/${id}`
-    case "surfboards":
-      return `/boards/${id}`
-    default:
-      return `/${id}`
-  }
-}
-
 function soldRelativeLabel(iso: string): string {
   const d = new Date(iso)
   const now = new Date()
@@ -78,7 +67,7 @@ function soldRelativeLabel(iso: string): string {
 }
 
 function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
-  const href = getListingHref(listing)
+  const href = listingDetailHref(listing)
   const locationText =
     listing.city && listing.state
       ? `${listing.city}, ${listing.state}`
