@@ -72,6 +72,12 @@ export async function sendListingMessage(input: {
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
 
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("display_name, shop_name, is_shop")
+    .eq("id", user.id)
+    .maybeSingle()
+
   void trackKlaviyoMessageSent({
     senderUserId: user.id,
     receiverUserId: seller_id,
@@ -80,6 +86,10 @@ export async function sendListingMessage(input: {
     listingId: listing_id ?? null,
     messageId: inserted.id,
     sentAt: inserted.created_at,
+    sessionSender: {
+      email: user.email ?? null,
+      profile: senderProfile,
+    },
   })
 
   return { success: true as const, conversation_id: conversation.id }
@@ -138,6 +148,12 @@ export async function sendConversationReply(input: {
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conv.id)
 
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("display_name, shop_name, is_shop")
+    .eq("id", user.id)
+    .maybeSingle()
+
   void trackKlaviyoMessageSent({
     senderUserId: user.id,
     receiverUserId: receiverId,
@@ -146,6 +162,10 @@ export async function sendConversationReply(input: {
     listingId: conv.listing_id,
     messageId: inserted.id,
     sentAt: inserted.created_at,
+    sessionSender: {
+      email: user.email ?? null,
+      profile: senderProfile,
+    },
   })
 
   return { success: true as const, message: inserted }

@@ -1,6 +1,10 @@
 /**
  * Server-only: Klaviyo Events API — fires when a marketplace message is sent.
- * Uses service role to resolve auth emails for flow triggers (requires SUPABASE_SERVICE_ROLE_KEY).
+ *
+ * Sender email + display name: prefer `sessionSender` from server actions (session + profiles
+ * read as the logged-in user) so production works without SUPABASE_SERVICE_ROLE_KEY for those fields.
+ *
+ * Receiver email: still uses auth.admin.getUserById (requires SUPABASE_SERVICE_ROLE_KEY in prod).
  */
 
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -30,7 +34,35 @@ async function getAuthEmailsForUsers(
   }
 }
 
+async function getReceiverEmail(receiverId: string): Promise<string | null> {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return null
+  }
+  try {
+    const admin = createServiceRoleClient()
+    const r = await admin.auth.admin.getUserById(receiverId)
+    return r.data.user?.email?.trim() || null
+  } catch {
+    return null
+  }
+}
+
 /** Public-facing sender label: shop name for shops, else display_name (matches listing UI). */
+function displayNameFromProfileRow(
+  data: {
+    display_name?: string | null
+    shop_name?: string | null
+    is_shop?: boolean | null
+  } | null,
+): string {
+  if (!data) return ""
+  const shop = typeof data.shop_name === "string" ? data.shop_name.trim() : ""
+  if (data.is_shop && shop) return shop
+  const dn = typeof data.display_name === "string" ? data.display_name.trim() : ""
+  return dn || "Anonymous Seller"
+}
+
+/** Uses service role + profiles table (e.g. purchase notification — no user session). */
 async function getSenderPublicDisplayName(senderId: string): Promise<string> {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
     return ""
@@ -43,11 +75,7 @@ async function getSenderPublicDisplayName(senderId: string): Promise<string> {
       .eq("id", senderId)
       .maybeSingle()
 
-    if (!data) return ""
-    const shop = typeof data.shop_name === "string" ? data.shop_name.trim() : ""
-    if (data.is_shop && shop) return shop
-    const dn = typeof data.display_name === "string" ? data.display_name.trim() : ""
-    return dn || "Anonymous Seller"
+    return displayNameFromProfileRow(data)
   } catch {
     return ""
   }
@@ -61,6 +89,18 @@ export type KlaviyoMessageSentPayload = {
   listingId?: string | null
   messageId: string
   sentAt: string
+  /**
+   * From `createClient()` + `getUser()` + own `profiles` row — works in production without
+   * service role for sender fields.
+   */
+  sessionSender?: {
+    email: string | null
+    profile: {
+      display_name?: string | null
+      shop_name?: string | null
+      is_shop?: boolean | null
+    } | null
+  }
 }
 
 /**
@@ -78,14 +118,26 @@ export async function trackKlaviyoMessageSent(
     listingId,
     messageId,
     sentAt,
+    sessionSender,
   } = payload
 
-  const [emails, senderDisplayName] = await Promise.all([
-    getAuthEmailsForUsers(senderUserId, receiverUserId),
-    getSenderPublicDisplayName(senderUserId),
-  ])
-  const senderEmail = emails.a
-  const receiverEmail = emails.b
+  let senderEmail: string | null
+  let senderDisplayName: string
+  let receiverEmail: string | null
+
+  if (sessionSender) {
+    senderEmail = sessionSender.email?.trim() || null
+    senderDisplayName = displayNameFromProfileRow(sessionSender.profile)
+    receiverEmail = await getReceiverEmail(receiverUserId)
+  } else {
+    const [emails, displayFromSr] = await Promise.all([
+      getAuthEmailsForUsers(senderUserId, receiverUserId),
+      getSenderPublicDisplayName(senderUserId),
+    ])
+    senderEmail = emails.a
+    receiverEmail = emails.b
+    senderDisplayName = displayFromSr
+  }
 
   const trimmed =
     message.length > MESSAGE_PROP_MAX
