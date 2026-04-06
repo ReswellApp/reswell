@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { MapPin, Store, Search, ArrowRight, Package } from "lucide-react"
+import { MapPin, Store, Search, ArrowRight } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
@@ -307,21 +307,23 @@ export default async function SellersPage({
         </div>
       </section>
 
-      <section className="border-t border-border/60 bg-offwhite py-12">
+      <section className="border-t border-border/60 bg-offwhite py-8">
         <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-lg text-center">
-            <Package className="mx-auto mb-3 h-9 w-9 text-primary" aria-hidden />
-            <h2 className="text-xl font-bold text-foreground">Sell on Reswell</h2>
-            <p className="mt-2 text-sm text-muted-foreground text-pretty">
-              List your gear and reach local surfers. Set up your seller profile in minutes.
-            </p>
-            <Button className="mt-5" size="lg" asChild>
-              <Link href="/dashboard/settings">
-                Become a seller
-                <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-              </Link>
-            </Button>
-          </div>
+          <Link
+            href="/sell"
+            className="mx-auto flex w-full max-w-3xl flex-col items-start justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 no-underline transition-colors hover:bg-primary/10 hover:no-underline sm:flex-row sm:items-center"
+          >
+            <div>
+              <p className="text-lg font-semibold text-foreground">Become a seller</p>
+              <p className="mt-1 text-muted-foreground">
+                List your gear and show up alongside shops on this directory.
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+              Get started
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </span>
+          </Link>
         </div>
       </section>
     </main>

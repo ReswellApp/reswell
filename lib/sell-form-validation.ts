@@ -8,15 +8,15 @@ import {
   COLLECTIBLE_TYPE_VALUES,
 } from "@/lib/collectible-options"
 import { APPAREL_KIND_VALUES, type ApparelKindValue } from "@/lib/apparel-lifestyle-options"
-
-/** Match `public.categories` ids used on the sell form (used gear). */
-const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
-const LEASHES_CATEGORY_ID = "b2a6282c-4c23-42dc-83f4-492eaa4f993a"
-const FINS_CATEGORY_ID = "f8327e72-d54c-4333-b383-58a8cef225a6"
-const BACKPACK_CATEGORY_ID = "a6000006-0000-4000-8000-000000000006"
-const BOARD_BAGS_CATEGORY_ID = "3779de38-dcf8-430f-a42c-9a17a2e048c4"
-const APPAREL_LIFESTYLE_CATEGORY_ID = "a2000002-0000-4000-8000-000000000002"
-const COLLECTIBLES_CATEGORY_ID = "a3000003-0000-4000-8000-000000000003"
+import {
+  APPAREL_LIFESTYLE_CATEGORY_ID,
+  BACKPACK_CATEGORY_ID,
+  BOARD_BAGS_CATEGORY_ID,
+  COLLECTIBLES_CATEGORY_ID,
+  FINS_CATEGORY_ID,
+  LEASHES_CATEGORY_ID,
+  WETSUITS_CATEGORY_ID,
+} from "@/lib/sell-category-ids"
 
 /** Align with sell page length inputs (min/max on feet field). */
 const BOARD_LENGTH_FT_MIN = 4
@@ -90,6 +90,92 @@ export function buildResolvedListingTitle(form: SellFormValidationInput): string
     }
   }
   return form.title.trim()
+}
+
+/**
+ * Validates category-specific used-gear fields (wetsuit, fins, etc.).
+ * Used by the sell wizard gear-details step and full {@link validateSellListingForm}.
+ */
+export function validateUsedCategoryFields(form: SellFormValidationInput): string | null {
+  if (form.listingType !== "used" || !form.category) return null
+  const cat = form.category
+  const needBrand =
+    cat === FINS_CATEGORY_ID ||
+    cat === BACKPACK_CATEGORY_ID ||
+    cat === BOARD_BAGS_CATEGORY_ID ||
+    cat === APPAREL_LIFESTYLE_CATEGORY_ID
+  if (needBrand && !form.brand?.trim()) {
+    return "Enter a brand for this item."
+  }
+
+  const needGearSize =
+    cat === FINS_CATEGORY_ID ||
+    cat === BACKPACK_CATEGORY_ID ||
+    cat === BOARD_BAGS_CATEGORY_ID ||
+    cat === APPAREL_LIFESTYLE_CATEGORY_ID
+  if (needGearSize && !form.gearSize?.trim()) {
+    return "Select or enter a size."
+  }
+
+  if (
+    (cat === FINS_CATEGORY_ID || cat === BACKPACK_CATEGORY_ID) &&
+    !form.gearColor?.trim()
+  ) {
+    return "Select or enter a color."
+  }
+
+  if (cat === BACKPACK_CATEGORY_ID && form.packKind !== "surfpack" && form.packKind !== "bag") {
+    return "Select surfpack or bag."
+  }
+
+  if (
+    cat === BOARD_BAGS_CATEGORY_ID &&
+    form.boardBagKind !== "day" &&
+    form.boardBagKind !== "travel"
+  ) {
+    return "Select day bag or travel bag."
+  }
+
+  if (cat === APPAREL_LIFESTYLE_CATEGORY_ID) {
+    if (!APPAREL_KIND_VALUES.includes(form.apparelKind as ApparelKindValue)) {
+      return "Select an apparel type."
+    }
+  }
+
+  if (cat === WETSUITS_CATEGORY_ID) {
+    if (!(WETSUIT_SIZE_OPTIONS as readonly string[]).includes(form.wetsuitSize.trim())) {
+      return "Select a wetsuit size."
+    }
+    if (!(WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(form.wetsuitThickness.trim())) {
+      return "Select wetsuit thickness."
+    }
+    if (!(WETSUIT_ZIP_VALUES as readonly string[]).includes(form.wetsuitZipType.trim())) {
+      return "Select a zip type."
+    }
+  }
+
+  if (cat === LEASHES_CATEGORY_ID) {
+    if (!(LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(form.leashLength.trim())) {
+      return "Select leash length."
+    }
+    if (!(LEASH_THICKNESS_OPTIONS as readonly string[]).includes(form.leashThickness.trim())) {
+      return "Select leash thickness."
+    }
+  }
+
+  if (cat === COLLECTIBLES_CATEGORY_ID) {
+    if (!(COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(form.collectibleType)) {
+      return "Select a collectible type."
+    }
+    if (!(COLLECTIBLE_ERA_VALUES as readonly string[]).includes(form.collectibleEra)) {
+      return "Select an era."
+    }
+    if (!(COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(form.collectibleCondition)) {
+      return "Select condition."
+    }
+  }
+
+  return null
 }
 
 export function validateSellListingForm(
@@ -195,83 +281,8 @@ export function validateSellListingForm(
     }
   }
 
-  if (form.listingType === "used" && form.category) {
-    const cat = form.category
-    const needBrand =
-      cat === FINS_CATEGORY_ID ||
-      cat === BACKPACK_CATEGORY_ID ||
-      cat === BOARD_BAGS_CATEGORY_ID ||
-      cat === APPAREL_LIFESTYLE_CATEGORY_ID
-    if (needBrand && !form.brand?.trim()) {
-      return "Enter a brand for this item."
-    }
-
-    const needGearSize =
-      cat === FINS_CATEGORY_ID ||
-      cat === BACKPACK_CATEGORY_ID ||
-      cat === BOARD_BAGS_CATEGORY_ID ||
-      cat === APPAREL_LIFESTYLE_CATEGORY_ID
-    if (needGearSize && !form.gearSize?.trim()) {
-      return "Select or enter a size."
-    }
-
-    if (
-      (cat === FINS_CATEGORY_ID || cat === BACKPACK_CATEGORY_ID) &&
-      !form.gearColor?.trim()
-    ) {
-      return "Select or enter a color."
-    }
-
-    if (cat === BACKPACK_CATEGORY_ID && (form.packKind !== "surfpack" && form.packKind !== "bag")) {
-      return "Select surfpack or bag."
-    }
-
-    if (
-      cat === BOARD_BAGS_CATEGORY_ID &&
-      (form.boardBagKind !== "day" && form.boardBagKind !== "travel")
-    ) {
-      return "Select day bag or travel bag."
-    }
-
-    if (cat === APPAREL_LIFESTYLE_CATEGORY_ID) {
-      if (!APPAREL_KIND_VALUES.includes(form.apparelKind as ApparelKindValue)) {
-        return "Select an apparel type."
-      }
-    }
-
-    if (cat === WETSUITS_CATEGORY_ID) {
-      if (!(WETSUIT_SIZE_OPTIONS as readonly string[]).includes(form.wetsuitSize.trim())) {
-        return "Select a wetsuit size."
-      }
-      if (!(WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(form.wetsuitThickness.trim())) {
-        return "Select wetsuit thickness."
-      }
-      if (!(WETSUIT_ZIP_VALUES as readonly string[]).includes(form.wetsuitZipType.trim())) {
-        return "Select a zip type."
-      }
-    }
-
-    if (cat === LEASHES_CATEGORY_ID) {
-      if (!(LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(form.leashLength.trim())) {
-        return "Select leash length."
-      }
-      if (!(LEASH_THICKNESS_OPTIONS as readonly string[]).includes(form.leashThickness.trim())) {
-        return "Select leash thickness."
-      }
-    }
-
-    if (cat === COLLECTIBLES_CATEGORY_ID) {
-      if (!(COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(form.collectibleType)) {
-        return "Select a collectible type."
-      }
-      if (!(COLLECTIBLE_ERA_VALUES as readonly string[]).includes(form.collectibleEra)) {
-        return "Select an era."
-      }
-      if (!(COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(form.collectibleCondition)) {
-        return "Select condition."
-      }
-    }
-  }
+  const usedCatErr = validateUsedCategoryFields(form)
+  if (usedCatErr) return usedCatErr
 
   const resolvedTitle = buildResolvedListingTitle(form)
   if (resolvedTitle.length > LISTING_TITLE_MAX_LENGTH) {

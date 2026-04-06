@@ -12,9 +12,11 @@ interface ImageGalleryProps {
   title: string
   /** Sold listings: muted imagery + SOLD badge (no change to carousel behavior). */
   sold?: boolean
+  /** Use for local blob/data URLs during sell-flow preview (Next/Image optimization off). */
+  unoptimized?: boolean
 }
 
-export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
+export function ImageGallery({ images, title, sold, unoptimized }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   if (images.length === 0) {
@@ -48,8 +50,9 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
             )}
             priority
             sizes="(max-width: 1024px) 100vw, 50vw"
-            placeholder="blur"
-            blurDataURL={portraitShimmer}
+            {...(unoptimized
+              ? { unoptimized: true }
+              : { placeholder: "blur" as const, blurDataURL: portraitShimmer })}
           />
         </div>
         {sold && (
@@ -68,6 +71,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
         {images.length > 1 && (
           <>
             <Button
+              type="button"
               variant="secondary"
               size="icon"
               className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full opacity-80 hover:opacity-100 z-10"
@@ -77,6 +81,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
               <span className="sr-only">Previous image</span>
             </Button>
             <Button
+              type="button"
               variant="secondary"
               size="icon"
               className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full opacity-80 hover:opacity-100 z-10"
@@ -122,8 +127,9 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
                     fill
                     className={cn("object-contain", sold && "[filter:grayscale(30%)]")}
                     sizes="64px"
-                    placeholder="blur"
-                    blurDataURL={squareShimmer}
+                    {...(unoptimized
+                      ? { unoptimized: true }
+                      : { placeholder: "blur" as const, blurDataURL: squareShimmer })}
                   />
                 </span>
               </span>

@@ -1,3 +1,4 @@
+import { trackKlaviyoWelcome } from "@/lib/klaviyo/track-welcome";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -16,7 +17,14 @@ export async function GET(request: Request) {
 
   if (token_hash && type) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash,
+      type,
+    });
+
+    if (!error && data.user && type === "signup") {
+      void trackKlaviyoWelcome({ user: data.user });
+    }
 
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);

@@ -1,4 +1,8 @@
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
+import {
+  isProbableFirstAuthSession,
+  trackKlaviyoWelcome,
+} from "@/lib/klaviyo/track-welcome";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -16,8 +20,12 @@ export async function GET(request: NextRequest) {
       request,
       redirectResponse,
     );
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const u = data.session?.user;
+      if (u && isProbableFirstAuthSession(u)) {
+        void trackKlaviyoWelcome({ user: u });
+      }
       redirectResponse.headers.set("Cache-Control", "private, no-store");
       return redirectResponse;
     }
@@ -30,10 +38,13 @@ export async function GET(request: NextRequest) {
       request,
       redirectResponse,
     );
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       token_hash,
       type: type as "email" | "signup" | "recovery" | "invite",
     });
+    if (!error && data.user && type === "signup") {
+      void trackKlaviyoWelcome({ user: data.user });
+    }
     if (!error) {
       redirectResponse.headers.set("Cache-Control", "private, no-store");
       return redirectResponse;

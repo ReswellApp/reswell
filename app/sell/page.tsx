@@ -113,11 +113,22 @@ import { BrandInputWithSuggestions } from "@/components/brand-input-with-suggest
 import { listingDetailPath } from "@/lib/listing-query"
 import {
   validateSellListingForm,
+  validateUsedCategoryFields,
   buildResolvedListingTitle,
   LISTING_TITLE_MAX_LENGTH,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import {
+  APPAREL_LIFESTYLE_CATEGORY_ID,
+  BACKPACK_CATEGORY_ID,
+  BOARD_BAGS_CATEGORY_ID,
+  COLLECTIBLES_CATEGORY_ID,
+  FINS_CATEGORY_ID,
+  LEASHES_CATEGORY_ID,
+  WETSUITS_CATEGORY_ID,
+} from "@/lib/sell-category-ids"
+import { buildSellListingUpsertFields, type SellListingFormState } from "@/lib/sell-listing-row"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -129,15 +140,6 @@ function submitErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback
 }
-
-// Category UUIDs (match `public.categories`) — used for conditional fields. Labels for the category dropdown load from the DB.
-const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
-const LEASHES_CATEGORY_ID = "b2a6282c-4c23-42dc-83f4-492eaa4f993a"
-const FINS_CATEGORY_ID = "f8327e72-d54c-4333-b383-58a8cef225a6"
-const BACKPACK_CATEGORY_ID = "a6000006-0000-4000-8000-000000000006"
-const BOARD_BAGS_CATEGORY_ID = "3779de38-dcf8-430f-a42c-9a17a2e048c4"
-const APPAREL_LIFESTYLE_CATEGORY_ID = "a2000002-0000-4000-8000-000000000002"
-const COLLECTIBLES_CATEGORY_ID = "a3000003-0000-4000-8000-000000000003"
 
 type DimMode = "decimal" | "fraction"
 
@@ -225,6 +227,90 @@ const LISTING_UPLOAD_STEP_LABELS = [
   "Almost there...",
 ] as const
 
+type SellWizardStepId =
+  | "kind"
+  | "category"
+  | "title"
+  | "brand"
+  | "dimensions"
+  | "fins_tail"
+  | "fulfillment"
+  | "location"
+  | "gear_details"
+  | "shipping_used"
+  | "price_condition"
+  | "description"
+  | "photos"
+
+const USED_GEAR_DETAIL_CATEGORY_IDS = new Set<string>([
+  WETSUITS_CATEGORY_ID,
+  LEASHES_CATEGORY_ID,
+  COLLECTIBLES_CATEGORY_ID,
+  FINS_CATEGORY_ID,
+  BACKPACK_CATEGORY_ID,
+  BOARD_BAGS_CATEGORY_ID,
+  APPAREL_LIFESTYLE_CATEGORY_ID,
+])
+
+function usedCategoryHasGearDetailsStep(categoryId: string): boolean {
+  return Boolean(categoryId && USED_GEAR_DETAIL_CATEGORY_IDS.has(categoryId))
+}
+
+function buildSellWizardSteps(listingType: "board" | "used", categoryId: string): SellWizardStepId[] {
+  if (listingType === "board") {
+    return [
+      "kind",
+      "category",
+      "title",
+      "brand",
+      "dimensions",
+      "fins_tail",
+      "fulfillment",
+      "location",
+      "price_condition",
+      "description",
+      "photos",
+    ]
+  }
+  const steps: SellWizardStepId[] = ["kind", "category", "title"]
+  if (usedCategoryHasGearDetailsStep(categoryId)) steps.push("gear_details")
+  steps.push("shipping_used", "price_condition", "description", "photos")
+  return steps
+}
+
+/** When a step is removed from the flow (e.g. category change), pick a sensible next step id. */
+function reconcileSellWizardStepId(
+  prev: SellWizardStepId,
+  steps: SellWizardStepId[],
+): SellWizardStepId {
+  if (steps.includes(prev)) return prev
+  const fallbackOrder: SellWizardStepId[] = [
+    "kind",
+    "category",
+    "title",
+    "gear_details",
+    "brand",
+    "dimensions",
+    "fins_tail",
+    "fulfillment",
+    "location",
+    "shipping_used",
+    "price_condition",
+    "description",
+    "photos",
+  ]
+  const start = fallbackOrder.indexOf(prev)
+  for (let i = start + 1; i < fallbackOrder.length; i++) {
+    const id = fallbackOrder[i]
+    if (steps.includes(id)) return id
+  }
+  for (let i = start - 1; i >= 0; i--) {
+    const id = fallbackOrder[i]
+    if (steps.includes(id)) return id
+  }
+  return steps[0] ?? "kind"
+}
+
 type PublishPreviewState = {
   title: string
   price: string
@@ -263,6 +349,9 @@ function SellPageContent() {
   const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
   const editId = searchParams.get("edit")
+  const draftParam = searchParams.get("draft")
+  const serverDraftId = draftParam?.trim() || null
+  const loadListingId = (editId?.trim() || serverDraftId) || null
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
@@ -272,6 +361,7 @@ function SellPageContent() {
   }, [])
 
   const [loading, setLoading] = useState(false)
+  const [savingPreview, setSavingPreview] = useState(false)
   const [submitStepIndex, setSubmitStepIndex] = useState(0)
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [descriptionGenerated, setDescriptionGenerated] = useState(false)
@@ -283,8 +373,11 @@ function SellPageContent() {
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
-  const [editLoading, setEditLoading] = useState(!!editId)
-  const [draftHydrated, setDraftHydrated] = useState(!!editId)
+  const [editLoading, setEditLoading] = useState(!!loadListingId)
+  const [draftHydrated, setDraftHydrated] = useState(() => {
+    if (!loadListingId) return false
+    return !!editId
+  })
 
   useEffect(() => {
     if (!loading) return
@@ -406,6 +499,7 @@ function SellPageContent() {
     formData: {} as SellListingDraftFormSnapshot,
     images: [] as ListingPhotoSlot[],
     editId: null as string | null,
+    serverDraftId: null as string | null,
     draftHydrated: false,
   })
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -481,6 +575,7 @@ function SellPageContent() {
     formData: formData as SellListingDraftFormSnapshot,
     images,
     editId,
+    serverDraftId,
     draftHydrated,
   }
 
@@ -498,6 +593,248 @@ function SellPageContent() {
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
     [sellValidationForm],
+  )
+
+  const wizardSteps = useMemo(
+    () => buildSellWizardSteps(listingType, formData.category),
+    [listingType, formData.category],
+  )
+  const [wizardStepId, setWizardStepId] = useState<SellWizardStepId>("kind")
+  useEffect(() => {
+    setWizardStepId((prev) => reconcileSellWizardStepId(prev, wizardSteps))
+  }, [wizardSteps])
+
+  const imagesUploadReady = useMemo(
+    () =>
+      listingType !== "used" && listingType !== "board"
+        ? true
+        : !images.some(
+            (im) =>
+              im.uploadPhase !== "done" ||
+              !im.url?.trim() ||
+              !im.thumbnailUrl?.trim(),
+          ),
+    [listingType, images],
+  )
+
+  const peekBoardFormAfterFractionCommit = useCallback((): typeof formData | null => {
+    if (listingType !== "board" || dimMode !== "fraction") return formData
+    const next = { ...formData }
+    let touched = false
+    if (inchesFractionInput.trim()) {
+      const p = parseDimension(inchesFractionInput.trim())
+      if (p == null) {
+        toast.error('Board length (inches): enter a valid value like 2 1/2 or 0.125')
+        return null
+      }
+      next.boardLengthIn = formatDecimalDimension(p)
+      touched = true
+    }
+    if (widthFractionInput.trim()) {
+      const p = parseDimension(widthFractionInput.trim())
+      if (p == null) {
+        toast.error("Board width: enter a valid value like 19 1/2 or 19.5")
+        return null
+      }
+      next.boardWidthInches = formatDecimalDimension(p)
+      touched = true
+    }
+    if (thicknessFractionInput.trim()) {
+      const p = parseDimension(thicknessFractionInput.trim())
+      if (p == null) {
+        toast.error("Board thickness: enter a valid value like 2 1/4 or 2.25")
+        return null
+      }
+      next.boardThicknessInches = formatDecimalDimension(p)
+      touched = true
+    }
+    return touched ? next : formData
+  }, [
+    listingType,
+    dimMode,
+    formData,
+    inchesFractionInput,
+    widthFractionInput,
+    thicknessFractionInput,
+  ])
+
+  const wizardStepBlocker = useCallback(
+    (step: SellWizardStepId, fd: typeof formData): string | null => {
+      switch (step) {
+        case "kind":
+          return null
+        case "category":
+          return fd.category ? null : "Select a category."
+        case "title": {
+          if (!fd.title.trim()) return "Enter a title."
+          const titleCheck = buildResolvedListingTitle({ listingType, ...fd })
+          if (titleCheck.length > LISTING_TITLE_MAX_LENGTH) {
+            return `Title must be ${LISTING_TITLE_MAX_LENGTH} characters or fewer (including board length in the title).`
+          }
+          return null
+        }
+        case "brand":
+          return null
+        case "dimensions": {
+          if (listingType !== "board") return null
+          const ftRaw = fd.boardLengthFt?.trim() ?? ""
+          if (!ftRaw) return "Board length (feet) is required."
+          const ft = parseInt(ftRaw, 10)
+          if (!Number.isFinite(ft) || ft < 4 || ft > 12) {
+            return "Board length: enter feet between 4 and 12."
+          }
+          const inRaw = fd.boardLengthIn?.trim() === "" ? "0" : (fd.boardLengthIn ?? "0")
+          const inches = parseFloat(inRaw)
+          if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
+            return "Board length: inches must be 0 or greater and less than 12 (fractions like ⅞ are OK)."
+          }
+          if (!fd.boardWidthInches?.trim()) return "Enter board width (inches)."
+          const width = parseFloat(fd.boardWidthInches.trim())
+          if (!Number.isFinite(width) || width < 14 || width > 28) {
+            return "Board width must be between 14 and 28 inches."
+          }
+          if (!fd.boardThicknessInches?.trim()) return "Enter board thickness (inches)."
+          const thick = parseFloat(fd.boardThicknessInches.trim())
+          if (!Number.isFinite(thick) || thick < 1 || thick > 4) {
+            return "Board thickness must be between 1 and 4 inches."
+          }
+          if (fd.boardVolumeL?.trim()) {
+            const vol = parseFloat(fd.boardVolumeL.trim())
+            if (!Number.isFinite(vol) || vol <= 0 || vol > 200) {
+              return "Volume must be a positive number (liters), or leave it blank."
+            }
+          }
+          return null
+        }
+        case "fins_tail": {
+          if (listingType !== "board") return null
+          if (!fd.boardFins?.trim()) return "Select a fin setup."
+          if (!fd.boardTail?.trim()) return "Select a tail shape."
+          return null
+        }
+        case "fulfillment": {
+          if (listingType !== "board") return null
+          const fulfillmentFlags = flagsFromBoardFulfillment(fd.boardFulfillment)
+          if (fulfillmentFlags.shipping_available) {
+            const raw = fd.boardShippingPrice?.trim() ?? ""
+            if (!raw) {
+              return "Enter a shipping price when offering shipping (use 0 for free shipping)."
+            }
+            const sp = parseFloat(raw)
+            if (!Number.isFinite(sp) || sp < 0) return "Shipping price must be a number ≥ 0."
+          }
+          return null
+        }
+        case "location": {
+          if (listingType !== "board") return null
+          if (!fd.locationCity?.trim() || !fd.locationState?.trim()) {
+            return "Set a location on the map for your surfboard (pickup area or where you ship from)."
+          }
+          return null
+        }
+        case "gear_details":
+          return validateUsedCategoryFields({ listingType, ...fd })
+        case "shipping_used": {
+          if (listingType !== "used") return null
+          if (fd.boardFulfillment === "shipping_only" && fd.boardShippingPrice !== "0") {
+            const raw = fd.boardShippingPrice?.trim() ?? ""
+            if (!raw) return "Enter a shipping price or choose free shipping."
+            const sp = parseFloat(raw)
+            if (!Number.isFinite(sp) || sp < 0.01) {
+              return "Enter a valid shipping price (at least $0.01) or choose free shipping."
+            }
+          }
+          return null
+        }
+        case "price_condition": {
+          if (!fd.price?.trim()) return "Enter a price."
+          const price = parseFloat(fd.price.trim())
+          if (!Number.isFinite(price) || price < 0.01 || price > 999_999.99) {
+            return "Enter a valid price between $0.01 and $999,999.99."
+          }
+          if (!fd.condition) return "Select a condition."
+          return null
+        }
+        case "description": {
+          if (listingType === "used" || listingType === "board") {
+            if (!fd.description?.trim()) return "Please add a description."
+          }
+          return null
+        }
+        case "photos": {
+          if (listingType === "used" || listingType === "board") {
+            if (images.length < 3) {
+              return `Add at least ${3 - images.length} more photo${images.length === 2 ? "" : "s"} (3 required).`
+            }
+            if (!imagesUploadReady) {
+              return "Wait for all photos to finish uploading, or tap Retry on any that failed."
+            }
+          }
+          return null
+        }
+        default:
+          return null
+      }
+    },
+    [listingType, images.length, imagesUploadReady],
+  )
+
+  const applyFractionCommitToState = useCallback(
+    (next: typeof formData) => {
+      if (next === formData) return
+      setFormData(next)
+      setInchesFractionInput("")
+      setWidthFractionInput("")
+      setThicknessFractionInput("")
+      setInchesFractionError("")
+      setWidthFractionError("")
+      setThicknessFractionError("")
+      setInchesParsedHint("")
+      setWidthParsedHint("")
+      setThicknessParsedHint("")
+    },
+    [formData],
+  )
+
+  const wizardStepIndex = wizardSteps.indexOf(wizardStepId)
+  const wizardStepDisplayIndex = wizardStepIndex >= 0 ? wizardStepIndex + 1 : 1
+  const wizardStepCount = wizardSteps.length
+  const wizardBack = useCallback(() => {
+    const i = wizardSteps.indexOf(wizardStepId)
+    if (i > 0) setWizardStepId(wizardSteps[i - 1])
+  }, [wizardStepId, wizardSteps])
+
+  const wizardNext = useCallback(() => {
+    let fd = formData
+    if (wizardStepId === "dimensions") {
+      const peeked = peekBoardFormAfterFractionCommit()
+      if (peeked === null) return
+      fd = peeked
+    }
+    const err = wizardStepBlocker(wizardStepId, fd)
+    if (err) {
+      toast.error(err)
+      return
+    }
+    if (wizardStepId === "dimensions" && fd !== formData) {
+      applyFractionCommitToState(fd)
+    }
+    const i = wizardSteps.indexOf(wizardStepId)
+    if (i >= 0 && i < wizardSteps.length - 1) {
+      setWizardStepId(wizardSteps[i + 1])
+    }
+  }, [
+    applyFractionCommitToState,
+    formData,
+    peekBoardFormAfterFractionCommit,
+    wizardStepBlocker,
+    wizardStepId,
+    wizardSteps,
+  ])
+
+  const boardFulfillmentFlags = useMemo(
+    () => flagsFromBoardFulfillment(formData.boardFulfillment),
+    [formData.boardFulfillment],
   )
 
   const boardLengthPreview = useMemo(() => {
@@ -630,6 +967,9 @@ function SellPageContent() {
       setDraftHydrated(true)
       return
     }
+    if (serverDraftId) {
+      return
+    }
     let cancelled = false
     void (async () => {
       const draft = await loadSellListingDraft()
@@ -662,7 +1002,7 @@ function SellPageContent() {
     return () => {
       cancelled = true
     }
-  }, [editId])
+  }, [editId, serverDraftId])
 
   useEffect(() => {
     if (editId || !draftHydrated) return
@@ -671,7 +1011,7 @@ function SellPageContent() {
       sellDraftPersistTimerRef.current = null
       void (async () => {
         const r = sellDraftLatestRef.current
-        if (r.editId || !r.draftHydrated) return
+        if (r.editId || r.serverDraftId || !r.draftHydrated) return
         const built = await buildSellListingDraft(
           r.listingType,
           r.formData,
@@ -689,7 +1029,7 @@ function SellPageContent() {
   useEffect(() => {
     const flush = () => {
       const r = sellDraftLatestRef.current
-      if (r.editId || !r.draftHydrated) return
+      if (r.editId || r.serverDraftId || !r.draftHydrated) return
       void (async () => {
         const built = await buildSellListingDraft(
           r.listingType,
@@ -712,7 +1052,7 @@ function SellPageContent() {
   }, [])
 
   useEffect(() => {
-    if (!editId) {
+    if (!loadListingId) {
       setEditListingOwnerId(null)
       setEditLoading(false)
       return
@@ -722,6 +1062,7 @@ function SellPageContent() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setEditLoading(false)
+        setDraftHydrated(true)
         return
       }
       const imp = getImpersonation()
@@ -774,7 +1115,7 @@ function SellPageContent() {
           listing_images (id, url, thumbnail_url, is_primary, sort_order)
         `
         )
-        .eq("id", editId)
+        .eq("id", loadListingId)
       if (!imp) {
         query = query.eq("user_id", user.id)
       }
@@ -784,7 +1125,23 @@ function SellPageContent() {
         toast.error("Listing not found or cannot be edited")
         router.replace("/sell")
         setEditLoading(false)
+        setDraftHydrated(true)
         return
+      }
+      if (serverDraftId && !editId) {
+        if ((listing as { status?: string }).status !== "draft") {
+          toast.message("This listing is already live.")
+          router.replace(
+            listingDetailPath({
+              section: String(listing.section),
+              slug: (listing as { slug?: string | null }).slug ?? null,
+              id: String(listing.id),
+            }),
+          )
+          setEditLoading(false)
+          setDraftHydrated(true)
+          return
+        }
       }
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can’t be edited.")
@@ -796,6 +1153,7 @@ function SellPageContent() {
           }),
         )
         setEditLoading(false)
+        setDraftHydrated(true)
         return
       }
       setEditListingOwnerId(listing.user_id as string)
@@ -916,10 +1274,11 @@ function SellPageContent() {
         })
       setImages(existingImages)
       setRemovedImageIds([])
+      setDraftHydrated(true)
       setEditLoading(false)
     })()
     return () => { mounted = false }
-  }, [editId, supabase, router])
+  }, [loadListingId, editId, serverDraftId, supabase, router])
 
   useEffect(() => {
     if (!draftHydrated || editId) return
@@ -1242,6 +1601,173 @@ function SellPageContent() {
     )
   }
 
+  async function saveDraftAndOpenPreview() {
+    if (savingPreview) return
+    const err = wizardStepBlocker("photos", formData)
+    if (err) {
+      toast.error(err)
+      return
+    }
+    setSavingPreview(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error("Please sign in to continue")
+        router.push("/auth/login?redirect=/sell")
+        return
+      }
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        toast.error("Your session expired. Please sign in again.")
+        router.push("/auth/login?redirect=/sell")
+        return
+      }
+
+      let fd = formData
+      if (listingType === "board" && dimMode === "fraction") {
+        const next = { ...formData }
+        let touched = false
+        if (inchesFractionInput.trim()) {
+          const p = parseDimension(inchesFractionInput.trim())
+          if (p == null) {
+            toast.error('Board length (inches): enter a valid value like 2 1/2 or 0.125')
+            return
+          }
+          next.boardLengthIn = formatDecimalDimension(p)
+          touched = true
+        }
+        if (widthFractionInput.trim()) {
+          const p = parseDimension(widthFractionInput.trim())
+          if (p == null) {
+            toast.error("Board width: enter a valid value like 19 1/2 or 19.5")
+            return
+          }
+          next.boardWidthInches = formatDecimalDimension(p)
+          touched = true
+        }
+        if (thicknessFractionInput.trim()) {
+          const p = parseDimension(thicknessFractionInput.trim())
+          if (p == null) {
+            toast.error("Board thickness: enter a valid value like 2 1/4 or 2.25")
+            return
+          }
+          next.boardThicknessInches = formatDecimalDimension(p)
+          touched = true
+        }
+        if (touched) {
+          fd = next
+          setFormData(next)
+          setInchesFractionInput("")
+          setWidthFractionInput("")
+          setThicknessFractionInput("")
+        }
+      }
+
+      const imagesUploadReady =
+        listingType !== "used" && listingType !== "board"
+          ? true
+          : !images.some(
+              (im) =>
+                im.uploadPhase !== "done" ||
+                !im.url?.trim() ||
+                !im.thumbnailUrl?.trim(),
+            )
+
+      const validationMessage = validateSellListingForm(
+        { listingType, ...fd } as SellFormValidationInput,
+        { imageCount: images.length, imagesUploadReady },
+      )
+      if (validationMessage) {
+        toast.error(validationMessage)
+        return
+      }
+
+      const section = listingType === "board" ? "surfboards" : "used"
+      const rowFields = buildSellListingUpsertFields(listingType, {
+        listingType,
+        ...fd,
+      } as SellListingFormState)
+
+      async function generateUniqueSlug(title: string): Promise<string> {
+        const base = slugify(title)
+        const { count } = await supabase
+          .from("listings")
+          .select("id", { count: "exact", head: true })
+          .eq("slug", base)
+        if (!count) return base
+        for (let i = 2; i < 100; i++) {
+          const candidate = `${base}-${i}`
+          const { count: c } = await supabase
+            .from("listings")
+            .select("id", { count: "exact", head: true })
+            .eq("slug", candidate)
+          if (!c) return candidate
+        }
+        return `${base}-${Date.now()}`
+      }
+
+      const draftIdFromUrl = serverDraftId
+      let listingId: string
+
+      if (draftIdFromUrl) {
+        const { data: updated, error: updateError } = await supabase
+          .from("listings")
+          .update({
+            ...rowFields,
+            section,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", draftIdFromUrl)
+          .eq("user_id", user.id)
+          .select("id, status")
+          .single()
+
+        if (updateError || !updated) {
+          throw new Error(submitErrorMessage(updateError, "Failed to update draft"))
+        }
+        if ((updated as { status?: string }).status !== "draft") {
+          toast.message("This listing is already live.")
+          router.replace(
+            listingDetailHref({
+              id: String(updated.id),
+              section,
+            }),
+          )
+          return
+        }
+        listingId = String(updated.id)
+      } else {
+        const titleForSlug = typeof rowFields.title === "string" ? rowFields.title : fd.title.trim()
+        const slug = await generateUniqueSlug(titleForSlug)
+        const { data: created, error: insertError } = await supabase
+          .from("listings")
+          .insert({
+            user_id: user.id,
+            ...rowFields,
+            section,
+            slug,
+            status: "draft",
+          })
+          .select("id")
+          .single()
+
+        if (insertError || !created) {
+          throw new Error(submitErrorMessage(insertError, "Failed to save draft listing"))
+        }
+        listingId = String(created.id)
+      }
+
+      await syncListingImages(listingId)
+      void clearSellListingDraft()
+      router.replace(`/sell?draft=${listingId}`)
+      router.push(`/sell/preview/${listingId}`)
+    } catch (e: unknown) {
+      toast.error(submitErrorMessage(e, "Could not save draft"))
+    } finally {
+      setSavingPreview(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const goSubmitStep = (n: number) => {
@@ -1286,6 +1812,12 @@ function SellPageContent() {
       }
       const listingImpersonation: ImpersonationData | null =
         actorIsAdmin && storedImpersonation ? storedImpersonation : null
+
+      if (!editId && !listingImpersonation) {
+        toast.error("Use “View your listing” on the photos step, then publish from the preview page.")
+        setLoading(false)
+        return
+      }
 
       let submitForm = formData
       if (listingType === "board" && dimMode === "fraction") {
@@ -1807,86 +2339,29 @@ function SellPageContent() {
               : null,
         }
 
-        if (listingImpersonation) {
-          usedImpersonationListingApi = true
-          goSubmitStep(0)
-          const imagePayload = listingImagesPayloadForApi()
-          if (imagePayload.length !== images.length) {
-            throw new Error("Finish uploading all photos before submitting.")
-          }
-          goSubmitStep(1)
-          const res = await fetch("/api/admin/impersonate/create-listing", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ listing: listingFields, images: imagePayload }),
-          })
-          const data = await res.json()
-          if (!res.ok) throw new Error(data.error || "Failed to create listing")
-          listingId = data.listing_id
-          listingSlug = data.slug
-          goSubmitStep(2)
-          if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
-            impersonationSellerLabel = data.seller_display_name.trim()
-          }
-        } else {
-          const newSlug = await generateUniqueSlug(resolvedListingTitle)
-          const { data: listing, error: listingError } = await supabase
-            .from("listings")
-            .insert({
-              user_id: user.id,
-              ...listingFields,
-              slug: newSlug,
-              status: "active",
-            })
-            .select()
-            .single()
-
-          if (listingError) {
-            throw new Error(submitErrorMessage(listingError, "Failed to create listing"))
-          }
-          if (!listing) {
-            throw new Error("No listing returned")
-          }
-          listingId = listing.id
-          listingSlug = listing.slug ?? newSlug
-          goSubmitStep(1)
-          const imageRows = images.map((im, index) => ({
-            listing_id: listingId,
-            url: im.url!,
-            thumbnail_url: im.thumbnailUrl ?? null,
-            is_primary: index === 0,
-            sort_order: index,
-          }))
-          const { error: imagesInsertError } = await supabase
-            .from("listing_images")
-            .insert(imageRows)
-          if (imagesInsertError) {
-            throw new Error(submitErrorMessage(imagesInsertError, "Failed to save listing photos"))
-          }
-          void fetch("/api/integrations/klaviyo/listing-created", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ listing_id: listingId }),
-          })
-            .then(async (res) => {
-              if (res.ok) return
-              const text = await res.text().catch(() => "")
-              if (process.env.NODE_ENV === "development") {
-                console.warn(
-                  "[klaviyo] listing-created API:",
-                  res.status,
-                  text.slice(0, 300),
-                )
-              }
-            })
-            .catch((err) => {
-              if (process.env.NODE_ENV === "development") {
-                console.warn("[klaviyo] listing-created fetch failed:", err)
-              }
-            })
-          goSubmitStep(2)
+        if (!listingImpersonation) {
+          throw new Error("Listing could not be submitted. Refresh the page and try again.")
+        }
+        usedImpersonationListingApi = true
+        goSubmitStep(0)
+        const imagePayload = listingImagesPayloadForApi()
+        if (imagePayload.length !== images.length) {
+          throw new Error("Finish uploading all photos before submitting.")
+        }
+        goSubmitStep(1)
+        const res = await fetch("/api/admin/impersonate/create-listing", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listing: listingFields, images: imagePayload }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to create listing")
+        listingId = data.listing_id
+        listingSlug = data.slug
+        goSubmitStep(2)
+        if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
+          impersonationSellerLabel = data.seller_display_name.trim()
         }
       }
 
@@ -1900,20 +2375,6 @@ function SellPageContent() {
           : "/gear"
 
       if (listingId) {
-        if (!editId && !listingImpersonation) {
-          setPublishPreview((p) =>
-            p ? { ...p, status: "live", detailHref: detailPath } : null,
-          )
-          const tid = uploadToastIdRef.current
-          if (tid != null) {
-            toast.success("Your listing is live! 🎉", { id: tid })
-          } else {
-            toast.success("Your listing is live! 🎉")
-          }
-          void clearSellListingDraft()
-          router.push(detailPath)
-          return
-        }
         if (editId && !usedImpersonationListingApi) {
           const willSyncNewPhotos = images.some((im) => !im.id && im.url)
           if (willSyncNewPhotos) goSubmitStep(1)
@@ -1961,14 +2422,20 @@ function SellPageContent() {
           description: msg,
           action: {
             label: "Retry",
-            onClick: () => formRef.current?.requestSubmit(),
+            onClick: () =>
+              void handleSubmit({
+                preventDefault() {},
+              } as unknown as React.FormEvent<HTMLFormElement>),
           },
         })
       } else {
         toast.error(msg, {
           action: {
             label: "Retry",
-            onClick: () => formRef.current?.requestSubmit(),
+            onClick: () =>
+              void handleSubmit({
+                preventDefault() {},
+              } as unknown as React.FormEvent<HTMLFormElement>),
           },
         })
       }
@@ -1987,7 +2454,7 @@ function SellPageContent() {
 
   return (
       <main className="flex-1 py-8">
-        <div className="container mx-auto max-w-2xl">
+        <div className={cn("container mx-auto max-w-2xl")}>
           <Link
             href="/dashboard"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
@@ -1998,9 +2465,15 @@ function SellPageContent() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{editId ? "Edit listing" : "Create a Listing"}</CardTitle>
+              <CardTitle>
+                {editId ? "Edit listing" : serverDraftId ? "Finish your draft" : "Create a Listing"}
+              </CardTitle>
               <CardDescription>
-                {editId ? "Update your listing details" : "List an item for buyers on Reswell"}
+                {editId
+                  ? "Update your listing details"
+                  : serverDraftId
+                    ? "Your draft is saved — continue editing or open preview to publish."
+                    : "List an item for buyers on Reswell"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2009,8 +2482,22 @@ function SellPageContent() {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-              <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" aria-busy={loading}>
-                {/* Board vs Gear — scopes the category list */}
+              <form
+                ref={formRef}
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (wizardStepId !== "photos") return
+                  if (!editId && !impersonation) return
+                  void handleSubmit(e)
+                }}
+                className="space-y-6"
+                aria-busy={loading || savingPreview}
+              >
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  {`Step ${wizardStepDisplayIndex} of ${wizardStepCount}`}
+                </p>
+
+                {wizardStepId === "kind" && (
                 <div className="space-y-3">
                   <Label className="text-base">What are you listing? *</Label>
                   <div
@@ -2020,14 +2507,14 @@ function SellPageContent() {
                   >
                     <button
                       type="button"
-                      disabled={!!editId}
+                      disabled={!!loadListingId}
                       onClick={() => handleSellKindChange("board")}
                       className={cn(
                         "flex flex-col items-start gap-1 rounded-lg border-2 p-4 text-left transition-colors",
                         sellUiKind === "board"
                           ? "border-primary bg-primary/5"
                           : "border-border hover:bg-muted/50",
-                        editId && "cursor-default opacity-90",
+                        loadListingId && "cursor-default opacity-90",
                       )}
                       aria-pressed={sellUiKind === "board"}
                     >
@@ -2041,14 +2528,14 @@ function SellPageContent() {
                     </button>
                     <button
                       type="button"
-                      disabled={!!editId}
+                      disabled={!!loadListingId}
                       onClick={() => handleSellKindChange("gear")}
                       className={cn(
                         "flex flex-col items-start gap-1 rounded-lg border-2 p-4 text-left transition-colors",
                         sellUiKind === "gear"
                           ? "border-primary bg-primary/5"
                           : "border-border hover:bg-muted/50",
-                        editId && "cursor-default opacity-90",
+                        loadListingId && "cursor-default opacity-90",
                       )}
                       aria-pressed={sellUiKind === "gear"}
                     >
@@ -2061,19 +2548,20 @@ function SellPageContent() {
                       </span>
                     </button>
                   </div>
-                  {editId && (
+                  {loadListingId && (
                     <p className="text-xs text-muted-foreground">
                       Listing type and category can&apos;t be changed while editing.
                     </p>
                   )}
                 </div>
+                )}
 
-                {/* Category */}
+                {wizardStepId === "category" && (
                 <div className="space-y-2">
                   <Label>Category *</Label>
                   <Select
                     value={formData.category}
-                    disabled={!!editId}
+                    disabled={!!loadListingId}
                     onValueChange={(value) => {
                       const meta = sellCategoryOptions.find((c) => c.value === value)
                       if (meta) setSellUiKind(meta.gear === true ? "gear" : "board")
@@ -2105,8 +2593,10 @@ function SellPageContent() {
                     </SelectContent>
                   </Select>
                 </div>
+                )}
 
-                {/* Title */}
+                {wizardStepId === "title" && (
+                <>
                 {listingType === "board" && (
                   <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
                     <span>{boardFieldsCompleted} of 10 fields complete</span>
@@ -2192,8 +2682,10 @@ function SellPageContent() {
                     />
                   )}
                 </div>
+                </>
+                )}
 
-                {listingType === "used" && (
+                {wizardStepId === "gear_details" && listingType === "used" && (
                   <>
                     {formData.category === WETSUITS_CATEGORY_ID && (
                       <div className="grid gap-4 sm:grid-cols-3 max-w-3xl">
@@ -2685,7 +3177,7 @@ function SellPageContent() {
                     )}
                   </>
                 )}
-                {listingType === "board" && (
+                {wizardStepId === "brand" && listingType === "board" && (
                   <>
                     <div className="space-y-2">
                         <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
@@ -2730,8 +3222,10 @@ function SellPageContent() {
                           />
                         )}
                     </div>
+                  </>
+                )}
 
-                    {/* Board Dimensions */}
+                {wizardStepId === "dimensions" && listingType === "board" && (
                     <div className="space-y-3 rounded-lg border border-border/60 bg-muted/15 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-medium text-foreground">Board dimensions</p>
@@ -2943,7 +3437,10 @@ function SellPageContent() {
                         </p>
                       )}
                     </div>
+                )}
 
+                {wizardStepId === "fins_tail" && listingType === "board" && (
+                  <>
                     {/* Fins Setup */}
                     <div className="space-y-2">
                       <Label>Fin setup</Label>
@@ -3004,7 +3501,7 @@ function SellPageContent() {
                   </>
                 )}
 
-                {listingType === "used" ? (
+                {wizardStepId === "shipping_used" && listingType === "used" && (
                   <div className="space-y-4 rounded-lg border border-border p-4">
                     <div className="space-y-2">
                       <Label>Shipping</Label>
@@ -3060,8 +3557,18 @@ function SellPageContent() {
                       </div>
                     )}
                   </div>
-                ) : (
-                  <>
+                )}
+
+                {wizardStepId === "shipping_used" && listingType === "used" && (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                    <p className="text-sm font-medium text-foreground">Shipping only</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Used items are shipped to the buyer. Coordinate shipping details in messages after purchase.
+                    </p>
+                  </div>
+                )}
+
+                {wizardStepId === "fulfillment" && listingType === "board" && (
                   <div className="space-y-4 rounded-lg border border-border p-4">
                     <div className="space-y-2">
                       <Label>How can buyers get this board? *</Label>
@@ -3125,7 +3632,9 @@ function SellPageContent() {
                       </div>
                     )}
                   </div>
+                )}
 
+                {wizardStepId === "location" && listingType === "board" && (
                   <LocationPicker
                     onLocationSelect={(loc) => {
                       setFormData({
@@ -3143,10 +3652,9 @@ function SellPageContent() {
                     initialState={formData.locationState || undefined}
                     initialDisplay={formData.locationDisplay || undefined}
                   />
-                  </>
                 )}
 
-                {/* Price & Condition */}
+                {wizardStepId === "price_condition" && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="price">Price ($) *</Label>
@@ -3180,8 +3688,9 @@ function SellPageContent() {
                     </Select>
                   </div>
                 </div>
+                )}
 
-                {/* Description */}
+                {wizardStepId === "description" && (
                 <div className="space-y-2">
                   <Label htmlFor="description">
                     Description{(listingType === "used" || listingType === "board") ? " *" : ""}
@@ -3360,18 +3869,9 @@ function SellPageContent() {
                     </div>
                   )}
                 </div>
-
-                {/* Used items are shipping only — no toggle; always shipped */}
-                {listingType === "used" && (
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <p className="text-sm font-medium text-foreground">Shipping only</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Used items are shipped to the buyer. Coordinate shipping details in messages after purchase.
-                    </p>
-                  </div>
                 )}
 
-                {/* Images */}
+                {wizardStepId === "photos" && (
                 <div className="space-y-2">
                   <Label>Photos (3–12 required)</Label>
                   {optimizingAny ? (
@@ -3496,6 +3996,7 @@ function SellPageContent() {
                     </p>
                   )}
                 </div>
+                )}
 
                 {/* Optimistic preview + submit / progress */}
                 {publishPreview && (
@@ -3570,7 +4071,11 @@ function SellPageContent() {
                             variant="outline"
                             size="sm"
                             className="gap-1.5"
-                            onClick={() => formRef.current?.requestSubmit()}
+                            onClick={() =>
+                              void handleSubmit({
+                                preventDefault() {},
+                              } as unknown as React.FormEvent<HTMLFormElement>)
+                            }
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
                             Retry
@@ -3610,14 +4115,65 @@ function SellPageContent() {
                     </p>
                   </div>
                 ) : (
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full relative transition-shadow"
-                    disabled={loading}
+                  <div
+                    className={cn(
+                      "sticky bottom-0 z-10 -mx-1 mt-4 border-t border-border bg-card/95 py-4 backdrop-blur",
+                      "supports-[backdrop-filter]:bg-card/85",
+                    )}
                   >
-                    {editId ? "Save changes" : "Create Listing"}
-                  </Button>
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={wizardBack}
+                        disabled={wizardStepIndex <= 0 || loading || savingPreview}
+                        className="sm:min-w-[7rem]"
+                      >
+                        <ChevronLeft className="mr-1 h-4 w-4" aria-hidden />
+                        Back
+                      </Button>
+                      <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row">
+                        {wizardStepId === "photos" && (editId || impersonation) ? (
+                          <Button
+                            type="submit"
+                            disabled={loading || savingPreview}
+                            className="sm:min-w-[10rem]"
+                          >
+                            {editId ? "Save changes" : "Publish listing"}
+                          </Button>
+                        ) : wizardStepId === "photos" ? (
+                          <Button
+                            type="button"
+                            onClick={() => void saveDraftAndOpenPreview()}
+                            disabled={loading || savingPreview || optimizingAny}
+                            className="sm:min-w-[10rem]"
+                          >
+                            {savingPreview ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                                Saving…
+                              </>
+                            ) : (
+                              <>
+                                View your listing
+                                <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={wizardNext}
+                            disabled={loading || savingPreview}
+                            className="sm:min-w-[7.5rem]"
+                          >
+                            Continue
+                            <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </form>
               )}
