@@ -4,7 +4,8 @@
  * Sender email + display name: prefer `sessionSender` from server actions (session + profiles
  * read as the logged-in user) so production works without SUPABASE_SERVICE_ROLE_KEY for those fields.
  *
- * Receiver email: still uses auth.admin.getUserById (requires SUPABASE_SERVICE_ROLE_KEY in prod).
+ * Receiver email: uses auth.admin.getUserById (requires SUPABASE_SERVICE_ROLE_KEY in prod for email).
+ * The Klaviyo **profile** on the event is the **receiver** so flows email them by default.
  */
 
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -105,7 +106,9 @@ export type KlaviyoMessageSentPayload = {
 
 /**
  * Metric name shown in Klaviyo as "Message Sent".
- * Profile = sender (the user who performed the action).
+ *
+ * **Profile = receiver** so metric-triggered flows default to emailing the person who was
+ * messaged (not the sender). Sender details stay on the event as properties for the template.
  */
 export async function trackKlaviyoMessageSent(
   payload: KlaviyoMessageSentPayload,
@@ -147,8 +150,8 @@ export async function trackKlaviyoMessageSent(
   await sendKlaviyoServerEvent({
     metricName: "Message Sent",
     profile: {
-      external_id: senderUserId,
-      email: senderEmail,
+      external_id: receiverUserId,
+      email: receiverEmail,
     },
     properties: {
       sender_email: senderEmail ?? "",
