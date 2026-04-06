@@ -1,5 +1,6 @@
 /**
  * Generate a URL-friendly slug from a listing title.
+ * Truncated to stay short; listing titles are capped in the sell flow (`LISTING_TITLE_MAX_LENGTH` in `sell-form-validation`).
  *
  * Examples:
  *   "Channel Islands Trip Plan Hull 7'5" → "channel-islands-trip-plan-hull-7-5"
@@ -13,7 +14,7 @@ export function slugify(text: string): string {
     .replace(/['ʼ'']/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 120)
+    .slice(0, 60)
 }
 
 const UUID_RE =

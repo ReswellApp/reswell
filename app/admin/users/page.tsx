@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, XCircle, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
 
@@ -38,6 +38,7 @@ interface User {
   is_employee: boolean
   shop_verified: boolean
   created_at: string
+  last_active_at?: string | null
   listings_count: number
 }
 
@@ -198,6 +199,7 @@ export default function AdminUsersPage() {
                   <TableHead>Listings</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Last active</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -252,6 +254,18 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(user.created_at), 'MMM d, yyyy')}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.last_active_at ? (
+                        <span
+                          title={format(new Date(user.last_active_at), 'PPpp')}
+                          className="cursor-default"
+                        >
+                          {formatDistanceToNow(new Date(user.last_active_at), { addSuffix: true })}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

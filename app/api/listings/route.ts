@@ -4,7 +4,7 @@ import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { slugify } from '@/lib/slugify'
 import { listingTitleWithBoardLength } from '@/lib/listing-title-board-length'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
-import { formatBoardInchesForTitle } from '@/lib/sell-form-validation'
+import { formatBoardInchesForTitle, LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -76,7 +76,14 @@ export async function POST(request: NextRequest) {
       ? listingTitleWithBoardLength(typeof title === 'string' ? title : '', boardLenLabel)
       : typeof title === 'string'
         ? title.trim()
-        : title
+        : String(title ?? '')
+
+  if (resolvedTitle.length > LISTING_TITLE_MAX_LENGTH) {
+    return NextResponse.json(
+      { error: `Title must be ${LISTING_TITLE_MAX_LENGTH} characters or fewer.` },
+      { status: 400 },
+    )
+  }
 
   // Generate unique slug
   const baseSlug = slugify(resolvedTitle)

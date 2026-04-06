@@ -113,6 +113,8 @@ import { BrandInputWithSuggestions } from "@/components/brand-input-with-suggest
 import { listingDetailPath } from "@/lib/listing-query"
 import {
   validateSellListingForm,
+  buildResolvedListingTitle,
+  LISTING_TITLE_MAX_LENGTH,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
@@ -489,6 +491,15 @@ function SellPageContent() {
     return `${parseInt(ft, 10)}'${formatDecimalDimension(Number.isFinite(inn) ? inn : 0)}"`
   }, [formData.boardLengthFt, formData.boardLengthIn])
 
+  const sellValidationForm = useMemo(
+    (): SellFormValidationInput => ({ listingType, ...formData }),
+    [listingType, formData],
+  )
+  const resolvedTitlePreview = useMemo(
+    () => buildResolvedListingTitle(sellValidationForm),
+    [sellValidationForm],
+  )
+
   const boardLengthPreview = useMemo(() => {
     const ft = formData.boardLengthFt.trim()
     if (!ft || isNaN(parseInt(ft, 10))) return ""
@@ -605,7 +616,10 @@ function SellPageContent() {
   const suggestedTitle = useMemo(() => {
     if (listingType !== "board") return null
     if (!formData.boardIndexLabel || !boardLengthFormatted) return null
-    const suggested = `${formData.boardIndexLabel} - ${boardLengthFormatted}`
+    let suggested = `${formData.boardIndexLabel} - ${boardLengthFormatted}`
+    if (suggested.length > LISTING_TITLE_MAX_LENGTH) {
+      suggested = suggested.slice(0, LISTING_TITLE_MAX_LENGTH)
+    }
     const currentTitle = formData.title.trim()
     if (currentTitle.toLowerCase() === suggested.toLowerCase()) return null
     return suggested
@@ -2106,7 +2120,24 @@ function SellPageContent() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
+                  <div className="flex items-end justify-between gap-2">
+                    <Label htmlFor="title">Title *</Label>
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums",
+                        resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
+                          ? "font-medium text-destructive"
+                          : "text-muted-foreground",
+                      )}
+                      aria-live="polite"
+                    >
+                      {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    Shown on your listing and in the URL. Max {LISTING_TITLE_MAX_LENGTH} characters
+                    {listingType === "board" ? " (including board length in the title)" : ""}.
+                  </p>
                   {listingType === "board" ? (
                     <>
                       <SurfboardTitleIndexInput
@@ -2122,7 +2153,10 @@ function SellPageContent() {
                               : ""
                             return {
                               ...f,
-                              title: titleFromIndexModelPick(opt, lenStr),
+                              title: titleFromIndexModelPick(opt, lenStr).slice(
+                                0,
+                                LISTING_TITLE_MAX_LENGTH,
+                              ),
                               boardIndexBrandSlug: opt.brandSlug,
                               boardIndexModelSlug: opt.modelSlug,
                               boardIndexLabel: opt.label,
@@ -2152,6 +2186,7 @@ function SellPageContent() {
                       id="title"
                       placeholder="e.g., Channel Islands Dumpster Diver - 5'6&quot;"
                       value={formData.title}
+                      maxLength={LISTING_TITLE_MAX_LENGTH}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       required
                     />

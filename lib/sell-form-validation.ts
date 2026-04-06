@@ -1,3 +1,4 @@
+import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 import { flagsFromBoardFulfillment, type BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
 import { WETSUIT_SIZE_OPTIONS, WETSUIT_THICKNESS_OPTIONS, WETSUIT_ZIP_VALUES } from "@/lib/wetsuit-options"
 import { LEASH_LENGTH_FT_OPTIONS, LEASH_THICKNESS_OPTIONS } from "@/lib/leash-options"
@@ -28,6 +29,12 @@ const BOARD_THICKNESS_MAX = 4
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
+
+/**
+ * Listing titles become URL slugs; keep them short so links stay readable in messages and search.
+ * (See {@link slugify} — slug is derived from title.)
+ */
+export const LISTING_TITLE_MAX_LENGTH = 60
 
 export type SellFormValidationInput = {
   listingType: "used" | "board"
@@ -62,6 +69,27 @@ export type SellFormValidationInput = {
   boardShippingPrice: string
   locationCity: string
   locationState: string
+}
+
+/**
+ * Same title string the sell flow saves (surfboards append length when set).
+ * Used for max-length validation and the live character counter.
+ */
+export function buildResolvedListingTitle(form: SellFormValidationInput): string {
+  if (form.listingType === "board") {
+    const ftRaw = form.boardLengthFt?.trim() ?? ""
+    if (ftRaw) {
+      const ft = parseInt(ftRaw, 10)
+      if (Number.isFinite(ft)) {
+        const inchRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
+        const inches = parseFloat(inchRaw)
+        const piece = Number.isFinite(inches) ? formatBoardInchesForTitle(inches) : "0"
+        const boardLengthFmt = `${ft}'${piece}"`
+        return listingTitleWithBoardLength(form.title, boardLengthFmt)
+      }
+    }
+  }
+  return form.title.trim()
 }
 
 export function validateSellListingForm(
@@ -243,6 +271,11 @@ export function validateSellListingForm(
         return "Select condition."
       }
     }
+  }
+
+  const resolvedTitle = buildResolvedListingTitle(form)
+  if (resolvedTitle.length > LISTING_TITLE_MAX_LENGTH) {
+    return `Title must be ${LISTING_TITLE_MAX_LENGTH} characters or fewer (including board length in the title). Shorter titles keep your listing URL clean.`
   }
 
   return null
