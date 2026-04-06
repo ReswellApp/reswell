@@ -25,6 +25,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { FollowButton } from "@/components/follows/follow-button"
 import { listingDetailHref } from "@/lib/listing-href"
+import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 
 const PROFILE_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -454,16 +455,36 @@ export default async function SellerProfilePage({
               </TabsList>
 
               <TabsContent value="all" className="mt-6">
-                <ListingGrid listings={currentListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
+                <ListingGrid
+                  listings={currentListings}
+                  favoritedIds={favoritedIds}
+                  isLoggedIn={!!user}
+                  viewerId={user?.id ?? null}
+                />
               </TabsContent>
               <TabsContent value="used" className="mt-6">
-                <ListingGrid listings={usedListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
+                <ListingGrid
+                  listings={usedListings}
+                  favoritedIds={favoritedIds}
+                  isLoggedIn={!!user}
+                  viewerId={user?.id ?? null}
+                />
               </TabsContent>
               <TabsContent value="new" className="mt-6">
-                <ListingGrid listings={newListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
+                <ListingGrid
+                  listings={newListings}
+                  favoritedIds={favoritedIds}
+                  isLoggedIn={!!user}
+                  viewerId={user?.id ?? null}
+                />
               </TabsContent>
               <TabsContent value="boards" className="mt-6">
-                <ListingGrid listings={boardListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
+                <ListingGrid
+                  listings={boardListings}
+                  favoritedIds={favoritedIds}
+                  isLoggedIn={!!user}
+                  viewerId={user?.id ?? null}
+                />
               </TabsContent>
             </Tabs>
           </div>
@@ -478,7 +499,12 @@ export default async function SellerProfilePage({
                   ({pastListings.length})
                 </span>
               </h2>
-              <ListingGrid listings={pastListings} favoritedIds={favoritedIds} isLoggedIn={!!user} />
+              <ListingGrid
+                listings={pastListings}
+                favoritedIds={favoritedIds}
+                isLoggedIn={!!user}
+                viewerId={user?.id ?? null}
+              />
             </div>
           )}
         </div>
@@ -486,7 +512,17 @@ export default async function SellerProfilePage({
   )
 }
 
-function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; favoritedIds: string[]; isLoggedIn: boolean }) {
+function ListingGrid({
+  listings,
+  favoritedIds,
+  isLoggedIn,
+  viewerId,
+}: {
+  listings: any[]
+  favoritedIds: string[]
+  isLoggedIn: boolean
+  viewerId: string | null
+}) {
   if (listings.length === 0) {
     return (
       <div className="text-center py-12">
@@ -512,6 +548,14 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
               : listing.status === "pending"
                 ? ("pending" as const)
                 : ("ended" as const)
+        const cartAction = computePeerCartPriceAction(viewerId, {
+          id: listing.id,
+          user_id: listing.user_id,
+          section: listing.section,
+          status: listing.status ?? "active",
+          local_pickup: listing.local_pickup,
+          shipping_available: listing.shipping_available,
+        })
         return (
           <ListingTile
             key={listing.id}
@@ -529,6 +573,7 @@ function ListingGrid({ listings, favoritedIds, isLoggedIn }: { listings: any[]; 
             meta={loc ? { variant: "location", text: loc, showMapPin: true } : null}
             metaRowClassName={loc ? "mt-2" : undefined}
             categoryPill={pill}
+            priceAction={cartAction}
             favorites={{
               initialFavorited: favoritedIds.includes(listing.id),
               isLoggedIn,

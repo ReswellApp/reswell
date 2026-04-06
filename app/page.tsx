@@ -30,6 +30,8 @@ import { listingProductCardClassName, listingProductCardGridClassName } from "@/
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
+import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import type { ReactNode } from "react"
@@ -384,7 +386,16 @@ export default async function HomePage() {
                 </Button>
               </div>
               <HomeListingScrollRow uniformCardHeights>
-                {featuredBoards.map((board) => (
+                {featuredBoards.map((board) => {
+                  const cart = computePeerCartPriceAction(user?.id ?? null, {
+                    id: board.id,
+                    user_id: board.user_id,
+                    section: "surfboards",
+                    status: board.status,
+                    local_pickup: board.local_pickup,
+                    shipping_available: board.shipping_available,
+                  })
+                  return (
                   <ListingTile
                     key={board.id}
                     href={listingDetailHref({
@@ -412,9 +423,17 @@ export default async function HomePage() {
                     }
                     footerSlot={
                       <div className={homeUniformScrollMetaFooterClass}>
-                        <p className="text-base font-bold text-black dark:text-white">
-                          ${board.price.toFixed(2)}
-                        </p>
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <p className="text-base font-bold text-black dark:text-white tabular-nums">
+                            ${board.price.toFixed(2)}
+                          </p>
+                          {cart?.type === "addToCartServer" ? (
+                            <ListingTileAddToCartServerIcon
+                              listingId={cart.listingId}
+                              isLoggedIn={cart.isLoggedIn}
+                            />
+                          ) : null}
+                        </div>
                         <div className="mt-1 flex justify-end">
                           <ListingTileCategoryPill label={formatListingTileCategoryPillText(board)} />
                         </div>
@@ -425,7 +444,8 @@ export default async function HomePage() {
                       isLoggedIn: !!user,
                     }}
                   />
-                ))}
+                  )
+                })}
               </HomeListingScrollRow>
             </div>
           </section>

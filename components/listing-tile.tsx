@@ -13,6 +13,7 @@ import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-ove
 import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
 import { ListingTileCheckoutBasketIcon } from "@/components/listing-tile-checkout-basket-icon"
 import { ListingTileAddToCartIcon, type ListingTileCartItem } from "@/components/listing-tile-add-to-cart-icon"
+import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 
@@ -30,6 +31,11 @@ export type ListingTilePriceAction =
   | {
       type: "addToCart"
       item: ListingTileCartItem
+    }
+  | {
+      type: "addToCartServer"
+      listingId: string
+      isLoggedIn: boolean
     }
 
 export type ListingTileMeta =
@@ -265,6 +271,11 @@ export function ListingTile({
         />
       ) : priceAction?.type === "addToCart" ? (
         <ListingTileAddToCartIcon item={priceAction.item} />
+      ) : priceAction?.type === "addToCartServer" ? (
+        <ListingTileAddToCartServerIcon
+          listingId={priceAction.listingId}
+          isLoggedIn={priceAction.isLoggedIn}
+        />
       ) : null}
     </div>
   )

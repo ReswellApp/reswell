@@ -52,6 +52,7 @@ import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 
 export async function SurfboardListingDetailPage({
   listingParam,
@@ -144,6 +145,12 @@ export async function SurfboardListingDetailPage({
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
 
+  const canPeerPurchase =
+    !isOwnListing &&
+    !isSold &&
+    (board.status === "active" || board.status === "pending_sale") &&
+    (pickupOffered || shippingOffered)
+
   const boardPickupCity = board.profiles?.location
     ? (board.profiles.location as string).split(",")[0]?.trim()
     : null
@@ -214,6 +221,16 @@ export async function SurfboardListingDetailPage({
                 boardFulfillmentSummary(board.local_pickup, board.shipping_available),
               ].filter(Boolean).join(" · ")}
             </p>
+            {canPeerPurchase && (
+              <div className="mt-4">
+                <ListingDetailPeerPurchaseActions
+                  listingId={board.id}
+                  checkoutListingParam={board.slug ?? board.id}
+                  section="surfboards"
+                  isLoggedIn={!!user}
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -249,6 +266,16 @@ export async function SurfboardListingDetailPage({
                   <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
                     ${board.price.toFixed(2)}
                   </p>
+                )}
+                {canPeerPurchase && (
+                  <div className="mt-4 hidden lg:block">
+                    <ListingDetailPeerPurchaseActions
+                      listingId={board.id}
+                      checkoutListingParam={board.slug ?? board.id}
+                      section="surfboards"
+                      isLoggedIn={!!user}
+                    />
+                  </div>
                 )}
               </div>
 

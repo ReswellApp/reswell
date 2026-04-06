@@ -1,6 +1,7 @@
 /**
- * Client-side cart in localStorage. Checkout validates rows against `listings` (see /api/checkout/cart-session).
- * Dispatches `cartUpdated` so the header badge stays in sync. Checkout: `/checkout` (Stripe success: `/checkout/success`).
+ * Client-side cart lines in localStorage (e.g. marketplace “new” inventory with quantity).
+ * Peer listings (used + surfboards) use `cart_items` in the database and `/cart` instead.
+ * Dispatches `cartUpdated` so any cart badge listeners stay in sync.
  */
 
 export type CartLine = {

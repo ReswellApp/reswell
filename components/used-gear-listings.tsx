@@ -5,6 +5,7 @@ import { capitalizeWords, formatListingTileCategoryPillText, getPublicSellerDisp
 import { createClient } from "@/lib/supabase/server"
 import { ListingTile } from "@/components/listing-tile"
 import { listingDetailHref } from "@/lib/listing-href"
+import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 
 export interface UsedGearSearchParams {
   category?: string
@@ -314,6 +315,14 @@ export async function UsedGearListings({
             section: "used",
             categories: listing.categories as { slug?: string | null } | null,
           })
+          const cartAction = computePeerCartPriceAction(user?.id ?? null, {
+            id: listing.id,
+            user_id: listing.user_id,
+            section: "used",
+            status: listing.status,
+            local_pickup: listing.local_pickup,
+            shipping_available: listing.shipping_available,
+          })
           return (
             <ListingTile
               key={listing.id}
@@ -330,6 +339,7 @@ export async function UsedGearListings({
                 verified: !!listing.profiles?.shop_verified,
               }}
               categoryPill={formatListingTileCategoryPillText(listing)}
+              priceAction={cartAction}
               favorites={{
                 initialFavorited: favoritedIds.includes(listing.id),
                 isLoggedIn: !!user,

@@ -33,9 +33,11 @@ function mapActiveRow(
     price: Number(row.price ?? 0),
     condition: String(row.condition ?? ""),
     section: row.section != null ? String(row.section) : section,
+    status: row.status != null ? String(row.status) : "active",
     city: row.city != null ? String(row.city) : null,
     state: row.state != null ? String(row.state) : null,
     shipping_available: Boolean(row.shipping_available),
+    local_pickup: row.local_pickup !== false,
     board_type: row.board_type != null ? String(row.board_type) : null,
     board_length: boardLength,
     listing_images: row.listing_images as RecentListing["listing_images"],
@@ -119,10 +121,12 @@ async function FeedData() {
         price,
         condition,
         section,
+        status,
         created_at,
         city,
         state,
         shipping_available,
+        local_pickup,
         listing_images (url, is_primary),
         profiles (display_name, avatar_url, location, sales_count),
         categories (name, slug)
@@ -141,10 +145,12 @@ async function FeedData() {
         price,
         condition,
         section,
+        status,
         created_at,
         city,
         state,
         shipping_available,
+        local_pickup,
         board_type,
         length_feet,
         length_inches,
@@ -207,6 +213,7 @@ async function FeedData() {
       soldListings={soldListings}
       favoritedListingIds={favoritedListingIds}
       isLoggedIn={!!user}
+      viewerUserId={user?.id ?? null}
       soldStats={{ count: stats.soldCount, gmvFormatted }}
       initialTickerItems={tickerItems}
     />

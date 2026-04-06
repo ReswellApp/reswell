@@ -9,6 +9,7 @@ import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filte
 import { Users } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
 import { listingDetailHref } from "@/lib/listing-href"
+import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
 
 function haversineMi(
@@ -210,6 +211,14 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
             board.city && board.state
               ? `${board.city}, ${board.state}`
               : board.profiles?.location || "Location not set"
+          const cartAction = computePeerCartPriceAction(user?.id ?? null, {
+            id: board.id,
+            user_id: board.user_id,
+            section: "surfboards",
+            status: board.status,
+            local_pickup: board.local_pickup,
+            shipping_available: board.shipping_available,
+          })
           return (
             <ListingTile
               key={board.id}
@@ -231,6 +240,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
               }
               meta={{ variant: "location", text: locationText }}
               categoryPill={formatListingTileCategoryPillText(board)}
+              priceAction={cartAction}
               favorites={{
                 initialFavorited: favoritedIds.includes(board.id),
                 isLoggedIn: !!user,

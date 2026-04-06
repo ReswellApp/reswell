@@ -51,6 +51,7 @@ export interface FeedPageClientProps {
   soldListings: SoldFeedListing[]
   favoritedListingIds: string[]
   isLoggedIn: boolean
+  viewerUserId: string | null
   soldStats: { count: number; gmvFormatted: string }
   initialTickerItems: SoldTickerItem[]
 }
@@ -174,6 +175,7 @@ export function FeedPageClient({
   soldListings,
   favoritedListingIds,
   isLoggedIn,
+  viewerUserId,
   soldStats,
   initialTickerItems,
 }: FeedPageClientProps) {
@@ -300,6 +302,7 @@ export function FeedPageClient({
             listings={listings}
             favoritedListingIds={favoritedListingIds}
             isLoggedIn={isLoggedIn}
+            viewerUserId={viewerUserId}
           />
         ) : (
           <>

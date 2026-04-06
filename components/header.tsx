@@ -41,6 +41,7 @@ import {
   Clock,
   ChevronDown,
   Users,
+  ShoppingCart,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
@@ -54,6 +55,7 @@ import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { CartHeaderLink } from "@/components/cart-header-link"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 type ProfileAvatarFields = {
@@ -635,6 +637,7 @@ export function Header() {
 
             {authLoaded && user ? (
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
+                <CartHeaderLink />
                 <Link href="/messages" className="relative hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
                     <MessageSquare className="h-6 w-6" />
@@ -906,6 +909,14 @@ export function Header() {
               >
                 <Clock className="h-5 w-5 shrink-0" />
                 Feed
+              </Link>
+              <Link
+                href="/cart"
+                onClick={onMobileDrawerLinkClick}
+                className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
+              >
+                <ShoppingCart className="h-5 w-5 shrink-0" />
+                Cart
               </Link>
               <hr className="my-2 border-border" />
               <div className="flex min-w-0 gap-2">

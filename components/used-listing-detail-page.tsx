@@ -38,6 +38,7 @@ import {
 } from "@/components/listing-sold-detail-notice"
 import { listingDetailHref } from "@/lib/listing-href"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 
 const ImageGallery = dynamic(
   () => import("@/components/image-gallery").then((m) => ({ default: m.ImageGallery })),
@@ -157,6 +158,12 @@ export async function UsedListingDetailPage({
   const shippingOffered = !!listing.shipping_available
   const shippingPrice = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
 
+  const canPeerPurchase =
+    !isOwnListing &&
+    !isSold &&
+    (listing.status === "active" || listing.status === "pending_sale") &&
+    (pickupOffered || shippingOffered)
+
   const pickupCity = listing.profiles?.location
     ? (listing.profiles.location as string).split(",")[0]?.trim()
     : null
@@ -221,6 +228,16 @@ export async function UsedListingDetailPage({
                 <p className="text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
                   ${listing.price.toFixed(2)}
                 </p>
+              )}
+              {canPeerPurchase && (
+                <div className="mt-4">
+                  <ListingDetailPeerPurchaseActions
+                    listingId={listing.id}
+                    checkoutListingParam={listing.slug ?? listing.id}
+                    section="used"
+                    isLoggedIn={!!user}
+                  />
+                </div>
               )}
             </div>
 

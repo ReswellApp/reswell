@@ -4,6 +4,7 @@ import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listin
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { listingDetailHref } from "@/lib/listing-href"
+import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 
 export interface RecentListing {
   id: string
@@ -13,9 +14,11 @@ export interface RecentListing {
   price: number
   condition: string
   section: string
+  status?: string
   city?: string | null
   state?: string | null
   shipping_available?: boolean
+  local_pickup?: boolean | null
   board_type?: string | null
   board_length?: string | null
   listing_images?: { url: string; is_primary?: boolean }[] | null
@@ -27,6 +30,7 @@ interface RecentFeedClientProps {
   listings: RecentListing[]
   favoritedListingIds: string[]
   isLoggedIn: boolean
+  viewerUserId: string | null
   /** Override default empty state copy (e.g. search results). */
   emptyMessage?: string
 }
@@ -43,6 +47,7 @@ export function RecentFeedClient({
   listings,
   favoritedListingIds,
   isLoggedIn,
+  viewerUserId,
   emptyMessage,
 }: RecentFeedClientProps) {
   if (!listings.length) {
@@ -61,6 +66,14 @@ export function RecentFeedClient({
           listing.city && listing.state
             ? `${listing.city}, ${listing.state}`
             : listing.profiles?.location || "Location not set"
+        const cartAction = computePeerCartPriceAction(viewerUserId, {
+          id: listing.id,
+          user_id: listing.user_id,
+          section: listing.section,
+          status: listing.status ?? "active",
+          local_pickup: listing.local_pickup,
+          shipping_available: listing.shipping_available,
+        })
         return (
           <ListingTile
             key={listing.id}
@@ -81,6 +94,7 @@ export function RecentFeedClient({
             }
             meta={{ variant: "location", text: locationText }}
             categoryPill={formatListingTileCategoryPillText(listing)}
+            priceAction={cartAction}
             favorites={{
               initialFavorited: favoritedListingIds.includes(listing.id),
               isLoggedIn,

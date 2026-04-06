@@ -116,6 +116,7 @@ export async function SearchPageView({
           listings={listings}
           favoritedListingIds={favoritedListingIds}
           isLoggedIn={!!user}
+          viewerUserId={user?.id ?? null}
           emptyMessage={
             rawQuery
               ? "No listings match your search. Try different keywords or filters."
