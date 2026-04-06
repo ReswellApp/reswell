@@ -153,17 +153,24 @@ export async function trackKlaviyoMessageSent(
       external_id: receiverUserId,
       email: receiverEmail,
     },
+    /**
+     * Avoid top-level `sender_email` / `receiver_email` strings — Klaviyo may treat scalar
+     * event properties as identifiers and attach the activity to the wrong profile. The
+     * recipient is always the `profile` above; put sender details in a nested object for
+     * templates (e.g. `message_from.email` in flow editor).
+     */
     properties: {
-      sender_email: senderEmail ?? "",
-      receiver_email: receiverEmail ?? "",
-      sender_display_name: senderDisplayName,
       message: trimmed,
       time: sentAt,
       conversation_id: conversationId,
       listing_id: listingId ?? null,
       message_id: messageId,
-      sender_user_id: senderUserId,
       receiver_user_id: receiverUserId,
+      message_from: {
+        email: senderEmail ?? "",
+        display_name: senderDisplayName,
+        user_id: senderUserId,
+      },
     },
     uniqueId: `message-sent-${messageId}`,
   })
