@@ -12,6 +12,7 @@ import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
+import { sendConversationReply } from '@/app/actions/messages'
 
 interface Message {
   id: string
@@ -162,26 +163,18 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
     setMessages((prev) => [...prev, optimisticMessage])
 
-    const { data: inserted, error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: id,
-        sender_id: currentUserId,
-        content,
-      })
-      .select('*')
-      .single()
+    const result = await sendConversationReply({
+      conversation_id: id,
+      content,
+    })
 
-    if (!error && inserted) {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? (inserted as Message) : m))
-      )
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', id)
-    } else {
+    if ('error' in result) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
+    } else {
+      const inserted = result.message as Message
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? inserted : m))
+      )
     }
     setSending(false)
   }

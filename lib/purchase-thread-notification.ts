@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 
 function shippingLines(shipping: Record<string, unknown> | null): string[] {
   if (!shipping) return []
@@ -76,16 +77,30 @@ export async function postPurchaseThreadNotification(
   const shipBlock = fulfillment === "shipping" ? shippingLines(shippingAddress).join("\n") : ""
   const content = [intro, "", fulfillmentLine, shipBlock].filter(Boolean).join("\n").trim()
 
-  const { error: msgError } = await supabase.from("messages").insert({
-    conversation_id: conversation.id,
-    sender_id: buyerId,
-    content,
-  })
+  const { data: inserted, error: msgError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversation.id,
+      sender_id: buyerId,
+      content,
+    })
+    .select("id, created_at")
+    .single()
 
-  if (msgError) {
+  if (msgError || !inserted) {
     console.error("[purchase notification] message insert failed:", msgError)
     return
   }
+
+  void trackKlaviyoMessageSent({
+    senderUserId: buyerId,
+    receiverUserId: sellerId,
+    message: content,
+    conversationId: conversation.id,
+    listingId,
+    messageId: inserted.id,
+    sentAt: inserted.created_at,
+  })
 
   await supabase
     .from("conversations")

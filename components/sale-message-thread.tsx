@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner"
 import { Loader2, MessageCircle, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { sendConversationReply } from "@/app/actions/messages"
 
 export type SaleThreadMessage = {
   id: string
@@ -45,26 +46,15 @@ export function SaleMessageThread({
         toast.error("Sign in to send a message")
         return
       }
-      const { data: inserted, error } = await supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          content: text,
-        })
-        .select("id, content, sender_id, created_at")
-        .single()
+      const result = await sendConversationReply({
+        conversation_id: conversationId,
+        content: text,
+      })
 
-      if (error) throw error
+      if ("error" in result) throw new Error(result.error)
 
-      await supabase
-        .from("conversations")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", conversationId)
-
-      if (inserted) {
-        setMessages((prev) => [...prev, inserted])
-      }
+      const inserted = result.message as SaleThreadMessage
+      setMessages((prev) => [...prev, inserted])
       setBody("")
       toast.success("Message sent")
     } catch {

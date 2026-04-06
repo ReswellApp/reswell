@@ -7,7 +7,6 @@ import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChrome } from '@/components/site-chrome'
 import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
-import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 import { LOCALE_COOKIE_NAME } from '@/lib/translations'
 import type { Locale } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
@@ -74,7 +73,6 @@ export default async function RootLayout({
     <html lang={locale} className="overflow-x-hidden">
       <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-white text-midgray min-h-dvh overflow-x-hidden`}>
         <LocaleProvider initialLocale={locale}>
-          <KlaviyoPageViewTracker />
           <PresenceHeartbeatLoader />
           <SiteChrome>{children}</SiteChrome>
           <Toaster />

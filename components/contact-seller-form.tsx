@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { sendListingMessage } from "@/app/actions/messages"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
@@ -34,7 +34,6 @@ export function ContactSellerForm({
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const quickMessages =
     section === "used"
@@ -68,51 +67,24 @@ export function ContactSellerForm({
     setSending(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        toast.error("Please sign in to send messages")
-        router.push("/auth/login")
-        return
+      const result = await sendListingMessage({
+        listing_id: listingId,
+        seller_id: sellerId,
+        content: message,
+      })
+
+      if ("error" in result) {
+        if (result.error === "Unauthorized") {
+          toast.error("Please sign in to send messages")
+          router.push("/auth/login")
+          return
+        }
+        throw new Error(result.error)
       }
-
-      // Find or create conversation (buyer = current user, seller = listing owner)
-      let { data: conversation } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("buyer_id", user.id)
-        .eq("seller_id", sellerId)
-        .eq("listing_id", listingId)
-        .single()
-
-      if (!conversation) {
-        const { data: newConversation, error: convError } = await supabase
-          .from("conversations")
-          .insert({
-            buyer_id: user.id,
-            seller_id: sellerId,
-            listing_id: listingId,
-          })
-          .select("id")
-          .single()
-
-        if (convError) throw convError
-        conversation = newConversation
-      }
-
-      // Send message
-      const { error: msgError } = await supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: user.id,
-          content: message,
-        })
-
-      if (msgError) throw msgError
 
       toast.success("Message sent!")
       setMessage("")
-      router.push(`/messages/${conversation.id}`)
+      router.push(`/messages/${result.conversation_id}`)
     } catch {
       toast.error("Failed to send message")
     } finally {
