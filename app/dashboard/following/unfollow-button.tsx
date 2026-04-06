@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Loader2, UserMinus } from "lucide-react"
+import { unfollowSeller } from "@/app/actions/follows"
 
 interface UnfollowButtonProps {
   sellerId: string
@@ -20,12 +21,8 @@ export function UnfollowButton({ sellerId, sellerName, followId: _followId }: Un
   async function handleUnfollow() {
     setLoading(true)
     try {
-      const res = await fetch("/api/follows", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sellerId }),
-      })
-      if (!res.ok) throw new Error()
+      const res = await unfollowSeller(sellerId)
+      if ("error" in res) throw new Error()
       setUnfollowed(true)
       toast.success(`Unfollowed ${sellerName}`)
       router.refresh()

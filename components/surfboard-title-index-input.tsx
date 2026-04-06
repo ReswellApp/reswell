@@ -4,6 +4,7 @@ import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
+import { getBoardModelsCatalogItems } from "@/app/actions/marketplace"
 
 function filterIndexBoardModels(
   items: IndexBoardModelSelection[],
@@ -61,12 +62,8 @@ export function SurfboardTitleIndexInput({
 
   React.useEffect(() => {
     let cancelled = false
-    fetch("/api/brands/board-models")
-      .then((r) => {
-        if (!r.ok) throw new Error("bad response")
-        return r.json()
-      })
-      .then((data: { items: IndexBoardModelSelection[] }) => {
+    getBoardModelsCatalogItems()
+      .then((data) => {
         if (!cancelled) {
           setItems(Array.isArray(data.items) ? data.items : [])
           setLoadError(null)

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
+import { submitContactMessage } from "@/app/actions/account"
 
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false)
@@ -19,13 +20,8 @@ export function ContactForm() {
     e.preventDefault()
     setLoading(true)
     try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
+      const data = await submitContactMessage({ name, email, message })
+      if ("error" in data) {
         toast.error(data.error ?? "Failed to send message")
         return
       }

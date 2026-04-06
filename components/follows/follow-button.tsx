@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { UserPlus, UserCheck, UserMinus, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { followSeller, unfollowSeller } from "@/app/actions/follows"
 
 interface FollowButtonProps {
   sellerId: string
@@ -82,19 +83,14 @@ export function FollowButton({
     setLoading(true)
 
     try {
-      const res = await fetch("/api/follows", {
-        method: wasFollowing ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sellerId }),
-      })
+      const data = wasFollowing
+        ? await unfollowSeller(sellerId)
+        : await followSeller(sellerId)
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error ?? "Request failed")
+      if ("error" in data) {
+        throw new Error(data.error ?? "Request failed")
       }
 
-      const data = await res.json()
-      // Sync with server's authoritative count
       setFollowerCount(data.followerCount)
 
       if (wasFollowing) {

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/tooltip"
 import PayoutModal from "@/components/PayoutModal"
 import { toast } from "sonner"
+import { getEarningsWalletData } from "@/app/actions/wallet"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -129,15 +130,14 @@ export default function EarningsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [earningsRes, paypalRes] = await Promise.all([
-        fetch("/api/earnings"),
+      const [earningsData, paypalRes] = await Promise.all([
+        getEarningsWalletData(),
         fetch("/api/payouts/paypal"),
       ])
 
-      if (earningsRes.ok) {
-        const data = await earningsRes.json()
-        setWallet(data.wallet)
-        setTransactions(data.transactions)
+      if (!earningsData.error) {
+        setWallet(earningsData.wallet)
+        setTransactions(earningsData.transactions as Transaction[])
       }
 
       if (paypalRes.ok) {

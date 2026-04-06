@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import type { NotificationPreferences } from "@/lib/follows/types"
+import { saveNotificationPreferences } from "@/app/actions/follows"
 
 interface NotificationPreferencesFormProps {
   initial: NotificationPreferences
@@ -20,12 +21,8 @@ export function NotificationPreferencesForm({ initial }: NotificationPreferences
   async function handleSave() {
     setSaving(true)
     try {
-      const res = await fetch("/api/follows/preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(prefs),
-      })
-      if (!res.ok) throw new Error()
+      const res = await saveNotificationPreferences(prefs)
+      if ("error" in res && res.error) throw new Error()
       toast.success("Preferences saved")
     } catch {
       toast.error("Failed to save preferences")

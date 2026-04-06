@@ -11,6 +11,7 @@ import { MapPin, Star, Package, ExternalLink } from "lucide-react"
 import { FollowButton } from "@/components/follows/follow-button"
 import { createClient } from "@/lib/supabase/client"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { getFollowStatusForSeller } from "@/app/actions/follows"
 
 interface SellerHoverCardProps {
   sellerId: string
@@ -94,7 +95,7 @@ export function SellerHoverCard({
         .select("rating")
         .eq("reviewed_id", sellerId),
       isLoggedIn
-        ? fetch(`/api/follows/status?sellerId=${sellerId}`).then((r) => r.json())
+        ? getFollowStatusForSeller(sellerId)
         : Promise.resolve({ following: false, followerCount: 0 }),
     ])
 

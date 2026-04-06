@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
+import { searchSuggest } from "@/app/actions/marketplace"
 
 /** Max rows in the combined Suggestions list (titles / categories / brands). */
 const SUGGEST_COMBINED_CAP = 24
@@ -79,10 +80,7 @@ async function fetchSearchSuggestionsJson(
   q: string,
   section: string,
 ): Promise<{ data: SuggestResult; hasAny: boolean }> {
-  const params = new URLSearchParams({ q })
-  if (section) params.set("section", section)
-  const res = await fetch(`/api/search/suggest?${params.toString()}`)
-  const data: SuggestResult = await res.json()
+  const data: SuggestResult = await searchSuggest(q, section)
   const listings = data.listings ?? []
   const hasAny =
     listings.length > 0 ||

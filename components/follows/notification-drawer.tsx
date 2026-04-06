@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, ExternalLink, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { FollowNotification } from "@/lib/follows/types"
+import { getFollowNotifications, markFollowNotificationsRead } from "@/app/actions/follows"
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -38,9 +39,8 @@ export function NotificationDrawer() {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const res = await fetch("/api/follows/notifications?limit=1")
-      if (!res.ok) return
-      const data = await res.json()
+      const data = await getFollowNotifications({ limit: 1, unreadOnly: true })
+      if ("error" in data && data.error) return
       setUnreadCount(data.unreadCount ?? 0)
     } catch {
       // silently ignore
@@ -57,32 +57,21 @@ export function NotificationDrawer() {
   async function onOpen() {
     setLoading(true)
     try {
-      const res = await fetch("/api/follows/notifications?limit=30&unreadOnly=false")
-      if (!res.ok) return
-      const data = await res.json()
-      setNotifications(data.notifications ?? [])
+      const data = await getFollowNotifications({ limit: 30, unreadOnly: false })
+      if ("error" in data && data.error) return
+      setNotifications((data.notifications ?? []) as unknown as FollowNotification[])
       setUnreadCount(data.unreadCount ?? 0)
     } finally {
       setLoading(false)
     }
 
-    // Mark all as read
-    await fetch("/api/follows/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    })
+    await markFollowNotificationsRead({})
     setUnreadCount(0)
     window.dispatchEvent(new Event("unreadCountRefresh"))
   }
 
   async function handleNotificationClick(id: string) {
-    // Mark individual as read
-    await fetch("/api/follows/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [id] }),
-    })
+    await markFollowNotificationsRead({ ids: [id] })
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     )

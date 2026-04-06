@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { updatePresenceHeartbeat } from '@/app/actions/account'
 
 const INTERVAL_MS = 60_000
 
 async function ping() {
   try {
-    await fetch('/api/presence', { method: 'POST', credentials: 'include' })
+    await updatePresenceHeartbeat()
   } catch {
     // ignore network errors
   }

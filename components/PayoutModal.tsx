@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { ArrowLeft, Loader2, X } from "lucide-react"
+import { getPaypalProfileStatus } from "@/app/actions/account"
 
 type Step = "details" | "confirm" | "processing" | "success" | "error"
 
@@ -35,9 +36,13 @@ async function fetchPaypalStatus(): Promise<{
   paypal_display_name?: string | null
   paypal_payer_id?: string | null
 }> {
-  const res = await fetch("/api/user/paypal-status")
-  if (!res.ok) return {}
-  return res.json()
+  const res = await getPaypalProfileStatus()
+  if (res.error) return {}
+  return (res.data ?? {}) as {
+    paypal_email?: string | null
+    paypal_display_name?: string | null
+    paypal_payer_id?: string | null
+  }
 }
 
 function PayPalMark({ className }: { className?: string }) {

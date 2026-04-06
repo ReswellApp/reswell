@@ -14,6 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import { getBoardModelsCatalogItems } from "@/app/actions/marketplace"
 
 export type IndexBoardModelSelection = {
   brandSlug: string
@@ -38,12 +39,8 @@ export function IndexBoardModelCombobox({
 
   React.useEffect(() => {
     let cancelled = false
-    fetch("/api/brands/board-models")
-      .then((r) => {
-        if (!r.ok) throw new Error("bad response")
-        return r.json()
-      })
-      .then((data: { items: IndexBoardModelSelection[] }) => {
+    getBoardModelsCatalogItems()
+      .then((data) => {
         if (!cancelled) {
           setItems(Array.isArray(data.items) ? data.items : [])
           setLoadError(null)

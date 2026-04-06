@@ -12,6 +12,7 @@ import { MapPin, Users, Loader2, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { getFollowingFeedPage } from "@/app/actions/follows"
 
 type Listing = {
   id: string
@@ -106,11 +107,9 @@ export function FollowingFeedClient({
     if (!cursor || loadingMore) return
     setLoadingMore(true)
     try {
-      const params = new URLSearchParams({ cursor, limit: "20" })
-      const res = await fetch(`/api/following/feed?${params}`)
-      if (!res.ok) return
-      const data = await res.json()
-      setListings((prev) => [...prev, ...(data.listings ?? [])])
+      const data = await getFollowingFeedPage({ cursor, limit: 20 })
+      if ("error" in data && data.error) return
+      setListings((prev) => [...prev, ...((data.listings ?? []) as unknown as Listing[])])
       setHasMore(data.hasMore)
       setCursor(data.nextCursor ?? null)
     } finally {

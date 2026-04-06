@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Minus, Plus, ShoppingCart, Check, Loader2 } from "lucide-react"
 import { mergeIntoCart } from "@/lib/cart-storage"
+import { getInventoryProductById } from "@/app/actions/marketplace"
 
 interface QuantitySelectorProps {
   productId: string
@@ -38,10 +39,9 @@ export function QuantitySelector({ productId, maxQuantity, item: itemProp }: Qua
     }
     async function fetchProduct() {
       try {
-        const response = await fetch(`/api/products/${productId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setProduct(data)
+        const result = await getInventoryProductById(productId)
+        if ("product" in result) {
+          setProduct(result.product)
         }
       } catch {
         // Product details will be fetched on add to cart

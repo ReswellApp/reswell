@@ -4,6 +4,7 @@ import * as React from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BrandEditorDialog } from "@/components/brands/brand-editor-dialog"
+import { getAdminSession } from "@/app/actions/account"
 
 export function BrandsListAdminBar() {
   const [isAdmin, setIsAdmin] = React.useState(false)
@@ -12,8 +13,7 @@ export function BrandsListAdminBar() {
 
   React.useEffect(() => {
     let cancelled = false
-    fetch("/api/admin/session")
-      .then((r) => r.json())
+    getAdminSession()
       .then((d: { isAdmin?: boolean }) => {
         if (!cancelled) {
           setIsAdmin(d.isAdmin === true)

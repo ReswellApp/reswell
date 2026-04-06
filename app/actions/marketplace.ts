@@ -1,12 +1,103 @@
-import { NextRequest, NextResponse } from "next/server"
+"use server"
+
 import { createClient } from "@/lib/supabase/server"
+import { listBrands } from "@/lib/brands/server"
+
+export async function getDistinctBrandsFromListings(section: string): Promise<string[]> {
+  const sections =
+    section === "used" ? ["used"] : section === "surfboards" ? ["surfboards"] : ["used", "surfboards"]
+
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("listings")
+    .select("brand")
+    .eq("status", "active")
+    .in("section", sections)
+    .not("brand", "is", null)
+
+  const set = new Set<string>()
+  return (data || [])
+    .map((r) => r.brand?.trim())
+    .filter((b): b is string => !!b && b.length > 0)
+    .filter((b) => {
+      const key = b.toLowerCase()
+      if (set.has(key)) return false
+      set.add(key)
+      return true
+    })
+    .sort((a, b) => a.localeCompare(b))
+}
+
+export type InventoryProductRow = {
+  id: string
+  name: string
+  price: number
+  image_url: string | null
+  stock_quantity: number
+}
+
+export async function getInventoryProductById(
+  id: string,
+): Promise<{ product: InventoryProductRow } | { error: string }> {
+  const supabase = await createClient()
+  const { data: product, error } = await supabase
+    .from("inventory")
+    .select("id, name, price, image_url, stock_quantity")
+    .eq("id", id)
+    .eq("is_active", true)
+    .single()
+
+  if (error || !product) {
+    return { error: "Product not found" }
+  }
+  return { product: product as InventoryProductRow }
+}
+
+const RECENT_USED_LIMIT = 50
+
+export async function getRecentUsedListingsForFeed() {
+  const supabase = await createClient()
+  const { data: listings, error } = await supabase
+    .from("listings")
+    .select(`
+      id,
+      title,
+      price,
+      condition,
+      created_at,
+      listing_images (url, is_primary),
+      categories (name, slug)
+    `)
+    .eq("status", "active")
+    .eq("section", "used")
+    .eq("shipping_available", true)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_USED_LIMIT)
+
+  if (error) {
+    return { error: error.message, listings: null as unknown[] | null }
+  }
+  return { error: null, listings: listings ?? [] }
+}
+
+export async function getBoardModelsCatalogItems() {
+  const supabase = await createClient()
+  const brands = await listBrands(supabase)
+  const items = brands.map((b) => ({
+    brandSlug: b.slug,
+    modelSlug: "",
+    brandName: b.name,
+    modelName: "",
+    label: b.name,
+  }))
+  return { items }
+}
 
 /** Returned to the client after dedupe / slice */
 const MAX_TITLES = 20
 const MAX_CATEGORIES = 12
 const MAX_BRANDS = 16
 const MAX_LISTINGS = 12
-/** Rows to scan before deduping distinct titles (same text match as listings). */
 const TITLE_SUGGEST_FETCH = 80
 
 export type SuggestListing = {
@@ -22,22 +113,26 @@ export type SuggestListing = {
   condition: string | null
 }
 
+export type SearchSuggestResult = {
+  titles: string[]
+  categories: string[]
+  brands: string[]
+  listings: SuggestListing[]
+}
+
 function escapeIlikeToken(q: string) {
   return q.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const q = (searchParams.get("q") || "").trim().replace(/%/g, "")
-  const section = searchParams.get("section") || ""
-
+export async function searchSuggest(qRaw: string, section: string): Promise<SearchSuggestResult> {
+  const q = (qRaw || "").trim().replace(/%/g, "")
   if (!q || q.length < 2) {
-    return NextResponse.json({
+    return {
       titles: [],
       categories: [],
       brands: [],
-      listings: [] as SuggestListing[],
-    })
+      listings: [],
+    }
   }
 
   const supabase = await createClient()
@@ -99,20 +194,20 @@ export async function GET(request: NextRequest) {
       .limit(MAX_BRANDS * 4),
   ])
 
-  const listings: SuggestListing[] = (listingsRes.data || []).map((row: any) => {
+  const listings: SuggestListing[] = (listingsRes.data || []).map((row: Record<string, unknown>) => {
     const imgs = row.listing_images as { url?: string; is_primary?: boolean }[] | null
     const primary = imgs?.find((i) => i.is_primary) || imgs?.[0]
     return {
-      id: row.id,
-      slug: row.slug ?? null,
-      title: row.title ?? "",
-      price: typeof row.price === "number" ? row.price : parseFloat(row.price) || 0,
-      section: row.section,
+      id: row.id as string,
+      slug: (row.slug as string | null) ?? null,
+      title: (row.title as string) ?? "",
+      price: typeof row.price === "number" ? row.price : parseFloat(String(row.price)) || 0,
+      section: row.section as string,
       imageUrl: primary?.url ?? null,
-      brand: row.brand ?? null,
-      city: row.city ?? null,
-      state: row.state ?? null,
-      condition: row.condition ?? null,
+      brand: (row.brand as string | null) ?? null,
+      city: (row.city as string | null) ?? null,
+      state: (row.state as string | null) ?? null,
+      condition: (row.condition as string | null) ?? null,
     }
   })
 
@@ -145,5 +240,5 @@ export async function GET(request: NextRequest) {
     })
     .slice(0, MAX_BRANDS)
 
-  return NextResponse.json({ titles, categories, brands, listings })
+  return { titles, categories, brands, listings }
 }
