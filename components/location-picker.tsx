@@ -305,12 +305,7 @@ export function LocationPicker({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <Label className="text-base font-medium">Where are you listing from?</Label>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          City, neighborhood, or beach is perfect — buyers only see the general area, not your address.
-        </p>
-      </div>
+      <Label className="text-base font-medium">Where are you listing from?</Label>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div ref={rootRef} className="relative flex-1">
@@ -445,14 +440,7 @@ export function LocationPicker({
             </div>
           </div>
         </div>
-      ) : (
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Suggestions appear as you type (US places). Use arrow keys and{" "}
-          <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">Enter</kbd>{" "}
-          to choose, or{" "}
-          <span className="font-medium text-foreground/90">Use my area</span> for this device.
-        </p>
-      )}
+      ) : null}
     </div>
   )
 }
