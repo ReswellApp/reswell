@@ -40,7 +40,6 @@ import {
   Banknote,
   Clock,
   ChevronDown,
-  Users,
   ShoppingCart,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -715,18 +714,6 @@ export function Header() {
                       <Link href="/dashboard/listings" className="flex items-center">
                         <Package className="mr-2 h-4 w-4" />
                         My Listings
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/favorites" className="flex items-center">
-                        <Heart className="mr-2 h-4 w-4" />
-                        Favorites
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/following" className="flex items-center">
-                        <Users className="mr-2 h-4 w-4" />
-                        My Feed
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
