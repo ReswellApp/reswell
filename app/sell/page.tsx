@@ -2211,7 +2211,7 @@ function SellPageContent() {
                       Why we need location & shipping
                     </summary>
                     <p className="mb-3 border-l-2 border-border/70 py-0.5 pl-3 leading-relaxed text-muted-foreground">
-                      Drop a pin for pickup or for where you ship from. If you offer shipping, set a flat rate (0 =
+                      Your listing location helps nearby buyers find you. If you ship, add a flat rate below (0 =
                       free shipping).
                     </p>
                   </details>
@@ -2279,14 +2279,14 @@ function SellPageContent() {
 
                   <LocationPicker
                     onLocationSelect={(loc) => {
-                      setFormData({
-                        ...formData,
+                      setFormData((f) => ({
+                        ...f,
                         locationLat: loc.lat,
                         locationLng: loc.lng,
                         locationCity: loc.city,
                         locationState: loc.state,
                         locationDisplay: loc.displayName,
-                      })
+                      }))
                     }}
                     initialLat={formData.locationLat || undefined}
                     initialLng={formData.locationLng || undefined}
