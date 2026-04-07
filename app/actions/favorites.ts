@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { trackKlaviyoListingFavorited } from "@/lib/klaviyo/track-listing-favorited"
 
 export async function toggleFavoriteListing(listingId: string) {
   const supabase = await createClient()
@@ -28,10 +29,52 @@ export async function toggleFavoriteListing(listingId: string) {
     return { success: true as const, favorited: false as const }
   }
 
-  const { error } = await supabase.from("favorites").insert({ user_id: user.id, listing_id: listingId })
+  const { data: inserted, error } = await supabase
+    .from("favorites")
+    .insert({ user_id: user.id, listing_id: listingId })
+    .select("id, created_at")
+    .single()
 
-  if (error) {
+  if (error || !inserted) {
     return { error: "Failed to add favorite" as const }
+  }
+
+  const [{ data: listing }, { data: favoriterProfile }] = await Promise.all([
+    supabase.from("listings").select("user_id, title, slug").eq("id", listingId).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name, shop_name, is_shop")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ])
+
+  let sellerEmailFromProfile: string | null = null
+  if (listing?.user_id) {
+    const { data: sellerRow } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", listing.user_id)
+      .maybeSingle()
+    const e = sellerRow?.email
+    sellerEmailFromProfile =
+      typeof e === "string" && e.trim() ? e.trim() : null
+  }
+
+  if (listing?.user_id && listing.user_id !== user.id) {
+    void trackKlaviyoListingFavorited({
+      sellerUserId: listing.user_id,
+      favoriterUserId: user.id,
+      listingId,
+      listingTitle: typeof listing.title === "string" ? listing.title : "",
+      listingSlug: typeof listing.slug === "string" ? listing.slug : null,
+      favoriteId: inserted.id,
+      favoritedAt: inserted.created_at,
+      sellerEmailFromProfile,
+      sessionFavoriter: {
+        email: user.email ?? null,
+        profile: favoriterProfile,
+      },
+    })
   }
 
   return { success: true as const, favorited: true as const }

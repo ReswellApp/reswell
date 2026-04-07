@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { toggleFavoriteListing } from "@/app/actions/favorites"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Heart } from "lucide-react"
@@ -27,7 +27,6 @@ export function FavoriteButton({
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   async function toggleFavorite() {
     if (!isLoggedIn) {
@@ -39,33 +38,23 @@ export function FavoriteButton({
     setLoading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("Not authenticated")
-
-      if (favorited) {
-        const { error } = await supabase
-          .from("favorites")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("listing_id", listingId)
-
-        if (error) throw error
-        setFavorited(false)
-        onFavoritedChange?.(false)
-        toast.success("Removed from favorites")
-      } else {
-        const { error } = await supabase
-          .from("favorites")
-          .insert({
-            user_id: user.id,
-            listing_id: listingId,
-          })
-
-        if (error) throw error
-        setFavorited(true)
-        onFavoritedChange?.(true)
-        toast.success("Added to favorites")
+      const result = await toggleFavoriteListing(listingId)
+      if ("error" in result) {
+        toast.error(
+          result.error === "Unauthorized"
+            ? "Please sign in to save favorites"
+            : "Failed to update favorites",
+        )
+        if (result.error === "Unauthorized") {
+          router.push(`/auth/login?redirect=${redirectPath || `/l/${listingId}`}`)
+        }
+        return
       }
+      setFavorited(result.favorited)
+      onFavoritedChange?.(result.favorited)
+      toast.success(
+        result.favorited ? "Added to favorites" : "Removed from favorites",
+      )
     } catch {
       toast.error("Failed to update favorites")
     } finally {
