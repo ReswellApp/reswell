@@ -10,7 +10,6 @@ import {
   PackageCheck,
   Archive,
   Heart,
-  Settings,
   ShoppingBag,
   Plus,
   Store,
@@ -31,7 +30,6 @@ const sidebarLinks = [
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Profile", href: "/dashboard/settings", icon: UserCircle },
-  { name: "Settings", href: "/dashboard/preferences", icon: Settings },
 ]
 
 export default async function DashboardLayout({
