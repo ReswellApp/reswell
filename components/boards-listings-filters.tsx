@@ -282,10 +282,10 @@ export function BoardsListingsFilters({
           <LocateFixed className={`h-4 w-4 ${userLat != null ? "text-primary" : ""}`} />
         </Button>
       </div>
-      <div className="w-full min-w-0 md:w-[140px] md:shrink-0">
+      <div className="col-span-2 w-full min-w-0 md:col-span-auto md:w-[200px] md:shrink-0">
         <Select name="type" value={type} onValueChange={setType}>
           <SelectTrigger className="w-full h-10 min-h-[2.5rem] rounded-lg">
-            <SelectValue placeholder="All Board Types" />
+            <SelectValue placeholder="Board type" />
           </SelectTrigger>
           <SelectContent>
             {boardTypes.map((t) => (

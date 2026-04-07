@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
-  Fragment,
   useState,
   useEffect,
   useLayoutEffect,
@@ -20,7 +19,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -48,8 +46,8 @@ import { HeaderNavSearch } from "@/components/header-nav-search"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
-import { allCategoriesForNav, headerCategoriesDropdownSections } from "@/lib/site-category-directory"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import { surfboardBrowseLinks } from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
@@ -83,8 +81,10 @@ function resolveHeaderAvatarUrl(
   return trim(profile?.avatar_url) || oauth
 }
 
-/** Desktop + mobile primary nav (Categories dropdown holds shape deep links). */
-const navigation = [{ name: "Surfboards", href: "/boards" }]
+/** Desktop + mobile: all surfboard `type` links (same labels/order as browse filters; no “all types” row). */
+const boardShapeNav = surfboardBrowseLinks
+  .filter((link) => link.href.includes("type="))
+  .map((link) => ({ name: link.label, href: link.href }))
 
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
@@ -117,19 +117,26 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
   return pathname === path
 }
 
-const mainNavHrefs = new Set(navigation.map((item) => item.href))
-const dropdownCategories = allCategoriesForNav.filter((cat) => !mainNavHrefs.has(cat.href))
-
-/** Header Categories dropdown: grey heading + links only (no bold title / view-all row). */
-const headerDropdownCompactSectionIds = new Set(["surfboards"])
-
 const CATEGORY_BAR_GAP_PX = 32
 
-function computeVisibleNavCount(availableWidth: number, linkWidths: number[], categoriesWidth: number): number {
-  for (let n = linkWidths.length; n >= 0; n--) {
-    const sumLinks = linkWidths.slice(0, n).reduce((a, b) => a + b, 0)
-    const total = sumLinks + categoriesWidth + n * CATEGORY_BAR_GAP_PX
-    if (total <= availableWidth) return n
+/** How many shape links fit before moving the rest into a "More" menu. */
+function computeVisibleBoardShapeCount(
+  availableWidth: number,
+  linkWidths: number[],
+  moreWidth: number,
+  gapPx: number
+): number {
+  const n = linkWidths.length
+  if (n === 0) return 0
+  const allFit =
+    linkWidths.reduce((a, b) => a + b, 0) + Math.max(0, n - 1) * gapPx
+  if (allFit <= availableWidth) return n
+
+  for (let k = n - 1; k >= 0; k--) {
+    const sumLinks = linkWidths.slice(0, k).reduce((a, b) => a + b, 0)
+    const gaps = k
+    const total = sumLinks + moreWidth + gaps * gapPx
+    if (total <= availableWidth) return k
   }
   return 0
 }
@@ -149,7 +156,7 @@ function HeaderDesktopCategoryBar({
   const leftSlotRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
   const zeroWidthRetriesRef = useRef(0)
-  const [visibleCount, setVisibleCount] = useState(navigation.length)
+  const [visibleCount, setVisibleCount] = useState<number>(boardShapeNav.length)
 
   const recalc = useCallback(() => {
     const slot = leftSlotRef.current
@@ -167,17 +174,16 @@ function HeaderDesktopCategoryBar({
     zeroWidthRetriesRef.current = 0
 
     const linkEls = measure.querySelectorAll<HTMLElement>("[data-nav-measure='link']")
-    const catEl = measure.querySelector<HTMLElement>("[data-nav-measure='categories']")
+    const moreEl = measure.querySelector<HTMLElement>("[data-nav-measure='more']")
     const linkWidths = Array.from(linkEls).map((el) => el.getBoundingClientRect().width)
-    const catW = Math.max(catEl?.getBoundingClientRect().width ?? 96, 1)
+    const moreW = Math.max(moreEl?.getBoundingClientRect().width ?? 72, 1)
 
     // Before fonts / first paint, widths can be 0 — don't collapse the bar to 0 visible links.
     if (!widthsLookReady(linkWidths)) {
       return
     }
 
-    let next = computeVisibleNavCount(available, linkWidths, catW)
-    // Wide desktop slot but algorithm returned 0 → measurement/layout glitch, not a real phone-width bar.
+    let next = computeVisibleBoardShapeCount(available, linkWidths, moreW, CATEGORY_BAR_GAP_PX)
     if (next === 0 && available >= 360 && linkWidths.length > 0) {
       next = 1
     }
@@ -206,8 +212,9 @@ function HeaderDesktopCategoryBar({
     }
   }, [recalc])
 
-  const visibleNav = navigation.slice(0, visibleCount)
-  const overflowNav = navigation.slice(visibleCount)
+  const visibleNav = boardShapeNav.slice(0, visibleCount)
+  const overflowNav = boardShapeNav.slice(visibleCount)
+  const showMore = overflowNav.length > 0
 
   return (
     <div className="relative hidden border-t border-lightgray/40 md:block">
@@ -216,13 +223,13 @@ function HeaderDesktopCategoryBar({
         className="pointer-events-none fixed left-[-10000px] top-0 z-[-1] flex items-center gap-8 whitespace-nowrap opacity-0"
         aria-hidden
       >
-        {navigation.map((item) => (
+        {boardShapeNav.map((item) => (
           <span key={item.href} data-nav-measure="link" className="shrink-0 py-4 text-[15px]">
             {item.name}
           </span>
         ))}
-        <span data-nav-measure="categories" className="flex shrink-0 items-center gap-1 py-4 text-[15px]">
-          Categories
+        <span data-nav-measure="more" className="flex shrink-0 items-center gap-1 py-4 text-[15px]">
+          More
           <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
         </span>
       </div>
@@ -242,74 +249,26 @@ function HeaderDesktopCategoryBar({
             </Link>
           ))}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger className="cat-link flex shrink-0 items-center gap-1 py-4 text-[15px] transition-colors duration-smooth focus:outline-none">
-              Categories
-              <ChevronDown className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="max-h-[min(70vh,28rem)] w-56 overflow-y-auto [&_a]:!text-[#6E6E6E] [&_a:hover]:!text-[#000000] [&_a[data-highlighted]]:!text-[#000000] [&_a:focus]:!text-[#000000]"
-            >
-              {overflowNav.map((item) => (
-                <DropdownMenuItem key={item.href} asChild>
-                  <Link href={item.href} prefetch={boardsBrowseLinkPrefetch(item.href)} className="w-full">
-                    {item.name}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-              {overflowNav.length > 0 ? <DropdownMenuSeparator /> : null}
-              {headerCategoriesDropdownSections.map((section, idx) => (
-                <Fragment key={section.id}>
-                  {idx > 0 ? <DropdownMenuSeparator /> : null}
-                  {!headerDropdownCompactSectionIds.has(section.id) ? (
-                    <>
-                      <DropdownMenuLabel className="px-2 py-1.5 text-sm font-semibold text-foreground">
-                        {section.title}
-                      </DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href={section.browseAllHref}
-                          prefetch={boardsBrowseLinkPrefetch(section.browseAllHref)}
-                          className="w-full font-medium"
-                        >
-                          {section.browseAllLabel}
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  ) : null}
-                  {section.subcategories.map((group) => (
-                    <Fragment key={`${section.id}-${group.heading}`}>
-                      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                        {group.heading}
-                      </DropdownMenuLabel>
-                      {group.links.map((link) => (
-                        <DropdownMenuItem key={`${link.href}-${link.label}`} asChild>
-                          <Link href={link.href} prefetch={boardsBrowseLinkPrefetch(link.href)} className="w-full">
-                            {link.label}
-                          </Link>
-                        </DropdownMenuItem>
-                      ))}
-                    </Fragment>
-                  ))}
-                </Fragment>
-              ))}
-              <DropdownMenuSeparator />
-              {dropdownCategories.map((cat) => (
-                <DropdownMenuItem key={cat.label} asChild>
-                  <Link href={cat.href} prefetch={boardsBrowseLinkPrefetch(cat.href)} className="w-full">
-                    {cat.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/categories" className="w-full font-medium">
-                  See all categories
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {showMore ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cat-link flex shrink-0 items-center gap-1 py-4 text-[15px] transition-colors duration-smooth focus:outline-none">
+                More
+                <ChevronDown className="h-4 w-4" aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="w-56 [&_a]:!text-[#6E6E6E] [&_a:hover]:!text-[#000000] [&_a[data-highlighted]]:!text-[#000000] [&_a:focus]:!text-[#000000]"
+              >
+                {overflowNav.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href} prefetch={boardsBrowseLinkPrefetch(item.href)} className="w-full">
+                      {item.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
 
         <nav
@@ -826,7 +785,7 @@ export function Header() {
               </Link>
             )}
             <nav className="flex flex-col gap-1">
-              {navigation.map((item) => (
+              {boardShapeNav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -837,23 +796,6 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
-              {dropdownCategories.map((cat) => (
-                <Link
-                  key={cat.href}
-                  href={cat.href}
-                  onClick={onMobileDrawerLinkClick}
-                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-                >
-                  {cat.label}
-                </Link>
-              ))}
-              <Link
-                href="/categories"
-                onClick={onMobileDrawerLinkClick}
-                className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-              >
-                See all categories
-              </Link>
               <hr className="my-2 border-border" />
               {secondaryNav.map((item) => (
                 <Link
