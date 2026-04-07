@@ -56,10 +56,14 @@ export default function ArchivedListingsPage() {
 
   const getSectionLabel = (section: string) => {
     switch (section) {
-      case 'used': return 'Used Gear'
-      case 'new': return 'New Items'
-      case 'surfboards': return 'Surfboards'
-      default: return section
+      case 'used':
+        return 'Surfboards'
+      case 'new':
+        return 'Shop (new)'
+      case 'surfboards':
+        return 'Surfboards'
+      default:
+        return section
     }
   }
 

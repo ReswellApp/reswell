@@ -40,10 +40,7 @@ export async function SearchPageView({
 
   const [{ data: { user } }, { data: categoryRows }] = await Promise.all([
     supabase.auth.getUser(),
-    supabase
-      .from("categories")
-      .select("id, name, slug, board, gear")
-      .or("board.eq.true,gear.eq.true"),
+    supabase.from("categories").select("id, name, slug, board").eq("board", true),
   ])
 
   const sortedCategories = sortMarketplaceBrowseCategories(categoryRows ?? [])

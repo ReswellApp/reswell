@@ -57,9 +57,7 @@ interface Props {
 const SECTIONS = [
   { label: "All", value: "all" },
   { label: "Surfboards", value: "surfboards" },
-  { label: "Wetsuits", value: "wetsuits" },
-  { label: "Fins", value: "fins" },
-  { label: "Used gear", value: "used" },
+  { label: "Shop (new)", value: "new" },
 ]
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000

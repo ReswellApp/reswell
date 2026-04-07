@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const MARKETPLACE_SECTIONS = ["used", "surfboards"] as const
+const MARKETPLACE_SECTIONS = ["surfboards"] as const
 
 export const revalidate = 60
 

@@ -4,17 +4,17 @@ import { HelpCircle } from "lucide-react"
 
 export const metadata = {
   title: "Help Center - Reswell",
-  description: "Get answers to common questions about buying and selling surf gear on Reswell.",
+  description: "Get answers to common questions about buying and selling surfboards on Reswell.",
 }
 
 const faqs = [
   {
     question: "How do I buy an item?",
-    answer: "Browse used gear or surfboards, click on a listing you like, and use the \"Contact Seller\" or \"Buy with Reswell Bucks\" option. For items that ship, you can pay with Reswell Bucks (in-app currency) or coordinate payment and shipping directly with the seller via messages.",
+    answer: "Browse surfboards, open a listing you like, and use \"Contact Seller\" or \"Buy with Reswell Bucks.\" If the seller ships, you can pay with Reswell Bucks (in-app currency) or coordinate payment and shipping in Messages.",
   },
   {
     question: "How do I sell an item?",
-    answer: "Sign in, click \"Sell\" in the header, and create a listing. Add photos, a title, description, price, and condition. For used gear you can offer shipping; for surfboards we recommend in-person pickup only so buyers can inspect the board.",
+    answer: "Sign in, click \"Sell\" in the header, and create a surfboard listing. Add photos, dimensions, price, and condition. You can offer local pickup, shipping, or both so buyers can inspect or receive the board.",
   },
   {
     question: "What are Reswell Bucks?",

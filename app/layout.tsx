@@ -35,19 +35,22 @@ const caveat = Caveat({
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicSiteOrigin()),
-  title: 'Reswell - Buy & Sell Surfing Gear',
-  description: 'The peer-to-peer marketplace for surfing accessories and surfboards. Buy used gear, shop new items, or find surfboards for in-person pickup.',
-  keywords: ['surfing', 'surfboard', 'marketplace', 'used surf gear', 'wetsuit', 'fins'],
+  title: 'Reswell — Buy & sell surfboards',
+  description:
+    'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
+  keywords: ['surfing', 'surfboard', 'marketplace', 'sell surfboard', 'buy surfboard'],
   openGraph: {
-    title: 'Reswell - Buy & Sell Surfing Gear',
-    description: 'The peer-to-peer marketplace for surfing accessories and surfboards. Buy used gear, shop new items, or find surfboards for in-person pickup.',
+    title: 'Reswell — Buy & sell surfboards',
+    description:
+      'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
     images: [{ url: '/images/og-image.jpg', width: 1024, height: 1024, alt: 'Reswell' }],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Reswell - Buy & Sell Surfing Gear',
-    description: 'The peer-to-peer marketplace for surfing accessories and surfboards. Buy used gear, shop new items, or find surfboards for in-person pickup.',
+    title: 'Reswell — Buy & sell surfboards',
+    description:
+      'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
     images: ['/images/og-image.jpg'],
   },
 }

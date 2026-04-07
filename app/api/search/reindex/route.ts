@@ -9,7 +9,7 @@ import { getElasticsearchClient } from "@/lib/elasticsearch/client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 
 /**
- * Full reindex of active used + surfboard listings into Elasticsearch.
+ * Full reindex of active surfboard (peer) listings into Elasticsearch.
  * POST /api/search/reindex
  *
  * Auth: either
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       `,
       )
       .eq("status", "active")
-      .in("section", ["used", "surfboards"])
+      .eq("section", "surfboards")
       .order("created_at", { ascending: false })
       .range(from, from + pageSize - 1)
 

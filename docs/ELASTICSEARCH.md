@@ -1,6 +1,6 @@
 # Elasticsearch search
 
-The **nav search bar** (magnifying glass) is the main site-wide search. It navigates to **`/search`**, a dedicated results page that searches across **used gear** and **surfboards**. When `ELASTICSEARCH_URL` is set, `/search` uses Elasticsearch for relevance-ranked results; otherwise it falls back to Supabase `ilike` queries.
+The **nav search bar** (magnifying glass) is the main site-wide search. It navigates to **`/search`**, a dedicated results page that searches **surfboard** (`section = surfboards`) listings. When `ELASTICSEARCH_URL` is set, `/search` uses Elasticsearch for relevance-ranked results; otherwise it falls back to Supabase `ilike` queries.
 
 ## Quick setup (Vercel + Elastic Cloud)
 
@@ -36,7 +36,7 @@ Optional:
 
 ## Reindex (admin UI)
 
-The easiest way to reindex: log in as admin, go to **Admin** → **Settings**, and click **Reindex search**. The index is built from all active `used` and `surfboards` listings.
+The easiest way to reindex: log in as admin, go to **Admin** → **Settings**, and click **Reindex search**. The index is built from all active **`surfboards`** listings.
 
 ## Reindex via API (optional)
 

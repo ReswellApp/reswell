@@ -120,10 +120,10 @@ function SoldFeedGrid({ listings }: { listings: SoldFeedListing[] }) {
           Be the first to sell something on Reswell.
         </p>
         <Link
-          href="/gear"
+          href="/boards"
           className="mt-6 text-sm font-medium text-cerulean hover:underline"
         >
-          Browse listings →
+          Browse surfboards →
         </Link>
       </div>
     )
@@ -223,7 +223,7 @@ export function FeedPageClient({
         { event: "INSERT", schema: "public", table: "listings", filter: "status=eq.active" },
         (payload) => {
           const row = payload.new as { section?: string }
-          if (row.section !== "used" && row.section !== "surfboards") return
+          if (row.section !== "surfboards" && row.section !== "new") return
           setNewListingCount((prev) => prev + 1)
         },
       )
@@ -252,7 +252,7 @@ export function FeedPageClient({
             New listings feed
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Latest used gear and surfboards on the marketplace
+            Latest surfboard listings on the marketplace
           </p>
 
           <div className="mt-6 flex gap-6 border-b border-border">

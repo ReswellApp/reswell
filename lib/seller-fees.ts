@@ -1,5 +1,5 @@
 /**
- * Standard fees for used gear sales on the platform.
+ * Standard fees for peer surfboard sales on the platform.
  * Applied consistently to Reswell Bucks and card (Stripe) purchases.
  *
  * Fee structure: Reswell takes 7%. Sellers keep 93%. No protection fund deduction.

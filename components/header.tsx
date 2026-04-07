@@ -83,17 +83,8 @@ function resolveHeaderAvatarUrl(
   return trim(profile?.avatar_url) || oauth
 }
 
-/** Desktop + mobile primary nav (Apparel / Leashes / Vintage last before Categories dropdown). */
-const navigation = [
-  { name: "Surfboards", href: "/boards" },
-  { name: "Fins", href: "/fins" },
-  { name: "Surfpacks & Bags", href: "/backpacks" },
-  { name: "Board Bags", href: "/board-bags" },
-  { name: "Wetsuits", href: "/wetsuits" },
-  { name: "Apparel & Lifestyle", href: "/apparel-lifestyle" },
-  { name: "Leashes", href: "/leashes" },
-  { name: "Vintage", href: "/collectibles-vintage" },
-]
+/** Desktop + mobile primary nav (Categories dropdown holds shape deep links). */
+const navigation = [{ name: "Surfboards", href: "/boards" }]
 
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
@@ -111,11 +102,6 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
   if (!pathname.startsWith(path)) return false
 
   if (!query) {
-    if (path === "/gear") {
-      if (pathname !== "/gear") return false
-      const cat = searchParams.get("category")
-      return !cat || cat === "all"
-    }
     if (path === "/boards") {
       return (
         (pathname === path && !searchParams.get("type")) || pathname.startsWith(`${path}/`)
@@ -128,14 +114,14 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
   for (const key of new Set(required.keys())) {
     if (searchParams.get(key) !== required.get(key)) return false
   }
-  return pathname === path || (path === "/gear" && pathname.startsWith("/gear"))
+  return pathname === path
 }
 
 const mainNavHrefs = new Set(navigation.map((item) => item.href))
 const dropdownCategories = allCategoriesForNav.filter((cat) => !mainNavHrefs.has(cat.href))
 
 /** Header Categories dropdown: grey heading + links only (no bold title / view-all row). */
-const headerDropdownCompactSectionIds = new Set(["surfboards", "fins", "surfpacks"])
+const headerDropdownCompactSectionIds = new Set(["surfboards"])
 
 const CATEGORY_BAR_GAP_PX = 32
 
@@ -570,7 +556,7 @@ export function Header() {
                         clearNavSearchQuery()
                         setSearchOpen(false)
                       }}
-                      placeholder="Search boards, gear, wetsuits…"
+                      placeholder="Search surfboards…"
                       section=""
                       listboxId="nav-search-suggestions-tablet"
                       leftIcon={<Search className="h-4 w-4 text-muted-foreground" />}
@@ -909,7 +895,7 @@ export function Header() {
                 <Input
                   ref={mobileSearchRef}
                   type="search"
-                  placeholder="Search boards, gear, wetsuits…"
+                  placeholder="Search surfboards…"
                   className="min-w-0 flex-1 rounded-lg border-border min-h-touch"
                   onKeyDown={async (e) => {
                     if (e.key === "Enter") {
