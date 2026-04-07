@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { addCartItem } from "@/app/actions/cart"
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
-import { useAuthModal } from "@/components/auth/auth-modal-context"
+import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 const tileBtnClass = cn(
   "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-colors",
@@ -48,7 +49,8 @@ export function ListingTileAddToCartServerIcon({
 }) {
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
-  const { openLogin } = useAuthModal()
+  const authModal = useOptionalAuthModal()
+  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
@@ -57,7 +59,12 @@ export function ListingTileAddToCartServerIcon({
     e.preventDefault()
     e.stopPropagation()
     if (!isLoggedIn) {
-      openLogin(here)
+      const safe = safeRedirectPath(here)
+      if (authModal) {
+        authModal.openLogin(here)
+      } else {
+        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
+      }
       return
     }
     setLoading(true)

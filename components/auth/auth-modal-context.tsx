@@ -67,3 +67,8 @@ export function useAuthModal(): AuthModalContextValue {
   }
   return ctx
 }
+
+/** Null when this client subtree is not under {@link AuthModalProvider} (e.g. inside a Server Component slot). */
+export function useOptionalAuthModal(): AuthModalContextValue | null {
+  return useContext(AuthModalContext)
+}

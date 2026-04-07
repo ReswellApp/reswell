@@ -1,6 +1,7 @@
 export type BrandRow = {
   id: string
   slug: string
+  brand_request_id?: string | null
   name: string
   short_description: string | null
   website_url: string | null

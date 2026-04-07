@@ -25,17 +25,35 @@ const LOGO_MAX = 5 * 1024 * 1024
 
 type Mode = "create" | "edit"
 
+/** Prefill when opening Add brand from an admin brand request (sell-flow UGC). */
+export type BrandCreatePrefillFromRequest = {
+  brand_request_id: string
+  slug: string
+  name: string
+  short_description: string
+  website_url: string | null
+  logo_url: string | null
+  founder_name: string | null
+  lead_shaper_name: string | null
+  location_label: string | null
+  about_paragraphs: string[]
+  model_count: number
+}
+
 export function BrandEditorDialog({
   open,
   onOpenChange,
   mode,
   brand,
+  createPrefill,
   onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   mode: Mode
   brand: BrandRow | null
+  /** When set with mode create, form fields load from a pending `brand_requests` row. */
+  createPrefill?: BrandCreatePrefillFromRequest | null
   onSaved?: () => void
 }) {
   const router = useRouter()
@@ -50,11 +68,13 @@ export function BrandEditorDialog({
   const [locationLabel, setLocationLabel] = React.useState("")
   const [modelCount, setModelCount] = React.useState("0")
   const [aboutText, setAboutText] = React.useState("")
+  const [sourceBrandRequestId, setSourceBrandRequestId] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     if (!open) return
     if (mode === "edit" && brand) {
+      setSourceBrandRequestId(null)
       setSlug(brand.slug)
       setName(brand.name)
       setShortDescription(brand.short_description ?? "")
@@ -65,7 +85,21 @@ export function BrandEditorDialog({
       setLocationLabel(brand.location_label ?? "")
       setModelCount(String(brand.model_count ?? 0))
       setAboutText((brand.about_paragraphs ?? []).join("\n\n"))
-    } else {
+    } else if (mode === "create" && createPrefill) {
+      setSourceBrandRequestId(createPrefill.brand_request_id)
+      setSlug(createPrefill.slug)
+      setName(createPrefill.name)
+      setShortDescription(createPrefill.short_description ?? "")
+      setWebsiteUrl(createPrefill.website_url ?? "")
+      setLogoUrl(createPrefill.logo_url ?? "")
+      setFounderName(createPrefill.founder_name ?? "")
+      setLeadShaperName(createPrefill.lead_shaper_name ?? "")
+      setLocationLabel(createPrefill.location_label ?? "")
+      setModelCount(String(Math.max(0, createPrefill.model_count ?? 0)))
+      setAboutText((createPrefill.about_paragraphs ?? []).join("\n\n"))
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    } else if (mode === "create") {
+      setSourceBrandRequestId(null)
       setSlug("")
       setName("")
       setShortDescription("")
@@ -76,8 +110,9 @@ export function BrandEditorDialog({
       setLocationLabel("")
       setModelCount("0")
       setAboutText("")
+      if (fileInputRef.current) fileInputRef.current.value = ""
     }
-  }, [open, mode, brand])
+  }, [open, mode, brand, createPrefill])
 
   async function uploadLogoFile(file: File): Promise<string | null> {
     if (file.size > LOGO_MAX) {
@@ -137,6 +172,7 @@ export function BrandEditorDialog({
             location_label: locationLabel.trim() || null,
             model_count: mc,
             about_paragraphs,
+            ...(sourceBrandRequestId ? { brand_request_id: sourceBrandRequestId } : {}),
           }),
         })
         const json = await res.json().catch(() => ({}))
@@ -198,9 +234,11 @@ export function BrandEditorDialog({
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "Add brand" : "Edit brand"}</DialogTitle>
           <DialogDescription>
-            {mode === "create"
-              ? "Create a catalog entry. Slug becomes the URL path."
-              : "Changes apply immediately on save."}
+            {mode === "create" && createPrefill
+              ? "Prefilled from a seller brand request. Review, edit anything, then create to add the directory page and mark the request approved."
+              : mode === "create"
+                ? "Create a catalog entry. Slug becomes the URL path."
+                : "Changes apply immediately on save."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

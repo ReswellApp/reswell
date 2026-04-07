@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { CreditCard, Loader2, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { addCartItem } from "@/app/actions/cart"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
-import { useAuthModal } from "@/components/auth/auth-modal-context"
+import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { toast } from "sonner"
 
 export function ListingDetailPeerPurchaseActions({
@@ -23,7 +24,8 @@ export function ListingDetailPeerPurchaseActions({
   isLoggedIn: boolean
 }) {
   const [loading, setLoading] = useState(false)
-  const { openLogin } = useAuthModal()
+  const authModal = useOptionalAuthModal()
+  const router = useRouter()
   const pathname = usePathname()
   const here = pathname || "/"
   const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam)
@@ -31,7 +33,12 @@ export function ListingDetailPeerPurchaseActions({
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
     if (!isLoggedIn) {
-      openLogin(here)
+      const safe = safeRedirectPath(here)
+      if (authModal) {
+        authModal.openLogin(here)
+      } else {
+        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
+      }
       return
     }
     setLoading(true)
@@ -69,12 +76,13 @@ export function ListingDetailPeerPurchaseActions({
       ) : (
         <Button variant="outline" size="lg" className="min-h-touch flex-1 gap-2 justify-center" asChild>
           <Link
-            href={`/auth/login?redirect=${encodeURIComponent(here)}`}
+            href={`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(here))}`}
             prefetch={false}
             onClick={(e) => {
               if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+              if (!authModal) return
               e.preventDefault()
-              openLogin(here)
+              authModal.openLogin(here)
             }}
           >
             <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />

@@ -32,10 +32,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Eye, Trash2, Flag, Package, RotateCcw, Pencil } from 'lucide-react'
+import { Search, MoreVertical, Eye, Trash2, Flag, Package, RotateCcw, Pencil, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { getAdminSession } from '@/app/actions/account'
 
 interface Listing {
   id: string
@@ -58,11 +59,24 @@ export default function AdminListingsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
+  const [isAdminUser, setIsAdminUser] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
     fetchListings()
   }, [statusFilter, sectionFilter])
+
+  useEffect(() => {
+    let cancelled = false
+    getAdminSession()
+      .then((d: { isAdmin?: boolean }) => {
+        if (!cancelled) setIsAdminUser(d.isAdmin === true)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function fetchListings() {
     let query = supabase
@@ -160,12 +174,22 @@ export default function AdminListingsPage() {
           <h1 className="text-2xl font-bold text-foreground">Manage Listings</h1>
           <p className="text-muted-foreground">View and moderate all marketplace listings</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/listings/add">
-            <Package className="h-4 w-4 mr-2" />
-            Add listing (for user)
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {isAdminUser ? (
+            <Button variant="outline" asChild>
+              <Link href="/admin/listings/brand-requests">
+                <Tag className="h-4 w-4 mr-2" />
+                Brand requests
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild>
+            <Link href="/admin/listings/add">
+              <Package className="h-4 w-4 mr-2" />
+              Add listing (for user)
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

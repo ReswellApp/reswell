@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useAuthModal } from "@/components/auth/auth-modal-context"
+import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
 
@@ -29,7 +29,7 @@ export function ListingTileCheckoutBasketIcon({
   isLoggedIn: boolean
   className?: string
 }) {
-  const { openLogin } = useAuthModal()
+  const authModal = useOptionalAuthModal()
 
   if (!isLoggedIn) {
     return (
@@ -39,8 +39,9 @@ export function ListingTileCheckoutBasketIcon({
         onClick={(e) => {
           e.stopPropagation()
           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+          if (!authModal) return
           e.preventDefault()
-          openLogin(checkoutHref)
+          authModal.openLogin(checkoutHref)
         }}
         className={cn(tileBtnClass, className)}
         aria-label="Sign in to checkout"

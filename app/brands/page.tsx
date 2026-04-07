@@ -11,7 +11,19 @@ export const metadata: Metadata = {
   description: "Surfboard brands on Reswell — profiles from our catalog.",
 }
 
-export default async function BrandsPage() {
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export default async function BrandsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ brandRequest?: string }>
+}) {
+  const sp = await searchParams
+  const raw = sp.brandRequest
+  const brandRequestImportId =
+    typeof raw === "string" && UUID_RE.test(raw.trim()) ? raw.trim() : undefined
+
   const supabase = await createClient()
   const brands = await listBrands(supabase)
 
@@ -20,7 +32,7 @@ export default async function BrandsPage() {
       <section className="border-b border-border/80 bg-offwhite">
         <div className="container relative mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
           <div className="absolute right-4 top-10 sm:right-6 sm:top-12">
-            <BrandsListAdminBar />
+            <BrandsListAdminBar brandRequestImportId={brandRequestImportId} />
           </div>
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Directory</p>

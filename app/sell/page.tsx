@@ -76,7 +76,6 @@ import {
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
 import { cn } from "@/lib/utils"
-import { BrandInputWithSuggestions } from "@/components/brand-input-with-suggestions"
 import { listingDetailPath } from "@/lib/listing-query"
 import {
   validateSellListingForm,
@@ -733,7 +732,6 @@ function SellPageContent() {
         price: String(listing.price ?? ""),
         category: listing.category_id ?? "",
         condition: listing.condition ?? "",
-        brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         boardFulfillment: loadedFulfillment,
         boardShippingPrice,
         boardType: listing.board_type ?? "",
@@ -744,7 +742,13 @@ function SellPageContent() {
         boardVolumeL: (listing as { volume?: number | null }).volume != null ? String((listing as { volume?: number | null }).volume) : "",
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
-        boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
+        ...(() => {
+          const bid = (listing as { brand_id?: string | null }).brand_id?.trim() ?? ""
+          return {
+            boardBrandId: bid,
+            brand: bid ? ((listing as { brand?: string | null }).brand?.trim() ?? "") : "",
+          }
+        })(),
         locationLat: Number(listing.latitude) || 0,
         locationLng: Number(listing.longitude) || 0,
         locationCity: listing.city ?? "",
@@ -1371,7 +1375,7 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
-          brand: fd.brand.trim() ? fd.brand.trim() : null,
+          brand: fd.boardBrandId.trim() ? fd.brand.trim() || null : null,
           brand_id: fd.boardBrandId.trim() || null,
         }
 
@@ -1461,7 +1465,7 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
-          brand: fd.brand.trim() ? fd.brand.trim() : null,
+          brand: fd.boardBrandId.trim() ? fd.brand.trim() || null : null,
           brand_id: fd.boardBrandId.trim() || null,
         }
 
@@ -1746,7 +1750,7 @@ function SellPageContent() {
                     </summary>
                     <p className="mt-2 border-l-2 border-border/70 py-0.5 pl-3 leading-relaxed text-muted-foreground">
                       Appears on your listing and in the link — max {LISTING_TITLE_MAX_LENGTH} characters including
-                      board length. Pick a catalog model from suggestions to autofill brand and speed things up.
+                      board length. Link a directory brand from the title search, or submit a brand request if needed.
                     </p>
                   </details>
                       <SurfboardTitleIndexInput
@@ -1771,6 +1775,7 @@ function SellPageContent() {
                             }
                           })
                         }}
+                        disabled={loading}
                         required
                       />
                       {suggestedTitle && (
@@ -1788,46 +1793,6 @@ function SellPageContent() {
                         </p>
                       )}
                 </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
-                        {formData.boardBrandId ? (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2">
-                              <div className="min-w-0 flex-1">
-                                <BrandInputWithSuggestions
-                                  id="surf-brand"
-                                  showHint={false}
-                                  value={formData.brand}
-                                  onChange={(v) => setFormData({ ...formData, brand: v })}
-                                />
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-9 shrink-0 self-start text-xs text-muted-foreground"
-                                onClick={() =>
-                                  setFormData((f) => ({
-                                    ...f,
-                                    boardBrandId: "",
-                                  }))
-                                }
-                              >
-                                Clear link
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <BrandInputWithSuggestions
-                            id="surf-brand"
-                            placeholder="e.g., Channel Islands"
-                            value={formData.brand}
-                            onChange={(v) => setFormData({ ...formData, brand: v })}
-                            showHint={false}
-                          />
-                        )}
-                    </div>
                 </div>
                 </SellFormSection>
 

@@ -11,12 +11,14 @@ import {
   MessageSquare,
   Settings,
   Activity,
+  Tag,
 } from 'lucide-react'
 
 const adminNavItems = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/live', label: 'Live', icon: Activity },
   { href: '/admin/listings', label: 'Listings', icon: Package },
+  { href: '/admin/listings/brand-requests', label: 'Brand requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/contact-messages', label: 'Contact messages', icon: MessageSquare },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
@@ -48,7 +50,12 @@ export default async function AdminLayout({
 
   const navItems = isAdmin
     ? adminNavItems
-    : adminNavItems.filter((item) => item.href !== '/admin/users' && item.href !== '/admin/settings')
+    : adminNavItems.filter(
+        (item) =>
+          item.href !== '/admin/users' &&
+          item.href !== '/admin/settings' &&
+          item.href !== '/admin/listings/brand-requests',
+      )
 
   return (
       <div className="flex-1 container mx-auto py-8 bg-background">

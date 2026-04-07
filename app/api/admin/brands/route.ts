@@ -6,6 +6,9 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 
 const MAX_PARAGRAPH = 20000
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 function parseBody(body: unknown): {
   slug: string
   name: string
@@ -17,6 +20,7 @@ function parseBody(body: unknown): {
   location_label: string | null
   model_count: number
   about_paragraphs: string[]
+  brand_request_id: string | null
 } | { error: string } {
   if (!body || typeof body !== "object") return { error: "Invalid JSON" }
   const o = body as Record<string, unknown>
@@ -24,6 +28,13 @@ function parseBody(body: unknown): {
   const name = typeof o.name === "string" ? o.name.trim() : ""
   if (!slug || !isValidBrandSlug(slug)) return { error: "Invalid slug (use lowercase letters, numbers, hyphens)" }
   if (!name) return { error: "Name is required" }
+
+  let brand_request_id: string | null = null
+  if (typeof o.brand_request_id === "string") {
+    const raw = o.brand_request_id.trim()
+    if (raw && UUID_RE.test(raw)) brand_request_id = raw
+    else if (raw) return { error: "Invalid brand request id" }
+  }
   const modelCount = Number(o.model_count)
   if (!Number.isFinite(modelCount) || modelCount < 0 || modelCount > 1_000_000) {
     return { error: "Invalid model count" }
@@ -54,6 +65,7 @@ function parseBody(body: unknown): {
     location_label: typeof o.location_label === "string" ? o.location_label.trim() || null : null,
     model_count: Math.floor(modelCount),
     about_paragraphs,
+    brand_request_id,
   }
 }
 
@@ -75,6 +87,24 @@ export async function POST(request: Request) {
 
   const { supabase } = gate.ctx
   const now = new Date().toISOString()
+
+  if (parsed.brand_request_id) {
+    const { data: reqRow, error: reqErr } = await supabase
+      .from("brand_requests")
+      .select("id, status")
+      .eq("id", parsed.brand_request_id)
+      .maybeSingle()
+    if (reqErr || !reqRow) {
+      return NextResponse.json({ error: "Brand request not found" }, { status: 404 })
+    }
+    if (reqRow.status !== "pending") {
+      return NextResponse.json(
+        { error: "That brand request was already processed. Refresh the requests list." },
+        { status: 400 },
+      )
+    }
+  }
+
   const { data, error } = await supabase
     .from("brands")
     .insert({
@@ -88,6 +118,7 @@ export async function POST(request: Request) {
       location_label: parsed.location_label,
       model_count: parsed.model_count,
       about_paragraphs: parsed.about_paragraphs,
+      brand_request_id: parsed.brand_request_id,
       updated_at: now,
     })
     .select("slug")
@@ -99,6 +130,31 @@ export async function POST(request: Request) {
     }
     console.error("admin brands POST:", error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  if (parsed.brand_request_id) {
+    const { data: deletedRows, error: delErr } = await supabase
+      .from("brand_requests")
+      .delete()
+      .eq("id", parsed.brand_request_id)
+      .eq("status", "pending")
+      .select("id")
+
+    if (delErr) {
+      console.error("admin brands POST: remove request after migrate failed:", delErr.message)
+      await supabase.from("brands").delete().eq("slug", data.slug)
+      return NextResponse.json(
+        { error: "Brand was created but removing the request failed. Try again (or run the brand_requests admin DELETE migration)." },
+        { status: 500 },
+      )
+    }
+    if (!deletedRows?.length) {
+      await supabase.from("brands").delete().eq("slug", data.slug)
+      return NextResponse.json(
+        { error: "That brand request was already removed or processed. Nothing was saved." },
+        { status: 409 },
+      )
+    }
   }
 
   revalidatePath(BRANDS_BASE)

@@ -2,9 +2,11 @@
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { getBoardModelsCatalogItems } from "@/app/actions/marketplace"
+import { RequestBrandDialog } from "@/components/request-brand-dialog"
 
 function filterIndexBoardModels(
   items: IndexBoardModelSelection[],
@@ -41,6 +43,7 @@ type SurfboardTitleIndexInputProps = {
   onChange: (value: string) => void
   boardLength: string
   onSelectModel: (opt: IndexBoardModelSelection) => void
+  onBrandRequestSubmitted?: () => void
 }
 
 export function SurfboardTitleIndexInput({
@@ -53,11 +56,14 @@ export function SurfboardTitleIndexInput({
   onChange,
   boardLength,
   onSelectModel,
+  onBrandRequestSubmitted,
 }: SurfboardTitleIndexInputProps) {
   const [items, setItems] = React.useState<IndexBoardModelSelection[]>([])
   const [loadError, setLoadError] = React.useState<string | null>(null)
   const [open, setOpen] = React.useState(false)
   const [highlight, setHighlight] = React.useState(0)
+  const [requestOpen, setRequestOpen] = React.useState(false)
+  const [requestSeedName, setRequestSeedName] = React.useState("")
   const containerRef = React.useRef<HTMLDivElement>(null)
   const listId = React.useId()
 
@@ -97,8 +103,20 @@ export function SurfboardTitleIndexInput({
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open])
 
+  const q = value.trim()
+  const showNoMatch =
+    open && q.length > 0 && !loadError && items.length > 0 && filtered.length === 0
+
   const showList =
-    open && value.trim().length > 0 && (loadError != null && items.length === 0 ? true : items.length > 0)
+    open &&
+    (loadError != null && items.length === 0 ? true : items.length > 0) &&
+    (filtered.length > 0 || showNoMatch)
+
+  function openRequestFromSearch() {
+    setRequestSeedName(q)
+    setRequestOpen(true)
+    setOpen(false)
+  }
 
   return (
     <div ref={containerRef} className="relative">
@@ -119,6 +137,13 @@ export function SurfboardTitleIndexInput({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
+          if (showNoMatch) {
+            if (e.key === "Escape") {
+              e.preventDefault()
+              setOpen(false)
+            }
+            return
+          }
           if (!showList || filtered.length === 0) {
             if (e.key === "Escape") setOpen(false)
             return
@@ -156,8 +181,21 @@ export function SurfboardTitleIndexInput({
         >
           {loadError && items.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">{loadError}</div>
-          ) : filtered.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">No matching brand.</div>
+          ) : showNoMatch ? (
+            <div className="space-y-2 p-3">
+              <p className="text-sm text-muted-foreground">
+                No brand in our directory matches &quot;{q}&quot;.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full min-h-touch"
+                onMouseDown={(ev) => ev.preventDefault()}
+                onClick={openRequestFromSearch}
+              >
+                Request we add this brand
+              </Button>
+            </div>
           ) : (
             filtered.map((opt, i) => (
               <button
@@ -183,8 +221,26 @@ export function SurfboardTitleIndexInput({
         </div>
       ) : null}
       <p className="text-xs text-muted-foreground mt-1.5">
-        Start typing to match a brand, then pick a suggestion to link this listing.
+        Search and pick a directory brand to link this listing. No match? Submit a request — you can publish without
+        a link while we review.
       </p>
+      <button
+        type="button"
+        className="text-xs text-primary underline-offset-4 hover:underline"
+        onClick={() => {
+          setRequestSeedName("")
+          setRequestOpen(true)
+        }}
+      >
+        Brand not listed? Request we add it
+      </button>
+
+      <RequestBrandDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        defaultName={requestSeedName}
+        onSubmitted={onBrandRequestSubmitted}
+      />
     </div>
   )
 }
