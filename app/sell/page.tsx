@@ -275,6 +275,8 @@ function SellPageContent() {
     boardVolumeL: "",
     boardFins: "",
     boardTail: "",
+    /** Directory brand UUID when linked via board index (matches listings.brand_id) */
+    boardBrandId: "",
     boardIndexBrandSlug: "",
     boardIndexModelSlug: "",
     boardIndexLabel: "",
@@ -655,9 +657,7 @@ function SellPageContent() {
           shipping_available,
           shipping_price,
           brand,
-          index_brand_slug,
-          index_model_slug,
-          index_model_label,
+          brand_id,
           listing_images (id, url, thumbnail_url, is_primary, sort_order)
         `
         )
@@ -726,9 +726,10 @@ function SellPageContent() {
         boardVolumeL: (listing as { volume?: number | null }).volume != null ? String((listing as { volume?: number | null }).volume) : "",
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
-        boardIndexBrandSlug: (listing as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? "",
-        boardIndexModelSlug: (listing as { index_model_slug?: string | null }).index_model_slug?.trim() ?? "",
-        boardIndexLabel: (listing as { index_model_label?: string | null }).index_model_label?.trim() ?? "",
+        boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
+        boardIndexBrandSlug: "",
+        boardIndexModelSlug: "",
+        boardIndexLabel: "",
         locationLat: Number(listing.latitude) || 0,
         locationLng: Number(listing.longitude) || 0,
         locationCity: listing.city ?? "",
@@ -1314,9 +1315,7 @@ function SellPageContent() {
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
-          index_brand_slug: fd.boardIndexBrandSlug.trim() || null,
-          index_model_slug: fd.boardIndexModelSlug.trim() || null,
-          index_model_label: fd.boardIndexLabel.trim() || null,
+          brand_id: fd.boardBrandId.trim() || null,
         }
 
         if (ownerEditsOwnListing) {
@@ -1406,9 +1405,7 @@ function SellPageContent() {
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
-          index_brand_slug: fd.boardIndexBrandSlug.trim() || null,
-          index_model_slug: fd.boardIndexModelSlug.trim() || null,
-          index_model_label: fd.boardIndexLabel.trim() || null,
+          brand_id: fd.boardBrandId.trim() || null,
         }
 
         if (listingImpersonation) {
@@ -1701,6 +1698,7 @@ function SellPageContent() {
                                 0,
                                 LISTING_TITLE_MAX_LENGTH,
                               ),
+                              boardBrandId: opt.brandId,
                               boardIndexBrandSlug: opt.brandSlug,
                               boardIndexModelSlug: opt.modelSlug,
                               boardIndexLabel: opt.label,
@@ -1730,7 +1728,7 @@ function SellPageContent() {
                 <>
                     <div className="space-y-2">
                         <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
-                        {formData.boardIndexBrandSlug && formData.boardIndexModelSlug ? (
+                        {formData.boardBrandId ? (
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
                               <div className="min-w-0 flex-1">
@@ -1749,6 +1747,7 @@ function SellPageContent() {
                                 onClick={() =>
                                   setFormData((f) => ({
                                     ...f,
+                                    boardBrandId: "",
                                     boardIndexBrandSlug: "",
                                     boardIndexModelSlug: "",
                                     boardIndexLabel: "",
