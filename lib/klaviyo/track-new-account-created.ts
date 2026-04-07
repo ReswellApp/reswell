@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
+import { subscribeKlaviyoProfileEmailMarketing } from "@/lib/klaviyo/subscribe-profile-email-marketing"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 export type TrackKlaviyoNewAccountCreatedOptions = {
@@ -53,6 +54,9 @@ export function shouldTrackKlaviyoNewAccountForOAuthSession(user: User): boolean
 /**
  * Klaviyo metric **"New Account Created"** — use in a flow to send a welcome email.
  * Deduped per user via `uniqueId` if multiple hooks run for the same account.
+ *
+ * Also calls Klaviyo **Subscribe Profiles** so the profile has email marketing consent
+ * (`SUBSCRIBED`) where your Klaviyo list/account opt-in settings allow immediate consent.
  */
 export async function trackKlaviyoNewAccountCreated(
   user: User,
@@ -125,5 +129,22 @@ export async function trackKlaviyoNewAccountCreated(
 
   if (result.skipped && result.skipReason) {
     console.warn("[klaviyo] New Account Created skipped:", result.skipReason)
+  }
+
+  if (recipientEmail) {
+    void subscribeKlaviyoProfileEmailMarketing({
+      email: recipientEmail,
+      externalId: user.id,
+    }).then((sub) => {
+      if (sub.skipped && sub.skipReason) {
+        console.warn("[klaviyo] Email subscribe skipped:", sub.skipReason)
+      } else if (!sub.ok) {
+        console.warn(
+          "[klaviyo] Email subscribe failed:",
+          sub.status,
+          sub.detail.slice(0, 200),
+        )
+      }
+    })
   }
 }
