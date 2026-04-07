@@ -12,7 +12,7 @@ const SOLD_LIMIT = 40
 export const metadata: Metadata = {
   title: "Feed — new listings & recently sold | Reswell",
   description:
-    "Browse the latest used gear and surfboards on Reswell, plus recently sold items — a live view of marketplace activity.",
+    "Browse the latest surfboard listings on Reswell, plus recently sold items — a live view of marketplace activity.",
 }
 
 function mapActiveRow(
@@ -69,7 +69,7 @@ function mapSoldRow(row: Record<string, unknown>): SoldFeedListing {
     price: listPrice,
     soldPrice: Number.isFinite(soldPrice) ? soldPrice : listPrice,
     condition: String(row.condition ?? ""),
-    section: String(row.section ?? "used"),
+    section: String(row.section ?? "surfboards"),
     city: row.city != null ? String(row.city) : null,
     state: row.state != null ? String(row.state) : null,
     board_type: row.board_type != null ? String(row.board_type) : null,
@@ -105,36 +105,11 @@ async function FeedData() {
 
   const [
     { data: { user } },
-    usedRes,
     boardsRes,
     soldRes,
     stats,
   ] = await Promise.all([
     supabase.auth.getUser(),
-    supabase
-      .from("listings")
-      .select(`
-        id,
-        slug,
-        user_id,
-        title,
-        price,
-        condition,
-        section,
-        status,
-        created_at,
-        city,
-        state,
-        shipping_available,
-        local_pickup,
-        listing_images (url, is_primary),
-        profiles (display_name, avatar_url, location, sales_count),
-        categories (name, slug)
-      `)
-      .eq("status", "active")
-      .eq("section", "used")
-      .order("created_at", { ascending: false })
-      .limit(LIMIT),
     supabase
       .from("listings")
       .select(`
@@ -166,7 +141,7 @@ async function FeedData() {
       .from("listings")
       .select(soldSelect)
       .eq("status", "sold")
-      .in("section", ["used", "surfboards"])
+      .in("section", ["surfboards"])
       .order("updated_at", { ascending: false })
       .limit(SOLD_LIMIT),
     getSoldFeedStats(),
@@ -188,10 +163,7 @@ async function FeedData() {
   const withCreated = (res: Record<string, unknown>[], section: string) =>
     res.map((row) => mapActiveRow(row, section))
 
-  const merged = [
-    ...withCreated((usedRes.data ?? []) as Record<string, unknown>[], "used"),
-    ...withCreated((boardsRes.data ?? []) as Record<string, unknown>[], "surfboards"),
-  ]
+  const merged = withCreated((boardsRes.data ?? []) as Record<string, unknown>[], "surfboards")
   const feedListings: RecentListing[] = merged
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, LIMIT)

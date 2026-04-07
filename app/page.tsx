@@ -34,6 +34,7 @@ import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
+import { surfboardBrowseLinks } from "@/lib/site-category-directory"
 import type { ReactNode } from "react"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
@@ -44,7 +45,7 @@ function HomeListingScrollRow({
   uniformCardHeights,
 }: {
   children: ReactNode
-  /** Stretch all cards to the row height (surfboards, Featured Used Gear, Browse by Category). */
+  /** Stretch all cards to the row height (surfboards, Browse by Category). */
   uniformCardHeights?: boolean
 }) {
   return (
@@ -89,7 +90,7 @@ const homeListingScrollMetaLinesClass =
 
 const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
 
-/** Equal-height cards: surfboards row, Featured Used Gear, Browse by Category (fixed title band, flex stretch). */
+/** Equal-height cards: surfboards row, Browse by Category (fixed title band, flex stretch). */
 const homeUniformScrollCardClass = cn(
   listingProductCardGridClassName,
   "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
@@ -122,17 +123,20 @@ function listingCardSrc(url?: string | null): string {
   return u || PLACEHOLDER_IMAGE
 }
 
-const categories = [
-  { name: "Surfboards", href: "/boards", section: "surfboards", slug: null },
-  { name: "Wetsuits", href: "/wetsuits", section: "used", slug: "wetsuits" },
-  { name: "Apparel & Lifestyle", href: "/apparel-lifestyle", section: "used", slug: "apparel-lifestyle" },
-  { name: "Fins", href: "/fins", section: "used", slug: "fins" },
-  { name: "Leashes", href: "/leashes", section: "used", slug: "leashes" },
-  { name: "Board Bags", href: "/board-bags", section: "used", slug: "board-bags" },
-  { name: "Vintage", href: "/collectibles-vintage", section: "used", slug: "collectibles-vintage" },
-]
+function boardBrowseSlugFromHref(href: string): string | null {
+  const q = href.split("?")[1]
+  if (!q) return null
+  const type = new URLSearchParams(q).get("type")
+  return type?.trim() ? type : null
+}
 
-/** Match `used-gear-listings` / seller grids: primary flag first, else first image. */
+const categories = surfboardBrowseLinks.map((c) => ({
+  name: c.label,
+  href: c.href,
+  slug: boardBrowseSlugFromHref(c.href),
+}))
+
+/** Primary image for listing tiles: primary flag first, else first image. */
 function primaryListingImageUrl(
   images?:
     | {
@@ -179,32 +183,6 @@ const features = [
 export default async function HomePage() {
   const supabase = await createClient()
   
-  // Fetch featured used listings - prioritize top sellers
-  const { data: rawFeaturedUsed } = await supabase
-    .from("listings")
-    .select(`
-      *,
-      listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles (display_name, avatar_url, sales_count, shop_verified),
-      categories (name)
-    `)
-    .eq("status", "active")
-    .eq("section", "used")
-    .order("created_at", { ascending: false })
-    .limit(20)
-
-  // Sort by seller sales_count descending, then recency, and take top 4
-  const featuredUsed = rawFeaturedUsed
-    ? [...rawFeaturedUsed]
-        .sort((a, b) => {
-          const salesA = a.profiles?.sales_count ?? 0
-          const salesB = b.profiles?.sales_count ?? 0
-          if (salesB !== salesA) return salesB - salesA
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        })
-        .slice(0, 20)
-    : null
-
   // Fetch featured new items
   const { data: featuredNew } = await supabase
     .from("inventory")
@@ -274,6 +252,7 @@ export default async function HomePage() {
       )
       .in("user_id", verifiedProfileIds)
       .eq("status", "active")
+      .eq("section", "surfboards")
 
     const bestByUser = new Map<string, ListingRow>()
     for (const listing of (listingsForVerified ?? []) as ListingRow[]) {
@@ -304,6 +283,7 @@ export default async function HomePage() {
       profiles (display_name, avatar_url, location, sales_count, shop_verified)
     `)
     .eq("status", "active")
+    .eq("section", "surfboards")
     .order("created_at", { ascending: false })
     .limit(200)
 
@@ -319,7 +299,6 @@ export default async function HomePage() {
 
   const { data: { user } } = await supabase.auth.getUser()
   const featuredListingIds = [
-    ...(featuredUsed ?? []).map((l) => l.id),
     ...(featuredBoards ?? []).map((b) => b.id),
     ...verifiedSpotlight.map(({ listing }) => listing.id),
     ...Array.from(categoryLatest.values()).map((l) => l.id),
@@ -347,16 +326,15 @@ export default async function HomePage() {
                 The Surf Community Marketplace
               </Badge>
               <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl text-balance">
-                Buy and Sell Surf Gear with the Community
+                Buy and Sell Surfboards with the Community
               </h1>
               <p className="mt-6 text-lg text-muted-foreground text-pretty">
-                Join thousands of surfers buying and selling quality used gear, 
-                shopping new accessories, and finding local surfboards.
+                Find local surfboards, meet sellers in person, and list your own boards with photos and dimensions.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button size="lg" asChild>
-                  <Link href="/gear">
-                    Browse Used Gear
+                  <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
+                    Browse surfboards
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -457,9 +435,9 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/sell" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
               <div>
-                <p className="text-lg font-semibold text-foreground">Give your gear a second life</p>
+                <p className="text-lg font-semibold text-foreground">List your surfboard in minutes</p>
                 <p className="text-muted-foreground mt-1">
-                  Secure payments, verified sellers, direct messaging, shipping, and local pickup — all in one place.
+                  Secure payments, verified sellers, direct messaging, and local pickup or shipping — all in one place.
                 </p>
               </div>
               <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
@@ -469,78 +447,6 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
-
-        {/* Featured Used Gear */}
-        {featuredUsed && featuredUsed.length > 0 && (
-          <FadeInSection>
-          <section className="py-16">
-            <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold">Featured Used Gear</h2>
-                  <p className="text-muted-foreground">Pre-loved items from the community</p>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/gear">
-                    View All
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <HomeListingScrollRow uniformCardHeights>
-                {featuredUsed.map((listing) => (
-                  <ListingTile
-                    key={listing.id}
-                    href={listingDetailHref(listing)}
-                    listingId={listing.id}
-                    title={listing.title}
-                    imageAlt={capitalizeWords(listing.title)}
-                    listingImages={listing.listing_images}
-                    price={Number(listing.price)}
-                    linkLayout="unified"
-                    linkClassName={homeUniformScrollLinkClass}
-                    cardClassName={homeUniformScrollCardClass}
-                    cardContentClassName={homeUniformScrollBodyClass}
-                    imageSizes={homeListingScrollImageSizes}
-                    blurDataURL={portraitShimmer}
-                    titleSlot={
-                      <div className={homeUniformScrollTitleSlotClass}>
-                        <h3 className={homeListingScrollHeadingClass}>
-                          {capitalizeWords(listing.title)}
-                        </h3>
-                      </div>
-                    }
-                    footerSlot={
-                      <div className={homeUniformScrollMetaFooterClass}>
-                        <p className="text-base font-bold text-black dark:text-white">
-                          ${listing.price.toFixed(2)}
-                        </p>
-                        <div
-                          className={`mt-1 flex items-start justify-between gap-1 text-xs text-muted-foreground ${homeListingScrollMetaLinesClass}`}
-                        >
-                          <div className="flex min-w-0 flex-1 items-start gap-1">
-                            <span className="min-w-0 flex-1 break-words line-clamp-2 leading-snug">
-                              {getPublicSellerDisplayName(listing.profiles)}
-                            </span>
-                            {listing.profiles?.shop_verified && (
-                              <VerifiedBadge size="sm" className="mt-0.5 shrink-0" />
-                            )}
-                          </div>
-                          <ListingTileCategoryPill label={formatListingTileCategoryPillText(listing)} />
-                        </div>
-                      </div>
-                    }
-                    favorites={{
-                      initialFavorited: favoritedIds.includes(listing.id),
-                      isLoggedIn: !!user,
-                    }}
-                  />
-                ))}
-              </HomeListingScrollRow>
-            </div>
-          </section>
-          </FadeInSection>
-        )}
 
         {/* Confidence banner */}
         <section className="py-8">
@@ -680,7 +586,7 @@ export default async function HomePage() {
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold">Browse by Category</h2>
               <Button variant="ghost" asChild>
-                <Link href="/gear">
+                <Link href="/categories">
                   View All
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>

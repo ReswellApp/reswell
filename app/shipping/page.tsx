@@ -4,7 +4,7 @@ import { Package, Truck, MapPin, DollarSign } from "lucide-react"
 
 export const metadata = {
   title: "Shipping Guide - Reswell",
-  description: "How to ship and receive surf gear on Reswell. Seller and buyer responsibilities, packaging tips, and local pickup.",
+  description: "How to ship and receive surfboards on Reswell. Seller and buyer responsibilities, packaging tips, and local pickup.",
 }
 
 export default function ShippingGuidePage() {
@@ -16,13 +16,13 @@ export default function ShippingGuidePage() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Shipping Guide</h1>
               <p className="text-muted-foreground mt-1">
-                How to ship and receive surf gear safely
+                How to ship and receive surfboards safely
               </p>
             </div>
           </div>
 
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            Sellers can choose whether to offer shipping on used gear. For surfboards, sellers can offer local pickup, shipping, or both—if they ship, they set a flat shipping price at listing time. Use this guide whether you’re sending or receiving an item.
+            Sellers choose whether to offer shipping on each listing. For surfboards you can offer local pickup, shipping, or both—if you ship, you set a flat shipping price at listing time. Use this guide whether you are sending or receiving a board.
           </p>
 
           <div className="space-y-6">

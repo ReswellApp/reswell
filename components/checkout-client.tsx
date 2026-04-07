@@ -22,7 +22,7 @@ const SURFBOARD_COPY = {
   priceContextNoun: "board",
 } as const
 
-/** Line-item labels for surfboards vs used gear. */
+/** Line-item labels for peer surfboard checkout (optional overrides). */
 export type CheckoutCopy = {
   itemLineLabel: string
   inspectNoun: string
@@ -55,7 +55,7 @@ function primaryListingImageUrl(images: CheckoutListing["listing_images"]): stri
 
 interface CheckoutClientProps {
   listing: CheckoutListing
-  /** Surfboard wording by default; pass used-gear labels when section is used. */
+  /** Optional overrides for checkout headings and helper text (peer surfboard flow). */
   copy?: CheckoutCopy
   buyerEmail?: string | null
   initialAddresses: ProfileAddressRow[]

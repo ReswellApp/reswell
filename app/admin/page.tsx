@@ -66,11 +66,6 @@ export default async function AdminDashboard() {
     .limit(5)
 
   // Fetch section breakdown
-  const { count: usedCount } = await supabase
-    .from('listings')
-    .select('*', { count: 'exact', head: true })
-    .eq('section', 'used')
-
   const { count: newCount } = await supabase
     .from('listings')
     .select('*', { count: 'exact', head: true })
@@ -103,9 +98,8 @@ export default async function AdminDashboard() {
   ]
 
   const sectionStats = [
-    { label: 'Used Gear', count: usedCount ?? 0, color: 'bg-neutral-700' },
-    { label: 'New Items', count: newCount ?? 0, color: 'bg-neutral-500' },
-    { label: 'Surfboards', count: boardsCount ?? 0, color: 'bg-neutral-400' },
+    { label: 'Surfboards', count: boardsCount ?? 0, color: 'bg-neutral-600' },
+    { label: 'Shop (new)', count: newCount ?? 0, color: 'bg-neutral-400' },
   ]
 
   return (

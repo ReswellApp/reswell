@@ -4,8 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
 
 export async function getDistinctBrandsFromListings(section: string): Promise<string[]> {
-  const sections =
-    section === "used" ? ["used"] : section === "surfboards" ? ["surfboards"] : ["used", "surfboards"]
+  const sections = section === "new" ? ["new"] : ["surfboards"]
 
   const supabase = await createClient()
   const { data } = await supabase
@@ -51,33 +50,6 @@ export async function getInventoryProductById(
     return { error: "Product not found" }
   }
   return { product: product as InventoryProductRow }
-}
-
-const RECENT_USED_LIMIT = 50
-
-export async function getRecentUsedListingsForFeed() {
-  const supabase = await createClient()
-  const { data: listings, error } = await supabase
-    .from("listings")
-    .select(`
-      id,
-      title,
-      price,
-      condition,
-      created_at,
-      listing_images (url, is_primary),
-      categories (name, slug)
-    `)
-    .eq("status", "active")
-    .eq("section", "used")
-    .eq("shipping_available", true)
-    .order("created_at", { ascending: false })
-    .limit(RECENT_USED_LIMIT)
-
-  if (error) {
-    return { error: error.message, listings: null as unknown[] | null }
-  }
-  return { error: null, listings: listings ?? [] }
 }
 
 export async function getBoardModelsCatalogItems() {
@@ -138,8 +110,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
   const supabase = await createClient()
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
-  const sections =
-    section === "used" ? ["used"] : section === "surfboards" ? ["surfboards"] : ["used", "surfboards"]
+  const sections = section === "new" ? ["new"] : ["surfboards"]
 
   const textOr = `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern}`
 
@@ -173,16 +144,13 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       .or(textOr)
       .order("created_at", { ascending: false })
       .limit(TITLE_SUGGEST_FETCH),
-    (() => {
-      let q = supabase.from("categories").select("name, slug")
-      if (section === "used") q = q.eq("gear", true)
-      else if (section === "surfboards") q = q.eq("board", true)
-      else q = q.or("board.eq.true,gear.eq.true")
-      return q
-        .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
-        .order("name", { ascending: true })
-        .limit(MAX_CATEGORIES * 3)
-    })(),
+    supabase
+      .from("categories")
+      .select("name, slug")
+      .eq("board", true)
+      .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+      .order("name", { ascending: true })
+      .limit(MAX_CATEGORIES * 3),
     supabase
       .from("listings")
       .select("brand")

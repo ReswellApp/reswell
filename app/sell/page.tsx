@@ -32,8 +32,6 @@ import {
   AlertCircle,
   RefreshCw,
   Sparkles,
-  Waves,
-  Package,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -56,38 +54,6 @@ import {
   getImpersonation,
   type ImpersonationData,
 } from "@/lib/impersonation"
-import {
-  FINS_TYPE_OPTIONS,
-  SINGLE_FIN_SIZE_OPTIONS,
-  USED_GEAR_COLOR_OPTIONS,
-  USED_GEAR_SIZE_OPTIONS,
-} from "@/lib/used-gear-filter-options"
-import { BOARD_BAG_LENGTH_OPTIONS } from "@/lib/board-bag-length-options"
-import {
-  APPAREL_KIND_OPTIONS,
-  APPAREL_KIND_VALUES,
-  APPAREL_SIZE_OPTIONS,
-  type ApparelKindValue,
-} from "@/lib/apparel-lifestyle-options"
-import {
-  WETSUIT_SIZE_OPTIONS,
-  WETSUIT_THICKNESS_OPTIONS,
-  WETSUIT_ZIP_OPTIONS,
-  WETSUIT_ZIP_VALUES,
-  type WetsuitZipValue,
-} from "@/lib/wetsuit-options"
-import { LEASH_LENGTH_FT_OPTIONS, LEASH_THICKNESS_OPTIONS, leashLengthLabel } from "@/lib/leash-options"
-import {
-  COLLECTIBLE_TYPE_OPTIONS,
-  COLLECTIBLE_TYPE_VALUES,
-  COLLECTIBLE_ERA_OPTIONS,
-  COLLECTIBLE_ERA_VALUES,
-  COLLECTIBLE_CONDITION_OPTIONS,
-  COLLECTIBLE_CONDITION_VALUES,
-  type CollectibleTypeValue,
-  type CollectibleEraValue,
-  type CollectibleConditionValue,
-} from "@/lib/collectible-options"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import {
   SurfboardTitleIndexInput,
@@ -129,15 +95,6 @@ function submitErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback
 }
-
-// Category UUIDs (match `public.categories`) — used for conditional fields. Labels for the category dropdown load from the DB.
-const WETSUITS_CATEGORY_ID = "2744c29e-d6d4-43d9-a3ee-5bc11a0027df"
-const LEASHES_CATEGORY_ID = "b2a6282c-4c23-42dc-83f4-492eaa4f993a"
-const FINS_CATEGORY_ID = "f8327e72-d54c-4333-b383-58a8cef225a6"
-const BACKPACK_CATEGORY_ID = "a6000006-0000-4000-8000-000000000006"
-const BOARD_BAGS_CATEGORY_ID = "3779de38-dcf8-430f-a42c-9a17a2e048c4"
-const APPAREL_LIFESTYLE_CATEGORY_ID = "a2000002-0000-4000-8000-000000000002"
-const COLLECTIBLES_CATEGORY_ID = "a3000003-0000-4000-8000-000000000003"
 
 type DimMode = "decimal" | "fraction"
 
@@ -308,19 +265,6 @@ function SellPageContent() {
     category: "",
     condition: "",
     brand: "",
-    gearSize: "",
-    gearColor: "",
-    packKind: "" as "" | "surfpack" | "bag",
-    boardBagKind: "" as "" | "day" | "travel",
-    apparelKind: "" as "" | ApparelKindValue,
-    wetsuitSize: "",
-    wetsuitThickness: "",
-    wetsuitZipType: "" as "" | WetsuitZipValue,
-    leashLength: "",
-    leashThickness: "",
-    collectibleType: "" as "" | CollectibleTypeValue,
-    collectibleEra: "" as "" | CollectibleEraValue,
-    collectibleCondition: "" as "" | CollectibleConditionValue,
     boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
     boardShippingPrice: "",
     boardType: "",
@@ -342,53 +286,15 @@ function SellPageContent() {
   })
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
-    { value: string; label: string; board: boolean; gear: boolean }[]
+    { value: string; label: string; board: boolean }[]
   >([])
-  /** Drives Board vs Gear tiles + category dropdown; kept in sync with selected category when possible. */
-  const [sellUiKind, setSellUiKind] = useState<"board" | "gear">("board")
 
-  const selectedCategoryRow = useMemo(
-    () => sellCategoryOptions.find((c) => c.value === formData.category),
-    [sellCategoryOptions, formData.category],
+  const boardCategoryOptions = useMemo(
+    () => sellCategoryOptions.filter((c) => c.board === true),
+    [sellCategoryOptions],
   )
 
-  const categoriesInCurrentKind = useMemo(
-    () =>
-      sellCategoryOptions.filter((c) =>
-        sellUiKind === "board" ? c.board === true : c.gear === true,
-      ),
-    [sellCategoryOptions, sellUiKind],
-  )
-
-  const handleSellKindChange = useCallback(
-    (kind: "board" | "gear") => {
-      if (editId) return
-      setSellUiKind(kind)
-      const row = sellCategoryOptions.find((c) => c.value === formData.category)
-      if (kind === "board" && row?.board === true) return
-      if (kind === "gear" && row?.gear === true) return
-      const first = sellCategoryOptions.find((c) => (kind === "board" ? c.board === true : c.gear === true))
-      if (!first) {
-        toast.message(
-          kind === "gear"
-            ? "No gear categories found — ensure some rows have gear = true in public.categories."
-            : "No board categories found — ensure some rows have board = true in public.categories.",
-        )
-        return
-      }
-      setFormData((prev) => ({
-        ...prev,
-        category: first.value,
-        boardType: kind === "board" ? boardTypeFromCategoryId(first.value) : prev.boardType,
-      }))
-    },
-    [editId, sellCategoryOptions, formData.category],
-  )
-
-  const listingType = useMemo((): "used" | "board" => {
-    if (!selectedCategoryRow) return "board"
-    return selectedCategoryRow.board === true ? "board" : "used"
-  }, [selectedCategoryRow])
+  const listingType = "board" as const
 
   const [dimMode, setDimMode] = useState<DimMode>("decimal")
   const [widthFractionInput, setWidthFractionInput] = useState("")
@@ -402,7 +308,7 @@ function SellPageContent() {
   const [inchesParsedHint, setInchesParsedHint] = useState("")
 
   const sellDraftLatestRef = useRef({
-    listingType: "board" as "used" | "board",
+    listingType: "board" as const,
     formData: {} as SellListingDraftFormSnapshot,
     images: [] as ListingPhotoSlot[],
     editId: null as string | null,
@@ -416,34 +322,18 @@ function SellPageContent() {
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const [boardRes, gearRes] = await Promise.all([
-        supabase.from("categories").select("id, name, board, gear").eq("board", true).order("name"),
-        supabase.from("categories").select("id, name, board, gear").eq("gear", true).order("name"),
-      ])
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, board")
+        .eq("board", true)
+        .order("name")
       if (cancelled) return
-      const err = boardRes.error ?? gearRes.error
-      if (err) return
-      const merged = new Map<string, { id: string; name: string; board: boolean; gear: boolean }>()
-      for (const r of [...(boardRes.data ?? []), ...(gearRes.data ?? [])]) {
-        merged.set(r.id, {
-          id: r.id,
-          name: r.name ?? "",
-          board: !!r.board,
-          gear: !!r.gear,
-        })
-      }
-      const rows = [...merged.values()].sort((a, b) => {
-        const sa = a.board === true ? 0 : 1
-        const sb = b.board === true ? 0 : 1
-        if (sa !== sb) return sa - sb
-        return a.name.localeCompare(b.name)
-      })
+      if (error) return
       setSellCategoryOptions(
-        rows.map((r) => ({
+        (data ?? []).map((r) => ({
           value: r.id,
-          label: r.name,
-          board: r.board,
-          gear: r.gear,
+          label: r.name ?? "",
+          board: true,
         })),
       )
     })()
@@ -468,14 +358,6 @@ function SellPageContent() {
     })
   }, [editId, sellCategoryOptions, draftHydrated])
 
-  /** Align tiles with `formData.category` when category id changes (default, draft, edit, dropdown). */
-  useEffect(() => {
-    if (sellCategoryOptions.length === 0 || !formData.category) return
-    const row = sellCategoryOptions.find((c) => c.value === formData.category)
-    if (!row) return
-    setSellUiKind(row.gear === true ? "gear" : "board")
-  }, [sellCategoryOptions, formData.category])
-
   sellDraftLatestRef.current = {
     listingType,
     formData: formData as SellListingDraftFormSnapshot,
@@ -492,8 +374,28 @@ function SellPageContent() {
   }, [formData.boardLengthFt, formData.boardLengthIn])
 
   const sellValidationForm = useMemo(
-    (): SellFormValidationInput => ({ listingType, ...formData }),
-    [listingType, formData],
+    (): SellFormValidationInput => ({
+      listingType: "board",
+      title: formData.title,
+      price: formData.price,
+      description: formData.description,
+      condition: formData.condition,
+      category: formData.category,
+      brand: formData.brand,
+      boardType: formData.boardType,
+      boardLengthFt: formData.boardLengthFt,
+      boardLengthIn: formData.boardLengthIn,
+      boardWidthInches: formData.boardWidthInches,
+      boardThicknessInches: formData.boardThicknessInches,
+      boardVolumeL: formData.boardVolumeL,
+      boardFins: formData.boardFins,
+      boardTail: formData.boardTail,
+      boardFulfillment: formData.boardFulfillment,
+      boardShippingPrice: formData.boardShippingPrice,
+      locationCity: formData.locationCity,
+      locationState: formData.locationState,
+    }),
+    [formData],
   )
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
@@ -532,7 +434,6 @@ function SellPageContent() {
 
   // Count completed board fields for progress indicator
   const boardFieldsCompleted = useMemo(() => {
-    if (listingType !== "board") return 0
     return [
       images.length >= 3,
       formData.title.trim(),
@@ -545,7 +446,7 @@ function SellPageContent() {
       formData.price.trim(),
       formData.description.trim(),
     ].filter(Boolean).length
-  }, [listingType, images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
+  }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
 
   const commitFractionField = (
     rawValue: string,
@@ -614,7 +515,6 @@ function SellPageContent() {
 
   // Smart title suggestion when brand + model index + length are all filled
   const suggestedTitle = useMemo(() => {
-    if (listingType !== "board") return null
     if (!formData.boardIndexLabel || !boardLengthFormatted) return null
     let suggested = `${formData.boardIndexLabel} - ${boardLengthFormatted}`
     if (suggested.length > LISTING_TITLE_MAX_LENGTH) {
@@ -623,7 +523,7 @@ function SellPageContent() {
     const currentTitle = formData.title.trim()
     if (currentTitle.toLowerCase() === suggested.toLowerCase()) return null
     return suggested
-  }, [listingType, formData.boardIndexLabel, boardLengthFormatted, formData.title])
+  }, [formData.boardIndexLabel, boardLengthFormatted, formData.title])
 
   useEffect(() => {
     if (editId) {
@@ -684,7 +584,7 @@ function SellPageContent() {
     return () => {
       if (sellDraftPersistTimerRef.current) clearTimeout(sellDraftPersistTimerRef.current)
     }
-  }, [editId, draftHydrated, listingType, formData, images])
+  }, [editId, draftHydrated, formData, images])
 
   useEffect(() => {
     const flush = () => {
@@ -758,19 +658,6 @@ function SellPageContent() {
           index_brand_slug,
           index_model_slug,
           index_model_label,
-          gear_size,
-          gear_color,
-          pack_kind,
-          board_bag_kind,
-          apparel_kind,
-          wetsuit_size,
-          wetsuit_thickness,
-          wetsuit_zip_type,
-          leash_length,
-          leash_thickness,
-          collectible_type,
-          collectible_era,
-          collectible_condition,
           listing_images (id, url, thumbnail_url, is_primary, sort_order)
         `
         )
@@ -795,6 +682,12 @@ function SellPageContent() {
             id: String(listing.id),
           }),
         )
+        setEditLoading(false)
+        return
+      }
+      if ((listing as { section?: string }).section !== "surfboards") {
+        toast.error("Only surfboard listings can be edited here.")
+        router.replace("/sell")
         setEditLoading(false)
         return
       }
@@ -823,56 +716,6 @@ function SellPageContent() {
         category: listing.category_id ?? "",
         condition: listing.condition ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
-        gearSize: (listing as { gear_size?: string | null }).gear_size?.trim() ?? "",
-        gearColor: (listing as { gear_color?: string | null }).gear_color?.trim() ?? "",
-        packKind: (() => {
-          const pk = (listing as { pack_kind?: string | null }).pack_kind?.trim()
-          return pk === "surfpack" || pk === "bag" ? pk : ""
-        })(),
-        boardBagKind: (() => {
-          const bk = (listing as { board_bag_kind?: string | null }).board_bag_kind?.trim()
-          return bk === "day" || bk === "travel" ? bk : ""
-        })(),
-        apparelKind: (() => {
-          const ak = (listing as { apparel_kind?: string | null }).apparel_kind?.trim()
-          if (!ak) return ""
-          return APPAREL_KIND_VALUES.includes(ak as ApparelKindValue) ? (ak as ApparelKindValue) : ""
-        })(),
-        wetsuitSize: (() => {
-          const s = (listing as { wetsuit_size?: string | null }).wetsuit_size?.trim() ?? ""
-          return (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(s) ? s : ""
-        })(),
-        wetsuitThickness: (() => {
-          const t = (listing as { wetsuit_thickness?: string | null }).wetsuit_thickness?.trim() ?? ""
-          return (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(t) ? t : ""
-        })(),
-        wetsuitZipType: (() => {
-          const z = (listing as { wetsuit_zip_type?: string | null }).wetsuit_zip_type?.trim() ?? ""
-          const normalized = z === "non_hooded" ? "chestzip" : z
-          return WETSUIT_ZIP_VALUES.includes(normalized as WetsuitZipValue)
-            ? (normalized as WetsuitZipValue)
-            : ""
-        })(),
-        leashLength: (() => {
-          const l = (listing as { leash_length?: string | null }).leash_length?.trim() ?? ""
-          return (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(l) ? l : ""
-        })(),
-        leashThickness: (() => {
-          const t = (listing as { leash_thickness?: string | null }).leash_thickness?.trim() ?? ""
-          return (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(t) ? t : ""
-        })(),
-        collectibleType: (() => {
-          const v = (listing as { collectible_type?: string | null }).collectible_type?.trim() ?? ""
-          return (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(v) ? (v as CollectibleTypeValue) : ""
-        })(),
-        collectibleEra: (() => {
-          const v = (listing as { collectible_era?: string | null }).collectible_era?.trim() ?? ""
-          return (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(v) ? (v as CollectibleEraValue) : ""
-        })(),
-        collectibleCondition: (() => {
-          const v = (listing as { collectible_condition?: string | null }).collectible_condition?.trim() ?? ""
-          return (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(v) ? (v as CollectibleConditionValue) : ""
-        })(),
         boardFulfillment: loadedFulfillment,
         boardShippingPrice,
         boardType: listing.board_type ?? "",
@@ -1288,7 +1131,7 @@ function SellPageContent() {
         actorIsAdmin && storedImpersonation ? storedImpersonation : null
 
       let submitForm = formData
-      if (listingType === "board" && dimMode === "fraction") {
+      if (dimMode === "fraction") {
         const next = { ...formData }
         let touched = false
         if (inchesFractionInput.trim()) {
@@ -1330,18 +1173,15 @@ function SellPageContent() {
         }
       }
 
-      const imagesUploadReady =
-        listingType !== "used" && listingType !== "board"
-          ? true
-          : !images.some(
-              (im) =>
-                im.uploadPhase !== "done" ||
-                !im.url?.trim() ||
-                !im.thumbnailUrl?.trim(),
-            )
+      const imagesUploadReady = !images.some(
+        (im) =>
+          im.uploadPhase !== "done" ||
+          !im.url?.trim() ||
+          !im.thumbnailUrl?.trim(),
+      )
 
       const validationMessage = validateSellListingForm(
-        { listingType, ...submitForm } as SellFormValidationInput,
+        { listingType: "board", ...submitForm } as SellFormValidationInput,
         { imageCount: images.length, imagesUploadReady },
       )
       if (validationMessage) {
@@ -1352,10 +1192,7 @@ function SellPageContent() {
 
       const fd = submitForm
 
-      const fulfillmentFlags =
-        listingType === "used"
-          ? { shipping_available: true, local_pickup: false }
-          : flagsFromBoardFulfillment(fd.boardFulfillment)
+      const fulfillmentFlags = flagsFromBoardFulfillment(fd.boardFulfillment)
 
       const fulfillmentRow = {
         shipping_available: fulfillmentFlags.shipping_available,
@@ -1365,22 +1202,17 @@ function SellPageContent() {
           : null,
       }
 
-      const boardLocationLat =
-        listingType === "board" && fd.locationLat ? fd.locationLat : null
-      const boardLocationLng =
-        listingType === "board" && fd.locationLng ? fd.locationLng : null
-      const boardLocationCity =
-        listingType === "board" ? fd.locationCity.trim() || null : null
-      const boardLocationState =
-        listingType === "board" ? fd.locationState.trim() || null : null
+      const boardLocationLat = fd.locationLat ? fd.locationLat : null
+      const boardLocationLng = fd.locationLng ? fd.locationLng : null
+      const boardLocationCity = fd.locationCity.trim() || null
+      const boardLocationState = fd.locationState.trim() || null
 
       const boardLengthFmt = fd.boardLengthFt.trim()
         ? `${parseInt(fd.boardLengthFt, 10)}'${formatDecimalDimension(parseFloat(fd.boardLengthIn) || 0)}"`
         : ""
-      const resolvedListingTitle =
-        listingType === "board" && boardLengthFmt
-          ? listingTitleWithBoardLength(fd.title, boardLengthFmt)
-          : fd.title.trim()
+      const resolvedListingTitle = boardLengthFmt
+        ? listingTitleWithBoardLength(fd.title, boardLengthFmt)
+        : fd.title.trim()
 
       const flowImpersonation = !!listingImpersonation
       if (!editId && !flowImpersonation) {
@@ -1466,139 +1298,25 @@ function SellPageContent() {
           price: parseFloat(fd.price),
           condition: fd.condition,
           category_id: fd.category,
-          board_type: listingType === "board" ? fd.boardType : null,
-          length_feet:
-            listingType === "board" && fd.boardLengthFt
-              ? parseInt(fd.boardLengthFt)
-              : null,
-          length_inches:
-            listingType === "board" && fd.boardLengthFt
-              ? parseFloat(fd.boardLengthIn) || 0
-              : null,
-          width: listingType === "board" && fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
-          thickness: listingType === "board" && fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
-          volume: listingType === "board" && fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
-          fins_setup: listingType === "board" && fd.boardFins ? fd.boardFins : null,
-          tail_shape: listingType === "board" && fd.boardTail ? fd.boardTail : null,
-          latitude:
-            listingType === "board"
-              ? boardLocationLat
-              : fulfillmentRow.local_pickup && fd.locationLat
-                ? fd.locationLat
-                : null,
-          longitude:
-            listingType === "board"
-              ? boardLocationLng
-              : fulfillmentRow.local_pickup && fd.locationLng
-                ? fd.locationLng
-                : null,
-          city:
-            listingType === "board"
-              ? boardLocationCity
-              : fulfillmentRow.local_pickup
-                ? fd.locationCity
-                : null,
-          state:
-            listingType === "board"
-              ? boardLocationState
-              : fulfillmentRow.local_pickup
-                ? fd.locationState
-                : null,
+          board_type: fd.boardType,
+          length_feet: fd.boardLengthFt ? parseInt(fd.boardLengthFt, 10) : null,
+          length_inches: fd.boardLengthFt ? parseFloat(fd.boardLengthIn) || 0 : null,
+          width: fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
+          thickness: fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
+          volume: fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
+          fins_setup: fd.boardFins ? fd.boardFins : null,
+          tail_shape: fd.boardTail ? fd.boardTail : null,
+          latitude: boardLocationLat,
+          longitude: boardLocationLng,
+          city: boardLocationCity,
+          state: boardLocationState,
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
-          brand:
-            listingType === "board" && fd.brand.trim()
-              ? fd.brand.trim()
-              : listingType === "used" &&
-                  (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
-                  fd.brand.trim()
-                ? fd.brand.trim()
-                : null,
-          index_brand_slug: listingType === "board" ? fd.boardIndexBrandSlug.trim() || null : null,
-          index_model_slug: listingType === "board" ? fd.boardIndexModelSlug.trim() || null : null,
-          index_model_label: listingType === "board" ? fd.boardIndexLabel.trim() || null : null,
-          gear_size:
-            listingType === "used" &&
-            (fd.category === FINS_CATEGORY_ID ||
-              fd.category === BACKPACK_CATEGORY_ID ||
-              fd.category === BOARD_BAGS_CATEGORY_ID ||
-              fd.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
-            fd.gearSize.trim()
-              ? fd.gearSize.trim()
-              : null,
-          gear_color:
-            listingType === "used" &&
-            (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
-            fd.gearColor.trim()
-              ? fd.gearColor.trim()
-              : null,
-          pack_kind:
-            listingType === "used" &&
-            fd.category === BACKPACK_CATEGORY_ID &&
-            (fd.packKind === "surfpack" || fd.packKind === "bag")
-              ? fd.packKind
-              : null,
-          board_bag_kind:
-            listingType === "used" &&
-            fd.category === BOARD_BAGS_CATEGORY_ID &&
-            (fd.boardBagKind === "day" || fd.boardBagKind === "travel")
-              ? fd.boardBagKind
-              : null,
-          apparel_kind:
-            listingType === "used" &&
-            fd.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
-            APPAREL_KIND_VALUES.includes(fd.apparelKind as ApparelKindValue)
-              ? fd.apparelKind
-              : null,
-          wetsuit_size:
-            listingType === "used" &&
-            fd.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(fd.wetsuitSize.trim())
-              ? fd.wetsuitSize.trim()
-              : null,
-          wetsuit_thickness:
-            listingType === "used" &&
-            fd.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(fd.wetsuitThickness.trim())
-              ? fd.wetsuitThickness.trim()
-              : null,
-          wetsuit_zip_type:
-            listingType === "used" &&
-            fd.category === WETSUITS_CATEGORY_ID &&
-            WETSUIT_ZIP_VALUES.includes(fd.wetsuitZipType as WetsuitZipValue)
-              ? fd.wetsuitZipType
-              : null,
-          leash_length:
-            listingType === "used" &&
-            fd.category === LEASHES_CATEGORY_ID &&
-            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(fd.leashLength.trim())
-              ? fd.leashLength.trim()
-              : null,
-          leash_thickness:
-            listingType === "used" &&
-            fd.category === LEASHES_CATEGORY_ID &&
-            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(fd.leashThickness.trim())
-              ? fd.leashThickness.trim()
-              : null,
-          collectible_type:
-            listingType === "used" &&
-            fd.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(fd.collectibleType)
-              ? fd.collectibleType
-              : null,
-          collectible_era:
-            listingType === "used" &&
-            fd.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(fd.collectibleEra)
-              ? fd.collectibleEra
-              : null,
-          collectible_condition:
-            listingType === "used" &&
-            fd.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(fd.collectibleCondition)
-              ? fd.collectibleCondition
-              : null,
+          brand: fd.brand.trim() ? fd.brand.trim() : null,
+          index_brand_slug: fd.boardIndexBrandSlug.trim() || null,
+          index_model_slug: fd.boardIndexModelSlug.trim() || null,
+          index_model_label: fd.boardIndexLabel.trim() || null,
         }
 
         if (ownerEditsOwnListing) {
@@ -1670,141 +1388,27 @@ function SellPageContent() {
           description: fd.description,
           price: parseFloat(fd.price),
           condition: fd.condition,
-          section: listingType === "board" ? "surfboards" : listingType,
+          section: "surfboards" as const,
           category_id: fd.category,
-          board_type: listingType === "board" ? fd.boardType : null,
-          length_feet:
-            listingType === "board" && fd.boardLengthFt
-              ? parseInt(fd.boardLengthFt)
-              : null,
-          length_inches:
-            listingType === "board" && fd.boardLengthFt
-              ? parseFloat(fd.boardLengthIn) || 0
-              : null,
-          width: listingType === "board" && fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
-          thickness: listingType === "board" && fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
-          volume: listingType === "board" && fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
-          fins_setup: listingType === "board" && fd.boardFins ? fd.boardFins : null,
-          tail_shape: listingType === "board" && fd.boardTail ? fd.boardTail : null,
-          latitude:
-            listingType === "board"
-              ? boardLocationLat
-              : fulfillmentRow.local_pickup && fd.locationLat
-                ? fd.locationLat
-                : null,
-          longitude:
-            listingType === "board"
-              ? boardLocationLng
-              : fulfillmentRow.local_pickup && fd.locationLng
-                ? fd.locationLng
-                : null,
-          city:
-            listingType === "board"
-              ? boardLocationCity
-              : fulfillmentRow.local_pickup
-                ? fd.locationCity
-                : null,
-          state:
-            listingType === "board"
-              ? boardLocationState
-              : fulfillmentRow.local_pickup
-                ? fd.locationState
-                : null,
+          board_type: fd.boardType,
+          length_feet: fd.boardLengthFt ? parseInt(fd.boardLengthFt, 10) : null,
+          length_inches: fd.boardLengthFt ? parseFloat(fd.boardLengthIn) || 0 : null,
+          width: fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
+          thickness: fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
+          volume: fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
+          fins_setup: fd.boardFins ? fd.boardFins : null,
+          tail_shape: fd.boardTail ? fd.boardTail : null,
+          latitude: boardLocationLat,
+          longitude: boardLocationLng,
+          city: boardLocationCity,
+          state: boardLocationState,
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
-          brand:
-            listingType === "board" && fd.brand.trim()
-              ? fd.brand.trim()
-              : listingType === "used" &&
-                  (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
-                  fd.brand.trim()
-                ? fd.brand.trim()
-                : null,
-          index_brand_slug: listingType === "board" ? fd.boardIndexBrandSlug.trim() || null : null,
-          index_model_slug: listingType === "board" ? fd.boardIndexModelSlug.trim() || null : null,
-          index_model_label: listingType === "board" ? fd.boardIndexLabel.trim() || null : null,
-          gear_size:
-            listingType === "used" &&
-            (fd.category === FINS_CATEGORY_ID ||
-              fd.category === BACKPACK_CATEGORY_ID ||
-              fd.category === BOARD_BAGS_CATEGORY_ID ||
-              fd.category === APPAREL_LIFESTYLE_CATEGORY_ID) &&
-            fd.gearSize.trim()
-              ? fd.gearSize.trim()
-              : null,
-          gear_color:
-            listingType === "used" &&
-            (fd.category === FINS_CATEGORY_ID || fd.category === BACKPACK_CATEGORY_ID) &&
-            fd.gearColor.trim()
-              ? fd.gearColor.trim()
-              : null,
-          pack_kind:
-            listingType === "used" &&
-            fd.category === BACKPACK_CATEGORY_ID &&
-            (fd.packKind === "surfpack" || fd.packKind === "bag")
-              ? fd.packKind
-              : null,
-          board_bag_kind:
-            listingType === "used" &&
-            fd.category === BOARD_BAGS_CATEGORY_ID &&
-            (fd.boardBagKind === "day" || fd.boardBagKind === "travel")
-              ? fd.boardBagKind
-              : null,
-          apparel_kind:
-            listingType === "used" &&
-            fd.category === APPAREL_LIFESTYLE_CATEGORY_ID &&
-            APPAREL_KIND_VALUES.includes(fd.apparelKind as ApparelKindValue)
-              ? fd.apparelKind
-              : null,
-          wetsuit_size:
-            listingType === "used" &&
-            fd.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_SIZE_OPTIONS as readonly string[]).includes(fd.wetsuitSize.trim())
-              ? fd.wetsuitSize.trim()
-              : null,
-          wetsuit_thickness:
-            listingType === "used" &&
-            fd.category === WETSUITS_CATEGORY_ID &&
-            (WETSUIT_THICKNESS_OPTIONS as readonly string[]).includes(fd.wetsuitThickness.trim())
-              ? fd.wetsuitThickness.trim()
-              : null,
-          wetsuit_zip_type:
-            listingType === "used" &&
-            fd.category === WETSUITS_CATEGORY_ID &&
-            WETSUIT_ZIP_VALUES.includes(fd.wetsuitZipType as WetsuitZipValue)
-              ? fd.wetsuitZipType
-              : null,
-          leash_length:
-            listingType === "used" &&
-            fd.category === LEASHES_CATEGORY_ID &&
-            (LEASH_LENGTH_FT_OPTIONS as readonly string[]).includes(fd.leashLength.trim())
-              ? fd.leashLength.trim()
-              : null,
-          leash_thickness:
-            listingType === "used" &&
-            fd.category === LEASHES_CATEGORY_ID &&
-            (LEASH_THICKNESS_OPTIONS as readonly string[]).includes(fd.leashThickness.trim())
-              ? fd.leashThickness.trim()
-              : null,
-          collectible_type:
-            listingType === "used" &&
-            fd.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_TYPE_VALUES as readonly string[]).includes(fd.collectibleType)
-              ? fd.collectibleType
-              : null,
-          collectible_era:
-            listingType === "used" &&
-            fd.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_ERA_VALUES as readonly string[]).includes(fd.collectibleEra)
-              ? fd.collectibleEra
-              : null,
-          collectible_condition:
-            listingType === "used" &&
-            fd.category === COLLECTIBLES_CATEGORY_ID &&
-            (COLLECTIBLE_CONDITION_VALUES as readonly string[]).includes(fd.collectibleCondition)
-              ? fd.collectibleCondition
-              : null,
+          brand: fd.brand.trim() ? fd.brand.trim() : null,
+          index_brand_slug: fd.boardIndexBrandSlug.trim() || null,
+          index_model_slug: fd.boardIndexModelSlug.trim() || null,
+          index_model_label: fd.boardIndexLabel.trim() || null,
         }
 
         if (listingImpersonation) {
@@ -1895,9 +1499,9 @@ function SellPageContent() {
           ? listingDetailHref({
               id: listingId,
               slug: listingSlug,
-              section: listingType === "board" ? "surfboards" : "used",
+              section: "surfboards",
             })
-          : "/gear"
+          : "/boards"
 
       if (listingId) {
         if (!editId && !listingImpersonation) {
@@ -2000,7 +1604,7 @@ function SellPageContent() {
             <CardHeader>
               <CardTitle>{editId ? "Edit listing" : "Create a Listing"}</CardTitle>
               <CardDescription>
-                {editId ? "Update your listing details" : "List an item for buyers on Reswell"}
+                {editId ? "Update your listing details" : "List your surfboard for buyers on Reswell"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2010,80 +1614,16 @@ function SellPageContent() {
                 </div>
               ) : (
               <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" aria-busy={loading}>
-                {/* Board vs Gear — scopes the category list */}
-                <div className="space-y-3">
-                  <Label className="text-base">What are you listing? *</Label>
-                  <div
-                    className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-                    role="group"
-                    aria-label="Listing type"
-                  >
-                    <button
-                      type="button"
-                      disabled={!!editId}
-                      onClick={() => handleSellKindChange("board")}
-                      className={cn(
-                        "flex flex-col items-start gap-1 rounded-lg border-2 p-4 text-left transition-colors",
-                        sellUiKind === "board"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted/50",
-                        editId && "cursor-default opacity-90",
-                      )}
-                      aria-pressed={sellUiKind === "board"}
-                    >
-                      <span className="flex items-center gap-2 font-semibold text-foreground">
-                        <Waves className="h-5 w-5 shrink-0" aria-hidden />
-                        Board
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Surfboards — list a board with dimensions &amp; shape details
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!!editId}
-                      onClick={() => handleSellKindChange("gear")}
-                      className={cn(
-                        "flex flex-col items-start gap-1 rounded-lg border-2 p-4 text-left transition-colors",
-                        sellUiKind === "gear"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted/50",
-                        editId && "cursor-default opacity-90",
-                      )}
-                      aria-pressed={sellUiKind === "gear"}
-                    >
-                      <span className="flex items-center gap-2 font-semibold text-foreground">
-                        <Package className="h-5 w-5 shrink-0" aria-hidden />
-                        Gear
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Fins, wetsuits, leashes, bags, apparel &amp; more
-                      </span>
-                    </button>
-                  </div>
-                  {editId && (
-                    <p className="text-xs text-muted-foreground">
-                      Listing type and category can&apos;t be changed while editing.
-                    </p>
-                  )}
-                </div>
-
-                {/* Category */}
                 <div className="space-y-2">
-                  <Label>Category *</Label>
+                  <Label>Board shape / category *</Label>
                   <Select
                     value={formData.category}
                     disabled={!!editId}
                     onValueChange={(value) => {
-                      const meta = sellCategoryOptions.find((c) => c.value === value)
-                      if (meta) setSellUiKind(meta.gear === true ? "gear" : "board")
                       setFormData((prev) => ({
                         ...prev,
                         category: value,
-                        boardType:
-                          meta?.board === true
-                            ? boardTypeFromCategoryId(value)
-                            : prev.boardType,
+                        boardType: boardTypeFromCategoryId(value),
                       }))
                     }}
                   >
@@ -2091,12 +1631,14 @@ function SellPageContent() {
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categoriesInCurrentKind.length === 0 ? (
+                      {boardCategoryOptions.length === 0 ? (
                         <SelectItem value="__loading__" disabled>
-                          {sellCategoryOptions.length === 0 ? "Loading categories…" : "No categories for this listing type"}
+                          {sellCategoryOptions.length === 0
+                            ? "Loading categories…"
+                            : "No board categories found — add rows with board = true in public.categories."}
                         </SelectItem>
                       ) : (
-                        categoriesInCurrentKind.map((cat) => (
+                        boardCategoryOptions.map((cat) => (
                           <SelectItem key={cat.value} value={cat.value}>
                             {cat.label}
                           </SelectItem>
@@ -2104,20 +1646,22 @@ function SellPageContent() {
                       )}
                     </SelectContent>
                   </Select>
+                  {editId && (
+                    <p className="text-xs text-muted-foreground">
+                      Category can&apos;t be changed while editing.
+                    </p>
+                  )}
                 </div>
 
-                {/* Title */}
-                {listingType === "board" && (
-                  <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
-                    <span>{boardFieldsCompleted} of 10 fields complete</span>
-                    <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all duration-300"
-                        style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
-                      />
-                    </div>
+                <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
+                  <span>{boardFieldsCompleted} of 10 fields complete</span>
+                  <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-300"
+                      style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
+                    />
                   </div>
-                )}
+                </div>
 
                 <div className="space-y-2">
                   <div className="flex items-end justify-between gap-2">
@@ -2136,10 +1680,10 @@ function SellPageContent() {
                   </div>
                   <p className="text-xs text-muted-foreground -mt-1">
                     Shown on your listing and in the URL. Max {LISTING_TITLE_MAX_LENGTH} characters
-                    {listingType === "board" ? " (including board length in the title)" : ""}.
+                    {" "}
+                    (including board length in the title).
                   </p>
-                  {listingType === "board" ? (
-                    <>
+                  <>
                       <SurfboardTitleIndexInput
                         id="title"
                         placeholder={`e.g., Channel Islands Dumpster Diver - 5'6"`}
@@ -2180,513 +1724,10 @@ function SellPageContent() {
                           </button>
                         </p>
                       )}
-                    </>
-                  ) : (
-                    <Input
-                      id="title"
-                      placeholder="e.g., Channel Islands Dumpster Diver - 5'6&quot;"
-                      value={formData.title}
-                      maxLength={LISTING_TITLE_MAX_LENGTH}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                    />
-                  )}
+                  </>
                 </div>
 
-                {listingType === "used" && (
-                  <>
-                    {formData.category === WETSUITS_CATEGORY_ID && (
-                      <div className="grid gap-4 sm:grid-cols-3 max-w-3xl">
-                        <div className="space-y-2">
-                          <Label>Size</Label>
-                          <Select
-                            value={formData.wetsuitSize || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, wetsuitSize: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {WETSUIT_SIZE_OPTIONS.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Thickness</Label>
-                          <Select
-                            value={formData.wetsuitThickness || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, wetsuitThickness: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {WETSUIT_THICKNESS_OPTIONS.map((t) => (
-                                <SelectItem key={t} value={t}>
-                                  {t}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Zip type</Label>
-                          <Select
-                            value={formData.wetsuitZipType || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({
-                                ...formData,
-                                wetsuitZipType: v === "__unset__" ? "" : (v as WetsuitZipValue),
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {WETSUIT_ZIP_OPTIONS.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                    {formData.category === LEASHES_CATEGORY_ID && (
-                      <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
-                        <div className="space-y-2">
-                          <Label>Length</Label>
-                          <Select
-                            value={formData.leashLength || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, leashLength: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {LEASH_LENGTH_FT_OPTIONS.map((ft) => (
-                                <SelectItem key={ft} value={ft}>
-                                  {leashLengthLabel(ft)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Thickness</Label>
-                          <Select
-                            value={formData.leashThickness || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, leashThickness: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {LEASH_THICKNESS_OPTIONS.map((t) => (
-                                <SelectItem key={t} value={t}>
-                                  {`${t}"`}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                    {formData.category === COLLECTIBLES_CATEGORY_ID && (
-                      <div className="grid gap-4 sm:grid-cols-3 max-w-3xl">
-                        <div className="space-y-2">
-                          <Label>Type</Label>
-                          <Select
-                            value={formData.collectibleType || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({
-                                ...formData,
-                                collectibleType: v === "__unset__" ? "" : (v as CollectibleTypeValue),
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {COLLECTIBLE_TYPE_OPTIONS.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Era</Label>
-                          <Select
-                            value={formData.collectibleEra || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({
-                                ...formData,
-                                collectibleEra: v === "__unset__" ? "" : (v as CollectibleEraValue),
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {COLLECTIBLE_ERA_OPTIONS.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Condition</Label>
-                          <Select
-                            value={formData.collectibleCondition || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({
-                                ...formData,
-                                collectibleCondition: v === "__unset__" ? "" : (v as CollectibleConditionValue),
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {COLLECTIBLE_CONDITION_OPTIONS.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                    {formData.category === FINS_CATEGORY_ID && (
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        <div className="space-y-2">
-                          <Label>Type</Label>
-                          <Select
-                            value={formData.brand || "__unset__"}
-                            onValueChange={(v) => {
-                              const newBrand = v === "__unset__" ? "" : v
-                              const sizeOpts =
-                                newBrand === "Single Fin"
-                                  ? (SINGLE_FIN_SIZE_OPTIONS as readonly string[])
-                                  : (USED_GEAR_SIZE_OPTIONS as readonly string[])
-                              let nextGearSize = formData.gearSize
-                              if (nextGearSize && !sizeOpts.includes(nextGearSize)) {
-                                nextGearSize = ""
-                              }
-                              setFormData({ ...formData, brand: newBrand, gearSize: nextGearSize })
-                            }}
-                          >
-                            <SelectTrigger id="fins-type">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {formData.brand &&
-                              !(FINS_TYPE_OPTIONS as readonly string[]).includes(formData.brand) ? (
-                                <SelectItem value={formData.brand}>
-                                  {formData.brand} (saved)
-                                </SelectItem>
-                              ) : null}
-                              {FINS_TYPE_OPTIONS.map((t) => (
-                                <SelectItem key={t} value={t}>
-                                  {t}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Size</Label>
-                          <Select
-                            value={formData.gearSize || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, gearSize: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger id="fins-size">
-                              <SelectValue placeholder="Select size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {(() => {
-                                const sizeOpts =
-                                  formData.brand === "Single Fin"
-                                    ? SINGLE_FIN_SIZE_OPTIONS
-                                    : USED_GEAR_SIZE_OPTIONS
-                                const inList = (sizeOpts as readonly string[]).includes(
-                                  formData.gearSize,
-                                )
-                                return formData.gearSize && !inList ? (
-                                  <SelectItem value={formData.gearSize}>
-                                    {formData.gearSize} (saved)
-                                  </SelectItem>
-                                ) : null
-                              })()}
-                              {(formData.brand === "Single Fin"
-                                ? SINGLE_FIN_SIZE_OPTIONS
-                                : USED_GEAR_SIZE_OPTIONS
-                              ).map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Color</Label>
-                          <Select
-                            value={formData.gearColor || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, gearColor: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger id="fins-color">
-                              <SelectValue placeholder="Select color" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {formData.gearColor &&
-                              !(USED_GEAR_COLOR_OPTIONS as readonly string[]).includes(
-                                formData.gearColor,
-                              ) ? (
-                                <SelectItem value={formData.gearColor}>
-                                  {formData.gearColor} (saved)
-                                </SelectItem>
-                              ) : null}
-                              {USED_GEAR_COLOR_OPTIONS.map((c) => (
-                                <SelectItem key={c} value={c}>
-                                  {c}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                    {formData.category === BACKPACK_CATEGORY_ID && (
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="space-y-2">
-                          <Label>Pack type</Label>
-                          <Select
-                            value={formData.packKind || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({
-                                ...formData,
-                                packKind: v === "__unset__" ? "" : (v as "surfpack" | "bag"),
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              <SelectItem value="surfpack">Surfpack</SelectItem>
-                              <SelectItem value="bag">Bag</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="pack-brand">Brand</Label>
-                          <BrandInputWithSuggestions
-                            id="pack-brand"
-                            placeholder="e.g., Dakine"
-                            value={formData.brand}
-                            onChange={(v) => setFormData({ ...formData, brand: v })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Size</Label>
-                          <Select
-                            value={formData.gearSize || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, gearSize: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Any" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {USED_GEAR_SIZE_OPTIONS.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Color</Label>
-                          <Select
-                            value={formData.gearColor || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, gearColor: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Any" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {USED_GEAR_COLOR_OPTIONS.map((c) => (
-                                <SelectItem key={c} value={c}>
-                                  {c}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                    {formData.category === BOARD_BAGS_CATEGORY_ID && (
-                      <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
-                        <div className="space-y-2 sm:col-span-2">
-                          <Label htmlFor="board-bag-brand">Brand</Label>
-                          <BrandInputWithSuggestions
-                            id="board-bag-brand"
-                            placeholder="e.g., Creatures of Leisure"
-                            value={formData.brand}
-                            onChange={(v) => setFormData({ ...formData, brand: v })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Board bag type</Label>
-                          <Select
-                            value={formData.boardBagKind || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({
-                                ...formData,
-                                boardBagKind: v === "__unset__" ? "" : (v as "day" | "travel"),
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              <SelectItem value="day">Day bag</SelectItem>
-                              <SelectItem value="travel">Travel bag</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Fits board length</Label>
-                          <Select
-                            value={formData.gearSize || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, gearSize: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {BOARD_BAG_LENGTH_OPTIONS.map((len) => (
-                                <SelectItem key={len} value={len}>
-                                  {len}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                    {formData.category === APPAREL_LIFESTYLE_CATEGORY_ID && (
-                      <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
-                        <div className="space-y-2 sm:col-span-2">
-                          <Label htmlFor="apparel-brand">Brand</Label>
-                          <BrandInputWithSuggestions
-                            id="apparel-brand"
-                            placeholder="e.g., Patagonia"
-                            value={formData.brand}
-                            onChange={(v) => setFormData({ ...formData, brand: v })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Item type</Label>
-                          <Select
-                            value={formData.apparelKind || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({
-                                ...formData,
-                                apparelKind: v === "__unset__" ? "" : (v as ApparelKindValue),
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {APPAREL_KIND_OPTIONS.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Size</Label>
-                          <Select
-                            value={formData.gearSize || "__unset__"}
-                            onValueChange={(v) =>
-                              setFormData({ ...formData, gearSize: v === "__unset__" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Not specified" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__unset__">Not specified</SelectItem>
-                              {APPAREL_SIZE_OPTIONS.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-                {listingType === "board" && (
-                  <>
+                <>
                     <div className="space-y-2">
                         <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
                         {formData.boardIndexBrandSlug && formData.boardIndexModelSlug ? (
@@ -2776,7 +1817,7 @@ function SellPageContent() {
                               value={formData.boardLengthFt}
                               onChange={(e) => setFormData({ ...formData, boardLengthFt: e.target.value })}
                               className="w-14 text-center px-2"
-                              required={listingType === "board"}
+                              required
                               aria-label="Feet"
                             />
                             <span className="text-xs text-muted-foreground shrink-0">ft</span>
@@ -3002,66 +2043,7 @@ function SellPageContent() {
                       </div>
                     </div>
                   </>
-                )}
 
-                {listingType === "used" ? (
-                  <div className="space-y-4 rounded-lg border border-border p-4">
-                    <div className="space-y-2">
-                      <Label>Shipping</Label>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData({ ...formData, boardFulfillment: "shipping_only", boardShippingPrice: "0" })
-                          }
-                          className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
-                            formData.boardFulfillment === "shipping_only" && formData.boardShippingPrice === "0"
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/40"
-                          }`}
-                        >
-                          <p className="font-medium">Free shipping</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">No extra cost to buyer</p>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData({
-                              ...formData,
-                              boardFulfillment: "shipping_only",
-                              boardShippingPrice: formData.boardShippingPrice === "0" ? "" : formData.boardShippingPrice,
-                            })
-                          }
-                          className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
-                            formData.boardFulfillment === "shipping_only" && formData.boardShippingPrice !== "0"
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/40"
-                          }`}
-                        >
-                          <p className="font-medium">Charge for shipping</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">Set a flat shipping fee</p>
-                        </button>
-                      </div>
-                    </div>
-                    {formData.boardShippingPrice !== "0" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="boardShippingPrice">Shipping price ($) *</Label>
-                        <Input
-                          id="boardShippingPrice"
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          placeholder="e.g. 8.99"
-                          value={formData.boardShippingPrice}
-                          onChange={(e) =>
-                            setFormData({ ...formData, boardShippingPrice: e.target.value })
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
                   <div className="space-y-4 rounded-lg border border-border p-4">
                     <div className="space-y-2">
                       <Label>How can buyers get this board? *</Label>
@@ -3143,8 +2125,6 @@ function SellPageContent() {
                     initialState={formData.locationState || undefined}
                     initialDisplay={formData.locationDisplay || undefined}
                   />
-                  </>
-                )}
 
                 {/* Price & Condition */}
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -3184,7 +2164,7 @@ function SellPageContent() {
                 {/* Description */}
                 <div className="space-y-2">
                   <Label htmlFor="description">
-                    Description{(listingType === "used" || listingType === "board") ? " *" : ""}
+                    Description *
                   </Label>
                   <div className={cn(
                     "relative rounded-md transition-all",
@@ -3192,18 +2172,14 @@ function SellPageContent() {
                   )}>
                     <Textarea
                       id="description"
-                      placeholder={
-                        listingType === "board"
-                          ? "Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
-                          : "Describe your item - include details about size, wear, included accessories, etc."
-                      }
+                      placeholder="Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
                       className="min-h-[120px] resize-none"
                       value={formData.description}
                       onChange={(e) => {
                         setFormData({ ...formData, description: e.target.value })
                         setDescriptionGenerated(false)
                       }}
-                      required={listingType === "used" || listingType === "board"}
+                      required
                       disabled={isGeneratingDescription}
                     />
                   </div>
@@ -3219,9 +2195,7 @@ function SellPageContent() {
                     )}
                   </div>
 
-                  {/* AI Generate button (board listings only) */}
-                  {listingType === "board" && (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Button
                           type="button"
@@ -3358,18 +2332,7 @@ function SellPageContent() {
                         </div>
                       </div>
                     </div>
-                  )}
                 </div>
-
-                {/* Used items are shipping only — no toggle; always shipped */}
-                {listingType === "used" && (
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <p className="text-sm font-medium text-foreground">Shipping only</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Used items are shipped to the buyer. Coordinate shipping details in messages after purchase.
-                    </p>
-                  </div>
-                )}
 
                 {/* Images */}
                 <div className="space-y-2">
@@ -3486,11 +2449,9 @@ function SellPageContent() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {listingType === "used" || listingType === "board"
-                      ? "Minimum 3 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. Any common phone/camera format is OK; unsupported types are converted to JPEG automatically."
-                      : "Only vertical (portrait) photos — height greater than width. First image is the main photo. Any common phone/camera format is OK; unsupported types are converted to JPEG automatically."}
+                    Minimum 3 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. Any common phone/camera format is OK; unsupported types are converted to JPEG automatically.
                   </p>
-                  {(listingType === "used" || listingType === "board") && images.length > 0 && images.length < 3 && (
+                  {images.length > 0 && images.length < 3 && (
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
                       Add {3 - images.length} more photo{3 - images.length !== 1 ? "s" : ""} to meet the minimum (3 required).
                     </p>

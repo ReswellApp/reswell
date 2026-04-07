@@ -24,38 +24,32 @@ CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (au
 CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "profiles_delete_own" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
--- Categories table (`board` / `gear` = marketplace buckets; neither = retail-only rows)
+-- Categories table (`board` = surfboard marketplace; neither = retail catalog for section=new)
 CREATE TABLE IF NOT EXISTS public.categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT NOT NULL UNIQUE,
   description TEXT,
   board BOOLEAN NOT NULL DEFAULT FALSE,
-  gear BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT categories_board_xor_gear CHECK (NOT (board AND gear))
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "categories_select_public" ON public.categories;
 CREATE POLICY "categories_select_public" ON public.categories FOR SELECT USING (true);
 
--- Insert default categories (board = surfboards marketplace, gear = used marketplace, neither = retail catalog)
-INSERT INTO public.categories (name, slug, description, board, gear) VALUES
-  ('Leashes', 'leashes', 'Surf leashes for all board types', FALSE, TRUE),
-  ('Fins', 'fins', 'Surfboard fins and fin systems', FALSE, TRUE),
-  ('Board Bags', 'board-bags', 'Travel and day bags for surfboards', FALSE, TRUE),
-  ('Wetsuits', 'wetsuits', 'Wetsuits for all water temperatures', FALSE, TRUE),
-  ('Traction Pads', 'traction-pads', 'Deck grips and traction pads', FALSE, FALSE),
-  ('Leashes', 'new-leashes', 'Brand new surf leashes', FALSE, FALSE),
-  ('Fins', 'new-fins', 'Brand new surfboard fins', FALSE, FALSE),
-  ('Wetsuits', 'new-wetsuits', 'Brand new wetsuits', FALSE, FALSE),
-  ('Board Bags', 'new-board-bags', 'Brand new board bags', FALSE, FALSE),
-  ('Shortboard', 'shortboard', 'Performance shortboards', TRUE, FALSE),
-  ('Fish', 'fish', 'Fish and retro shapes', TRUE, FALSE),
-  ('Mid-Length', 'mid-length', 'Mid-length funboards', TRUE, FALSE),
-  ('Longboard', 'longboard', 'Classic longboards', TRUE, FALSE),
-  ('Soft Top', 'soft-top', 'Foam and soft top boards', TRUE, FALSE)
+-- Insert default categories (board = surfboard P2P; neither = retail catalog)
+INSERT INTO public.categories (name, slug, description, board) VALUES
+  ('Traction Pads', 'traction-pads', 'Deck grips and traction pads', FALSE),
+  ('Leashes', 'new-leashes', 'Brand new surf leashes', FALSE),
+  ('Fins', 'new-fins', 'Brand new surfboard fins', FALSE),
+  ('Wetsuits', 'new-wetsuits', 'Brand new wetsuits', FALSE),
+  ('Board Bags', 'new-board-bags', 'Brand new board bags', FALSE),
+  ('Shortboard', 'shortboard', 'Performance shortboards', TRUE),
+  ('Fish', 'fish', 'Fish and retro shapes', TRUE),
+  ('Mid-Length', 'mid-length', 'Mid-length funboards', TRUE),
+  ('Longboard', 'longboard', 'Classic longboards', TRUE),
+  ('Soft Top', 'soft-top', 'Foam and soft top boards', TRUE)
 ON CONFLICT (slug) DO NOTHING;
 
 -- Listings table
@@ -67,7 +61,7 @@ CREATE TABLE IF NOT EXISTS public.listings (
   description TEXT NOT NULL,
   price DECIMAL(10, 2) NOT NULL,
   condition TEXT CHECK (condition IN ('new', 'like_new', 'good', 'fair')),
-  section TEXT NOT NULL CHECK (section IN ('used', 'new', 'surfboards')),
+  section TEXT NOT NULL CHECK (section IN ('new', 'surfboards')),
   shipping_available BOOLEAN DEFAULT FALSE,
   local_pickup BOOLEAN DEFAULT TRUE,
   shipping_price DECIMAL(10, 2),

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
-  if (listing.section !== "used" && listing.section !== "surfboards") {
+  if (listing.section !== "surfboards") {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
   }
 

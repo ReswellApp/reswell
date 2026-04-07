@@ -6,7 +6,7 @@
 const DB_NAME = "reswell-sell-draft"
 const STORE = "draft"
 const KEY = "current"
-export const SELL_LISTING_DRAFT_VERSION = 1
+export const SELL_LISTING_DRAFT_VERSION = 2
 
 export type SellListingDraftFormSnapshot = Record<string, unknown>
 
@@ -18,7 +18,7 @@ export type SellListingDraftImageBlob = {
 
 export type SellListingDraftRecord = {
   v: number
-  listingType: "used" | "board"
+  listingType: "board"
   formData: SellListingDraftFormSnapshot
   imageBlobs: SellListingDraftImageBlob[]
 }
@@ -84,7 +84,7 @@ export async function saveSellListingDraft(record: SellListingDraftRecord): Prom
 }
 
 export async function buildSellListingDraft(
-  listingType: "used" | "board",
+  listingType: "board",
   formData: SellListingDraftFormSnapshot,
   images: { file?: File }[],
 ): Promise<SellListingDraftRecord | null> {

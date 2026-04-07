@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import { findListingByParam } from "@/lib/listing-query"
 import { metadataForListingDetail } from "@/lib/listing-metadata"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
-import { UsedListingDetailPage } from "@/components/used-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 
 const META_SELECT =
@@ -51,8 +50,6 @@ export default async function ListingDetailPage(props: {
   switch (listing.section) {
     case "surfboards":
       return <SurfboardListingDetailPage listingParam={listingParam} />
-    case "used":
-      return <UsedListingDetailPage listing={listingParam} />
     case "new":
       return <ShopListingDetailPage listingParam={listingParam} />
     default:

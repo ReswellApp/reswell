@@ -9,12 +9,6 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { getProfileAddresses } from "@/app/actions/addresses"
 import type { CheckoutSeller } from "@/components/checkout-client"
 
-const USED_CHECKOUT_COPY: CheckoutCopy = {
-  itemLineLabel: "Item",
-  inspectNoun: "item",
-  priceContextNoun: "item",
-} as const
-
 function listingCheckoutLoginRedirect(listingParam: string) {
   const params = new URLSearchParams()
   params.set("listing", listingParam)
@@ -24,7 +18,7 @@ function listingCheckoutLoginRedirect(listingParam: string) {
 export default async function CheckoutPage(props: { searchParams: Promise<{ listing?: string }> }) {
   const { listing: listingParam } = await props.searchParams
   if (!listingParam?.trim()) {
-    redirect("/gear")
+    redirect("/boards")
   }
 
   const id = listingParam.trim()
@@ -61,7 +55,7 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
     redirect(listingDetailHref(listing))
   }
 
-  if (listing.section !== "used" && listing.section !== "surfboards") {
+  if (listing.section !== "surfboards") {
     notFound()
   }
 
@@ -71,8 +65,7 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
     notFound()
   }
 
-  const copy: CheckoutCopy | undefined =
-    listing.section === "used" ? USED_CHECKOUT_COPY : undefined
+  const copy: CheckoutCopy | undefined = undefined
 
   const { addresses: initialAddresses, error: addressesError } = await getProfileAddresses()
 

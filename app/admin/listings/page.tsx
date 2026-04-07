@@ -199,8 +199,7 @@ export default function AdminListingsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sections</SelectItem>
-                <SelectItem value="used">Used Gear</SelectItem>
-                <SelectItem value="new">New Items</SelectItem>
+                <SelectItem value="new">Shop (new)</SelectItem>
                 <SelectItem value="surfboards">Surfboards</SelectItem>
               </SelectContent>
             </Select>

@@ -240,7 +240,6 @@ export default async function SellerProfilePage({
     (l) => (l.status !== "active" || l.archived_at) && l.status !== "removed"
   )
 
-  const usedListings = currentListings.filter((l) => l.section === "used")
   const newListings = currentListings.filter((l) => l.section === "new")
   const boardListings = currentListings.filter(
     (l) => l.section === "surfboards"
@@ -342,7 +341,7 @@ export default async function SellerProfilePage({
                   <FollowButton
                     sellerId={shop.id}
                     sellerName={displayName}
-                    sellerSlug={shop.seller_slug ?? undefined}
+                    sellerSlug={shop.seller_slug || undefined}
                     sellerCity={shop.city || undefined}
                     initialFollowing={isFollowing}
                     initialFollowerCount={followerCount}
@@ -437,11 +436,6 @@ export default async function SellerProfilePage({
                 <TabsTrigger value="all">
                   Current ({currentListings.length})
                 </TabsTrigger>
-                {usedListings.length > 0 && (
-                  <TabsTrigger value="used">
-                    Used ({usedListings.length})
-                  </TabsTrigger>
-                )}
                 {newListings.length > 0 && (
                   <TabsTrigger value="new">
                     New ({newListings.length})
@@ -457,14 +451,6 @@ export default async function SellerProfilePage({
               <TabsContent value="all" className="mt-6">
                 <ListingGrid
                   listings={currentListings}
-                  favoritedIds={favoritedIds}
-                  isLoggedIn={!!user}
-                  viewerId={user?.id ?? null}
-                />
-              </TabsContent>
-              <TabsContent value="used" className="mt-6">
-                <ListingGrid
-                  listings={usedListings}
                   favoritedIds={favoritedIds}
                   isLoggedIn={!!user}
                   viewerId={user?.id ?? null}

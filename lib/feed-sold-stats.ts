@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 
-const MARKETPLACE_SECTIONS = ["used", "surfboards"] as const
+const MARKETPLACE_SECTIONS = ["surfboards"] as const
 
 function anonSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -65,7 +65,7 @@ const getCachedSoldFeedStats = unstable_cache(fetchSoldFeedStats, ["marketplace-
   revalidate: 600,
 })
 
-/** Cached ~10 minutes — public marketplace sold stats (used + surfboards). */
+/** Cached ~10 minutes — public marketplace sold stats (surfboards). */
 export function getSoldFeedStats(): Promise<{ soldCount: number; gmvTotal: number }> {
   return getCachedSoldFeedStats()
 }
