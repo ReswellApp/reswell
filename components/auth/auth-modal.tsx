@@ -50,6 +50,7 @@ export function AuthModal({
         ) : (
           <SignUpFormPanel
             variant="modal"
+            redirectTo={redirectTo}
             onSignUpSuccess={onClose}
             footerLogin={
               <Button

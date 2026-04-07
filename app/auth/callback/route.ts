@@ -1,4 +1,8 @@
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
+import {
+  shouldTrackKlaviyoNewAccountForOAuthSession,
+  trackKlaviyoNewAccountCreated,
+} from "@/lib/klaviyo/track-new-account-created";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -16,8 +20,14 @@ export async function GET(request: NextRequest) {
       request,
       redirectResponse,
     );
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const u = data.session?.user;
+      if (u && shouldTrackKlaviyoNewAccountForOAuthSession(u)) {
+        await trackKlaviyoNewAccountCreated(u, {
+          supabaseForProfile: supabase,
+        });
+      }
       redirectResponse.headers.set("Cache-Control", "private, no-store");
       return redirectResponse;
     }
@@ -30,11 +40,17 @@ export async function GET(request: NextRequest) {
       request,
       redirectResponse,
     );
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       token_hash,
       type: type as "email" | "signup" | "recovery" | "invite",
     });
     if (!error) {
+      const u = data.user ?? data.session?.user;
+      if (type === "signup" && u) {
+        await trackKlaviyoNewAccountCreated(u, {
+          supabaseForProfile: supabase,
+        });
+      }
       redirectResponse.headers.set("Cache-Control", "private, no-store");
       return redirectResponse;
     }

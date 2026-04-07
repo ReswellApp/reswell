@@ -16,17 +16,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
+import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { validateDisplayName } from "@/lib/display-name-validation"
 
 export function SignUpFormPanel({
   variant = "page",
+  redirectTo = "/dashboard",
   footerLogin,
   onSignUpSuccess,
 }: {
   variant?: "page" | "modal"
+  /** Post-signup destination when the user receives a session (email confirmation off in Supabase). */
+  redirectTo?: string
   /** Override “Login” link (e.g. switch to login in modal). */
   footerLogin?: ReactNode
-  /** Called right before navigating to the confirmation page (e.g. close auth modal). */
+  /** Called after successful signup before navigation (e.g. close auth modal). */
   onSignUpSuccess?: () => void
 }) {
   const [displayName, setDisplayName] = useState("")
@@ -40,9 +44,9 @@ export function SignUpFormPanel({
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) router.push("/dashboard")
+      if (user) router.push(redirectTo)
     })
-  }, [router])
+  }, [router, redirectTo])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,31 +75,52 @@ export function SignUpFormPanel({
     }
 
     try {
-      let redirectTo = window.location.origin
+      let siteOrigin = window.location.origin
       const devOverride = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL?.trim()
       if (devOverride && process.env.NODE_ENV === "development") {
         try {
           const u = new URL(devOverride.startsWith("http") ? devOverride : `https://${devOverride}`)
           if (u.hostname === "localhost" || u.hostname === "127.0.0.1") {
-            redirectTo = `${u.protocol}//${u.host}`
+            siteOrigin = `${u.protocol}//${u.host}`
           }
         } catch {
           /* keep window.location.origin */
         }
       }
-      const { error: signError } = await supabase.auth.signUp({
+      const { data: signData, error: signError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${redirectTo}/auth/confirm`,
+          emailRedirectTo: `${siteOrigin}/auth/confirm`,
           data: {
             display_name: name!,
           },
         },
       })
       if (signError) throw signError
-      onSignUpSuccess?.()
-      router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`)
+      if (signData.session?.user) {
+        try {
+          await fetch("/api/integrations/klaviyo/new-account-created", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${signData.session.access_token}`,
+            },
+          })
+        } catch {
+          /* Klaviyo must not block signup */
+        }
+        await supabase.auth.getSession()
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+        }
+        onSignUpSuccess?.()
+        router.push(redirectTo)
+        router.refresh()
+      } else {
+        onSignUpSuccess?.()
+        router.push("/auth/login")
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
@@ -110,7 +135,7 @@ export function SignUpFormPanel({
         <CardDescription>Create an account to buy, sell, and trade surf gear</CardDescription>
       </CardHeader>
       <CardContent className={`flex flex-col gap-6 ${variant === "modal" ? "px-0 pb-0" : ""}`}>
-        <GoogleOAuthButton nextPath="/dashboard" />
+        <GoogleOAuthButton nextPath={redirectTo} />
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <Separator />

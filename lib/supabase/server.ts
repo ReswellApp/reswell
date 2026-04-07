@@ -58,6 +58,25 @@ export function createAnonSupabaseClient() {
 }
 
 /**
+ * RLS as the user for this JWT — use when the session cookie is not on the request yet
+ * (e.g. immediately after `signUp` before the browser persists SSR auth cookies).
+ */
+export function createUserJwtSupabaseClient(accessToken: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) {
+    throw new Error(
+      'Missing Supabase env: add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local or .env (see .env.example). Get values from https://supabase.com/dashboard/project/_/settings/api'
+    )
+  }
+  return createSupabaseClient(url, key, {
+    global: {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  })
+}
+
+/**
  * Service role client for server-only use (e.g. webhooks). Bypasses RLS.
  * Only use when no user session is available.
  */
