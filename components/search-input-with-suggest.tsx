@@ -40,7 +40,7 @@ interface SearchInputWithSuggestProps {
   onChange: (value: string) => void
   onSelect?: (value: string) => void
   placeholder?: string
-  /** "used" | "surfboards" to scope suggestions */
+  /** "surfboards" | "new" to scope suggestions (default surfboards when empty). */
   section?: string
   className?: string
   inputClassName?: string
@@ -72,7 +72,7 @@ function listingHref(listing: SuggestListing) {
 
 function listingSectionLabel(section: string) {
   if (section === "surfboards") return "Surfboard"
-  if (section === "used") return "Used gear"
+  if (section === "new") return "Shop"
   return "Listing"
 }
 

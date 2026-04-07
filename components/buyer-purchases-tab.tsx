@@ -139,7 +139,7 @@ export function BuyerOrdersTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Peer-to-peer buys (used gear, surfboards, Reswell Bucks or card).
+          Peer-to-peer buys (surfboards, Reswell Bucks or card).
         </p>
         <Button asChild size="sm" variant="outline">
           <Link href="/dashboard/orders">Open full page</Link>

@@ -16,8 +16,8 @@ interface ContactSellerFormProps {
   sellerId: string
   listingTitle: string
   isLoggedIn: boolean
-  /** Used for shipping-only; surfboards for pickup. Affects quick-message options. */
-  section?: "used" | "surfboards"
+  /** Surfboard listings: shipping vs local pickup affects quick-message options. */
+  section?: "surfboards"
   /** Surfboards: seller offers shipping (shows shipping-related quick prompts). */
   shippingAvailable?: boolean
 }
@@ -35,28 +35,20 @@ export function ContactSellerForm({
   const [sending, setSending] = useState(false)
   const router = useRouter()
 
-  const quickMessages =
-    section === "used"
-      ? [
-          "Hi, is this still available?",
-          "What's the lowest you'll accept?",
-          "Can I see more photos?",
-          "When can you ship?",
-        ]
-      : shippingAvailable
-        ? [
-            "Hi, is this still available?",
-            "What's the lowest you'll accept?",
-            "Can I see more photos?",
-            "Where can we meet for pickup?",
-            "Can you ship this board to me?",
-          ]
-        : [
-            "Hi, is this still available?",
-            "What's the lowest you'll accept?",
-            "Can I see more photos?",
-            "Where can we meet for pickup?",
-          ]
+  const quickMessages = shippingAvailable
+    ? [
+        "Hi, is this still available?",
+        "What's the lowest you'll accept?",
+        "Can I see more photos?",
+        "Where can we meet for pickup?",
+        "Can you ship this board to me?",
+      ]
+    : [
+        "Hi, is this still available?",
+        "What's the lowest you'll accept?",
+        "Can I see more photos?",
+        "Where can we meet for pickup?",
+      ]
 
   async function handleSend() {
     if (!message.trim()) {

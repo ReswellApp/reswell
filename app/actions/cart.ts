@@ -47,7 +47,7 @@ async function assertListingEligibleForCart(
   }
 
   const listing = row as PeerListingCartFields
-  if (listing.section !== "used" && listing.section !== "surfboards") {
+  if (listing.section !== "surfboards") {
     return { ok: false, message: "This listing cannot be added to cart" }
   }
   if (listing.status !== "active" && listing.status !== "pending_sale") {
@@ -133,7 +133,7 @@ export async function addCartItem(listingId: string): Promise<{ ok: boolean; err
           ? listingRow.price
           : Number(listingRow.price),
       slug: listingRow.slug ?? null,
-      section: String(listingRow.section ?? "used"),
+      section: String(listingRow.section ?? "surfboards"),
       photoUrl,
     })
   }

@@ -61,7 +61,7 @@ export function CartPageView({
           <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
           <p className="text-muted-foreground mb-8">
-            Save listings from surfboards and used gear while you browse, then check out when you are ready.
+            Save surfboard listings while you browse, then check out when you are ready.
           </p>
           <Button asChild>
             <Link href="/boards">Browse surfboards</Link>

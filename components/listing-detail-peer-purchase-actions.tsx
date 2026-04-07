@@ -19,7 +19,7 @@ export function ListingDetailPeerPurchaseActions({
   listingId: string
   /** Slug or id for `/checkout?listing=` */
   checkoutListingParam: string
-  section: "used" | "surfboards"
+  section: "surfboards"
   isLoggedIn: boolean
 }) {
   const [loading, setLoading] = useState(false)

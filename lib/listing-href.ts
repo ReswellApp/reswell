@@ -17,15 +17,7 @@ export function boardDetailHref(board: { id: string; slug?: string | null }): st
   return `/l/${board.slug || board.id}`
 }
 
-export function usedDetailHref(listing: {
-  id: string
-  slug?: string | null
-  categories?: { slug?: string | null } | Array<{ slug?: string | null }> | null
-}): string {
-  return listingDetailHref({ ...listing, section: "used" })
-}
-
-/** Peer-to-peer checkout (used gear + surfboards). */
+/** Peer-to-peer checkout (surfboards). */
 export function peerListingCheckoutHref(_listingSection: string, listingSlugOrId: string): string {
   const params = new URLSearchParams()
   params.set("listing", listingSlugOrId)

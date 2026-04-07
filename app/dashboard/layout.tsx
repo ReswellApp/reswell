@@ -30,7 +30,6 @@ const sidebarLinks = [
   { name: "My Followers", href: "/dashboard/followers", icon: Users },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
-  { name: "Seller profile", href: "/dashboard/profile", icon: Store },
   { name: "Profile", href: "/dashboard/settings", icon: UserCircle },
   { name: "Settings", href: "/dashboard/preferences", icon: Settings },
 ]

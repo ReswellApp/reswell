@@ -21,7 +21,7 @@ export function listingDetailPath(listing: {
 /**
  * Look up a listing by its slug (preferred) or UUID (backward compat).
  * - redirectSlug: URL used a UUID and the row belongs on this route; redirect to slug within the same section.
- * - canonicalPath: listing exists but under a different section (e.g. opened a used URL for a surfboard); redirect here.
+ * - canonicalPath: listing exists but the URL does not match the listing’s canonical path; redirect here.
  */
 export async function findListingByParam(
   supabase: SupabaseClient,

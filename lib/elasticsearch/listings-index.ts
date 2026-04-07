@@ -99,7 +99,7 @@ export async function deleteListingDocument(listingId: string): Promise<void> {
 }
 
 /** @deprecated Legacy search UI; ES listing search defaults to surfboards-only marketplace scope. */
-export type SearchSectionFilter = "all" | "used" | "boards"
+export type SearchSectionFilter = "all" | "boards"
 
 const SEARCH_FIELDS = [
   "title^3",
@@ -346,7 +346,7 @@ export async function syncListingToIndex(
   const doc = await listingRowToSearchDoc(supabase, listingId)
   if (!doc) return
 
-  if (doc.status !== "active" || !["used", "surfboards"].includes(doc.section)) {
+  if (doc.status !== "active" || doc.section !== "surfboards") {
     await deleteListingDocument(listingId)
     return
   }

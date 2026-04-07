@@ -12,7 +12,6 @@ export type MarketplaceCategoryRow = {
   name: string
   slug: string
   board?: boolean | null
-  gear?: boolean | null
 }
 
 interface SearchCategoryFiltersProps {
@@ -24,7 +23,7 @@ interface SearchCategoryFiltersProps {
   curated?: boolean
 }
 
-/** Marketplace search filter: `public.categories` rows with `board` or `gear` set. Default = all board listings. */
+/** Marketplace search filter: `public.categories` rows with `board` set (surfboard types). */
 export function SearchCategoryFilters({
   query,
   selectedSlug,

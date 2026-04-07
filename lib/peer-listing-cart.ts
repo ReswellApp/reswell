@@ -14,7 +14,7 @@ export function computePeerCartPriceAction(
   viewerId: string | null,
   listing: PeerListingCartFields,
 ): ListingTilePriceAction | null {
-  if (listing.section !== "used" && listing.section !== "surfboards") return null
+  if (listing.section !== "surfboards") return null
   if (listing.status !== "active" && listing.status !== "pending_sale") return null
   const lp = listing.local_pickup !== false
   const sa = !!listing.shipping_available
