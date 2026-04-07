@@ -4,7 +4,7 @@ import { MarketingCtaBanner } from "@/components/marketing-cta-banners"
 export function SellersPageSellCta() {
   return (
     <MarketingCtaBanner
-      href="/dashboard/settings"
+      href="/dashboard/profile"
       title="Sell on Reswell"
       description="List your gear and reach local surfers. Set up your seller profile in minutes."
       ctaLabel="Become a seller"

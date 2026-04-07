@@ -29,7 +29,7 @@ const sidebarLinks = [
   { name: "My Followers", href: "/dashboard/followers", icon: Users },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
-  { name: "Profile", href: "/dashboard/settings", icon: UserCircle },
+  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]
 
 export default async function DashboardLayout({

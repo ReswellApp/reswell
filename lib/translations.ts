@@ -76,7 +76,7 @@ type Translations = {
 
 const en: Translations = {
   settings: {
-    title: 'Settings',
+    title: 'Profile',
     subtitle: 'Manage your account and public profile',
     profileTab: 'Profile',
     profile: {
@@ -142,7 +142,7 @@ const en: Translations = {
 
 const es: Translations = {
   settings: {
-    title: 'Ajustes',
+    title: 'Perfil',
     subtitle: 'Administra tu cuenta y perfil público',
     profileTab: 'Perfil',
     profile: {
