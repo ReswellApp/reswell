@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 
 export type CartListingRow = {
@@ -89,6 +90,52 @@ export async function addCartItem(listingId: string): Promise<{ ok: boolean; err
       return { ok: true, error: null }
     }
     return { ok: false, error: error.message }
+  }
+
+  const [{ data: listingRow }, { data: firstImage }, { data: profileRow }] =
+    await Promise.all([
+      supabase
+        .from("listings")
+        .select("id, title, price, slug, section")
+        .eq("id", listingId)
+        .maybeSingle(),
+      supabase
+        .from("listing_images")
+        .select("url, thumbnail_url")
+        .eq("listing_id", listingId)
+        .order("sort_order", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ])
+
+  if (listingRow) {
+    const photoUrl =
+      (firstImage?.thumbnail_url &&
+        String(firstImage.thumbnail_url).trim()) ||
+      (firstImage?.url && String(firstImage.url).trim()) ||
+      null
+    const buyerEmail =
+      (typeof profileRow?.email === "string" && profileRow.email.trim()
+        ? profileRow.email.trim()
+        : null) || user.email?.trim() || null
+    void trackKlaviyoAddedToCart({
+      buyerUserId: user.id,
+      buyerEmail,
+      listingId: listingRow.id,
+      title: String(listingRow.title ?? ""),
+      price:
+        typeof listingRow.price === "number"
+          ? listingRow.price
+          : Number(listingRow.price),
+      slug: listingRow.slug ?? null,
+      section: String(listingRow.section ?? "used"),
+      photoUrl,
+    })
   }
 
   revalidatePath("/cart")
