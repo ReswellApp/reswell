@@ -26,13 +26,12 @@ import {
   Upload,
   Loader2,
   X,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Check,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Sparkles,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -76,8 +75,7 @@ import {
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
 import { cn } from "@/lib/utils"
-
-const LISTING_TAG_SELECT_NONE = "__none__"
+import { BrandInputWithSuggestions } from "@/components/brand-input-with-suggestions"
 import { listingDetailPath } from "@/lib/listing-query"
 import {
   validateSellListingForm,
@@ -86,18 +84,6 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
-import {
-  FIN_SETUP_TAG_OPTIONS,
-  parseFinsSetupFromStorage,
-  serializeFinsSetupTags,
-  singleFinSetupSlugForForm,
-} from "@/lib/listing-fin-setup-tags"
-import {
-  parseTailShapeFromStorage,
-  serializeTailShapeTags,
-  singleTailShapeSlugForForm,
-  TAIL_SHAPE_TAG_OPTIONS,
-} from "@/lib/listing-tail-shape-tags"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -110,46 +96,13 @@ function submitErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
-function SellFormSection({
-  title,
-  description,
-  children,
-  className,
-  complete,
-}: {
-  title: string
-  description?: string
-  children: React.ReactNode
-  className?: string
-  complete?: boolean
-}) {
-  return (
-    <section className={cn("scroll-mt-24 space-y-4", className)}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
-          {description ? (
-            <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-          ) : null}
-        </div>
-        {complete ? (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
-            <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-            Done
-          </span>
-        ) : null}
-      </div>
-      <div className="space-y-4">{children}</div>
-    </section>
-  )
-}
+type DimMode = "decimal" | "fraction"
 
 function formatDecimalDimension(value: number): string {
   if (!Number.isFinite(value)) return ""
   return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(3)))
 }
 
-/** Parse typed dimensions: decimals, fractions (5/16), or mixed (2 5/16). */
 function parseDimension(input: string): number | null {
   const normalized = input.trim()
   if (!normalized) return null
@@ -157,6 +110,7 @@ function parseDimension(input: string): number | null {
     const decimal = Number.parseFloat(normalized)
     return Number.isFinite(decimal) ? decimal : null
   }
+
   const mixedFraction = normalized.match(/^(\d+)\s+(\d+)\/(\d+)$/)
   if (mixedFraction) {
     const whole = Number.parseInt(mixedFraction[1], 10)
@@ -165,6 +119,7 @@ function parseDimension(input: string): number | null {
     if (!denominator || numerator >= denominator) return null
     return whole + numerator / denominator
   }
+
   const fraction = normalized.match(/^(\d+)\/(\d+)$/)
   if (fraction) {
     const numerator = Number.parseInt(fraction[1], 10)
@@ -172,11 +127,11 @@ function parseDimension(input: string): number | null {
     if (!denominator || numerator >= denominator) return null
     return numerator / denominator
   }
+
   return null
 }
 
-/** Human-readable inches for summaries (e.g. 19.5 → 19 1/2). */
-function formatDimensionInches(value: number): string {
+function formatDimension(value: number): string {
   if (!Number.isFinite(value)) return ""
   const whole = Math.floor(value)
   const fraction = value - whole
@@ -185,11 +140,14 @@ function formatDimensionInches(value: number): string {
   const numerator = Math.round(fraction * denominator)
   if (numerator === 0) return String(whole)
   if (numerator === denominator) return String(whole + 1)
+
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
-  const g = gcd(numerator, denominator)
-  const n = numerator / g
-  const d = denominator / g
-  return whole > 0 ? `${whole} ${n}/${d}` : `${n}/${d}`
+  const divisor = gcd(numerator, denominator)
+  const reducedNumerator = numerator / divisor
+  const reducedDenominator = denominator / divisor
+  return whole > 0
+    ? `${whole} ${reducedNumerator}/${reducedDenominator}`
+    : `${reducedNumerator}/${reducedDenominator}`
 }
 
 // Board type to category UUID mapping
@@ -272,6 +230,8 @@ function SellPageContent() {
 
   const [loading, setLoading] = useState(false)
   const [submitStepIndex, setSubmitStepIndex] = useState(0)
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [descriptionGenerated, setDescriptionGenerated] = useState(false)
   const submitStepIndexRef = useRef(0)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -315,7 +275,9 @@ function SellPageContent() {
     boardVolumeL: "",
     boardFins: "",
     boardTail: "",
-    boardBrandId: "",
+    boardIndexBrandSlug: "",
+    boardIndexModelSlug: "",
+    boardIndexLabel: "",
     locationLat: 0,
     locationLng: 0,
     locationCity: "",
@@ -334,10 +296,16 @@ function SellPageContent() {
 
   const listingType = "board" as const
 
-  const [widthDimText, setWidthDimText] = useState("")
-  const [thicknessDimText, setThicknessDimText] = useState("")
-  const [widthDimError, setWidthDimError] = useState("")
-  const [thicknessDimError, setThicknessDimError] = useState("")
+  const [dimMode, setDimMode] = useState<DimMode>("decimal")
+  const [widthFractionInput, setWidthFractionInput] = useState("")
+  const [thicknessFractionInput, setThicknessFractionInput] = useState("")
+  const [inchesFractionInput, setInchesFractionInput] = useState("")
+  const [widthFractionError, setWidthFractionError] = useState("")
+  const [thicknessFractionError, setThicknessFractionError] = useState("")
+  const [inchesFractionError, setInchesFractionError] = useState("")
+  const [widthParsedHint, setWidthParsedHint] = useState("")
+  const [thicknessParsedHint, setThicknessParsedHint] = useState("")
+  const [inchesParsedHint, setInchesParsedHint] = useState("")
 
   const sellDraftLatestRef = useRef({
     listingType: "board" as const,
@@ -439,8 +407,20 @@ function SellPageContent() {
     if (!ft || isNaN(parseInt(ft, 10))) return ""
     const inches = parseFloat(formData.boardLengthIn)
     if (!Number.isFinite(inches)) return `${parseInt(ft, 10)}'0"`
-    return `${parseInt(ft, 10)}'${formatDecimalDimension(inches)}"`
-  }, [formData.boardLengthFt, formData.boardLengthIn])
+    return dimMode === "fraction"
+      ? `${parseInt(ft, 10)}'${formatDimension(inches)}"`
+      : `${parseInt(ft, 10)}'${formatDecimalDimension(inches)}"`
+  }, [dimMode, formData.boardLengthFt, formData.boardLengthIn])
+
+  const fractionWidthPreview = useMemo(() => {
+    const width = parseFloat(formData.boardWidthInches)
+    return Number.isFinite(width) ? formatDimension(width) : ""
+  }, [formData.boardWidthInches])
+
+  const fractionThicknessPreview = useMemo(() => {
+    const thickness = parseFloat(formData.boardThicknessInches)
+    return Number.isFinite(thickness) ? formatDimension(thickness) : ""
+  }, [formData.boardThicknessInches])
 
   const estimatedVolume = useMemo(() => {
     const ft = parseInt(formData.boardLengthFt, 10)
@@ -460,75 +440,90 @@ function SellPageContent() {
       formData.boardLengthFt.trim(),
       formData.boardWidthInches.trim(),
       formData.boardThicknessInches.trim(),
+      formData.boardFins,
+      formData.boardTail,
       formData.condition,
       formData.price.trim(),
       formData.description.trim(),
     ].filter(Boolean).length
-  }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.condition, formData.price, formData.description])
+  }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
 
-  const basicsComplete = useMemo(
-    () =>
-      Boolean(
-        formData.category?.trim() &&
-          formData.title?.trim() &&
-          resolvedTitlePreview.length <= LISTING_TITLE_MAX_LENGTH,
-      ),
-    [formData.category, formData.title, resolvedTitlePreview.length],
-  )
-
-  const photosComplete = useMemo(() => images.length >= 3, [images.length])
-
-  const specsComplete = useMemo(
-    () =>
-      Boolean(
-        formData.boardLengthFt?.trim() &&
-          formData.boardWidthInches?.trim() &&
-          formData.boardThicknessInches?.trim(),
-      ),
-    [formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches],
-  )
-
-  const pickupComplete = useMemo(() => {
-    const city = formData.locationCity?.trim()
-    const st = formData.locationState?.trim()
-    if (!city || !st) return false
-    const flags = flagsFromBoardFulfillment(formData.boardFulfillment)
-    if (flags.shipping_available) {
-      const raw = formData.boardShippingPrice?.trim() ?? ""
-      if (raw === "") return false
-      const sp = parseFloat(raw)
-      if (!Number.isFinite(sp) || sp < 0) return false
+  const commitFractionField = (
+    rawValue: string,
+    setRaw: (next: string) => void,
+    applyDecimal: (decimalValue: string) => void,
+    setError: (value: string) => void,
+    setHint: (value: string) => void,
+    unitLabel: string
+  ) => {
+    const trimmed = rawValue.trim()
+    if (!trimmed) {
+      applyDecimal("")
+      setError("")
+      setHint("")
+      return
     }
-    return true
-  }, [
-    formData.locationCity,
-    formData.locationState,
-    formData.boardFulfillment,
-    formData.boardShippingPrice,
-  ])
+    const parsed = parseDimension(trimmed)
+    if (parsed == null) {
+      setError("Enter a measurement like 19 1/2 or 19.5")
+      setHint("")
+      return
+    }
+    const normalized = formatDimension(parsed)
+    setRaw(normalized)
+    applyDecimal(formatDecimalDimension(parsed))
+    setError("")
+    setHint(`= ${formatDecimalDimension(parsed)} ${unitLabel}`)
+  }
 
-  const priceComplete = useMemo(() => {
-    if (!formData.price?.trim() || !formData.condition?.trim()) return false
-    const price = parseFloat(formData.price.trim())
-    return Number.isFinite(price) && price >= 0.01 && price <= 999_999.99
-  }, [formData.price, formData.condition])
+  const switchMode = (newMode: DimMode) => {
+    if (newMode === dimMode) return
 
-  const descriptionComplete = useMemo(
-    () => formData.description.trim().length > 0,
-    [formData.description],
-  )
+    if (newMode === "fraction") {
+      const width = parseFloat(formData.boardWidthInches)
+      const thickness = parseFloat(formData.boardThicknessInches)
+      const inches = parseFloat(formData.boardLengthIn)
+      setWidthFractionInput(Number.isFinite(width) ? formatDimension(width) : "")
+      setThicknessFractionInput(Number.isFinite(thickness) ? formatDimension(thickness) : "")
+      setInchesFractionInput(Number.isFinite(inches) ? formatDimension(inches) : "")
+      setWidthFractionError("")
+      setThicknessFractionError("")
+      setInchesFractionError("")
+      setWidthParsedHint("")
+      setThicknessParsedHint("")
+      setInchesParsedHint("")
+    } else {
+      const parsedWidth = parseDimension(widthFractionInput)
+      const parsedThickness = parseDimension(thicknessFractionInput)
+      const parsedInches = parseDimension(inchesFractionInput)
+      setFormData((prev) => ({
+        ...prev,
+        boardWidthInches: parsedWidth != null ? formatDecimalDimension(parsedWidth) : "",
+        boardThicknessInches: parsedThickness != null ? formatDecimalDimension(parsedThickness) : "",
+        boardLengthIn: parsedInches != null ? formatDecimalDimension(parsedInches) : "",
+      }))
+      setWidthFractionError("")
+      setThicknessFractionError("")
+      setInchesFractionError("")
+      setWidthParsedHint("")
+      setThicknessParsedHint("")
+      setInchesParsedHint("")
+    }
+
+    setDimMode(newMode)
+  }
 
   // Smart title suggestion when brand + model index + length are all filled
   const suggestedTitle = useMemo(() => {
-    if (!formData.boardBrandId || !formData.brand.trim() || !boardLengthFormatted) return null
-    let suggested = `${formData.brand.trim()} - ${boardLengthFormatted}`
+    if (!formData.boardIndexLabel || !boardLengthFormatted) return null
+    let suggested = `${formData.boardIndexLabel} - ${boardLengthFormatted}`
     if (suggested.length > LISTING_TITLE_MAX_LENGTH) {
       suggested = suggested.slice(0, LISTING_TITLE_MAX_LENGTH)
     }
     const currentTitle = formData.title.trim()
     if (currentTitle.toLowerCase() === suggested.toLowerCase()) return null
     return suggested
-  }, [formData.boardBrandId, formData.brand, boardLengthFormatted, formData.title])
+  }, [formData.boardIndexLabel, boardLengthFormatted, formData.title])
 
   useEffect(() => {
     if (editId) {
@@ -543,34 +538,7 @@ function SellPageContent() {
         setDraftHydrated(true)
         return
       }
-      const partial = draft.formData as Partial<SellListingDraftFormSnapshot>
-      setFormData((prev) => ({
-        ...prev,
-        ...partial,
-        ...(partial.boardFins !== undefined
-          ? { boardFins: singleFinSetupSlugForForm(partial.boardFins) }
-          : {}),
-        ...(partial.boardTail !== undefined
-          ? { boardTail: singleTailShapeSlugForForm(partial.boardTail) }
-          : {}),
-      }))
-      const wDraft = typeof partial.boardWidthInches === "string" ? partial.boardWidthInches.trim() : ""
-      const tDraft =
-        typeof partial.boardThicknessInches === "string" ? partial.boardThicknessInches.trim() : ""
-      if (wDraft) {
-        const pv = parseFloat(wDraft)
-        if (Number.isFinite(pv)) setWidthDimText(formatDimensionInches(pv))
-      } else {
-        setWidthDimText("")
-      }
-      if (tDraft) {
-        const pv = parseFloat(tDraft)
-        if (Number.isFinite(pv)) setThicknessDimText(formatDimensionInches(pv))
-      } else {
-        setThicknessDimText("")
-      }
-      setWidthDimError("")
-      setThicknessDimError("")
+      setFormData((prev) => ({ ...prev, ...(draft.formData as Partial<typeof prev>) }))
       const restored: ListingPhotoSlot[] = []
       for (const b of draft.imageBlobs) {
         const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
@@ -687,7 +655,9 @@ function SellPageContent() {
           shipping_available,
           shipping_price,
           brand,
-          brand_id,
+          index_brand_slug,
+          index_model_slug,
+          index_model_label,
           listing_images (id, url, thumbnail_url, is_primary, sort_order)
         `
         )
@@ -745,6 +715,7 @@ function SellPageContent() {
         price: String(listing.price ?? ""),
         category: listing.category_id ?? "",
         condition: listing.condition ?? "",
+        brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         boardFulfillment: loadedFulfillment,
         boardShippingPrice,
         boardType: listing.board_type ?? "",
@@ -753,21 +724,11 @@ function SellPageContent() {
         boardWidthInches: (listing as { width?: number | null }).width != null ? String((listing as { width?: number | null }).width) : "",
         boardThicknessInches: (listing as { thickness?: number | null }).thickness != null ? String((listing as { thickness?: number | null }).thickness) : "",
         boardVolumeL: (listing as { volume?: number | null }).volume != null ? String((listing as { volume?: number | null }).volume) : "",
-        boardFins:
-          parseFinsSetupFromStorage(
-            (listing as { fins_setup?: string | null }).fins_setup ?? null,
-          )[0] ?? "",
-        boardTail:
-          parseTailShapeFromStorage(
-            (listing as { tail_shape?: string | null }).tail_shape ?? null,
-          )[0] ?? "",
-        ...(() => {
-          const bid = (listing as { brand_id?: string | null }).brand_id?.trim() ?? ""
-          return {
-            boardBrandId: bid,
-            brand: bid ? ((listing as { brand?: string | null }).brand?.trim() ?? "") : "",
-          }
-        })(),
+        boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
+        boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
+        boardIndexBrandSlug: (listing as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? "",
+        boardIndexModelSlug: (listing as { index_model_slug?: string | null }).index_model_slug?.trim() ?? "",
+        boardIndexLabel: (listing as { index_model_label?: string | null }).index_model_label?.trim() ?? "",
         locationLat: Number(listing.latitude) || 0,
         locationLng: Number(listing.longitude) || 0,
         locationCity: listing.city ?? "",
@@ -798,32 +759,10 @@ function SellPageContent() {
         })
       setImages(existingImages)
       setRemovedImageIds([])
-      const widthNum = (listing as { width?: number | null }).width
-      const thickNum = (listing as { thickness?: number | null }).thickness
-      if (widthNum != null && Number.isFinite(Number(widthNum))) {
-        setWidthDimText(formatDimensionInches(Number(widthNum)))
-      } else {
-        setWidthDimText("")
-      }
-      if (thickNum != null && Number.isFinite(Number(thickNum))) {
-        setThicknessDimText(formatDimensionInches(Number(thickNum)))
-      } else {
-        setThicknessDimText("")
-      }
-      setWidthDimError("")
-      setThicknessDimError("")
       setEditLoading(false)
     })()
     return () => { mounted = false }
   }, [editId, supabase, router])
-
-  useEffect(() => {
-    if (editId) return
-    setWidthDimText("")
-    setThicknessDimText("")
-    setWidthDimError("")
-    setThicknessDimError("")
-  }, [editId])
 
   useEffect(() => {
     if (!draftHydrated || editId) return
@@ -1146,38 +1085,6 @@ function SellPageContent() {
     )
   }
 
-  function commitWidthDimInput() {
-    setWidthDimError("")
-    const raw = widthDimText.trim()
-    if (!raw) {
-      setFormData((f) => ({ ...f, boardWidthInches: "" }))
-      return
-    }
-    const p = parseDimension(raw)
-    if (p == null) {
-      setWidthDimError("Use a number or fraction, e.g. 19 1/2 or 19 5/16")
-      return
-    }
-    setFormData((f) => ({ ...f, boardWidthInches: formatDecimalDimension(p) }))
-    setWidthDimText(formatDimensionInches(p))
-  }
-
-  function commitThicknessDimInput() {
-    setThicknessDimError("")
-    const raw = thicknessDimText.trim()
-    if (!raw) {
-      setFormData((f) => ({ ...f, boardThicknessInches: "" }))
-      return
-    }
-    const p = parseDimension(raw)
-    if (p == null) {
-      setThicknessDimError("Use a number or fraction, e.g. 2 5/16 or 2 1/4")
-      return
-    }
-    setFormData((f) => ({ ...f, boardThicknessInches: formatDecimalDimension(p) }))
-    setThicknessDimText(formatDimensionInches(p))
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const goSubmitStep = (n: number) => {
@@ -1223,36 +1130,48 @@ function SellPageContent() {
       const listingImpersonation: ImpersonationData | null =
         actorIsAdmin && storedImpersonation ? storedImpersonation : null
 
-      let submitForm = { ...formData }
-      const wTrim = widthDimText.trim()
-      if (wTrim === "") {
-        submitForm.boardWidthInches = ""
-      } else {
-        const pw = parseDimension(wTrim)
-        if (pw == null) {
-          toast.error("Width: enter a valid number or fraction (e.g. 19 1/2 or 19 5/16).")
-          setLoading(false)
-          return
+      let submitForm = formData
+      if (dimMode === "fraction") {
+        const next = { ...formData }
+        let touched = false
+        if (inchesFractionInput.trim()) {
+          const p = parseDimension(inchesFractionInput.trim())
+          if (p == null) {
+            toast.error('Board length (inches): enter a valid value like 2 1/2 or 0.125')
+            setLoading(false)
+            return
+          }
+          next.boardLengthIn = formatDecimalDimension(p)
+          touched = true
         }
-        submitForm.boardWidthInches = formatDecimalDimension(pw)
-        setWidthDimText(formatDimensionInches(pw))
-      }
-      const tTrim = thicknessDimText.trim()
-      if (tTrim === "") {
-        submitForm.boardThicknessInches = ""
-      } else {
-        const pt = parseDimension(tTrim)
-        if (pt == null) {
-          toast.error("Thickness: enter a valid number or fraction (e.g. 2 5/16 or 2 1/4).")
-          setLoading(false)
-          return
+        if (widthFractionInput.trim()) {
+          const p = parseDimension(widthFractionInput.trim())
+          if (p == null) {
+            toast.error("Board width: enter a valid value like 19 1/2 or 19.5")
+            setLoading(false)
+            return
+          }
+          next.boardWidthInches = formatDecimalDimension(p)
+          touched = true
         }
-        submitForm.boardThicknessInches = formatDecimalDimension(pt)
-        setThicknessDimText(formatDimensionInches(pt))
+        if (thicknessFractionInput.trim()) {
+          const p = parseDimension(thicknessFractionInput.trim())
+          if (p == null) {
+            toast.error("Board thickness: enter a valid value like 2 1/4 or 2.25")
+            setLoading(false)
+            return
+          }
+          next.boardThicknessInches = formatDecimalDimension(p)
+          touched = true
+        }
+        if (touched) {
+          submitForm = next
+          setFormData(next)
+          setInchesFractionInput("")
+          setWidthFractionInput("")
+          setThicknessFractionInput("")
+        }
       }
-      setFormData(submitForm)
-      setWidthDimError("")
-      setThicknessDimError("")
 
       const imagesUploadReady = !images.some(
         (im) =>
@@ -1385,8 +1304,8 @@ function SellPageContent() {
           width: fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
           thickness: fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
           volume: fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
-          fins_setup: serializeFinsSetupTags(fd.boardFins.trim() ? [fd.boardFins.trim()] : []),
-          tail_shape: serializeTailShapeTags(fd.boardTail.trim() ? [fd.boardTail.trim()] : []),
+          fins_setup: fd.boardFins ? fd.boardFins : null,
+          tail_shape: fd.boardTail ? fd.boardTail : null,
           latitude: boardLocationLat,
           longitude: boardLocationLng,
           city: boardLocationCity,
@@ -1394,8 +1313,10 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
-          brand: fd.boardBrandId.trim() ? fd.brand.trim() || null : null,
-          brand_id: fd.boardBrandId.trim() || null,
+          brand: fd.brand.trim() ? fd.brand.trim() : null,
+          index_brand_slug: fd.boardIndexBrandSlug.trim() || null,
+          index_model_slug: fd.boardIndexModelSlug.trim() || null,
+          index_model_label: fd.boardIndexLabel.trim() || null,
         }
 
         if (ownerEditsOwnListing) {
@@ -1475,8 +1396,8 @@ function SellPageContent() {
           width: fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
           thickness: fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
           volume: fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
-          fins_setup: serializeFinsSetupTags(fd.boardFins.trim() ? [fd.boardFins.trim()] : []),
-          tail_shape: serializeTailShapeTags(fd.boardTail.trim() ? [fd.boardTail.trim()] : []),
+          fins_setup: fd.boardFins ? fd.boardFins : null,
+          tail_shape: fd.boardTail ? fd.boardTail : null,
           latitude: boardLocationLat,
           longitude: boardLocationLng,
           city: boardLocationCity,
@@ -1484,8 +1405,10 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
-          brand: fd.boardBrandId.trim() ? fd.brand.trim() || null : null,
-          brand_id: fd.boardBrandId.trim() || null,
+          brand: fd.brand.trim() ? fd.brand.trim() : null,
+          index_brand_slug: fd.boardIndexBrandSlug.trim() || null,
+          index_model_slug: fd.boardIndexModelSlug.trim() || null,
+          index_model_label: fd.boardIndexLabel.trim() || null,
         }
 
         if (listingImpersonation) {
@@ -1668,7 +1591,7 @@ function SellPageContent() {
 
   return (
       <main className="flex-1 py-8">
-        <div className="container mx-auto max-w-3xl px-4 sm:px-6">
+        <div className="container mx-auto max-w-2xl">
           <Link
             href="/dashboard"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
@@ -1690,21 +1613,7 @@ function SellPageContent() {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-              <form ref={formRef} onSubmit={handleSubmit} className="space-y-10" aria-busy={loading}>
-                <div className="space-y-2 rounded-xl border border-border/50 bg-muted/15 px-4 py-3 sm:px-5 sm:py-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                    <span className="font-medium text-foreground">Listing completeness</span>
-                    <span className="tabular-nums text-muted-foreground">{boardFieldsCompleted} of 10</span>
-                  </div>
-                  <Progress
-                    value={(boardFieldsCompleted / 10) * 100}
-                    className="h-2.5 bg-muted"
-                    aria-label={`${boardFieldsCompleted} of 10 required fields complete`}
-                  />
-                </div>
-
-                <SellFormSection title="Basics" complete={basicsComplete}>
-                <div className="space-y-5 rounded-xl border border-border/50 bg-muted/10 p-4 sm:p-5">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" aria-busy={loading}>
                 <div className="space-y-2">
                   <Label>Board shape / category *</Label>
                   <Select
@@ -1744,6 +1653,16 @@ function SellPageContent() {
                   )}
                 </div>
 
+                <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
+                  <span>{boardFieldsCompleted} of 10 fields complete</span>
+                  <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-300"
+                      style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <div className="flex items-end justify-between gap-2">
                     <Label htmlFor="title">Title *</Label>
@@ -1759,19 +1678,12 @@ function SellPageContent() {
                       {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
                     </span>
                   </div>
-                  <details className="group text-xs">
-                    <summary className="flex cursor-pointer list-none items-center gap-1.5 text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
-                      <ChevronDown
-                        className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180"
-                        aria-hidden
-                      />
-                      Title tips
-                    </summary>
-                    <p className="mt-2 border-l-2 border-border/70 py-0.5 pl-3 leading-relaxed text-muted-foreground">
-                      Appears on your listing and in the link — max {LISTING_TITLE_MAX_LENGTH} characters including
-                      board length. Link a directory brand from the title search, or submit a brand request if needed.
-                    </p>
-                  </details>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    Shown on your listing and in the URL. Max {LISTING_TITLE_MAX_LENGTH} characters
+                    {" "}
+                    (including board length in the title).
+                  </p>
+                  <>
                       <SurfboardTitleIndexInput
                         id="title"
                         placeholder={`e.g., Channel Islands Dumpster Diver - 5'6"`}
@@ -1789,12 +1701,13 @@ function SellPageContent() {
                                 0,
                                 LISTING_TITLE_MAX_LENGTH,
                               ),
-                              boardBrandId: opt.brandId,
+                              boardIndexBrandSlug: opt.brandSlug,
+                              boardIndexModelSlug: opt.modelSlug,
+                              boardIndexLabel: opt.label,
                               brand: opt.brandName,
                             }
                           })
                         }}
-                        disabled={loading}
                         required
                       />
                       {suggestedTitle && (
@@ -1811,316 +1724,333 @@ function SellPageContent() {
                           </button>
                         </p>
                       )}
+                  </>
                 </div>
-                </div>
-                </SellFormSection>
 
-                <SellFormSection title="Photos" complete={photosComplete}>
-                <div className="space-y-3 rounded-xl border border-border/50 bg-muted/10 p-4 sm:p-5">
-                  <Label>Photos (3–12 required)</Label>
-                  {optimizingAny ? (
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                      Optimizing images…
-                    </p>
-                  ) : null}
-                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-                    {images.map((image, index) => (
-                      <div
-                        key={image.clientId}
-                        className="relative flex aspect-square flex-col overflow-hidden rounded-lg bg-muted"
-                      >
-                        <div className="relative min-h-0 flex-1">
-                          <Image
-                            src={
-                              image.thumbnailUrl ||
-                              image.url ||
-                              image.previewUrl ||
-                              "/placeholder.svg"
-                            }
-                            alt={`Photo ${index + 1}`}
-                            fill
-                            className="object-contain"
-                            unoptimized
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute right-1 top-1 z-10 rounded-full bg-background/80 p-1 hover:bg-background"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                          <div className="absolute bottom-6 left-1 z-10 flex items-center gap-1">
-                            {index === 0 && (
-                              <span className="rounded bg-primary px-1 text-[10px] text-primary-foreground">
-                                Main
-                              </span>
-                            )}
-                          </div>
-                          <div className="absolute bottom-6 right-1 z-10 flex gap-1">
-                            {index > 0 && (
-                              <button
+                <>
+                    <div className="space-y-2">
+                        <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
+                        {formData.boardIndexBrandSlug && formData.boardIndexModelSlug ? (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="min-w-0 flex-1">
+                                <BrandInputWithSuggestions
+                                  id="surf-brand"
+                                  showHint={false}
+                                  value={formData.brand}
+                                  onChange={(v) => setFormData({ ...formData, brand: v })}
+                                />
+                              </div>
+                              <Button
                                 type="button"
-                                onClick={() => moveImage(index, -1)}
-                                className="rounded-full bg-background/80 p-1 hover:bg-background"
-                                aria-label="Move left"
-                              >
-                                <ChevronLeft className="h-3 w-3" />
-                              </button>
-                            )}
-                            {index < images.length - 1 && (
-                              <button
-                                type="button"
-                                onClick={() => moveImage(index, 1)}
-                                className="rounded-full bg-background/80 p-1 hover:bg-background"
-                                aria-label="Move right"
-                              >
-                                <ChevronRight className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {image.optimizePhase === "running" && image.uploadPhase === "idle" ? (
-                          <div className="shrink-0 border-t border-border/60 bg-background/90 px-1 py-1">
-                            <p className="text-center text-[9px] leading-tight text-muted-foreground">
-                              Optimizing…
-                            </p>
-                          </div>
-                        ) : image.uploadPhase === "uploading" ? (
-                          <div className="shrink-0 space-y-0.5 border-t border-border/60 bg-background/90 px-1 pb-1 pt-0.5">
-                            <p className="text-center text-[9px] leading-tight text-muted-foreground">
-                              Uploading
-                            </p>
-                            <Progress value={image.progressFull} className="h-1" title="Full size" />
-                            <Progress value={image.progressThumb} className="h-1" title="Thumbnail" />
-                          </div>
-                        ) : null}
-                        {image.uploadPhase === "error" || image.optimizePhase === "error" ? (
-                          <div className="shrink-0 space-y-1 border-t border-destructive/20 bg-destructive/10 p-1">
-                            <p className="line-clamp-2 text-[9px] text-destructive">
-                              {image.errorMessage || "Failed"}
-                            </p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-6 w-full px-1 text-[10px]"
-                              onClick={() => retryListingPhotoUpload(image.clientId)}
-                            >
-                              <RefreshCw className="mr-0.5 h-3 w-3" />
-                              Retry
-                            </Button>
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                    {images.length < 12 && (
-                      <label className="relative flex aspect-square cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary/50">
-                        <Upload className="pointer-events-none h-6 w-6 text-muted-foreground" />
-                        <span className="pointer-events-none mt-1 text-xs text-muted-foreground">Add</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageChange}
-                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                          aria-label="Add photos"
-                        />
-                      </label>
-                    )}
-                  </div>
-                  <details className="group text-xs">
-                    <summary className="flex cursor-pointer list-none items-center gap-1.5 text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
-                      <ChevronDown
-                        className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180"
-                        aria-hidden
-                      />
-                      Photo requirements
-                    </summary>
-                    <p className="mt-2 border-l-2 border-border/70 py-0.5 pl-3 leading-relaxed text-muted-foreground">
-                      3–12 portrait (vertical) images. First photo is the cover. Phone formats are fine; others
-                      convert to JPEG automatically.
-                    </p>
-                  </details>
-                  {images.length > 0 && images.length < 3 && (
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Add {3 - images.length} more photo{3 - images.length !== 1 ? "s" : ""} (minimum 3).
-                    </p>
-                  )}
-                </div>
-                </SellFormSection>
-
-                <SellFormSection title="Board specifications" complete={specsComplete}>
-                    {/* Board Dimensions */}
-                    <div className="space-y-5 rounded-lg border border-border/60 bg-muted/10 p-4 sm:p-6">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Board dimensions</p>
-                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                          Length and volume: type numbers. Width and thickness: type inches as a decimal or fraction
-                          (e.g. 19 1/2 or 2 5/16).
-                        </p>
-                      </div>
-
-                      <div className="grid gap-5 sm:grid-cols-2">
-                        <div className="space-y-3">
-                          <Label htmlFor="board-len-ft">Length *</Label>
-                          <div className="flex flex-wrap items-end gap-4">
-                            <div className="space-y-1.5">
-                              <span className="text-xs text-muted-foreground">Feet</span>
-                              <Input
-                                id="board-len-ft"
-                                type="number"
-                                inputMode="numeric"
-                                min={4}
-                                max={12}
-                                step={1}
-                                placeholder="6"
-                                value={formData.boardLengthFt}
-                                onChange={(e) => setFormData({ ...formData, boardLengthFt: e.target.value })}
-                                className="h-11 w-[4.75rem] tabular-nums"
-                                required
-                                aria-label="Length in feet"
-                              />
-                            </div>
-                            <div className="min-w-0 flex-1 space-y-1.5 sm:max-w-[9rem]">
-                              <span className="text-xs text-muted-foreground">Inches</span>
-                              <Input
-                                type="number"
-                                inputMode="decimal"
-                                min={0}
-                                max={11.875}
-                                step={0.125}
-                                placeholder="0"
-                                value={formData.boardLengthIn === "0" ? "" : formData.boardLengthIn}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    boardLengthIn: e.target.value === "" ? "0" : e.target.value,
-                                  })
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 shrink-0 self-start text-xs text-muted-foreground"
+                                onClick={() =>
+                                  setFormData((f) => ({
+                                    ...f,
+                                    boardIndexBrandSlug: "",
+                                    boardIndexModelSlug: "",
+                                    boardIndexLabel: "",
+                                  }))
                                 }
-                                className="h-11 tabular-nums"
-                                aria-label="Length in inches"
-                              />
+                              >
+                                Clear link
+                              </Button>
                             </div>
+                            <p className="text-xs text-muted-foreground">
+                              Suggestions from our brand list — you can enter any brand.
+                            </p>
                           </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <Label htmlFor="board-vol">Volume (L)</Label>
-                          <Input
-                            id="board-vol"
-                            type="number"
-                            inputMode="decimal"
-                            min={10}
-                            max={200}
-                            step={0.1}
-                            placeholder={
-                              estimatedVolume != null ? `Est. ~${estimatedVolume}` : "e.g. 32.5"
-                            }
-                            value={formData.boardVolumeL}
-                            onChange={(e) => setFormData({ ...formData, boardVolumeL: e.target.value })}
-                            className="h-11 tabular-nums"
+                        ) : (
+                          <BrandInputWithSuggestions
+                            id="surf-brand"
+                            placeholder="e.g., Channel Islands"
+                            value={formData.brand}
+                            onChange={(v) => setFormData({ ...formData, brand: v })}
                           />
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Leave blank and we&apos;ll estimate from length, width, and thickness.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-6 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="board-width-dim">Width (inches) *</Label>
-                          <Input
-                            id="board-width-dim"
-                            type="text"
-                            inputMode="decimal"
-                            autoComplete="off"
-                            placeholder='e.g. 19 1/2 or 19.5'
-                            value={widthDimText}
-                            onChange={(e) => {
-                              setWidthDimText(e.target.value)
-                              if (widthDimError) setWidthDimError("")
-                            }}
-                            onBlur={commitWidthDimInput}
-                            className={cn("h-11 tabular-nums", widthDimError && "border-destructive")}
-                            aria-invalid={!!widthDimError}
-                            aria-describedby={widthDimError ? "board-width-dim-error" : undefined}
-                          />
-                          {widthDimError ? (
-                            <p id="board-width-dim-error" className="text-xs text-destructive">
-                              {widthDimError}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                              Across the deck, in inches — decimals or fractions like 19 5/16.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="board-thickness-dim">Thickness (inches) *</Label>
-                          <Input
-                            id="board-thickness-dim"
-                            type="text"
-                            inputMode="decimal"
-                            autoComplete="off"
-                            placeholder='e.g. 2 5/16 or 2.25'
-                            value={thicknessDimText}
-                            onChange={(e) => {
-                              setThicknessDimText(e.target.value)
-                              if (thicknessDimError) setThicknessDimError("")
-                            }}
-                            onBlur={commitThicknessDimInput}
-                            className={cn("h-11 tabular-nums", thicknessDimError && "border-destructive")}
-                            aria-invalid={!!thicknessDimError}
-                            aria-describedby={thicknessDimError ? "board-thickness-dim-error" : undefined}
-                          />
-                          {thicknessDimError ? (
-                            <p id="board-thickness-dim-error" className="text-xs text-destructive">
-                              {thicknessDimError}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                              Rail to rail thickness — same formats as width.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {boardLengthPreview ? (
-                        <p className="border-t border-border/50 pt-4 text-xs font-medium tabular-nums text-muted-foreground">
-                          {boardLengthPreview}
-                          {formData.boardWidthInches &&
-                            Number.isFinite(parseFloat(formData.boardWidthInches)) &&
-                            ` × ${formatDimensionInches(parseFloat(formData.boardWidthInches))}"`}
-                          {formData.boardThicknessInches &&
-                            Number.isFinite(parseFloat(formData.boardThicknessInches)) &&
-                            ` × ${formatDimensionInches(parseFloat(formData.boardThicknessInches))}"`}
-                          {(formData.boardVolumeL || estimatedVolume) &&
-                            ` — ${formData.boardVolumeL || `~${estimatedVolume}`} L`}
-                        </p>
-                      ) : null}
+                        )}
                     </div>
 
-                </SellFormSection>
+                    {/* Board Dimensions */}
+                    <div className="space-y-3 rounded-lg border border-border/60 bg-muted/15 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-foreground">Board dimensions</p>
+                        <div className="inline-flex gap-0.5 rounded-lg bg-muted p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => switchMode("decimal")}
+                            className={cn(
+                              "rounded-md px-3 py-1 text-xs transition-colors",
+                              dimMode === "decimal"
+                                ? "bg-background font-medium text-foreground shadow-sm"
+                                : "bg-transparent text-muted-foreground"
+                            )}
+                          >
+                            Decimals
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => switchMode("fraction")}
+                            className={cn(
+                              "rounded-md px-3 py-1 text-xs transition-colors",
+                              dimMode === "fraction"
+                                ? "bg-background font-medium text-foreground shadow-sm"
+                                : "bg-transparent text-muted-foreground"
+                            )}
+                          >
+                            Fractions
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {/* Length */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Length *</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={4}
+                              max={12}
+                              step={1}
+                              placeholder="6"
+                              value={formData.boardLengthFt}
+                              onChange={(e) => setFormData({ ...formData, boardLengthFt: e.target.value })}
+                              className="w-14 text-center px-2"
+                              required
+                              aria-label="Feet"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">ft</span>
+                            <Input
+                              type={dimMode === "fraction" ? "text" : "number"}
+                              min={dimMode === "decimal" ? 0 : undefined}
+                              max={dimMode === "decimal" ? 11.875 : undefined}
+                              step={dimMode === "decimal" ? 0.125 : undefined}
+                              placeholder={dimMode === "fraction" ? "e.g. 2 1/2" : "2"}
+                              value={
+                                dimMode === "fraction"
+                                  ? inchesFractionInput
+                                  : formData.boardLengthIn === "0"
+                                    ? ""
+                                    : formData.boardLengthIn
+                              }
+                              onChange={(e) => {
+                                if (dimMode === "fraction") {
+                                  setInchesFractionInput(e.target.value)
+                                  setInchesFractionError("")
+                                } else {
+                                  setFormData({ ...formData, boardLengthIn: e.target.value || "0" })
+                                }
+                              }}
+                              onBlur={() => {
+                                if (dimMode !== "fraction") return
+                                commitFractionField(
+                                  inchesFractionInput,
+                                  setInchesFractionInput,
+                                  (decimal) => setFormData((prev) => ({ ...prev, boardLengthIn: decimal })),
+                                  setInchesFractionError,
+                                  setInchesParsedHint,
+                                  "inches"
+                                )
+                              }}
+                              className="w-14 text-center px-2"
+                              aria-label="Inches"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">in</span>
+                          </div>
+                          {inchesFractionError && <p className="text-xs text-red-600">{inchesFractionError}</p>}
+                          {!inchesFractionError && inchesParsedHint && dimMode === "fraction" && (
+                            <p className="text-xs text-muted-foreground">{inchesParsedHint}</p>
+                          )}
+                          {boardLengthPreview && (
+                            <p className="text-xs text-muted-foreground">{boardLengthPreview}</p>
+                          )}
+                        </div>
 
-                <SellFormSection title="Pickup & delivery" complete={pickupComplete}>
-                  <details className="group text-xs">
-                    <summary className="mb-3 flex cursor-pointer list-none items-center gap-1.5 text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
-                      <ChevronDown
-                        className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180"
-                        aria-hidden
-                      />
-                      Why we need location & shipping
-                    </summary>
-                    <p className="mb-3 border-l-2 border-border/70 py-0.5 pl-3 leading-relaxed text-muted-foreground">
-                      Your listing location helps nearby buyers find you. If you ship, add a flat rate below (0 =
-                      free shipping).
-                    </p>
-                  </details>
-                  <div className="space-y-4 rounded-lg border border-border/60 bg-muted/15 p-4 sm:p-5">
+                        {/* Width */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Width</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type={dimMode === "fraction" ? "text" : "number"}
+                              min={dimMode === "decimal" ? 14 : undefined}
+                              max={dimMode === "decimal" ? 24 : undefined}
+                              step={dimMode === "decimal" ? 0.25 : undefined}
+                              placeholder={dimMode === "fraction" ? "e.g. 19 1/2" : "19.5"}
+                              value={dimMode === "fraction" ? widthFractionInput : formData.boardWidthInches}
+                              onChange={(e) => {
+                                if (dimMode === "fraction") {
+                                  setWidthFractionInput(e.target.value)
+                                  setWidthFractionError("")
+                                } else {
+                                  setFormData({ ...formData, boardWidthInches: e.target.value })
+                                }
+                              }}
+                              onBlur={() => {
+                                if (dimMode !== "fraction") return
+                                commitFractionField(
+                                  widthFractionInput,
+                                  setWidthFractionInput,
+                                  (decimal) => setFormData((prev) => ({ ...prev, boardWidthInches: decimal })),
+                                  setWidthFractionError,
+                                  setWidthParsedHint,
+                                  "inches"
+                                )
+                              }}
+                              className="w-20 text-center px-2"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">in</span>
+                          </div>
+                          {widthFractionError && <p className="text-xs text-red-600">{widthFractionError}</p>}
+                          {!widthFractionError && widthParsedHint && dimMode === "fraction" && (
+                            <p className="text-xs text-muted-foreground">{widthParsedHint}</p>
+                          )}
+                        </div>
+
+                        {/* Thickness */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Thickness</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type={dimMode === "fraction" ? "text" : "number"}
+                              min={dimMode === "decimal" ? 1.5 : undefined}
+                              max={dimMode === "decimal" ? 4 : undefined}
+                              step={dimMode === "decimal" ? 0.125 : undefined}
+                              placeholder={dimMode === "fraction" ? "e.g. 2 1/2" : "2.5"}
+                              value={dimMode === "fraction" ? thicknessFractionInput : formData.boardThicknessInches}
+                              onChange={(e) => {
+                                if (dimMode === "fraction") {
+                                  setThicknessFractionInput(e.target.value)
+                                  setThicknessFractionError("")
+                                } else {
+                                  setFormData({ ...formData, boardThicknessInches: e.target.value })
+                                }
+                              }}
+                              onBlur={() => {
+                                if (dimMode !== "fraction") return
+                                commitFractionField(
+                                  thicknessFractionInput,
+                                  setThicknessFractionInput,
+                                  (decimal) => setFormData((prev) => ({ ...prev, boardThicknessInches: decimal })),
+                                  setThicknessFractionError,
+                                  setThicknessParsedHint,
+                                  "inches"
+                                )
+                              }}
+                              className="w-20 text-center px-2"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">in</span>
+                          </div>
+                          {thicknessFractionError && <p className="text-xs text-red-600">{thicknessFractionError}</p>}
+                          {!thicknessFractionError && thicknessParsedHint && dimMode === "fraction" && (
+                            <p className="text-xs text-muted-foreground">{thicknessParsedHint}</p>
+                          )}
+                        </div>
+
+                        {/* Volume */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Volume</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={10}
+                              max={100}
+                              step={0.1}
+                              placeholder={estimatedVolume ? String(estimatedVolume) : "32.5"}
+                              value={formData.boardVolumeL}
+                              onChange={(e) => setFormData({ ...formData, boardVolumeL: e.target.value })}
+                              className="w-20 text-center px-2"
+                            />
+                            <span className="text-xs text-muted-foreground shrink-0">L</span>
+                          </div>
+                          {!formData.boardVolumeL && estimatedVolume && (
+                            <p className="text-xs text-muted-foreground">~{estimatedVolume}L (est.)</p>
+                          )}
+                        </div>
+                      </div>
+                      {boardLengthPreview && (
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {boardLengthPreview}
+                          {formData.boardWidthInches &&
+                            ` × ${dimMode === "fraction" ? fractionWidthPreview : formData.boardWidthInches}`}
+                          {formData.boardThicknessInches &&
+                            ` × ${dimMode === "fraction" ? fractionThicknessPreview : formData.boardThicknessInches}`}
+                          {(formData.boardVolumeL || estimatedVolume) && ` — ${formData.boardVolumeL || `~${estimatedVolume}`}L`}
+                        </p>
+                      )}
+                      {!formData.boardVolumeL && (
+                        <p className="text-xs text-muted-foreground">
+                          Not sure of volume? Leave blank and we&apos;ll estimate based on your other dimensions.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Fins Setup */}
+                    <div className="space-y-2">
+                      <Label>Fin setup</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "single", label: "Single" },
+                          { value: "twin", label: "Twin (2+1)" },
+                          { value: "thruster", label: "Thruster" },
+                          { value: "quad", label: "Quad" },
+                          { value: "five", label: "5-fin" },
+                          { value: "other", label: "Other" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, boardFins: formData.boardFins === opt.value ? "" : opt.value })}
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-sm transition-colors",
+                              formData.boardFins === opt.value
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover:border-primary/50",
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tail Shape */}
+                    <div className="space-y-2">
+                      <Label>Tail shape</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "round", label: "Round" },
+                          { value: "squash", label: "Squash" },
+                          { value: "square", label: "Square" },
+                          { value: "pin", label: "Pin" },
+                          { value: "swallow", label: "Swallow" },
+                          { value: "fish", label: "Fish" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, boardTail: formData.boardTail === opt.value ? "" : opt.value })}
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-sm transition-colors",
+                              formData.boardTail === opt.value
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover:border-primary/50",
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+
+                  <div className="space-y-4 rounded-lg border border-border p-4">
                     <div className="space-y-2">
                       <Label>How can buyers get this board? *</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Every surfboard needs a map location (pickup area or where you ship from). If you
+                        ship, set a flat shipping price (use 0 for free shipping).
+                      </p>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {(
                           [
@@ -2147,13 +2077,11 @@ function SellPageContent() {
                             onClick={() =>
                               setFormData({ ...formData, boardFulfillment: opt.value })
                             }
-                            className={cn(
-                              "rounded-lg border-2 p-3 text-left text-sm transition-all outline-none text-balance",
-                              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                            className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
                               formData.boardFulfillment === opt.value
-                                ? "border-primary bg-primary/5 shadow-sm ring-2 ring-primary/15"
-                                : "border-border hover:border-primary/40 hover:bg-muted/30",
-                            )}
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/40"
+                            }`}
                           >
                             <p className="font-medium">{opt.title}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{opt.hint}</p>
@@ -2182,14 +2110,14 @@ function SellPageContent() {
 
                   <LocationPicker
                     onLocationSelect={(loc) => {
-                      setFormData((f) => ({
-                        ...f,
+                      setFormData({
+                        ...formData,
                         locationLat: loc.lat,
                         locationLng: loc.lng,
                         locationCity: loc.city,
                         locationState: loc.state,
                         locationDisplay: loc.displayName,
-                      }))
+                      })
                     }}
                     initialLat={formData.locationLat || undefined}
                     initialLng={formData.locationLng || undefined}
@@ -2197,9 +2125,8 @@ function SellPageContent() {
                     initialState={formData.locationState || undefined}
                     initialDisplay={formData.locationDisplay || undefined}
                   />
-                </SellFormSection>
 
-                <SellFormSection title="Price & condition" complete={priceComplete}>
+                {/* Price & Condition */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="price">Price ($) *</Label>
@@ -2233,82 +2160,304 @@ function SellPageContent() {
                     </Select>
                   </div>
                 </div>
-                </SellFormSection>
 
-                <SellFormSection title="Description" complete={descriptionComplete}>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description *</Label>
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">
+                    Description *
+                  </Label>
+                  <div className={cn(
+                    "relative rounded-md transition-all",
+                    isGeneratingDescription && "ring-2 ring-primary/40 ring-offset-1 animate-pulse",
+                  )}>
                     <Textarea
                       id="description"
                       placeholder="Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
                       className="min-h-[120px] resize-none"
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, description: e.target.value })
+                        setDescriptionGenerated(false)
+                      }}
                       required
+                      disabled={isGeneratingDescription}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {formData.description.length} / 1000
-                    </p>
                   </div>
-                  <div className="space-y-4 border-t border-border/50 pt-5">
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Optional fin setup and tail shape — helps buyers search and filter. Only the listed
-                      choices are stored.
-                    </p>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="sell-fin-setup">Fin setup</Label>
-                        <Select
-                          value={formData.boardFins.trim() ? formData.boardFins : LISTING_TAG_SELECT_NONE}
-                          onValueChange={(v) =>
-                            setFormData({
-                              ...formData,
-                              boardFins: v === LISTING_TAG_SELECT_NONE ? "" : v,
-                            })
-                          }
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {formData.description.length} / 1000
+                    </span>
+                    {descriptionGenerated && (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Description written — feel free to edit
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isGeneratingDescription}
+                          onClick={async () => {
+                            if (formData.description.trim()) {
+                              if (!window.confirm("This will replace your current description. Continue?")) return
+                            }
+                            setIsGeneratingDescription(true)
+                            setDescriptionGenerated(false)
+                            setFormData((f) => ({ ...f, description: "" }))
+                            let fullText = ""
+                            let buffer = ""
+                            try {
+                              const listingData = {
+                                brand: formData.brand || formData.boardIndexLabel?.split(" ")[0] || "",
+                                model: formData.boardIndexLabel || "",
+                                condition: formData.condition,
+                                length: boardLengthFormatted,
+                                width: formData.boardWidthInches,
+                                thickness: formData.boardThicknessInches,
+                                volume: formData.boardVolumeL || (estimatedVolume ? String(estimatedVolume) : ""),
+                                fins: formData.boardFins,
+                                tail: formData.boardTail,
+                                price: formData.price,
+                                location: formData.locationDisplay || formData.locationCity || "",
+                              }
+                              const response = await fetch("/api/listings/generate-description", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ listingData }),
+                              })
+                              if (!response.ok) {
+                                const errBody = await response.json().catch(() => null) as {
+                                  error?: string
+                                } | null
+                                throw new Error(
+                                  errBody?.error ||
+                                    "Failed to generate description. Check that ANTHROPIC_API_KEY is set on the server.",
+                                )
+                              }
+                              const reader = response.body!.getReader()
+                              const decoder = new TextDecoder()
+                              while (true) {
+                                const { done, value } = await reader.read()
+                                if (done) break
+                                // Accumulate into buffer so lines split across chunks are reassembled
+                                buffer += decoder.decode(value, { stream: true })
+                                const lines = buffer.split("\n")
+                                // Keep the incomplete trailing line in the buffer
+                                buffer = lines.pop() ?? ""
+                                for (const line of lines) {
+                                  if (!line.startsWith("data: ")) continue
+                                  const raw = line.slice(6).trim()
+                                  if (raw === "[DONE]") continue
+                                  // Parse JSON separately so malformed lines are skipped but real errors propagate
+                                  let parsed: { text?: string; error?: string }
+                                  try {
+                                    parsed = JSON.parse(raw)
+                                  } catch {
+                                    continue
+                                  }
+                                  if (parsed.error) throw new Error(parsed.error)
+                                  if (parsed.text) {
+                                    fullText += parsed.text
+                                    setFormData((f) => ({ ...f, description: fullText }))
+                                  }
+                                }
+                              }
+                              if (fullText.length > 0) setDescriptionGenerated(true)
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : "Failed to generate description")
+                            } finally {
+                              setIsGeneratingDescription(false)
+                            }
+                          }}
+                          className="gap-1.5"
                         >
-                          <SelectTrigger id="sell-fin-setup" className="h-11 w-full">
-                            <SelectValue placeholder="Optional" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={LISTING_TAG_SELECT_NONE}>None</SelectItem>
-                            {FIN_SETUP_TAG_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          {isGeneratingDescription ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Writing...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              {formData.description.trim() ? "Rewrite description" : "Write description for me"}
+                            </>
+                          )}
+                        </Button>
+                        {formData.description.trim() && !isGeneratingDescription && (
+                          <span className="text-xs text-muted-foreground">
+                            Will replace your current description
+                          </span>
+                        )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="sell-tail-shape">Tail shape</Label>
-                        <Select
-                          value={formData.boardTail.trim() ? formData.boardTail : LISTING_TAG_SELECT_NONE}
-                          onValueChange={(v) =>
-                            setFormData({
-                              ...formData,
-                              boardTail: v === LISTING_TAG_SELECT_NONE ? "" : v,
-                            })
-                          }
-                        >
-                          <SelectTrigger id="sell-tail-shape" className="h-11 w-full">
-                            <SelectValue placeholder="Optional" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={LISTING_TAG_SELECT_NONE}>None</SelectItem>
-                            {TAIL_SHAPE_TAG_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+
+                      {/* Quick add chips */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground">Quick add:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            "Has been reglassed",
+                            "No pressure dings",
+                            "Fresh wax",
+                            "Comes with board bag",
+                            "Fin boxes in great shape",
+                            "Minor heel dents",
+                            "Good for beginners",
+                            "Great for small waves",
+                            "Rides bigger than it looks",
+                          ].map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => {
+                                setFormData((f) => {
+                                  const desc = f.description.trimEnd()
+                                  const append = desc.endsWith(".")
+                                    ? ` ${chip}.`
+                                    : desc
+                                      ? `, ${chip.toLowerCase()}`
+                                      : chip
+                                  return { ...f, description: desc + append }
+                                })
+                              }}
+                              className="rounded-full border border-border px-2.5 py-0.5 text-xs hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                            >
+                              + {chip}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </SellFormSection>
+                </div>
 
-                <div className="space-y-6 border-t border-border/50 pt-8">
+                {/* Images */}
+                <div className="space-y-2">
+                  <Label>Photos (3–12 required)</Label>
+                  {optimizingAny ? (
+                    <p className="text-xs text-muted-foreground flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                      Optimizing images…
+                    </p>
+                  ) : null}
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                    {images.map((image, index) => (
+                      <div
+                        key={image.clientId}
+                        className="relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col"
+                      >
+                        <div className="relative flex-1 min-h-0">
+                          <Image
+                            src={
+                              image.thumbnailUrl ||
+                              image.url ||
+                              image.previewUrl ||
+                              "/placeholder.svg"
+                            }
+                            alt={`Photo ${index + 1}`}
+                            fill
+                            className="object-contain"
+                            unoptimized
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-background/80 hover:bg-background z-10"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          <div className="absolute bottom-6 left-1 flex items-center gap-1 z-10">
+                            {index === 0 && (
+                              <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
+                                Main
+                              </span>
+                            )}
+                          </div>
+                          <div className="absolute bottom-6 right-1 flex gap-1 z-10">
+                            {index > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, -1)}
+                                className="p-1 rounded-full bg-background/80 hover:bg-background"
+                                aria-label="Move left"
+                              >
+                                <ChevronLeft className="h-3 w-3" />
+                              </button>
+                            )}
+                            {index < images.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, 1)}
+                                className="p-1 rounded-full bg-background/80 hover:bg-background"
+                                aria-label="Move right"
+                              >
+                                <ChevronRight className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {image.optimizePhase === "running" && image.uploadPhase === "idle" ? (
+                          <div className="shrink-0 px-1 py-1 bg-background/90 border-t border-border/60">
+                            <p className="text-[9px] text-muted-foreground text-center leading-tight">
+                              Optimizing…
+                            </p>
+                          </div>
+                        ) : image.uploadPhase === "uploading" ? (
+                          <div className="shrink-0 px-1 pb-1 pt-0.5 space-y-0.5 bg-background/90 border-t border-border/60">
+                            <p className="text-[9px] text-muted-foreground text-center leading-tight">
+                              Uploading
+                            </p>
+                            <Progress value={image.progressFull} className="h-1" title="Full size" />
+                            <Progress value={image.progressThumb} className="h-1" title="Thumbnail" />
+                          </div>
+                        ) : null}
+                        {image.uploadPhase === "error" || image.optimizePhase === "error" ? (
+                          <div className="shrink-0 p-1 bg-destructive/10 border-t border-destructive/20 space-y-1">
+                            <p className="text-[9px] text-destructive line-clamp-2">
+                              {image.errorMessage || "Failed"}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 w-full text-[10px] px-1"
+                              onClick={() => retryListingPhotoUpload(image.clientId)}
+                            >
+                              <RefreshCw className="h-3 w-3 mr-0.5" />
+                              Retry
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                    {images.length < 12 && (
+                      <label className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors overflow-hidden">
+                        <Upload className="h-6 w-6 text-muted-foreground pointer-events-none" />
+                        <span className="text-xs text-muted-foreground mt-1 pointer-events-none">Add</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          aria-label="Add photos"
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Minimum 3 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. Any common phone/camera format is OK; unsupported types are converted to JPEG automatically.
+                  </p>
+                  {images.length > 0 && images.length < 3 && (
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      Add {3 - images.length} more photo{3 - images.length !== 1 ? "s" : ""} to meet the minimum (3 required).
+                    </p>
+                  )}
+                </div>
+
                 {/* Optimistic preview + submit / progress */}
                 {publishPreview && (
                   <div
@@ -2431,7 +2580,6 @@ function SellPageContent() {
                     {editId ? "Save changes" : "Create Listing"}
                   </Button>
                 )}
-                </div>
               </form>
               )}
             </CardContent>
