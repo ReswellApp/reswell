@@ -16,7 +16,6 @@ import {
   UserCircle,
   Banknote,
   Users,
-  Rss,
 } from "lucide-react"
 
 const sidebarLinks = [
@@ -25,8 +24,7 @@ const sidebarLinks = [
   { name: "Archived", href: "/dashboard/listings/archived", icon: Archive },
   { name: "Earnings & Payouts", href: "/dashboard/earnings", icon: Banknote },
   { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
-  { name: "Following", href: "/dashboard/following", icon: Rss },
-  { name: "My Followers", href: "/dashboard/followers", icon: Users },
+  { name: "Followers", href: "/dashboard/followers", icon: Users },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
