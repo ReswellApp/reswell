@@ -224,6 +224,26 @@ export default async function HomePage() {
         .slice(0, 20)
     : null
 
+  const { data: rawFeaturedShortboards } = await supabase
+    .from("listings")
+    .select(`
+      *,
+      listing_images (url, thumbnail_url, sort_order, is_primary),
+      profiles (display_name, avatar_url, location, sales_count, shop_verified),
+      categories (name)
+    `)
+    .eq("status", "active")
+    .eq("section", "surfboards")
+    .eq("board_type", "shortboard")
+    .order("created_at", { ascending: false })
+    .limit(20)
+
+  const featuredShortboards = rawFeaturedShortboards
+    ? [...rawFeaturedShortboards]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 20)
+    : null
+
   // Recently verified sellers: each card shows their single most expensive active listing + profile
   const verifiedForSpotlightFields =
     "id, seller_slug, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified, shop_verified_at, updated_at"
@@ -300,6 +320,7 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
+    ...(featuredShortboards ?? []).map((b) => b.id),
     ...verifiedSpotlight.map(({ listing }) => listing.id),
     ...Array.from(categoryLatest.values()).map((l) => l.id),
   ]
@@ -447,6 +468,92 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
+
+        {featuredShortboards && featuredShortboards.length > 0 && (
+          <FadeInSection>
+            <section className="py-16">
+              <div className="container mx-auto">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-2xl font-bold">Recently added shortboards</h2>
+                    <p className="text-muted-foreground">In-person pickup only</p>
+                  </div>
+                  <Button variant="outline" asChild>
+                    <Link
+                      href="/boards?type=shortboard"
+                      prefetch={boardsBrowseLinkPrefetch("/boards?type=shortboard")}
+                    >
+                      Find More
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+                <HomeListingScrollRow uniformCardHeights>
+                  {featuredShortboards.map((board) => {
+                    const cart = computePeerCartPriceAction(user?.id ?? null, {
+                      id: board.id,
+                      user_id: board.user_id,
+                      section: "surfboards",
+                      status: board.status,
+                      local_pickup: board.local_pickup,
+                      shipping_available: board.shipping_available,
+                    })
+                    return (
+                      <ListingTile
+                        key={board.id}
+                        href={listingDetailHref({
+                          id: board.id,
+                          slug: board.slug,
+                          section: "surfboards",
+                        })}
+                        listingId={board.id}
+                        title={board.title}
+                        imageAlt={capitalizeWords(board.title)}
+                        listingImages={board.listing_images}
+                        price={Number(board.price)}
+                        linkLayout="unified"
+                        linkClassName={homeUniformScrollLinkClass}
+                        cardClassName={homeUniformScrollCardClass}
+                        cardContentClassName={homeUniformScrollBodyClass}
+                        imageSizes={homeListingScrollImageSizes}
+                        blurDataURL={portraitShimmer}
+                        titleSlot={
+                          <div className={homeUniformScrollTitleSlotClass}>
+                            <h3 className={homeListingScrollHeadingClass}>
+                              {capitalizeWords(board.title)}
+                            </h3>
+                          </div>
+                        }
+                        footerSlot={
+                          <div className={homeUniformScrollMetaFooterClass}>
+                            <div className="flex min-w-0 items-center justify-between gap-2">
+                              <p className="text-base font-bold text-black dark:text-white tabular-nums">
+                                ${board.price.toFixed(2)}
+                              </p>
+                              {cart?.type === "addToCartServer" ? (
+                                <ListingTileAddToCartServerIcon
+                                  listingId={cart.listingId}
+                                  isLoggedIn={cart.isLoggedIn}
+                                />
+                              ) : null}
+                            </div>
+                            <div className="mt-1 flex justify-end">
+                              <ListingTileCategoryPill label={formatListingTileCategoryPillText(board)} />
+                            </div>
+                          </div>
+                        }
+                        favorites={{
+                          initialFavorited: favoritedIds.includes(board.id),
+                          isLoggedIn: !!user,
+                        }}
+                      />
+                    )
+                  })}
+                </HomeListingScrollRow>
+              </div>
+            </section>
+          </FadeInSection>
+        )}
 
         {/* Confidence banner */}
         <section className="py-8">
