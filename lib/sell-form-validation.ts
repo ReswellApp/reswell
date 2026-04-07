@@ -1,5 +1,7 @@
 import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 import { flagsFromBoardFulfillment, type BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
+import { isFinSetupTagSlug } from "@/lib/listing-fin-setup-tags"
+import { isTailShapeTagSlug } from "@/lib/listing-tail-shape-tags"
 
 /** Align with sell page length inputs (min/max on feet field). */
 const BOARD_LENGTH_FT_MIN = 4
@@ -126,11 +128,13 @@ export function validateSellListingForm(
     }
   }
 
-  if (!form.boardFins?.trim()) {
-    return "Select a fin setup."
+  const finSlug = form.boardFins?.trim().toLowerCase() ?? ""
+  if (finSlug && !isFinSetupTagSlug(finSlug)) {
+    return "Pick a valid fin setup or leave it unset."
   }
-  if (!form.boardTail?.trim()) {
-    return "Select a tail shape."
+  const tailSlug = form.boardTail?.trim().toLowerCase() ?? ""
+  if (tailSlug && !isTailShapeTagSlug(tailSlug)) {
+    return "Pick a valid tail shape or leave it unset."
   }
 
   const minPhotos = 3

@@ -76,6 +76,8 @@ import {
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
 import { cn } from "@/lib/utils"
+
+const LISTING_TAG_SELECT_NONE = "__none__"
 import { listingDetailPath } from "@/lib/listing-query"
 import {
   validateSellListingForm,
@@ -84,6 +86,18 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import {
+  FIN_SETUP_TAG_OPTIONS,
+  parseFinsSetupFromStorage,
+  serializeFinsSetupTags,
+  singleFinSetupSlugForForm,
+} from "@/lib/listing-fin-setup-tags"
+import {
+  parseTailShapeFromStorage,
+  serializeTailShapeTags,
+  singleTailShapeSlugForForm,
+  TAIL_SHAPE_TAG_OPTIONS,
+} from "@/lib/listing-tail-shape-tags"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -446,13 +460,11 @@ function SellPageContent() {
       formData.boardLengthFt.trim(),
       formData.boardWidthInches.trim(),
       formData.boardThicknessInches.trim(),
-      formData.boardFins,
-      formData.boardTail,
       formData.condition,
       formData.price.trim(),
       formData.description.trim(),
     ].filter(Boolean).length
-  }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
+  }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.condition, formData.price, formData.description])
 
   const basicsComplete = useMemo(
     () =>
@@ -471,17 +483,9 @@ function SellPageContent() {
       Boolean(
         formData.boardLengthFt?.trim() &&
           formData.boardWidthInches?.trim() &&
-          formData.boardThicknessInches?.trim() &&
-          formData.boardFins?.trim() &&
-          formData.boardTail?.trim(),
+          formData.boardThicknessInches?.trim(),
       ),
-    [
-      formData.boardLengthFt,
-      formData.boardWidthInches,
-      formData.boardThicknessInches,
-      formData.boardFins,
-      formData.boardTail,
-    ],
+    [formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches],
   )
 
   const pickupComplete = useMemo(() => {
@@ -540,7 +544,16 @@ function SellPageContent() {
         return
       }
       const partial = draft.formData as Partial<SellListingDraftFormSnapshot>
-      setFormData((prev) => ({ ...prev, ...partial }))
+      setFormData((prev) => ({
+        ...prev,
+        ...partial,
+        ...(partial.boardFins !== undefined
+          ? { boardFins: singleFinSetupSlugForForm(partial.boardFins) }
+          : {}),
+        ...(partial.boardTail !== undefined
+          ? { boardTail: singleTailShapeSlugForForm(partial.boardTail) }
+          : {}),
+      }))
       const wDraft = typeof partial.boardWidthInches === "string" ? partial.boardWidthInches.trim() : ""
       const tDraft =
         typeof partial.boardThicknessInches === "string" ? partial.boardThicknessInches.trim() : ""
@@ -740,8 +753,14 @@ function SellPageContent() {
         boardWidthInches: (listing as { width?: number | null }).width != null ? String((listing as { width?: number | null }).width) : "",
         boardThicknessInches: (listing as { thickness?: number | null }).thickness != null ? String((listing as { thickness?: number | null }).thickness) : "",
         boardVolumeL: (listing as { volume?: number | null }).volume != null ? String((listing as { volume?: number | null }).volume) : "",
-        boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
-        boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
+        boardFins:
+          parseFinsSetupFromStorage(
+            (listing as { fins_setup?: string | null }).fins_setup ?? null,
+          )[0] ?? "",
+        boardTail:
+          parseTailShapeFromStorage(
+            (listing as { tail_shape?: string | null }).tail_shape ?? null,
+          )[0] ?? "",
         ...(() => {
           const bid = (listing as { brand_id?: string | null }).brand_id?.trim() ?? ""
           return {
@@ -1366,8 +1385,8 @@ function SellPageContent() {
           width: fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
           thickness: fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
           volume: fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
-          fins_setup: fd.boardFins ? fd.boardFins : null,
-          tail_shape: fd.boardTail ? fd.boardTail : null,
+          fins_setup: serializeFinsSetupTags(fd.boardFins.trim() ? [fd.boardFins.trim()] : []),
+          tail_shape: serializeTailShapeTags(fd.boardTail.trim() ? [fd.boardTail.trim()] : []),
           latitude: boardLocationLat,
           longitude: boardLocationLng,
           city: boardLocationCity,
@@ -1456,8 +1475,8 @@ function SellPageContent() {
           width: fd.boardWidthInches ? parseFloat(fd.boardWidthInches) : null,
           thickness: fd.boardThicknessInches ? parseFloat(fd.boardThicknessInches) : null,
           volume: fd.boardVolumeL ? parseFloat(fd.boardVolumeL) : null,
-          fins_setup: fd.boardFins ? fd.boardFins : null,
-          tail_shape: fd.boardTail ? fd.boardTail : null,
+          fins_setup: serializeFinsSetupTags(fd.boardFins.trim() ? [fd.boardFins.trim()] : []),
+          tail_shape: serializeTailShapeTags(fd.boardTail.trim() ? [fd.boardTail.trim()] : []),
           latitude: boardLocationLat,
           longitude: boardLocationLng,
           city: boardLocationCity,
@@ -2083,73 +2102,6 @@ function SellPageContent() {
                       ) : null}
                     </div>
 
-                    <div className="grid gap-6 md:grid-cols-2">
-                    {/* Fins Setup */}
-                    <div className="space-y-2">
-                      <Label>Fin setup *</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { value: "single", label: "Single" },
-                          { value: "twin", label: "Twin (2+1)" },
-                          { value: "thruster", label: "Thruster" },
-                          { value: "quad", label: "Quad" },
-                          { value: "five", label: "5-fin" },
-                          { value: "other", label: "Other" },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, boardFins: formData.boardFins === opt.value ? "" : opt.value })}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-all outline-none",
-                              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                              formData.boardFins === opt.value
-                                ? "border-primary bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/25"
-                                : "border-border bg-background hover:border-primary/45 hover:bg-muted/50",
-                            )}
-                          >
-                            {formData.boardFins === opt.value ? (
-                              <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
-                            ) : null}
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Tail Shape */}
-                    <div className="space-y-2">
-                      <Label>Tail shape *</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { value: "round", label: "Round" },
-                          { value: "squash", label: "Squash" },
-                          { value: "square", label: "Square" },
-                          { value: "pin", label: "Pin" },
-                          { value: "swallow", label: "Swallow" },
-                          { value: "fish", label: "Fish" },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, boardTail: formData.boardTail === opt.value ? "" : opt.value })}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-all outline-none",
-                              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                              formData.boardTail === opt.value
-                                ? "border-primary bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/25"
-                                : "border-border bg-background hover:border-primary/45 hover:bg-muted/50",
-                            )}
-                          >
-                            {formData.boardTail === opt.value ? (
-                              <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
-                            ) : null}
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    </div>
                 </SellFormSection>
 
                 <SellFormSection title="Pickup & delivery" complete={pickupComplete}>
@@ -2297,6 +2249,62 @@ function SellPageContent() {
                     <p className="text-xs text-muted-foreground">
                       {formData.description.length} / 1000
                     </p>
+                  </div>
+                  <div className="space-y-4 border-t border-border/50 pt-5">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Optional fin setup and tail shape — helps buyers search and filter. Only the listed
+                      choices are stored.
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="sell-fin-setup">Fin setup</Label>
+                        <Select
+                          value={formData.boardFins.trim() ? formData.boardFins : LISTING_TAG_SELECT_NONE}
+                          onValueChange={(v) =>
+                            setFormData({
+                              ...formData,
+                              boardFins: v === LISTING_TAG_SELECT_NONE ? "" : v,
+                            })
+                          }
+                        >
+                          <SelectTrigger id="sell-fin-setup" className="h-11 w-full">
+                            <SelectValue placeholder="Optional" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={LISTING_TAG_SELECT_NONE}>None</SelectItem>
+                            {FIN_SETUP_TAG_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="sell-tail-shape">Tail shape</Label>
+                        <Select
+                          value={formData.boardTail.trim() ? formData.boardTail : LISTING_TAG_SELECT_NONE}
+                          onValueChange={(v) =>
+                            setFormData({
+                              ...formData,
+                              boardTail: v === LISTING_TAG_SELECT_NONE ? "" : v,
+                            })
+                          }
+                        >
+                          <SelectTrigger id="sell-tail-shape" className="h-11 w-full">
+                            <SelectValue placeholder="Optional" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={LISTING_TAG_SELECT_NONE}>None</SelectItem>
+                            {TAIL_SHAPE_TAG_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 </SellFormSection>
 

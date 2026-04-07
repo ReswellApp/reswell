@@ -305,7 +305,7 @@ async function buildSearchQuery(
         const safe = term.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
         const pattern = `"%${safe}%"`
         query = query.or(
-          `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern}`,
+          `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern},fins_setup.ilike.${pattern},tail_shape.ilike.${pattern}`,
         )
       }
     } else {
@@ -321,6 +321,8 @@ async function buildSearchQuery(
           orParts.push(`title.ilike.${pattern}`)
           orParts.push(`description.ilike.${pattern}`)
           orParts.push(`brand.ilike.${pattern}`)
+          orParts.push(`fins_setup.ilike.${pattern}`)
+          orParts.push(`tail_shape.ilike.${pattern}`)
         }
         query = query.or(orParts.join(","))
       }

@@ -1,5 +1,7 @@
 import Anthropic, { APIError, AuthenticationError } from "@anthropic-ai/sdk"
 import { NextResponse } from "next/server"
+import { FIN_SETUP_LABELS, parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
+import { parseTailShapeFromStorage, TAIL_SHAPE_LABELS } from "@/lib/listing-tail-shape-tags"
 
 /** Strips surrounding quotes and whitespace — common .env mistakes cause invalid x-api-key. */
 function normalizeAnthropicApiKey(raw: string): string {
@@ -68,35 +70,37 @@ export async function POST(req: Request) {
     fair: "Fair",
   }
 
-  const finsLabels: Record<string, string> = {
-    single: "Single fin",
-    twin: "Twin (2+1)",
-    thruster: "Thruster",
-    quad: "Quad",
-    five: "5-fin",
-    other: "Other",
-  }
-
-  const tailLabels: Record<string, string> = {
-    round: "Round tail",
-    squash: "Squash tail",
-    square: "Square tail",
-    pin: "Pin tail",
-    swallow: "Swallow tail",
-    fish: "Fish tail",
-  }
-
   const dimsLine = [length, width, thickness].filter(Boolean).join(" x ")
   const volLine = volume ? `${volume}L` : null
   const dimsDisplay = [dimsLine, volLine].filter(Boolean).join(" — ")
+
+  let finsDisplay = "Not specified"
+  if (Array.isArray(fins) && fins.length > 0) {
+    const flat = fins.flatMap((f) => (typeof f === "string" ? parseFinsSetupFromStorage(f) : []))
+    const uniq = [...new Set(flat)]
+    if (uniq.length) finsDisplay = uniq.map((slug) => FIN_SETUP_LABELS[slug]).join(", ")
+  } else if (typeof fins === "string" && fins.trim()) {
+    const slugs = parseFinsSetupFromStorage(fins)
+    if (slugs.length) finsDisplay = slugs.map((s) => FIN_SETUP_LABELS[s]).join(", ")
+  }
+
+  let tailDisplay = "Not specified"
+  if (Array.isArray(tail) && tail.length > 0) {
+    const flat = tail.flatMap((t) => (typeof t === "string" ? parseTailShapeFromStorage(t) : []))
+    const uniq = [...new Set(flat)]
+    if (uniq.length) tailDisplay = uniq.map((slug) => TAIL_SHAPE_LABELS[slug]).join(", ")
+  } else if (typeof tail === "string" && tail.trim()) {
+    const slugs = parseTailShapeFromStorage(tail)
+    if (slugs.length) tailDisplay = slugs.map((s) => TAIL_SHAPE_LABELS[s]).join(", ")
+  }
 
   const prompt = `You are helping a surfer write a listing description for their surfboard on Reswell, a peer-to-peer surf gear marketplace. Write a natural, honest, and appealing listing description based on these details:
 
 Board: ${[brand, model].filter(Boolean).join(" ") || "Surfboard"}
 Dimensions: ${dimsDisplay || "Not specified"}
 Condition: ${conditionLabels[condition] || condition || "Not specified"}
-Fins: ${finsLabels[fins] || fins || "Not specified"}
-Tail: ${tailLabels[tail] || tail || "Not specified"}
+Fins: ${finsDisplay}
+Tail: ${tailDisplay}
 Price: ${price ? `$${price}` : "Not specified"}
 Location: ${location || "Not specified"}
 

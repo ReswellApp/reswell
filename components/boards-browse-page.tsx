@@ -87,7 +87,12 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       .eq("board", true)
       .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
     const categoryIds = (matchingCats ?? []).map((c) => c.id)
-    const orParts = [`title.ilike.${pattern}`, `description.ilike.${pattern}`]
+    const orParts = [
+      `title.ilike.${pattern}`,
+      `description.ilike.${pattern}`,
+      `fins_setup.ilike.${pattern}`,
+      `tail_shape.ilike.${pattern}`,
+    ]
     if (categoryIds.length > 0) orParts.push(`category_id.in.(${categoryIds.join(",")})`)
     dbQuery = dbQuery.or(orParts.join(","))
   }
