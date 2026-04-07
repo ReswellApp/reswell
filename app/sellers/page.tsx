@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { MapPin, Store, Search, ArrowRight, Package } from "lucide-react"
+import { MapPin, Store, Search, ArrowRight } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
@@ -13,6 +13,7 @@ import { wideShimmer } from "@/lib/image-shimmer"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
 const THUMB_PER_SELLER = 6
@@ -54,6 +55,10 @@ export default async function SellersPage({
 }) {
   const { q } = await searchParams
   const supabase = await getSupabaseForPublicSellersDirectory()
+  const authClient = await createClient()
+  const {
+    data: { user },
+  } = await authClient.auth.getUser()
 
   const profilePublicFields =
     "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
@@ -307,23 +312,11 @@ export default async function SellersPage({
         </div>
       </section>
 
-      <section className="border-t border-border/60 bg-offwhite py-12">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-lg text-center">
-            <Package className="mx-auto mb-3 h-9 w-9 text-primary" aria-hidden />
-            <h2 className="text-xl font-bold text-foreground">Sell on Reswell</h2>
-            <p className="mt-2 text-sm text-muted-foreground text-pretty">
-              List your gear and reach local surfers. Set up your seller profile in minutes.
-            </p>
-            <Button className="mt-5" size="lg" asChild>
-              <Link href="/dashboard/settings">
-                Become a seller
-                <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-              </Link>
-            </Button>
-          </div>
+      {!user ? (
+        <div className="border-t border-border/60">
+          <SellersPageSellCta />
         </div>
-      </section>
+      ) : null}
     </main>
   )
 }
