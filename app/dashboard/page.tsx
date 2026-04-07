@@ -115,7 +115,7 @@ export default async function DashboardPage() {
       name: "Favorites",
       value: favoriteCount || 0,
       icon: Heart,
-      href: "/dashboard/favorites",
+      href: "/favorites",
     },
     {
       name: "Unread Messages",
@@ -290,7 +290,7 @@ export default async function DashboardPage() {
               </Link>
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/favorites">
+              <Link href="/favorites">
                 <Heart className="h-6 w-6 mb-2" />
                 Favorites
               </Link>

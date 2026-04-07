@@ -23,7 +23,7 @@ const sidebarLinks = [
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Archived", href: "/dashboard/listings/archived", icon: Archive },
   { name: "Earnings & Payouts", href: "/dashboard/earnings", icon: Banknote },
-  { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
+  { name: "Favorites", href: "/favorites", icon: Heart },
   { name: "Followers", href: "/dashboard/followers", icon: Users },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
