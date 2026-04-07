@@ -17,6 +17,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBoardModelsCatalogItems } from "@/app/actions/marketplace"
 
 export type IndexBoardModelSelection = {
+  brandId: string
   brandSlug: string
   modelSlug: string
   brandName: string
@@ -86,7 +87,7 @@ export function IndexBoardModelCombobox({
               <CommandGroup>
                 {items.map((opt) => (
                   <CommandItem
-                    key={`${opt.brandSlug}/${opt.modelSlug}`}
+                    key={`${opt.brandId}/${opt.modelSlug}`}
                     value={`${opt.label} ${opt.brandSlug} ${opt.modelSlug}`}
                     onSelect={() => {
                       onChange(opt)
@@ -96,7 +97,7 @@ export function IndexBoardModelCombobox({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4 shrink-0",
-                        value?.brandSlug === opt.brandSlug && value?.modelSlug === opt.modelSlug
+                        value?.brandId === opt.brandId && value?.modelSlug === opt.modelSlug
                           ? "opacity-100"
                           : "opacity-0",
                       )}

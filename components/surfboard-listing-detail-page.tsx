@@ -47,7 +47,7 @@ import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { ListingSellerStats } from "@/components/listing-seller-stats"
 import { BRANDS_BASE } from "@/lib/brands/routes"
-import { getBrandBySlug } from "@/lib/brands/server"
+import { getBrandById } from "@/lib/brands/server"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -155,9 +155,8 @@ export async function SurfboardListingDetailPage({
     ? (board.profiles.location as string).split(",")[0]?.trim()
     : null
 
-  const indexBrandSlug = (board as { index_brand_slug?: string | null }).index_brand_slug?.trim() ?? ""
-  const indexBrand =
-    indexBrandSlug ? await getBrandBySlug(supabase, indexBrandSlug) : null
+  const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
+  const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
 
   return (
       <main className="flex-1 py-8">

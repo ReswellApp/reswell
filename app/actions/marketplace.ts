@@ -56,6 +56,7 @@ export async function getBoardModelsCatalogItems() {
   const supabase = await createClient()
   const brands = await listBrands(supabase)
   const items = brands.map((b) => ({
+    brandId: b.id,
     brandSlug: b.slug,
     modelSlug: "",
     brandName: b.name,

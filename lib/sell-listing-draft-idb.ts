@@ -6,7 +6,7 @@
 const DB_NAME = "reswell-sell-draft"
 const STORE = "draft"
 const KEY = "current"
-export const SELL_LISTING_DRAFT_VERSION = 2
+export const SELL_LISTING_DRAFT_VERSION = 3
 
 export type SellListingDraftFormSnapshot = Record<string, unknown>
 

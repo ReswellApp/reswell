@@ -148,6 +148,22 @@ type ParsedHit = {
   lng: number
   haystack: string
   importance: number
+  city: string
+  state: string
+}
+
+function nominatimCityState(hit: NominatimHit): { city: string; state: string } {
+  const addr = hit.address || {}
+  const city =
+    addr.city ||
+    addr.town ||
+    addr.village ||
+    addr.hamlet ||
+    addr.municipality ||
+    (typeof hit.name === "string" ? hit.name.trim() : "") ||
+    ""
+  const state = addr.state || ""
+  return { city, state }
 }
 
 function parseNominatimHits(data: (NominatimHit & { class?: string })[]): ParsedHit[] {
@@ -157,12 +173,15 @@ function parseNominatimHits(data: (NominatimHit & { class?: string })[]): Parsed
       const label = labelForHit(hit)
       const display = hit.display_name ?? ""
       const haystack = `${display} ${label}`.toLowerCase()
+      const { city, state } = nominatimCityState(hit)
       return {
         label,
         lat: Number(hit.lat),
         lng: Number(hit.lon),
         haystack,
         importance: typeof hit.importance === "number" ? hit.importance : 0,
+        city,
+        state,
       }
     })
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng))
@@ -247,12 +266,22 @@ function parsePhotonFeatures(features: PhotonFeature[]): ParsedHit[] {
       .filter(Boolean)
       .join(" ")
       .toLowerCase()
+    const pCity = String(p.city ?? "").trim()
+    const pState = String(p.state ?? "").trim()
+    const pName = String(p.name ?? "").trim()
+    const pType = String(p.type ?? "")
+    const city =
+      pCity ||
+      (pType === "city" || pType === "town" || pType === "village" ? pName : "") ||
+      pName
     out.push({
       label,
       lat,
       lng,
       haystack,
-      importance: photonTypeWeight(String(p.type ?? "")),
+      importance: photonTypeWeight(pType),
+      city,
+      state: pState,
     })
   }
   return out
@@ -328,6 +357,8 @@ export async function GET(request: NextRequest) {
       label: r.row.label,
       lat: r.row.lat,
       lng: r.row.lng,
+      city: r.row.city,
+      state: r.row.state,
     }))
 
     const seen = new Set<string>()

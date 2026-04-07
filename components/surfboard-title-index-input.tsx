@@ -15,7 +15,8 @@ function filterIndexBoardModels(
   if (!q) return []
   return items
     .filter((o) => {
-      const hay = `${o.label} ${o.brandName} ${o.modelName} ${o.brandSlug} ${o.modelSlug}`.toLowerCase()
+      const hay =
+        `${o.label} ${o.brandName} ${o.modelName} ${o.brandSlug} ${o.modelSlug} ${o.brandId}`.toLowerCase()
       return hay.includes(q)
     })
     .slice(0, limit)
@@ -160,7 +161,7 @@ export function SurfboardTitleIndexInput({
           ) : (
             filtered.map((opt, i) => (
               <button
-                key={`${opt.brandSlug}/${opt.modelSlug}`}
+                key={`${opt.brandId}/${opt.modelSlug}`}
                 type="button"
                 role="option"
                 aria-selected={i === highlight}
