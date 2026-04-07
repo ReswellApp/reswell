@@ -100,7 +100,6 @@ const navigation = [
 const secondaryNav = [
   { name: "Sellers", href: "/sellers" },
   { name: "Brands", href: BRANDS_BASE },
-  { name: "Field notes", href: "/blog" },
   { name: "Board Talk", href: "/board-talk" },
 ]
 
