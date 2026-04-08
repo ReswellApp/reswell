@@ -48,7 +48,6 @@ type SaleDetail = {
   buyer_id: string
   listing_id: string
   stripe_checkout_session_id: string | null
-  payouts?: PayoutRow[] | PayoutRow | null
   listings:
     | {
         id: string
@@ -90,8 +89,18 @@ function fulfillmentLabel(method: string | null, hasShipAddr: boolean): string {
   return hasShipAddr ? "Ship to buyer" : "Local pickup"
 }
 
+/** Avoid caching a mistaken 404; each sale is user-specific and dynamic. */
+export const dynamic = "force-dynamic"
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function SaleDetailPage(props: { params: Promise<{ id: string }> }) {
-  const { id } = await props.params
+  const raw = (await props.params).id
+  const id = decodeURIComponent(typeof raw === "string" ? raw.trim() : "").trim()
+  if (!id || !UUID_RE.test(id)) {
+    notFound()
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -99,6 +108,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   if (!user) return null
 
+  // Keep the same `orders` + `listings` embed shape as `/dashboard/sales` so the detail view
+  // loads whenever the list row exists. Payouts are loaded separately — embedding `payouts` here
+  // has caused PostgREST to fail the whole request while the list query still succeeds.
   const { data: row, error } = await supabase
     .from("orders")
     .select(
@@ -116,7 +128,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       buyer_id,
       listing_id,
       stripe_checkout_session_id,
-      payouts ( status, hold_reason ),
       listings (
         id,
         title,
@@ -136,6 +147,14 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   }
 
   const sale = row as unknown as SaleDetail
+
+  const { data: payoutFromDb } = await supabase
+    .from("payouts")
+    .select("status, hold_reason")
+    .eq("order_id", id)
+    .maybeSingle()
+
+  const payoutRow: PayoutRow | null = payoutFromDb ?? null
   const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
   const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
   const img = primaryImage(listing?.listing_images ?? null)
@@ -155,9 +174,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
   const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
   const paidWithCard = !!sale.stripe_checkout_session_id
-  const payoutRow: PayoutRow | null = Array.isArray(sale.payouts)
-    ? sale.payouts[0] ?? null
-    : sale.payouts ?? null
 
   const { data: convRow } = await supabase
     .from("conversations")
