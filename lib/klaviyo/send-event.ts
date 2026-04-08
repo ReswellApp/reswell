@@ -12,6 +12,7 @@ const KLAVIYO_EVENTS_URL = "https://a.klaviyo.com/api/events"
 export const KLAVIYO_API_REVISION = "2026-01-15"
 
 let klaviyoEnvDebugLogged = false
+let klaviyoMissingKeyWarned = false
 
 function logKlaviyoEnvDebugOnce(): void {
   if (klaviyoEnvDebugLogged) return
@@ -85,6 +86,12 @@ export async function sendKlaviyoServerEvent(
   logKlaviyoEnvDebugOnce()
   const apiKey = process.env.KLAVIYO_API_KEY?.trim()
   if (!apiKey) {
+    if (!klaviyoMissingKeyWarned) {
+      klaviyoMissingKeyWarned = true
+      console.warn(
+        "[klaviyo] KLAVIYO_API_KEY is not set; Events API calls are skipped. Metrics such as Purchase Successful only appear in Klaviyo after at least one event is accepted.",
+      )
+    }
     return {
       ok: false,
       status: 0,
@@ -95,6 +102,11 @@ export async function sendKlaviyoServerEvent(
   }
 
   if (!hasProfileIdentifier(input.profile)) {
+    console.warn(
+      "[klaviyo] Event skipped:",
+      input.metricName,
+      "— no profile identifier (email, external_id, or anonymous_id)",
+    )
     return {
       ok: false,
       status: 0,

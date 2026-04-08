@@ -34,6 +34,56 @@ async function buyerEmailForKlaviyo(buyerId: string): Promise<string | null> {
 }
 
 /**
+ * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
+ * Klaviyo dedupes by `unique_id` (`purchase-successful-{orderId}`).
+ */
+async function emitPurchaseSuccessfulKlaviyoForOrderId(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  orderId: string,
+): Promise<void> {
+  const { data: order } = await serviceSupabase
+    .from("orders")
+    .select("id, buyer_id, listing_id, amount, fulfillment_method, payment_method")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (!order?.buyer_id || !order.listing_id) return
+
+  const { data: listing } = await serviceSupabase
+    .from("listings")
+    .select("id, title, section, slug")
+    .eq("id", order.listing_id)
+    .maybeSingle()
+
+  if (!listing) return
+
+  const buyerEmail = await buyerEmailForKlaviyo(order.buyer_id)
+  const rawAmount = order.amount as unknown
+  const amount =
+    typeof rawAmount === "number"
+      ? rawAmount
+      : parseFloat(typeof rawAmount === "string" ? rawAmount : String(rawAmount))
+
+  const fulfillmentMethod =
+    order.fulfillment_method === "pickup" ? "pickup" : "shipping"
+  const paymentMethod =
+    order.payment_method === "reswell_bucks" ? "reswell_bucks" : "stripe"
+
+  await trackKlaviyoBuyerOrderConfirmed({
+    buyerUserId: order.buyer_id,
+    buyerEmail,
+    orderId: order.id,
+    listingId: listing.id,
+    listingTitle: listing.title ?? "",
+    listingSection: listing.section ?? "",
+    listingSlug: listing.slug ?? null,
+    amount: Number.isFinite(amount) ? amount : 0,
+    fulfillmentMethod,
+    paymentMethod,
+  })
+}
+
+/**
  * Creates the marketplace order and side effects for a succeeded PaymentIntent.
  * Idempotent: safe to call from the client finalize route and from Stripe webhooks.
  * Caller must only invoke when `pi.status === "succeeded"` and metadata is trusted (Stripe-signed webhook or session matches buyer_id).
@@ -61,6 +111,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     .maybeSingle()
 
   if (existing?.id) {
+    await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -310,7 +361,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     shippingAddress: shippingAddressJson,
   })
 
-  void trackKlaviyoBuyerOrderConfirmed({
+  await trackKlaviyoBuyerOrderConfirmed({
     buyerUserId: buyerId,
     buyerEmail,
     orderId: purchase.id,

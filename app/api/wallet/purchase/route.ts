@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (purchase?.id) {
-    void trackKlaviyoBuyerOrderConfirmed({
+    await trackKlaviyoBuyerOrderConfirmed({
       buyerUserId: user.id,
       buyerEmail: user.email ?? null,
       orderId: purchase.id,
