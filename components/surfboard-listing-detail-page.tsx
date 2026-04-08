@@ -4,18 +4,20 @@ import Image from "next/image"
 import { portraitShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { formatCondition, formatBoardType, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { createClient } from "@/lib/supabase/server"
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
-import {
-  ArrowLeft,
-  MapPin,
-  MessageSquare,
-  Clock,
-  Info,
-} from "lucide-react"
+import { MapPin, MessageSquare, Clock, Info } from "lucide-react"
 import dynamic from "next/dynamic"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ContactSellerForm } from "@/components/contact-seller-form"
@@ -55,6 +57,7 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
+import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 
 export async function SurfboardListingDetailPage({
   listingParam,
@@ -153,26 +156,61 @@ export async function SurfboardListingDetailPage({
   const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
   const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
 
+  const rawBoardType = board.board_type?.trim() || null
+  const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
+  const listingTitle = capitalizeWords(board.title)
+
   return (
       <main className="flex-1 py-8">
         <div className="container mx-auto">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-            <Link href="/boards" className="hover:text-foreground flex items-center gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Surfboards
-            </Link>
-            {board.board_type && (
-              <>
-                <span>/</span>
-                <Link
-                  href={`/boards?type=${board.board_type}`}
-                  className="hover:text-foreground capitalize"
-                >
-                  {board.board_type}
-                </Link>
-              </>
-            )}
+          <div className="border-t border-neutral-200 mb-6 pt-4">
+            <Breadcrumb>
+              <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                    <Link href="/">Home</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                {typeCrumb ? (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                        <Link href="/boards">Surfboards</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                        <Link href={`/boards?type=${encodeURIComponent(rawBoardType ?? "")}`}>
+                          {typeCrumb}
+                        </Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                        {listingTitle}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                ) : (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                        <Link href="/boards">Surfboards</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                        {listingTitle}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
 
           {isSold && (

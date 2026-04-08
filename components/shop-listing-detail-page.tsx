@@ -3,9 +3,17 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
-import { ArrowLeft, Package, Truck, Shield, RotateCcw } from "lucide-react"
+import { Package, Truck, Shield, RotateCcw } from "lucide-react"
 import { QuantitySelector } from "@/components/quantity-selector"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
 import { formatCategory } from "@/lib/listing-labels"
@@ -60,6 +68,12 @@ export async function ShopListingDetailPage({
     .order("created_at", { ascending: false })
     .limit(4)
 
+  const listingCat = listing.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
+  const listingCatRow = Array.isArray(listingCat) ? listingCat[0] : listingCat
+  const listingCategoryLabel = listingCatRow?.name?.trim()
+    ? formatCategory(listingCatRow.name)
+    : null
+
   const relatedItems =
     relatedListings
       ?.filter((l) => {
@@ -88,11 +102,50 @@ export async function ShopListingDetailPage({
   return (
     <main className="flex-1 py-8">
       <div className="container mx-auto">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-          <Link href="/shop" className="hover:text-foreground flex items-center gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Shop
-          </Link>
+        <div className="border-t border-neutral-200 mb-6 pt-4">
+          <Breadcrumb>
+            <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                  <Link href="/">Home</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+              {listingCategoryLabel ? (
+                <>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/shop">Shop</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <span className="font-normal text-[#5c6b89]">{listingCategoryLabel}</span>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                      {listing.title}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </>
+              ) : (
+                <>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/shop">Shop</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                      {listing.title}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </>
+              )}
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
