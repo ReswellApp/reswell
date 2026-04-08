@@ -2,10 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle2, Loader2, ShoppingBag } from "lucide-react"
+import { CheckCircle2, Loader2 } from "lucide-react"
 
 function StaticSuccess() {
   return (
@@ -39,26 +39,36 @@ function StaticSuccess() {
 }
 
 function CheckoutSuccessInner() {
+  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const paymentIntent = searchParams.get("payment_intent")
   const redirectStatus = searchParams.get("redirect_status")
-  const [error, setError] = useState<string | null>(null)
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [confirmed, setConfirmed] = useState(false)
-  const [authRequired, setAuthRequired] = useState(false)
+  const orderIdInUrl = searchParams.get("order_id")?.trim() ?? null
+
+  const [finalizeError, setFinalizeError] = useState<string | null>(null)
+  const [finalizedOrderId, setFinalizedOrderId] = useState<string | null>(null)
+  const [finalizeAuth, setFinalizeAuth] = useState(false)
+  const [finalizeBusy, setFinalizeBusy] = useState(false)
 
   const signInContinueHref = `/auth/login?redirect=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`
 
   useEffect(() => {
-    if (!paymentIntent) return
+    if (!orderIdInUrl || paymentIntent) return
+    router.replace(`/successpage/${orderIdInUrl}`)
+  }, [orderIdInUrl, paymentIntent, router])
 
+  useEffect(() => {
+    if (!paymentIntent) return
     if (redirectStatus === "failed") {
-      setError("Your bank did not authorize this payment.")
+      setFinalizeError("Your bank did not authorize this payment.")
       return
     }
 
     let cancelled = false
+    setFinalizeBusy(true)
+    setFinalizeError(null)
+    setFinalizeAuth(false)
 
     ;(async () => {
       try {
@@ -71,17 +81,22 @@ function CheckoutSuccessInner() {
         const data = (await res.json()) as { error?: string; orderId?: string }
         if (cancelled) return
         if (res.status === 401) {
-          setAuthRequired(true)
+          setFinalizeAuth(true)
           return
         }
         if (!res.ok) {
-          setError(data.error ?? "Could not complete your order.")
+          setFinalizeError(data.error ?? "Could not complete your order.")
           return
         }
-        setOrderId(data.orderId ?? null)
-        setConfirmed(true)
+        if (!data.orderId?.trim()) {
+          setFinalizeError("Could not complete your order.")
+          return
+        }
+        setFinalizedOrderId(data.orderId.trim())
       } catch {
-        if (!cancelled) setError("Something went wrong completing your order.")
+        if (!cancelled) setFinalizeError("Something went wrong completing your order.")
+      } finally {
+        if (!cancelled) setFinalizeBusy(false)
       }
     })()
 
@@ -90,11 +105,41 @@ function CheckoutSuccessInner() {
     }
   }, [paymentIntent, redirectStatus])
 
-  if (!paymentIntent) {
+  useEffect(() => {
+    if (!finalizedOrderId) return
+    router.replace(`/successpage/${finalizedOrderId}`)
+  }, [finalizedOrderId, router])
+
+  if (!paymentIntent && !orderIdInUrl) {
     return <StaticSuccess />
   }
 
-  if (authRequired) {
+  if (paymentIntent && redirectStatus === "failed") {
+    return (
+      <main className="flex-1 py-16">
+        <div className="container mx-auto max-w-md text-center">
+          <Card>
+            <CardContent className="pt-8 pb-8 space-y-4">
+              <h1 className="text-xl font-bold">Payment issue</h1>
+              <p className="text-sm text-muted-foreground">
+                Your bank did not authorize this payment.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Button asChild>
+                  <Link href="/dashboard/orders">View orders</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/boards">Browse boards</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    )
+  }
+
+  if (finalizeAuth) {
     return (
       <main className="flex-1 py-16">
         <div className="container mx-auto max-w-md text-center">
@@ -125,20 +170,20 @@ function CheckoutSuccessInner() {
     )
   }
 
-  if (error) {
+  if (finalizeError) {
     return (
       <main className="flex-1 py-16">
         <div className="container mx-auto max-w-md text-center">
           <Card>
             <CardContent className="pt-8 pb-8 space-y-4">
-              <h1 className="text-xl font-bold">Payment issue</h1>
-              <p className="text-sm text-muted-foreground">{error}</p>
+              <h1 className="text-xl font-bold">Something went wrong</h1>
+              <p className="text-sm text-muted-foreground">{finalizeError}</p>
               <div className="flex flex-col gap-3">
                 <Button asChild>
                   <Link href="/dashboard/orders">View orders</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href="/gear">Browse gear</Link>
+                  <Link href="/boards">Browse boards</Link>
                 </Button>
               </div>
             </CardContent>
@@ -148,38 +193,25 @@ function CheckoutSuccessInner() {
     )
   }
 
-  if (confirmed) {
+  const waitingOnFinalize =
+    Boolean(paymentIntent) && redirectStatus !== "failed" && !finalizedOrderId && !finalizeError && !finalizeAuth
+
+  const redirectingToSuccess =
+    Boolean(orderIdInUrl) && !paymentIntent && !finalizeError && !finalizeAuth
+
+  const goingToReceipt =
+    Boolean(finalizedOrderId) && !finalizeError && !finalizeAuth
+
+  if (finalizeBusy || waitingOnFinalize || redirectingToSuccess || goingToReceipt) {
     return (
       <main className="flex-1 py-16">
-        <div className="container mx-auto max-w-md text-center">
-          <Card>
-            <CardContent className="pt-8 pb-8">
-              <div className="flex justify-center mb-4">
-                <div className="rounded-full bg-green-100 p-4 dark:bg-green-900/40">
-                  <ShoppingBag className="h-12 w-12 text-green-700 dark:text-green-300" />
-                </div>
-              </div>
-              <h1 className="text-xl font-bold mb-2">Purchase confirmed</h1>
-              <p className="text-muted-foreground text-sm mb-6">
-                Your payment was successful and the seller has been notified. You can track the
-                status of your order from your dashboard.
-              </p>
-              <div className="flex flex-col gap-3">
-                {orderId ? (
-                  <Button asChild>
-                    <Link href={`/dashboard/orders/${orderId}`}>View your order</Link>
-                  </Button>
-                ) : (
-                  <Button asChild>
-                    <Link href="/dashboard/orders">View orders</Link>
-                  </Button>
-                )}
-                <Button variant="outline" asChild>
-                  <Link href="/gear">Continue browsing</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="container mx-auto max-w-md flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {finalizeBusy || waitingOnFinalize
+              ? "Confirming your order…"
+              : "Taking you to your receipt…"}
+          </p>
         </div>
       </main>
     )
@@ -188,12 +220,9 @@ function CheckoutSuccessInner() {
   return (
     <main className="flex-1 py-16">
       <div className="container mx-auto max-w-md text-center">
-        <Card>
-          <CardContent className="pt-8 pb-8 flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Confirming your order…</p>
-          </CardContent>
-        </Card>
+        <Button asChild>
+          <Link href="/dashboard/orders">View orders</Link>
+        </Button>
       </div>
     </main>
   )

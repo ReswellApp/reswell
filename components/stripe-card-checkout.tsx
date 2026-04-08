@@ -78,9 +78,9 @@ function StripePayButton({
           }
           toast.success(`You bought “${listingTitle}”`)
           if (data.orderId) {
-            router.push(`/dashboard/orders/${data.orderId}`)
+            router.replace(`/successpage/${data.orderId}`)
           } else {
-            router.push("/dashboard/orders")
+            router.replace("/checkout/success")
           }
         }
       } catch (err) {
