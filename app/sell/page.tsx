@@ -1583,7 +1583,7 @@ function SellPageContent() {
                             <Input
                               type="text"
                               inputMode="numeric"
-                              placeholder="6"
+                              placeholder=""
                               value={formData.boardLengthFt}
                               onChange={(e) => setFormData({ ...formData, boardLengthFt: e.target.value })}
                               className="w-14 text-center px-2"
@@ -1594,7 +1594,7 @@ function SellPageContent() {
                             <Input
                               type="text"
                               inputMode="decimal"
-                              placeholder="e.g. 1 or 2 1/2"
+                              placeholder=""
                               value={formData.boardLengthIn}
                               onChange={(e) => setFormData({ ...formData, boardLengthIn: e.target.value })}
                               className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
@@ -1602,9 +1602,6 @@ function SellPageContent() {
                             />
                             <span className="text-xs text-muted-foreground shrink-0">in</span>
                           </div>
-                          {boardLengthFormatted && (
-                            <p className="text-xs text-muted-foreground">{boardLengthFormatted}</p>
-                          )}
                         </div>
 
                         {/* Width */}
@@ -1614,7 +1611,7 @@ function SellPageContent() {
                             <Input
                               type="text"
                               inputMode="decimal"
-                              placeholder="e.g. 19.5 or 19 1/2"
+                              placeholder=""
                               value={formData.boardWidthInches}
                               onChange={(e) => setFormData({ ...formData, boardWidthInches: e.target.value })}
                               className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
@@ -1630,7 +1627,7 @@ function SellPageContent() {
                             <Input
                               type="text"
                               inputMode="decimal"
-                              placeholder="e.g. 2.5 or 2 1/2"
+                              placeholder=""
                               value={formData.boardThicknessInches}
                               onChange={(e) => setFormData({ ...formData, boardThicknessInches: e.target.value })}
                               className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
@@ -1646,7 +1643,7 @@ function SellPageContent() {
                             <Input
                               type="text"
                               inputMode="decimal"
-                              placeholder="e.g. 32.5"
+                              placeholder=""
                               value={formData.boardVolumeL}
                               onChange={(e) => setFormData({ ...formData, boardVolumeL: e.target.value })}
                               className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
@@ -1655,15 +1652,6 @@ function SellPageContent() {
                           </div>
                         </div>
                       </div>
-                      {boardLengthFormatted && (
-                        <p className="text-xs text-muted-foreground font-medium">
-                          {boardLengthFormatted}
-                          {formData.boardWidthInches.trim() && ` × ${formData.boardWidthInches.trim()}`}
-                          {formData.boardThicknessInches.trim() && ` × ${formData.boardThicknessInches.trim()}`}
-                          {formData.boardVolumeL.trim() &&
-                            ` — ${formData.boardVolumeL.trim().toLowerCase().endsWith("l") ? formData.boardVolumeL.trim() : `${formData.boardVolumeL.trim()}L`}`}
-                        </p>
-                      )}
                     </div>
 
                     {/* Fins Setup */}
