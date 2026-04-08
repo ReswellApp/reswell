@@ -24,13 +24,9 @@ function filterIndexBoardModels(
     .slice(0, limit)
 }
 
-/** Title line after choosing a directory model; appends board length when present. */
-export function titleFromIndexModelPick(
-  opt: IndexBoardModelSelection,
-  boardLength: string,
-): string {
-  const len = boardLength.trim()
-  return len ? `${opt.label} - ${len}` : opt.label
+/** Title line after choosing a directory model (length is appended on publish, not here). */
+export function titleFromIndexModelPick(opt: IndexBoardModelSelection): string {
+  return opt.label
 }
 
 type SurfboardTitleIndexInputProps = {

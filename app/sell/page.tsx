@@ -357,17 +357,17 @@ function SellPageContent() {
     ].filter(Boolean).length
   }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
 
-  // Smart title suggestion when brand + model index + length are all filled
+  // Smart title suggestion when directory model is linked (length is appended on publish)
   const suggestedTitle = useMemo(() => {
-    if (!formData.boardIndexLabel || !boardLengthFormatted) return null
-    let suggested = `${formData.boardIndexLabel} - ${boardLengthFormatted}`
+    if (!formData.boardIndexLabel) return null
+    let suggested = formData.boardIndexLabel
     if (suggested.length > LISTING_TITLE_MAX_LENGTH) {
       suggested = suggested.slice(0, LISTING_TITLE_MAX_LENGTH)
     }
     const currentTitle = formData.title.trim()
     if (currentTitle.toLowerCase() === suggested.toLowerCase()) return null
     return suggested
-  }, [formData.boardIndexLabel, boardLengthFormatted, formData.title])
+  }, [formData.boardIndexLabel, formData.title])
 
   useEffect(() => {
     if (editId) {
@@ -1489,10 +1489,9 @@ function SellPageContent() {
                         boardLength={boardLengthFormatted}
                         onSelectModel={(opt: IndexBoardModelSelection) => {
                           setFormData((f) => {
-                            const lenStr = formatBoardLengthForTitle(f.boardLengthFt, f.boardLengthIn)
                             return {
                               ...f,
-                              title: titleFromIndexModelPick(opt, lenStr).slice(
+                              title: titleFromIndexModelPick(opt).slice(
                                 0,
                                 LISTING_TITLE_MAX_LENGTH,
                               ),
