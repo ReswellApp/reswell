@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { PackageCheck, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -106,7 +107,7 @@ export default async function SalesPage() {
     `
     )
     .eq("seller_id", user.id)
-    .eq("status", "confirmed")
+    .in("status", [...ORDER_STATUS_LIST])
     .order("created_at", { ascending: false })
 
   const list = (sales ?? []) as unknown as SaleRow[]
@@ -190,7 +191,9 @@ export default async function SalesPage() {
                         })}
                       </CardDescription>
                     </div>
-                    <Badge variant="default">Paid</Badge>
+                    <Badge variant={orderStatusBadgeVariant(sale.status)}>
+                      {orderStatusLabel(sale.status)}
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">

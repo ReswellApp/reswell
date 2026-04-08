@@ -8,7 +8,15 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Package, Truck, MapPin, CreditCard } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import { SaleMessageThread, type SaleThreadMessage } from "@/components/sale-message-thread"
+import {
+  SellerTrackingForm,
+  SellerPickupVerify,
+  DeliveryStatusBadge,
+  PayoutStatusBadge,
+  TrackingInfo,
+} from "@/components/order-actions"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -24,6 +32,8 @@ type ShippingAddressJson = {
   } | null
 } | null
 
+type PayoutRow = { status: string; hold_reason?: string | null }
+
 type SaleDetail = {
   id: string
   amount: number | string
@@ -32,9 +42,13 @@ type SaleDetail = {
   created_at: string
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
+  delivery_status: string
+  tracking_number: string | null
+  tracking_carrier: string | null
   buyer_id: string
   listing_id: string
   stripe_checkout_session_id: string | null
+  payouts?: PayoutRow[] | PayoutRow | null
   listings:
     | {
         id: string
@@ -96,9 +110,13 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       created_at,
       shipping_address,
       fulfillment_method,
+      delivery_status,
+      tracking_number,
+      tracking_carrier,
       buyer_id,
       listing_id,
       stripe_checkout_session_id,
+      payouts ( status, hold_reason ),
       listings (
         id,
         title,
@@ -110,7 +128,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     )
     .eq("id", id)
     .eq("seller_id", user.id)
-    .eq("status", "confirmed")
+    .in("status", [...ORDER_STATUS_LIST])
     .maybeSingle()
 
   if (error || !row) {
@@ -137,6 +155,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
   const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
   const paidWithCard = !!sale.stripe_checkout_session_id
+  const payoutRow: PayoutRow | null = Array.isArray(sale.payouts)
+    ? sale.payouts[0] ?? null
+    : sale.payouts ?? null
 
   const { data: convRow } = await supabase
     .from("conversations")
@@ -190,7 +211,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Badge variant="default">Paid</Badge>
+        <Badge variant={orderStatusBadgeVariant(sale.status)}>{orderStatusLabel(sale.status)}</Badge>
         <Badge variant="outline" className="gap-1">
           {paidWithCard ? (
             <>
@@ -209,7 +230,27 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           )}
           {fulfill}
         </Badge>
+        <DeliveryStatusBadge status={sale.delivery_status} />
+        <PayoutStatusBadge payout={payoutRow} />
       </div>
+
+      {/* Seller action: add tracking for shipping orders */}
+      {sale.fulfillment_method === "shipping" && (
+        <SellerTrackingForm orderId={sale.id} deliveryStatus={sale.delivery_status} />
+      )}
+
+      {/* Seller action: verify pickup code for local pickup */}
+      {sale.fulfillment_method === "pickup" && (
+        <SellerPickupVerify orderId={sale.id} deliveryStatus={sale.delivery_status} />
+      )}
+
+      {/* Show tracking info if already added */}
+      {sale.tracking_number && (
+        <TrackingInfo
+          trackingNumber={sale.tracking_number}
+          trackingCarrier={sale.tracking_carrier}
+        />
+      )}
 
       <Card>
         <CardHeader>
@@ -218,8 +259,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         <CardContent>
           <p className="font-medium text-foreground">{buyerName}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            They completed checkout for this order. Use messages below to coordinate pickup or
-            shipping.
+            They completed checkout for this order. Use messages below to coordinate.
           </p>
         </CardContent>
       </Card>

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle2, Loader2 } from "lucide-react"
+import { CheckCircle2, Loader2, ShoppingBag } from "lucide-react"
 
 function StaticSuccess() {
   return (
@@ -44,6 +44,8 @@ function CheckoutSuccessInner() {
   const paymentIntent = searchParams.get("payment_intent")
   const redirectStatus = searchParams.get("redirect_status")
   const [error, setError] = useState<string | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [confirmed, setConfirmed] = useState(false)
 
   useEffect(() => {
     if (!paymentIntent) return
@@ -68,11 +70,8 @@ function CheckoutSuccessInner() {
           setError(data.error ?? "Could not complete your order.")
           return
         }
-        if (data.orderId) {
-          router.replace(`/dashboard/orders/${data.orderId}`)
-        } else {
-          router.replace("/dashboard/orders")
-        }
+        setOrderId(data.orderId ?? null)
+        setConfirmed(true)
       } catch {
         if (!cancelled) setError("Something went wrong completing your order.")
       }
@@ -81,7 +80,7 @@ function CheckoutSuccessInner() {
     return () => {
       cancelled = true
     }
-  }, [paymentIntent, redirectStatus, router])
+  }, [paymentIntent, redirectStatus])
 
   if (!paymentIntent) {
     return <StaticSuccess />
@@ -101,6 +100,43 @@ function CheckoutSuccessInner() {
                 </Button>
                 <Button variant="outline" asChild>
                   <Link href="/gear">Browse gear</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    )
+  }
+
+  if (confirmed) {
+    return (
+      <main className="flex-1 py-16">
+        <div className="container mx-auto max-w-md text-center">
+          <Card>
+            <CardContent className="pt-8 pb-8">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-green-100 p-4 dark:bg-green-900/40">
+                  <ShoppingBag className="h-12 w-12 text-green-700 dark:text-green-300" />
+                </div>
+              </div>
+              <h1 className="text-xl font-bold mb-2">Purchase confirmed</h1>
+              <p className="text-muted-foreground text-sm mb-6">
+                Your payment was successful and the seller has been notified. You can track the
+                status of your order from your dashboard.
+              </p>
+              <div className="flex flex-col gap-3">
+                {orderId ? (
+                  <Button asChild>
+                    <Link href={`/dashboard/orders/${orderId}`}>View your order</Link>
+                  </Button>
+                ) : (
+                  <Button asChild>
+                    <Link href="/dashboard/orders">View orders</Link>
+                  </Button>
+                )}
+                <Button variant="outline" asChild>
+                  <Link href="/gear">Continue browsing</Link>
                 </Button>
               </div>
             </CardContent>

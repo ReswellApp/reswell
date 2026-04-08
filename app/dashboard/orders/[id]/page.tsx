@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, MessageCircle, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import {
+  BuyerConfirmDelivery,
+  BuyerPickupCode,
+  DeliveryStatusBadge,
+  TrackingInfo,
+} from "@/components/order-actions"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -29,6 +36,10 @@ type OrderDetail = {
   status: string
   created_at: string
   fulfillment_method: string | null
+  delivery_status: string
+  tracking_number: string | null
+  tracking_carrier: string | null
+  pickup_code: string | null
   shipping_address: ShippingAddressJson
   stripe_checkout_session_id: string | null
   seller_id: string
@@ -86,6 +97,10 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       status,
       created_at,
       fulfillment_method,
+      delivery_status,
+      tracking_number,
+      tracking_carrier,
+      pickup_code,
       shipping_address,
       stripe_checkout_session_id,
       seller_id,
@@ -159,7 +174,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Badge variant="secondary">Paid</Badge>
+        <Badge variant={orderStatusBadgeVariant(order.status)}>{orderStatusLabel(order.status)}</Badge>
         <Badge variant="outline" className="gap-1">
           {paidWithCard ? "Card (Stripe)" : "Reswell Bucks"}
         </Badge>
@@ -171,7 +186,24 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           )}
           {fulfill}
         </Badge>
+        <DeliveryStatusBadge status={order.delivery_status} />
       </div>
+
+      {/* Buyer action: confirm delivery for shipped orders */}
+      <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
+
+      {/* Buyer: show pickup code for local pickup */}
+      {order.fulfillment_method === "pickup" && order.pickup_code && (
+        <BuyerPickupCode pickupCode={order.pickup_code} deliveryStatus={order.delivery_status} />
+      )}
+
+      {/* Tracking info from seller */}
+      {order.tracking_number && (
+        <TrackingInfo
+          trackingNumber={order.tracking_number}
+          trackingCarrier={order.tracking_carrier}
+        />
+      )}
 
       <Card>
         <CardHeader>
@@ -225,7 +257,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground">
             <p>
-              This order was <span className="font-medium text-foreground">local pickup</span>. Use
+              This order is <span className="font-medium text-foreground">local pickup</span>. Use
               Messages to agree on a time and place with the seller.
             </p>
           </CardContent>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Receipt, Package, ChevronRight } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 
 type MarketplaceOrderRow = {
   id: string
@@ -72,7 +73,7 @@ export default async function OrdersPage() {
     `
     )
     .eq("buyer_id", user.id)
-    .eq("status", "confirmed")
+    .in("status", [...ORDER_STATUS_LIST])
     .order("created_at", { ascending: false })
 
   const list = (orders ?? []) as unknown as MarketplaceOrderRow[]
@@ -158,7 +159,9 @@ export default async function OrdersPage() {
                       · {paymentLabel(row.stripe_checkout_session_id)} · {fulfill}
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary">Paid</Badge>
+                  <Badge variant={orderStatusBadgeVariant(row.status)}>
+                    {orderStatusLabel(row.status)}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">

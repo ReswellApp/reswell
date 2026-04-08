@@ -1,12 +1,16 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe-server"
+import type Stripe from "stripe"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import {
   profileAddressToOrderShippingJson,
   type ProfileAddressRow,
 } from "@/lib/profile-address"
+import { generatePickupCode } from "@/lib/order-status"
+import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -28,8 +32,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing payment_intent_id" }, { status: 400 })
   }
 
-  const stripe = getStripe()
-  const pi = await stripe.paymentIntents.retrieve(piId)
+  let pi: Stripe.PaymentIntent
+  try {
+    const stripe = getStripe()
+    pi = await stripe.paymentIntents.retrieve(piId)
+  } catch (e) {
+    console.error("[finalize-order] Stripe retrieve:", e)
+    return NextResponse.json({ error: "Could not verify payment" }, { status: 502 })
+  }
 
   if (pi.status !== "succeeded") {
     return NextResponse.json({ error: "Payment is not complete yet" }, { status: 400 })
@@ -44,7 +54,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid payment metadata" }, { status: 400 })
   }
 
-  const { data: existing } = await supabase
+  let serviceSupabase
+  try {
+    serviceSupabase = createServiceRoleClient()
+  } catch {
+    return NextResponse.json(
+      { error: "Checkout could not be completed (server configuration)." },
+      { status: 503 },
+    )
+  }
+
+  const { data: existing } = await serviceSupabase
     .from("orders")
     .select("id")
     .eq("stripe_checkout_session_id", piId)
@@ -102,18 +122,21 @@ export async function POST(request: NextRequest) {
     cardPayment: true,
   })
 
-  let { data: sellerWallet } = await supabase
+  let { data: sellerWallet } = await serviceSupabase
     .from("wallets")
     .select("*")
     .eq("user_id", listing.user_id)
-    .single()
+    .maybeSingle()
 
   if (!sellerWallet) {
-    const { data: newWallet } = await supabase
+    const { data: newWallet, error: walletInsertErr } = await serviceSupabase
       .from("wallets")
       .insert({ user_id: listing.user_id })
       .select()
       .single()
+    if (walletInsertErr) {
+      console.error("[finalize-order] seller wallet insert:", walletInsertErr)
+    }
     sellerWallet = newWallet
   }
 
@@ -149,7 +172,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: purchase, error: insertError } = await supabase
+  const isPickup = fulfillmentMethod === "pickup"
+  const deliveryStatus = isPickup ? "pickup_ready" : "pending"
+  const pickupCode = isPickup ? generatePickupCode() : null
+
+  const { data: purchase, error: insertError } = await serviceSupabase
     .from("orders")
     .insert({
       listing_id: listing.id,
@@ -159,18 +186,22 @@ export async function POST(request: NextRequest) {
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
       status: "confirmed",
+      payment_method: "stripe",
       stripe_checkout_session_id: piId,
       fulfillment_method: fulfillmentMethod,
+      delivery_status: deliveryStatus,
+      pickup_code: pickupCode,
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
     })
     .select()
     .single()
 
   if (insertError || !purchase) {
+    console.error("[finalize-order] order insert:", insertError)
     return NextResponse.json({ error: "Could not create order" }, { status: 500 })
   }
 
-  await supabase
+  const { error: sellerWalletUpdateErr } = await serviceSupabase
     .from("wallets")
     .update({
       balance: newSellerBalance,
@@ -179,7 +210,12 @@ export async function POST(request: NextRequest) {
     })
     .eq("id", sellerWallet.id)
 
-  await supabase.from("wallet_transactions").insert({
+  if (sellerWalletUpdateErr) {
+    console.error("[finalize-order] seller wallet update:", sellerWalletUpdateErr)
+    return NextResponse.json({ error: "Could not credit seller" }, { status: 500 })
+  }
+
+  const { error: txErr } = await serviceSupabase.from("wallet_transactions").insert({
     wallet_id: sellerWallet.id,
     user_id: listing.user_id,
     type: "sale",
@@ -190,7 +226,42 @@ export async function POST(request: NextRequest) {
     reference_type: "listing",
   })
 
-  await supabase.from("listings").update({ status: "sold" }).eq("id", listing.id)
+  if (txErr) {
+    console.error("[finalize-order] wallet_transactions:", txErr)
+    return NextResponse.json({ error: "Could not record sale" }, { status: 500 })
+  }
+
+  const { error: listingErr } = await serviceSupabase
+    .from("listings")
+    .update({ status: "sold" })
+    .eq("id", listing.id)
+
+  if (listingErr) {
+    console.error("[finalize-order] listing update:", listingErr)
+    return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
+  }
+
+  void postPurchaseThreadNotification(supabase, {
+    buyerId: user.id,
+    sellerId: listing.user_id,
+    listingId: listing.id,
+    listingTitle: listing.title,
+    total: price,
+    fulfillment: isPickup ? "pickup" : "shipping",
+    shippingAddress: shippingAddressJson,
+  })
+
+  void trackKlaviyoBuyerOrderConfirmed({
+    buyerUserId: user.id,
+    buyerEmail: user.email ?? null,
+    orderId: purchase.id,
+    listingId: listing.id,
+    listingTitle: listing.title,
+    listingSection: listing.section,
+    amount: price,
+    fulfillmentMethod: isPickup ? "pickup" : "shipping",
+    paymentMethod: "stripe",
+  })
 
   return NextResponse.json({ success: true, orderId: purchase.id })
 }

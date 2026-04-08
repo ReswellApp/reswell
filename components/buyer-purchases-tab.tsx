@@ -5,13 +5,16 @@ import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Package, ChevronRight, Receipt } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 
 type Row = {
   id: string
   amount: number | string
+  status: string
   created_at: string
   fulfillment_method: string | null
   stripe_checkout_session_id: string | null
@@ -49,6 +52,7 @@ export function BuyerOrdersTab() {
         `
         id,
         amount,
+        status,
         created_at,
         fulfillment_method,
         stripe_checkout_session_id,
@@ -57,7 +61,7 @@ export function BuyerOrdersTab() {
       `
       )
       .eq("buyer_id", user.id)
-      .eq("status", "confirmed")
+      .in("status", [...ORDER_STATUS_LIST])
       .order("created_at", { ascending: false })
 
     if (qErr) {
@@ -174,9 +178,14 @@ export function BuyerOrdersTab() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-mono text-muted-foreground">
-                    #{row.id.slice(0, 8).toUpperCase()}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-mono text-muted-foreground">
+                      #{row.id.slice(0, 8).toUpperCase()}
+                    </p>
+                    <Badge variant={orderStatusBadgeVariant(row.status)} className="text-[10px] px-1.5 py-0">
+                      {orderStatusLabel(row.status)}
+                    </Badge>
+                  </div>
                   <p className="font-medium text-foreground line-clamp-1">{title}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(row.created_at).toLocaleDateString(undefined, {

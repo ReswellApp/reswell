@@ -1,7 +1,10 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
+import { generatePickupCode } from "@/lib/order-status"
+import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -19,7 +22,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing listing_id" }, { status: 400 })
   }
 
-  // Fetch the listing
   const { data: listing, error: listingError } = await supabase
     .from("listings")
     .select("id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status")
@@ -43,7 +45,6 @@ export async function POST(request: NextRequest) {
   const price = resolved.total
   const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, { cardPayment: false })
 
-  // Fetch buyer wallet
   const { data: buyerWallet } = await supabase
     .from("wallets")
     .select("*")
@@ -57,19 +58,31 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Fetch seller wallet (or create)
-  let { data: sellerWallet } = await supabase
+  let serviceSupabase
+  try {
+    serviceSupabase = createServiceRoleClient()
+  } catch {
+    return NextResponse.json(
+      { error: "Purchase could not be completed (server configuration)." },
+      { status: 503 },
+    )
+  }
+
+  let { data: sellerWallet } = await serviceSupabase
     .from("wallets")
     .select("*")
     .eq("user_id", listing.user_id)
-    .single()
+    .maybeSingle()
 
   if (!sellerWallet) {
-    const { data: newWallet } = await supabase
+    const { data: newWallet, error: walletInsertErr } = await serviceSupabase
       .from("wallets")
       .insert({ user_id: listing.user_id })
       .select()
       .single()
+    if (walletInsertErr) {
+      console.error("[wallet/purchase] seller wallet insert:", walletInsertErr)
+    }
     sellerWallet = newWallet
   }
 
@@ -80,7 +93,6 @@ export async function POST(request: NextRequest) {
   const newBuyerBalance = parseFloat(buyerWallet.balance) - price
   const newSellerBalance = parseFloat(sellerWallet.balance) + sellerEarnings
 
-  // Update buyer wallet
   const { error: buyerUpdateError } = await supabase
     .from("wallets")
     .update({
@@ -94,8 +106,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to process payment" }, { status: 500 })
   }
 
-  // Update seller wallet
-  await supabase
+  const { error: sellerWalletUpdateErr } = await serviceSupabase
     .from("wallets")
     .update({
       balance: newSellerBalance,
@@ -104,8 +115,16 @@ export async function POST(request: NextRequest) {
     })
     .eq("id", sellerWallet.id)
 
-  // Create purchase record
-  const { data: purchase } = await supabase
+  if (sellerWalletUpdateErr) {
+    console.error("[wallet/purchase] seller wallet update:", sellerWalletUpdateErr)
+    return NextResponse.json({ error: "Failed to credit seller" }, { status: 500 })
+  }
+
+  const isPickup = fulfillment === "pickup" || (!listing.shipping_available && listing.local_pickup !== false)
+  const deliveryStatus = isPickup ? "pickup_ready" : "pending"
+  const pickupCode = isPickup ? generatePickupCode() : null
+
+  const { data: purchase, error: orderErr } = await serviceSupabase
     .from("orders")
     .insert({
       listing_id: listing.id,
@@ -115,39 +134,84 @@ export async function POST(request: NextRequest) {
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
       status: "confirmed",
+      payment_method: "reswell_bucks",
+      fulfillment_method: isPickup ? "pickup" : "shipping",
+      delivery_status: deliveryStatus,
+      pickup_code: pickupCode,
     })
     .select()
     .single()
 
-  // Create buyer transaction
-  await supabase.from("wallet_transactions").insert({
+  if (orderErr || !purchase) {
+    console.error("[wallet/purchase] order insert:", orderErr)
+    return NextResponse.json({ error: "Could not create order" }, { status: 500 })
+  }
+
+  const { error: buyerTxErr } = await supabase.from("wallet_transactions").insert({
     wallet_id: buyerWallet.id,
     user_id: user.id,
     type: "purchase",
     amount: -price,
     balance_after: newBuyerBalance,
     description: `Purchased "${listing.title}"${resolved.shipping > 0 ? ` (incl. shipping $${resolved.shipping.toFixed(2)})` : ""}`,
-    reference_id: purchase?.id,
+    reference_id: purchase.id,
     reference_type: "listing",
   })
 
-  // Create seller transaction
-  await supabase.from("wallet_transactions").insert({
+  if (buyerTxErr) {
+    console.error("[wallet/purchase] buyer wallet_transactions:", buyerTxErr)
+    return NextResponse.json({ error: "Could not record purchase" }, { status: 500 })
+  }
+
+  const { error: sellerTxErr } = await serviceSupabase.from("wallet_transactions").insert({
     wallet_id: sellerWallet.id,
     user_id: listing.user_id,
     type: "sale",
     amount: sellerEarnings,
     balance_after: newSellerBalance,
     description: `Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)})`,
-    reference_id: purchase?.id,
+    reference_id: purchase.id,
     reference_type: "listing",
   })
 
-  // Mark listing as sold
-  await supabase
+  if (sellerTxErr) {
+    console.error("[wallet/purchase] seller wallet_transactions:", sellerTxErr)
+    return NextResponse.json({ error: "Could not record sale" }, { status: 500 })
+  }
+
+  const { error: listingErr } = await serviceSupabase
     .from("listings")
     .update({ status: "sold" })
     .eq("id", listing.id)
+
+  if (listingErr) {
+    console.error("[wallet/purchase] listing update:", listingErr)
+    return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
+  }
+
+  void postPurchaseThreadNotification(supabase, {
+    buyerId: user.id,
+    sellerId: listing.user_id,
+    listingId: listing.id,
+    listingTitle: listing.title,
+    total: price,
+    fulfillment: isPickup ? "pickup" : "shipping",
+    shippingAddress: null,
+  })
+
+  if (purchase?.id) {
+    void trackKlaviyoBuyerOrderConfirmed({
+      buyerUserId: user.id,
+      buyerEmail: user.email ?? null,
+      orderId: purchase.id,
+      listingId: listing.id,
+      listingTitle: listing.title,
+      listingSection: listing.section,
+      amount: price,
+      fulfillmentMethod: isPickup ? "pickup" : "shipping",
+      paymentMethod: "reswell_bucks",
+    })
+  }
 
   return NextResponse.json({
     success: true,

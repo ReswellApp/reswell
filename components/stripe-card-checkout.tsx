@@ -40,6 +40,12 @@ function StripePayButton({
 
       setBusy(true)
       try {
+        const { error: submitError } = await elements.submit()
+        if (submitError) {
+          toast.error(submitError.message ?? "Check your payment details and try again.")
+          return
+        }
+
         const origin = window.location.origin
         const { error, paymentIntent } = await stripe.confirmPayment({
           elements,
@@ -50,7 +56,11 @@ function StripePayButton({
         })
 
         if (error) {
-          toast.error(error.message ?? "Payment failed")
+          const hint =
+            error.type === "invalid_request_error"
+              ? " If this keeps happening, confirm your Stripe publishable and secret keys are from the same account and both test or both live."
+              : ""
+          toast.error((error.message ?? "Payment failed") + hint)
           return
         }
 
@@ -72,7 +82,8 @@ function StripePayButton({
             router.push("/dashboard/orders")
           }
         }
-      } catch {
+      } catch (err) {
+        console.error("Stripe checkout error", err)
         toast.error("Something went wrong. Try again.")
       } finally {
         setBusy(false)
