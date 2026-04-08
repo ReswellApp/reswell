@@ -6,6 +6,12 @@ import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
+function listingDimensionDisplayTrim(v: unknown): string | null {
+  if (v == null) return null
+  const s = String(v).trim().slice(0, 80)
+  return s === '' ? null : s
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -49,6 +55,10 @@ export async function POST(request: NextRequest) {
     shaper,
     images = [],
     inventory_quantity,
+    length_inches_display,
+    width_inches_display,
+    thickness_inches_display,
+    volume_display,
   } = body
 
   if (!targetUserId || !title || !description || price == null || !section || !category_id) {
@@ -113,6 +123,10 @@ export async function POST(request: NextRequest) {
       width: width ? parseFloat(width) : null,
       thickness: thickness ? parseFloat(thickness) : null,
       volume: volume ? parseFloat(volume) : null,
+      length_inches_display: listingDimensionDisplayTrim(length_inches_display),
+      width_inches_display: listingDimensionDisplayTrim(width_inches_display),
+      thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
+      volume_display: listingDimensionDisplayTrim(volume_display),
       brand: brand || null,
       shaper: shaper || null,
     })

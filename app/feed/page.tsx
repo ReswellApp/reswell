@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
 import type { RecentListing } from "@/components/recent-feed-client"
+import { formatDecimalDimension } from "@/lib/board-measurements"
 import { FeedPageClient, type SoldFeedListing, type SoldTickerItem } from "./feed-page-client"
 
 const LIMIT = 50
@@ -19,9 +20,13 @@ function mapActiveRow(
   row: Record<string, unknown>,
   section: string,
 ): RecentListing & { created_at: string } {
+  const inchesNum =
+    row.length_inches != null && Number.isFinite(Number(row.length_inches))
+      ? Number(row.length_inches)
+      : null
   const boardLength =
-    row.length_feet != null && row.length_inches != null
-      ? `${row.length_feet}'${row.length_inches}"`
+    row.length_feet != null && inchesNum != null
+      ? `${row.length_feet}'${formatDecimalDimension(inchesNum) || "0"}"`
       : row.length_feet != null
         ? `${row.length_feet}'`
         : null
@@ -48,9 +53,13 @@ function mapActiveRow(
 }
 
 function mapSoldRow(row: Record<string, unknown>): SoldFeedListing {
+  const inchesNum =
+    row.length_inches != null && Number.isFinite(Number(row.length_inches))
+      ? Number(row.length_inches)
+      : null
   const boardLength =
-    row.length_feet != null && row.length_inches != null
-      ? `${row.length_feet}'${row.length_inches}"`
+    row.length_feet != null && inchesNum != null
+      ? `${row.length_feet}'${formatDecimalDimension(inchesNum) || "0"}"`
       : row.length_feet != null
         ? `${row.length_feet}'`
         : null

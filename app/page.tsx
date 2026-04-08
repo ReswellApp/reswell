@@ -413,36 +413,36 @@ export default async function HomePage() {
                     cardContentClassName={homeUniformScrollBodyClass}
                     imageSizes={homeListingScrollImageSizes}
                     blurDataURL={portraitShimmer}
-                    titleSlot={
-                      <div className={homeUniformScrollTitleSlotClass}>
-                        <h3 className={homeListingScrollHeadingClass}>
-                          {capitalizeWords(board.title)}
-                        </h3>
-                      </div>
-                    }
-                    footerSlot={
-                      <div className={homeUniformScrollMetaFooterClass}>
-                        <div className="flex min-w-0 items-center justify-between gap-2">
-                          <p className="text-base font-bold text-black dark:text-white tabular-nums">
-                            ${board.price.toFixed(2)}
-                          </p>
-                          {cart?.type === "addToCartServer" ? (
-                            <ListingTileAddToCartServerIcon
-                              listingId={cart.listingId}
-                              isLoggedIn={cart.isLoggedIn}
-                            />
-                          ) : null}
-                        </div>
-                        <div className="mt-1 flex justify-end">
-                          <ListingTileCategoryPill label={formatListingTileCategoryPillText(board)} />
-                        </div>
-                      </div>
-                    }
-                    favorites={{
-                      initialFavorited: favoritedIds.includes(board.id),
-                      isLoggedIn: !!user,
-                    }}
-                  />
+                        titleSlot={
+                          <div className={homeUniformScrollTitleSlotClass}>
+                            <h3 className={homeListingScrollHeadingClass}>
+                              {capitalizeWords(board.title)}
+                            </h3>
+                          </div>
+                        }
+                        footerSlot={
+                          <div className={homeUniformScrollMetaFooterClass}>
+                            <div className="flex min-w-0 items-center justify-between gap-2">
+                              <p className="text-base font-bold text-black dark:text-white tabular-nums">
+                                ${board.price.toFixed(2)}
+                              </p>
+                              {cart?.type === "addToCartServer" ? (
+                                <ListingTileAddToCartServerIcon
+                                  listingId={cart.listingId}
+                                  isLoggedIn={cart.isLoggedIn}
+                                />
+                              ) : null}
+                            </div>
+                            <div className="mt-1 flex justify-end">
+                              <ListingTileCategoryPill label={formatListingTileCategoryPillText(board)} />
+                            </div>
+                          </div>
+                        }
+                        favorites={{
+                          initialFavorited: favoritedIds.includes(board.id),
+                          isLoggedIn: !!user,
+                        }}
+                      />
                   )
                 })}
               </HomeListingScrollRow>

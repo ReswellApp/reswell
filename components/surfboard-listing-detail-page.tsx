@@ -53,6 +53,7 @@ import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
+import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 
 export async function SurfboardListingDetailPage({
   listingParam,
@@ -216,7 +217,6 @@ export async function SurfboardListingDetailPage({
               {[
                 formatCondition(board.condition),
                 board.board_type ? formatBoardType(board.board_type) : null,
-                board.board_length || null,
                 boardFulfillmentSummary(board.local_pickup, board.shipping_available),
               ].filter(Boolean).join(" · ")}
             </p>
@@ -282,10 +282,27 @@ export async function SurfboardListingDetailPage({
                 {[
                   formatCondition(board.condition),
                   board.board_type ? formatBoardType(board.board_type) : null,
-                  board.board_length || null,
                   boardFulfillmentSummary(board.local_pickup, board.shipping_available),
                 ].filter(Boolean).join(" · ")}
               </p>
+
+              <ListingBoardDimensionsBlock
+                listingId={board.id}
+                dimensions={{
+                  length_feet: board.length_feet,
+                  length_inches: board.length_inches,
+                  width: board.width,
+                  thickness: board.thickness,
+                  volume: board.volume,
+                  length_inches_display: (board as { length_inches_display?: string | null })
+                    .length_inches_display,
+                  width_inches_display: (board as { width_inches_display?: string | null })
+                    .width_inches_display,
+                  thickness_inches_display: (board as { thickness_inches_display?: string | null })
+                    .thickness_inches_display,
+                  volume_display: (board as { volume_display?: string | null }).volume_display,
+                }}
+              />
 
               {/* Description (above map) */}
               <div>

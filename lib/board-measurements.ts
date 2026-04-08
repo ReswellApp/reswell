@@ -75,6 +75,33 @@ export type BoardDimensionsDbFields = {
   volume: number | null
 }
 
+/** Trimmed sell-form strings for listing detail (fractions preserved). */
+export type BoardDimensionDisplayFields = {
+  length_inches_display: string | null
+  width_inches_display: string | null
+  thickness_inches_display: string | null
+  volume_display: string | null
+}
+
+function trimDimensionDisplay(raw: string): string | null {
+  const t = raw.trim().slice(0, 80)
+  return t === "" ? null : t
+}
+
+export function boardDimensionDisplayFields(input: {
+  boardLengthIn: string
+  boardWidthInches: string
+  boardThicknessInches: string
+  boardVolumeL: string
+}): BoardDimensionDisplayFields {
+  return {
+    length_inches_display: trimDimensionDisplay(input.boardLengthIn),
+    width_inches_display: trimDimensionDisplay(input.boardWidthInches),
+    thickness_inches_display: trimDimensionDisplay(input.boardThicknessInches),
+    volume_display: trimDimensionDisplay(input.boardVolumeL),
+  }
+}
+
 export function boardDimensionsToDbFields(input: {
   boardLengthFt: string
   boardLengthIn: string

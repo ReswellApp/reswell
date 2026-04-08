@@ -84,10 +84,7 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
-import {
-  boardDimensionsToDbFields,
-  formatBoardLengthForTitle,
-} from "@/lib/board-measurements"
+import { boardDimensionsToDbFields, formatBoardLengthForTitle } from "@/lib/board-measurements"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -469,39 +466,15 @@ function SellPageContent() {
         return
       }
       const imp = getImpersonation()
+      // Use `*` so edit load works before/without dimension display columns; see
+      // supabase/migrations/20260407140000_listing_dimension_display_text.sql
       let query = supabase
         .from("listings")
         .select(
           `
-          id,
-          slug,
-          user_id,
-          section,
-          status,
-          title,
-          description,
-          price,
-          condition,
-          category_id,
-          board_type,
-          length_feet,
-          length_inches,
-          width,
-          thickness,
-          volume,
-          fins_setup,
-          tail_shape,
-          latitude,
-          longitude,
-          city,
-          state,
-          local_pickup,
-          shipping_available,
-          shipping_price,
-          brand,
-          brand_id,
+          *,
           listing_images (id, url, thumbnail_url, is_primary, sort_order)
-        `
+        `,
         )
         .eq("id", editId)
       if (!imp) {
@@ -561,10 +534,26 @@ function SellPageContent() {
         boardShippingPrice,
         boardType: listing.board_type ?? "",
         boardLengthFt: lengthFeet ? lengthFeet : "",
-        boardLengthIn: listing.length_inches != null ? String(listing.length_inches) : "",
-        boardWidthInches: (listing as { width?: number | null }).width != null ? String((listing as { width?: number | null }).width) : "",
-        boardThicknessInches: (listing as { thickness?: number | null }).thickness != null ? String((listing as { thickness?: number | null }).thickness) : "",
-        boardVolumeL: (listing as { volume?: number | null }).volume != null ? String((listing as { volume?: number | null }).volume) : "",
+        boardLengthIn:
+          (listing as { length_inches_display?: string | null }).length_inches_display?.trim() ||
+          (listing.length_inches != null && Number(listing.length_inches) !== 0
+            ? String(listing.length_inches)
+            : ""),
+        boardWidthInches:
+          (listing as { width_inches_display?: string | null }).width_inches_display?.trim() ||
+          ((listing as { width?: number | null }).width != null
+            ? String((listing as { width?: number | null }).width)
+            : ""),
+        boardThicknessInches:
+          (listing as { thickness_inches_display?: string | null }).thickness_inches_display?.trim() ||
+          ((listing as { thickness?: number | null }).thickness != null
+            ? String((listing as { thickness?: number | null }).thickness)
+            : ""),
+        boardVolumeL:
+          (listing as { volume_display?: string | null }).volume_display?.trim() ||
+          ((listing as { volume?: number | null }).volume != null
+            ? String((listing as { volume?: number | null }).volume)
+            : ""),
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",

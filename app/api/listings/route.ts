@@ -6,6 +6,12 @@ import { listingTitleWithBoardLength } from '@/lib/listing-title-board-length'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { formatBoardInchesForTitle, LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 
+function listingDimensionDisplayTrim(v: unknown): string | null {
+  if (v == null) return null
+  const s = String(v).trim().slice(0, 80)
+  return s === '' ? null : s
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -40,6 +46,10 @@ export async function POST(request: NextRequest) {
     brand,
     shaper,
     images = [],
+    length_inches_display,
+    width_inches_display,
+    thickness_inches_display,
+    volume_display,
   } = body
 
   if (
@@ -121,6 +131,10 @@ export async function POST(request: NextRequest) {
       width: width ? parseFloat(width) : null,
       thickness: thickness ? parseFloat(thickness) : null,
       volume: volume ? parseFloat(volume) : null,
+      length_inches_display: listingDimensionDisplayTrim(length_inches_display),
+      width_inches_display: listingDimensionDisplayTrim(width_inches_display),
+      thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
+      volume_display: listingDimensionDisplayTrim(volume_display),
       brand,
       shaper,
     })

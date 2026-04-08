@@ -9,6 +9,7 @@ import {
   searchListingIdsFromElasticsearch,
 } from "@/lib/elasticsearch/listings-index"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
+import { formatDecimalDimension } from "@/lib/board-measurements"
 
 const LIMIT = 48
 
@@ -237,9 +238,13 @@ async function buildSearchFromSupabase(
 }
 
 function rowToRecentListing(row: any): RecentListing {
+  const inchesNum =
+    row.length_inches != null && Number.isFinite(Number(row.length_inches))
+      ? Number(row.length_inches)
+      : null
   const boardLength =
-    row.length_feet != null && row.length_inches != null
-      ? `${row.length_feet}'${row.length_inches}"`
+    row.length_feet != null && inchesNum != null
+      ? `${row.length_feet}'${formatDecimalDimension(inchesNum) || "0"}"`
       : row.length_feet != null
         ? `${row.length_feet}'`
         : null
