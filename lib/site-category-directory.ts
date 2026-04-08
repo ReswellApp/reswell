@@ -6,7 +6,7 @@
 export type CategoryLink = { label: string; href: string }
 
 export const surfboardBrowseLinks: CategoryLink[] = [
-  { label: "All surfboards", href: "/boards" },
+  { label: "All Surfboards", href: "/boards" },
   { label: "Shortboard", href: "/boards?type=shortboard" },
   { label: "Longboard", href: "/boards?type=longboard" },
   { label: "Funboard / Mid-length", href: "/boards?type=funboard" },

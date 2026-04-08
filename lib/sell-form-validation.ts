@@ -2,15 +2,13 @@ import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 import { flagsFromBoardFulfillment, type BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
 import { isFinSetupTagSlug } from "@/lib/listing-fin-setup-tags"
 import { isTailShapeTagSlug } from "@/lib/listing-tail-shape-tags"
-
-/** Align with sell page length inputs (min/max on feet field). */
-const BOARD_LENGTH_FT_MIN = 4
-const BOARD_LENGTH_FT_MAX = 12
-
-const BOARD_WIDTH_MIN = 14
-const BOARD_WIDTH_MAX = 28
-const BOARD_THICKNESS_MIN = 1
-const BOARD_THICKNESS_MAX = 4
+import {
+  formatBoardLengthForTitle,
+  formatDecimalDimension,
+  parseBoardMeasurement,
+  parseLengthFeet,
+  parseVolumeLiters,
+} from "@/lib/board-measurements"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -48,16 +46,12 @@ export type SellFormValidationInput = {
  * Used for max-length validation and the live character counter.
  */
 export function buildResolvedListingTitle(form: SellFormValidationInput): string {
-  const ftRaw = form.boardLengthFt?.trim() ?? ""
-  if (ftRaw) {
-    const ft = parseInt(ftRaw, 10)
-    if (Number.isFinite(ft)) {
-      const inchRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
-      const inches = parseFloat(inchRaw)
-      const piece = Number.isFinite(inches) ? formatBoardInchesForTitle(inches) : "0"
-      const boardLengthFmt = `${ft}'${piece}"`
-      return listingTitleWithBoardLength(form.title, boardLengthFmt)
-    }
+  const boardLengthFmt = formatBoardLengthForTitle(
+    form.boardLengthFt ?? "",
+    form.boardLengthIn ?? "",
+  )
+  if (boardLengthFmt) {
+    return listingTitleWithBoardLength(form.title, boardLengthFmt)
   }
   return form.title.trim()
 }
@@ -94,37 +88,41 @@ export function validateSellListingForm(
   if (!ftRaw) {
     return "Board length (feet) is required."
   }
-  const ft = parseInt(ftRaw, 10)
-  if (!Number.isFinite(ft) || ft < BOARD_LENGTH_FT_MIN || ft > BOARD_LENGTH_FT_MAX) {
-    return `Board length: enter feet between ${BOARD_LENGTH_FT_MIN} and ${BOARD_LENGTH_FT_MAX}.`
+  const ft = parseLengthFeet(ftRaw)
+  if (ft == null || ft < 1 || ft > 15) {
+    return "Board length: enter whole feet (1–15)."
   }
 
   const inRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
-  const inches = parseFloat(inRaw)
+  const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
   if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
-    return "Board length: inches must be 0 or greater and less than 12 (fractions like ⅞ are OK)."
+    return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
   }
 
   if (!form.boardWidthInches?.trim()) {
     return "Enter board width (inches)."
   }
-  const width = parseFloat(form.boardWidthInches.trim())
-  if (!Number.isFinite(width) || width < BOARD_WIDTH_MIN || width > BOARD_WIDTH_MAX) {
-    return `Board width must be between ${BOARD_WIDTH_MIN} and ${BOARD_WIDTH_MAX} inches.`
+  const width =
+    parseBoardMeasurement(form.boardWidthInches.trim()) ??
+    Number.parseFloat(form.boardWidthInches.trim())
+  if (!Number.isFinite(width) || width <= 0) {
+    return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
   }
 
   if (!form.boardThicknessInches?.trim()) {
     return "Enter board thickness (inches)."
   }
-  const thick = parseFloat(form.boardThicknessInches.trim())
-  if (!Number.isFinite(thick) || thick < BOARD_THICKNESS_MIN || thick > BOARD_THICKNESS_MAX) {
-    return `Board thickness must be between ${BOARD_THICKNESS_MIN} and ${BOARD_THICKNESS_MAX} inches.`
+  const thick =
+    parseBoardMeasurement(form.boardThicknessInches.trim()) ??
+    Number.parseFloat(form.boardThicknessInches.trim())
+  if (!Number.isFinite(thick) || thick <= 0) {
+    return "Board thickness: enter a number (decimals or fractions are OK)."
   }
 
   if (form.boardVolumeL?.trim()) {
-    const vol = parseFloat(form.boardVolumeL.trim())
-    if (!Number.isFinite(vol) || vol <= 0 || vol > 200) {
-      return "Volume must be a positive number (liters), or leave it blank."
+    const vol = parseVolumeLiters(form.boardVolumeL.trim())
+    if (vol == null || vol > 200) {
+      return "Volume: enter liters as a number (or leave blank)."
     }
   }
 
@@ -168,6 +166,5 @@ export function validateSellListingForm(
 
 /** For API title generation; keeps fractional inches readable. */
 export function formatBoardInchesForTitle(inches: number): string {
-  if (!Number.isFinite(inches)) return "0"
-  return Number.isInteger(inches) ? String(inches) : String(Number(inches.toFixed(3)))
+  return formatDecimalDimension(inches) || "0"
 }

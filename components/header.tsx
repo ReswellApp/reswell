@@ -81,10 +81,11 @@ function resolveHeaderAvatarUrl(
   return trim(profile?.avatar_url) || oauth
 }
 
-/** Desktop + mobile: all surfboard `type` links (same labels/order as browse filters; no “all types” row). */
-const boardShapeNav = surfboardBrowseLinks
-  .filter((link) => link.href.includes("type="))
-  .map((link) => ({ name: link.label, href: link.href }))
+/** Desktop + mobile: “All Surfboards” first, then each `type=` link (order from {@link surfboardBrowseLinks}). */
+const boardShapeNav = surfboardBrowseLinks.map((link) => ({
+  name: link.label,
+  href: link.href,
+}))
 
 /** Right-aligned nav in the category bar, visually separated from marketplace categories. */
 const secondaryNav = [
