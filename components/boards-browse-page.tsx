@@ -2,6 +2,14 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
@@ -10,7 +18,10 @@ import { Users } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
-import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
+import {
+  boardsBrowseBoardTypeLabel,
+  type BoardsBrowseSearchParams,
+} from "@/lib/marketplace-slug-metadata"
 
 function haversineMi(
   lat1: number,
@@ -280,11 +291,41 @@ export async function BoardsBrowsePage(props: {
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
   const searchParams = await props.searchParams
+  const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
 
   return (
     <main className="flex-1">
       <section className="bg-offwhite pt-6 pb-4 sm:pt-8 sm:pb-5">
         <div className="container mx-auto">
+          <div className="border-t border-neutral-200 mb-4 pt-4">
+            <Breadcrumb>
+              <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                    <Link href="/">Home</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                {typeCrumb ? (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                        <Link href="/boards">Surfboards</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="font-normal text-[#5c6b89]">{typeCrumb}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                ) : (
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="font-normal text-[#5c6b89]">Surfboards</BreadcrumbPage>
+                  </BreadcrumbItem>
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
           <h1 className="text-3xl font-bold text-center">Surfboards</h1>
           <p className="text-center text-muted-foreground mt-2">
             Find local boards for pickup from sellers in your area

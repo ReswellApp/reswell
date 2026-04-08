@@ -12,6 +12,13 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
   other: "Surfboards",
 }
 
+/** Display label for `/boards?type=` (used in UI breadcrumbs and metadata). */
+export function boardsBrowseBoardTypeLabel(type: string | undefined | null): string | undefined {
+  if (!type || type === "all") return undefined
+  if (BOARD_TYPE_LABELS[type]) return BOARD_TYPE_LABELS[type]
+  return type.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 const BOARDS_CONDITION_LABELS = LISTING_CONDITION_LABELS
 
 export type BoardsBrowseSearchParams = {
