@@ -198,6 +198,21 @@ export async function POST(request: NextRequest) {
 
   if (insertError || !purchase) {
     console.error("[finalize-order] order insert:", insertError)
+    const msg = insertError?.message ?? ""
+    const schemaStale =
+      insertError?.code === "PGRST204" ||
+      msg.includes("delivery_status") ||
+      msg.includes("pickup_code") ||
+      msg.includes("schema cache")
+    if (schemaStale) {
+      return NextResponse.json(
+        {
+          error:
+            "Database is missing required order columns. Apply pending Supabase migrations (see supabase/migrations), then reload the schema in the Supabase dashboard if needed.",
+        },
+        { status: 503 },
+      )
+    }
     return NextResponse.json({ error: "Could not create order" }, { status: 500 })
   }
 

@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 
 export async function POST(
   request: NextRequest,
@@ -103,6 +104,22 @@ export async function POST(
       .update({ last_message_at: new Date().toISOString() })
       .eq("id", conv.id)
   }
+
+  let buyerEmail: string | null = null
+  try {
+    const svc = createServiceRoleClient()
+    const { data: buyerAuth } = await svc.auth.admin.getUserById(order.buyer_id)
+    buyerEmail = buyerAuth?.user?.email ?? null
+  } catch { /* non-critical */ }
+
+  void trackKlaviyoOrderShipped({
+    buyerUserId: order.buyer_id,
+    buyerEmail,
+    orderId: order.id,
+    listingTitle: title,
+    trackingNumber,
+    trackingCarrier: carrier ?? null,
+  })
 
   return NextResponse.json({ success: true })
 }
