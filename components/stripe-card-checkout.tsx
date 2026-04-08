@@ -31,6 +31,7 @@ function StripePayButton({
   const elements = useElements()
   const router = useRouter()
   const [busy, setBusy] = useState(false)
+  const [elementLoadError, setElementLoadError] = useState<string | null>(null)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -82,8 +83,30 @@ function StripePayButton({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
-      <Button type="submit" size="lg" className="w-full gap-2" disabled={disabled || busy || !stripe}>
+      {elementLoadError ? (
+        <p className="text-sm text-destructive">{elementLoadError}</p>
+      ) : null}
+      <PaymentElement
+        onLoadError={(event) => {
+          const stripeErr = event.error
+          const msg =
+            stripeErr?.message?.trim() ||
+            "Payment form failed to load. Use Stripe keys from the same account and the same mode (test vs live) for the publishable key and server secret."
+          setElementLoadError(msg)
+          console.error("Stripe PaymentElement load error", {
+            code: stripeErr?.code,
+            message: stripeErr?.message,
+            type: stripeErr?.type,
+          })
+          toast.error(msg)
+        }}
+      />
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full gap-2"
+        disabled={disabled || busy || !stripe || !!elementLoadError}
+      >
         {busy ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
