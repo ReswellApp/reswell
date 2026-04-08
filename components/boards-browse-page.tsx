@@ -283,7 +283,7 @@ export async function BoardsBrowsePage(props: {
 
   return (
     <main className="flex-1">
-      <section className="bg-offwhite py-12">
+      <section className="bg-offwhite pt-6 pb-4 sm:pt-8 sm:pb-5">
         <div className="container mx-auto">
           <h1 className="text-3xl font-bold text-center">Surfboards</h1>
           <p className="text-center text-muted-foreground mt-2">
@@ -292,7 +292,7 @@ export async function BoardsBrowsePage(props: {
         </div>
       </section>
 
-      <section className="py-4 min-w-0">
+      <section className="pt-2 pb-4 min-w-0">
         <div className="container mx-auto min-w-0">
           <BoardsBrowseClient
             initialQ={searchParams.q ?? ""}
