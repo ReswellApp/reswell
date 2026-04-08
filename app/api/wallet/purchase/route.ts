@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
   const { data: purchase, error: orderErr } = await serviceSupabase
     .from("orders")
     .insert({
+      id: randomUUID(),
       listing_id: listing.id,
       buyer_id: user.id,
       seller_id: listing.user_id,

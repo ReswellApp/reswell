@@ -10,6 +10,9 @@ export const runtime = "nodejs"
  * Events: `payment_intent.succeeded`
  * Signing secret: `STRIPE_WEBHOOK_SECRET` in env.
  *
+ * Use the **canonical** host Vercel serves without a redirect (www vs apex). Stripe does not follow
+ * 308/301 redirects on webhook POSTs — a redirect causes delivery failures.
+ *
  * Completes marketplace orders when the browser cannot call finalize (e.g. session cookie missing after 3DS return).
  */
 export async function POST(request: Request) {
@@ -37,6 +40,12 @@ export async function POST(request: Request) {
   if (event.type !== "payment_intent.succeeded") {
     return NextResponse.json({ received: true })
   }
+
+  console.info("[stripe webhook] payment_intent.succeeded", {
+    id: event.id,
+    livemode: event.livemode,
+    pi: (event.data.object as Stripe.PaymentIntent).id,
+  })
 
   const piPartial = event.data.object as Stripe.PaymentIntent
   let pi: Stripe.PaymentIntent

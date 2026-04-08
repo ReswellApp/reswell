@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import type Stripe from "stripe"
@@ -78,7 +79,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const { data: listing, error: listingError } = await serviceSupabase
     .from("listings")
     .select(
-      "id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status, slug",
+      "id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status",
     )
     .eq("id", listingId)
     .single()
@@ -123,6 +124,21 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, {
     cardPayment: true,
   })
+
+  if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
+    console.error("[stripe-complete-order] invalid seller_earnings", {
+      price,
+      platformFee,
+      sellerEarnings,
+      listingId: listing.id,
+    })
+    return {
+      ok: false,
+      error:
+        "Order total is too low after card processing fees for the system to record this sale. Refund from Stripe if needed.",
+      status: 500,
+    }
+  }
 
   let { data: sellerWallet } = await serviceSupabase
     .from("wallets")
@@ -178,9 +194,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const deliveryStatus = isPickup ? "pickup_ready" : "pending"
   const pickupCode = isPickup ? generatePickupCode() : null
 
+  const orderId = randomUUID()
+
   const { data: purchase, error: insertError } = await serviceSupabase
     .from("orders")
     .insert({
+      id: orderId,
       listing_id: listing.id,
       buyer_id: buyerId,
       seller_id: listing.user_id,
@@ -209,7 +228,21 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         return { ok: true, orderId: raced.id, alreadyProcessed: true }
       }
     }
-    console.error("[stripe-complete-order] order insert:", insertError)
+    console.error(
+      "[stripe-complete-order] order insert:",
+      insertError
+        ? JSON.stringify(
+            {
+              message: insertError.message,
+              code: insertError.code,
+              details: insertError.details,
+              hint: insertError.hint,
+            },
+            null,
+            2,
+          )
+        : "no row returned",
+    )
     const msg = insertError?.message ?? ""
     const schemaStale =
       insertError?.code === "PGRST204" ||
@@ -284,7 +317,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     listingId: listing.id,
     listingTitle: listing.title,
     listingSection: listing.section,
-    listingSlug: listing.slug ?? null,
+    listingSlug: null,
     amount: price,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     paymentMethod: "stripe",
