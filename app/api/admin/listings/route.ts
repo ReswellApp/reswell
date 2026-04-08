@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
+import {
+  isListingDimensionDisplaySchemaCacheError,
+  withoutListingDimensionDisplayDbFields,
+} from '@/lib/listing-dimensions-display'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -98,40 +102,54 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: listing, error: listingError } = await supabase
+  const adminListingInsertRow = {
+    user_id: targetUserId,
+    title,
+    slug,
+    description,
+    price: parseFloat(price),
+    condition: condition || null,
+    section,
+    category_id,
+    shipping_available: shipping_available || false,
+    local_pickup: local_pickup !== false,
+    shipping_price: shipping_price ? parseFloat(shipping_price) : null,
+    city: city || null,
+    state: state || null,
+    board_type: board_type || null,
+    length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
+    length_inches:
+      length_inches != null && length_inches !== ''
+        ? parseFloat(String(length_inches))
+        : null,
+    width: width ? parseFloat(width) : null,
+    thickness: thickness ? parseFloat(thickness) : null,
+    volume: volume ? parseFloat(volume) : null,
+    length_inches_display: listingDimensionDisplayTrim(length_inches_display),
+    width_inches_display: listingDimensionDisplayTrim(width_inches_display),
+    thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
+    volume_display: listingDimensionDisplayTrim(volume_display),
+    brand: brand || null,
+    shaper: shaper || null,
+  }
+  let { data: listing, error: listingError } = await supabase
     .from('listings')
-    .insert({
-      user_id: targetUserId,
-      title,
-      slug,
-      description,
-      price: parseFloat(price),
-      condition: condition || null,
-      section,
-      category_id,
-      shipping_available: shipping_available || false,
-      local_pickup: local_pickup !== false,
-      shipping_price: shipping_price ? parseFloat(shipping_price) : null,
-      city: city || null,
-      state: state || null,
-      board_type: board_type || null,
-      length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
-      length_inches:
-        length_inches != null && length_inches !== ''
-          ? parseFloat(String(length_inches))
-          : null,
-      width: width ? parseFloat(width) : null,
-      thickness: thickness ? parseFloat(thickness) : null,
-      volume: volume ? parseFloat(volume) : null,
-      length_inches_display: listingDimensionDisplayTrim(length_inches_display),
-      width_inches_display: listingDimensionDisplayTrim(width_inches_display),
-      thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
-      volume_display: listingDimensionDisplayTrim(volume_display),
-      brand: brand || null,
-      shaper: shaper || null,
-    })
+    .insert(adminListingInsertRow)
     .select('id')
     .single()
+
+  if (listingError && isListingDimensionDisplaySchemaCacheError(listingError)) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[api/admin/listings] Retrying insert without dimension display columns.')
+    }
+    const retry = await supabase
+      .from('listings')
+      .insert(withoutListingDimensionDisplayDbFields(adminListingInsertRow as Record<string, unknown>))
+      .select('id')
+      .single()
+    listing = retry.data
+    listingError = retry.error
+  }
 
   if (listingError) {
     return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })

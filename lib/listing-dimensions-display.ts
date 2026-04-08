@@ -37,6 +37,23 @@ function formatVolumeFromDisplay(raw: string): string {
 }
 
 /**
+ * Short length line for cards (e.g. tiles): `5'9` plus inches as entered when stored.
+ */
+export function formatListingBoardLengthSubtitle(input: ListingDimensionsWithDisplay): string | null {
+  const ft = input.length_feet
+  const inchDisp = input.length_inches_display?.trim()
+  const inchNum = input.length_inches
+  if (ft == null || !Number.isFinite(ft)) return null
+  if (inchDisp) {
+    return `${ft}'${appendInchMarkUnlessPresent(inchDisp)}`
+  }
+  if (inchNum != null && Number.isFinite(inchNum) && inchNum > 0) {
+    return `${ft}'${formatInchesForLength(inchNum)}\u2033`
+  }
+  return `${ft}'`
+}
+
+/**
  * Length × width × thickness only (× between). Omits volume.
  */
 export function formatListingGeometryLine(input: ListingDimensionsWithDisplay): string | null {
@@ -132,4 +149,44 @@ export function formatListingDimensionsLine(input: ListingDimensionsWithDisplay)
   const v = formatListingVolumePart(input)
   if (g && v) return `${g} \u00b7 ${v}`
   return g ?? v
+}
+
+const LISTING_DIMENSION_DISPLAY_DB_KEYS = [
+  "length_inches_display",
+  "width_inches_display",
+  "thickness_inches_display",
+  "volume_display",
+] as const
+
+/** Drop optional display columns (for retry when the DB migration is not applied yet). */
+export function withoutListingDimensionDisplayDbFields(
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  const out = { ...row }
+  for (const k of LISTING_DIMENSION_DISPLAY_DB_KEYS) {
+    delete out[k]
+  }
+  return out
+}
+
+function errorBlobForSchemaCheck(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === "object") {
+    const o = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown }
+    return [o.message, o.details, o.hint, o.code]
+      .filter((x): x is string => typeof x === "string" && x.trim() !== "")
+      .join(" ")
+  }
+  return ""
+}
+
+/**
+ * PostgREST when `listings` is missing migrated text columns (schema cache / PGRST204).
+ */
+export function isListingDimensionDisplaySchemaCacheError(error: unknown): boolean {
+  const text = errorBlobForSchemaCheck(error)
+  const lower = text.toLowerCase()
+  const mentionsDisplayColumn = LISTING_DIMENSION_DISPLAY_DB_KEYS.some((k) => lower.includes(k))
+  if (!mentionsDisplayColumn) return false
+  return lower.includes("schema cache") || lower.includes("pgrst204")
 }

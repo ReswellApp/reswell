@@ -84,7 +84,15 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
-import { boardDimensionsToDbFields, formatBoardLengthForTitle } from "@/lib/board-measurements"
+import {
+  boardDimensionDisplayFields,
+  boardDimensionsToDbFields,
+  formatBoardLengthForTitle,
+} from "@/lib/board-measurements"
+import {
+  isListingDimensionDisplaySchemaCacheError,
+  withoutListingDimensionDisplayDbFields,
+} from "@/lib/listing-dimensions-display"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -1081,6 +1089,7 @@ function SellPageContent() {
           user.id !== editListingOwnerId
 
         const dimDb = boardDimensionsToDbFields(fd)
+        const dimDisplay = boardDimensionDisplayFields(fd)
         const editListingFields = {
           title: resolvedListingTitle,
           description: fd.description,
@@ -1093,6 +1102,7 @@ function SellPageContent() {
           width: dimDb.width,
           thickness: dimDb.thickness,
           volume: dimDb.volume,
+          ...dimDisplay,
           fins_setup: fd.boardFins ? fd.boardFins : null,
           tail_shape: fd.boardTail ? fd.boardTail : null,
           latitude: boardLocationLat,
@@ -1107,13 +1117,33 @@ function SellPageContent() {
         }
 
         if (ownerEditsOwnListing) {
-          const { data: updated, error: updateError } = await supabase
+          const updatePayload = { ...editListingFields, updated_at: new Date().toISOString() }
+          let { data: updated, error: updateError } = await supabase
             .from("listings")
-            .update({ ...editListingFields, updated_at: new Date().toISOString() })
+            .update(updatePayload)
             .eq("id", editId)
             .eq("user_id", user.id)
             .select("slug")
             .single()
+          if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn(
+                "[sell] DB missing listing dimension display columns; saved without them. Run: supabase/migrations/20260407140000_listing_dimension_display_text.sql",
+              )
+            }
+            const retry = await supabase
+              .from("listings")
+              .update({
+                ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", editId)
+              .eq("user_id", user.id)
+              .select("slug")
+              .single()
+            updated = retry.data
+            updateError = retry.error
+          }
           if (updateError) throw new Error(submitErrorMessage(updateError, "Failed to update listing"))
           listingSlug = updated?.slug ?? null
         } else if (adminImpersonatesListingOwner) {
@@ -1171,6 +1201,7 @@ function SellPageContent() {
         }
       } else {
         const dimDbNew = boardDimensionsToDbFields(fd)
+        const dimDisplayNew = boardDimensionDisplayFields(fd)
         const listingFields = {
           title: resolvedListingTitle,
           description: fd.description,
@@ -1184,6 +1215,7 @@ function SellPageContent() {
           width: dimDbNew.width,
           thickness: dimDbNew.thickness,
           volume: dimDbNew.volume,
+          ...dimDisplayNew,
           fins_setup: fd.boardFins ? fd.boardFins : null,
           tail_shape: fd.boardTail ? fd.boardTail : null,
           latitude: boardLocationLat,
@@ -1221,16 +1253,34 @@ function SellPageContent() {
           }
         } else {
           const newSlug = await generateUniqueSlug(resolvedListingTitle)
-          const { data: listing, error: listingError } = await supabase
+          const insertPayload = {
+            user_id: user.id,
+            ...listingFields,
+            slug: newSlug,
+            status: "active" as const,
+          }
+          let { data: listing, error: listingError } = await supabase
             .from("listings")
-            .insert({
-              user_id: user.id,
-              ...listingFields,
-              slug: newSlug,
-              status: "active",
-            })
+            .insert(insertPayload)
             .select()
             .single()
+
+          if (listingError && isListingDimensionDisplaySchemaCacheError(listingError)) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn(
+                "[sell] DB missing listing dimension display columns; saved without them. Run: supabase/migrations/20260407140000_listing_dimension_display_text.sql",
+              )
+            }
+            const retryPayload = {
+              user_id: user.id,
+              ...withoutListingDimensionDisplayDbFields(listingFields as Record<string, unknown>),
+              slug: newSlug,
+              status: "active" as const,
+            }
+            const retry = await supabase.from("listings").insert(retryPayload).select().single()
+            listing = retry.data
+            listingError = retry.error
+          }
 
           if (listingError) {
             throw new Error(submitErrorMessage(listingError, "Failed to create listing"))

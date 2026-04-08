@@ -5,6 +5,10 @@ import { slugify } from '@/lib/slugify'
 import { listingTitleWithBoardLength } from '@/lib/listing-title-board-length'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { formatBoardInchesForTitle, LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
+import {
+  isListingDimensionDisplaySchemaCacheError,
+  withoutListingDimensionDisplayDbFields,
+} from '@/lib/listing-dimensions-display'
 
 function listingDimensionDisplayTrim(v: unknown): string | null {
   if (v == null) return null
@@ -106,40 +110,54 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: listing, error: listingError } = await supabase
+  const listingInsertRow = {
+    user_id: user.id,
+    title: resolvedTitle,
+    slug,
+    description,
+    price: parseFloat(price),
+    condition,
+    section,
+    category_id,
+    shipping_available: shipping_available || false,
+    local_pickup: local_pickup !== false,
+    shipping_price: shipping_price ? parseFloat(shipping_price) : null,
+    city,
+    state,
+    board_type,
+    length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
+    length_inches:
+      length_inches != null && length_inches !== ''
+        ? parseFloat(String(length_inches))
+        : null,
+    width: width ? parseFloat(width) : null,
+    thickness: thickness ? parseFloat(thickness) : null,
+    volume: volume ? parseFloat(volume) : null,
+    length_inches_display: listingDimensionDisplayTrim(length_inches_display),
+    width_inches_display: listingDimensionDisplayTrim(width_inches_display),
+    thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
+    volume_display: listingDimensionDisplayTrim(volume_display),
+    brand,
+    shaper,
+  }
+  let { data: listing, error: listingError } = await supabase
     .from('listings')
-    .insert({
-      user_id: user.id,
-      title: resolvedTitle,
-      slug,
-      description,
-      price: parseFloat(price),
-      condition,
-      section,
-      category_id,
-      shipping_available: shipping_available || false,
-      local_pickup: local_pickup !== false,
-      shipping_price: shipping_price ? parseFloat(shipping_price) : null,
-      city,
-      state,
-      board_type,
-      length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
-      length_inches:
-        length_inches != null && length_inches !== ''
-          ? parseFloat(String(length_inches))
-          : null,
-      width: width ? parseFloat(width) : null,
-      thickness: thickness ? parseFloat(thickness) : null,
-      volume: volume ? parseFloat(volume) : null,
-      length_inches_display: listingDimensionDisplayTrim(length_inches_display),
-      width_inches_display: listingDimensionDisplayTrim(width_inches_display),
-      thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
-      volume_display: listingDimensionDisplayTrim(volume_display),
-      brand,
-      shaper,
-    })
+    .insert(listingInsertRow)
     .select('id')
     .single()
+
+  if (listingError && isListingDimensionDisplaySchemaCacheError(listingError)) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[api/listings] Retrying insert without dimension display columns.')
+    }
+    const retry = await supabase
+      .from('listings')
+      .insert(withoutListingDimensionDisplayDbFields(listingInsertRow as Record<string, unknown>))
+      .select('id')
+      .single()
+    listing = retry.data
+    listingError = retry.error
+  }
 
   if (listingError) {
     return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })

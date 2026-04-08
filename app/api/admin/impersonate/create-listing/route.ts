@@ -3,6 +3,10 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import { slugify } from "@/lib/slugify"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
+import {
+  isListingDimensionDisplaySchemaCacheError,
+  withoutListingDimensionDisplayDbFields,
+} from "@/lib/listing-dimensions-display"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -83,16 +87,32 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: listing, error: listingError } = await service
+  const insertPayload = {
+    ...listingData,
+    user_id: targetUserId,
+    slug,
+    status: "active" as const,
+  }
+  let { data: listing, error: listingError } = await service
     .from("listings")
-    .insert({
-      ...listingData,
-      user_id: targetUserId,
-      slug,
-      status: "active",
-    })
+    .insert(insertPayload)
     .select("id, slug")
     .single()
+
+  if (listingError && isListingDimensionDisplaySchemaCacheError(listingError)) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[impersonate] listings missing dimension display columns; retrying insert without them.",
+      )
+    }
+    const retry = await service
+      .from("listings")
+      .insert(withoutListingDimensionDisplayDbFields(insertPayload as Record<string, unknown>))
+      .select("id, slug")
+      .single()
+    listing = retry.data
+    listingError = retry.error
+  }
 
   if (listingError || !listing) {
     console.error("[impersonate] listing insert error:", listingError)

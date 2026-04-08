@@ -54,6 +54,7 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
+import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
 
 export async function SurfboardListingDetailPage({
   listingParam,
@@ -107,14 +108,7 @@ export async function SurfboardListingDetailPage({
   // Get seller's other boards
   const { data: sellerBoards } = await supabase
     .from("listings")
-    .select(`
-      id,
-      slug,
-      title,
-      price,
-      board_length,
-      listing_images (url, is_primary)
-    `)
+    .select("*, listing_images (url, is_primary)")
     .eq("user_id", board.user_id)
     .eq("status", "active")
     .eq("section", "surfboards")
@@ -511,6 +505,12 @@ export async function SurfboardListingDetailPage({
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {sellerBoards.map((item) => {
                   const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
+                  const boardLenSubtitle = formatListingBoardLengthSubtitle({
+                    length_feet: item.length_feet,
+                    length_inches: item.length_inches,
+                    length_inches_display: (item as { length_inches_display?: string | null })
+                      .length_inches_display,
+                  })
                   return (
                     <Link
                       key={item.id}
@@ -540,9 +540,9 @@ export async function SurfboardListingDetailPage({
                         </div>
                         <CardContent className="min-w-0 p-3">
                           <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{item.title}</h3>
-                          {item.board_length && (
-                            <p className="text-sm text-muted-foreground">{item.board_length}</p>
-                          )}
+                          {boardLenSubtitle ? (
+                            <p className="text-sm text-muted-foreground">{boardLenSubtitle}</p>
+                          ) : null}
                           <p className="text-base font-bold text-black dark:text-white mt-1">
                             ${item.price.toFixed(2)}
                           </p>

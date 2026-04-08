@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
+import {
+  isListingDimensionDisplaySchemaCacheError,
+  withoutListingDimensionDisplayDbFields,
+} from "@/lib/listing-dimensions-display"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -86,15 +90,35 @@ export async function PUT(request: NextRequest) {
     slug?: unknown
   }
 
-  const { data: updatedRow, error: updateError } = await service
+  const updatePayload = {
+    ...listingFields,
+    updated_at: new Date().toISOString(),
+  }
+  let { data: updatedRow, error: updateError } = await service
     .from("listings")
-    .update({
-      ...listingFields,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", listingId)
     .select("slug")
     .single()
+
+  if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[impersonate] listings missing dimension display columns; retrying update without them.",
+      )
+    }
+    const retry = await service
+      .from("listings")
+      .update({
+        ...withoutListingDimensionDisplayDbFields(listingFields as Record<string, unknown>),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", listingId)
+      .select("slug")
+      .single()
+    updatedRow = retry.data
+    updateError = retry.error
+  }
 
   if (updateError) {
     console.error("[impersonate] listing update error:", updateError)
