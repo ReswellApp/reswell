@@ -1,10 +1,9 @@
 /**
- * Server-only: Klaviyo Events API — fires when a buyer’s order is confirmed (payment captured).
+ * Server-only: Klaviyo Events API — fires when a buyer’s purchase succeeds (payment captured).
  *
- * **Metric name in Klaviyo:** `Order Confirmed` — use as the flow trigger (Metric → Placed Order
- * style: choose “Order Confirmed” from metrics).
+ * **Metric name in Klaviyo:** `Purchase Successful` — use as the flow trigger (Flows → Metric).
  *
- * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Order Confirmed** →
+ * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Purchase Successful** →
  * add email; in the template use event variables, e.g. `{{ event.Title }}`, `{{ event.order_url }}`,
  * `{{ event.listing_url }}`, `{{ event.fulfillment_method }}`, `{{ event.payment_method }}`.
  *
@@ -43,12 +42,12 @@ export async function trackKlaviyoBuyerOrderConfirmed(
   const orderUrl = `${origin}/dashboard/orders/${payload.orderId}`
 
   await sendKlaviyoServerEvent({
-    metricName: "Order Confirmed",
+    metricName: "Purchase Successful",
     profile: {
       external_id: payload.buyerUserId,
       email: payload.buyerEmail,
     },
-    uniqueId: `order-confirmed-${payload.orderId}`,
+    uniqueId: `purchase-successful-${payload.orderId}`,
     value: Number.isFinite(amountNum) ? amountNum : undefined,
     valueCurrency: "USD",
     properties: {
