@@ -67,6 +67,7 @@ function StripePayButton({
         if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
           const res = await fetch("/api/stripe/finalize-order", {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ payment_intent_id: paymentIntent.id }),
           })
