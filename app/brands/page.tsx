@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { BrandsDirectorySearch } from "@/components/brands/brands-directory-search"
 import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
@@ -41,6 +42,9 @@ export default async function BrandsPage({
               Shapers and labels in the Reswell catalog — locations, story, and links to shop official gear or search
               listings here.
             </p>
+            <div className="mx-auto mt-8 max-w-xl">
+              <BrandsDirectorySearch brands={brands} />
+            </div>
           </div>
         </div>
       </section>

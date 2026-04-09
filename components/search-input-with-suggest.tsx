@@ -64,6 +64,10 @@ interface SearchInputWithSuggestProps {
    * User can still open via focus (cached suggestions) or by typing on other routes.
    */
   autoOpenDropdownOnFetch?: boolean
+  /**
+   * Surfboards filter bar: match `/sell` title field dropdown — `rounded-md` panel, vertical brand rows.
+   */
+  variant?: "default" | "boards"
 }
 
 function listingHref(listing: SuggestListing) {
@@ -110,7 +114,10 @@ export function SearchInputWithSuggest({
   autoOpenDropdownOnFetch = true,
   onNavigate,
   onFocus: onFocusProp,
+  variant = "default",
 }: SearchInputWithSuggestProps) {
+  const boardsTitleStyle = variant === "boards"
+  const panelTopRounded = boardsTitleStyle ? "rounded-t-md" : "rounded-t-2xl"
   const [suggestions, setSuggestions] = useState<SuggestResult | null>(null)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -277,8 +284,10 @@ export function SearchInputWithSuggest({
         id={listboxId}
         role="listbox"
         className={cn(
-          "fixed z-[100] overflow-hidden rounded-2xl border border-border/80 bg-popover text-popover-foreground",
-          "shadow-xl shadow-black/10",
+          "fixed z-[100] overflow-hidden border bg-popover text-popover-foreground",
+          boardsTitleStyle
+            ? "rounded-md border-border shadow-md"
+            : "rounded-2xl border-border/80 shadow-xl shadow-black/10",
         )}
         style={{
           top: dropdownRect.top,
@@ -368,31 +377,54 @@ export function SearchInputWithSuggest({
         {(suggestions?.brands?.length ?? 0) > 0 && (
           <div
             className={cn(
-              "border-t border-border/60 bg-background px-4 py-3",
-              listings.length === 0 && "rounded-t-2xl",
+              "border-t border-border/60 bg-background",
+              boardsTitleStyle ? "px-0 py-0" : "px-4 py-3",
+              listings.length === 0 && panelTopRounded,
             )}
           >
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p
+              className={cn(
+                "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
+                boardsTitleStyle ? "mb-0 px-3 pt-3" : "mb-2",
+              )}
+            >
               Brands
             </p>
-            <div className="flex gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {suggestions!.brands!.map((brand) => (
-                <button
-                  key={brand}
-                  type="button"
-                  className="flex min-w-[4.5rem] max-w-[5.5rem] flex-col items-center gap-1.5 text-center"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleSelect(brand)}
-                >
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted text-base font-bold text-cerulean">
-                    {brand.slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className="line-clamp-2 w-full text-xs font-medium leading-tight text-foreground">
-                    {brand}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {boardsTitleStyle ? (
+              <ul className="max-h-[min(240px,40vh)] overflow-y-auto py-1">
+                {suggestions!.brands!.map((brand) => (
+                  <li key={brand} role="option">
+                    <button
+                      type="button"
+                      className="flex w-full cursor-pointer select-none items-center px-3 py-2.5 text-left text-sm outline-none min-h-touch hover:bg-accent/60 focus-visible:bg-accent"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelect(brand)}
+                    >
+                      <span className="truncate font-medium text-foreground">{brand}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {suggestions!.brands!.map((brand) => (
+                  <button
+                    key={brand}
+                    type="button"
+                    className="flex min-w-[4.5rem] max-w-[5.5rem] flex-col items-center gap-1.5 text-center"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelect(brand)}
+                  >
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted text-base font-bold text-cerulean">
+                      {brand.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="line-clamp-2 w-full text-xs font-medium leading-tight text-foreground">
+                      {brand}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -424,7 +456,7 @@ export function SearchInputWithSuggest({
               listings.length === 0 &&
                 (suggestions?.brands?.length ?? 0) === 0 &&
                 (suggestions?.categories?.length ?? 0) === 0 &&
-                "rounded-t-2xl",
+                panelTopRounded,
             )}
           >
             <p className="border-b border-border/40 bg-muted/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -437,7 +469,12 @@ export function SearchInputWithSuggest({
                   <li key={`${item.type}-${item.text}-${i}`} role="option">
                     <button
                       type="button"
-                      className="mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80"
+                      className={cn(
+                        "flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-sm outline-none min-h-touch transition-colors",
+                        boardsTitleStyle
+                          ? "hover:bg-accent/60 focus-visible:bg-accent"
+                          : "mx-1 w-[calc(100%-0.5rem)] rounded-lg py-2 hover:bg-muted/80 focus-visible:bg-muted/80",
+                      )}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelect(item.text)}
                     >

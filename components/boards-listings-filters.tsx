@@ -10,8 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, MapPin, LocateFixed } from "lucide-react"
-import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
+import { MapPin, LocateFixed } from "lucide-react"
+import { BoardsBrandSearchField } from "@/components/boards-brand-search-field"
+import {
+  SiteSearchFormSubmitButton,
+  SiteSearchShell,
+  siteFilterBorderedInputClassName,
+  siteFilterIconButtonClassName,
+  siteFilterSelectTriggerClassName,
+  siteSearchInputClassName,
+} from "@/components/site-search-bar"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
 import { useToast } from "@/hooks/use-toast"
 import { listingConditionFilterRows } from "@/lib/listing-labels"
@@ -228,25 +236,11 @@ export function BoardsListingsFilters({
         e.preventDefault()
         void pushSearchParams()
       }}
-      className="grid grid-cols-2 gap-2 items-end md:flex md:flex-nowrap md:gap-2 md:items-end"
+      className="grid grid-cols-2 gap-2 items-center md:flex md:flex-nowrap md:gap-2 md:items-center"
     >
-      <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[360px] md:min-w-[360px]">
-        <SearchInputWithSuggest
-          value={q}
-          onChange={setQ}
-          placeholder="Search surfboards..."
-          section="surfboards"
-          leftIcon={<Search className="h-4 w-4" />}
-          name="q"
-          listboxId="boards-search-suggestions"
-          showTypeLabels={false}
-          className="w-full"
-          inputClassName="w-full box-border rounded-lg"
-        />
-      </div>
       <div className="col-span-2 flex items-center gap-2 min-w-[200px] md:col-auto md:w-[300px] md:min-w-[300px] md:shrink-0">
         <div className="relative flex-1 min-w-[160px]">
-          <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 z-[1] h-4 w-4 text-muted-foreground pointer-events-none" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 z-[1] h-4 w-4 text-muted-foreground pointer-events-none" />
           <LocationInputSuggest
             name="location"
             placeholder="City or ZIP"
@@ -267,7 +261,7 @@ export function BoardsListingsFilters({
               })
             }}
             listboxId="boards-location-suggest"
-            inputClassName="pl-9 w-full min-w-0 h-10 min-h-[2.5rem] rounded-lg"
+            inputClassName={siteFilterBorderedInputClassName()}
           />
         </div>
         <Button
@@ -277,14 +271,14 @@ export function BoardsListingsFilters({
           title="Use my location"
           disabled={locationLoading}
           onClick={handleUseMyLocation}
-          className="shrink-0 h-10 w-10 rounded-lg"
+          className={siteFilterIconButtonClassName()}
         >
           <LocateFixed className={`h-4 w-4 ${userLat != null ? "text-primary" : ""}`} />
         </Button>
       </div>
       <div className="col-span-2 w-full min-w-0 md:col-span-auto md:w-[200px] md:shrink-0">
         <Select name="type" value={type} onValueChange={setType}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem] rounded-lg">
+          <SelectTrigger className={siteFilterSelectTriggerClassName()}>
             <SelectValue placeholder="Board type" />
           </SelectTrigger>
           <SelectContent>
@@ -298,7 +292,7 @@ export function BoardsListingsFilters({
       </div>
       <div className="w-full min-w-0 md:w-[120px] md:shrink-0">
         <Select name="condition" value={condition} onValueChange={setCondition}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem] rounded-lg">
+          <SelectTrigger className={siteFilterSelectTriggerClassName()}>
             <SelectValue placeholder="Any Condition" />
           </SelectTrigger>
           <SelectContent>
@@ -312,7 +306,7 @@ export function BoardsListingsFilters({
       </div>
       <div className="w-full min-w-0 md:w-[140px] md:shrink-0">
         <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full h-10 min-h-[2.5rem] rounded-lg">
+          <SelectTrigger className={siteFilterSelectTriggerClassName()}>
             <SelectValue placeholder="Newest" />
           </SelectTrigger>
           <SelectContent>
@@ -323,6 +317,21 @@ export function BoardsListingsFilters({
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[360px] md:min-w-[min(360px,100%)] md:max-w-full">
+        <SiteSearchShell
+          actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
+        >
+          <BoardsBrandSearchField
+            value={q}
+            onChange={setQ}
+            name="q"
+            listboxId="boards-brand-q"
+            placeholder="Filter by brand name…"
+            className="w-full"
+            inputClassName={siteSearchInputClassName()}
+          />
+        </SiteSearchShell>
       </div>
     </form>
   )

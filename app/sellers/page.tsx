@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { MapPin, Store, Search, ArrowRight } from "lucide-react"
+import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
+import { MapPin, Store, ArrowRight } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
@@ -150,27 +151,18 @@ export default async function SellersPage({
             <p className="mt-2 text-sm text-muted-foreground text-pretty sm:text-base">
               Browse seller profiles and a sample of what they have listed right now.
             </p>
-            <form
+            <SiteSearchBar
               action="/sellers"
               method="GET"
-              className="mx-auto mt-6 flex max-w-lg flex-col gap-2 sm:flex-row sm:items-center"
+              className="mx-auto mt-6 w-full max-w-lg"
             >
-              <div className="relative flex-1">
-                <Search
-                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden
-                />
-                <Input
-                  name="q"
-                  defaultValue={q || ""}
-                  placeholder="Search by name or location…"
-                  className="pl-9"
-                />
-              </div>
-              <Button type="submit" className="sm:w-auto">
-                Search
-              </Button>
-            </form>
+              <Input
+                name="q"
+                defaultValue={q || ""}
+                placeholder="Search by name or location…"
+                className={siteSearchInputClassName()}
+              />
+            </SiteSearchBar>
           </div>
         </div>
       </section>

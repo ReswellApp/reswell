@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ArrowLeft, Plus, Search, UserCog, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Plus, UserCog, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { setImpersonation } from '@/lib/impersonation'
 
@@ -98,16 +99,20 @@ export default function AdminAddListingPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <SiteSearchBar
+            className="max-w-md"
+            onSubmit={(e) => {
+              e.preventDefault()
+            }}
+          >
             <Input
               placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className={siteSearchInputClassName()}
               autoFocus
             />
-          </div>
+          </SiteSearchBar>
 
           {loading ? (
             <p className="text-sm text-muted-foreground py-8 text-center">Loading users...</p>

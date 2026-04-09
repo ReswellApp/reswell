@@ -43,6 +43,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
+import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
+import { cn } from "@/lib/utils"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
@@ -483,7 +485,8 @@ export function Header() {
                 align="end"
                 sideOffset={8}
               >
-                <form
+                <SiteSearchBar
+                  compact
                   onSubmit={async (e) => {
                     e.preventDefault()
                     const q = searchQuery.trim()
@@ -499,36 +502,30 @@ export function Header() {
                     clearNavSearchQuery()
                     setSearchOpen(false)
                   }}
-                  className="flex gap-3"
+                  className="w-full"
                 >
-                  <div className="relative min-w-0 flex-1">
-                    <SearchInputWithSuggest
-                      value={searchQuery}
-                      onChange={setSearchQuery}
-                      onSelect={(text) => {
-                        router.push(`/search?q=${encodeURIComponent(text)}`)
-                        setSearchQuery("")
-                        clearNavSearchQuery()
-                        setSearchOpen(false)
-                      }}
-                      onNavigate={() => {
-                        setSearchQuery("")
-                        clearNavSearchQuery()
-                        setSearchOpen(false)
-                      }}
-                      placeholder="Search surfboards…"
-                      section=""
-                      listboxId="nav-search-suggestions-tablet"
-                      leftIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                      inputClassName="h-10 rounded-xl border-border bg-background text-foreground"
-                      className="w-full"
-                      autoFocus={searchOpen}
-                    />
-                  </div>
-                  <Button type="submit" size="sm" className="h-10 shrink-0 rounded-xl px-4">
-                    Search
-                  </Button>
-                </form>
+                  <SearchInputWithSuggest
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    onSelect={(text) => {
+                      router.push(`/search?q=${encodeURIComponent(text)}`)
+                      setSearchQuery("")
+                      clearNavSearchQuery()
+                      setSearchOpen(false)
+                    }}
+                    onNavigate={() => {
+                      setSearchQuery("")
+                      clearNavSearchQuery()
+                      setSearchOpen(false)
+                    }}
+                    placeholder="Search surfboards…"
+                    section=""
+                    listboxId="nav-search-suggestions-tablet"
+                    inputClassName={siteSearchInputClassName({ compact: true })}
+                    className="w-full"
+                    autoFocus={searchOpen}
+                  />
+                </SiteSearchBar>
               </PopoverContent>
             </Popover>
 
@@ -834,51 +831,32 @@ export function Header() {
                 Cart
               </Link>
               <hr className="my-2 border-border" />
-              <div className="flex min-w-0 gap-2">
+              <SiteSearchBar
+                compact
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  const input = mobileSearchRef.current
+                  const q = (input?.value || "").trim()
+                  if (!q) {
+                    clearNavSearchQuery()
+                    setMobileMenuOpen(false)
+                    await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+                    return
+                  }
+                  router.push(`/search?q=${encodeURIComponent(q)}`)
+                  if (input) input.value = ""
+                  clearNavSearchQuery()
+                  setMobileMenuOpen(false)
+                }}
+                className="min-w-0 w-full"
+              >
                 <Input
                   ref={mobileSearchRef}
                   type="search"
                   placeholder="Search surfboards…"
-                  className="min-w-0 flex-1 rounded-lg border-border min-h-touch"
-                  onKeyDown={async (e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      const q = (e.currentTarget.value || "").trim()
-                      if (!q) {
-                        clearNavSearchQuery()
-                        setMobileMenuOpen(false)
-                        await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
-                        return
-                      }
-                      router.push(`/search?q=${encodeURIComponent(q)}`)
-                      e.currentTarget.value = ""
-                      clearNavSearchQuery()
-                      setMobileMenuOpen(false)
-                    }
-                  }}
+                  className={cn(siteSearchInputClassName({ compact: true }), "min-h-touch")}
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  className="rounded-lg min-h-touch shrink-0"
-                  onClick={async () => {
-                    const input = mobileSearchRef.current
-                    const q = (input?.value || "").trim()
-                    if (!q) {
-                      clearNavSearchQuery()
-                      setMobileMenuOpen(false)
-                      await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
-                      return
-                    }
-                    router.push(`/search?q=${encodeURIComponent(q)}`)
-                    if (input) input.value = ""
-                    clearNavSearchQuery()
-                    setMobileMenuOpen(false)
-                  }}
-                >
-                  Search
-                </Button>
-              </div>
+              </SiteSearchBar>
               <Link
                 href={user ? "/favorites" : "/auth/login?redirect=" + encodeURIComponent("/favorites")}
                 onClick={

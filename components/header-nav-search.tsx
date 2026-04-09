@@ -4,10 +4,10 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Clock, X, TrendingUp } from "lucide-react"
 import { createPortal } from "react-dom"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
+import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
@@ -318,33 +318,24 @@ export function HeaderNavSearch() {
 
   return (
     <div className="hidden min-w-0 w-full flex-1 items-center px-2 md:flex">
-      <form
-        ref={formRef}
-        onSubmit={handleSubmit}
-        className="flex w-full min-w-0 items-center gap-2 rounded-full border border-border bg-muted/40 pl-2 pr-1.5 transition-shadow focus-within:bg-background focus-within:border-cerulean/40 focus-within:ring-2 focus-within:ring-cerulean/15 focus-within:shadow-sm"
-      >
-        <div className="relative min-w-0 flex-1">
-          <SearchInputWithSuggest
-            value={query}
-            onChange={setQuery}
-            onSelect={(text) => {
-              saveRecentSearch(text)
-              runSearch(text)
-            }}
-            onNavigate={clearSearchAndStorage}
-            onFocus={handleIdleFocus}
-            placeholder="Search surfboards…"
-            section=""
-            listboxId="header-nav-search-suggestions"
-            inputClassName="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] pl-4"
-            className="w-full"
-            minLength={2}
-          />
-        </div>
-        <Button type="submit" size="sm" className="h-10 shrink-0 rounded-full px-5 text-[14px]">
-          Search
-        </Button>
-      </form>
+      <SiteSearchBar ref={formRef} onSubmit={handleSubmit} className="w-full">
+        <SearchInputWithSuggest
+          value={query}
+          onChange={setQuery}
+          onSelect={(text) => {
+            saveRecentSearch(text)
+            runSearch(text)
+          }}
+          onNavigate={clearSearchAndStorage}
+          onFocus={handleIdleFocus}
+          placeholder="Search surfboards…"
+          section=""
+          listboxId="header-nav-search-suggestions"
+          inputClassName={siteSearchInputClassName()}
+          className="w-full"
+          minLength={2}
+        />
+      </SiteSearchBar>
       {idleDropdown}
     </div>
   )

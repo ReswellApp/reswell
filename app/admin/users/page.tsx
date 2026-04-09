@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -22,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, XCircle, UserCheck } from 'lucide-react'
+import { MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, XCircle, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { format, formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
@@ -166,15 +167,19 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <SiteSearchBar
+        className="max-w-md"
+        onSubmit={(e) => {
+          e.preventDefault()
+        }}
+      >
         <Input
           placeholder="Search by name or email..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className={siteSearchInputClassName()}
         />
-      </div>
+      </SiteSearchBar>
 
       {/* Users Table */}
       <Card>

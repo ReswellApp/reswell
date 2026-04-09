@@ -8,7 +8,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { MessageCircle, Search, Heart } from 'lucide-react'
+import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
+import { MessageCircle, Heart } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -170,15 +171,19 @@ function MessagesContent() {
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold text-foreground mb-6">Messages</h1>
 
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <SiteSearchBar
+            className="mb-6 max-w-md"
+            onSubmit={(e) => {
+              e.preventDefault()
+            }}
+          >
             <Input
               placeholder="Search conversations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className={siteSearchInputClassName()}
             />
-          </div>
+          </SiteSearchBar>
 
           {loading ? (
             <div className="space-y-4">

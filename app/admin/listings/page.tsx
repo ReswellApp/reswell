@@ -9,6 +9,7 @@ import { listingDetailHref } from '@/lib/listing-href'
 import { setImpersonation } from '@/lib/impersonation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -32,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, MoreVertical, Eye, Trash2, Flag, Package, RotateCcw, Pencil, Tag } from 'lucide-react'
+import { MoreVertical, Eye, Trash2, Flag, Package, RotateCcw, Pencil, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -196,15 +197,19 @@ export default function AdminListingsPage() {
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <SiteSearchBar
+              className="flex-1 md:min-w-0"
+              onSubmit={(e) => {
+                e.preventDefault()
+              }}
+            >
               <Input
                 placeholder="Search by title or seller..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className={siteSearchInputClassName()}
               />
-            </div>
+            </SiteSearchBar>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-40">
                 <SelectValue placeholder="Status" />
