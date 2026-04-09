@@ -41,6 +41,12 @@ const nextConfig = {
         hostname: '**.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      // Admin sell-form “Fill seed listing” placeholder photos (picsum)
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        pathname: '/**',
+      },
       // Index / brand image URLs (Shopify CDN + custom domains with /cdn/shop/)
       {
         protocol: 'https',

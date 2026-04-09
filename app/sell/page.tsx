@@ -163,6 +163,13 @@ type ListingPhotoSlot = {
   prepared?: PreparedListingImagePair
 }
 
+/** Admin-only quick fill: portrait URLs (not re-uploaded; valid for submit validation). */
+const ADMIN_SEED_IMAGE_URLS = [
+  "https://picsum.photos/seed/reswell-seed-1/600/900",
+  "https://picsum.photos/seed/reswell-seed-2/600/900",
+  "https://picsum.photos/seed/reswell-seed-3/600/900",
+] as const
+
 function shippingPriceToFormValue(v: unknown): string {
   if (v == null || v === "") return ""
   const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""))
@@ -213,6 +220,7 @@ function SellPageContent() {
     imagesRef.current = images
   }, [images])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -282,6 +290,23 @@ function SellPageContent() {
           board: true,
         })),
       )
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [supabase])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle()
+      if (!cancelled) setViewerIsAdmin(profile?.is_admin === true)
     })()
     return () => {
       cancelled = true
@@ -1425,6 +1450,72 @@ function SellPageContent() {
 
   const optimizingAny = images.some((im) => im.optimizePhase === "running")
 
+  const applyAdminSeedListing = useCallback(() => {
+    const cat =
+      boardCategoryOptions[0]?.value ?? boardCategoryMap.shortboard
+    const boardType = boardCategoryOptions[0]
+      ? boardTypeFromCategoryId(cat)
+      : "shortboard"
+
+    const seedSlots: ListingPhotoSlot[] = ADMIN_SEED_IMAGE_URLS.map((url) => ({
+      clientId: crypto.randomUUID(),
+      previewUrl: url,
+      url,
+      thumbnailUrl: url,
+      optimizePhase: "done",
+      uploadPhase: "done",
+      progressFull: 100,
+      progressThumb: 100,
+    }))
+
+    setImages((prev) => {
+      for (const im of prev) {
+        if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
+      }
+      return seedSlots
+    })
+
+    if (editId) {
+      setRemovedImageIds((prev) => {
+        const fromSlots = images.map((im) => im.id).filter((x): x is string => !!x)
+        return [...new Set([...prev, ...fromSlots])]
+      })
+    } else {
+      setRemovedImageIds([])
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      title: "Admin seed",
+      description:
+        "Admin seed listing for QA — shortboard placeholder. Replace copy and photos before production use.",
+      price: "0.50",
+      category: cat,
+      condition: "good",
+      brand: "Seed Brand",
+      boardFulfillment: "pickup_only",
+      boardShippingPrice: "",
+      boardType,
+      boardLengthFt: "5",
+      boardLengthIn: "8",
+      boardWidthInches: "19",
+      boardThicknessInches: "2.375",
+      boardVolumeL: "28",
+      boardFins: "thruster",
+      boardTail: "round",
+      boardBrandId: "",
+      boardIndexBrandSlug: "",
+      boardIndexModelSlug: "",
+      boardIndexLabel: "",
+      locationLat: 32.7157,
+      locationLng: -117.1611,
+      locationCity: "San Diego",
+      locationState: "CA",
+      locationDisplay: "San Diego, CA",
+    }))
+    toast.message("Seed listing data applied")
+  }, [boardCategoryOptions, editId, images])
+
   return (
       <main className="flex-1 w-full bg-muted py-8">
         <div className="container mx-auto max-w-2xl">
@@ -1437,11 +1528,31 @@ function SellPageContent() {
           </Link>
 
           <Card>
-            <CardHeader>
-              <CardTitle>{editId ? "Edit listing" : "Create a Listing"}</CardTitle>
-              <CardDescription>
-                {editId ? "Update your listing details" : "List your surfboard for buyers on Reswell"}
-              </CardDescription>
+            <CardHeader className="space-y-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1.5">
+                  <CardTitle>{editId ? "Edit listing" : "Create a Listing"}</CardTitle>
+                  <CardDescription>
+                    {editId ? "Update your listing details" : "List your surfboard for buyers on Reswell"}
+                  </CardDescription>
+                </div>
+                {viewerIsAdmin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={
+                      loading ||
+                      boardCategoryOptions.length === 0 ||
+                      optimizingAny
+                    }
+                    onClick={applyAdminSeedListing}
+                  >
+                    Fill seed listing
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {editLoading ? (

@@ -9,6 +9,7 @@ import { ArrowLeft, MessageCircle, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
   BuyerConfirmDelivery,
   BuyerPickupCode,
@@ -32,6 +33,7 @@ type ShippingAddressJson = {
 
 type OrderDetail = {
   id: string
+  order_num: string | null
   amount: number | string
   status: string
   created_at: string
@@ -93,6 +95,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
     .select(
       `
       id,
+      order_num,
       amount,
       status,
       created_at,
@@ -163,7 +166,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
       <div>
         <h1 className="text-2xl font-bold font-mono tracking-tight">
-          Order #{order.id.slice(0, 8).toUpperCase()}
+          Order #{formatOrderNumForCustomer(order.order_num, order.id)}
         </h1>
         <p className="text-muted-foreground mt-1">
           {new Date(order.created_at).toLocaleString(undefined, {

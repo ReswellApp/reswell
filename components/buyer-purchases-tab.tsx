@@ -10,9 +10,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Package, ChevronRight, Receipt } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 type Row = {
   id: string
+  order_num: string | null
   amount: number | string
   status: string
   created_at: string
@@ -51,6 +53,7 @@ export function BuyerOrdersTab() {
       .select(
         `
         id,
+        order_num,
         amount,
         status,
         created_at,
@@ -180,7 +183,7 @@ export function BuyerOrdersTab() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-xs font-mono text-muted-foreground">
-                      #{row.id.slice(0, 8).toUpperCase()}
+                      #{formatOrderNumForCustomer(row.order_num, row.id)}
                     </p>
                     <Badge variant={orderStatusBadgeVariant(row.status)} className="text-[10px] px-1.5 py-0">
                       {orderStatusLabel(row.status)}

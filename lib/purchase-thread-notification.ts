@@ -35,12 +35,15 @@ export async function postPurchaseThreadNotification(
     sellerId: string
     listingId: string
     listingTitle: string
+    /** `orders.order_num` (customer-facing reference). */
+    orderNum: string
     total: number
     fulfillment: "pickup" | "shipping"
     shippingAddress: Record<string, unknown> | null
   }
 ): Promise<void> {
-  const { buyerId, sellerId, listingId, listingTitle, total, fulfillment, shippingAddress } = params
+  const { buyerId, sellerId, listingId, listingTitle, orderNum, total, fulfillment, shippingAddress } =
+    params
 
   let { data: conversation } = await supabase
     .from("conversations")
@@ -68,7 +71,7 @@ export async function postPurchaseThreadNotification(
     conversation = created
   }
 
-  const intro = `I paid with card for "${listingTitle}" — $${total.toFixed(2)} total.`
+  const intro = `Order #${orderNum}\n\nI paid with card for "${listingTitle}" — $${total.toFixed(2)} total.`
   const fulfillmentLine =
     fulfillment === "shipping"
       ? "Fulfillment: please ship to the address I entered at checkout (also saved on your sale record)."

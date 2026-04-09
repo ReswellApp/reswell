@@ -4,8 +4,8 @@
  * **Metric name in Klaviyo:** `Purchase Successful` — use as the flow trigger (Flows → Metric).
  *
  * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Purchase Successful** →
- * add email; in the template use event variables, e.g. `{{ event.Title }}`, `{{ event.order_url }}`,
- * `{{ event.listing_url }}`, `{{ event.fulfillment_method }}`, `{{ event.payment_method }}`.
+ * add email; in the template use event variables, e.g. `{{ event.order_num }}`, `{{ event.Title }}`,
+ * `{{ event.order_url }}`, `{{ event.listing_url }}`, `{{ event.fulfillment_method }}`, `{{ event.payment_method }}`.
  *
  * Profile on the event is the **buyer** (`external_id` + email when available).
  */
@@ -13,11 +13,14 @@
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 export type KlaviyoBuyerOrderConfirmedPayload = {
   buyerUserId: string
   buyerEmail: string | null
   orderId: string
+  /** From `orders.order_num` (optional for legacy callers). */
+  orderNum?: string | null
   listingId: string
   listingTitle: string
   listingSection: string
@@ -52,6 +55,7 @@ export async function trackKlaviyoBuyerOrderConfirmed(
     valueCurrency: "USD",
     properties: {
       order_id: payload.orderId,
+      order_num: formatOrderNumForCustomer(payload.orderNum, payload.orderId),
       listing_id: payload.listingId,
       Title: payload.listingTitle,
       fulfillment_method: payload.fulfillmentMethod,

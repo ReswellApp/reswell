@@ -9,8 +9,11 @@ import {
   type ProfileAddressRow,
 } from "@/lib/profile-address"
 import { generatePickupCode } from "@/lib/order-status"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -22,20 +25,9 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
   return Boolean(err.message?.toLowerCase().includes("duplicate"))
 }
 
-async function buyerEmailForKlaviyo(buyerId: string): Promise<string | null> {
-  try {
-    const admin = createServiceRoleClient()
-    const { data, error } = await admin.auth.admin.getUserById(buyerId)
-    if (error || !data?.user?.email) return null
-    return data.user.email
-  } catch {
-    return null
-  }
-}
-
 /**
- * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
- * Klaviyo dedupes by `unique_id` (`purchase-successful-{orderId}`).
+ * Re-send Purchase Successful + Sale Successful for an order already stored (idempotent finalize / webhook).
+ * Klaviyo dedupes by `unique_id` (`purchase-successful-{orderId}` / `sale-successful-{orderId}`).
  */
 async function emitPurchaseSuccessfulKlaviyoForOrderId(
   serviceSupabase: ReturnType<typeof createServiceRoleClient>,
@@ -43,11 +35,13 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
 ): Promise<void> {
   const { data: order } = await serviceSupabase
     .from("orders")
-    .select("id, buyer_id, listing_id, amount, fulfillment_method, payment_method")
+    .select(
+      "id, order_num, buyer_id, seller_id, listing_id, amount, platform_fee, seller_earnings, fulfillment_method, payment_method",
+    )
     .eq("id", orderId)
     .maybeSingle()
 
-  if (!order?.buyer_id || !order.listing_id) return
+  if (!order?.buyer_id || !order.seller_id || !order.listing_id) return
 
   const { data: listing } = await serviceSupabase
     .from("listings")
@@ -57,12 +51,31 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
 
   if (!listing) return
 
-  const buyerEmail = await buyerEmailForKlaviyo(order.buyer_id)
+  const buyerEmail = await getAuthEmailForUserId(order.buyer_id)
+  const sellerEmail = await getAuthEmailForUserId(order.seller_id)
   const rawAmount = order.amount as unknown
   const amount =
     typeof rawAmount === "number"
       ? rawAmount
       : parseFloat(typeof rawAmount === "string" ? rawAmount : String(rawAmount))
+
+  const rawPlatformFee = order.platform_fee as unknown
+  const platformFee =
+    typeof rawPlatformFee === "number"
+      ? rawPlatformFee
+      : parseFloat(
+          typeof rawPlatformFee === "string" ? rawPlatformFee : String(rawPlatformFee ?? 0),
+        )
+
+  const rawSellerEarnings = order.seller_earnings as unknown
+  const sellerEarnings =
+    typeof rawSellerEarnings === "number"
+      ? rawSellerEarnings
+      : parseFloat(
+          typeof rawSellerEarnings === "string"
+            ? rawSellerEarnings
+            : String(rawSellerEarnings ?? 0),
+        )
 
   const fulfillmentMethod =
     order.fulfillment_method === "pickup" ? "pickup" : "shipping"
@@ -73,11 +86,28 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
     buyerUserId: order.buyer_id,
     buyerEmail,
     orderId: order.id,
+    orderNum: (order as { order_num?: string | null }).order_num ?? null,
     listingId: listing.id,
     listingTitle: listing.title ?? "",
     listingSection: listing.section ?? "",
     listingSlug: listing.slug ?? null,
     amount: Number.isFinite(amount) ? amount : 0,
+    fulfillmentMethod,
+    paymentMethod,
+  })
+
+  await trackKlaviyoSellerOrderConfirmed({
+    sellerUserId: order.seller_id,
+    sellerEmail,
+    orderId: order.id,
+    orderNum: (order as { order_num?: string | null }).order_num ?? null,
+    listingId: listing.id,
+    listingTitle: listing.title ?? "",
+    listingSection: listing.section ?? "",
+    listingSlug: listing.slug ?? null,
+    orderAmount: Number.isFinite(amount) ? amount : 0,
+    sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
+    platformFee: Number.isFinite(platformFee) ? platformFee : 0,
     fulfillmentMethod,
     paymentMethod,
   })
@@ -125,7 +155,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
-  const buyerEmail = await buyerEmailForKlaviyo(buyerId)
+  const buyerEmail = await getAuthEmailForUserId(buyerId)
 
   const { data: listing, error: listingError } = await serviceSupabase
     .from("listings")
@@ -138,6 +168,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   if (listingError || !listing) {
     return { ok: false, error: "Listing not found", status: 404 }
   }
+
+  const sellerEmail = await getAuthEmailForUserId(listing.user_id)
 
   if (listing.user_id === buyerId) {
     return { ok: false, error: "Invalid purchase", status: 400 }
@@ -356,6 +388,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     sellerId: listing.user_id,
     listingId: listing.id,
     listingTitle: listing.title,
+    orderNum: formatOrderNumForCustomer(
+      (purchase as { order_num?: string | null }).order_num,
+      purchase.id,
+    ),
     total: price,
     fulfillment: isPickup ? "pickup" : "shipping",
     shippingAddress: shippingAddressJson,
@@ -365,11 +401,28 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     buyerUserId: buyerId,
     buyerEmail,
     orderId: purchase.id,
+    orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
     listingId: listing.id,
     listingTitle: listing.title,
     listingSection: listing.section,
     listingSlug: null,
     amount: price,
+    fulfillmentMethod: isPickup ? "pickup" : "shipping",
+    paymentMethod: "stripe",
+  })
+
+  await trackKlaviyoSellerOrderConfirmed({
+    sellerUserId: listing.user_id,
+    sellerEmail,
+    orderId: purchase.id,
+    orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+    listingId: listing.id,
+    listingTitle: listing.title,
+    listingSection: listing.section,
+    listingSlug: null,
+    orderAmount: price,
+    sellerEarnings,
+    platformFee,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     paymentMethod: "stripe",
   })

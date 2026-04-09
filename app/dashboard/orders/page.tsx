@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Receipt, Package, ChevronRight } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 type MarketplaceOrderRow = {
   id: string
+  order_num: string | null
   amount: number | string
   status: string
   created_at: string
@@ -57,6 +59,7 @@ export default async function OrdersPage() {
     .select(
       `
       id,
+      order_num,
       amount,
       status,
       created_at,
@@ -149,7 +152,7 @@ export default async function OrdersPage() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <CardTitle className="text-base font-mono text-muted-foreground">
-                      Order #{row.id.slice(0, 8).toUpperCase()}
+                      Order #{formatOrderNumForCustomer(row.order_num, row.id)}
                     </CardTitle>
                     <CardDescription>
                       {new Date(row.created_at).toLocaleString(undefined, {

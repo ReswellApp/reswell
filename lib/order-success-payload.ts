@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { capitalizeWords, formatCategory, formatCondition } from "@/lib/listing-labels"
 import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -136,13 +137,8 @@ export async function fetchBuyerOrderSuccessPayload(
     }
   }
 
-  const created = new Date(order.created_at)
-  const year = created.getFullYear()
-  const shortId = order.id.replace(/-/g, "").slice(0, 8).toUpperCase()
-  const displayNumber =
-    order.order_num && order.order_num.trim()
-      ? `ORD-${order.order_num.trim()}`
-      : `ORD-${year}-${shortId}`
+  /** Same human reference as dashboard Orders / Sales (`orders.order_num`). */
+  const displayNumber = formatOrderNumForCustomer(order.order_num, order.id)
 
   const ship = order.shipping_address
   const addr = ship?.address

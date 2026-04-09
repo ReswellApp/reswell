@@ -9,6 +9,7 @@ import { ArrowLeft, Package, Truck, MapPin, CreditCard } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { SaleMessageThread, type SaleThreadMessage } from "@/components/sale-message-thread"
 import {
   SellerTrackingForm,
@@ -36,6 +37,7 @@ type PayoutRow = { status: string; hold_reason?: string | null }
 
 type SaleDetail = {
   id: string
+  order_num: string | null
   amount: number | string
   seller_earnings: number | string
   status: string
@@ -116,6 +118,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     .select(
       `
       id,
+      order_num,
       amount,
       seller_earnings,
       status,
@@ -216,7 +219,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
       <div>
         <h1 className="text-2xl font-bold font-mono tracking-tight">
-          Sale #{sale.id.slice(0, 8).toUpperCase()}
+          Sale #{formatOrderNumForCustomer(sale.order_num, sale.id)}
         </h1>
         <p className="text-muted-foreground mt-1">
           {new Date(sale.created_at).toLocaleString(undefined, {

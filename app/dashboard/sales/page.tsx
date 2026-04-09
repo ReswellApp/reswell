@@ -8,6 +8,7 @@ import { PackageCheck, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -25,6 +26,7 @@ type ShippingAddressJson = {
 
 type SaleRow = {
   id: string
+  order_num: string | null
   amount: number | string
   seller_earnings: number | string
   status: string
@@ -88,6 +90,7 @@ export default async function SalesPage() {
     .select(
       `
       id,
+      order_num,
       amount,
       seller_earnings,
       status,
@@ -182,7 +185,7 @@ export default async function SalesPage() {
                     <div className="space-y-1">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <PackageCheck className="h-5 w-5 text-muted-foreground" />
-                        Sale #{sale.id.slice(0, 8)}
+                        Sale #{formatOrderNumForCustomer(sale.order_num, sale.id)}
                       </CardTitle>
                       <CardDescription>
                         {new Date(sale.created_at).toLocaleString(undefined, {

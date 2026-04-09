@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 
 export type CheckoutOrderSuccessPayload = {
   orderId: string
+  /** `orders.order_num` (shown as `Order #…`, same as dashboard Orders). */
   displayNumber: string
   buyerEmail: string | null
   total: number
@@ -179,7 +180,9 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
                   <Package className="mt-0.5 h-5 w-5 shrink-0 text-cyan-600 dark:text-cyan-400" />
                   <div>
                     <div className="mb-1 text-sm">Order number</div>
-                    <div className="font-mono text-sm text-muted-foreground">{data.displayNumber}</div>
+                    <div className="font-mono text-sm text-muted-foreground">
+                      Order #{data.displayNumber}
+                    </div>
                   </div>
                 </div>
 

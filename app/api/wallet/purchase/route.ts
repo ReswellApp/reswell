@@ -4,8 +4,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { generatePickupCode } from "@/lib/order-status"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -196,20 +199,40 @@ export async function POST(request: NextRequest) {
     sellerId: listing.user_id,
     listingId: listing.id,
     listingTitle: listing.title,
+    orderNum: formatOrderNumForCustomer(
+      (purchase as { order_num?: string | null }).order_num,
+      purchase.id,
+    ),
     total: price,
     fulfillment: isPickup ? "pickup" : "shipping",
     shippingAddress: null,
   })
 
   if (purchase?.id) {
+    const sellerEmail = await getAuthEmailForUserId(listing.user_id)
     await trackKlaviyoBuyerOrderConfirmed({
       buyerUserId: user.id,
       buyerEmail: user.email ?? null,
       orderId: purchase.id,
+      orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
       listingId: listing.id,
       listingTitle: listing.title,
       listingSection: listing.section,
       amount: price,
+      fulfillmentMethod: isPickup ? "pickup" : "shipping",
+      paymentMethod: "reswell_bucks",
+    })
+    await trackKlaviyoSellerOrderConfirmed({
+      sellerUserId: listing.user_id,
+      sellerEmail,
+      orderId: purchase.id,
+      orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+      listingId: listing.id,
+      listingTitle: listing.title,
+      listingSection: listing.section,
+      orderAmount: price,
+      sellerEarnings,
+      platformFee,
       fulfillmentMethod: isPickup ? "pickup" : "shipping",
       paymentMethod: "reswell_bucks",
     })
