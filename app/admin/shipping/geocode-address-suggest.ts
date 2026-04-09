@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { KeyboardEvent } from "react"
+import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import type { AddressFields } from "./address-fields"
 
 export type GeocodeSuggestionRow = {
@@ -40,6 +41,10 @@ function buildPatch(
   }
   if (!patch.city_locality && s.city) patch.city_locality = s.city
   if (!patch.state_province && s.state) patch.state_province = s.state
+  const cc = patch.country_code ?? structured?.country_code ?? "US"
+  if (patch.state_province) {
+    patch.state_province = normalizeUsStateProvinceForShipping(cc, patch.state_province)
+  }
   return patch
 }
 

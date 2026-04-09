@@ -53,4 +53,26 @@ export const US_STATE_NAME_TO_CODE: Record<string, string> = {
   "district of columbia": "DC",
   "washington dc": "DC",
   "washington d.c.": "DC",
+  "puerto rico": "PR",
+  guam: "GU",
+  "american samoa": "AS",
+  "northern mariana islands": "MP",
+  "u.s. virgin islands": "VI",
+  "united states virgin islands": "VI",
+  "virgin islands": "VI",
+}
+
+/**
+ * ShipEngine and many US carrier APIs require `state_province` to be a 2-letter USPS code when
+ * `country_code` is US. Geocoders often return full names (e.g. "California").
+ */
+export function normalizeUsStateProvinceForShipping(
+  countryCode: string,
+  stateProvince: string,
+): string {
+  const cc = countryCode.trim().toUpperCase()
+  const s = stateProvince.trim()
+  if (cc !== "US" || !s) return s
+  if (s.length <= 2) return s.slice(0, 2).toUpperCase()
+  return US_STATE_NAME_TO_CODE[s.toLowerCase()] ?? s
 }

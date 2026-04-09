@@ -28,9 +28,9 @@ import { Separator } from '@/components/ui/separator'
 import { ChevronDown, ChevronUp, Loader2, Scale } from 'lucide-react'
 import { toast } from 'sonner'
 import { normalizeUsStateProvinceForShipping } from '@/lib/us-state-name-to-code'
-import type { AddressFields } from './address-fields'
-import { AddressForm } from './shipping-address-form'
-import { RATE_SEED_LISTINGS } from './rate-seed-listings'
+import { AddressForm } from '../shipping/shipping-address-form'
+import type { AddressFields } from '../shipping/address-fields'
+import { RATE_SEED_LISTINGS } from '../shipping/rate-seed-listings'
 
 const inputClass =
   'h-11 rounded-xl border-border/60 bg-background/90 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-[border-color,box-shadow] focus-visible:border-foreground/25 focus-visible:ring-2 focus-visible:ring-foreground/[0.06]'
@@ -52,11 +52,11 @@ const defaultFrom: AddressFields = {
   name: 'Ship from',
   phone: '555-0100',
   company_name: '',
-  address_line1: '4301 Bull Creek Road',
+  address_line1: '300 N Coast Hwy',
   address_line2: '',
-  city_locality: 'Austin',
-  state_province: 'TX',
-  postal_code: '78731',
+  city_locality: 'Oceanside',
+  state_province: 'CA',
+  postal_code: '92054',
   country_code: 'US',
   residential: 'no',
 }
@@ -65,11 +65,11 @@ const defaultTo: AddressFields = {
   name: 'Recipient',
   phone: '555-0200',
   company_name: '',
-  address_line1: '1600 Pennsylvania Avenue NW',
-  address_line2: '',
-  city_locality: 'Washington',
-  state_province: 'DC',
-  postal_code: '20500',
+  address_line1: '100 Federal St',
+  address_line2: 'Suite 400',
+  city_locality: 'Boston',
+  state_province: 'MA',
+  postal_code: '02110',
   country_code: 'US',
   residential: 'no',
 }
@@ -97,24 +97,53 @@ function newCompareRow(partial?: Partial<CompareRow>): CompareRow {
   }
 }
 
-function addressToPayload(a: AddressFields, role: 'from' | 'to') {
-  const country = a.country_code.trim().toUpperCase() || 'US'
-  const base: Record<string, unknown> = {
-    name: a.name.trim() || (role === 'from' ? 'Shipper' : 'Recipient'),
-    phone: a.phone.trim() || undefined,
-    company_name: a.company_name.trim() || undefined,
-    address_line1: a.address_line1.trim(),
-    address_line2: a.address_line2.trim() || undefined,
-    city_locality: a.city_locality.trim(),
-    state_province: normalizeUsStateProvinceForShipping(country, a.state_province),
-    postal_code: a.postal_code.trim(),
-    country_code: country,
-    address_residential_indicator: a.residential,
+function toShippoAddress(a: AddressFields): Record<string, unknown> {
+  const residential =
+    a.residential === 'yes' ? true : a.residential === 'no' ? false : undefined
+  const country = (a.country_code.trim().toUpperCase() || 'US').slice(0, 2)
+  const o: Record<string, unknown> = {
+    name: a.name.trim(),
+    street1: a.address_line1.trim(),
+    city: a.city_locality.trim(),
+    state: normalizeUsStateProvinceForShipping(country, a.state_province),
+    zip: a.postal_code.trim(),
+    country,
   }
-  return base
+  const s2 = a.address_line2.trim()
+  if (s2) o.street2 = s2
+  const ph = a.phone.trim()
+  if (ph) o.phone = ph
+  const co = a.company_name.trim()
+  if (co) o.company = co
+  if (residential !== undefined) o.is_residential = residential
+  return o
 }
 
-function buildShipmentBody(
+function buildParcel(
+  weightValue: number,
+  weightUnit: 'ounce' | 'pound' | 'gram' | 'kilogram',
+  length: number,
+  width: number,
+  height: number,
+  dimUnit: 'inch' | 'centimeter',
+): Record<string, unknown> {
+  const massUnitMap = {
+    ounce: 'oz',
+    pound: 'lb',
+    gram: 'g',
+    kilogram: 'kg',
+  } as const
+  return {
+    length: String(length),
+    width: String(width),
+    height: String(height),
+    distance_unit: dimUnit === 'inch' ? 'in' : 'cm',
+    weight: String(weightValue),
+    mass_unit: massUnitMap[weightUnit],
+  }
+}
+
+function buildShippoShipmentBody(
   shipFrom: AddressFields,
   shipTo: AddressFields,
   opts: {
@@ -124,84 +153,77 @@ function buildShipmentBody(
     width: number
     height: number
     dimUnit: 'inch' | 'centimeter'
-    packageCode: string
-    validateAddress: 'no_validation' | 'validate_only' | 'validate_and_clean'
+    carrierAccountIds: string[]
   },
 ) {
-  const pkg: Record<string, unknown> = {
-    package_code: opts.packageCode || 'package',
-    weight: { value: opts.weightValue, unit: opts.weightUnit },
-  }
-  if (opts.length > 0 && opts.width > 0 && opts.height > 0) {
-    pkg.dimensions = {
-      length: opts.length,
-      width: opts.width,
-      height: opts.height,
-      unit: opts.dimUnit,
-    }
-  }
   return {
-    validate_address: opts.validateAddress,
-    ship_from: addressToPayload(shipFrom, 'from'),
-    ship_to: addressToPayload(shipTo, 'to'),
-    packages: [pkg],
+    address_from: toShippoAddress(shipFrom),
+    address_to: toShippoAddress(shipTo),
+    parcels: [
+      buildParcel(
+        opts.weightValue,
+        opts.weightUnit,
+        opts.length,
+        opts.width,
+        opts.height,
+        opts.dimUnit,
+      ),
+    ],
+    carrier_accounts: opts.carrierAccountIds,
+    async: false,
   }
 }
 
-function extractRatesFromApiEnvelope(envelope: unknown): Record<string, unknown>[] {
+function extractShippoRates(envelope: unknown): Record<string, unknown>[] {
   const root = asRecord(envelope)
   const inner = root?.data !== undefined && root?.data !== null ? root.data : envelope
-  const se = asRecord(inner)
-  const rr = asRecord(se?.rate_response) ?? asRecord(se)
-  const rates = rr?.rates
+  const s = asRecord(inner)
+  const rates = s?.rates
   return Array.isArray(rates) ? (rates as Record<string, unknown>[]) : []
 }
 
-function rateMoneyTotal(r: Record<string, unknown>): { total: number; currency: string } {
-  const keys = [
-    'shipping_amount',
-    'shipment_amount',
-    'insurance_amount',
-    'confirmation_amount',
-    'other_amount',
-  ] as const
-  let total = 0
-  let currency = 'usd'
-  for (const k of keys) {
-    const m = asRecord(r[k])
-    if (m && typeof m.amount === 'number') {
-      total += m.amount
-      if (typeof m.currency === 'string') currency = m.currency
-    }
-  }
-  return { total, currency }
+function rateMoneyShippo(r: Record<string, unknown>): { total: number; currency: string } {
+  const raw = r.amount
+  const n = typeof raw === 'string' ? parseFloat(raw) : typeof raw === 'number' ? raw : NaN
+  const currency = typeof r.currency === 'string' ? r.currency : 'usd'
+  return { total: Number.isFinite(n) ? n : 0, currency }
+}
+
+function serviceLabel(r: Record<string, unknown>): string {
+  const sl = asRecord(r.servicelevel)
+  return String(sl?.name ?? '—')
+}
+
+function serviceToken(r: Record<string, unknown>): string {
+  const sl = asRecord(r.servicelevel)
+  return String(sl?.token ?? sl?.extended_token ?? '')
 }
 
 type SortKey = 'price' | 'delivery' | 'service'
 
-export function ShippingRateCalculator({
-  carriers,
+export function ShippoRateCalculator({
+  carrierAccounts,
 }: {
-  carriers: Record<string, unknown>[]
+  carrierAccounts: Record<string, unknown>[]
 }) {
-  const carrierIds = useMemo(
+  const accountIds = useMemo(
     () =>
-      carriers
-        .map((c) => (typeof c.carrier_id === 'string' ? c.carrier_id : null))
+      carrierAccounts
+        .map((c) => (typeof c.object_id === 'string' ? c.object_id : null))
         .filter(Boolean) as string[],
-    [carriers],
+    [carrierAccounts],
   )
 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const carriersSeenRef = useRef(false)
+
   useEffect(() => {
-    if (carrierIds.length === 0) return
+    if (accountIds.length === 0) return
     if (!carriersSeenRef.current) {
       carriersSeenRef.current = true
-      setSelectedIds([...carrierIds])
+      setSelectedIds([...accountIds])
     }
-  }, [carrierIds])
-
+  }, [accountIds])
   const [shipFrom, setShipFrom] = useState<AddressFields>(defaultFrom)
   const [shipTo, setShipTo] = useState<AddressFields>(defaultTo)
 
@@ -211,14 +233,9 @@ export function ShippingRateCalculator({
   const [width, setWidth] = useState('20')
   const [height, setHeight] = useState('6')
   const [dimUnit, setDimUnit] = useState<'inch' | 'centimeter'>('inch')
-  const [packageCode, setPackageCode] = useState('package')
-  const [validateAddress, setValidateAddress] = useState<
-    'no_validation' | 'validate_only' | 'validate_and_clean'
-  >('no_validation')
 
   const [singleBusy, setSingleBusy] = useState(false)
   const [singleResult, setSingleResult] = useState<unknown>(null)
-
   const [sortKey, setSortKey] = useState<SortKey>('price')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
@@ -261,33 +278,30 @@ export function ShippingRateCalculator({
   }, [])
 
   const selectAllCarriers = useCallback(() => {
-    setSelectedIds([...carrierIds])
-  }, [carrierIds])
+    setSelectedIds([...accountIds])
+  }, [accountIds])
 
   const clearCarriers = useCallback(() => setSelectedIds([]), [])
 
-  const runRates = useCallback(
-    async (payload: object) => {
-      const res = await fetch('/api/admin/shipengine', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'rates', payload }),
-      })
-      const data = (await res.json()) as unknown
-      const ok = asRecord(data)?.ok === true
-      if (!res.ok || !ok) {
-        const err = asRecord(data)?.error ?? data
-        throw new Error(typeof err === 'string' ? err : JSON.stringify(err))
-      }
-      return data
-    },
-    [],
-  )
+  const runRates = useCallback(async (payload: object) => {
+    const res = await fetch('/api/admin/shippo', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'rates', payload }),
+    })
+    const data = (await res.json()) as unknown
+    const ok = asRecord(data)?.ok === true
+    if (!res.ok || !ok) {
+      const err = asRecord(data)?.error ?? data
+      throw new Error(typeof err === 'string' ? err : JSON.stringify(err))
+    }
+    return data
+  }, [])
 
   const handleSingleCalculate = async () => {
     if (selectedIds.length === 0) {
-      toast.error('Select at least one carrier')
+      toast.error('Select at least one carrier account')
       return
     }
     const w = Number(weight)
@@ -303,19 +317,15 @@ export function ShippingRateCalculator({
       return
     }
 
-    const payload = {
-      rate_options: { carrier_ids: selectedIds },
-      shipment: buildShipmentBody(shipFrom, shipTo, {
-        weightValue: w,
-        weightUnit,
-        length: l,
-        width: wi,
-        height: h,
-        dimUnit,
-        packageCode,
-        validateAddress,
-      }),
-    }
+    const payload = buildShippoShipmentBody(shipFrom, shipTo, {
+      weightValue: w,
+      weightUnit,
+      length: l,
+      width: wi,
+      height: h,
+      dimUnit,
+      carrierAccountIds: selectedIds,
+    })
 
     setSingleBusy(true)
     setSingleResult(null)
@@ -333,7 +343,7 @@ export function ShippingRateCalculator({
 
   const singleRates = useMemo(() => {
     if (!singleResult) return []
-    return extractRatesFromApiEnvelope(singleResult)
+    return extractShippoRates(singleResult)
   }, [singleResult])
 
   const sortedRates = useMemo(() => {
@@ -341,15 +351,15 @@ export function ShippingRateCalculator({
     rows.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       if (sortKey === 'price') {
-        return (rateMoneyTotal(a).total - rateMoneyTotal(b).total) * dir
+        return (rateMoneyShippo(a).total - rateMoneyShippo(b).total) * dir
       }
       if (sortKey === 'delivery') {
-        const da = typeof a.delivery_days === 'number' ? a.delivery_days : 999
-        const db = typeof b.delivery_days === 'number' ? b.delivery_days : 999
+        const da = typeof a.estimated_days === 'number' ? a.estimated_days : 999
+        const db = typeof b.estimated_days === 'number' ? b.estimated_days : 999
         return (da - db) * dir
       }
-      const sa = String(a.service_type ?? a.service_code ?? '')
-      const sb = String(b.service_type ?? b.service_code ?? '')
+      const sa = serviceLabel(a)
+      const sb = serviceLabel(b)
       return sa.localeCompare(sb) * dir
     })
     return rows
@@ -360,7 +370,7 @@ export function ShippingRateCalculator({
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
       setSortKey(key)
-      setSortDir(key === 'price' ? 'asc' : 'asc')
+      setSortDir('asc')
     }
   }
 
@@ -373,7 +383,7 @@ export function ShippingRateCalculator({
 
   const handleCompare = async () => {
     if (selectedIds.length === 0) {
-      toast.error('Select at least one carrier')
+      toast.error('Select at least one carrier account')
       return
     }
     setCompareBusy(true)
@@ -394,19 +404,15 @@ export function ShippingRateCalculator({
           })
           continue
         }
-        const payload = {
-          rate_options: { carrier_ids: selectedIds },
-          shipment: buildShipmentBody(shipFrom, shipTo, {
-            weightValue: w,
-            weightUnit: 'ounce',
-            length: l,
-            width: wi,
-            height: h,
-            dimUnit: 'inch',
-            packageCode: 'package',
-            validateAddress,
-          }),
-        }
+        const payload = buildShippoShipmentBody(shipFrom, shipTo, {
+          weightValue: w,
+          weightUnit: 'ounce',
+          length: l,
+          width: wi,
+          height: h,
+          dimUnit: 'inch',
+          carrierAccountIds: selectedIds,
+        })
         try {
           const data = await runRates(payload)
           outcomes.push({ row, envelope: data })
@@ -439,7 +445,7 @@ export function ShippingRateCalculator({
     toast.message('Added a row — adjust label and values as needed')
   }
 
-  if (carrierIds.length === 0) {
+  if (accountIds.length === 0) {
     return (
       <Card className={`${surfaceCard} border-dashed`}>
         <CardHeader className="space-y-2">
@@ -448,7 +454,7 @@ export function ShippingRateCalculator({
           </div>
           <CardTitle className="text-lg font-semibold tracking-tight">Rate calculator</CardTitle>
           <CardDescription className="text-[15px] leading-relaxed">
-            No carrier accounts found. Connect carriers in the ShipEngine dashboard, then refresh.
+            No carrier accounts found. Connect carriers in the Shippo dashboard, then refresh.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -466,14 +472,17 @@ export function ShippingRateCalculator({
             <div className="space-y-1">
               <CardTitle className="text-lg font-semibold tracking-tight">Rate calculator</CardTitle>
               <CardDescription className="text-[15px] leading-relaxed">
-                Live quotes from your carriers. ShipEngine marks best value / cheapest / fastest when available.{' '}
+                Quotes via Shippo{' '}
+                <code className="rounded-md bg-muted/80 px-1.5 py-0.5 text-[12px] font-mono">POST /shipments</code>{' '}
+                with{' '}
+                <code className="rounded-md bg-muted/80 px-1.5 py-0.5 text-[12px] font-mono">async: false</code>.{' '}
                 <Link
-                  href="https://www.shipengine.com/docs/rates/"
+                  href="https://docs.goshippo.com/docs/shipments/rateshoppingwithcarriers"
                   className="font-medium text-foreground/80 underline decoration-border underline-offset-4 hover:text-foreground"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Rates docs
+                  Rate shopping
                 </Link>
               </CardDescription>
             </div>
@@ -483,7 +492,7 @@ export function ShippingRateCalculator({
           <div>
             <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Carriers
+                Carrier accounts
               </h3>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -507,10 +516,12 @@ export function ShippingRateCalculator({
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {carriers.map((c) => {
-                const id = typeof c.carrier_id === 'string' ? c.carrier_id : ''
+              {carrierAccounts.map((c) => {
+                const id = typeof c.object_id === 'string' ? c.object_id : ''
                 if (!id) return null
-                const label = String(c.friendly_name ?? c.nickname ?? c.carrier_code ?? id)
+                const label = String(
+                  c.carrier_name ?? c.carrier ?? c.description ?? id,
+                )
                 return (
                   <label
                     key={id}
@@ -569,7 +580,7 @@ export function ShippingRateCalculator({
                 Ship from
               </h3>
               <AddressForm
-                formId="ship-from"
+                formId="shippo-ship-from"
                 inputClassName={inputClass}
                 selectTriggerClassName={selectTriggerClass}
                 value={shipFrom}
@@ -581,7 +592,7 @@ export function ShippingRateCalculator({
                 Ship to
               </h3>
               <AddressForm
-                formId="ship-to"
+                formId="shippo-ship-to"
                 inputClassName={inputClass}
                 selectTriggerClassName={selectTriggerClass}
                 value={shipTo}
@@ -590,14 +601,14 @@ export function ShippingRateCalculator({
             </div>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="rc-weight" className="text-[13px] font-medium text-foreground/90">
+              <Label htmlFor="shippo-rc-weight" className="text-[13px] font-medium text-foreground/90">
                 Weight
               </Label>
               <div className="flex gap-2">
                 <Input
-                  id="rc-weight"
+                  id="shippo-rc-weight"
                   inputMode="decimal"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
@@ -656,37 +667,6 @@ export function ShippingRateCalculator({
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="rc-pkg" className="text-[13px] font-medium text-foreground/90">
-                Package code
-              </Label>
-              <Input
-                id="rc-pkg"
-                value={packageCode}
-                onChange={(e) => setPackageCode(e.target.value)}
-                placeholder="package"
-                className={inputClass}
-              />
-              <p className="text-[12px] leading-snug text-muted-foreground">
-                Carrier-specific; generic is usually fine.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-foreground/90">Address validation</Label>
-              <Select
-                value={validateAddress}
-                onValueChange={(v) => setValidateAddress(v as typeof validateAddress)}
-              >
-                <SelectTrigger className={selectTriggerClass}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="no_validation">None (fastest)</SelectItem>
-                  <SelectItem value="validate_only">Validate only</SelectItem>
-                  <SelectItem value="validate_and_clean">Validate &amp; clean</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <Button
@@ -706,7 +686,7 @@ export function ShippingRateCalculator({
                   Results · {sortedRates.length} options
                 </h3>
                 <p className="text-[12px] text-muted-foreground">
-                  Total includes shipping, insurance, confirmation, and other line items.
+                  Amounts from Shippo rate objects (account-based pricing).
                 </p>
               </div>
               <div className={`overflow-x-auto ${shipTableShell}`}>
@@ -716,7 +696,7 @@ export function ShippingRateCalculator({
                       <TableHead className={`w-[120px] cursor-pointer ${shipTh}`} onClick={() => toggleSort('price')}>
                         Total {sortIcon('price')}
                       </TableHead>
-                      <TableHead className={shipTh}>Carrier</TableHead>
+                      <TableHead className={shipTh}>Provider</TableHead>
                       <TableHead
                         className={`cursor-pointer min-w-[180px] ${shipTh}`}
                         onClick={() => toggleSort('service')}
@@ -726,42 +706,33 @@ export function ShippingRateCalculator({
                       <TableHead className={`cursor-pointer w-[100px] ${shipTh}`} onClick={() => toggleSort('delivery')}>
                         Days {sortIcon('delivery')}
                       </TableHead>
-                      <TableHead className={`min-w-[140px] ${shipTh}`}>Est. delivery</TableHead>
-                      <TableHead className={`font-mono text-xs ${shipTh}`}>rate_id</TableHead>
-                      <TableHead className={shipTh}>Flags</TableHead>
+                      <TableHead className={`min-w-[140px] ${shipTh}`}>ETA</TableHead>
+                      <TableHead className={`font-mono text-xs ${shipTh}`}>rate object_id</TableHead>
+                      <TableHead className={shipTh}>Attrs</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sortedRates.map((r, i) => {
-                      const { total, currency } = rateMoneyTotal(r)
-                      const attrs = Array.isArray(r.rate_attributes)
-                        ? (r.rate_attributes as string[])
-                        : []
-                      const warnings = Array.isArray(r.warning_messages)
-                        ? (r.warning_messages as string[])
-                        : []
+                      const { total, currency } = rateMoneyShippo(r)
+                      const attrs = Array.isArray(r.attributes) ? (r.attributes as string[]) : []
                       return (
-                        <TableRow key={String(r.rate_id ?? i)}>
+                        <TableRow key={String(r.object_id ?? i)}>
                           <TableCell className="font-medium whitespace-nowrap">
                             {currency.toUpperCase()} {total.toFixed(2)}
                           </TableCell>
+                          <TableCell className="text-sm">{String(r.provider ?? '—')}</TableCell>
                           <TableCell className="text-sm">
-                            {String(r.carrier_friendly_name ?? r.carrier_code ?? '—')}
+                            <span className="font-medium">{serviceLabel(r)}</span>
+                            <div className="text-xs text-muted-foreground font-mono">{serviceToken(r)}</div>
                           </TableCell>
-                          <TableCell className="text-sm">
-                            <span className="font-medium">{String(r.service_type ?? '—')}</span>
-                            <div className="text-xs text-muted-foreground font-mono">
-                              {String(r.service_code ?? '')}
-                            </div>
+                          <TableCell>
+                            {r.estimated_days != null ? String(r.estimated_days) : '—'}
                           </TableCell>
-                          <TableCell>{r.delivery_days != null ? String(r.delivery_days) : '—'}</TableCell>
                           <TableCell className="text-xs whitespace-nowrap">
-                            {r.estimated_delivery_date
-                              ? String(r.estimated_delivery_date).slice(0, 16)
-                              : '—'}
+                            {r.arrives_by ? String(r.arrives_by).slice(0, 16) : '—'}
                           </TableCell>
-                          <TableCell className="font-mono text-[10px] max-w-[120px] truncate" title={String(r.rate_id)}>
-                            {String(r.rate_id ?? '—')}
+                          <TableCell className="font-mono text-[10px] max-w-[120px] truncate" title={String(r.object_id)}>
+                            {String(r.object_id ?? '—')}
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
@@ -770,11 +741,6 @@ export function ShippingRateCalculator({
                                   {a}
                                 </Badge>
                               ))}
-                              {warnings.length > 0 ? (
-                                <Badge variant="outline" className="text-[10px]" title={warnings.join('\n')}>
-                                  warning
-                                </Badge>
-                              ) : null}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -786,8 +752,8 @@ export function ShippingRateCalculator({
             </div>
           ) : singleResult ? (
             <p className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-3 text-[14px] text-muted-foreground">
-              No rates in this response — expand <strong className="font-medium text-foreground/80">Raw response</strong>{' '}
-              below or check <code className="rounded bg-muted/80 px-1 font-mono text-[12px]">invalid_rates</code>.
+              No rates in this response — open <strong className="font-medium text-foreground/80">Raw API response</strong>{' '}
+              below or check Shippo <code className="rounded bg-muted/80 px-1 font-mono text-[12px]">messages</code>.
             </p>
           ) : null}
 
@@ -811,7 +777,7 @@ export function ShippingRateCalculator({
         <CardHeader className="space-y-2 pb-2">
           <CardTitle className="text-lg font-semibold tracking-tight">Compare package sizes</CardTitle>
           <CardDescription className="text-[15px] leading-relaxed">
-            Same origin, destination, and carriers — one rates request per row. Useful for boards, boxes, or gear.
+            Same origin, destination, and carrier accounts — one shipment request per row.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 pt-2">
@@ -950,10 +916,10 @@ export function ShippingRateCalculator({
           {compareResults && compareResults.length > 0 ? (
             <div className="space-y-6">
               {compareResults.map(({ row, envelope, error }) => {
-                const rates = envelope ? extractRatesFromApiEnvelope(envelope) : []
+                const rates = envelope ? extractShippoRates(envelope) : []
                 const best = rates.reduce(
                   (bestR, r) => {
-                    const t = rateMoneyTotal(r).total
+                    const t = rateMoneyShippo(r).total
                     if (!bestR || t < bestR.total) return { r, total: t }
                     return bestR
                   },
@@ -967,8 +933,8 @@ export function ShippingRateCalculator({
                         {row.weightOz} oz · {row.lengthIn}×{row.widthIn}×{row.heightIn} in
                         {best ? (
                           <span className="mt-1 block font-medium text-foreground sm:mt-0 sm:ml-2 sm:inline">
-                            Best {rateMoneyTotal(best.r).currency.toUpperCase()} {best.total.toFixed(2)} —{' '}
-                            {String(best.r.service_type ?? best.r.service_code ?? '')}
+                            Best {rateMoneyShippo(best.r).currency.toUpperCase()} {best.total.toFixed(2)} —{' '}
+                            {serviceLabel(best.r)}
                           </span>
                         ) : null}
                       </CardDescription>
@@ -984,26 +950,26 @@ export function ShippingRateCalculator({
                             <TableHeader>
                               <TableRow className="border-border/40 hover:bg-transparent">
                                 <TableHead className={shipTh}>Total</TableHead>
-                                <TableHead className={shipTh}>Carrier</TableHead>
+                                <TableHead className={shipTh}>Provider</TableHead>
                                 <TableHead className={shipTh}>Service</TableHead>
                                 <TableHead className={shipTh}>Days</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {[...rates]
-                                .sort((a, b) => rateMoneyTotal(a).total - rateMoneyTotal(b).total)
+                                .sort((a, b) => rateMoneyShippo(a).total - rateMoneyShippo(b).total)
                                 .map((r, i) => {
-                                  const { total, currency } = rateMoneyTotal(r)
+                                  const { total, currency } = rateMoneyShippo(r)
                                   return (
-                                    <TableRow key={String(r.rate_id ?? i)}>
+                                    <TableRow key={String(r.object_id ?? i)}>
                                       <TableCell className="font-medium whitespace-nowrap">
                                         {currency.toUpperCase()} {total.toFixed(2)}
                                       </TableCell>
-                                      <TableCell className="text-sm">
-                                        {String(r.carrier_friendly_name ?? r.carrier_code)}
+                                      <TableCell className="text-sm">{String(r.provider ?? '—')}</TableCell>
+                                      <TableCell className="text-sm">{serviceLabel(r)}</TableCell>
+                                      <TableCell>
+                                        {r.estimated_days != null ? String(r.estimated_days) : '—'}
                                       </TableCell>
-                                      <TableCell className="text-sm">{String(r.service_type ?? '—')}</TableCell>
-                                      <TableCell>{r.delivery_days != null ? String(r.delivery_days) : '—'}</TableCell>
                                     </TableRow>
                                   )
                                 })}
@@ -1024,7 +990,8 @@ export function ShippingRateCalculator({
         <CardHeader className="space-y-1 pb-2">
           <CardTitle className="text-base font-semibold tracking-tight">Manual JSON</CardTitle>
           <CardDescription className="text-[14px] leading-relaxed">
-            Advanced — full <code className="rounded bg-muted/80 px-1 font-mono text-[12px]">POST /v1/rates</code> body.
+            Advanced — full <code className="rounded bg-muted/80 px-1 font-mono text-[12px]">POST /shipments</code> body
+            (async:false applied if omitted).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-2">
@@ -1041,7 +1008,7 @@ export function ShippingRateCalculator({
             <>
               <Textarea
                 className="min-h-[220px] rounded-2xl border-border/60 bg-background/80 font-mono text-[12px] leading-relaxed shadow-inner"
-                placeholder='{ "rate_options": { "carrier_ids": ["se-…"] }, "shipment": { ... } }'
+                placeholder='{ "address_from": {...}, "address_to": {...}, "parcels": [...], "carrier_accounts": ["..."] }'
                 value={manualJson}
                 onChange={(e) => setManualJson(e.target.value)}
               />
@@ -1057,19 +1024,15 @@ export function ShippingRateCalculator({
                       const l = Number(length)
                       const wi = Number(width)
                       const h = Number(height)
-                      const built = {
-                        rate_options: { carrier_ids: selectedIds },
-                        shipment: buildShipmentBody(shipFrom, shipTo, {
-                          weightValue: w,
-                          weightUnit,
-                          length: l,
-                          width: wi,
-                          height: h,
-                          dimUnit,
-                          packageCode,
-                          validateAddress,
-                        }),
-                      }
+                      const built = buildShippoShipmentBody(shipFrom, shipTo, {
+                        weightValue: w,
+                        weightUnit,
+                        length: l,
+                        width: wi,
+                        height: h,
+                        dimUnit,
+                        carrierAccountIds: selectedIds,
+                      })
                       setManualJson(JSON.stringify(built, null, 2))
                       toast.success('Filled from calculator')
                     } catch {

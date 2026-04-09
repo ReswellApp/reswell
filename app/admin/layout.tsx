@@ -13,6 +13,7 @@ import {
   Activity,
   Tag,
   Truck,
+  Box,
 } from 'lucide-react'
 
 const adminNavItems = [
@@ -23,6 +24,7 @@ const adminNavItems = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/contact-messages', label: 'Contact messages', icon: MessageSquare },
   { href: '/admin/shipping', label: 'Shipping', icon: Truck },
+  { href: '/admin/shippo', label: 'Shippo', icon: Box },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
@@ -57,6 +59,7 @@ export default async function AdminLayout({
           item.href !== '/admin/users' &&
           item.href !== '/admin/settings' &&
           item.href !== '/admin/shipping' &&
+          item.href !== '/admin/shippo' &&
           item.href !== '/admin/listings/brand-requests',
       )
 

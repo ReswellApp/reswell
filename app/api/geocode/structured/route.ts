@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
+import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
+
 const HEADERS = {
   Accept: "application/json",
   "Accept-Language": "en",
@@ -52,10 +54,13 @@ export async function GET(request: NextRequest) {
       ""
     ).trim()
 
-    const state_province = (a.state || a.region || "").trim()
+    const rawState = (a.state || a.region || "").trim()
     const postal_code = (a.postcode || "").trim()
     const rawCc = (a.country_code || "").trim().toUpperCase()
     const country_code = rawCc.length === 2 ? rawCc : "US"
+    const state_province = rawState
+      ? normalizeUsStateProvinceForShipping(country_code, rawState)
+      : ""
 
     return NextResponse.json({
       address_line1: address_line1 || null,

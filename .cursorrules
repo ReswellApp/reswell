@@ -1,0 +1,30 @@
+# Reswell — Cursor AI rules
+
+## Stack
+- Next.js App Router (`app/`), React 19, TypeScript (`strict`), Tailwind CSS, path alias `@/*`.
+- UI: Radix primitives, `class-variance-authority`, `tailwind-merge`, `lucide-react`.
+- Data/auth: Supabase (`@supabase/ssr`, `@supabase/supabase-js`). Payments: Stripe. Other integrations as present in `lib/` and `app/api/`.
+
+## General
+- Change only what the task requires. No drive-by refactors or unrelated edits.
+- Before adding code, read nearby files and match naming, types, imports, and component patterns.
+- Prefer extending existing helpers and components over duplicating logic.
+- Do not add README/markdown docs unless asked.
+
+## TypeScript & React
+- Use explicit types at boundaries (API handlers, `fetch` JSON, props). Avoid `any`; use `unknown` and narrow.
+- Prefer server components by default; add `"use client"` only when hooks, browser APIs, or client-only libs require it.
+- Colocate feature UI with its route or a nearby `components` folder following existing layout.
+
+## Next.js
+- Use App Router conventions: `layout.tsx`, `page.tsx`, `route.ts`, `loading.tsx`, `error.tsx` as appropriate.
+- API routes: validate input (e.g. Zod), return appropriate HTTP status codes, avoid leaking internal errors in production responses.
+
+## Styling
+- Use Tailwind utilities and existing design tokens/patterns. Keep spacing, typography, and colors consistent with adjacent UI.
+
+## Security & env
+- Never commit secrets. Use `.env.example` for new env vars (placeholders only). Server-only keys stay in server code / Route Handlers.
+
+## Testing & quality
+- After substantive edits, run `npm run lint` and fix new issues you introduce.
