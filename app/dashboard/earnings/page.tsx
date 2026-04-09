@@ -120,6 +120,7 @@ export default function EarningsPage() {
   const [wallet, setWallet] = useState<WalletData | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   const [paypalEmail, setPaypalEmail] = useState("")
   const [paypalDisplayName, setPaypalDisplayName] = useState("")
@@ -128,11 +129,12 @@ export default function EarningsPage() {
   const [paypalDisplayBalance, setPaypalDisplayBalance] = useState(0)
   const [paypalHistory, setPaypalHistory] = useState<PayPalPayoutHistoryItem[]>([])
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (opts?: { showRefreshIndicator?: boolean }) => {
+    if (opts?.showRefreshIndicator) setRefreshing(true)
     try {
       const [earningsData, paypalRes] = await Promise.all([
         getEarningsWalletData(),
-        fetch("/api/payouts/paypal"),
+        fetch("/api/payouts/paypal", { cache: "no-store" }),
       ])
 
       if (!earningsData.error) {
@@ -149,6 +151,7 @@ export default function EarningsPage() {
       }
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [])
 
@@ -215,11 +218,22 @@ export default function EarningsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Earnings & Payouts</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Earnings</h1>
           <p className="text-muted-foreground">Your earnings from marketplace sales.</p>
         </div>
-        <Button variant="ghost" size="sm" onClick={fetchData} className="text-muted-foreground">
-          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={refreshing}
+          aria-busy={refreshing}
+          onClick={() => void fetchData({ showRefreshIndicator: true })}
+          className="text-muted-foreground"
+        >
+          <RefreshCw
+            className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`}
+            aria-hidden
+          />
           Refresh
         </Button>
       </div>
