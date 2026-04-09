@@ -33,6 +33,11 @@ type NominatimHit = {
   name?: string
   importance?: number
   address?: {
+    house_number?: string
+    road?: string
+    pedestrian?: string
+    neighbourhood?: string
+    suburb?: string
     city?: string
     town?: string
     village?: string
@@ -48,8 +53,29 @@ type PhotonFeature = {
   properties?: Record<string, unknown>
 }
 
-function labelForHit(hit: NominatimHit): string {
+function labelForHit(hit: NominatimHit, preferStreet: boolean): string {
   const addr = hit.address
+  if (addr && preferStreet) {
+    const hn = (addr.house_number || "").trim()
+    const road = (addr.road || addr.pedestrian || "").trim()
+    const line1 = [hn, road].filter(Boolean).join(" ").trim()
+    const place =
+      addr.city ||
+      addr.town ||
+      addr.village ||
+      addr.hamlet ||
+      addr.municipality ||
+      (typeof hit.name === "string" ? hit.name.trim() : "") ||
+      ""
+    const state = (addr.state || "").trim()
+    const zip = (addr.postcode || "").trim()
+    if (line1 && place && state) {
+      return zip ? `${line1}, ${place}, ${state} ${zip}` : `${line1}, ${place}, ${state}`
+    }
+    if (line1 && place) {
+      return `${line1}, ${place}`
+    }
+  }
   if (addr) {
     const place =
       addr.city ||
@@ -64,7 +90,8 @@ function labelForHit(hit: NominatimHit): string {
   }
   if (hit.display_name) {
     const parts = hit.display_name.split(",").map((s) => s.trim())
-    return parts.slice(0, 3).join(", ")
+    const n = preferStreet ? 5 : 3
+    return parts.slice(0, n).join(", ")
   }
   return hit.name || "Unknown"
 }
@@ -125,6 +152,7 @@ function rankSuggestion(
   tokens: string[],
   label: string,
   importance: number,
+  detailFull: boolean,
 ): number {
   const h = haystack.toLowerCase()
   const p = phrase.trim().toLowerCase()
@@ -139,6 +167,12 @@ function rankSuggestion(
     if (idx >= 0) score += 10_000 - Math.min(idx, 9999)
   }
   score += Math.max(0, importance || 0) * 100
+  if (detailFull) {
+    const hasDigit = /\d/.test(p)
+    const looksStreet = /\d/.test(primary) || /\b(ave|avenue|st|street|rd|road|dr|drive|blvd|ln|lane|way|ct|court)\b/i.test(label)
+    if (hasDigit && looksStreet) score += 400_000
+    if (label.split(",").length >= 3) score += 50_000
+  }
   return score
 }
 
@@ -166,11 +200,14 @@ function nominatimCityState(hit: NominatimHit): { city: string; state: string } 
   return { city, state }
 }
 
-function parseNominatimHits(data: (NominatimHit & { class?: string })[]): ParsedHit[] {
+function parseNominatimHits(
+  data: (NominatimHit & { class?: string })[],
+  preferStreet: boolean,
+): ParsedHit[] {
   return data
     .filter((hit) => hit.lat && hit.lon && nominatimIsGeographic(hit))
     .map((hit) => {
-      const label = labelForHit(hit)
+      const label = labelForHit(hit, preferStreet)
       const display = hit.display_name ?? ""
       const haystack = `${display} ${label}`.toLowerCase()
       const { city, state } = nominatimCityState(hit)
@@ -187,11 +224,11 @@ function parseNominatimHits(data: (NominatimHit & { class?: string })[]): Parsed
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng))
 }
 
-async function fetchNominatimParsed(q: string): Promise<ParsedHit[]> {
+async function fetchNominatimParsed(q: string, preferStreet: boolean): Promise<ParsedHit[]> {
   const url = new URL("https://nominatim.openstreetmap.org/search")
   url.searchParams.set("q", q)
   url.searchParams.set("format", "json")
-  url.searchParams.set("limit", "30")
+  url.searchParams.set("limit", preferStreet ? "40" : "30")
   url.searchParams.set("addressdetails", "1")
   url.searchParams.set("countrycodes", "us")
   url.searchParams.set("dedupe", "1")
@@ -202,11 +239,15 @@ async function fetchNominatimParsed(q: string): Promise<ParsedHit[]> {
   if (!res.ok) return []
   const data = (await res.json()) as (NominatimHit & { class?: string })[]
   if (!Array.isArray(data)) return []
-  return parseNominatimHits(data)
+  return parseNominatimHits(data, preferStreet)
 }
 
 function photonTypeWeight(type: string): number {
   switch (type) {
+    case "house":
+      return 1.05
+    case "street":
+      return 0.98
     case "city":
       return 1
     case "town":
@@ -228,11 +269,25 @@ function photonTypeWeight(type: string): number {
   }
 }
 
-function photonLabel(p: Record<string, unknown>): string {
-  const name = String(p.name ?? "").trim()
+function photonLabel(p: Record<string, unknown>, detailFull: boolean): string {
+  const pType = String(p.type ?? "")
+  const hn = String(p.housenumber ?? "").trim()
+  const street = String(p.street ?? "").trim()
   const city = String(p.city ?? "").trim()
   const state = String(p.state ?? "").trim()
+  const postcode = String(p.postcode ?? "").trim()
+  const name = String(p.name ?? "").trim()
   const county = String(p.county ?? "").trim()
+
+  if (detailFull && (pType === "house" || pType === "street")) {
+    const line = [hn, street].filter(Boolean).join(" ").trim()
+    if (line && city && state) {
+      return postcode ? `${line}, ${city}, ${state} ${postcode}` : `${line}, ${city}, ${state}`
+    }
+    if (line && city) return `${line}, ${city}`
+    if (line) return line
+  }
+
   const locality = name || city
   if (locality && state) {
     if (name && city && name.toLowerCase() !== city.toLowerCase()) {
@@ -244,25 +299,35 @@ function photonLabel(p: Record<string, unknown>): string {
   return locality || county || state || "Unknown"
 }
 
-function photonRowAllowed(p: Record<string, unknown>): boolean {
+function photonRowAllowed(p: Record<string, unknown>, detailFull: boolean): boolean {
   const cc = String(p.countrycode ?? "").toUpperCase()
   if (cc && cc !== "US") return false
   const t = String(p.type ?? "")
-  if (t === "house" || t === "street") return false
+  if (!detailFull && (t === "house" || t === "street")) return false
   return true
 }
 
-function parsePhotonFeatures(features: PhotonFeature[]): ParsedHit[] {
+function parsePhotonFeatures(features: PhotonFeature[], detailFull: boolean): ParsedHit[] {
   const out: ParsedHit[] = []
   for (const f of features) {
     const p = f.properties
-    if (!p || !photonRowAllowed(p)) continue
+    if (!p || !photonRowAllowed(p, detailFull)) continue
     const coords = f.geometry?.coordinates
     if (!coords || coords.length < 2) continue
     const [lng, lat] = coords
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
-    const label = photonLabel(p)
-    const haystack = [p.name, p.city, p.state, p.street, p.county, p.postcode, p.country, label]
+    const label = photonLabel(p, detailFull)
+    const haystack = [
+      p.name,
+      p.housenumber,
+      p.street,
+      p.city,
+      p.state,
+      p.county,
+      p.postcode,
+      p.country,
+      label,
+    ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase()
@@ -291,10 +356,10 @@ function parsePhotonFeatures(features: PhotonFeature[]): ParsedHit[] {
  * Photon (Komoot) fuzzy search is built for typeahead; Nominatim often returns only POIs for strings like "santa bar".
  * Scoped to continental US via bbox (aligned with `countrycodes=us`).
  */
-async function fetchPhotonParsed(q: string): Promise<ParsedHit[]> {
+async function fetchPhotonParsed(q: string, detailFull: boolean): Promise<ParsedHit[]> {
   const url = new URL("https://photon.komoot.io/api/")
   url.searchParams.set("q", q)
-  url.searchParams.set("limit", "30")
+  url.searchParams.set("limit", detailFull ? "40" : "30")
   url.searchParams.set("lang", "en")
   url.searchParams.set("bbox", "-125.0,24.0,-65.0,50.0")
   const res = await fetch(url.toString(), {
@@ -304,7 +369,7 @@ async function fetchPhotonParsed(q: string): Promise<ParsedHit[]> {
   if (!res.ok) return []
   const data = (await res.json()) as { features?: PhotonFeature[] }
   if (!Array.isArray(data.features)) return []
-  return parsePhotonFeatures(data.features)
+  return parsePhotonFeatures(data.features, detailFull)
 }
 
 function isZipOrNumericQuery(q: string): boolean {
@@ -328,6 +393,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ suggestions: [] })
   }
 
+  /** Street-level + full labels (shipping admin). Default: city/ZIP oriented (boards search). */
+  const detailFull =
+    request.nextUrl.searchParams.get("detail") === "full" ||
+    request.nextUrl.searchParams.get("address") === "1"
+
   const tokens = queryTokens(q)
   const phrase = q.trim().toLowerCase()
 
@@ -335,12 +405,24 @@ export async function GET(request: NextRequest) {
     let parsed: ParsedHit[] = []
 
     if (isZipOrNumericQuery(q)) {
-      parsed = await fetchNominatimParsed(q)
+      parsed = await fetchNominatimParsed(q, detailFull)
+    } else if (detailFull) {
+      const [photon, nomi] = await Promise.all([
+        fetchPhotonParsed(q, true),
+        fetchNominatimParsed(q, true),
+      ])
+      const merged = [...photon, ...nomi]
+      const byLabel = new Map<string, ParsedHit>()
+      for (const row of merged) {
+        const k = row.label.toLowerCase()
+        if (!byLabel.has(k)) byLabel.set(k, row)
+      }
+      parsed = [...byLabel.values()]
     } else {
-      parsed = await fetchPhotonParsed(q)
+      parsed = await fetchPhotonParsed(q, false)
       const keywordOk = parsed.some((row) => matchesAllTokens(row.haystack, tokens))
       if (!keywordOk) {
-        parsed = await fetchNominatimParsed(q)
+        parsed = await fetchNominatimParsed(q, false)
       }
     }
 
@@ -349,7 +431,14 @@ export async function GET(request: NextRequest) {
     const ranked = pool
       .map((row) => ({
         row,
-        rank: rankSuggestion(row.haystack, phrase, tokens, row.label, row.importance),
+        rank: rankSuggestion(
+          row.haystack,
+          phrase,
+          tokens,
+          row.label,
+          row.importance,
+          detailFull,
+        ),
       }))
       .sort((a, b) => b.rank - a.rank)
 
@@ -369,7 +458,8 @@ export async function GET(request: NextRequest) {
       return true
     })
 
-    const top = unique.slice(0, 8)
+    const limit = detailFull ? 15 : 8
+    const top = unique.slice(0, limit)
 
     return NextResponse.json(
       { suggestions: top },

@@ -18,7 +18,11 @@ export function AdminGuard({
 
   useEffect(() => {
     if (!isAdmin && isEmployee && pathname) {
-      if (pathname === '/admin/users' || pathname === '/admin/settings') {
+      if (
+        pathname === '/admin/users' ||
+        pathname === '/admin/settings' ||
+        pathname === '/admin/shipping'
+      ) {
         router.replace('/admin')
       }
     }
