@@ -58,8 +58,15 @@ export function buildResolvedListingTitle(form: SellFormValidationInput): string
 
 export function validateSellListingForm(
   form: SellFormValidationInput,
-  opts: { imageCount: number; imagesUploadReady: boolean },
+  opts: {
+    imageCount: number
+    imagesUploadReady: boolean
+    /** Admin editing another user's listing via impersonation — allow legacy rows that predate newer required fields. */
+    adminImpersonationEdit?: boolean
+  },
 ): string | null {
+  const relaxed = opts.adminImpersonationEdit === true
+
   if (!form.title?.trim() || !form.price?.trim() || !form.condition) {
     return "Please fill in all required fields."
   }
@@ -77,46 +84,80 @@ export function validateSellListingForm(
     return "Please select a board category."
   }
 
-  if (!form.description?.trim()) {
-    return "Description is required for surfboards."
-  }
-  if (!form.locationCity?.trim() || !form.locationState?.trim()) {
-    return "Set a location on the map for your surfboard (pickup area or where you ship from)."
+  if (!relaxed) {
+    if (!form.description?.trim()) {
+      return "Description is required for surfboards."
+    }
+    if (!form.locationCity?.trim() || !form.locationState?.trim()) {
+      return "Set a location on the map for your surfboard (pickup area or where you ship from)."
+    }
   }
 
   const ftRaw = form.boardLengthFt?.trim() ?? ""
-  if (!ftRaw) {
-    return "Board length (feet) is required."
-  }
-  const ft = parseLengthFeet(ftRaw)
-  if (ft == null || ft < 1 || ft > 15) {
-    return "Board length: enter whole feet (1–15)."
+  if (!relaxed) {
+    if (!ftRaw) {
+      return "Board length (feet) is required."
+    }
+    const ft = parseLengthFeet(ftRaw)
+    if (ft == null || ft < 1 || ft > 15) {
+      return "Board length: enter whole feet (1–15)."
+    }
+
+    const inRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
+    const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
+    if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
+      return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
+    }
+
+    if (!form.boardWidthInches?.trim()) {
+      return "Enter board width (inches)."
+    }
+    const width =
+      parseBoardMeasurement(form.boardWidthInches.trim()) ??
+      Number.parseFloat(form.boardWidthInches.trim())
+    if (!Number.isFinite(width) || width <= 0) {
+      return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
+    }
+
+    if (!form.boardThicknessInches?.trim()) {
+      return "Enter board thickness (inches)."
+    }
+    const thick =
+      parseBoardMeasurement(form.boardThicknessInches.trim()) ??
+      Number.parseFloat(form.boardThicknessInches.trim())
+    if (!Number.isFinite(thick) || thick <= 0) {
+      return "Board thickness: enter a number (decimals or fractions are OK)."
+    }
+  } else if (ftRaw) {
+    const ft = parseLengthFeet(ftRaw)
+    if (ft == null || ft < 1 || ft > 15) {
+      return "Board length: enter whole feet (1–15)."
+    }
+
+    const inRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
+    const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
+    if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
+      return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
+    }
   }
 
-  const inRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
-  const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
-  if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
-    return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
-  }
-
-  if (!form.boardWidthInches?.trim()) {
-    return "Enter board width (inches)."
-  }
-  const width =
-    parseBoardMeasurement(form.boardWidthInches.trim()) ??
-    Number.parseFloat(form.boardWidthInches.trim())
-  if (!Number.isFinite(width) || width <= 0) {
-    return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
-  }
-
-  if (!form.boardThicknessInches?.trim()) {
-    return "Enter board thickness (inches)."
-  }
-  const thick =
-    parseBoardMeasurement(form.boardThicknessInches.trim()) ??
-    Number.parseFloat(form.boardThicknessInches.trim())
-  if (!Number.isFinite(thick) || thick <= 0) {
-    return "Board thickness: enter a number (decimals or fractions are OK)."
+  if (relaxed) {
+    if (form.boardWidthInches?.trim()) {
+      const width =
+        parseBoardMeasurement(form.boardWidthInches.trim()) ??
+        Number.parseFloat(form.boardWidthInches.trim())
+      if (!Number.isFinite(width) || width <= 0) {
+        return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
+      }
+    }
+    if (form.boardThicknessInches?.trim()) {
+      const thick =
+        parseBoardMeasurement(form.boardThicknessInches.trim()) ??
+        Number.parseFloat(form.boardThicknessInches.trim())
+      if (!Number.isFinite(thick) || thick <= 0) {
+        return "Board thickness: enter a number (decimals or fractions are OK)."
+      }
+    }
   }
 
   if (form.boardVolumeL?.trim()) {
@@ -135,9 +176,11 @@ export function validateSellListingForm(
     return "Pick a valid tail shape or leave it unset."
   }
 
-  const minPhotos = 3
-  if (opts.imageCount < minPhotos) {
-    return `At least ${minPhotos} photos are required for this listing.`
+  if (!relaxed) {
+    const minPhotos = 3
+    if (opts.imageCount < minPhotos) {
+      return `At least ${minPhotos} photos are required for this listing.`
+    }
   }
 
   if (!opts.imagesUploadReady) {
@@ -147,12 +190,14 @@ export function validateSellListingForm(
   const fulfillmentFlags = flagsFromBoardFulfillment(form.boardFulfillment)
   if (fulfillmentFlags.shipping_available) {
     const raw = form.boardShippingPrice?.trim() ?? ""
-    if (!raw) {
+    if (!raw && !relaxed) {
       return "Enter a shipping price when offering shipping (use 0 for free shipping)."
     }
-    const sp = parseFloat(raw)
-    if (!Number.isFinite(sp) || sp < 0) {
-      return "Shipping price must be a number ≥ 0."
+    if (raw) {
+      const sp = parseFloat(raw)
+      if (!Number.isFinite(sp) || sp < 0) {
+        return "Shipping price must be a number ≥ 0."
+      }
     }
   }
 

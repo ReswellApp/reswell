@@ -994,6 +994,14 @@ function SellPageContent() {
       const listingImpersonation: ImpersonationData | null =
         actorIsAdmin && storedImpersonation ? storedImpersonation : null
 
+      const adminImpersonationEditListing = Boolean(
+        editId &&
+          editListingOwnerId &&
+          listingImpersonation &&
+          listingImpersonation.userId === editListingOwnerId &&
+          user.id !== editListingOwnerId,
+      )
+
       const submitForm = formData
 
       const imagesUploadReady = !images.some(
@@ -1005,7 +1013,11 @@ function SellPageContent() {
 
       const validationMessage = validateSellListingForm(
         { listingType: "board", ...submitForm } as SellFormValidationInput,
-        { imageCount: images.length, imagesUploadReady },
+        {
+          imageCount: images.length,
+          imagesUploadReady,
+          adminImpersonationEdit: adminImpersonationEditListing,
+        },
       )
       if (validationMessage) {
         toast.error(validationMessage)
@@ -1021,7 +1033,11 @@ function SellPageContent() {
         shipping_available: fulfillmentFlags.shipping_available,
         local_pickup: fulfillmentFlags.local_pickup,
         shipping_price: fulfillmentFlags.shipping_available
-          ? parseFloat(fd.boardShippingPrice.trim())
+          ? (() => {
+              const raw = fd.boardShippingPrice.trim()
+              if (adminImpersonationEditListing && !raw) return 0
+              return parseFloat(raw)
+            })()
           : null,
       }
 
