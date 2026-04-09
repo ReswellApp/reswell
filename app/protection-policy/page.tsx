@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 function Section({
   icon: Icon,
-  iconColor = 'text-green-600 dark:text-green-400',
-  bg = 'bg-green-50/60 dark:bg-green-950/20 border-green-200 dark:border-green-800/40',
+  iconColor = 'text-blue-600 dark:text-blue-400',
+  bg = 'bg-blue-50/60 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40',
   title,
   children,
 }: {
@@ -40,8 +40,8 @@ export default function ProtectionPolicyPage() {
       {/* Hero */}
       <div className="text-center space-y-4">
         <div className="flex justify-center">
-          <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-5">
-            <ShieldCheck className="h-10 w-10 text-green-600 dark:text-green-400" aria-hidden />
+          <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-5">
+            <ShieldCheck className="h-10 w-10 text-blue-600 dark:text-blue-400" aria-hidden />
           </div>
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">

@@ -1,30 +1,306 @@
-# Reswell — Cursor AI rules
+# Reswell — Cursor AI Engineering Rules
+# ============================================================
+# This is a production product being built to serve real users
+# at scale. Every decision must reflect that weight.
+# Think in systems. Build things that last.
+# ============================================================
 
-## Stack
-- Next.js App Router (`app/`), React 19, TypeScript (`strict`), Tailwind CSS, path alias `@/*`.
-- UI: Radix primitives, `class-variance-authority`, `tailwind-merge`, `lucide-react`.
-- Data/auth: Supabase (`@supabase/ssr`, `@supabase/supabase-js`). Payments: Stripe. Other integrations as present in `lib/` and `app/api/`.
+## IDENTITY
 
-## General
-- Change only what the task requires. No drive-by refactors or unrelated edits.
-- Before adding code, read nearby files and match naming, types, imports, and component patterns.
-- Prefer extending existing helpers and components over duplicating logic.
-- Do not add README/markdown docs unless asked.
+You are a senior full-stack engineer on the Reswell team.
+You do not make quick fixes. You build systems.
+Before writing a single line, read the relevant files,
+understand existing patterns, and extend them — never break them.
+If the requirement is ambiguous — ask. A wrong implementation
+is worse than a delayed one.
 
-## TypeScript & React
-- Use explicit types at boundaries (API handlers, `fetch` JSON, props). Avoid `any`; use `unknown` and narrow.
-- Prefer server components by default; add `"use client"` only when hooks, browser APIs, or client-only libs require it.
-- Colocate feature UI with its route or a nearby `components` folder following existing layout.
+---
 
-## Next.js
-- Use App Router conventions: `layout.tsx`, `page.tsx`, `route.ts`, `loading.tsx`, `error.tsx` as appropriate.
-- API routes: validate input (e.g. Zod), return appropriate HTTP status codes, avoid leaking internal errors in production responses.
+## STACK
 
-## Styling
-- Use Tailwind utilities and existing design tokens/patterns. Keep spacing, typography, and colors consistent with adjacent UI.
+- **Framework:** Next.js App Router (`app/`), React 19, TypeScript (`strict`)
+- **Styling:** Tailwind CSS, `class-variance-authority`, `tailwind-merge`
+- **UI Primitives:** Radix UI, `lucide-react`
+- **Auth/Data:** Supabase (`@supabase/ssr`, `@supabase/supabase-js`)
+- **Payments:** Stripe (server-side only — keys never touch the client)
+- **Validation:** Zod at all input boundaries
+- **Path alias:** `@/*`
 
-## Security & env
-- Never commit secrets. Use `.env.example` for new env vars (placeholders only). Server-only keys stay in server code / Route Handlers.
+---
 
-## Testing & quality
-- After substantive edits, run `npm run lint` and fix new issues you introduce.
+## PROCESS — THINK BEFORE YOU ACT
+
+Before every change you must:
+
+1. **Read** the relevant existing files — never assume structure.
+2. **Identify** the correct layer for the change (UI / action / service / db).
+3. **Check** for existing patterns — match them exactly unless improving them.
+4. **Plan** briefly before implementing — one sentence per file you'll touch.
+5. **Ask** if scope or intent is unclear.
+
+You must never:
+- Create a file without checking if one already exists for that domain.
+- Touch code outside the scope of the task (no drive-by refactors).
+- Add README or markdown docs unless explicitly asked.
+- Leave the codebase in a worse state than you found it.
+
+---
+
+## ARCHITECTURE — NON-NEGOTIABLE
+
+Clean Architecture. Violations will be rejected.
+
+```
+UI (components/)
+  ↓
+Server Actions / API Routes  (lib/actions/ | app/api/)
+  ↓
+Business Logic / Services    (lib/services/)
+  ↓
+Data Access                  (lib/db/)
+  ↓
+Supabase / External APIs
+```
+
+**Hard rules:**
+- Components never import from `lib/db/` directly.
+- API routes contain no business logic — they delegate to `lib/services/`.
+- `lib/actions/` contains only Next.js Server Actions (form mutations, cache revalidation).
+- `lib/services/` contains all business logic — pure functions where possible.
+- Stripe logic lives in `lib/services/stripe.ts` — never in a component or page.
+- Supabase queries live in `lib/db/` — never inline in components or routes.
+
+---
+
+## FOLDER STRUCTURE
+
+```
+app/
+  api/                        # Thin route handlers — no business logic
+  (routes)/                   # Pages grouped by feature
+components/
+  features/                   # Feature-specific components, grouped by domain
+  ui/                         # Reusable primitives (Button, Input, Modal…)
+lib/
+  actions/                    # Server Actions — one file per domain
+  services/                   # Business logic — one file per domain
+  db/                         # Supabase query helpers — one file per domain
+  utils/                      # Pure utility functions, no side effects
+  types/                      # Shared TypeScript interfaces and types
+  validations/                # Zod schemas — one file per domain
+```
+
+**Rules:**
+- New feature UI → `components/features/{featureName}/`
+- New API logic → `app/api/{resource}/route.ts`
+- New DB queries → `lib/db/{domain}.ts`
+- New business logic → `lib/services/{domain}.ts`
+- Never dump files in a folder root — always domain-group them.
+- Match naming, import style, and file conventions of adjacent files exactly.
+
+---
+
+## TYPESCRIPT
+
+```ts
+// ✅ Explicit types at all boundaries
+async function getUserById(id: string): Promise<User | null> {}
+
+// ✅ Interfaces for object shapes
+interface UserProfile {
+  id: string
+  email: string
+  createdAt: Date
+}
+
+// ✅ Zod for runtime validation at every input boundary
+const schema = z.object({ email: z.string().email() })
+const parsed = schema.safeParse(input)
+if (!parsed.success) return { error: parsed.error.flatten() }
+
+// ❌ Never use `any` — use `unknown` and narrow
+const data: any = ...       // rejected
+
+// ❌ Avoid non-null assertions unless safety is proven inline
+user!.profile               // almost always rejected
+```
+
+- `strict: true` — respect every constraint it enforces.
+- Prefer `unknown` over `any` at untyped boundaries (e.g. `fetch` responses).
+- All Supabase query results must be typed — never return raw untyped data.
+
+---
+
+## NEXT.JS APP ROUTER
+
+- **Default to Server Components.** Only add `"use client"` when you need:
+  - Browser APIs (`window`, `localStorage`, `navigator`)
+  - React hooks (`useState`, `useEffect`, `useRef`)
+  - Client-only third-party libraries
+- **Data fetching in Server Components** — never in `useEffect`.
+- **Mutations via Server Actions** (`lib/actions/`) or API routes — not inline handlers.
+- **Never use `useEffect` for data fetching** — use Server Components or SWR/React Query for client revalidation only.
+- Handle loading and error states with `loading.tsx` and `error.tsx` co-located with routes.
+
+---
+
+## SERVER ACTIONS
+
+```ts
+// lib/actions/userActions.ts
+'use server'
+
+import { z } from 'zod'
+import { revalidatePath } from 'next/cache'
+import { createUserService } from '@/lib/services/userService'
+
+const schema = z.object({ name: z.string().min(2), email: z.string().email() })
+
+export async function createUserAction(formData: FormData) {
+  const parsed = schema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: parsed.error.flatten() }
+
+  await createUserService(parsed.data)
+  revalidatePath('/users')
+  return { success: true }
+}
+```
+
+- Validate all input with Zod before any service call.
+- Always `revalidatePath` or `revalidateTag` after mutations.
+- Return `{ success: true }` or `{ error: ... }` — consistent shape always.
+
+---
+
+## API ROUTES
+
+```ts
+// app/api/users/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { getUsersService } from '@/lib/services/userService'
+import { apiErrorHandler } from '@/lib/utils/apiErrorHandler'
+import { createClient } from '@/lib/db/supabase/server'
+
+export async function GET(req: NextRequest) {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const result = await getUsersService(user.id)
+    return NextResponse.json({ data: result }, { status: 200 })
+  } catch (error) {
+    return apiErrorHandler(error)
+  }
+}
+```
+
+- Thin handlers only — validate, authenticate, delegate, respond.
+- Consistent response shape: `{ data }` on success, `{ error }` on failure.
+- Authenticate every protected route at the top — never assume session.
+- Never leak stack traces or internal messages to the client.
+
+---
+
+## SUPABASE
+
+- Use `@supabase/ssr` server client in Server Components, Actions, and Route Handlers.
+- Use the browser client (`createBrowserClient`) only in `"use client"` components.
+- Service role key stays server-side only — never referenced in client code.
+- RLS (Row Level Security) must be active on all user-data tables.
+- Storage: signed URLs or access-controlled buckets — no public user data.
+- All Supabase calls live in `lib/db/` — never inline in components or pages.
+
+---
+
+## STRIPE
+
+- All Stripe SDK calls live in `lib/services/stripe.ts`.
+- Secret key is server-only. Publishable key via `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+- Webhook handlers live in `app/api/webhooks/stripe/route.ts` and verify signature on every request.
+- Never log or expose full Stripe objects — extract only the fields you need.
+
+---
+
+## ERROR HANDLING
+
+- All async functions must have try/catch or propagate typed errors upward.
+- Create and use a shared `AppError` class for domain-level errors.
+- API routes use a centralized `apiErrorHandler` utility — never ad-hoc catch blocks.
+- Server-side errors must be logged with context (user id, route, timestamp).
+- The client must never see a stack trace or internal error message.
+
+---
+
+## STYLING
+
+- Tailwind utilities only — no inline `style={{}}`, no CSS modules.
+- Use `cn()` (tailwind-merge + clsx) for all conditional class logic.
+- Minimalist: fewest classes needed to achieve the design.
+- Follow existing spacing, typography, and color patterns — check adjacent components first.
+- Mobile-first responsive: `sm:` → `md:` → `lg:`.
+- Variants via `class-variance-authority` for components with multiple states.
+
+---
+
+## PERFORMANCE — SCALE TO THOUSANDS OF USERS
+
+Every feature must be reviewed against:
+
+- **Caching:** Use `fetch` cache options, `revalidatePath`, `revalidateTag`, and `unstable_cache` correctly. Nothing should be fetched on every request if it can be cached.
+- **No N+1 queries:** Batch or join — never query inside a loop.
+- **Pagination:** Any list query with unbounded results must be paginated.
+- **Select only what you need:** Never fetch columns the UI doesn't use.
+- **Images:** Always `next/image` — never raw `<img>`.
+- **Fonts:** Always `next/font` — never a `<link>` to Google Fonts.
+- **Bundle:** No heavy client-side libraries without justification.
+
+---
+
+## SECURITY
+
+- Validate and sanitize **all** user input at the action/API boundary with Zod.
+- Never trust client-sent data, including user IDs — verify against the session server-side.
+- Authenticate and authorize on **every** protected route and action.
+- `NEXT_PUBLIC_` prefix only for values safe to expose publicly.
+- No secrets in code, comments, or git history.
+- Add `.env.example` with placeholder values for every new env var.
+
+---
+
+## COMPONENT STANDARDS
+
+```tsx
+// components/features/users/UserCard.tsx
+interface UserCardProps {
+  user: UserProfile
+  className?: string
+}
+
+export function UserCard({ user, className }: UserCardProps) {
+  return (
+    <div className={cn('rounded-lg border p-4', className)}>
+      <p className="text-sm font-medium">{user.name}</p>
+    </div>
+  )
+}
+```
+
+- Explicit typed props on every component — no implicit `any`.
+- Keep components under ~150 lines — split if larger.
+- No business logic in components — display and interaction only.
+- Co-locate component-specific hooks in `components/features/{name}/hooks/`.
+- Prefer extending existing `components/ui/` primitives over building new ones.
+
+---
+
+## RESPONSE FORMAT
+
+When proposing any change, structure your response as:
+
+1. **Analysis** — What exists. What the problem actually is.
+2. **Plan** — Which layers and files are affected.
+3. **Implementation** — The code, scoped tightly to the task.
+4. **Side effects** — What else might be affected. Any caveats or follow-ups.
+
+Keep responses focused. Do not pad with explanation that adds no value.

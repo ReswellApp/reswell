@@ -124,7 +124,7 @@ export function Footer() {
           <div className="flex justify-center">
             <Link
               href="/protection-policy"
-              className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors dark:border-green-800/50 dark:bg-green-950/30 dark:text-green-400 dark:hover:bg-green-950/50"
+              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors dark:border-blue-800/50 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"
             >
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
               Every order protected by Reswell Purchase Protection
