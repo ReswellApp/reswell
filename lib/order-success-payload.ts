@@ -49,6 +49,7 @@ export async function fetchBuyerOrderSuccessPayload(
     .select(
       `
       id,
+      order_num,
       amount,
       created_at,
       fulfillment_method,
@@ -77,6 +78,7 @@ export async function fetchBuyerOrderSuccessPayload(
 
   const order = row as {
     id: string
+    order_num: string | null
     amount: number | string
     created_at: string
     fulfillment_method: string | null
@@ -137,7 +139,10 @@ export async function fetchBuyerOrderSuccessPayload(
   const created = new Date(order.created_at)
   const year = created.getFullYear()
   const shortId = order.id.replace(/-/g, "").slice(0, 8).toUpperCase()
-  const displayNumber = `ORD-${year}-${shortId}`
+  const displayNumber =
+    order.order_num && order.order_num.trim()
+      ? `ORD-${order.order_num.trim()}`
+      : `ORD-${year}-${shortId}`
 
   const ship = order.shipping_address
   const addr = ship?.address
