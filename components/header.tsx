@@ -752,11 +752,39 @@ export function Header() {
                 <span className="sr-only">Close menu</span>
               </Button>
             </div>
+            {!user && (
+              <div className="mb-6 flex flex-col gap-1">
+                <Link
+                  href="/auth/login"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openLogin()
+                    queueMicrotask(() => setMobileMenuOpen(false))
+                  }}
+                  className="cat-link block min-h-touch rounded-lg px-2 py-3 text-lg font-medium transition-colors hover:bg-muted/50"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth/sign-up"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openSignUp()
+                    queueMicrotask(() => setMobileMenuOpen(false))
+                  }}
+                  className="cat-link block min-h-touch rounded-lg px-2 py-3 text-lg font-medium transition-colors hover:bg-muted/50"
+                >
+                  Get Started
+                </Link>
+              </div>
+            )}
             {user && authLoaded && (
               <Link
                 href="/dashboard"
                 onClick={onMobileDrawerLinkClick}
-                className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
+                className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
               >
                 <Avatar className="h-12 w-12 shrink-0 border border-border">
                   {profileAvatarUrl && !avatarImageFailed ? (
@@ -778,29 +806,7 @@ export function Header() {
                 </div>
               </Link>
             )}
-            <nav className="flex flex-col gap-1">
-              {boardShapeNav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  prefetch={boardsBrowseLinkPrefetch(item.href)}
-                  onClick={onMobileDrawerLinkClick}
-                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <hr className="my-2 border-border" />
-              {secondaryNav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onMobileDrawerLinkClick}
-                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-                >
-                  {item.name}
-                </Link>
-              ))}
+            <div className="mb-6 flex flex-col gap-3">
               <Button
                 asChild
                 size="sm"
@@ -810,23 +816,6 @@ export function Header() {
                   Sell your Board
                 </Link>
               </Button>
-              <Link
-                href="/feed"
-                onClick={onMobileDrawerLinkClick}
-                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-foreground hover:text-cerulean hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
-              >
-                <Clock className="h-5 w-5 shrink-0" />
-                Feed
-              </Link>
-              <Link
-                href="/cart"
-                onClick={onMobileDrawerLinkClick}
-                className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
-              >
-                <ShoppingCart className="h-5 w-5 shrink-0" />
-                Cart
-              </Link>
-              <hr className="my-2 border-border" />
               <SiteSearchBar
                 compact
                 onSubmit={async (e) => {
@@ -853,6 +842,47 @@ export function Header() {
                   className={cn(siteSearchInputClassName({ compact: true }), "min-h-touch")}
                 />
               </SiteSearchBar>
+            </div>
+            <nav className="flex flex-col gap-1">
+              {boardShapeNav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  prefetch={boardsBrowseLinkPrefetch(item.href)}
+                  onClick={onMobileDrawerLinkClick}
+                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                >
+                  {item.name}
+                </Link>
+              ))}
+              <hr className="my-2 border-border" />
+              {secondaryNav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onMobileDrawerLinkClick}
+                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                >
+                  {item.name}
+                </Link>
+              ))}
+              <hr className="my-2 border-border" />
+              <Link
+                href="/feed"
+                onClick={onMobileDrawerLinkClick}
+                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
+              >
+                <Clock className="h-5 w-5 shrink-0" aria-hidden />
+                Feed
+              </Link>
+              <Link
+                href="/cart"
+                onClick={onMobileDrawerLinkClick}
+                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
+              >
+                <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
+                Cart
+              </Link>
               <Link
                 href={user ? "/favorites" : "/auth/login?redirect=" + encodeURIComponent("/favorites")}
                 onClick={
@@ -865,39 +895,11 @@ export function Header() {
                         queueMicrotask(() => setMobileMenuOpen(false))
                       }
                 }
-                className="flex items-center gap-2 py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch"
+                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
               >
-                <Heart className="h-5 w-5 shrink-0" />
+                <Heart className="h-5 w-5 shrink-0" aria-hidden />
                 Favorites
               </Link>
-              {!user && (
-                <>
-                  <Link
-                    href="/auth/login"
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                      e.preventDefault()
-                      openLogin()
-                      queueMicrotask(() => setMobileMenuOpen(false))
-                    }}
-                    className="py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg min-h-touch block"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/auth/sign-up"
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                      e.preventDefault()
-                      openSignUp()
-                      queueMicrotask(() => setMobileMenuOpen(false))
-                    }}
-                    className="py-3 px-2 text-lg font-medium text-cerulean hover:bg-muted/50 rounded-lg min-h-touch block"
-                  >
-                    Get Started
-                  </Link>
-                </>
-              )}
             </nav>
           </div>
         </div>
