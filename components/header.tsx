@@ -122,6 +122,13 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
 
 const CATEGORY_BAR_GAP_PX = 32
 
+/**
+ * When the header row is narrower than this (split view, small tablets, etc.),
+ * hide the inline search and use the icon + hamburger instead so the bar
+ * stays usable. Typical iPad portrait (~810px+) stays above this.
+ */
+const HEADER_ROW_COMPACT_BELOW_PX = 800
+
 /** How many shape links fit before moving the rest into a "More" menu. */
 function computeVisibleBoardShapeCount(
   availableWidth: number,
@@ -316,6 +323,8 @@ export function Header() {
   /** When the image URL is set but fails to load (403, blocked, bad URL), hide img so fallback letter shows. */
   const [avatarImageFailed, setAvatarImageFailed] = useState(false)
   const mobileSearchRef = useRef<HTMLInputElement>(null)
+  const headerMainRowRef = useRef<HTMLDivElement>(null)
+  const [headerRowCompact, setHeaderRowCompact] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const headerSearchParams = useSearchParams()
@@ -419,6 +428,19 @@ export function Header() {
     }
   }, [mobileMenuOpen])
 
+  useLayoutEffect(() => {
+    const el = headerMainRowRef.current
+    if (!el || typeof ResizeObserver === "undefined") return
+    const measure = () => {
+      const w = el.getBoundingClientRect().width
+      setHeaderRowCompact(w < HEADER_ROW_COMPACT_BELOW_PX)
+    }
+    measure()
+    const ro = new ResizeObserver(() => measure())
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   /**
    * Close the drawer after Next `<Link>` runs its own navigation (`linkClicked`).
    * We must not `preventDefault` here — that skips Link's handler. Defer closing so the drawer
@@ -440,7 +462,10 @@ export function Header() {
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
       <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
-        <div className="container mx-auto flex min-w-0 items-center gap-2 py-2 sm:py-2.5 md:py-3 md:gap-4 min-h-[56px] sm:min-h-[64px] md:min-h-[80px]">
+        <div
+          ref={headerMainRowRef}
+          className="container mx-auto flex min-w-0 items-center gap-2 py-2 sm:py-2.5 md:py-3 md:gap-4 min-h-[56px] sm:min-h-[64px] md:min-h-[80px]"
+        >
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link
             href="/"
@@ -454,12 +479,14 @@ export function Header() {
             </span>
           </Link>
 
-          {/* Main search (md+): fills space between nav and actions */}
-          <Suspense
-            fallback={<div className="hidden min-w-0 flex-1 md:block" aria-hidden />}
-          >
-            <HeaderNavSearch />
-          </Suspense>
+          {/* Main search (md+ when row is wide enough); icon + drawer when row is cramped */}
+          {!headerRowCompact ? (
+            <Suspense
+              fallback={<div className="hidden min-w-0 flex-1 md:block" aria-hidden />}
+            >
+              <HeaderNavSearch />
+            </Suspense>
+          ) : null}
 
           {/* CLS-FIX: actions area keeps a stable minimum width while auth loads.
               The invisible placeholder reserves space equal to the logged-in
@@ -470,7 +497,10 @@ export function Header() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="flex h-10 w-10 text-foreground hover:bg-muted md:hidden"
+                  className={cn(
+                    "flex h-10 w-10 text-foreground hover:bg-muted",
+                    !headerRowCompact && "md:hidden",
+                  )}
                   aria-label="Search"
                 >
                   <Search className="h-[22px] w-[22px]" />
@@ -711,11 +741,13 @@ export function Header() {
             {/* Mobile menu toggle: two-line hamburger when closed, X when open */}
             <button
               type="button"
-              className={`md:hidden flex h-10 w-10 min-w-[2.5rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              className={cn(
+                "flex h-10 w-10 min-w-[2.5rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                !headerRowCompact && "md:hidden",
                 mobileLogoHovered && !mobileMenuOpen
                   ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-border bg-white text-foreground"
-              }`}
+                  : "border-border bg-white text-foreground",
+              )}
               onMouseEnter={() => setMobileLogoHovered(true)}
               onMouseLeave={() => setMobileLogoHovered(false)}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -735,7 +767,11 @@ export function Header() {
 
       {/* Mobile slide-out menu (pure CSS, no Radix Dialog) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
+        <div
+          className={cn("fixed inset-0 z-50", !headerRowCompact && "md:hidden")}
+          role="dialog"
+          aria-modal="true"
+        >
           {/* Backdrop */}
           <button
             type="button"
