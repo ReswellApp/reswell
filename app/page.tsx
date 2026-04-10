@@ -223,6 +223,7 @@ export default async function HomePage() {
     `)
     .eq("status", "active")
     .eq("section", "surfboards")
+    .eq("hidden_from_site", false)
     .order("created_at", { ascending: false })
     .limit(20)
 
@@ -243,6 +244,7 @@ export default async function HomePage() {
     .eq("status", "active")
     .eq("section", "surfboards")
     .eq("board_type", "shortboard")
+    .eq("hidden_from_site", false)
     .order("created_at", { ascending: false })
     .limit(20)
 
@@ -281,6 +283,7 @@ export default async function HomePage() {
       .in("user_id", verifiedProfileIds)
       .eq("status", "active")
       .eq("section", "surfboards")
+      .eq("hidden_from_site", false)
 
     const bestByUser = new Map<string, ListingRow>()
     for (const listing of (listingsForVerified ?? []) as ListingRow[]) {
@@ -312,6 +315,7 @@ export default async function HomePage() {
     `)
     .eq("status", "active")
     .eq("section", "surfboards")
+    .eq("hidden_from_site", false)
     .order("created_at", { ascending: false })
     .limit(200)
 

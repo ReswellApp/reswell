@@ -33,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Eye, Trash2, Flag, Package, RotateCcw, Pencil, Tag } from 'lucide-react'
+import { MoreVertical, Eye, EyeOff, Trash2, Flag, Package, RotateCcw, Pencil, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -49,6 +49,7 @@ interface Listing {
   section: string
   views: number
   created_at: string
+  hidden_from_site?: boolean | null
   profiles: { display_name: string; email: string }
   listing_images: { url: string }[]
 }
@@ -80,28 +81,29 @@ export default function AdminListingsPage() {
   }, [])
 
   async function fetchListings() {
-    let query = supabase
-      .from('listings')
-      .select(`
-        id, user_id, slug, title, price, status, section, views, created_at,
-        profiles(display_name, email),
-        listing_images(url)
-      `)
-      .order('created_at', { ascending: false })
+    const params = new URLSearchParams()
+    if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (sectionFilter !== 'all') params.set('section', sectionFilter)
 
-    if (statusFilter !== 'all') {
-      query = query.eq('status', statusFilter)
-    }
-    if (sectionFilter !== 'all') {
-      query = query.eq('section', sectionFilter)
-    }
+    try {
+      const res = await fetch(`/api/admin/listings?${params.toString()}`, {
+        credentials: 'include',
+      })
+      const json = (await res.json()) as { listings?: Listing[]; error?: string }
 
-    const { data, error } = await query
+      if (!res.ok) {
+        toast.error(typeof json.error === 'string' ? json.error : 'Failed to load listings')
+        setListings([])
+        return
+      }
 
-    if (!error && data) {
-      setListings(data as unknown as Listing[])
+      setListings(json.listings ?? [])
+    } catch {
+      toast.error('Failed to load listings')
+      setListings([])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function updateListingStatus(id: string, newStatus: string) {
@@ -115,6 +117,28 @@ export default function AdminListingsPage() {
       toast.success(`Listing marked as ${newStatus}`)
     } else {
       toast.error('Failed to update listing')
+    }
+  }
+
+  async function toggleSiteVisibility(listing: Listing) {
+    const next = !Boolean(listing.hidden_from_site)
+    const res = await fetch(
+      `/api/admin/listings/${encodeURIComponent(listing.id)}/site-visibility`,
+      {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden_from_site: next }),
+      },
+    )
+    if (res.ok) {
+      setListings((prev) =>
+        prev.map((l) => (l.id === listing.id ? { ...l, hidden_from_site: next } : l)),
+      )
+      toast.success(next ? 'Hidden from site' : 'Visible on site again')
+    } else {
+      const data = await res.json().catch(() => ({ error: 'Failed to update' }))
+      toast.error(typeof data.error === 'string' ? data.error : 'Failed to update visibility')
     }
   }
 
@@ -283,9 +307,16 @@ export default function AdminListingsPage() {
                             </div>
                           )}
                         </div>
-                        <span className="font-medium text-foreground line-clamp-1 max-w-[200px]">
-                          {capitalizeWords(listing.title)}
-                        </span>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="font-medium text-foreground line-clamp-1 max-w-[200px]">
+                            {capitalizeWords(listing.title)}
+                          </span>
+                          {listing.hidden_from_site ? (
+                            <Badge variant="secondary" className="shrink-0 text-[10px] font-normal">
+                              Hidden from site
+                            </Badge>
+                          ) : null}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -321,6 +352,17 @@ export default function AdminListingsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => editListing(listing)}>
                             <Pencil className="h-4 w-4 mr-2" /> Edit Listing
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleSiteVisibility(listing)}>
+                            {listing.hidden_from_site ? (
+                              <>
+                                <Eye className="h-4 w-4 mr-2" /> Show on site
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="h-4 w-4 mr-2" /> Hide from site
+                              </>
+                            )}
                           </DropdownMenuItem>
                           {listing.status === 'active' && (
                             <DropdownMenuItem onClick={() => updateListingStatus(listing.id, 'removed')}>

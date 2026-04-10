@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,34 +10,72 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner"
 import { Loader2, MessageCircle, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { sendConversationReply } from "@/app/actions/messages"
+import { sendConversationReply, sendListingMessage } from "@/app/actions/messages"
 
-export type SaleThreadMessage = {
+export type OrderThreadMessage = {
   id: string
   content: string
   sender_id: string
   created_at: string
 }
 
-export function SaleMessageThread({
+export function OrderMessageThread({
   conversationId,
   initialMessages,
-  buyerName,
-  sellerId,
+  counterpartyName,
+  currentUserId,
+  variant,
+  startConversation,
 }: {
   conversationId: string | null
-  initialMessages: SaleThreadMessage[]
-  buyerName: string
-  sellerId: string
+  initialMessages: OrderThreadMessage[]
+  counterpartyName: string
+  currentUserId: string
+  variant: "seller" | "buyer"
+  /** Buyer only: when there is no row yet, first send creates the conversation via `sendListingMessage`. */
+  startConversation?: { listingId: string; sellerId: string } | null
 }) {
   const [messages, setMessages] = useState(initialMessages)
   const [body, setBody] = useState("")
   const [sending, setSending] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
+
+  const canStartFromOrder =
+    variant === "buyer" && !conversationId && !!startConversation?.listingId && !!startConversation?.sellerId
 
   async function send() {
     const text = body.trim()
-    if (!text || !conversationId) return
+    if (!text) return
+
+    if (!conversationId) {
+      if (!canStartFromOrder || !startConversation) return
+      setSending(true)
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          toast.error("Sign in to send a message")
+          return
+        }
+        const result = await sendListingMessage({
+          listing_id: startConversation.listingId,
+          seller_id: startConversation.sellerId,
+          content: text,
+        })
+        if ("error" in result) throw new Error(result.error)
+        setBody("")
+        toast.success("Message sent")
+        router.refresh()
+      } catch {
+        toast.error("Could not send message")
+      } finally {
+        setSending(false)
+      }
+      return
+    }
+
     setSending(true)
     try {
       const {
@@ -53,7 +92,7 @@ export function SaleMessageThread({
 
       if ("error" in result) throw new Error(result.error)
 
-      const inserted = result.message as SaleThreadMessage
+      const inserted = result.message as OrderThreadMessage
       setMessages((prev) => [...prev, inserted])
       setBody("")
       toast.success("Message sent")
@@ -64,19 +103,22 @@ export function SaleMessageThread({
     }
   }
 
+  const description =
+    variant === "seller"
+      ? "Recent messages about this listing. Replies go to the same thread as your inbox."
+      : "Recent messages about this purchase. Replies go to the same thread as your inbox."
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <MessageCircle className="h-5 w-5" />
-          Messages with {buyerName}
+          Messages with {counterpartyName}
         </CardTitle>
-        <CardDescription>
-          Recent messages about this listing. Replies go to the same thread as your inbox.
-        </CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!conversationId && (
+        {!conversationId && variant === "seller" && (
           <p className="text-sm text-muted-foreground">
             The buyer hasn&apos;t opened a message thread for this listing yet. When they do, it will
             show up here. You can also check{" "}
@@ -87,6 +129,28 @@ export function SaleMessageThread({
           </p>
         )}
 
+        {!conversationId && variant === "buyer" && (
+          <p className="text-sm text-muted-foreground">
+            {canStartFromOrder ? (
+              <>
+                Coordinate pickup or shipping with {counterpartyName} below. You can also check{" "}
+                <Link href="/messages" className="text-primary underline underline-offset-2">
+                  all messages
+                </Link>{" "}
+                for an existing thread.
+              </>
+            ) : (
+              <>
+                Open{" "}
+                <Link href="/messages" className="text-primary underline underline-offset-2">
+                  all messages
+                </Link>{" "}
+                to message the seller.
+              </>
+            )}
+          </p>
+        )}
+
         {conversationId && messages.length === 0 && (
           <p className="text-sm text-muted-foreground">No messages yet. Say hello below.</p>
         )}
@@ -94,19 +158,19 @@ export function SaleMessageThread({
         {conversationId && messages.length > 0 && (
           <ul className="space-y-3 max-h-72 overflow-y-auto rounded-lg border bg-muted/30 p-3 text-sm">
             {messages.map((m) => {
-              const fromSeller = m.sender_id === sellerId
+              const fromSelf = m.sender_id === currentUserId
               return (
                 <li
                   key={m.id}
-                  className={`flex flex-col gap-0.5 ${fromSeller ? "items-end" : "items-start"}`}
+                  className={`flex flex-col gap-0.5 ${fromSelf ? "items-end" : "items-start"}`}
                 >
                   <span className="text-xs text-muted-foreground">
-                    {fromSeller ? "You" : buyerName} ·{" "}
+                    {fromSelf ? "You" : counterpartyName} ·{" "}
                     {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                   </span>
                   <span
                     className={`max-w-[90%] rounded-lg px-3 py-2 ${
-                      fromSeller
+                      fromSelf
                         ? "bg-primary text-primary-foreground"
                         : "bg-background border text-foreground"
                     }`}
@@ -119,10 +183,10 @@ export function SaleMessageThread({
           </ul>
         )}
 
-        {conversationId && (
+        {(conversationId || canStartFromOrder) && (
           <div className="space-y-2">
             <Textarea
-              placeholder="Write a reply…"
+              placeholder={conversationId ? "Write a reply…" : "Message the seller…"}
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={3}
@@ -140,9 +204,11 @@ export function SaleMessageThread({
                   </>
                 )}
               </Button>
-              <Button variant="outline" asChild>
-                <Link href={`/messages/${conversationId}`}>Open full conversation</Link>
-              </Button>
+              {conversationId && (
+                <Button variant="outline" asChild>
+                  <Link href={`/messages/${conversationId}`}>Open full conversation</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}

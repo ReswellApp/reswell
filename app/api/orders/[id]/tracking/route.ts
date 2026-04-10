@@ -1,6 +1,6 @@
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
+import { markOrderShippedWithTracking } from "@/lib/services/markOrderShipped"
 
 export async function POST(
   request: NextRequest,
@@ -45,81 +45,18 @@ export async function POST(
     return NextResponse.json({ error: "Tracking already added or order already delivered" }, { status: 409 })
   }
 
-  const { error: updateErr } = await supabase
-    .from("orders")
-    .update({
-      tracking_number: trackingNumber,
-      tracking_carrier: body.tracking_carrier?.trim() || null,
-      delivery_status: "shipped",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", orderId)
-
-  if (updateErr) {
-    return NextResponse.json({ error: "Failed to update order" }, { status: 500 })
-  }
-
-  await supabase
-    .from("payouts")
-    .update({
-      hold_reason: "awaiting_delivery",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("order_id", orderId)
-
-  const { data: listing } = await supabase
-    .from("listings")
-    .select("title")
-    .eq("id", order.listing_id)
-    .maybeSingle()
-
-  const title = listing?.title ?? "your item"
-  const carrier = body.tracking_carrier?.trim()
-  const msgContent = [
-    `Tracking added for "${title}":`,
-    carrier ? `Carrier: ${carrier}` : null,
-    `Tracking #: ${trackingNumber}`,
-    "",
-    "You'll be asked to confirm delivery once it arrives.",
-  ]
-    .filter((l) => l !== null)
-    .join("\n")
-
-  const { data: conv } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("buyer_id", order.buyer_id)
-    .eq("seller_id", user.id)
-    .eq("listing_id", order.listing_id)
-    .maybeSingle()
-
-  if (conv) {
-    await supabase.from("messages").insert({
-      conversation_id: conv.id,
-      sender_id: user.id,
-      content: msgContent,
-    })
-    await supabase
-      .from("conversations")
-      .update({ last_message_at: new Date().toISOString() })
-      .eq("id", conv.id)
-  }
-
-  let buyerEmail: string | null = null
-  try {
-    const svc = createServiceRoleClient()
-    const { data: buyerAuth } = await svc.auth.admin.getUserById(order.buyer_id)
-    buyerEmail = buyerAuth?.user?.email ?? null
-  } catch { /* non-critical */ }
-
-  void trackKlaviyoOrderShipped({
-    buyerUserId: order.buyer_id,
-    buyerEmail,
-    orderId: order.id,
-    listingTitle: title,
+  const carrier = body.tracking_carrier?.trim() || null
+  const result = await markOrderShippedWithTracking(
+    supabase,
+    { id: order.id, buyer_id: order.buyer_id, listing_id: order.listing_id },
+    user.id,
     trackingNumber,
-    trackingCarrier: carrier ?? null,
-  })
+    carrier,
+  )
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status })
+  }
 
   return NextResponse.json({ success: true })
 }

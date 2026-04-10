@@ -343,6 +343,22 @@ export async function syncListingToIndex(
 ): Promise<void> {
   if (!getElasticsearchClient()) return
 
+  const { data: visibilityRow, error: visibilityError } = await supabase
+    .from("listings")
+    .select("id, hidden_from_site")
+    .eq("id", listingId)
+    .maybeSingle()
+
+  if (visibilityError) return
+  if (!visibilityRow) {
+    await deleteListingDocument(listingId)
+    return
+  }
+  if ((visibilityRow as { hidden_from_site?: boolean | null }).hidden_from_site) {
+    await deleteListingDocument(listingId)
+    return
+  }
+
   const doc = await listingRowToSearchDoc(supabase, listingId)
   if (!doc) return
 

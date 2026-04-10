@@ -172,6 +172,7 @@ export async function getFollowingFeedPage(opts: {
     )
     .in("user_id", sellerIds)
     .eq("status", "active")
+    .eq("hidden_from_site", false)
     .gte("created_at", thirtyDaysAgo)
     .order("created_at", { ascending: false })
     .limit(limit + 1)

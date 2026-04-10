@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     )
     .eq("id", listingId)
     .eq("status", "active")
+    .eq("hidden_from_site", false)
     .single()
 
   if (listingError || !listing) {

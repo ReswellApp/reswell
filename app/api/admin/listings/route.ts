@@ -10,6 +10,101 @@ import {
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
+function canAccessAdminListings(
+  email: string | undefined,
+  profile: { is_admin?: boolean | null; is_employee?: boolean | null } | null,
+): boolean {
+  if (!email) return false
+  if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) return true
+  return profile?.is_admin === true || profile?.is_employee === true
+}
+
+/** Full listing rows for /admin/listings — bypasses RLS so staff see every row. */
+export async function GET(request: NextRequest) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin, is_employee')
+    .eq('id', user.id)
+    .single()
+
+  if (!canAccessAdminListings(user.email ?? undefined, profile)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  let service: ReturnType<typeof createServiceRoleClient>
+  try {
+    service = createServiceRoleClient()
+  } catch (e) {
+    console.error('[admin listings GET] service role:', e)
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+  }
+
+  const status = request.nextUrl.searchParams.get('status')?.trim() || 'all'
+  const section = request.nextUrl.searchParams.get('section')?.trim() || 'all'
+
+  const selectWithHidden = `
+    id, user_id, slug, title, price, status, section, views, created_at,
+    hidden_from_site,
+    profiles(display_name, email),
+    listing_images(url)
+  `
+
+  const selectWithoutHidden = `
+    id, user_id, slug, title, price, status, section, views, created_at,
+    profiles(display_name, email),
+    listing_images(url)
+  `
+
+  let q = service.from('listings').select(selectWithHidden).order('created_at', { ascending: false })
+
+  if (status !== 'all') {
+    q = q.eq('status', status)
+  }
+  if (section !== 'all') {
+    q = q.eq('section', section)
+  }
+
+  const { data, error } = await q
+
+  if (error) {
+    const msg = error.message ?? ''
+    const missingColumn =
+      msg.includes('hidden_from_site') ||
+      msg.includes('does not exist') ||
+      error.code === '42703'
+
+    if (missingColumn) {
+      let q2 = service.from('listings').select(selectWithoutHidden).order('created_at', { ascending: false })
+      if (status !== 'all') q2 = q2.eq('status', status)
+      if (section !== 'all') q2 = q2.eq('section', section)
+      const retry = await q2
+      if (retry.error) {
+        console.error('[admin listings GET] retry:', retry.error)
+        return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })
+      }
+      const listings = (retry.data ?? []).map((row: Record<string, unknown>) => ({
+        ...row,
+        hidden_from_site: false,
+      }))
+      return NextResponse.json({ listings })
+    }
+
+    console.error('[admin listings GET]:', error)
+    return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })
+  }
+
+  return NextResponse.json({ listings: data ?? [] })
+}
+
 function listingDimensionDisplayTrim(v: unknown): string | null {
   if (v == null) return null
   const s = String(v).trim().slice(0, 80)

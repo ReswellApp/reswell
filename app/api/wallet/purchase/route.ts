@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     .select("id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status")
     .eq("id", listing_id)
     .eq("status", "active")
+    .eq("hidden_from_site", false)
     .single()
 
   if (listingError || !listing) {
@@ -222,20 +223,22 @@ export async function POST(request: NextRequest) {
       fulfillmentMethod: isPickup ? "pickup" : "shipping",
       paymentMethod: "reswell_bucks",
     })
-    await trackKlaviyoSellerOrderConfirmed({
-      sellerUserId: listing.user_id,
-      sellerEmail,
-      orderId: purchase.id,
-      orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
-      listingId: listing.id,
-      listingTitle: listing.title,
-      listingSection: listing.section,
-      orderAmount: price,
-      sellerEarnings,
-      platformFee,
-      fulfillmentMethod: isPickup ? "pickup" : "shipping",
-      paymentMethod: "reswell_bucks",
-    })
+    if (user.id !== listing.user_id) {
+      await trackKlaviyoSellerOrderConfirmed({
+        sellerUserId: listing.user_id,
+        sellerEmail,
+        orderId: purchase.id,
+        orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+        listingId: listing.id,
+        listingTitle: listing.title,
+        listingSection: listing.section,
+        orderAmount: price,
+        sellerEarnings,
+        platformFee,
+        fulfillmentMethod: isPickup ? "pickup" : "shipping",
+        paymentMethod: "reswell_bucks",
+      })
+    }
   }
 
   return NextResponse.json({

@@ -193,6 +193,7 @@ async function fetchCuratedRecentListings(
     `,
     )
     .eq("status", "active")
+    .eq("hidden_from_site", false)
 
   if (categoryId) {
     q = q.eq("category_id", categoryId)
@@ -296,6 +297,7 @@ async function buildSearchQuery(
     `,
     )
     .eq("status", "active")
+    .eq("hidden_from_site", false)
 
   if (categoryId) {
     query = query.eq("category_id", categoryId)

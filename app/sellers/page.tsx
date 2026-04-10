@@ -71,6 +71,7 @@ export default async function SellersPage({
         .from("listings")
         .select("user_id")
         .eq("status", "active")
+        .eq("hidden_from_site", false)
         .is("archived_at", null),
     ])
 
@@ -121,6 +122,7 @@ export default async function SellersPage({
         shops.map((s) => s.id)
       )
       .eq("status", "active")
+      .eq("hidden_from_site", false)
       .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(LISTINGS_FETCH_CAP)

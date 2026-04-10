@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MessageCircle, Package, Truck, MapPin } from "lucide-react"
+import { ArrowLeft, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
@@ -16,6 +16,9 @@ import {
   DeliveryStatusBadge,
   TrackingInfo,
 } from "@/components/order-actions"
+import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
+import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
+import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -69,6 +72,9 @@ function primaryImage(images: Array<{ url: string; is_primary: boolean | null }>
   const primary = images.find((i) => i.is_primary)
   return (primary ?? images[0]).url
 }
+
+/** Avoid caching stale threads; order detail is user-specific. */
+export const dynamic = "force-dynamic"
 
 function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
   if (!addr) return null
@@ -153,6 +159,34 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           ? "Shipping"
           : "Local pickup"
 
+  const { data: convRow } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("buyer_id", user.id)
+    .eq("seller_id", order.seller_id)
+    .eq("listing_id", order.listing_id)
+    .maybeSingle()
+
+  const conversationId = convRow?.id ?? null
+
+  let initialMessages: OrderThreadMessage[] = []
+  if (conversationId) {
+    const { data: msgs } = await supabase
+      .from("messages")
+      .select("id, content, sender_id, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(8)
+
+    initialMessages = [...(msgs ?? [])].reverse()
+
+    await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", user.id)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -191,6 +225,24 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         </Badge>
         <DeliveryStatusBadge status={order.delivery_status} />
       </div>
+
+      <BuyerOrderExperience
+        orderId={order.id}
+        displayOrderNum={formatOrderNumForCustomer(order.order_num, order.id)}
+        createdAtIso={order.created_at}
+        amount={Number(order.amount)}
+        status={order.status}
+        fulfillmentMethod={order.fulfillment_method}
+        deliveryStatus={order.delivery_status}
+        trackingNumber={order.tracking_number}
+        trackingCarrier={order.tracking_carrier}
+        paidWithCard={paidWithCard}
+        listingTitle={title}
+        sellerName={sellerName}
+        messagesHref={`/messages?user=${encodeURIComponent(order.seller_id)}&listing=${encodeURIComponent(order.listing_id)}`}
+        canRequestCancel={order.status === "confirmed" && canSubmitCancelRequest(order)}
+        canRequestRefundHelp={order.status === "confirmed" && canSubmitRefundHelpRequest(order)}
+      />
 
       {/* Buyer action: confirm delivery for shipped orders */}
       <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
@@ -261,19 +313,27 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           <CardContent className="pt-6 text-sm text-muted-foreground">
             <p>
               This order is <span className="font-medium text-foreground">local pickup</span>. Use
-              Messages to agree on a time and place with the seller.
+              messages below to agree on a time and place with the seller.
             </p>
           </CardContent>
         </Card>
       )}
 
+      <OrderMessageThread
+        key={conversationId ?? `new-${order.id}`}
+        conversationId={conversationId}
+        initialMessages={initialMessages}
+        counterpartyName={sellerName}
+        currentUserId={user.id}
+        variant="buyer"
+        startConversation={
+          conversationId
+            ? null
+            : { listingId: order.listing_id, sellerId: order.seller_id }
+        }
+      />
+
       <div className="flex flex-wrap gap-3">
-        <Button asChild>
-          <Link href="/messages" className="gap-2">
-            <MessageCircle className="h-4 w-4" />
-            Open messages
-          </Link>
-        </Button>
         <Button variant="outline" asChild>
           <Link href="/dashboard/orders">Back to orders</Link>
         </Button>

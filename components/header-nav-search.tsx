@@ -99,6 +99,7 @@ export function HeaderNavSearch() {
         .select("id, slug, title, price, listing_images (url, is_primary)")
         .eq("status", "active")
         .eq("section", "surfboards")
+        .eq("hidden_from_site", false)
         .order("created_at", { ascending: false })
         .limit(3)
       if (data) {

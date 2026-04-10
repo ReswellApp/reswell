@@ -180,8 +180,20 @@ export default async function SellerProfilePage({
 
   const id = shop.id
 
-  // Fetch ALL of the seller's listings (current + past)
-  const { data: listings } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: viewerProfile } = user
+    ? await supabase.from("profiles").select("is_admin, is_employee").eq("id", user.id).maybeSingle()
+    : { data: null }
+
+  const canSeeHiddenListings =
+    user?.id === id ||
+    viewerProfile?.is_admin === true ||
+    viewerProfile?.is_employee === true
+
+  let listingsQuery = supabase
     .from("listings")
     .select(
       `
@@ -189,10 +201,13 @@ export default async function SellerProfilePage({
       listing_images (url, is_primary),
       categories (name, slug),
       inventory (quantity)
-    `
+    `,
     )
     .eq("user_id", id)
-    .order("created_at", { ascending: false })
+  if (!canSeeHiddenListings) {
+    listingsQuery = listingsQuery.eq("hidden_from_site", false)
+  }
+  const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
 
   // Fetch reviews (for stats + list)
   const { data: reviews } = await supabase
@@ -207,7 +222,6 @@ export default async function SellerProfilePage({
       : 0
   const reviewCount = reviews?.length || 0
 
-  const { data: { user } } = await supabase.auth.getUser()
   let favoritedIds: string[] = []
   if (user && listings && listings.length > 0) {
     const { data: favs } = await supabase

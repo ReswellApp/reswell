@@ -89,6 +89,7 @@ export function SellerHoverCard({
         .select("id, title, slug, section, price, listing_images(url, is_primary)")
         .eq("user_id", sellerId)
         .eq("status", "active")
+        .eq("hidden_from_site", false)
         .order("created_at", { ascending: false })
         .limit(3),
       supabase

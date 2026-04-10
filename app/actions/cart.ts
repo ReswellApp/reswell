@@ -38,7 +38,7 @@ async function assertListingEligibleForCart(
 ): Promise<{ ok: true; listing: PeerListingCartFields } | { ok: false; message: string }> {
   const { data: row, error } = await supabase
     .from("listings")
-    .select("id, user_id, section, status, local_pickup, shipping_available")
+    .select("id, user_id, section, status, local_pickup, shipping_available, hidden_from_site")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -46,7 +46,10 @@ async function assertListingEligibleForCart(
     return { ok: false, message: "Listing not found" }
   }
 
-  const listing = row as PeerListingCartFields
+  const listing = row as PeerListingCartFields & { hidden_from_site?: boolean | null }
+  if (listing.hidden_from_site) {
+    return { ok: false, message: "This listing is not available" }
+  }
   if (listing.section !== "surfboards") {
     return { ok: false, message: "This listing cannot be added to cart" }
   }

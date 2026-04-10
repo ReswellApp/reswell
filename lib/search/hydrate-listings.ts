@@ -35,6 +35,7 @@ export async function hydrateListingsByIds(
     .select(SELECT)
     .in("id", ids)
     .eq("status", "active")
+    .eq("hidden_from_site", false)
 
   if (error || !data) return []
 

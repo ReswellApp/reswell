@@ -73,6 +73,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     )
     .eq("status", "active")
     .eq("section", "surfboards")
+    .eq("hidden_from_site", false)
 
   if (boardType !== "all") {
     dbQuery = dbQuery.eq("board_type", boardType)

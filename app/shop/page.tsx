@@ -18,6 +18,7 @@ export default async function ShopPage() {
     `)
     .eq("section", "new")
     .eq("status", "active")
+    .eq("hidden_from_site", false)
     .order("created_at", { ascending: false })
     .limit(24)
 

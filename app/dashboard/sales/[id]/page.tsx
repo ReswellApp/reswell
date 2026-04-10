@@ -10,7 +10,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { SaleMessageThread, type SaleThreadMessage } from "@/components/sale-message-thread"
+import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import {
   SellerTrackingForm,
   SellerPickupVerify,
@@ -188,7 +188,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   const conversationId = convRow?.id ?? null
 
-  let initialMessages: SaleThreadMessage[] = []
+  let initialMessages: OrderThreadMessage[] = []
   if (conversationId) {
     const { data: msgs } = await supabase
       .from("messages")
@@ -257,6 +257,24 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       {sale.fulfillment_method === "shipping" && (
         <SellerTrackingForm orderId={sale.id} deliveryStatus={sale.delivery_status} />
       )}
+
+      {sale.fulfillment_method === "shipping" &&
+        listing?.section === "surfboards" &&
+        sale.delivery_status === "pending" && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/shipping?order=${encodeURIComponent(sale.id)}`}>
+                Print shipping label
+              </Link>
+            </Button>
+            <p className="text-sm text-muted-foreground self-center">
+              Label purchase via ShipEngine.{" "}
+              <Link href="/shipping" className="underline font-medium text-foreground">
+                Full shipping guide
+              </Link>
+            </p>
+          </div>
+        )}
 
       {/* Seller action: verify pickup code for local pickup */}
       {sale.fulfillment_method === "pickup" && (
@@ -347,11 +365,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         </Card>
       )}
 
-      <SaleMessageThread
+      <OrderMessageThread
         conversationId={conversationId}
         initialMessages={initialMessages}
-        buyerName={buyerName}
-        sellerId={user.id}
+        counterpartyName={buyerName}
+        currentUserId={user.id}
+        variant="seller"
       />
     </div>
   )

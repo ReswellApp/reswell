@@ -29,6 +29,7 @@ export async function GET() {
       .from("listings")
       .select("id, title, price, city, state, updated_at")
       .eq("status", "sold")
+      .eq("hidden_from_site", false)
       .in("section", [...MARKETPLACE_SECTIONS])
       .order("updated_at", { ascending: false })
       .limit(10)

@@ -39,6 +39,7 @@ export async function ShopListingDetailPage({
       categories (name)
     `,
     section: "new",
+    includeHiddenListings: true,
   })
 
   if (!listing || listing.status !== "active") {
@@ -64,6 +65,7 @@ export async function ShopListingDetailPage({
     `)
     .eq("section", "new")
     .eq("status", "active")
+    .eq("hidden_from_site", false)
     .neq("id", listing.id)
     .order("created_at", { ascending: false })
     .limit(4)

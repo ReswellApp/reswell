@@ -11,6 +11,7 @@ export async function getDistinctBrandsFromListings(section: string): Promise<st
     .from("listings")
     .select("brand")
     .eq("status", "active")
+    .eq("hidden_from_site", false)
     .in("section", sections)
     .not("brand", "is", null)
 
@@ -133,6 +134,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       `,
       )
       .eq("status", "active")
+      .eq("hidden_from_site", false)
       .in("section", sections)
       .or(textOr)
       .order("created_at", { ascending: false })
@@ -141,6 +143,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       .from("listings")
       .select("title")
       .eq("status", "active")
+      .eq("hidden_from_site", false)
       .in("section", sections)
       .or(textOr)
       .order("created_at", { ascending: false })
@@ -156,6 +159,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       .from("listings")
       .select("brand")
       .eq("status", "active")
+      .eq("hidden_from_site", false)
       .in("section", sections)
       .not("brand", "is", null)
       .ilike("brand", `%${safe}%`)

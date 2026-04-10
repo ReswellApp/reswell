@@ -22,6 +22,7 @@ async function sumSoldPricesPaged(supabase: ReturnType<typeof anonSupabase>): Pr
       .from("listings")
       .select("price")
       .eq("status", "sold")
+      .eq("hidden_from_site", false)
       .in("section", [...MARKETPLACE_SECTIONS])
       .order("id", { ascending: true })
       .range(offset, offset + pageSize - 1)
@@ -47,6 +48,7 @@ async function fetchSoldFeedStats(): Promise<{ soldCount: number; gmvTotal: numb
     .from("listings")
     .select("*", { count: "exact", head: true })
     .eq("status", "sold")
+    .eq("hidden_from_site", false)
     .in("section", [...MARKETPLACE_SECTIONS])
 
   if (countError) {
@@ -63,6 +65,7 @@ async function fetchSoldFeedStats(): Promise<{ soldCount: number; gmvTotal: numb
 
 const getCachedSoldFeedStats = unstable_cache(fetchSoldFeedStats, ["marketplace-sold-feed-stats"], {
   revalidate: 600,
+  tags: ["sold-feed-stats"],
 })
 
 /** Cached ~10 minutes — public marketplace sold stats (surfboards). */

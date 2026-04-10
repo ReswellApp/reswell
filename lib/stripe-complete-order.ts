@@ -96,21 +96,24 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
     paymentMethod,
   })
 
-  await trackKlaviyoSellerOrderConfirmed({
-    sellerUserId: order.seller_id,
-    sellerEmail,
-    orderId: order.id,
-    orderNum: (order as { order_num?: string | null }).order_num ?? null,
-    listingId: listing.id,
-    listingTitle: listing.title ?? "",
-    listingSection: listing.section ?? "",
-    listingSlug: listing.slug ?? null,
-    orderAmount: Number.isFinite(amount) ? amount : 0,
-    sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
-    platformFee: Number.isFinite(platformFee) ? platformFee : 0,
-    fulfillmentMethod,
-    paymentMethod,
-  })
+  // Same user as buyer + seller → one Klaviyo profile would get both metrics and both flows (duplicate emails).
+  if (order.buyer_id !== order.seller_id) {
+    await trackKlaviyoSellerOrderConfirmed({
+      sellerUserId: order.seller_id,
+      sellerEmail,
+      orderId: order.id,
+      orderNum: (order as { order_num?: string | null }).order_num ?? null,
+      listingId: listing.id,
+      listingTitle: listing.title ?? "",
+      listingSection: listing.section ?? "",
+      listingSlug: listing.slug ?? null,
+      orderAmount: Number.isFinite(amount) ? amount : 0,
+      sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
+      platformFee: Number.isFinite(platformFee) ? platformFee : 0,
+      fulfillmentMethod,
+      paymentMethod,
+    })
+  }
 }
 
 /**
@@ -411,21 +414,23 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     paymentMethod: "stripe",
   })
 
-  await trackKlaviyoSellerOrderConfirmed({
-    sellerUserId: listing.user_id,
-    sellerEmail,
-    orderId: purchase.id,
-    orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
-    listingId: listing.id,
-    listingTitle: listing.title,
-    listingSection: listing.section,
-    listingSlug: null,
-    orderAmount: price,
-    sellerEarnings,
-    platformFee,
-    fulfillmentMethod: isPickup ? "pickup" : "shipping",
-    paymentMethod: "stripe",
-  })
+  if (buyerId !== listing.user_id) {
+    await trackKlaviyoSellerOrderConfirmed({
+      sellerUserId: listing.user_id,
+      sellerEmail,
+      orderId: purchase.id,
+      orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+      listingId: listing.id,
+      listingTitle: listing.title,
+      listingSection: listing.section,
+      listingSlug: null,
+      orderAmount: price,
+      sellerEarnings,
+      platformFee,
+      fulfillmentMethod: isPickup ? "pickup" : "shipping",
+      paymentMethod: "stripe",
+    })
+  }
 
   return { ok: true, orderId: purchase.id }
 }

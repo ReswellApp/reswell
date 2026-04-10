@@ -73,6 +73,7 @@ export async function SurfboardListingDetailPage({
         profiles (id, seller_slug, is_shop, shop_name, display_name, avatar_url, location, created_at, shop_verified, sales_count)
       `,
     section: "surfboards",
+    includeHiddenListings: true,
   })
 
   if (!board) {
@@ -115,6 +116,7 @@ export async function SurfboardListingDetailPage({
     .eq("user_id", board.user_id)
     .eq("status", "active")
     .eq("section", "surfboards")
+    .eq("hidden_from_site", false)
     .neq("id", board.id)
     .limit(4)
 

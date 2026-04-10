@@ -144,12 +144,14 @@ async function FeedData() {
       `)
       .eq("status", "active")
       .eq("section", "surfboards")
+      .eq("hidden_from_site", false)
       .order("created_at", { ascending: false })
       .limit(LIMIT),
     supabase
       .from("listings")
       .select(soldSelect)
       .eq("status", "sold")
+      .eq("hidden_from_site", false)
       .in("section", ["surfboards"])
       .order("updated_at", { ascending: false })
       .limit(SOLD_LIMIT),

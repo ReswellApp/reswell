@@ -29,24 +29,30 @@ export async function findListingByParam(
   {
     select,
     section: expectedSection,
+    /** When false (default), rows with hidden_from_site are excluded (public/catalog). */
+    includeHiddenListings = false,
   }: {
     select: string
     section?: string
+    includeHiddenListings?: boolean
   },
 ): Promise<{
   listing: any | null
   redirectSlug: string | null
   canonicalPath: string | null
 }> {
+  const applySiteVisibility = <T extends { eq: (c: string, v: boolean) => T }>(q: T) =>
+    includeHiddenListings ? q : q.eq("hidden_from_site", false)
+
   const byId = async (withSection: boolean) => {
-    let q = supabase.from("listings").select(select).eq("id", param)
+    let q = applySiteVisibility(supabase.from("listings").select(select).eq("id", param))
     if (withSection && expectedSection) q = q.eq("section", expectedSection)
     const { data } = await q.maybeSingle()
     return isListingRow(data) ? data : null
   }
 
   const bySlug = async (withSection: boolean) => {
-    let q = supabase.from("listings").select(select).eq("slug", param)
+    let q = applySiteVisibility(supabase.from("listings").select(select).eq("slug", param))
     if (withSection && expectedSection) q = q.eq("section", expectedSection)
     const { data } = await q.maybeSingle()
     return isListingRow(data) ? data : null
