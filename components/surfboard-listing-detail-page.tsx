@@ -1,7 +1,5 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
-import { portraitShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -50,13 +48,11 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { ListingSellerStats } from "@/components/listing-seller-stats"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
-import { listingProductCardClassName } from "@/lib/listing-card-styles"
-import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
-import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
+import { HomePeerListingScrollTile } from "@/components/features/home"
 import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 
 export async function SurfboardListingDetailPage({
@@ -109,10 +105,16 @@ export async function SurfboardListingDetailPage({
       ? reviewRatings.reduce((sum, r) => sum + r, 0) / sellerReviewCount
       : 0
 
-  // Get seller's other boards
+  // Get seller's other boards (same fields as standard peer tiles)
   const { data: sellerBoards } = await supabase
     .from("listings")
-    .select("*, listing_images (url, is_primary)")
+    .select(
+      `
+      *,
+      listing_images (url, thumbnail_url, sort_order, is_primary),
+      categories (name)
+    `,
+    )
     .eq("user_id", board.user_id)
     .eq("status", "active")
     .eq("section", "surfboards")
@@ -122,6 +124,17 @@ export async function SurfboardListingDetailPage({
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
+
+  const sellerBoardIds = (sellerBoards ?? []).map((b) => b.id)
+  let sellerBoardFavoritedIds: string[] = []
+  if (user && sellerBoardIds.length > 0) {
+    const { data: sellerBoardFavs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", sellerBoardIds)
+    sellerBoardFavoritedIds = (sellerBoardFavs ?? []).map((f) => f.listing_id)
+  }
 
   // Check if favorited
   let isFavorited = false
@@ -542,55 +555,16 @@ export async function SurfboardListingDetailPage({
           {sellerBoards && sellerBoards.length > 0 && (
             <section className="mt-16">
               <h2 className="text-xl font-bold mb-6">More Boards from this Seller</h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {sellerBoards.map((item) => {
-                  const primaryImage = item.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || item.listing_images?.[0]
-                  const boardLenSubtitle = formatListingBoardLengthSubtitle({
-                    length_feet: item.length_feet,
-                    length_inches: item.length_inches,
-                    length_inches_display: (item as { length_inches_display?: string | null })
-                      .length_inches_display,
-                  })
-                  return (
-                    <Link
-                      key={item.id}
-                      href={listingDetailHref({
-                        id: item.id,
-                        slug: item.slug,
-                        section: "surfboards",
-                      })}
-                      className="min-w-0 block"
-                    >
-                      <Card className={cn(listingProductCardClassName, "min-w-0")}>
-                        <div className="aspect-[3/4] w-full relative bg-muted">
-                          {primaryImage?.url ? (
-                            <Image
-                              src={primaryImage.url || "/placeholder.svg"}
-                              alt={item.title}
-                              fill
-                              className="object-contain group-hover:scale-105 transition-transform duration-300"
-                              placeholder="blur"
-                              blurDataURL={portraitShimmer}
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                              No Image
-                            </div>
-                          )}
-                        </div>
-                        <CardContent className="min-w-0 p-3">
-                          <h3 className="text-sm font-medium line-clamp-2 min-h-[2.8em]">{item.title}</h3>
-                          {boardLenSubtitle ? (
-                            <p className="text-sm text-muted-foreground">{boardLenSubtitle}</p>
-                          ) : null}
-                          <p className="text-base font-bold text-black dark:text-white mt-1">
-                            ${item.price.toFixed(2)}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  )
-                })}
+              <div className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {sellerBoards.map((item) => (
+                  <HomePeerListingScrollTile
+                    key={item.id}
+                    layout="grid"
+                    listing={item}
+                    userId={user?.id ?? null}
+                    isFavorited={sellerBoardFavoritedIds.includes(item.id)}
+                  />
+                ))}
               </div>
             </section>
           )}

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { wideShimmer, portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
+import { wideShimmer } from "@/lib/image-shimmer"
 import { FALLBACK_HOME_HERO_SLIDE_PATHS, HeroSlideshow } from "@/components/hero-slideshow"
 import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
 import { buildHomeHeroSlideUrls } from "@/lib/home-hero-slide-urls"
@@ -8,12 +8,6 @@ import { getCachedHomeHeroImageUrls } from "@/lib/home-hero-slideshow-cache"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  capitalizeWords,
-  formatCategory,
-  formatListingTileCategoryPillText,
-  getPublicSellerDisplayName,
-} from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -24,107 +18,16 @@ import {
   Recycle,
   Users,
   Store,
-  UserCheck,
 } from "lucide-react"
-import { ListingTile } from "@/components/listing-tile"
-import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
 import { VerifiedBadge } from "@/components/verified-badge"
-import { listingProductCardClassName, listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import { listingDetailHref } from "@/lib/listing-href"
-import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
-import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import { surfboardBrowseLinks } from "@/lib/site-category-directory"
-import type { ReactNode } from "react"
-
-const PLACEHOLDER_IMAGE = "/placeholder.svg"
-
-/** Single-row horizontal scroll for homepage listing sections (up to 20 cards). */
-function HomeListingScrollRow({
-  children,
-  uniformCardHeights,
-}: {
-  children: ReactNode
-  /** Stretch all cards to the row height (surfboards, Browse by Category). */
-  uniformCardHeights?: boolean
-}) {
-  return (
-    <div className="-mx-4 overflow-x-auto overflow-y-visible pb-2 pl-4 sm:-mx-6 sm:pl-6 lg:-mx-8 lg:pl-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div
-        className={cn(
-          "flex w-max gap-3 pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none",
-          uniformCardHeights && "min-h-0 items-stretch",
-        )}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
-
-/** ~2 full cards + peek of 3rd on mobile; fixed width from `sm` up. */
-const homeListingScrollCardClass = cn(
-  listingProductCardGridClassName,
-  "shrink-0 snap-start w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
-)
-
-const homeListingScrollImageSizes = "(max-width: 639px) 44vw, 208px"
-
-/** Equal row height + meta pinned to bottom so price/location align across cards. */
-const homeListingScrollLinkClass = "min-w-0 flex flex-1 flex-col min-h-0"
-const homeListingScrollBodyClass = "min-w-0 p-3 flex flex-col flex-1 min-h-0"
-
-/**
- * flex-1 + overflow hidden so line-clamp works; flex row stretches cards so prices align.
- * Mobile: line-clamp with ellipsis (narrow cards get 4 lines, sm+ wider cards use 3).
- */
-const homeListingScrollTitleSlotClass =
-  "flex min-h-0 flex-1 flex-col overflow-hidden"
-
-const homeListingScrollHeadingClass =
-  "text-sm font-medium leading-snug line-clamp-4 break-words sm:line-clamp-3"
-
-/** Mobile: fixed band under price for row alignment; clip with line-clamp (no nested vertical scroll). Pair with `mt-1`. */
-const homeListingScrollMetaLinesClass =
-  "max-sm:h-[2.625rem] max-sm:max-h-[2.625rem] max-sm:overflow-hidden max-sm:min-h-0 sm:max-h-none sm:overflow-visible"
-
-const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
-
-/** Equal-height cards: surfboards row, Browse by Category (fixed title band, flex stretch). */
-const homeUniformScrollCardClass = cn(
-  listingProductCardGridClassName,
-  "h-full min-h-0 shrink-0 snap-start self-stretch w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
-)
-const homeUniformScrollLinkClass =
-  "flex min-h-0 h-full min-w-0 flex-1 flex-col"
-const homeUniformScrollBodyClass =
-  "flex min-h-0 min-w-0 flex-1 flex-col p-3 pt-3"
-const homeUniformScrollTitleSlotClass =
-  "flex h-[6.25rem] max-h-[6.25rem] min-h-0 shrink-0 flex-col overflow-hidden sm:h-[5.75rem] sm:max-h-[5.75rem]"
-const homeUniformScrollMetaFooterClass = "mt-auto w-full shrink-0 pt-1"
-
-/** Browse by Category: same bottom height as the Browse button on placeholder cards. */
-const homeUniformCategoryBrowseSlotClass =
-  "flex min-h-9 shrink-0 items-center px-3 pb-3 pt-0"
-
-/**
- * Browse by Category seller + badge row: fixed height on all breakpoints so used (multi-line seller)
- * matches surfboard cards (mobile used `homeListingScrollMetaLinesClass` only; sm+ was unbounded).
- */
-const homeBrowseCategoryMetaLinesClass =
-  "h-[2.625rem] max-h-[2.625rem] min-h-0 overflow-hidden sm:h-[2.75rem] sm:max-h-[2.75rem]"
-
-function HomeListingTitleSlot({ children }: { children: ReactNode }) {
-  return <div className={homeListingScrollTitleSlotClass}>{children}</div>
-}
-
-function listingCardSrc(url?: string | null): string {
-  const u = typeof url === "string" ? url.trim() : ""
-  return u || PLACEHOLDER_IMAGE
-}
+import { HomeListingScrollRow, HomePeerListingScrollTile } from "@/components/features/home"
+import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 
 function boardBrowseSlugFromHref(href: string): string | null {
   const q = href.split("?")[1]
@@ -138,27 +41,6 @@ const categories = surfboardBrowseLinks.map((c) => ({
   href: c.href,
   slug: boardBrowseSlugFromHref(c.href),
 }))
-
-/** Primary image for listing tiles: primary flag first, else first image. */
-function primaryListingImageUrl(
-  images?:
-    | {
-        url: string
-        thumbnail_url?: string | null
-        is_primary?: boolean | null
-        sort_order?: number | null
-      }[]
-    | null
-): string | undefined {
-  if (!images?.length) return undefined
-  const flagged = images.find((img) => img.is_primary)
-  const pick =
-    flagged ||
-    [...images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]
-  if (!pick?.url) return undefined
-  const thumb = pick.thumbnail_url?.trim()
-  return thumb || pick.url
-}
 
 const features = [
   {
@@ -190,15 +72,6 @@ export default async function HomePage() {
 
   const homeHeroExtraUrls = await getCachedHomeHeroImageUrls()
   const heroSlideUrls = buildHomeHeroSlideUrls(homeHeroExtraUrls, FALLBACK_HOME_HERO_SLIDE_PATHS)
-
-  // Fetch featured new items
-  const { data: featuredNew } = await supabase
-    .from("inventory")
-    .select("*")
-    .eq("is_active", true)
-    .gt("stock_quantity", 0)
-    .order("created_at", { ascending: false })
-    .limit(4)
 
   // Fetch featured shops - public profile fields only; never expose email or role flags
   const profilePublicFields =
@@ -304,37 +177,86 @@ export default async function HomePage() {
     }
   }
 
-  // Fetch one recent listing per homepage category
-  const { data: allCategoryListings } = await supabase
+  // Browse by Category: same real listings as “Recently added surfboards” — resolve by `board_type` = `/boards?type=` param.
+  const { data: listingsForBrowseByCategory } = await supabase
     .from("listings")
-    .select(`
+    .select(
+      `
       *,
       listing_images (url, thumbnail_url, sort_order, is_primary),
-      categories (slug, name),
-      profiles (display_name, avatar_url, location, sales_count, shop_verified)
-    `)
+      profiles (display_name, avatar_url, location, sales_count, shop_verified),
+      categories (name)
+    `,
+    )
     .eq("status", "active")
     .eq("section", "surfboards")
     .eq("hidden_from_site", false)
     .order("created_at", { ascending: false })
-    .limit(200)
+    .limit(400)
 
-  const categoryLatest = new Map<string, NonNullable<typeof allCategoryListings>[number]>()
-  for (const cat of categories) {
-    const match = (allCategoryListings ?? []).find((l) => {
-      if (cat.slug === null) return l.section === "surfboards"
-      const catSlug = Array.isArray(l.categories) ? (l.categories as any)[0]?.slug : (l.categories as any)?.slug
-      return catSlug === cat.slug
-    })
-    if (match) categoryLatest.set(cat.name, match)
+  type BrowseListingRow = NonNullable<typeof listingsForBrowseByCategory>[number]
+  const sortedForBrowse =
+    listingsForBrowseByCategory != null
+      ? [...listingsForBrowseByCategory].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+      : []
+
+  const latestByBoardType = new Map<string, BrowseListingRow>()
+  for (const row of sortedForBrowse) {
+    const bt = typeof row.board_type === "string" ? row.board_type.trim() : ""
+    if (bt && !latestByBoardType.has(bt)) {
+      latestByBoardType.set(bt, row)
+    }
   }
+
+  const browseCategoryTiles: { category: (typeof categories)[number]; listing: BrowseListingRow }[] = []
+  for (const cat of categories) {
+    const listing =
+      cat.slug === null ? sortedForBrowse[0] : latestByBoardType.get(cat.slug)
+    if (listing) {
+      browseCategoryTiles.push({ category: cat, listing })
+    }
+  }
+
+  const { data: rawFeaturedNew } = await supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      slug,
+      title,
+      price,
+      listing_images (url, thumbnail_url, sort_order, is_primary),
+      inventory (quantity),
+      categories (name)
+    `,
+    )
+    .eq("section", "new")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .order("created_at", { ascending: false })
+    .limit(12)
+
+  const featuredNew =
+    rawFeaturedNew
+      ?.map((l) => {
+        const inv = Array.isArray(l.inventory) ? l.inventory[0] : l.inventory
+        const qty = inv ? Number((inv as { quantity: number }).quantity) : 0
+        const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
+        const catRow = Array.isArray(cat) ? cat[0] : cat
+        return { listing: l, stockQuantity: qty, categoryName: catRow?.name ?? null }
+      })
+      .filter((x) => x.stockQuantity > 0)
+      .slice(0, 4) ?? []
 
   const { data: { user } } = await supabase.auth.getUser()
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
     ...verifiedSpotlight.map(({ listing }) => listing.id),
-    ...Array.from(categoryLatest.values()).map((l) => l.id),
+    ...browseCategoryTiles.map(({ listing }) => listing.id),
+    ...featuredNew.map(({ listing }) => listing.id),
   ]
   let favoritedIds: string[] = []
   if (user && featuredListingIds.length > 0) {
@@ -403,66 +325,14 @@ export default async function HomePage() {
                 </Button>
               </div>
               <HomeListingScrollRow uniformCardHeights>
-                {featuredBoards.map((board) => {
-                  const cart = computePeerCartPriceAction(user?.id ?? null, {
-                    id: board.id,
-                    user_id: board.user_id,
-                    section: "surfboards",
-                    status: board.status,
-                    local_pickup: board.local_pickup,
-                    shipping_available: board.shipping_available,
-                  })
-                  return (
-                  <ListingTile
+                {featuredBoards.map((board) => (
+                  <HomePeerListingScrollTile
                     key={board.id}
-                    href={listingDetailHref({
-                      id: board.id,
-                      slug: board.slug,
-                      section: "surfboards",
-                    })}
-                    listingId={board.id}
-                    title={board.title}
-                    imageAlt={capitalizeWords(board.title)}
-                    listingImages={board.listing_images}
-                    price={Number(board.price)}
-                    linkLayout="unified"
-                    linkClassName={homeUniformScrollLinkClass}
-                    cardClassName={homeUniformScrollCardClass}
-                    cardContentClassName={homeUniformScrollBodyClass}
-                    imageSizes={homeListingScrollImageSizes}
-                    blurDataURL={portraitShimmer}
-                        titleSlot={
-                          <div className={homeUniformScrollTitleSlotClass}>
-                            <h3 className={homeListingScrollHeadingClass}>
-                              {capitalizeWords(board.title)}
-                            </h3>
-                          </div>
-                        }
-                        footerSlot={
-                          <div className={homeUniformScrollMetaFooterClass}>
-                            <div className="flex min-w-0 items-center justify-between gap-2">
-                              <p className="text-base font-bold text-black dark:text-white tabular-nums">
-                                ${board.price.toFixed(2)}
-                              </p>
-                              {cart?.type === "addToCartServer" ? (
-                                <ListingTileAddToCartServerIcon
-                                  listingId={cart.listingId}
-                                  isLoggedIn={cart.isLoggedIn}
-                                />
-                              ) : null}
-                            </div>
-                            <div className="mt-1 flex justify-end">
-                              <ListingTileCategoryPill label={formatListingTileCategoryPillText(board)} />
-                            </div>
-                          </div>
-                        }
-                        favorites={{
-                          initialFavorited: favoritedIds.includes(board.id),
-                          isLoggedIn: !!user,
-                        }}
-                      />
-                  )
-                })}
+                    listing={board}
+                    userId={user?.id ?? null}
+                    isFavorited={favoritedIds.includes(board.id)}
+                  />
+                ))}
               </HomeListingScrollRow>
             </div>
           </section>
@@ -507,66 +377,14 @@ export default async function HomePage() {
                   </Button>
                 </div>
                 <HomeListingScrollRow uniformCardHeights>
-                  {featuredShortboards.map((board) => {
-                    const cart = computePeerCartPriceAction(user?.id ?? null, {
-                      id: board.id,
-                      user_id: board.user_id,
-                      section: "surfboards",
-                      status: board.status,
-                      local_pickup: board.local_pickup,
-                      shipping_available: board.shipping_available,
-                    })
-                    return (
-                      <ListingTile
-                        key={board.id}
-                        href={listingDetailHref({
-                          id: board.id,
-                          slug: board.slug,
-                          section: "surfboards",
-                        })}
-                        listingId={board.id}
-                        title={board.title}
-                        imageAlt={capitalizeWords(board.title)}
-                        listingImages={board.listing_images}
-                        price={Number(board.price)}
-                        linkLayout="unified"
-                        linkClassName={homeUniformScrollLinkClass}
-                        cardClassName={homeUniformScrollCardClass}
-                        cardContentClassName={homeUniformScrollBodyClass}
-                        imageSizes={homeListingScrollImageSizes}
-                        blurDataURL={portraitShimmer}
-                        titleSlot={
-                          <div className={homeUniformScrollTitleSlotClass}>
-                            <h3 className={homeListingScrollHeadingClass}>
-                              {capitalizeWords(board.title)}
-                            </h3>
-                          </div>
-                        }
-                        footerSlot={
-                          <div className={homeUniformScrollMetaFooterClass}>
-                            <div className="flex min-w-0 items-center justify-between gap-2">
-                              <p className="text-base font-bold text-black dark:text-white tabular-nums">
-                                ${board.price.toFixed(2)}
-                              </p>
-                              {cart?.type === "addToCartServer" ? (
-                                <ListingTileAddToCartServerIcon
-                                  listingId={cart.listingId}
-                                  isLoggedIn={cart.isLoggedIn}
-                                />
-                              ) : null}
-                            </div>
-                            <div className="mt-1 flex justify-end">
-                              <ListingTileCategoryPill label={formatListingTileCategoryPillText(board)} />
-                            </div>
-                          </div>
-                        }
-                        favorites={{
-                          initialFavorited: favoritedIds.includes(board.id),
-                          isLoggedIn: !!user,
-                        }}
-                      />
-                    )
-                  })}
+                  {featuredShortboards.map((board) => (
+                    <HomePeerListingScrollTile
+                      key={board.id}
+                      listing={board}
+                      userId={user?.id ?? null}
+                      isFavorited={favoritedIds.includes(board.id)}
+                    />
+                  ))}
                 </HomeListingScrollRow>
               </div>
             </section>
@@ -591,7 +409,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Recently verified sellers — top-priced listing + profile */}
+        {/* Recently verified — same listing tile as Recently added surfboards (priciest active listing per verified seller) */}
         {verifiedSpotlight.length > 0 && (
           <FadeInSection>
           <section className="py-16 bg-offwhite">
@@ -600,7 +418,7 @@ export default async function HomePage() {
                 <div>
                   <h2 className="text-2xl font-bold">Recently verified users</h2>
                   <p className="text-muted-foreground">
-                    Each seller&apos;s priciest active listing right now, with their profile below
+                    Each verified seller&apos;s priciest active surfboard listing right now
                   </p>
                 </div>
                 <Button variant="outline" asChild>
@@ -610,76 +428,15 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <HomeListingScrollRow>
-                {verifiedSpotlight.map(({ profile, listing }) => {
-                  const href = listingDetailHref(listing)
-                  const sellerLabel =
-                    profile.shop_name?.trim() || getPublicSellerDisplayName(profile)
-                  return (
-                    <ListingTile
-                      key={`${profile.id}-${listing.id}`}
-                      href={href}
-                      listingId={listing.id}
-                      title={listing.title}
-                      imageAlt={capitalizeWords(listing.title)}
-                      listingImages={listing.listing_images}
-                      price={Number(listing.price)}
-                      linkLayout="unified"
-                      linkClassName={homeListingScrollLinkClass}
-                      cardClassName={homeListingScrollCardClass}
-                      cardContentClassName={homeListingScrollBodyClass}
-                      imageSizes={homeListingScrollImageSizes}
-                      blurDataURL={portraitShimmer}
-                      titleSlot={
-                        <HomeListingTitleSlot>
-                          <h3 className={homeListingScrollHeadingClass}>
-                            {capitalizeWords(listing.title)}
-                          </h3>
-                        </HomeListingTitleSlot>
-                      }
-                      footerSlot={
-                        <div className={homeListingScrollMetaFooterClass}>
-                          <p className="text-base font-bold text-black dark:text-white">
-                            ${Number(listing.price).toFixed(2)}
-                          </p>
-                          <div className="mt-1 flex justify-end">
-                            <ListingTileCategoryPill label={formatListingTileCategoryPillText(listing)} />
-                          </div>
-                        </div>
-                      }
-                      favorites={{
-                        initialFavorited: favoritedIds.includes(listing.id),
-                        isLoggedIn: !!user,
-                      }}
-                      trailingInsideCard={
-                        <div className="shrink-0 border-t border-border/60 bg-muted/40 px-3 py-2">
-                          <Link
-                            href={sellerProfileHref(profile)}
-                            className="flex items-center gap-3 rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-muted/80"
-                          >
-                            <Avatar className="h-10 w-10 border border-border shrink-0">
-                              <AvatarImage
-                                src={profile.shop_logo_url || profile.avatar_url || ""}
-                                alt=""
-                              />
-                              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                                {sellerLabel.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1 text-left">
-                              <p className="font-medium text-sm line-clamp-1 text-foreground">{sellerLabel}</p>
-                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                <UserCheck className="h-3 w-3 shrink-0" />
-                                Verified seller
-                              </p>
-                            </div>
-                            <VerifiedBadge size="md" className="shrink-0" />
-                          </Link>
-                        </div>
-                      }
-                    />
-                  )
-                })}
+              <HomeListingScrollRow uniformCardHeights>
+                {verifiedSpotlight.map(({ profile, listing }) => (
+                  <HomePeerListingScrollTile
+                    key={`${profile.id}-${listing.id}`}
+                    listing={listing}
+                    userId={user?.id ?? null}
+                    isFavorited={favoritedIds.includes(listing.id)}
+                  />
+                ))}
               </HomeListingScrollRow>
             </div>
           </section>
@@ -704,7 +461,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Categories */}
+        {/* Categories — same `HomePeerListingScrollTile` as Recently added surfboards; one listing per `board_type` */}
+        {browseCategoryTiles.length > 0 && (
         <FadeInSection>
         <section className="py-16 bg-offwhite">
           <div className="container mx-auto">
@@ -718,124 +476,19 @@ export default async function HomePage() {
               </Button>
             </div>
             <HomeListingScrollRow uniformCardHeights>
-              {categories.map((category) => {
-                const listing = categoryLatest.get(category.name)
-
-                if (!listing) {
-                  return (
-                    <Card key={category.href} className={homeUniformScrollCardClass}>
-                      <Link
-                        href={category.href}
-                        prefetch={boardsBrowseLinkPrefetch(category.href)}
-                        className={homeUniformScrollLinkClass}
-                      >
-                        <div className="relative aspect-[3/4] w-full shrink-0 bg-muted overflow-hidden">
-                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                            No Image
-                          </div>
-                        </div>
-                        <CardContent className={homeUniformScrollBodyClass}>
-                          <div className={homeUniformScrollTitleSlotClass}>
-                            <h3 className={homeListingScrollHeadingClass}>{category.name}</h3>
-                          </div>
-                          <div className={homeUniformScrollMetaFooterClass}>
-                            <p
-                              className="text-base font-bold text-black dark:text-white invisible select-none pointer-events-none"
-                              aria-hidden
-                            >
-                              $0.00
-                            </p>
-                            <div
-                              className={`mt-1 flex items-start justify-between gap-1 ${homeBrowseCategoryMetaLinesClass}`}
-                            >
-                              <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1 overflow-hidden">
-                                <span className="invisible line-clamp-2 text-xs leading-snug" aria-hidden>
-                                  &nbsp;
-                                </span>
-                              </div>
-                              <ListingTileCategoryPill label={formatCategory(category.name)} />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Link>
-                      <div className={homeUniformCategoryBrowseSlotClass}>
-                        <Button variant="outline" size="sm" className="bg-transparent" asChild>
-                          <Link href={category.href} prefetch={boardsBrowseLinkPrefetch(category.href)}>
-                            Browse
-                          </Link>
-                        </Button>
-                      </div>
-                    </Card>
-                  )
-                }
-
-                const href = listingDetailHref(listing)
-                const showBoardLength = listing.section === "surfboards"
-
-                return (
-                  <ListingTile
-                    key={category.href}
-                    href={href}
-                    listingId={listing.id}
-                    title={listing.title}
-                    imageAlt={capitalizeWords(listing.title)}
-                    listingImages={listing.listing_images}
-                    price={Number(listing.price)}
-                    linkLayout="unified"
-                    linkClassName={homeUniformScrollLinkClass}
-                    cardClassName={homeUniformScrollCardClass}
-                    cardContentClassName={homeUniformScrollBodyClass}
-                    imageSizes={homeListingScrollImageSizes}
-                    blurDataURL={portraitShimmer}
-                    titleSlot={
-                      <div className={homeUniformScrollTitleSlotClass}>
-                        <h3 className={homeListingScrollHeadingClass}>
-                          {capitalizeWords(listing.title)}
-                        </h3>
-                        {showBoardLength ? (
-                          <p
-                            className={`mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words ${listing.board_length ? "" : "invisible"}`}
-                            aria-hidden={!listing.board_length}
-                          >
-                            {listing.board_length ?? "\u00a0"}
-                          </p>
-                        ) : null}
-                      </div>
-                    }
-                    footerSlot={
-                      <div className={homeUniformScrollMetaFooterClass}>
-                        <p className="text-base font-bold text-black dark:text-white">
-                          ${Number(listing.price).toFixed(2)}
-                        </p>
-                        <div
-                          className={`mt-1 flex items-start justify-between gap-1 ${homeBrowseCategoryMetaLinesClass}`}
-                        >
-                          <div className="flex min-h-0 min-w-0 flex-1 items-start gap-1 overflow-hidden">
-                            <span className="min-w-0 flex-1 break-words text-xs text-muted-foreground line-clamp-2 leading-snug">
-                              {getPublicSellerDisplayName(listing.profiles)}
-                            </span>
-                            {listing.profiles?.shop_verified && (
-                              <VerifiedBadge size="sm" className="mt-0.5 shrink-0" />
-                            )}
-                          </div>
-                          <ListingTileCategoryPill
-                            label={formatListingTileCategoryPillText(listing) ?? formatCategory(category.name)}
-                          />
-                        </div>
-                      </div>
-                    }
-                    favorites={{
-                      initialFavorited: favoritedIds.includes(listing.id),
-                      isLoggedIn: !!user,
-                    }}
-                    trailingInsideCard={<div className={homeUniformCategoryBrowseSlotClass} aria-hidden />}
-                  />
-                )
-              })}
+              {browseCategoryTiles.map(({ category, listing }) => (
+                <HomePeerListingScrollTile
+                  key={category.href}
+                  listing={listing}
+                  userId={user?.id ?? null}
+                  isFavorited={favoritedIds.includes(listing.id)}
+                />
+              ))}
             </HomeListingScrollRow>
           </div>
         </section>
         </FadeInSection>
+        )}
 
         {/* Featured Sellers */}
         {featuredShops && featuredShops.length > 0 && (
@@ -908,7 +561,7 @@ export default async function HomePage() {
         )}
 
         {/* Featured New Gear */}
-        {featuredNew && featuredNew.length > 0 && (
+        {featuredNew.length > 0 && (
           <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
@@ -924,38 +577,25 @@ export default async function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {featuredNew.map((item) => (
-                  <Link key={item.id} href={listingDetailHref({ id: item.id, section: "new" })}>
-                    <Card className={listingProductCardClassName}>
-                      <div className="aspect-square relative bg-muted">
-                        <Image
-                          src={listingCardSrc(item.image_url)}
-                          alt={item.name}
-                          fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          className="object-contain group-hover:scale-105 transition-transform duration-300"
-                          placeholder="blur"
-                          blurDataURL={squareShimmer}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-medium line-clamp-1">{item.name}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-lg font-bold text-black dark:text-white">
-                            ${item.price.toFixed(2)}
-                          </p>
-                          {item.compare_at_price && item.compare_at_price > item.price && (
-                            <p className="text-sm text-muted-foreground line-through">
-                              ${item.compare_at_price.toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+              <HomeListingScrollRow uniformCardHeights>
+                {featuredNew.map(({ listing, stockQuantity, categoryName }) => (
+                  <ShopNewListingStandardTile
+                    key={listing.id}
+                    layout="homeScroll"
+                    listing={{
+                      id: listing.id,
+                      slug: listing.slug,
+                      title: listing.title,
+                      price: Number(listing.price),
+                      listing_images: listing.listing_images,
+                    }}
+                    stockQuantity={stockQuantity}
+                    userId={user?.id ?? null}
+                    isFavorited={favoritedIds.includes(listing.id)}
+                    categoryName={categoryName}
+                  />
                 ))}
-              </div>
+              </HomeListingScrollRow>
             </div>
           </section>
           </FadeInSection>

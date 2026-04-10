@@ -1,6 +1,4 @@
-import { ListingTile } from "@/components/listing-tile"
-import { listingProductCardClassName } from "@/lib/listing-card-styles"
-import { listingDetailHref } from "@/lib/listing-href"
+import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 
 export interface MarketplaceNewItem {
   id: string
@@ -18,22 +16,23 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {items.map((item) => (
-        <ListingTile
+        <ShopNewListingStandardTile
           key={item.id}
-          href={listingDetailHref({ id: item.id, section: "new" })}
-          listingId={item.id}
-          title={item.title}
-          imageAlt={item.title}
-          imageUrl={item.image_url}
-          price={Number(item.price)}
-          imageAspect="square"
-          imageFit="contain"
-          useBlurPlaceholder={false}
-          cardClassName={listingProductCardClassName}
-          cardContentClassName="p-3"
-          titleClassName="text-sm font-medium line-clamp-1 hover:text-primary transition-colors text-foreground"
-          categoryPill={item.categoryLabel}
+          layout="grid"
           showFavorites={false}
+          listing={{
+            id: item.id,
+            slug: null,
+            title: item.title,
+            price: Number(item.price),
+            listing_images: item.image_url
+              ? [{ url: item.image_url, is_primary: true }]
+              : null,
+          }}
+          stockQuantity={item.stock_quantity}
+          userId={null}
+          isFavorited={false}
+          categoryName={item.categoryLabel ?? null}
         />
       ))}
     </div>
