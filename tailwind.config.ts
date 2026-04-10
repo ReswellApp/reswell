@@ -12,9 +12,12 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
-          'var(--font-inter)',
+          'var(--font-sans)',
+          'system-ui',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
           'Arial',
-          'Helvetica',
           'sans-serif',
         ],
       },
@@ -30,50 +33,50 @@ const config: Config = {
         touch: '44px',
       },
       colors: {
-        /* Black & white — neutrals only */
+        /* Slate-neutral professional palette */
         white: '#FFFFFF',
-        softwhite: '#F5F5F5',
-        black: '#111111',
-        midgray: '#6E6E6E',
-        lightgray: '#E5E5E5',
-        /* Legacy names → same grayscale (keeps existing class names working) */
-        cerulean: '#111111',
-        pacific: '#333333',
-        olive: '#525252',
-        gold: '#737373',
+        softwhite: '#F8FAFC',
+        black: '#0F172A',
+        midgray: '#64748B',
+        lightgray: '#E2E8F0',
+        /* Legacy names → mapped to slate scale */
+        cerulean: '#0F172A',
+        pacific: '#334155',
+        olive: '#64748B',
+        gold: '#94A3B8',
         background: '#FFFFFF',
-        foreground: '#111111',
+        foreground: '#0F172A',
         card: {
           DEFAULT: '#FFFFFF',
-          foreground: '#111111',
+          foreground: '#0F172A',
         },
         popover: {
           DEFAULT: '#FFFFFF',
-          foreground: '#111111',
+          foreground: '#0F172A',
         },
         primary: {
-          DEFAULT: '#111111',
+          DEFAULT: '#0F172A',
           foreground: '#FFFFFF',
         },
         secondary: {
           DEFAULT: 'transparent',
-          foreground: '#111111',
+          foreground: '#0F172A',
         },
         muted: {
-          DEFAULT: '#F5F5F5',
-          foreground: '#6E6E6E',
+          DEFAULT: '#F8FAFC',
+          foreground: '#64748B',
         },
         accent: {
-          DEFAULT: '#333333',
+          DEFAULT: '#334155',
           foreground: '#FFFFFF',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
-        border: '#E5E5E5',
-        input: '#E5E5E5',
-        ring: '#111111',
+        border: '#E2E8F0',
+        input: '#CBD5E1',
+        ring: '#0F172A',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -104,8 +107,10 @@ const config: Config = {
         smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
       boxShadow: {
-        soft: '0 1px 3px rgba(0, 0, 0, 0.04)',
-        'soft-hover': '0 4px 12px rgba(0, 0, 0, 0.06)',
+        soft: '0 1px 2px 0 rgb(15 23 42 / 0.05)',
+        'soft-hover': '0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.05)',
+        surface: '0 1px 3px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.06)',
+        'surface-lg': '0 20px 25px -5px rgb(15 23 42 / 0.08), 0 8px 10px -6px rgb(15 23 42 / 0.05)',
       },
       keyframes: {
         'accordion-down': {

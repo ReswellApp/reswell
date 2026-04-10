@@ -34,9 +34,9 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     <AuthModalProvider>
       <div className="flex min-h-dvh flex-col">
         <RouteProgressBar />
-        <div className="sticky top-0 z-50 w-full bg-white pt-[env(safe-area-inset-top)]">
+        <div className="sticky top-0 z-50 w-full pt-[env(safe-area-inset-top)]">
           <ImpersonationBanner />
-          <Suspense fallback={<header className="min-h-[56px] border-b border-lightgray bg-white" aria-hidden />}>
+          <Suspense fallback={<header className="min-h-[56px] border-b border-border bg-white shadow-sm" aria-hidden />}>
             <Header />
           </Suspense>
         </div>

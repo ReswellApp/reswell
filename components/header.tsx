@@ -220,7 +220,7 @@ function HeaderDesktopCategoryBar({
   const showMore = overflowNav.length > 0
 
   return (
-    <div className="relative hidden border-t border-lightgray/40 md:block">
+    <div className="relative hidden border-t border-border md:block">
       <div
         ref={measureRef}
         className="pointer-events-none fixed left-[-10000px] top-0 z-[-1] flex items-center gap-8 whitespace-nowrap opacity-0"
@@ -260,7 +260,7 @@ function HeaderDesktopCategoryBar({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="start"
-                className="w-56 [&_a]:!text-[#6E6E6E] [&_a:hover]:!text-[#000000] [&_a[data-highlighted]]:!text-[#000000] [&_a:focus]:!text-[#000000]"
+                className="w-56 [&_a]:!text-muted-foreground [&_a:hover]:!text-foreground [&_a[data-highlighted]]:!text-foreground [&_a:focus]:!text-foreground"
               >
                 {overflowNav.map((item) => (
                   <DropdownMenuItem key={item.href} asChild>
@@ -275,7 +275,7 @@ function HeaderDesktopCategoryBar({
         </div>
 
         <nav
-          className="ml-6 flex shrink-0 items-center gap-8 border-l border-lightgray/60 pl-8"
+          className="ml-6 flex shrink-0 items-center gap-8 border-l border-border pl-8"
           aria-label="Editorial and community"
         >
           {secondaryNav.map((item) => {
@@ -437,13 +437,9 @@ export function Header() {
 
   return (
     <>
-      <style>{`
-        .cat-link { color: #6E6E6E !important; text-decoration: none !important; }
-        .cat-link:hover { color: #000000 !important; text-decoration: none !important; }
-      `}</style>
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
-      <header className="relative z-50 w-full border-b border-lightgray bg-white backdrop-blur supports-[backdrop-filter]:bg-white/95 transition-colors duration-smooth">
+      <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
         <div className="container mx-auto flex min-w-0 items-center gap-2 py-2 sm:py-2.5 md:py-3 md:gap-4 min-h-[56px] sm:min-h-[64px] md:min-h-[80px]">
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link
@@ -451,7 +447,7 @@ export function Header() {
             className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
             <span
-              className="text-3xl font-black tracking-tight text-black sm:text-4xl md:text-5xl"
+              className="text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl"
               style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
             >
               Reswell
@@ -468,20 +464,20 @@ export function Header() {
           {/* CLS-FIX: actions area keeps a stable minimum width while auth loads.
               The invisible placeholder reserves space equal to the logged-in
               desktop layout so the search bar never shifts horizontally. */}
-          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5 text-black">
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5 text-foreground">
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="flex h-10 w-10 text-black hover:bg-pacific/5 md:hidden"
+                  className="flex h-10 w-10 text-foreground hover:bg-muted md:hidden"
                   aria-label="Search"
                 >
                   <Search className="h-[22px] w-[22px]" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[min(100vw-2rem,380px)] rounded-2xl border-border bg-card p-4 shadow-sm"
+                className="w-[min(100vw-2rem,380px)] rounded-xl border border-border bg-popover p-4 shadow-lg"
                 align="end"
                 sideOffset={8}
               >
@@ -532,7 +528,7 @@ export function Header() {
             <Button
               asChild
               size="sm"
-              className="hidden h-10 shrink-0 rounded-xl px-4 sm:inline-flex"
+              className="hidden shrink-0 sm:inline-flex"
             >
               <Link href="/sell">Sell your Board</Link>
             </Button>
@@ -541,7 +537,7 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden sm:flex h-11 w-11 text-black hover:bg-pacific/5"
+                className="hidden sm:flex h-10 w-10 text-foreground hover:bg-muted"
                 aria-label="Feed — new listings and recently sold"
               >
                 <Clock className="h-6 w-6" />
@@ -560,7 +556,7 @@ export function Header() {
                     }
               }
             >
-              <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
+              <Button variant="ghost" size="icon" className="text-foreground">
                 <Heart className="h-6 w-6" />
                 <span className="sr-only">Favorites</span>
               </Button>
@@ -571,8 +567,8 @@ export function Header() {
                 This prevents the search bar from shifting once the real buttons appear. */}
             {!authLoaded && (
               <div className="hidden sm:flex items-center gap-1 md:gap-0.5 pointer-events-none select-none" aria-hidden>
-                <div className="h-11 w-11 rounded-full" />
-                <div className="h-11 w-11 rounded-full" />
+                <div className="h-10 w-10 rounded-lg" />
+                <div className="h-10 w-10 rounded-lg" />
               </div>
             )}
 
@@ -580,7 +576,7 @@ export function Header() {
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
                 <CartHeaderLink />
                 <Link href="/messages" className="relative hidden sm:inline-flex">
-                  <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
+                  <Button variant="ghost" size="icon" className="text-foreground">
                     <MessageSquare className="h-6 w-6" />
                     {unreadMessages > 0 && (
                       <Badge
@@ -597,7 +593,7 @@ export function Header() {
                 <div className="ml-2 shrink-0 sm:ml-3 md:ml-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-black hover:bg-pacific/5">
+                    <Button variant="ghost" size="icon" className="text-foreground">
                       <Avatar className="h-9 w-9">
                         {profileAvatarUrl && !avatarImageFailed ? (
                           <AvatarImage
@@ -647,7 +643,7 @@ export function Header() {
                           Earnings
                         </span>
                         {walletBalance !== null && (
-                          <span className="text-xs font-medium text-black dark:text-white ml-2 tabular-nums">
+                          <span className="text-xs font-medium text-foreground dark:text-white ml-2 tabular-nums">
                             ${walletBalance.toFixed(2)}
                           </span>
                         )}
@@ -718,7 +714,7 @@ export function Header() {
               className={`md:hidden flex h-10 w-10 min-w-[2.5rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 mobileLogoHovered && !mobileMenuOpen
                   ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-border bg-white text-black"
+                  : "border-border bg-white text-foreground"
               }`}
               onMouseEnter={() => setMobileLogoHovered(true)}
               onMouseLeave={() => setMobileLogoHovered(false)}
@@ -808,7 +804,7 @@ export function Header() {
               <Button
                 asChild
                 size="sm"
-                className="h-10 w-full shrink-0 justify-center rounded-xl px-4"
+                className="h-10 w-full shrink-0 justify-center px-4"
               >
                 <Link href="/sell" onClick={onMobileDrawerLinkClick}>
                   Sell your Board

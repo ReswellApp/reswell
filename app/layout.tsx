@@ -13,17 +13,15 @@ import { publicSiteOrigin } from '@/lib/public-site-origin'
 
 import './globals.css'
 
-// CLS-FIX: next/font automatically generates a size-adjusted fallback font
-// (adjustFontFallback) so that when the real font swaps in, the line heights
-// and spacing are identical — eliminating any text-reflow layout shift.
-// preload: true ensures the primary weight is fetched early via <link rel=preload>.
+// Inter for UI — neutral, readable, standard for modern professional products.
+// CLS-FIX: next/font generates size-adjusted fallbacks for the display font below.
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans',
   display: 'swap',
   adjustFontFallback: true,
   preload: true,
-  weight: ['400', '500', '600', '700', '800', '900'],
+  weight: ['400', '500', '600', '700'],
 })
 const caveat = Caveat({
   subsets: ['latin'],
@@ -56,7 +54,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#111111',
+  themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -74,7 +72,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="overflow-x-hidden">
-      <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-white text-midgray min-h-dvh overflow-x-hidden`}>
+      <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
         <LocaleProvider initialLocale={locale}>
           <PresenceHeartbeatLoader />
           <SiteChrome>{children}</SiteChrome>

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
  * Matches homepage horizontal listing cards: rounded corners + hover shadow.
  */
 export const listingProductCardClassName =
-  "group overflow-hidden rounded-xl hover:shadow-lg transition-shadow"
+  "group overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md"
 
 /** Grid cells that fill a track and use a column flex layout (most listing grids). */
 export const listingProductCardGridClassName = cn(
