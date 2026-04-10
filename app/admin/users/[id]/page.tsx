@@ -28,6 +28,7 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
+import { revalidateListingDetailAfterProfileUpdate } from '@/app/actions/listing-detail-cache'
 
 interface Profile {
   id: string
@@ -122,6 +123,7 @@ export default function AdminUserDetailPage() {
     if (!error) {
       setProfile({ ...profile, shop_verified: next })
       toast.success(next ? 'Verified seller badge granted' : 'Verified seller badge removed')
+      void revalidateListingDetailAfterProfileUpdate()
     } else {
       toast.error('Failed to update profile')
     }

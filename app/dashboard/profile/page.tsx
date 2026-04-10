@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { validateDisplayName } from '@/lib/display-name-validation'
 import { useLocale } from '@/components/locale-provider'
+import { revalidateListingDetailAfterProfileUpdate } from '@/app/actions/listing-detail-cache'
 
 interface Profile {
   id: string
@@ -81,6 +82,7 @@ export default function DashboardProfilePage() {
 
     if (!error) {
       toast.success('Profile updated successfully')
+      void revalidateListingDetailAfterProfileUpdate()
     } else {
       toast.error('Failed to update profile')
     }
@@ -123,6 +125,7 @@ export default function DashboardProfilePage() {
 
       setProfile({ ...profile, avatar_url: avatarUrl })
       toast.success('Profile photo updated')
+      void revalidateListingDetailAfterProfileUpdate()
     } catch (err: any) {
       console.error('Avatar upload error:', err.message)
       toast.error('Failed to upload photo')

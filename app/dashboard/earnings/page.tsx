@@ -25,6 +25,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import PayoutModal from "@/components/PayoutModal"
 import {
   StripeBankPayoutSection,
@@ -142,6 +151,8 @@ export default function EarningsPage() {
   const [paypalHistory, setPaypalHistory] = useState<PayPalPayoutHistoryItem[]>([])
   const [stripeConnectStatus, setStripeConnectStatus] = useState<StripeConnectStatusPayload | null>(null)
   const [stripeTransferHistory, setStripeTransferHistory] = useState<StripeTransferHistoryItem[]>([])
+  const [paypalDisconnectOpen, setPaypalDisconnectOpen] = useState(false)
+  const [paypalDisconnecting, setPaypalDisconnecting] = useState(false)
 
   const stripePayoutsEnabled =
     typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === "string" &&
@@ -238,6 +249,30 @@ export default function EarningsPage() {
     [fetchData],
   )
 
+  const paypalConnected = Boolean(paypalPayerId || paypalEmail)
+
+  const confirmDisconnectPayPal = useCallback(async () => {
+    setPaypalDisconnecting(true)
+    try {
+      const res = await fetch("/api/auth/paypal/disconnect", { method: "POST" })
+      const data = (await res.json()) as { error?: string }
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not disconnect PayPal")
+        return
+      }
+      toast.success("PayPal disconnected")
+      setPaypalDisconnectOpen(false)
+      setPaypalEmail("")
+      setPaypalDisplayName("")
+      setPaypalPayerId("")
+      await fetchData()
+    } catch {
+      toast.error("Something went wrong. Try again.")
+    } finally {
+      setPaypalDisconnecting(false)
+    }
+  }, [fetchData])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -328,6 +363,29 @@ export default function EarningsPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            {paypalConnected ? (
+              <div className="rounded-xl border border-border/80 bg-muted/15 px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    PayPal payout
+                  </p>
+                  <p className="text-sm font-medium text-foreground mt-0.5 truncate">
+                    {paypalDisplayName ? `${paypalDisplayName} · ` : ""}
+                    {paypalEmail || paypalPayerId || "Connected"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 rounded-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => setPaypalDisconnectOpen(true)}
+                >
+                  Disconnect PayPal
+                </Button>
+              </div>
+            ) : null}
+
             <Button
               type="button"
               className="w-full sm:w-auto bg-[#0070ba] hover:bg-[#005ea6] text-white font-medium"
@@ -390,6 +448,36 @@ export default function EarningsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <AlertDialog open={paypalDisconnectOpen} onOpenChange={setPaypalDisconnectOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Disconnect PayPal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You won&apos;t be able to cash out to PayPal until you connect an account again. Your
+                Reswell balance is unchanged.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={paypalDisconnecting}>Cancel</AlertDialogCancel>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={paypalDisconnecting}
+                onClick={() => void confirmDisconnectPayPal()}
+              >
+                {paypalDisconnecting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden />
+                    Disconnecting…
+                  </>
+                ) : (
+                  "Disconnect"
+                )}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </TooltipProvider>
 
       {/* ── Lifetime stats ──────────────────────────────────────────────────── */}

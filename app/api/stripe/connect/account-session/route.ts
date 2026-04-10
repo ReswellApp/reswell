@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import {
   createConnectAccountSessionClientSecret,
   ensureExpressConnectedAccount,
+  prefillConnectAccountMarketplaceBusinessProfile,
 } from "@/lib/services/stripeConnect"
 
 export const runtime = "nodejs"
@@ -30,6 +31,8 @@ export async function POST() {
   if ("error" in ensured) {
     return NextResponse.json({ error: ensured.error }, { status: 400 })
   }
+
+  await prefillConnectAccountMarketplaceBusinessProfile(supabase, ensured.stripeAccountId, user.id)
 
   const session = await createConnectAccountSessionClientSecret(ensured.stripeAccountId)
   if ("error" in session) {

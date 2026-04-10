@@ -13,6 +13,11 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
+import {
+  getCachedPublicShopListing,
+  getCachedShopRelatedListings,
+  SHOP_LISTING_SELECT,
+} from "@/lib/listing-detail-cache"
 import { Package, Truck, Shield, RotateCcw } from "lucide-react"
 import { QuantitySelector } from "@/components/quantity-selector"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
@@ -26,21 +31,15 @@ export async function ShopListingDetailPage({
 }) {
   const supabase = await createClient()
 
-  const { listing } = await findListingByParam(supabase, listingParam, {
-    select: `
-      id,
-      title,
-      description,
-      price,
-      status,
-      user_id,
-      listing_images (url, is_primary),
-      inventory (quantity),
-      categories (name)
-    `,
-    section: "new",
-    includeHiddenListings: true,
-  })
+  let { listing } = await getCachedPublicShopListing(listingParam)
+  if (!listing) {
+    const r = await findListingByParam(supabase, listingParam, {
+      select: SHOP_LISTING_SELECT,
+      section: "new",
+      includeHiddenListings: true,
+    })
+    listing = r.listing
+  }
 
   if (!listing || listing.status !== "active") {
     notFound()
@@ -53,22 +52,7 @@ export async function ShopListingDetailPage({
   const imageUrl = primaryImage?.url ?? null
   const price = Number(listing.price)
 
-  const { data: relatedListings } = await supabase
-    .from("listings")
-    .select(`
-      id,
-      title,
-      price,
-      listing_images (url, is_primary),
-      inventory (quantity),
-      categories (name)
-    `)
-    .eq("section", "new")
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .neq("id", listing.id)
-    .order("created_at", { ascending: false })
-    .limit(4)
+  const relatedListings = await getCachedShopRelatedListings(listing.id)
 
   const listingCat = listing.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
   const listingCatRow = Array.isArray(listingCat) ? listingCat[0] : listingCat

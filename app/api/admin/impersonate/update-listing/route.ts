@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { revalidateListingDetailCache } from "@/lib/listing-detail-cache"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -167,6 +169,11 @@ export async function PUT(request: NextRequest) {
     updatedRow && typeof (updatedRow as { slug?: string }).slug === "string"
       ? (updatedRow as { slug: string }).slug
       : ""
+
+  revalidateListingDetailCache()
+  if (slug.trim()) {
+    revalidatePath(`/l/${slug.trim()}`, "page")
+  }
 
   return NextResponse.json({ success: true, slug, seller_display_name: sellerDisplayName })
 }

@@ -5,3 +5,11 @@ export const stripeConnectCashOutBodySchema = z.object({
 })
 
 export type StripeConnectCashOutBody = z.infer<typeof stripeConnectCashOutBodySchema>
+
+export const stripeConnectExternalAccountBodySchema = z.object({
+  externalAccountId: z.string().trim().regex(/^ba_/, "Invalid bank account id"),
+})
+
+export type StripeConnectExternalAccountBody = z.infer<
+  typeof stripeConnectExternalAccountBodySchema
+>

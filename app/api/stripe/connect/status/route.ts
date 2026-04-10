@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getStripeConnectAccountByUserId } from "@/lib/db/stripeConnect"
-import { syncStripeConnectAccountRow } from "@/lib/services/stripeConnect"
+import {
+  type ConnectBankAccountSummary,
+  connectBanksDeletableViaPlatformApi,
+  listExternalBankAccountsForConnectAccount,
+  syncStripeConnectAccountRow,
+} from "@/lib/services/stripeConnect"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -29,16 +34,27 @@ export async function GET() {
       bankLast4: null as string | null,
       bankName: null as string | null,
       defaultExternalAccountId: null as string | null,
+      bankAccounts: [] as ConnectBankAccountSummary[],
+      bankAccountsDeletableViaPlatformApi: false,
     })
   }
 
+  let bankAccountsDeletableViaPlatformApi = false
   try {
-    await syncStripeConnectAccountRow(supabase, row.stripe_account_id)
+    const account = await syncStripeConnectAccountRow(supabase, row.stripe_account_id)
+    bankAccountsDeletableViaPlatformApi = connectBanksDeletableViaPlatformApi(account)
   } catch (e) {
     console.error("[stripe connect status] sync", e)
   }
 
   const fresh = await getStripeConnectAccountByUserId(supabase, user.id)
+
+  let bankAccounts: Awaited<ReturnType<typeof listExternalBankAccountsForConnectAccount>> = []
+  try {
+    bankAccounts = await listExternalBankAccountsForConnectAccount(row.stripe_account_id)
+  } catch (e) {
+    console.error("[stripe connect status] list banks", e)
+  }
 
   return NextResponse.json({
     hasAccount: true,
@@ -47,5 +63,7 @@ export async function GET() {
     bankLast4: fresh?.bank_last4 ?? null,
     bankName: fresh?.bank_name ?? null,
     defaultExternalAccountId: fresh?.default_external_account_id ?? null,
+    bankAccounts,
+    bankAccountsDeletableViaPlatformApi,
   })
 }

@@ -1,4 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache"
+import { revalidateListingDetailCache } from "@/lib/listing-detail-cache"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
@@ -68,14 +69,27 @@ export async function PATCH(
   const supabaseForEs = await createClient()
   await syncListingToIndex(supabaseForEs, listingId.trim())
 
+  const { data: listingRow } = await supabaseForEs
+    .from("listings")
+    .select("slug")
+    .eq("id", listingId.trim())
+    .maybeSingle()
+  const slug =
+    listingRow && typeof (listingRow as { slug?: unknown }).slug === "string"
+      ? String((listingRow as { slug: string }).slug).trim()
+      : ""
+  if (slug) {
+    revalidatePath(`/l/${slug}`, "page")
+  }
+  revalidateListingDetailCache()
+
   revalidatePath("/boards")
   revalidatePath("/feed")
   revalidatePath("/search")
   revalidatePath("/shop")
   revalidatePath("/")
   revalidatePath("/sellers")
-  revalidatePath("/l/[listing]", "page")
-  revalidateTag("sold-feed-stats")
+  revalidateTag("sold-feed-stats", "max")
 
   return NextResponse.json({ success: true })
 }

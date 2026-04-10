@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type Stripe from "stripe"
+import Stripe from "stripe"
 import {
   getStripeConnectAccountByUserId,
   insertStripeConnectAccount,
@@ -9,6 +9,11 @@ import {
 import { getStripe } from "@/lib/stripe-server"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+
+/** Satisfies Stripe’s business-profile checks for marketplace sellers without a personal website. */
+const MARKETPLACE_PRODUCT_DESCRIPTION =
+  "Selling surfboards and related gear to buyers on Reswell, a US peer-to-peer marketplace. " +
+  "Customers discover listings and purchase through Reswell; payouts are for completed sales on the platform."
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -46,7 +51,7 @@ function pickDefaultBank(
 export async function syncStripeConnectAccountRow(
   supabase: SupabaseClient,
   stripeAccountId: string,
-): Promise<void> {
+): Promise<Stripe.Account> {
   const stripe = getStripe()
   const account = await stripe.accounts.retrieve(stripeAccountId)
   const bank = pickDefaultBank(account)
@@ -57,6 +62,51 @@ export async function syncStripeConnectAccountRow(
     bank_last4: bank?.last4 ?? null,
     bank_name: bank?.bankName ?? null,
   })
+  return account
+}
+
+/** Bank DELETE via Connect API is only supported when Stripe collects requirements on the platform (Custom). */
+export function connectBanksDeletableViaPlatformApi(account: Stripe.Account): boolean {
+  return account.controller?.requirement_collection === "application"
+}
+
+function marketplaceBusinessProfileUrl(origin: string, sellerSlug: string | null | undefined): string {
+  const base = origin.replace(/\/$/, "")
+  const slug = sellerSlug?.trim()
+  if (slug) {
+    return `${base}/sellers/${encodeURIComponent(slug)}`
+  }
+  return base
+}
+
+/**
+ * Sets `business_profile.url` to the seller’s public Reswell profile (or site home) and a full product description
+ * so Stripe does not treat “website” / description as empty for marketplace sellers who have no standalone site.
+ */
+export async function prefillConnectAccountMarketplaceBusinessProfile(
+  supabase: SupabaseClient,
+  stripeAccountId: string,
+  userId: string,
+): Promise<void> {
+  const origin = publicSiteOrigin()
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("seller_slug")
+    .eq("id", userId)
+    .maybeSingle()
+
+  const url = marketplaceBusinessProfileUrl(origin, profile?.seller_slug ?? null)
+  const stripe = getStripe()
+  try {
+    await stripe.accounts.update(stripeAccountId, {
+      business_profile: {
+        url,
+        product_description: MARKETPLACE_PRODUCT_DESCRIPTION,
+      },
+    })
+  } catch (e) {
+    console.error("[stripe connect] prefillConnectAccountMarketplaceBusinessProfile", e)
+  }
 }
 
 export async function ensureExpressConnectedAccount(
@@ -72,6 +122,13 @@ export async function ensureExpressConnectedAccount(
   const stripe = getStripe()
   const origin = publicSiteOrigin()
 
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("seller_slug")
+    .eq("id", userId)
+    .maybeSingle()
+  const businessUrl = marketplaceBusinessProfileUrl(origin, profileRow?.seller_slug ?? null)
+
   try {
     const account = await stripe.accounts.create({
       type: "express",
@@ -81,8 +138,8 @@ export async function ensureExpressConnectedAccount(
         transfers: { requested: true },
       },
       business_profile: {
-        url: origin,
-        product_description: "Sales on the Reswell marketplace",
+        url: businessUrl,
+        product_description: MARKETPLACE_PRODUCT_DESCRIPTION,
       },
       metadata: {
         reswell_user_id: userId,
@@ -116,17 +173,20 @@ export async function createConnectAccountSessionClientSecret(
 ): Promise<{ clientSecret: string } | { error: string }> {
   const stripe = getStripe()
   try {
+    // Express accounts: do not set disable_stripe_user_authentication — only valid when
+    // requirement_collection is "application"; otherwise accountSessions.create fails.
     const session = await stripe.accountSessions.create({
       account: stripeAccountId,
       components: {
         account_onboarding: {
           enabled: true,
-          features: {
-            disable_stripe_user_authentication: true,
-          },
         },
         account_management: {
           enabled: true,
+          features: {
+            // Ensures payout bank linking/editing is fully available in embedded UI (Express).
+            external_account_collection: true,
+          },
         },
       },
     })
@@ -138,6 +198,102 @@ export async function createConnectAccountSessionClientSecret(
     console.error("[stripe connect] createConnectAccountSessionClientSecret", e)
     return { error: "Could not start the secure bank setup flow." }
   }
+}
+
+export interface ConnectBankAccountSummary {
+  id: string
+  last4: string | null
+  bankName: string | null
+  defaultForCurrency: boolean
+  currency: string
+}
+
+export async function listExternalBankAccountsForConnectAccount(
+  stripeAccountId: string,
+): Promise<ConnectBankAccountSummary[]> {
+  const stripe = getStripe()
+  const result = await stripe.accounts.listExternalAccounts(stripeAccountId, {
+    object: "bank_account",
+    limit: 100,
+  })
+  return result.data.map((ex) => {
+    const b = ex as Stripe.BankAccount
+    return {
+      id: b.id,
+      last4: b.last4 ?? null,
+      bankName: b.bank_name ?? null,
+      defaultForCurrency: Boolean(b.default_for_currency),
+      currency: typeof b.currency === "string" ? b.currency : "usd",
+    }
+  })
+}
+
+export type ConnectBankMutationResult =
+  | { ok: true }
+  | { ok: false; error: string; status: number }
+
+export async function deleteConnectBankAccount(
+  supabase: SupabaseClient,
+  userId: string,
+  externalAccountId: string,
+): Promise<ConnectBankMutationResult> {
+  const row = await getStripeConnectAccountByUserId(supabase, userId)
+  if (!row?.stripe_account_id) {
+    return { ok: false, error: "No bank payout profile found.", status: 400 }
+  }
+
+  const stripe = getStripe()
+  try {
+    await stripe.accounts.deleteExternalAccount(row.stripe_account_id, externalAccountId)
+  } catch (e) {
+    console.error("[stripe connect] deleteExternalAccount", e)
+    // Bank delete via API is only supported for Custom Connect accounts (requirement_collection: application).
+    // Express accounts must add/remove banks through Stripe Connect embedded account management.
+    if (e instanceof Stripe.errors.StripePermissionError) {
+      return {
+        ok: false,
+        error:
+          "Removing this bank from the app isn’t available for your account type. Use Earnings → Add or manage banks to open Stripe and update payout accounts there.",
+        status: 403,
+      }
+    }
+    if (e instanceof Stripe.errors.StripeInvalidRequestError) {
+      return {
+        ok: false,
+        error:
+          "Stripe could not remove this bank. If it’s your only payout account, add another bank first, then set it as default, or use Add or manage banks in Stripe.",
+        status: 400,
+      }
+    }
+    return { ok: false, error: "Could not remove this bank account. Try again.", status: 502 }
+  }
+
+  await syncStripeConnectAccountRow(supabase, row.stripe_account_id)
+  return { ok: true }
+}
+
+export async function setDefaultConnectBankAccount(
+  supabase: SupabaseClient,
+  userId: string,
+  externalAccountId: string,
+): Promise<ConnectBankMutationResult> {
+  const row = await getStripeConnectAccountByUserId(supabase, userId)
+  if (!row?.stripe_account_id) {
+    return { ok: false, error: "No bank payout profile found.", status: 400 }
+  }
+
+  const stripe = getStripe()
+  try {
+    await stripe.accounts.updateExternalAccount(row.stripe_account_id, externalAccountId, {
+      default_for_currency: true,
+    })
+  } catch (e) {
+    console.error("[stripe connect] updateExternalAccount default", e)
+    return { ok: false, error: "Could not set the default bank. Try again.", status: 502 }
+  }
+
+  await syncStripeConnectAccountRow(supabase, row.stripe_account_id)
+  return { ok: true }
 }
 
 export type ConnectCashOutResult =

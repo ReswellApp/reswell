@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,10 +13,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { StripeConnectSetupDialog } from "@/components/features/earnings/stripe-connect-setup-dialog"
-import { Building2, CheckCircle2, Loader2, Shield } from "lucide-react"
+import { Building2, CheckCircle2, Loader2, Shield, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+
+/** Mirrors Stripe Connect external bank accounts returned by `/api/stripe/connect/status`. */
+export interface StripeConnectBankAccountRow {
+  id: string
+  last4: string | null
+  bankName: string | null
+  defaultForCurrency: boolean
+  currency: string
+}
 
 export interface StripeConnectStatusPayload {
   hasAccount: boolean
@@ -25,6 +43,13 @@ export interface StripeConnectStatusPayload {
   bankLast4: string | null
   bankName: string | null
   defaultExternalAccountId: string | null
+  /** Linked US bank accounts on the Stripe Connect account (ACH). */
+  bankAccounts?: StripeConnectBankAccountRow[]
+  /**
+   * When true, the platform may remove banks via API (Custom Connect).
+   * Express accounts use Stripe’s embedded UI only — see `confirmRemoveBank` / Remove flow.
+   */
+  bankAccountsDeletableViaPlatformApi?: boolean
 }
 
 interface StripeTransferHistoryRow {
@@ -74,10 +99,33 @@ export function StripeBankPayoutSection({
   const [cashOpen, setCashOpen] = useState(false)
   const [amountStr, setAmountStr] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<StripeConnectBankAccountRow | null>(null)
+  const [removeBusy, setRemoveBusy] = useState(false)
+  const [defaultBusyId, setDefaultBusyId] = useState<string | null>(null)
+
+  const bankRows: StripeConnectBankAccountRow[] = useMemo(() => {
+    const fromApi = connectStatus?.bankAccounts
+    if (fromApi && fromApi.length > 0) {
+      return fromApi
+    }
+    if (connectStatus?.bankLast4) {
+      return [
+        {
+          id: connectStatus.defaultExternalAccountId ?? "",
+          last4: connectStatus.bankLast4,
+          bankName: connectStatus.bankName,
+          defaultForCurrency: true,
+          currency: "usd",
+        },
+      ]
+    }
+    return []
+  }, [connectStatus])
 
   const ready =
     Boolean(connectStatus?.payoutsEnabled) &&
-    Boolean(connectStatus?.defaultExternalAccountId ?? connectStatus?.bankLast4)
+    bankRows.length > 0 &&
+    Boolean(bankRows.some((b) => b.last4))
 
   const openCashOut = useCallback(() => {
     setAmountStr(availableBalance > 0 ? availableBalance.toFixed(2) : "")
@@ -112,6 +160,93 @@ export function StripeBankPayoutSection({
     }
   }, [amountStr, onRefresh])
 
+  const setDefaultBank = useCallback(
+    async (externalAccountId: string) => {
+      setDefaultBusyId(externalAccountId)
+      try {
+        const res = await fetch("/api/stripe/connect/external-accounts", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ externalAccountId }),
+        })
+        const data = (await res.json()) as { error?: string }
+        if (!res.ok) {
+          toast.error(data.error ?? "Could not update default bank")
+          return
+        }
+        toast.success("Default payout bank updated")
+        await onRefresh()
+      } catch {
+        toast.error("Something went wrong. Try again.")
+      } finally {
+        setDefaultBusyId(null)
+      }
+    },
+    [onRefresh],
+  )
+
+  const openPayoutManagement = useCallback(() => {
+    setSetupUseManagement(true)
+    setSetupOpen(true)
+  }, [])
+
+  const confirmRemoveBank = useCallback(async () => {
+    const target = removeTarget
+    if (!target) return
+    setRemoveBusy(true)
+    try {
+      if (!target.id?.trim()) {
+        toast.info("Opening Stripe’s payout settings", {
+          description: "Remove or update the bank in the secure window.",
+        })
+        setRemoveTarget(null)
+        openPayoutManagement()
+        return
+      }
+
+      // Express / Standard-style Connect: Stripe does not allow platform DELETE — open embedded management instead.
+      if (connectStatus?.bankAccountsDeletableViaPlatformApi !== true) {
+        toast.info("Opening Stripe’s payout settings", {
+          description: "Remove or change banks in the secure window below. If this is your only default, add another bank first.",
+        })
+        setRemoveTarget(null)
+        openPayoutManagement()
+        return
+      }
+
+      const res = await fetch("/api/stripe/connect/external-accounts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ externalAccountId: target.id }),
+      })
+      const data = (await res.json()) as { error?: string }
+
+      if (res.ok) {
+        toast.success("Bank removed")
+        setRemoveTarget(null)
+        await onRefresh()
+        return
+      }
+
+      if (res.status === 400 || res.status === 403 || res.status === 502) {
+        toast.info("Opening Stripe’s payout settings", {
+          description:
+            data.error ??
+            "Finish removing the bank in the secure window. If this is your only default, add another bank first.",
+        })
+        setRemoveTarget(null)
+        openPayoutManagement()
+        return
+      }
+
+      toast.error(data.error ?? "Could not remove this bank account. Try again.")
+    } catch {
+      toast.error("Something went wrong. Try again.")
+    } finally {
+      setRemoveBusy(false)
+    }
+  }, [removeTarget, connectStatus?.bankAccountsDeletableViaPlatformApi, onRefresh, openPayoutManagement])
+
   if (!stripeConfigured) {
     return null
   }
@@ -142,30 +277,88 @@ export function StripeBankPayoutSection({
           </div>
 
           {ready ? (
-            <div className="rounded-xl border border-border/80 bg-muted/15 px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
-              <div>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Payout account
+                  Payout accounts
                 </p>
-                <p className="text-sm font-medium text-foreground mt-0.5">
-                  {connectStatus?.bankName ?? "Bank account"}{" "}
-                  <span className="text-muted-foreground font-normal">
-                    ····{connectStatus?.bankLast4 ?? "••••"}
-                  </span>
-                </p>
+                <Button
+                  type="button"
+                  className={cn(
+                    "rounded-full font-medium",
+                    "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
+                  )}
+                  onClick={openPayoutManagement}
+                >
+                  Manage payout banks
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 rounded-full"
-                onClick={() => {
-                  setSetupUseManagement(true)
-                  setSetupOpen(true)
-                }}
-              >
-                Update
-              </Button>
+              <p className="text-xs text-muted-foreground leading-snug">
+                Reswell can’t store bank numbers — this opens Stripe’s secure form to add, change, or remove payout
+                accounts (remove usually requires two linked banks first).
+              </p>
+              <ul className="space-y-2">
+                {bankRows.map((row) => {
+                  const canMutate = Boolean(row.id)
+                  const showRemove = Boolean(row.last4)
+                  const showDefaultCta =
+                    canMutate && bankRows.length > 1 && !row.defaultForCurrency
+                  return (
+                    <li
+                      key={row.id || `${row.last4}-${row.bankName}`}
+                      className="rounded-xl border border-border/80 bg-muted/15 px-4 py-3 flex flex-wrap items-center gap-3 justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {row.bankName ?? "Bank account"}{" "}
+                          <span className="text-muted-foreground font-normal">
+                            ····{row.last4 ?? "••••"}
+                          </span>
+                          {row.defaultForCurrency ? (
+                            <Badge
+                              variant="secondary"
+                              className="ml-2 align-middle text-[10px] uppercase tracking-wide"
+                            >
+                              Default
+                            </Badge>
+                          ) : null}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {showDefaultCta ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full"
+                            disabled={defaultBusyId !== null}
+                            onClick={() => void setDefaultBank(row.id)}
+                          >
+                            {defaultBusyId === row.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                            ) : (
+                              "Use for payouts"
+                            )}
+                          </Button>
+                        ) : null}
+                        {showRemove ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-full text-destructive hover:text-destructive"
+                            disabled={removeBusy}
+                            onClick={() => setRemoveTarget(row)}
+                            aria-label="Remove bank account"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
           ) : (
             <Button
@@ -295,6 +488,39 @@ export function StripeBankPayoutSection({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={removeTarget !== null} onOpenChange={(o) => !o && setRemoveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this bank account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removeTarget
+                ? connectStatus?.bankAccountsDeletableViaPlatformApi === true
+                  ? `Remove ${removeTarget.bankName ?? "bank"} ending in ${removeTarget.last4 ?? "••••"} from your payout options. If you have more than one bank and this is the default, choose “Use for payouts” on another account first.`
+                  : `Remove ${removeTarget.bankName ?? "bank"} ending in ${removeTarget.last4 ?? "••••"} from your payout options. We’ll open Stripe’s secure window next — complete removal there. If you have more than one bank and this is the default, choose “Use for payouts” on another account first.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removeBusy}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={removeBusy}
+              onClick={() => void confirmRemoveBank()}
+            >
+              {removeBusy ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin inline" aria-hidden />
+                  Removing…
+                </>
+              ) : (
+                "Remove"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

@@ -99,7 +99,7 @@ export function StripeConnectSetupDialog({
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground leading-snug">
               {useManagement
-                ? "Update your payout details securely. Your full account numbers stay with Stripe — Reswell only sees that you’re set up to receive funds."
+                ? "Add or change payout banks and other account details in Stripe below. To remove a bank, link a second account first, set the default for payouts, then remove the old one."
                 : "Add a US bank account for ACH payouts. Everything sensitive is handled by Stripe inside this window — we never store your bank details."}
             </DialogDescription>
           </DialogHeader>

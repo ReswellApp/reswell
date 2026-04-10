@@ -13,6 +13,10 @@ import {
 import { formatCondition, formatBoardType, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { createClient } from "@/lib/supabase/server"
+import {
+  getCachedPublicSurfboardListing,
+  SURFBOARD_LISTING_SELECT,
+} from "@/lib/listing-detail-cache"
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { MapPin, MessageSquare, Clock, Info } from "lucide-react"
@@ -62,15 +66,15 @@ export async function SurfboardListingDetailPage({
 }) {
   const supabase = await createClient()
 
-  const { listing: board } = await findListingByParam(supabase, listingParam, {
-    select: `
-        *,
-        listing_images (id, url, is_primary, sort_order),
-        profiles (id, seller_slug, is_shop, shop_name, display_name, avatar_url, location, created_at, shop_verified, sales_count)
-      `,
-    section: "surfboards",
-    includeHiddenListings: true,
-  })
+  let { listing: board } = await getCachedPublicSurfboardListing(listingParam)
+  if (!board) {
+    const r = await findListingByParam(supabase, listingParam, {
+      select: SURFBOARD_LISTING_SELECT,
+      section: "surfboards",
+      includeHiddenListings: true,
+    })
+    board = r.listing
+  }
 
   if (!board) {
     notFound()
@@ -267,16 +271,6 @@ export async function SurfboardListingDetailPage({
                 boardFulfillmentSummary(board.local_pickup, board.shipping_available),
               ].filter(Boolean).join(" · ")}
             </p>
-            {canPeerPurchase && (
-              <div className="mt-4">
-                <ListingDetailPeerPurchaseActions
-                  listingId={board.id}
-                  checkoutListingParam={board.slug ?? board.id}
-                  section="surfboards"
-                  isLoggedIn={!!user}
-                />
-              </div>
-            )}
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -286,6 +280,16 @@ export async function SurfboardListingDetailPage({
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
               <ImageGallery images={images} title={capitalizeWords(board.title)} sold={isSold} />
+              {canPeerPurchase && (
+                <div className="mt-4 lg:hidden">
+                  <ListingDetailPeerPurchaseActions
+                    listingId={board.id}
+                    checkoutListingParam={board.slug ?? board.id}
+                    section="surfboards"
+                    isLoggedIn={!!user}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Details */}
