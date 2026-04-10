@@ -1,7 +1,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { wideShimmer, portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
-import { HeroSlideshow } from "@/components/hero-slideshow"
+import { FALLBACK_HOME_HERO_SLIDE_PATHS, HeroSlideshow } from "@/components/hero-slideshow"
+import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
+import { listHomeHeroImageUrls } from "@/lib/db/home-hero-images"
+import { buildHomeHeroSlideUrls } from "@/lib/home-hero-slide-urls"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -180,9 +183,14 @@ const features = [
   },
 ]
 
+export const dynamic = "force-dynamic"
+
 export default async function HomePage() {
   const supabase = await createClient()
-  
+
+  const homeHeroExtraUrls = await listHomeHeroImageUrls(supabase)
+  const heroSlideUrls = buildHomeHeroSlideUrls(homeHeroExtraUrls, FALLBACK_HOME_HERO_SLIDE_PATHS)
+
   // Fetch featured new items
   const { data: featuredNew } = await supabase
     .from("inventory")
@@ -339,8 +347,14 @@ export default async function HomePage() {
         {/* CLS-FIX: hero has explicit min-height so the section never reflows
             while the slideshow images decode or fonts swap in. */}
         <section className="relative min-h-[420px] sm:min-h-[480px] md:min-h-[540px] flex items-center overflow-hidden">
-          <HeroSlideshow />
-          <div className="absolute inset-0 bg-white/55" aria-hidden />
+          <HeroSlideshow
+            key={heroSlideUrls.map((u) => u.trim()).join("|")}
+            slides={heroSlideUrls}
+          />
+          <div className="absolute inset-0 z-[1] bg-white/55" aria-hidden />
+          <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+            <HomeHeroSlideshowAdminBar />
+          </div>
           <div className="container mx-auto relative z-10 py-20 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="secondary" className="mb-4 text-black">
