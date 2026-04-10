@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe-server"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
+import { tryHandleStripeConnectEvent } from "@/lib/services/stripeConnectWebhook"
 import type Stripe from "stripe"
 
 export const runtime = "nodejs"
 
 /**
  * Stripe → Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`
- * Events: `payment_intent.succeeded`
+ * Events: `payment_intent.succeeded`, `account.updated`, `transfer.reversed`
  * Signing secret: `STRIPE_WEBHOOK_SECRET` in env.
  *
  * Use the **canonical** host Vercel serves without a redirect (www vs apex). Stripe does not follow
@@ -35,6 +36,11 @@ export async function POST(request: Request) {
   } catch (e) {
     console.error("[stripe webhook] signature verification failed:", e)
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
+  }
+
+  const connectHandled = await tryHandleStripeConnectEvent(event)
+  if (connectHandled) {
+    return NextResponse.json({ received: true })
   }
 
   if (event.type !== "payment_intent.succeeded") {

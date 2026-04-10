@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
+import { HOME_HERO_SLIDESHOW_CACHE_TAG } from "@/lib/home-hero-slideshow-cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { deleteHomeHeroSlideService } from "@/lib/services/homeHeroSlides"
 
@@ -26,5 +27,6 @@ export async function DELETE(_request: Request, ctx: { params: Promise<{ id: str
 
   revalidatePath("/", "layout")
   revalidatePath("/", "page")
+  revalidateTag(HOME_HERO_SLIDESHOW_CACHE_TAG, "max")
   return NextResponse.json({ data: { deleted: true } }, { status: 200 })
 }

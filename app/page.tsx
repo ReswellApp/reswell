@@ -3,8 +3,8 @@ import Image from "next/image"
 import { wideShimmer, portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import { FALLBACK_HOME_HERO_SLIDE_PATHS, HeroSlideshow } from "@/components/hero-slideshow"
 import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
-import { listHomeHeroImageUrls } from "@/lib/db/home-hero-images"
 import { buildHomeHeroSlideUrls } from "@/lib/home-hero-slide-urls"
+import { getCachedHomeHeroImageUrls } from "@/lib/home-hero-slideshow-cache"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -188,7 +188,7 @@ export const dynamic = "force-dynamic"
 export default async function HomePage() {
   const supabase = await createClient()
 
-  const homeHeroExtraUrls = await listHomeHeroImageUrls(supabase)
+  const homeHeroExtraUrls = await getCachedHomeHeroImageUrls()
   const heroSlideUrls = buildHomeHeroSlideUrls(homeHeroExtraUrls, FALLBACK_HOME_HERO_SLIDE_PATHS)
 
   // Fetch featured new items

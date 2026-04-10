@@ -26,6 +26,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import PayoutModal from "@/components/PayoutModal"
+import {
+  StripeBankPayoutSection,
+  type StripeConnectStatusPayload,
+} from "@/components/features/earnings/stripe-bank-payout-section"
 import { toast } from "sonner"
 import { getEarningsWalletData } from "@/app/actions/wallet"
 
@@ -53,6 +57,14 @@ interface PayPalPayoutHistoryItem {
   id: string
   amount: string | number
   paypal_email: string
+  status: string
+  created_at: string
+}
+
+interface StripeTransferHistoryItem {
+  id: string
+  amount: string | number
+  stripe_transfer_id: string | null
   status: string
   created_at: string
 }
@@ -128,13 +140,21 @@ export default function EarningsPage() {
   const [paypalModalOpen, setPaypalModalOpen] = useState(false)
   const [paypalDisplayBalance, setPaypalDisplayBalance] = useState(0)
   const [paypalHistory, setPaypalHistory] = useState<PayPalPayoutHistoryItem[]>([])
+  const [stripeConnectStatus, setStripeConnectStatus] = useState<StripeConnectStatusPayload | null>(null)
+  const [stripeTransferHistory, setStripeTransferHistory] = useState<StripeTransferHistoryItem[]>([])
+
+  const stripePayoutsEnabled =
+    typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === "string" &&
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.trim().length > 0
 
   const fetchData = useCallback(async (opts?: { showRefreshIndicator?: boolean }) => {
     if (opts?.showRefreshIndicator) setRefreshing(true)
     try {
-      const [earningsData, paypalRes] = await Promise.all([
+      const [earningsData, paypalRes, stripeStatusRes, stripePayoutsRes] = await Promise.all([
         getEarningsWalletData(),
         fetch("/api/payouts/paypal", { cache: "no-store" }),
+        fetch("/api/stripe/connect/status", { cache: "no-store" }),
+        fetch("/api/payouts/stripe", { cache: "no-store" }),
       ])
 
       if (!earningsData.error) {
@@ -148,6 +168,20 @@ export default function EarningsPage() {
         setPaypalEmail((p.paypalEmail as string) ?? "")
         setPaypalDisplayName((p.paypalDisplayName as string) ?? "")
         setPaypalPayerId((p.paypalPayerId as string) ?? "")
+      }
+
+      if (stripeStatusRes.ok) {
+        const s = (await stripeStatusRes.json()) as StripeConnectStatusPayload
+        setStripeConnectStatus(s)
+      } else {
+        setStripeConnectStatus(null)
+      }
+
+      if (stripePayoutsRes.ok) {
+        const t = (await stripePayoutsRes.json()) as { history?: StripeTransferHistoryItem[] }
+        setStripeTransferHistory(t.history ?? [])
+      } else {
+        setStripeTransferHistory([])
       }
     } finally {
       setLoading(false)
@@ -265,11 +299,24 @@ export default function EarningsPage() {
 
           <div className="mt-4 text-sm text-muted-foreground space-y-1">
             <p>
-              Cash out to PayPal below. Bank transfer options will return when we finish updating payments.
+              {stripePayoutsEnabled
+                ? "Cash out to your bank (ACH) or PayPal — choose the option that works best for you."
+                : "Cash out to PayPal below. Add a publishable Stripe key to enable bank transfers."}
             </p>
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Bank (Stripe Connect) ───────────────────────────────────────────── */}
+      {stripePayoutsEnabled && (
+        <StripeBankPayoutSection
+          availableBalance={displayAvailable}
+          stripeConfigured={stripePayoutsEnabled}
+          connectStatus={stripeConnectStatus}
+          transferHistory={stripeTransferHistory}
+          onRefresh={fetchData}
+        />
+      )}
 
       {/* ── PayPal payout ───────────────────────────────────────────────────── */}
       <TooltipProvider delayDuration={200}>
@@ -416,7 +463,9 @@ export default function EarningsPage() {
                 <Banknote className="h-4 w-4" /> Cash out
               </div>
               <p className="text-muted-foreground">
-                Cash out to PayPal from the section above. Minimum $10.
+                {stripePayoutsEnabled
+                  ? "Cash out to your bank or PayPal from the sections above. Minimum $10 for each method."
+                  : "Cash out to PayPal from the section above. Minimum $10."}
               </p>
             </div>
           </div>
@@ -452,7 +501,11 @@ function parseDescription(raw: string, type: string): { title: string; subtitle:
     return { title: `Purchased — ${itemName}`, subtitle: rest.replace(/^\(|\)$/g, "").trim() }
   }
 
-  // Cash-out: 'Cash-out $X via paypal (standard, fee: $0.00, payout: $X)'
+  // Cash-out: 'Cash-out $X via paypal ...' or '... via bank (Stripe...'
+  const cashoutStripe = raw.match(/^Cash-out \$[\d.]+ via bank/i)
+  if (cashoutStripe) {
+    return { title: "Cash out", subtitle: "Bank (ACH via Stripe)" }
+  }
   const cashoutMatch = raw.match(/^Cash-out \$[\d.]+ via (\w+)/i)
   if (cashoutMatch) {
     const method = cashoutMatch[1].charAt(0).toUpperCase() + cashoutMatch[1].slice(1)
