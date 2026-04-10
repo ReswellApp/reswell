@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MapPin, LocateFixed } from "lucide-react"
-import { BoardsBrandSearchField } from "@/components/boards-brand-search-field"
+import { BoardsListingsSearchField } from "@/components/boards-listings-search-field"
 import {
   SiteSearchFormSubmitButton,
   SiteSearchShell,
@@ -322,12 +322,10 @@ export function BoardsListingsFilters({
         <SiteSearchShell
           actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
         >
-          <BoardsBrandSearchField
+          <BoardsListingsSearchField
             value={q}
             onChange={setQ}
             name="q"
-            listboxId="boards-brand-q"
-            placeholder="Filter by brand name…"
             className="w-full"
             inputClassName={siteSearchInputClassName()}
           />

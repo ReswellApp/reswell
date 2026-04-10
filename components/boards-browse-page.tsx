@@ -102,6 +102,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     const orParts = [
       `title.ilike.${pattern}`,
       `description.ilike.${pattern}`,
+      `brand.ilike.${pattern}`,
       `fins_setup.ilike.${pattern}`,
       `tail_shape.ilike.${pattern}`,
     ]
