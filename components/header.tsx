@@ -788,6 +788,34 @@ export function Header() {
                 <span className="sr-only">Close menu</span>
               </Button>
             </div>
+            <div className="mb-6 min-w-0 w-full">
+              <SiteSearchBar
+                compact
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  const input = mobileSearchRef.current
+                  const q = (input?.value || "").trim()
+                  if (!q) {
+                    clearNavSearchQuery()
+                    setMobileMenuOpen(false)
+                    await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+                    return
+                  }
+                  router.push(`/search?q=${encodeURIComponent(q)}`)
+                  if (input) input.value = ""
+                  clearNavSearchQuery()
+                  setMobileMenuOpen(false)
+                }}
+                className="min-w-0 w-full"
+              >
+                <Input
+                  ref={mobileSearchRef}
+                  type="search"
+                  placeholder="Search surfboards…"
+                  className={cn(siteSearchInputClassName({ compact: true }), "min-h-touch")}
+                />
+              </SiteSearchBar>
+            </div>
             {!user && (
               <div className="mb-6 flex flex-col gap-1">
                 <Link
@@ -842,7 +870,7 @@ export function Header() {
                 </div>
               </Link>
             )}
-            <div className="mb-6 flex flex-col gap-3">
+            <div className="mb-6">
               <Button
                 asChild
                 size="sm"
@@ -852,32 +880,6 @@ export function Header() {
                   Sell your Board
                 </Link>
               </Button>
-              <SiteSearchBar
-                compact
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  const input = mobileSearchRef.current
-                  const q = (input?.value || "").trim()
-                  if (!q) {
-                    clearNavSearchQuery()
-                    setMobileMenuOpen(false)
-                    await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
-                    return
-                  }
-                  router.push(`/search?q=${encodeURIComponent(q)}`)
-                  if (input) input.value = ""
-                  clearNavSearchQuery()
-                  setMobileMenuOpen(false)
-                }}
-                className="min-w-0 w-full"
-              >
-                <Input
-                  ref={mobileSearchRef}
-                  type="search"
-                  placeholder="Search surfboards…"
-                  className={cn(siteSearchInputClassName({ compact: true }), "min-h-touch")}
-                />
-              </SiteSearchBar>
             </div>
             <nav className="flex flex-col gap-1">
               {boardShapeNav.map((item) => (

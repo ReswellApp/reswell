@@ -29,13 +29,6 @@ import {
   ListingSoldOwnerNotice,
 } from "@/components/listing-sold-detail-notice"
 
-// Split Leaflet map into its own chunk. ssr:false is not allowed in Server Components
-// (Next.js 16), but LocationMap is already SSR-safe — Leaflet only runs inside useEffect.
-const LocationMap = dynamic(
-  () => import("@/components/location-map").then((m) => ({ default: m.LocationMap })),
-  { loading: () => <div className="h-[280px] rounded-lg bg-muted animate-pulse" /> },
-)
-
 // Gallery JS is deferred; the server renders the static first image wrapper
 const ImageGallery = dynamic(
   () => import("@/components/image-gallery").then((m) => ({ default: m.ImageGallery })),
@@ -168,16 +161,17 @@ export async function SurfboardListingDetailPage({
     (board.status === "active" || board.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const boardPickupCity = board.profiles?.location
-    ? (board.profiles.location as string).split(",")[0]?.trim()
-    : null
-
   const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
   const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
 
   const rawBoardType = board.board_type?.trim() || null
   const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
   const listingTitle = capitalizeWords(board.title)
+
+  const listingLocationLine =
+    board.city && board.state
+      ? `${board.city}, ${board.state}`
+      : board.profiles?.location?.trim() || null
 
   return (
       <main className="flex-1 py-8">
@@ -449,48 +443,31 @@ export async function SurfboardListingDetailPage({
                 </CardContent>
               </Card>
 
-              {/* Location (map) */}
-              <Card className="bg-primary/5 border-primary/20 overflow-hidden">
+              {/* Location (same text pattern as sell flow — no map) */}
+              <Card className="overflow-hidden border-border/80 bg-muted/30">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-primary">
-                    <MapPin className="h-5 w-5" />
-                    <span className="font-medium">
-                      {board.city && board.state
-                        ? `${board.city}, ${board.state}`
-                        : board.profiles?.location || "Location not specified"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1 mb-3">
-                    {pickupOffered && shippingOffered &&
-                      "Approximate area for pickup, or the seller can ship this board to you."}
-                    {pickupOffered && !shippingOffered &&
-                      "Approximate pickup area for meeting the seller and inspecting the board."}
-                    {!pickupOffered &&
-                      shippingOffered &&
-                      "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
-                  </p>
-                  {pickupOffered && board.latitude && board.longitude ? (
-                    <LocationMap
-                      lat={parseFloat(board.latitude)}
-                      lng={parseFloat(board.longitude)}
-                      label={
-                        board.city && board.state
-                          ? `${board.city}, ${board.state}`
-                          : "Pickup Location"
-                      }
-                      showDirections
-                      height={280}
-                    />
-                  ) : pickupOffered && board.profiles?.location ? (
-                    <div className="h-[200px] rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-sm">
-                      <MapPin className="h-5 w-5 mr-2" />
-                      {board.profiles.location}
+                  <div className="flex gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <MapPin className="h-4 w-4" aria-hidden />
                     </div>
-                  ) : !pickupOffered ? (
-                    <p className="text-sm text-muted-foreground py-4">
-                      Map is shown when the seller offers local pickup.
-                    </p>
-                  ) : null}
+                    <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Listing location
+                      </p>
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {listingLocationLine ?? "Location not specified"}
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {pickupOffered && shippingOffered &&
+                          "Approximate area for pickup, or the seller can ship this board to you."}
+                        {pickupOffered && !shippingOffered &&
+                          "Approximate pickup area for meeting the seller and inspecting the board."}
+                        {!pickupOffered &&
+                          shippingOffered &&
+                          "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
