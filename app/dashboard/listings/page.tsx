@@ -31,7 +31,9 @@ import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingProductCardClassName } from '@/lib/listing-card-styles'
 import {
+  clearRemoteResumeDraftIdStorage,
   clearSellServerDraftListingId,
+  getRemoteResumeDraftIdFromStorage,
   getSellServerDraftListingId,
 } from "@/lib/sell-draft-local-meta"
 
@@ -104,6 +106,9 @@ export default function MyListingsPage() {
     }
     if (getSellServerDraftListingId() === id) {
       clearSellServerDraftListingId()
+    }
+    if (getRemoteResumeDraftIdFromStorage() === id) {
+      clearRemoteResumeDraftIdStorage()
     }
     setListings((prev) => prev.filter((l) => l.id !== id))
     toast.success('Draft removed')

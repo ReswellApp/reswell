@@ -6,7 +6,7 @@
 const DB_NAME = "reswell-sell-draft"
 const STORE = "draft"
 const KEY = "current"
-export const SELL_LISTING_DRAFT_VERSION = 5
+export const SELL_LISTING_DRAFT_VERSION = 6
 
 export type SellListingDraftFormSnapshot = Record<string, unknown>
 
@@ -21,6 +21,8 @@ export type SellListingDraftRecord = {
   listingType: "board"
   formData: SellListingDraftFormSnapshot
   imageBlobs: SellListingDraftImageBlob[]
+  /** Supabase draft row id — keeps /sell on one URL without navigation. */
+  serverListingId?: string
 }
 
 export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot): boolean {
@@ -55,7 +57,7 @@ export async function loadSellListingDraft(): Promise<SellListingDraftRecord | n
       r.onerror = () => reject(r.error)
     })
     db.close()
-    if (!record || record.v !== SELL_LISTING_DRAFT_VERSION) return null
+    if (!record || (record.v !== SELL_LISTING_DRAFT_VERSION && record.v !== 5)) return null
     const blobs = Array.isArray(record.imageBlobs) ? record.imageBlobs : []
     if (blobs.length === 0 && !sellDraftFormLooksFilled(record.formData)) return null
     return { ...record, imageBlobs: blobs }
@@ -87,6 +89,7 @@ export async function buildSellListingDraft(
   listingType: "board",
   formData: SellListingDraftFormSnapshot,
   images: { file?: File }[],
+  serverListingId?: string | null,
 ): Promise<SellListingDraftRecord | null> {
   const imageBlobs: SellListingDraftImageBlob[] = []
   for (const im of images) {
@@ -100,11 +103,16 @@ export async function buildSellListingDraft(
   }
   const formSnapshot = JSON.parse(JSON.stringify(formData)) as SellListingDraftFormSnapshot
   if (imageBlobs.length === 0 && !sellDraftFormLooksFilled(formSnapshot)) return null
+  const sid =
+    typeof serverListingId === "string" && /^[0-9a-f-]{36}$/i.test(serverListingId)
+      ? serverListingId
+      : undefined
   return {
     v: SELL_LISTING_DRAFT_VERSION,
     listingType,
     formData: formSnapshot,
     imageBlobs,
+    ...(sid ? { serverListingId: sid } : {}),
   }
 }
 

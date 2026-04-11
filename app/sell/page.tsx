@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,6 +30,7 @@ import {
   ArrowLeft,
   Upload,
   Loader2,
+  Trash2,
   X,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +39,7 @@ import {
   RefreshCw,
   Sparkles,
   Heart,
+  Zap,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -81,8 +85,11 @@ import {
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
 import {
+  clearRemoteResumeDraftIdStorage,
   clearSellServerDraftListingId,
+  getRemoteResumeDraftIdFromStorage,
   getSellServerDraftListingId,
+  setRemoteResumeDraftIdStorage,
   setSellServerDraftListingId,
 } from "@/lib/sell-draft-local-meta"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
@@ -103,6 +110,13 @@ import {
   boardDimensionDisplayFields,
   boardDimensionsToDbFields,
   formatBoardLengthForTitle,
+  formatBoardLengthInputFromParts,
+  isBoardLengthEntryComplete,
+  isTapeStyleInchesEntryComplete,
+  normalizeBoardLengthInput,
+  normalizeTapeStyleInchesInput,
+  normalizeVolumeLitersInput,
+  shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -227,21 +241,27 @@ function SellPageContent() {
   const editId = searchParams.get("edit")
   const startFresh = searchParams.get("new") === "1"
 
-  /** Instant resume: same-tab session knows the draft row id (no network). */
+  /** Start blank: clear session hint only (no auto-redirect — avoids loading flash). */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
       clearSellServerDraftListingId()
       router.replace("/sell")
-      return
     }
-    if (!editId) {
-      const sid = getSellServerDraftListingId()
-      if (sid) {
-        router.replace(`/sell?edit=${sid}`)
-      }
-    }
-  }, [editId, startFresh, router])
+  }, [startFresh, router])
+
+  /**
+   * Instant “Continue draft” hint: `remoteResumeDraftId` storage is cleared when local state
+   * matches the server row, but `serverDraftListingId` session still holds the row id — use it
+   * here so the strip does not wait on GET /api/listings/draft after a full navigation.
+   */
+  useLayoutEffect(() => {
+    if (typeof window === "undefined" || editId) return
+    const remote = getRemoteResumeDraftIdFromStorage()
+    const server = getSellServerDraftListingId()
+    const hint = remote ?? server
+    if (hint) setRemoteResumeDraftId(hint)
+  }, [editId])
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
@@ -266,6 +286,63 @@ function SellPageContent() {
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const listingIsDraft = editListingStatus === "draft"
+  /** Server draft row id while staying on `/sell` (no ?edit=) — source of truth with IDB. */
+  const [localServerDraftId, setLocalServerDraftId] = useState<string | null>(null)
+  /** Server draft id for “Continue” — primed from sessionStorage in useLayoutEffect (before paint). */
+  const [remoteResumeDraftId, setRemoteResumeDraftId] = useState<string | null>(null)
+  const [isDiscardingResumeDraft, setIsDiscardingResumeDraft] = useState(false)
+
+  const effectiveEditId = editId ?? localServerDraftId
+  const isLocalOnlyServerDraft = Boolean(localServerDraftId && !editId)
+  const draftRowForImages = editId ?? localServerDraftId
+  const treatAsDraftForSync =
+    listingIsDraft || isLocalOnlyServerDraft
+
+  const localServerDraftIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    localServerDraftIdRef.current = localServerDraftId
+  }, [localServerDraftId])
+
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return
+    setLocalServerDraftId(null)
+    setRemoteResumeDraftId(null)
+    void clearSellListingDraft()
+    clearSellServerDraftListingId()
+    clearRemoteResumeDraftIdStorage()
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!remoteResumeDraftId || !localServerDraftId) return
+    if (remoteResumeDraftId === localServerDraftId) {
+      setRemoteResumeDraftId(null)
+      clearRemoteResumeDraftIdStorage()
+    }
+  }, [remoteResumeDraftId, localServerDraftId])
+
+  const handleDiscardResumeBannerDraft = useCallback(async () => {
+    const id = remoteResumeDraftId
+    if (!id) return
+    setIsDiscardingResumeDraft(true)
+    try {
+      const res = await fetch(`/api/listings/draft?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      if (!res.ok) {
+        toast.error("Could not delete draft")
+        return
+      }
+      void clearSellListingDraft()
+      clearSellServerDraftListingId()
+      clearRemoteResumeDraftIdStorage()
+      setRemoteResumeDraftId(null)
+      setLocalServerDraftId((prev) => (prev === id ? null : prev))
+      toast.success("Draft deleted")
+    } finally {
+      setIsDiscardingResumeDraft(false)
+    }
+  }, [remoteResumeDraftId])
 
   useEffect(() => {
     if (!loading) return
@@ -293,9 +370,11 @@ function SellPageContent() {
     boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
     boardShippingPrice: "",
+    autoPriceDrop: false,
+    autoPriceDropFloor: "",
+    buyerOffers: true,
     boardType: "",
-    boardLengthFt: "",
-    boardLengthIn: "",
+    boardLength: "",
     boardWidthInches: "",
     boardThicknessInches: "",
     boardVolumeL: "",
@@ -314,6 +393,14 @@ function SellPageContent() {
     locationState: "",
     locationDisplay: "",
   })
+
+  const boardDimLengthRef = useRef<HTMLInputElement>(null)
+  const boardDimWidthRef = useRef<HTMLInputElement>(null)
+  const boardDimThicknessRef = useRef<HTMLInputElement>(null)
+  const boardDimVolumeRef = useRef<HTMLInputElement>(null)
+  const prevBoardLengthRef = useRef<string | undefined>(undefined)
+  const prevBoardWidthRef = useRef<string | undefined>(undefined)
+  const prevBoardThicknessRef = useRef<string | undefined>(undefined)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
     { value: string; label: string; board: boolean }[]
@@ -405,8 +492,8 @@ function SellPageContent() {
   }
 
   const boardLengthFormatted = useMemo(
-    () => formatBoardLengthForTitle(formData.boardLengthFt, formData.boardLengthIn),
-    [formData.boardLengthFt, formData.boardLengthIn],
+    () => formatBoardLengthForTitle(formData.boardLength),
+    [formData.boardLength],
   )
 
   const sellValidationForm = useMemo(
@@ -419,8 +506,7 @@ function SellPageContent() {
       category: formData.category,
       brand: formData.brand,
       boardType: formData.boardType,
-      boardLengthFt: formData.boardLengthFt,
-      boardLengthIn: formData.boardLengthIn,
+      boardLength: formData.boardLength,
       boardWidthInches: formData.boardWidthInches,
       boardThicknessInches: formData.boardThicknessInches,
       boardVolumeL: formData.boardVolumeL,
@@ -429,6 +515,8 @@ function SellPageContent() {
       boardFulfillment: formData.boardFulfillment,
       boardShippingCostMode: formData.boardShippingCostMode,
       boardShippingPrice: formData.boardShippingPrice,
+      autoPriceDrop: formData.autoPriceDrop,
+      autoPriceDropFloor: formData.autoPriceDropFloor,
       locationCity: formData.locationCity,
       locationState: formData.locationState,
     }),
@@ -449,7 +537,7 @@ function SellPageContent() {
     return [
       images.length >= LISTING_MIN_PHOTOS,
       formData.title.trim(),
-      formData.boardLengthFt.trim(),
+      formData.boardLength.trim(),
       formData.boardWidthInches.trim(),
       formData.boardThicknessInches.trim(),
       formData.boardFins,
@@ -458,7 +546,7 @@ function SellPageContent() {
       formData.price.trim(),
       formData.description.trim(),
     ].filter(Boolean).length
-  }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
+  }, [images.length, formData.title, formData.boardLength, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
 
   // When a directory model is linked from the title field, offer to snap brand back to the catalog name
   const suggestedBrand = useMemo(() => {
@@ -478,14 +566,14 @@ function SellPageContent() {
       } = await supabase.auth.getUser()
       if (!user) return
       if (editId && !listingIsDraft) return
-      if (!editId) {
+      if (!editId && !localServerDraftId) {
         const hasLocal =
           sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot) ||
           images.length > 0
         if (!hasLocal) return
       }
       const body = {
-        listingId: editId,
+        listingId: editId ?? localServerDraftId,
         title: formData.title,
         description: formData.description,
         price: formData.price,
@@ -495,9 +583,11 @@ function SellPageContent() {
         boardFulfillment: formData.boardFulfillment,
         boardShippingCostMode: formData.boardShippingCostMode,
         boardShippingPrice: formData.boardShippingPrice,
+        autoPriceDrop: formData.autoPriceDrop,
+        autoPriceDropFloor: formData.autoPriceDropFloor,
+        buyerOffers: formData.buyerOffers,
         boardType: formData.boardType,
-        boardLengthFt: formData.boardLengthFt,
-        boardLengthIn: formData.boardLengthIn,
+        boardLength: formData.boardLength,
         boardWidthInches: formData.boardWidthInches,
         boardThicknessInches: formData.boardThicknessInches,
         boardVolumeL: formData.boardVolumeL,
@@ -522,19 +612,21 @@ function SellPageContent() {
       const id = json?.data?.id
       if (typeof id === "string") {
         setSellServerDraftListingId(id)
-        if (!editId) {
-          await clearSellListingDraft()
-          router.replace(`/sell?edit=${id}`)
+        setLocalServerDraftId(id)
+        if (remoteResumeDraftId === id) {
+          setRemoteResumeDraftId(null)
+          clearRemoteResumeDraftIdStorage()
         }
       }
     },
     [
       draftHydrated,
       editId,
+      localServerDraftId,
       formData,
       images.length,
       listingIsDraft,
-      router,
+      remoteResumeDraftId,
       supabase,
       editLoading,
     ],
@@ -553,60 +645,36 @@ function SellPageContent() {
     }
     let cancelled = false
     void (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (cancelled) return
-
-      if (user) {
-        const [res, idbDraft] = await Promise.all([
-          fetch("/api/listings/draft", { credentials: "include" }),
-          loadSellListingDraft(),
-        ])
-        if (cancelled) return
-        if (res.ok) {
-          const json = (await res.json()) as { data?: { draft?: { id: string } | null } }
-          const serverDraftId = json?.data?.draft?.id
-          if (typeof serverDraftId === "string" && serverDraftId) {
-            setSellServerDraftListingId(serverDraftId)
-            router.replace(`/sell?edit=${serverDraftId}`)
-            return
-          }
-        }
-        if (!idbDraft) {
-          setDraftHydrated(true)
-          return
-        }
-        setFormData((prev) => ({ ...prev, ...(idbDraft.formData as Partial<typeof prev>) }))
-        const restored: ListingPhotoSlot[] = []
-        for (const b of idbDraft.imageBlobs) {
-          const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
-          const clientId = crypto.randomUUID()
-          restored.push({
-            clientId,
-            previewUrl: URL.createObjectURL(file),
-            optimizePhase: "running",
-            uploadPhase: "idle",
-            progressFull: 0,
-            progressThumb: 0,
-            sourceFile: file,
-          })
-        }
-        if (restored.length) {
-          draftPhotosPendingRef.current = restored
-          setImages(restored)
-        }
-        setDraftHydrated(true)
-        return
-      }
-
       const draft = await loadSellListingDraft()
       if (cancelled) return
+      if (draft?.serverListingId) {
+        setLocalServerDraftId(draft.serverListingId)
+        setSellServerDraftListingId(draft.serverListingId)
+      }
       if (!draft) {
         setDraftHydrated(true)
         return
       }
-      setFormData((prev) => ({ ...prev, ...(draft.formData as Partial<typeof prev>) }))
+      setFormData((prev) => {
+        const fromDraft = draft.formData as Partial<typeof prev> & {
+          boardLengthFt?: string
+          boardLengthIn?: string
+        }
+        const merged = { ...prev, ...fromDraft }
+        let boardLength = merged.boardLength
+        if (typeof boardLength !== "string" || !boardLength.trim()) {
+          const legacyFt = typeof fromDraft.boardLengthFt === "string" ? fromDraft.boardLengthFt : ""
+          const legacyIn =
+            typeof fromDraft.boardLengthIn === "string" ? fromDraft.boardLengthIn : ""
+          boardLength = legacyFt.trim()
+            ? formatBoardLengthInputFromParts(legacyFt, legacyIn)
+            : ""
+        }
+        const next = { ...merged, boardLength }
+        delete (next as Record<string, unknown>).boardLengthFt
+        delete (next as Record<string, unknown>).boardLengthIn
+        return next
+      })
       const restored: ListingPhotoSlot[] = []
       for (const b of draft.imageBlobs) {
         const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
@@ -630,7 +698,40 @@ function SellPageContent() {
     return () => {
       cancelled = true
     }
-  }, [editId, router, supabase])
+  }, [editId])
+
+  /** Revalidate server draft in background — does not block first paint (banner uses sessionStorage). */
+  useEffect(() => {
+    if (editId) return
+    let cancelled = false
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const res = await fetch("/api/listings/draft", { credentials: "include" })
+      if (!res.ok || cancelled) return
+      const json = (await res.json()) as { data?: { draft?: { id: string } | null } }
+      const rid = json?.data?.draft?.id
+      if (typeof rid !== "string" || !rid) {
+        clearRemoteResumeDraftIdStorage()
+        clearSellServerDraftListingId()
+        setRemoteResumeDraftId(null)
+        return
+      }
+      setSellServerDraftListingId(rid)
+      if (rid !== localServerDraftIdRef.current) {
+        setRemoteResumeDraftId(rid)
+        setRemoteResumeDraftIdStorage(rid)
+      } else {
+        setRemoteResumeDraftId(null)
+        clearRemoteResumeDraftIdStorage()
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [editId, supabase])
 
   useEffect(() => {
     if (editId || !draftHydrated) return
@@ -644,6 +745,7 @@ function SellPageContent() {
           r.listingType,
           r.formData,
           r.images.map((i) => ({ file: i.sourceFile })),
+          localServerDraftIdRef.current,
         )
         if (built) await saveSellListingDraft(built)
         else await clearSellListingDraft()
@@ -652,14 +754,14 @@ function SellPageContent() {
     return () => {
       if (sellDraftPersistTimerRef.current) clearTimeout(sellDraftPersistTimerRef.current)
     }
-  }, [editId, draftHydrated, formData, images])
+  }, [editId, draftHydrated, formData, images, localServerDraftId])
 
   useEffect(() => {
     if (!draftHydrated) return
     if (editLoading) return
     if (getImpersonation()) return
     if (editId && !listingIsDraft) return
-    if (!editId) {
+    if (!editId && !localServerDraftId) {
       const hasLocal =
         sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot) ||
         images.length > 0
@@ -677,6 +779,7 @@ function SellPageContent() {
     draftHydrated,
     editLoading,
     editId,
+    localServerDraftId,
     listingIsDraft,
     formData,
     images.length,
@@ -812,13 +915,27 @@ function SellPageContent() {
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
         boardShippingPrice,
+        autoPriceDrop: (() => {
+          const f = (listing as { auto_price_drop_floor?: number | string | null })
+            .auto_price_drop_floor
+          return f != null && f !== ""
+        })(),
+        autoPriceDropFloor: (() => {
+          const f = (listing as { auto_price_drop_floor?: number | string | null })
+            .auto_price_drop_floor
+          if (f == null || f === "") return ""
+          return String(f)
+        })(),
+        buyerOffers:
+          (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
         boardType: listing.board_type ?? "",
-        boardLengthFt: lengthFeet ? lengthFeet : "",
-        boardLengthIn:
+        boardLength: formatBoardLengthInputFromParts(
+          lengthFeet ? lengthFeet : "",
           (listing as { length_inches_display?: string | null }).length_inches_display?.trim() ||
-          (listing.length_inches != null && Number(listing.length_inches) !== 0
-            ? String(listing.length_inches)
-            : ""),
+            (listing.length_inches != null && Number(listing.length_inches) !== 0
+              ? String(listing.length_inches)
+              : ""),
+        ),
         boardWidthInches:
           (listing as { width_inches_display?: string | null }).width_inches_display?.trim() ||
           ((listing as { width?: number | null }).width != null
@@ -890,7 +1007,7 @@ function SellPageContent() {
   }, [draftHydrated, editId])
 
   useEffect(() => {
-    if (!listingIsDraft || !editId || editLoading) return
+    if (!treatAsDraftForSync || !draftRowForImages || editLoading) return
     const ready =
       images.length > 0 &&
       images.every((im) => im.uploadPhase === "done" && Boolean(im.url?.trim()))
@@ -898,7 +1015,7 @@ function SellPageContent() {
     if (draftImageSyncTimerRef.current) clearTimeout(draftImageSyncTimerRef.current)
     draftImageSyncTimerRef.current = setTimeout(() => {
       draftImageSyncTimerRef.current = null
-      void syncListingImages(editId).catch((e) => {
+      void syncListingImages(draftRowForImages).catch((e) => {
         if (process.env.NODE_ENV === "development") {
           console.warn("[sell] draft listing_images sync", e)
         }
@@ -907,7 +1024,7 @@ function SellPageContent() {
     return () => {
       if (draftImageSyncTimerRef.current) clearTimeout(draftImageSyncTimerRef.current)
     }
-  }, [listingIsDraft, editId, editLoading, images])
+  }, [treatAsDraftForSync, draftRowForImages, editLoading, images])
 
   async function convertViaServer(file: File): Promise<File> {
     const form = new FormData()
@@ -1306,13 +1423,13 @@ function SellPageContent() {
       const boardLocationCity = fd.locationCity.trim() || null
       const boardLocationState = fd.locationState.trim() || null
 
-      const boardLengthFmt = formatBoardLengthForTitle(fd.boardLengthFt, fd.boardLengthIn)
+      const boardLengthFmt = formatBoardLengthForTitle(fd.boardLength)
       const resolvedListingTitle = boardLengthFmt
         ? listingTitleWithBoardLength(fd.title, boardLengthFmt)
         : fd.title.trim()
 
       const flowImpersonation = !!listingImpersonation
-      if (!editId && !flowImpersonation) {
+      if (!effectiveEditId && !flowImpersonation) {
         const labels = [
           "Saving your listing...",
           "Attaching photos...",
@@ -1320,7 +1437,7 @@ function SellPageContent() {
         ]
         uploadPhaseLabelsRef.current = labels
         setUploadPhaseLabels(labels)
-      } else if (editId && !flowImpersonation) {
+      } else if (effectiveEditId && !flowImpersonation) {
         const labels = [
           "Saving your listing...",
           "Saving photo changes...",
@@ -1348,11 +1465,11 @@ function SellPageContent() {
         duration: 600_000,
       })
 
-      if (!editId && !flowImpersonation) {
+      if (!effectiveEditId && !flowImpersonation) {
         await new Promise((r) => setTimeout(r, 200))
       }
 
-      let listingId = editId
+      let listingId: string | null = effectiveEditId
       let listingSlug: string | null = null
       let usedImpersonationListingApi = false
       let impersonationSellerLabel: string | null = null
@@ -1377,13 +1494,15 @@ function SellPageContent() {
         return `${base}-${Date.now()}`
       }
 
-      if (editId) {
-        if (!editListingOwnerId) {
+      if (effectiveEditId) {
+        const isLocalOnlyServerDraftSubmit = Boolean(localServerDraftId && !editId)
+        if (!isLocalOnlyServerDraftSubmit && editId && !editListingOwnerId) {
           toast.error("Listing is still loading. Try again in a moment.")
           setLoading(false)
           return
         }
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const ownerEditsOwnListing =
+          isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
         const adminImpersonatesListingOwner =
           !!listingImpersonation &&
           listingImpersonation.userId === editListingOwnerId &&
@@ -1413,19 +1532,24 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
+          auto_price_drop_floor: fd.autoPriceDrop
+            ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
+            : null,
+          buyer_offers_enabled: fd.buyerOffers !== false,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
         }
 
         if (ownerEditsOwnListing) {
           let publishSlug: string | null = null
-          if (listingIsDraft) {
+          const publishingFromDraftRow = listingIsDraft || isLocalOnlyServerDraftSubmit
+          if (publishingFromDraftRow) {
             publishSlug = await generateUniqueListingSlug(supabase, resolvedListingTitle)
           }
           const updatePayload = {
             ...editListingFields,
             updated_at: new Date().toISOString(),
-            ...(listingIsDraft
+            ...(publishingFromDraftRow
               ? {
                   status: "active" as const,
                   hidden_from_site: false,
@@ -1436,7 +1560,7 @@ function SellPageContent() {
           let { data: updated, error: updateError } = await supabase
             .from("listings")
             .update(updatePayload)
-            .eq("id", editId)
+            .eq("id", effectiveEditId)
             .eq("user_id", user.id)
             .select("slug")
             .single()
@@ -1451,7 +1575,7 @@ function SellPageContent() {
               .update({
                 ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
                 updated_at: new Date().toISOString(),
-                ...(listingIsDraft
+                ...(publishingFromDraftRow
                   ? {
                       status: "active" as const,
                       hidden_from_site: false,
@@ -1459,7 +1583,7 @@ function SellPageContent() {
                     }
                   : {}),
               })
-              .eq("id", editId)
+              .eq("id", effectiveEditId)
               .eq("user_id", user.id)
               .select("slug")
               .single()
@@ -1501,7 +1625,7 @@ function SellPageContent() {
             credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              listingId: editId,
+              listingId: effectiveEditId,
               listing: editListingFields,
               removedImageIds,
               images: imageOps,
@@ -1547,6 +1671,10 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
+          auto_price_drop_floor: fd.autoPriceDrop
+            ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
+            : null,
+          buyer_offers_enabled: fd.buyerOffers !== false,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
         }
@@ -1662,7 +1790,7 @@ function SellPageContent() {
           : "/boards"
 
       if (listingId) {
-        if (!editId && !listingImpersonation) {
+        if (!effectiveEditId && !listingImpersonation) {
           setPublishPreview((p) =>
             p ? { ...p, status: "live", detailHref: detailPath } : null,
           )
@@ -1674,10 +1802,13 @@ function SellPageContent() {
           }
           void clearSellListingDraft()
           clearSellServerDraftListingId()
+          clearRemoteResumeDraftIdStorage()
+          setLocalServerDraftId(null)
+          setRemoteResumeDraftId(null)
           router.push(detailPath)
           return
         }
-        if (editId && !usedImpersonationListingApi) {
+        if (effectiveEditId && !usedImpersonationListingApi) {
           const willSyncNewPhotos = images.some((im) => !im.id && im.url)
           if (willSyncNewPhotos) goSubmitStep(1)
           await syncListingImages(listingId)
@@ -1690,18 +1821,21 @@ function SellPageContent() {
 
       const tidDone = uploadToastIdRef.current
       if (impersonationSellerLabel) {
-        const msg = editId
+        const msg = effectiveEditId
           ? `Listing updated for ${impersonationSellerLabel}`
           : `Listing created for ${impersonationSellerLabel}`
         if (tidDone != null) toast.success(`${msg} 🎉`, { id: tidDone })
         else toast.success(msg)
       } else {
-        const msg = editId ? "Listing updated!" : "Your listing is live! 🎉"
+        const msg = effectiveEditId ? "Listing updated!" : "Your listing is live! 🎉"
         if (tidDone != null) toast.success(msg, { id: tidDone })
-        else toast.success(editId ? "Listing updated!" : "Your listing is live! 🎉")
+        else toast.success(effectiveEditId ? "Listing updated!" : "Your listing is live! 🎉")
       }
       void clearSellListingDraft()
       clearSellServerDraftListingId()
+      clearRemoteResumeDraftIdStorage()
+      setLocalServerDraftId(null)
+      setRemoteResumeDraftId(null)
       router.push(detailPath)
     } catch (error: unknown) {
       const msg = submitErrorMessage(error, "Failed to create listing")
@@ -1795,9 +1929,11 @@ function SellPageContent() {
       boardFulfillment: "pickup_only",
       boardShippingCostMode: "reswell",
       boardShippingPrice: "",
+      autoPriceDrop: false,
+      autoPriceDropFloor: "",
+      buyerOffers: true,
       boardType,
-      boardLengthFt: "5",
-      boardLengthIn: "8",
+      boardLength: "5'8",
       boardWidthInches: "19",
       boardThicknessInches: "2.375",
       boardVolumeL: "28",
@@ -1827,6 +1963,45 @@ function SellPageContent() {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Dashboard
           </Link>
+
+          {!editId &&
+          remoteResumeDraftId &&
+          remoteResumeDraftId !== localServerDraftId ? (
+            <div className="mb-6 flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Draft</span>
+                {" — "}
+                Continue where you left off.
+              </p>
+              <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  disabled={isDiscardingResumeDraft}
+                  aria-label="Delete draft"
+                  onClick={() => void handleDiscardResumeBannerDraft()}
+                >
+                  {isDiscardingResumeDraft ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0"
+                  disabled={isDiscardingResumeDraft}
+                  onClick={() => router.push(`/sell?edit=${remoteResumeDraftId}`)}
+                >
+                  Continue
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mb-10 space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -2093,27 +2268,68 @@ function SellPageContent() {
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Length *</Label>
                           <div className="flex items-center gap-1">
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              placeholder=""
-                              value={formData.boardLengthFt}
-                              onChange={(e) => setFormData({ ...formData, boardLengthFt: e.target.value })}
-                              className="w-14 text-center px-2"
-                              required
-                              aria-label="Feet"
-                            />
-                            <span className="text-xs text-muted-foreground shrink-0">ft</span>
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              placeholder=""
-                              value={formData.boardLengthIn}
-                              onChange={(e) => setFormData({ ...formData, boardLengthIn: e.target.value })}
-                              className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
-                              aria-label="Inches"
-                            />
-                            <span className="text-xs text-muted-foreground shrink-0">in</span>
+                            <div
+                              className={cn(
+                                "flex min-h-10 min-w-0 max-w-[10rem] flex-1 items-center justify-center gap-0.5 rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                              )}
+                            >
+                              <Input
+                                ref={boardDimLengthRef}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="6'2"
+                                value={formData.boardLength}
+                                onChange={(e) => {
+                                  const next = normalizeBoardLengthInput(e.target.value)
+                                  const prev = prevBoardLengthRef.current ?? ""
+                                  prevBoardLengthRef.current = next
+                                  setFormData((fd) => ({ ...fd, boardLength: next }))
+                                  if (
+                                    !isBoardLengthEntryComplete(prev) &&
+                                    isBoardLengthEntryComplete(next)
+                                  ) {
+                                    requestAnimationFrame(() =>
+                                      boardDimWidthRef.current?.focus({ preventScroll: true }),
+                                    )
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key !== "Enter") return
+                                  const next = normalizeBoardLengthInput(
+                                    (e.target as HTMLInputElement).value,
+                                  )
+                                  if (!isBoardLengthEntryComplete(next)) return
+                                  e.preventDefault()
+                                  boardDimWidthRef.current?.focus({ preventScroll: true })
+                                }}
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                required
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-label="Board length in feet and inches"
+                                aria-describedby={
+                                  shouldShowLengthInchHint(formData.boardLength)
+                                    ? "sell-length-inches-hint-sr"
+                                    : undefined
+                                }
+                              />
+                              {shouldShowLengthInchHint(formData.boardLength) ? (
+                                <>
+                                  <span id="sell-length-inches-hint-sr" className="sr-only">
+                                    {`Then type inches after the apostrophe (for example six foot two as 6'2).`}
+                                  </span>
+                                  <span
+                                    className="pointer-events-none shrink-0 select-none text-sm tabular-nums text-muted-foreground/55"
+                                    aria-hidden
+                                  >
+                                    <span className="font-medium text-muted-foreground/70">'</span>
+                                    <span>·</span>
+                                    <span className="opacity-80">_</span>
+                                  </span>
+                                </>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
 
@@ -2121,14 +2337,38 @@ function SellPageContent() {
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Width</Label>
                           <div className="flex items-center gap-1">
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              placeholder=""
-                              value={formData.boardWidthInches}
-                              onChange={(e) => setFormData({ ...formData, boardWidthInches: e.target.value })}
-                              className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
-                            />
+                            <div
+                              className={cn(
+                                "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                              )}
+                            >
+                              <Input
+                                ref={boardDimWidthRef}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="19 1/4"
+                                value={formData.boardWidthInches}
+                                onChange={(e) => {
+                                  const next = normalizeTapeStyleInchesInput(e.target.value)
+                                  const prev = prevBoardWidthRef.current ?? ""
+                                  prevBoardWidthRef.current = next
+                                  setFormData((fd) => ({ ...fd, boardWidthInches: next }))
+                                  if (
+                                    !isTapeStyleInchesEntryComplete(prev) &&
+                                    isTapeStyleInchesEntryComplete(next)
+                                  ) {
+                                    requestAnimationFrame(() =>
+                                      boardDimThicknessRef.current?.focus({ preventScroll: true }),
+                                    )
+                                  }
+                                }}
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-label="Board width in inches"
+                              />
+                            </div>
                             <span className="text-xs text-muted-foreground shrink-0">in</span>
                           </div>
                         </div>
@@ -2137,14 +2377,38 @@ function SellPageContent() {
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Thickness</Label>
                           <div className="flex items-center gap-1">
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              placeholder=""
-                              value={formData.boardThicknessInches}
-                              onChange={(e) => setFormData({ ...formData, boardThicknessInches: e.target.value })}
-                              className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
-                            />
+                            <div
+                              className={cn(
+                                "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                              )}
+                            >
+                              <Input
+                                ref={boardDimThicknessRef}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="2 3/8"
+                                value={formData.boardThicknessInches}
+                                onChange={(e) => {
+                                  const next = normalizeTapeStyleInchesInput(e.target.value)
+                                  const prev = prevBoardThicknessRef.current ?? ""
+                                  prevBoardThicknessRef.current = next
+                                  setFormData((fd) => ({ ...fd, boardThicknessInches: next }))
+                                  if (
+                                    !isTapeStyleInchesEntryComplete(prev) &&
+                                    isTapeStyleInchesEntryComplete(next)
+                                  ) {
+                                    requestAnimationFrame(() =>
+                                      boardDimVolumeRef.current?.focus({ preventScroll: true }),
+                                    )
+                                  }
+                                }}
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-label="Board thickness in inches"
+                              />
+                            </div>
                             <span className="text-xs text-muted-foreground shrink-0">in</span>
                           </div>
                         </div>
@@ -2153,14 +2417,30 @@ function SellPageContent() {
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Volume</Label>
                           <div className="flex items-center gap-1">
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              placeholder=""
-                              value={formData.boardVolumeL}
-                              onChange={(e) => setFormData({ ...formData, boardVolumeL: e.target.value })}
-                              className="min-w-0 flex-1 max-w-[7rem] text-center px-2"
-                            />
+                            <div
+                              className={cn(
+                                "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                              )}
+                            >
+                              <Input
+                                ref={boardDimVolumeRef}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="30.4"
+                                value={formData.boardVolumeL}
+                                onChange={(e) =>
+                                  setFormData((fd) => ({
+                                    ...fd,
+                                    boardVolumeL: normalizeVolumeLitersInput(e.target.value),
+                                  }))
+                                }
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-label="Board volume in liters"
+                              />
+                            </div>
                             <span className="text-xs text-muted-foreground shrink-0">L</span>
                           </div>
                         </div>
@@ -2337,6 +2617,103 @@ function SellPageContent() {
                           ) : null}
                         </div>
                       ) : null}
+
+                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+                        <div className="flex gap-3">
+                          <div
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
+                            aria-hidden
+                          >
+                            <Zap className="h-4 w-4" strokeWidth={2.5} />
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <h3 className="text-sm font-semibold text-foreground">
+                              Sell your board even faster
+                            </h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Increase your chances of selling with price drops and offers.
+                            </p>
+                          </div>
+                        </div>
+
+                        <Separator className="my-5" />
+
+                        <div className="space-y-4">
+                          <div className="flex gap-4">
+                            <Switch
+                              id="sell-auto-price-drop"
+                              checked={formData.autoPriceDrop}
+                              onCheckedChange={(v) =>
+                                setFormData({ ...formData, autoPriceDrop: v === true })
+                              }
+                              className="mt-0.5 shrink-0 data-[state=checked]:bg-emerald-600"
+                              aria-label="Drop the price in 2 weeks if not sold"
+                            />
+                            <div className="min-w-0 space-y-1">
+                              <Label
+                                htmlFor="sell-auto-price-drop"
+                                className="text-sm font-medium text-foreground cursor-pointer"
+                              >
+                                Drop the price in 2 weeks
+                              </Label>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                If it hasn&apos;t sold, we can lower your list price after two weeks.
+                                You choose the floor — we won&apos;t go below that price.
+                              </p>
+                            </div>
+                          </div>
+                          {formData.autoPriceDrop ? (
+                            <div className="space-y-2 sm:pl-14">
+                              <Label htmlFor="sell-auto-price-drop-floor">
+                                Lowest price after 2 weeks ($) *
+                              </Label>
+                              <Input
+                                id="sell-auto-price-drop-floor"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={formData.autoPriceDropFloor}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    autoPriceDropFloor: e.target.value,
+                                  })
+                                }
+                              />
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Must be less than your list price. When automation ships, this is the
+                                minimum your listing will show after the scheduled drop.
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <Separator className="my-5" />
+
+                        <div className="flex gap-4">
+                          <Switch
+                            id="sell-buyer-offers"
+                            checked={formData.buyerOffers}
+                            onCheckedChange={(v) =>
+                              setFormData({ ...formData, buyerOffers: v === true })
+                            }
+                            className="mt-0.5 shrink-0 data-[state=checked]:bg-emerald-600"
+                            aria-label="Allow buyers to make offers"
+                          />
+                          <div className="min-w-0 space-y-1">
+                            <Label
+                              htmlFor="sell-buyer-offers"
+                              className="text-sm font-medium text-foreground cursor-pointer"
+                            >
+                              Allow buyers to make offers
+                            </Label>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Lets you negotiate a final price with buyers before checkout.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     <LocationPicker
                       onLocationSelect={(loc) => {

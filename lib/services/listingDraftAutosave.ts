@@ -4,6 +4,7 @@ import {
   boardDimensionDisplayFields,
   boardDimensionsToDbFields,
   formatBoardLengthForTitle,
+  formatBoardLengthInputFromParts,
 } from "@/lib/board-measurements"
 import { flagsFromBoardFulfillment, type BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
 import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
@@ -31,11 +32,14 @@ function shippingPriceToDb(
   return 0
 }
 
+function resolveDraftBoardLength(fd: ListingDraftAutosaveInput): string {
+  const c = fd.boardLength?.trim()
+  if (c) return c
+  return formatBoardLengthInputFromParts(fd.boardLengthFt ?? "", fd.boardLengthIn ?? "")
+}
+
 function resolvedDraftTitle(fd: ListingDraftAutosaveInput): string {
-  const boardLengthFmt = formatBoardLengthForTitle(
-    fd.boardLengthFt?.trim() ?? "",
-    fd.boardLengthIn?.trim() ?? "",
-  )
+  const boardLengthFmt = formatBoardLengthForTitle(resolveDraftBoardLength(fd))
   const base = (fd.title ?? "").trim()
   return boardLengthFmt ? listingTitleWithBoardLength(base, boardLengthFmt) : base
 }
@@ -48,15 +52,15 @@ export function buildSurfboardDraftListingRow(
   const flags = flagsFromBoardFulfillment(fulfillment)
   const priceRaw = (fd.price ?? "").trim()
   const price = priceRaw ? parseFloat(priceRaw.replace(/,/g, "")) : 0
+  const boardLengthCombined = resolveDraftBoardLength(fd)
   const dimDb = boardDimensionsToDbFields({
-    boardLengthFt: fd.boardLengthFt ?? "",
-    boardLengthIn: fd.boardLengthIn ?? "",
+    boardLength: boardLengthCombined,
     boardWidthInches: fd.boardWidthInches ?? "",
     boardThicknessInches: fd.boardThicknessInches ?? "",
     boardVolumeL: fd.boardVolumeL ?? "",
   })
   const dimDisplay = boardDimensionDisplayFields({
-    boardLengthIn: fd.boardLengthIn ?? "",
+    boardLength: boardLengthCombined,
     boardWidthInches: fd.boardWidthInches ?? "",
     boardThicknessInches: fd.boardThicknessInches ?? "",
     boardVolumeL: fd.boardVolumeL ?? "",
@@ -101,6 +105,14 @@ export function buildSurfboardDraftListingRow(
       fd.boardShippingPrice ?? "",
       fd.boardShippingCostMode as BoardShippingCostMode | undefined,
     ),
+    auto_price_drop_floor: (() => {
+      if (fd.autoPriceDrop !== true) return null
+      const t = (fd.autoPriceDropFloor ?? "").trim().replace(/,/g, "")
+      if (!t) return null
+      const n = parseFloat(t)
+      return Number.isFinite(n) ? n : null
+    })(),
+    buyer_offers_enabled: fd.buyerOffers !== false,
     brand: fd.brand?.trim() ? fd.brand.trim() : null,
     brand_id: fd.boardBrandId?.trim() || null,
     status: "draft",

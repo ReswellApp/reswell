@@ -11,6 +11,7 @@ import { isTailShapeTagSlug } from "@/lib/listing-tail-shape-tags"
 import {
   formatBoardLengthForTitle,
   formatDecimalDimension,
+  parseBoardLengthParts,
   parseBoardMeasurement,
   parseLengthFeet,
   parseVolumeLiters,
@@ -37,8 +38,8 @@ export type SellFormValidationInput = {
   category: string
   brand: string
   boardType: string
-  boardLengthFt: string
-  boardLengthIn: string
+  /** Combined feet/inches, e.g. `6'2` or `10'8` */
+  boardLength: string
   boardWidthInches: string
   boardThicknessInches: string
   boardVolumeL: string
@@ -47,6 +48,9 @@ export type SellFormValidationInput = {
   boardFulfillment: BoardFulfillmentChoice
   boardShippingCostMode: BoardShippingCostMode
   boardShippingPrice: string
+  /** Scheduled price drop (2 weeks) — seller sets floor via `autoPriceDropFloor`. */
+  autoPriceDrop: boolean
+  autoPriceDropFloor: string
   locationCity: string
   locationState: string
 }
@@ -56,10 +60,7 @@ export type SellFormValidationInput = {
  * Used for max-length validation and the live character counter.
  */
 export function buildResolvedListingTitle(form: SellFormValidationInput): string {
-  const boardLengthFmt = formatBoardLengthForTitle(
-    form.boardLengthFt ?? "",
-    form.boardLengthIn ?? "",
-  )
+  const boardLengthFmt = formatBoardLengthForTitle(form.boardLength ?? "")
   if (boardLengthFmt) {
     return listingTitleWithBoardLength(form.title, boardLengthFmt)
   }
@@ -103,17 +104,18 @@ export function validateSellListingForm(
     }
   }
 
-  const ftRaw = form.boardLengthFt?.trim() ?? ""
+  const lenRaw = form.boardLength?.trim() ?? ""
+  const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
   if (!relaxed) {
-    if (!ftRaw) {
-      return "Board length (feet) is required."
+    if (!lenRaw || !feetStr) {
+      return "Board length is required."
     }
-    const ft = parseLengthFeet(ftRaw)
+    const ft = parseLengthFeet(feetStr)
     if (ft == null || ft < 1 || ft > 15) {
       return "Board length: enter whole feet (1–15)."
     }
 
-    const inRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
+    const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
     const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
     if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
       return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
@@ -138,13 +140,13 @@ export function validateSellListingForm(
     if (!Number.isFinite(thick) || thick <= 0) {
       return "Board thickness: enter a number (decimals or fractions are OK)."
     }
-  } else if (ftRaw) {
-    const ft = parseLengthFeet(ftRaw)
+  } else if (lenRaw && feetStr) {
+    const ft = parseLengthFeet(feetStr)
     if (ft == null || ft < 1 || ft > 15) {
       return "Board length: enter whole feet (1–15)."
     }
 
-    const inRaw = form.boardLengthIn?.trim() === "" ? "0" : (form.boardLengthIn ?? "0")
+    const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
     const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
     if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
       return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
@@ -210,6 +212,20 @@ export function validateSellListingForm(
           return "Flat shipping must be a number ≥ 0."
         }
       }
+    }
+  }
+
+  if (!relaxed && form.autoPriceDrop) {
+    const floorRaw = form.autoPriceDropFloor?.trim() ?? ""
+    if (!floorRaw) {
+      return "Enter the lowest price you allow after 2 weeks, or turn off automatic price drop."
+    }
+    const floor = parseFloat(floorRaw.replace(/,/g, ""))
+    if (!Number.isFinite(floor) || floor < PRICE_MIN || floor > PRICE_MAX) {
+      return `Lowest-after-drop price must be between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
+    }
+    if (floor >= price) {
+      return "Lowest-after-drop price must be less than your current list price."
     }
   }
 
