@@ -43,6 +43,11 @@ export type SellFormValidationInput = {
   boardWidthInches: string
   boardThicknessInches: string
   boardVolumeL: string
+  /**
+   * When true, width/thickness/volume are not required (length still required).
+   * Used by the sell UI when the seller opts out of full dimensions.
+   */
+  boardSkipOptionalDimensions?: boolean
   boardFins: string
   boardTail: string
   boardFulfillment: BoardFulfillmentChoice
@@ -121,24 +126,44 @@ export function validateSellListingForm(
       return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
     }
 
-    if (!form.boardWidthInches?.trim()) {
-      return "Enter board width (inches)."
-    }
-    const width =
-      parseBoardMeasurement(form.boardWidthInches.trim()) ??
-      Number.parseFloat(form.boardWidthInches.trim())
-    if (!Number.isFinite(width) || width <= 0) {
-      return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
-    }
+    const skipDims = form.boardSkipOptionalDimensions === true
+    if (!skipDims) {
+      if (!form.boardWidthInches?.trim()) {
+        return "Enter board width (inches)."
+      }
+      const width =
+        parseBoardMeasurement(form.boardWidthInches.trim()) ??
+        Number.parseFloat(form.boardWidthInches.trim())
+      if (!Number.isFinite(width) || width <= 0) {
+        return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
+      }
 
-    if (!form.boardThicknessInches?.trim()) {
-      return "Enter board thickness (inches)."
-    }
-    const thick =
-      parseBoardMeasurement(form.boardThicknessInches.trim()) ??
-      Number.parseFloat(form.boardThicknessInches.trim())
-    if (!Number.isFinite(thick) || thick <= 0) {
-      return "Board thickness: enter a number (decimals or fractions are OK)."
+      if (!form.boardThicknessInches?.trim()) {
+        return "Enter board thickness (inches)."
+      }
+      const thick =
+        parseBoardMeasurement(form.boardThicknessInches.trim()) ??
+        Number.parseFloat(form.boardThicknessInches.trim())
+      if (!Number.isFinite(thick) || thick <= 0) {
+        return "Board thickness: enter a number (decimals or fractions are OK)."
+      }
+    } else {
+      if (form.boardWidthInches?.trim()) {
+        const width =
+          parseBoardMeasurement(form.boardWidthInches.trim()) ??
+          Number.parseFloat(form.boardWidthInches.trim())
+        if (!Number.isFinite(width) || width <= 0) {
+          return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
+        }
+      }
+      if (form.boardThicknessInches?.trim()) {
+        const thick =
+          parseBoardMeasurement(form.boardThicknessInches.trim()) ??
+          Number.parseFloat(form.boardThicknessInches.trim())
+        if (!Number.isFinite(thick) || thick <= 0) {
+          return "Board thickness: enter a number (decimals or fractions are OK)."
+        }
+      }
     }
   } else if (lenRaw && feetStr) {
     const ft = parseLengthFeet(feetStr)

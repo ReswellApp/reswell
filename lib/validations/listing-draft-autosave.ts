@@ -25,6 +25,8 @@ export const listingDraftAutosaveSchema = z.object({
   boardWidthInches: z.string().optional(),
   boardThicknessInches: z.string().optional(),
   boardVolumeL: z.string().optional(),
+  /** Sell UI: seller opted out of requiring width/thickness/volume. */
+  boardSkipOptionalDimensions: z.boolean().optional(),
   boardFins: z.string().optional(),
   boardTail: z.string().optional(),
   boardBrandId: z.string().optional(),

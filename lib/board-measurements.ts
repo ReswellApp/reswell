@@ -350,7 +350,7 @@ export function parseVolumeLiters(input: string): number | null {
 }
 
 /**
- * Sell flow: length is “complete” when it passes the same inch rules as {@link validateSellListingForm}
+ * Sell flow: length is “complete” when it passes the same inch rules as sell validation
  * (feet 1–15, inches present, under 12).
  */
 export function isBoardLengthEntryComplete(raw: string): boolean {
