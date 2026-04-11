@@ -47,9 +47,14 @@ INSERT INTO public.categories (name, slug, description, board) VALUES
   ('Board Bags', 'new-board-bags', 'Brand new board bags', FALSE),
   ('Shortboard', 'shortboard', 'Performance shortboards', TRUE),
   ('Fish', 'fish', 'Fish and retro shapes', TRUE),
-  ('Mid-Length', 'mid-length', 'Mid-length funboards', TRUE),
+  ('Mid-length', 'mid-length', 'Mid-length surfboards — between shortboard and longboard.', TRUE),
   ('Longboard', 'longboard', 'Classic longboards', TRUE),
   ('Soft Top', 'soft-top', 'Foam and soft top boards', TRUE)
+ON CONFLICT (slug) DO NOTHING;
+
+-- Fixed id matches `boardCategoryMap` in app/sell/page.tsx and migration `20260511120000_categories_step_up_mid_length.sql`.
+INSERT INTO public.categories (id, name, slug, description, board) VALUES
+  ('91c4e8a2-3f5b-4d1c-9e6a-7b8c9d0e1f2a', 'Step-Up', 'step-up', 'Step-up surfboards for heavier waves.', TRUE)
 ON CONFLICT (slug) DO NOTHING;
 
 -- Listings table

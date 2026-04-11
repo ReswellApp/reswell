@@ -5,7 +5,8 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
 const BOARD_TYPE_LABELS: Record<string, string> = {
   shortboard: "Shortboards",
   longboard: "Longboards",
-  funboard: "Funboards",
+  funboard: "Mid-length",
+  "step-up": "Step-Up",
   fish: "Fish Boards",
   gun: "Gun Boards",
   foamie: "Foam / Soft-Top Boards",

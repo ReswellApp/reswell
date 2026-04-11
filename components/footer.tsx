@@ -13,9 +13,10 @@ const footerLinks = {
     { name: "Purchase Protection", href: "/protection-policy" },
   ],
   categories: [
-    { name: "Browse by shape", href: "/categories" },
-    { name: "Search listings", href: "/search/recent" },
-    { name: "Shop (new)", href: "/shop" },
+    { name: "All surfboards", href: "/boards" },
+    { name: "Shortboards", href: "/boards?type=shortboard" },
+    { name: "Longboards", href: "/boards?type=longboard" },
+    { name: "Mid-length", href: "/boards?type=funboard" },
   ],
   support: [
     { name: "Help Center", href: "/help" },
@@ -76,6 +77,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
+                    prefetch={boardsBrowseLinkPrefetch(link.href)}
                     className="text-sm text-muted-foreground transition-colors duration-smooth hover:text-foreground"
                   >
                     {link.name}

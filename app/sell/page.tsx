@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -105,11 +105,38 @@ function submitErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
+function SellFormSection({
+  title,
+  children,
+  description,
+}: {
+  title: string
+  children: React.ReactNode
+  description?: string
+}) {
+  return (
+    <section className="space-y-3 lg:space-y-4">
+      <div>
+        <h2 className="text-base font-semibold tracking-tight text-foreground lg:text-lg">
+          {title}
+        </h2>
+        {description ? (
+          <p className="text-sm text-muted-foreground mt-1 lg:text-base lg:mt-1.5">{description}</p>
+        ) : null}
+      </div>
+      <Card className="shadow-sm hover:shadow-sm lg:shadow-md">
+        <CardContent className="p-6 lg:p-8 xl:p-10">{children}</CardContent>
+      </Card>
+    </section>
+  )
+}
+
 // Board type to category UUID mapping
 const boardCategoryMap: Record<string, string> = {
   shortboard: "7e434a96-f3f7-4a73-b733-704a769195e6",
   longboard: "47a0d0bb-8738-43b4-a0fe-a5b2acc72fa3",
   funboard: "93b8eeaf-366b-4823-8bb9-98d42c5fefba",
+  "step-up": "91c4e8a2-3f5b-4d1c-9e6a-7b8c9d0e1f2a",
   fish: "f3ccddc0-f0f3-45d3-ad43-51bcf9935b45",
   foamie: "7cc95cb5-2391-4e53-a48e-42977bf9504b",
   gun: "7e434a96-f3f7-4a73-b733-704a769195e6", // default to shortboard category
@@ -124,6 +151,7 @@ function boardTypeFromCategoryId(categoryId: string): string {
   if (keys.length === 0) return "other"
   if (keys.includes("shortboard")) return "shortboard"
   if (keys.includes("funboard")) return "funboard"
+  if (keys.includes("step-up")) return "step-up"
   if (keys.includes("longboard")) return "longboard"
   if (keys.includes("fish")) return "fish"
   if (keys.includes("foamie")) return "foamie"
@@ -1534,7 +1562,7 @@ function SellPageContent() {
 
   return (
       <main className="flex-1 w-full bg-muted py-8">
-        <div className="container mx-auto max-w-2xl">
+        <div className="container mx-auto max-w-2xl lg:max-w-3xl">
           <Link
             href="/dashboard"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
@@ -1543,89 +1571,49 @@ function SellPageContent() {
             Back to Dashboard
           </Link>
 
-          <Card>
-            <CardHeader className="space-y-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1.5">
-                  <CardTitle>{editId ? "Edit listing" : "Create a Listing"}</CardTitle>
-                  <CardDescription>
-                    {editId ? "Update your listing details" : "List your surfboard for buyers on Reswell"}
-                  </CardDescription>
-                </div>
-                {viewerIsAdmin && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                    disabled={
-                      loading ||
-                      boardCategoryOptions.length === 0 ||
-                      optimizingAny
-                    }
-                    onClick={applyAdminSeedListing}
-                  >
-                    Fill seed listing
-                  </Button>
-                )}
+          <div className="mb-10 space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1.5">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground lg:text-3xl">
+                  {editId ? "Edit listing" : "Create a Listing"}
+                </h1>
+                <p className="text-sm text-muted-foreground lg:text-base">
+                  {editId ? "Update your listing details" : "List your surfboard for buyers on Reswell"}
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              {editLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-              <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" aria-busy={loading}>
-                <div className="space-y-2">
-                  <Label>Board shape / category *</Label>
-                  <Select
-                    value={formData.category}
-                    disabled={!!editId}
-                    onValueChange={(value) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        category: value,
-                        boardType: boardTypeFromCategoryId(value),
-                      }))
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {boardCategoryOptions.length === 0 ? (
-                        <SelectItem value="__loading__" disabled>
-                          {sellCategoryOptions.length === 0
-                            ? "Loading categories…"
-                            : "No board categories found — add rows with board = true in public.categories."}
-                        </SelectItem>
-                      ) : (
-                        boardCategoryOptions.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {editId && (
-                    <p className="text-xs text-muted-foreground">
-                      Category can&apos;t be changed while editing.
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
-                  <span>{boardFieldsCompleted} of 10 fields complete</span>
-                  <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-300"
-                      style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
+              {viewerIsAdmin && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  disabled={
+                    loading ||
+                    boardCategoryOptions.length === 0 ||
+                    optimizingAny
+                  }
+                  onClick={applyAdminSeedListing}
+                >
+                  Fill seed listing
+                </Button>
+              )}
+            </div>
+          </div>
+          {editLoading ? (
+            <div className="flex items-center justify-center py-16 rounded-xl border border-border bg-card shadow-sm">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="space-y-10 lg:space-y-12"
+              aria-busy={loading}
+            >
+                <SellFormSection
+                  title="Listing title"
+                  description="Shown on your listing and in the URL (max length includes board length)."
+                >
                 <div className="space-y-2">
                   <div className="flex items-end justify-between gap-2">
                     <Label htmlFor="title">Title *</Label>
@@ -1641,11 +1629,6 @@ function SellPageContent() {
                       {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground -mt-1">
-                    Shown on your listing and in the URL. Max {LISTING_TITLE_MAX_LENGTH} characters
-                    {" "}
-                    (including board length in the title).
-                  </p>
                   <>
                       <SurfboardTitleIndexInput
                         id="title"
@@ -1687,8 +1670,9 @@ function SellPageContent() {
                       )}
                   </>
                 </div>
+                </SellFormSection>
 
-                <>
+                <SellFormSection title="Brand / shaper" description="Optional — link from the catalog or enter any name.">
                     <div className="space-y-2">
                         <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
                         {formData.boardBrandId ? (
@@ -1733,14 +1717,63 @@ function SellPageContent() {
                           />
                         )}
                     </div>
+                </SellFormSection>
 
-                    {/* Board Dimensions */}
-                    <div className="space-y-3 rounded-lg border border-border/60 bg-muted/15 p-4">
-                      <p className="text-sm font-medium text-foreground">Board dimensions</p>
-                      <p className="text-xs text-muted-foreground -mt-2">
-                        Use any format you like (decimals or fractions). Volume is optional and independent of the other
-                        measurements.
-                      </p>
+                <SellFormSection title="Board shape / category">
+                <div className="space-y-2">
+                  <Select
+                    value={formData.category}
+                    disabled={!!editId}
+                    onValueChange={(value) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        category: value,
+                        boardType: boardTypeFromCategoryId(value),
+                      }))
+                    }}
+                  >
+                    <SelectTrigger aria-label="Board shape or category">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {boardCategoryOptions.length === 0 ? (
+                        <SelectItem value="__loading__" disabled>
+                          {sellCategoryOptions.length === 0
+                            ? "Loading categories…"
+                            : "No board categories found — add rows with board = true in public.categories."}
+                        </SelectItem>
+                      ) : (
+                        boardCategoryOptions.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {editId && (
+                    <p className="text-xs text-muted-foreground">
+                      Category can&apos;t be changed while editing.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
+                  <span>{boardFieldsCompleted} of 10 fields complete</span>
+                  <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-300"
+                      style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                </SellFormSection>
+
+                <SellFormSection
+                  title="Board dimensions"
+                  description="Use any format you like (decimals or fractions). Volume is optional and independent of the other measurements."
+                >
+                    <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
                         <div className="space-y-1.5">
@@ -1819,10 +1852,10 @@ function SellPageContent() {
                         </div>
                       </div>
                     </div>
+                </SellFormSection>
 
-                    {/* Fins Setup */}
+                <SellFormSection title="Fin setup">
                     <div className="space-y-2">
-                      <Label>Fin setup</Label>
                       <div className="flex flex-wrap gap-2">
                         {[
                           { value: "single", label: "Single" },
@@ -1848,10 +1881,10 @@ function SellPageContent() {
                         ))}
                       </div>
                     </div>
+                </SellFormSection>
 
-                    {/* Tail Shape */}
+                <SellFormSection title="Tail shape">
                     <div className="space-y-2">
-                      <Label>Tail shape</Label>
                       <div className="flex flex-wrap gap-2">
                         {[
                           { value: "round", label: "Round" },
@@ -1877,15 +1910,15 @@ function SellPageContent() {
                         ))}
                       </div>
                     </div>
-                  </>
+                </SellFormSection>
 
-                  <div className="space-y-4 rounded-lg border border-border p-4">
+                <SellFormSection
+                  title="Pickup & shipping"
+                  description="Every surfboard needs a map location (pickup area or where you ship from). If you ship, set a flat shipping price (use 0 for free shipping)."
+                >
+                  <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>How can buyers get this board? *</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Every surfboard needs a map location (pickup area or where you ship from). If you
-                        ship, set a flat shipping price (use 0 for free shipping).
-                      </p>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {(
                           [
@@ -1942,7 +1975,12 @@ function SellPageContent() {
                       </div>
                     )}
                   </div>
+                </SellFormSection>
 
+                <SellFormSection
+                  title="Where you're listing from"
+                  description="Pickup area or where you ship from."
+                >
                   <LocationPicker
                     onLocationSelect={(loc) => {
                       setFormData({
@@ -1960,8 +1998,9 @@ function SellPageContent() {
                     initialState={formData.locationState || undefined}
                     initialDisplay={formData.locationDisplay || undefined}
                   />
+                </SellFormSection>
 
-                {/* Price & Condition */}
+                <SellFormSection title="Price & condition">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="price">Price ($) *</Label>
@@ -1995,8 +2034,9 @@ function SellPageContent() {
                     </Select>
                   </div>
                 </div>
+                </SellFormSection>
 
-                {/* Description */}
+                <SellFormSection title="Description">
                 <div className="space-y-2">
                   <Label htmlFor="description">
                     Description *
@@ -2168,10 +2208,11 @@ function SellPageContent() {
                       </div>
                     </div>
                 </div>
+                </SellFormSection>
 
-                {/* Images */}
+                <SellFormSection title="Photos">
                 <div className="space-y-2">
-                  <Label>Photos (3–12 required)</Label>
+                  <Label className="sr-only">Listing photos</Label>
                   {optimizingAny ? (
                     <p className="text-xs text-muted-foreground flex items-center gap-2">
                       <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
@@ -2292,8 +2333,9 @@ function SellPageContent() {
                     </p>
                   )}
                 </div>
+                </SellFormSection>
 
-                {/* Optimistic preview + submit / progress */}
+                <SellFormSection title={editId ? "Save your listing" : "Publish your listing"}>
                 {publishPreview && (
                   <div
                     className={cn(
@@ -2415,10 +2457,9 @@ function SellPageContent() {
                     {editId ? "Save changes" : "Create Listing"}
                   </Button>
                 )}
+                </SellFormSection>
               </form>
               )}
-            </CardContent>
-          </Card>
         </div>
       </main>
   )

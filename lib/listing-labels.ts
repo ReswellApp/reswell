@@ -67,7 +67,8 @@ export function formatCategory(name: string | null | undefined): string {
 const BOARD_TYPE_LABELS: Record<string, string> = {
   shortboard: "Shortboard",
   longboard: "Longboard",
-  funboard: "Funboard",
+  funboard: "Mid-length",
+  "step-up": "Step-Up",
   fish: "Fish",
   gun: "Gun",
   foamie: "Foamie",

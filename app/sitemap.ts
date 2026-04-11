@@ -8,6 +8,7 @@ const BOARD_TYPE_FILTERS = [
   "shortboard",
   "longboard",
   "funboard",
+  "step-up",
   "fish",
   "gun",
   "foamie",
