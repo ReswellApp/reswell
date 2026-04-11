@@ -271,6 +271,8 @@ function SellPageContent() {
     boardIndexBrandSlug: "",
     boardIndexModelSlug: "",
     boardIndexLabel: "",
+    /** Catalog brand name when linked via title picker — used for “Suggested” under Brand / shaper */
+    boardLinkedBrandName: "",
     locationLat: 0,
     locationLng: 0,
     locationCity: "",
@@ -415,17 +417,13 @@ function SellPageContent() {
     ].filter(Boolean).length
   }, [images.length, formData.title, formData.boardLengthFt, formData.boardWidthInches, formData.boardThicknessInches, formData.boardFins, formData.boardTail, formData.condition, formData.price, formData.description])
 
-  // Smart title suggestion when directory model is linked (length is appended on publish)
-  const suggestedTitle = useMemo(() => {
-    if (!formData.boardIndexLabel) return null
-    let suggested = formData.boardIndexLabel
-    if (suggested.length > LISTING_TITLE_MAX_LENGTH) {
-      suggested = suggested.slice(0, LISTING_TITLE_MAX_LENGTH)
-    }
-    const currentTitle = formData.title.trim()
-    if (currentTitle.toLowerCase() === suggested.toLowerCase()) return null
-    return suggested
-  }, [formData.boardIndexLabel, formData.title])
+  // When a directory model is linked from the title field, offer to snap brand back to the catalog name
+  const suggestedBrand = useMemo(() => {
+    const s = formData.boardLinkedBrandName.trim()
+    if (!s) return null
+    if (formData.brand.trim().toLowerCase() === s.toLowerCase()) return null
+    return s
+  }, [formData.boardLinkedBrandName, formData.brand])
 
   useEffect(() => {
     if (editId) {
@@ -621,6 +619,10 @@ function SellPageContent() {
         boardIndexBrandSlug: "",
         boardIndexModelSlug: "",
         boardIndexLabel: "",
+        boardLinkedBrandName:
+          (listing as { brand_id?: string | null }).brand_id?.trim()
+            ? ((listing as { brand?: string | null }).brand?.trim() ?? "")
+            : "",
         locationLat: Number(listing.latitude) || 0,
         locationLng: Number(listing.longitude) || 0,
         locationCity: listing.city ?? "",
@@ -1551,6 +1553,7 @@ function SellPageContent() {
       boardIndexBrandSlug: "",
       boardIndexModelSlug: "",
       boardIndexLabel: "",
+      boardLinkedBrandName: "",
       locationLat: 32.7157,
       locationLng: -117.1611,
       locationCity: "San Diego",
@@ -1649,25 +1652,12 @@ function SellPageContent() {
                               boardIndexModelSlug: opt.modelSlug,
                               boardIndexLabel: opt.label,
                               brand: opt.brandName,
+                              boardLinkedBrandName: opt.brandName,
                             }
                           })
                         }}
                         required
                       />
-                      {suggestedTitle && (
-                        <p className="text-xs text-muted-foreground">
-                          Suggested:{" "}
-                          <span className="font-medium text-foreground">{suggestedTitle}</span>
-                          {" — "}
-                          <button
-                            type="button"
-                            className="text-primary underline-offset-2 hover:underline"
-                            onClick={() => setFormData((f) => ({ ...f, title: suggestedTitle }))}
-                          >
-                            Use this
-                          </button>
-                        </p>
-                      )}
                   </>
                 </div>
                 </SellFormSection>
@@ -1698,6 +1688,7 @@ function SellPageContent() {
                                     boardIndexBrandSlug: "",
                                     boardIndexModelSlug: "",
                                     boardIndexLabel: "",
+                                    boardLinkedBrandName: "",
                                   }))
                                 }
                               >
@@ -1716,6 +1707,20 @@ function SellPageContent() {
                             onChange={(v) => setFormData({ ...formData, brand: v })}
                           />
                         )}
+                    {suggestedBrand ? (
+                      <p className="text-xs text-muted-foreground">
+                        Suggested:{" "}
+                        <span className="font-medium text-foreground">{suggestedBrand}</span>
+                        {" — "}
+                        <button
+                          type="button"
+                          className="text-primary underline-offset-2 hover:underline"
+                          onClick={() => setFormData((f) => ({ ...f, brand: suggestedBrand }))}
+                        >
+                          Use this
+                        </button>
+                      </p>
+                    ) : null}
                     </div>
                 </SellFormSection>
 
