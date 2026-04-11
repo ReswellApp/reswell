@@ -84,6 +84,7 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import { FIN_SETUP_TAG_OPTIONS } from "@/lib/listing-fin-setup-tags"
 import {
   boardDimensionDisplayFields,
   boardDimensionsToDbFields,
@@ -1774,14 +1775,7 @@ function SellPageContent() {
                       <div className="space-y-2">
                         <Label>Fin setup</Label>
                         <div className="flex flex-wrap gap-2">
-                          {[
-                            { value: "single", label: "Single" },
-                            { value: "twin", label: "Twin (2+1)" },
-                            { value: "thruster", label: "Thruster" },
-                            { value: "quad", label: "Quad" },
-                            { value: "five", label: "5-fin" },
-                            { value: "other", label: "Other" },
-                          ].map((opt) => (
+                          {FIN_SETUP_TAG_OPTIONS.map((opt) => (
                             <button
                               key={opt.value}
                               type="button"

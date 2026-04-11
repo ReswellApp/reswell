@@ -2,6 +2,7 @@
 
 export const FIN_SETUP_TAG_SLUGS = [
   "single",
+  "twin_only",
   "twin",
   "thruster",
   "quad",
@@ -15,6 +16,7 @@ const SLUG_SET = new Set<string>(FIN_SETUP_TAG_SLUGS)
 
 export const FIN_SETUP_TAG_OPTIONS: readonly { value: FinSetupTagSlug; label: string }[] = [
   { value: "single", label: "Single" },
+  { value: "twin_only", label: "Twin" },
   { value: "twin", label: "Twin (2+1)" },
   { value: "thruster", label: "Thruster" },
   { value: "quad", label: "Quad" },
