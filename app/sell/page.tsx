@@ -1614,25 +1614,25 @@ function SellPageContent() {
               aria-busy={loading}
             >
                 <SellFormSection
-                  title="Listing title"
-                  description="Shown on your listing and in the URL (max length includes board length)."
+                  title="Listing title & brand / shaper"
+                  description="Title is shown on your listing and in the URL (max length includes board length). Brand is optional — link from the catalog or enter any name."
                 >
-                <div className="space-y-2">
-                  <div className="flex items-end justify-between gap-2">
-                    <Label htmlFor="title">Title *</Label>
-                    <span
-                      className={cn(
-                        "text-xs tabular-nums",
-                        resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
-                          ? "font-medium text-destructive"
-                          : "text-muted-foreground",
-                      )}
-                      aria-live="polite"
-                    >
-                      {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
-                    </span>
-                  </div>
-                  <>
+                  <div className="space-y-8">
+                    <div className="space-y-2">
+                      <div className="flex items-end justify-between gap-2">
+                        <Label htmlFor="title">Title *</Label>
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums",
+                            resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
+                              ? "font-medium text-destructive"
+                              : "text-muted-foreground",
+                          )}
+                          aria-live="polite"
+                        >
+                          {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
+                        </span>
+                      </div>
                       <SurfboardTitleIndexInput
                         id="title"
                         placeholder={`e.g., Channel Islands Dumpster Diver - 5'6"`}
@@ -1658,120 +1658,174 @@ function SellPageContent() {
                         }}
                         required
                       />
-                  </>
-                </div>
-                </SellFormSection>
-
-                <SellFormSection title="Brand / shaper" description="Optional — link from the catalog or enter any name.">
-                    <div className="space-y-2">
-                        <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
-                        {formData.boardBrandId ? (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2">
-                              <div className="min-w-0 flex-1">
-                                <BrandInputWithSuggestions
-                                  id="surf-brand"
-                                  showHint={false}
-                                  value={formData.brand}
-                                  onChange={(v) => setFormData({ ...formData, brand: v })}
-                                />
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-9 shrink-0 self-start text-xs text-muted-foreground"
-                                onClick={() =>
-                                  setFormData((f) => ({
-                                    ...f,
-                                    boardBrandId: "",
-                                    boardIndexBrandSlug: "",
-                                    boardIndexModelSlug: "",
-                                    boardIndexLabel: "",
-                                    boardLinkedBrandName: "",
-                                  }))
-                                }
-                              >
-                                Clear link
-                              </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              Suggestions from our brand list — you can enter any brand.
-                            </p>
-                          </div>
-                        ) : (
-                          <BrandInputWithSuggestions
-                            id="surf-brand"
-                            placeholder="e.g., Channel Islands"
-                            value={formData.brand}
-                            onChange={(v) => setFormData({ ...formData, brand: v })}
-                          />
-                        )}
-                    {suggestedBrand ? (
-                      <p className="text-xs text-muted-foreground">
-                        Suggested:{" "}
-                        <span className="font-medium text-foreground">{suggestedBrand}</span>
-                        {" — "}
-                        <button
-                          type="button"
-                          className="text-primary underline-offset-2 hover:underline"
-                          onClick={() => setFormData((f) => ({ ...f, brand: suggestedBrand }))}
-                        >
-                          Use this
-                        </button>
-                      </p>
-                    ) : null}
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
+                      {formData.boardBrandId ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <BrandInputWithSuggestions
+                                id="surf-brand"
+                                showHint={false}
+                                value={formData.brand}
+                                onChange={(v) => setFormData({ ...formData, brand: v })}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 shrink-0 self-start text-xs text-muted-foreground"
+                              onClick={() =>
+                                setFormData((f) => ({
+                                  ...f,
+                                  boardBrandId: "",
+                                  boardIndexBrandSlug: "",
+                                  boardIndexModelSlug: "",
+                                  boardIndexLabel: "",
+                                  boardLinkedBrandName: "",
+                                }))
+                              }
+                            >
+                              Clear link
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Suggestions from our brand list — you can enter any brand.
+                          </p>
+                        </div>
+                      ) : (
+                        <BrandInputWithSuggestions
+                          id="surf-brand"
+                          placeholder="e.g., Channel Islands"
+                          value={formData.brand}
+                          onChange={(v) => setFormData({ ...formData, brand: v })}
+                        />
+                      )}
+                      {suggestedBrand ? (
+                        <p className="text-xs text-muted-foreground">
+                          Suggested:{" "}
+                          <span className="font-medium text-foreground">{suggestedBrand}</span>
+                          {" — "}
+                          <button
+                            type="button"
+                            className="text-primary underline-offset-2 hover:underline"
+                            onClick={() => setFormData((f) => ({ ...f, brand: suggestedBrand }))}
+                          >
+                            Use this
+                          </button>
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
                 </SellFormSection>
 
-                <SellFormSection title="Board shape / category">
-                <div className="space-y-2">
-                  <Select
-                    value={formData.category}
-                    disabled={!!editId}
-                    onValueChange={(value) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        category: value,
-                        boardType: boardTypeFromCategoryId(value),
-                      }))
-                    }}
-                  >
-                    <SelectTrigger aria-label="Board shape or category">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {boardCategoryOptions.length === 0 ? (
-                        <SelectItem value="__loading__" disabled>
-                          {sellCategoryOptions.length === 0
-                            ? "Loading categories…"
-                            : "No board categories found — add rows with board = true in public.categories."}
-                        </SelectItem>
-                      ) : (
-                        boardCategoryOptions.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {editId && (
-                    <p className="text-xs text-muted-foreground">
-                      Category can&apos;t be changed while editing.
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-muted-foreground pb-1">
-                  <span>{boardFieldsCompleted} of 10 fields complete</span>
-                  <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-300"
-                      style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
-                    />
-                  </div>
-                </div>
+                <SellFormSection title="Board shape / category · fin setup & tail">
+                    <div className="space-y-8">
+                      <div className="space-y-2">
+                        <Label>Board shape / category *</Label>
+                        <Select
+                          value={formData.category}
+                          disabled={!!editId}
+                          onValueChange={(value) => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              category: value,
+                              boardType: boardTypeFromCategoryId(value),
+                            }))
+                          }}
+                        >
+                          <SelectTrigger aria-label="Board shape or category">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {boardCategoryOptions.length === 0 ? (
+                              <SelectItem value="__loading__" disabled>
+                                {sellCategoryOptions.length === 0
+                                  ? "Loading categories…"
+                                  : "No board categories found — add rows with board = true in public.categories."}
+                              </SelectItem>
+                            ) : (
+                              boardCategoryOptions.map((cat) => (
+                                <SelectItem key={cat.value} value={cat.value}>
+                                  {cat.label}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {editId && (
+                          <p className="text-xs text-muted-foreground">
+                            Category can&apos;t be changed while editing.
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between text-sm text-muted-foreground pb-1 pt-1">
+                          <span>{boardFieldsCompleted} of 10 fields complete</span>
+                          <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all duration-300"
+                              style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fin setup</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { value: "single", label: "Single" },
+                            { value: "twin", label: "Twin (2+1)" },
+                            { value: "thruster", label: "Thruster" },
+                            { value: "quad", label: "Quad" },
+                            { value: "five", label: "5-fin" },
+                            { value: "other", label: "Other" },
+                          ].map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, boardFins: formData.boardFins === opt.value ? "" : opt.value })}
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-sm transition-colors",
+                                formData.boardFins === opt.value
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border hover:border-primary/50",
+                              )}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tail shape</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { value: "round", label: "Round" },
+                            { value: "squash", label: "Squash" },
+                            { value: "square", label: "Square" },
+                            { value: "pin", label: "Pin" },
+                            { value: "swallow", label: "Swallow" },
+                            { value: "fish", label: "Fish" },
+                          ].map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, boardTail: formData.boardTail === opt.value ? "" : opt.value })}
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-sm transition-colors",
+                                formData.boardTail === opt.value
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border hover:border-primary/50",
+                              )}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                 </SellFormSection>
 
                 <SellFormSection
@@ -1859,150 +1913,88 @@ function SellPageContent() {
                     </div>
                 </SellFormSection>
 
-                <SellFormSection title="Fin setup">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { value: "single", label: "Single" },
-                          { value: "twin", label: "Twin (2+1)" },
-                          { value: "thruster", label: "Thruster" },
-                          { value: "quad", label: "Quad" },
-                          { value: "five", label: "5-fin" },
-                          { value: "other", label: "Other" },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, boardFins: formData.boardFins === opt.value ? "" : opt.value })}
-                            className={cn(
-                              "rounded-full border px-3 py-1 text-sm transition-colors",
-                              formData.boardFins === opt.value
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border hover:border-primary/50",
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                </SellFormSection>
-
-                <SellFormSection title="Tail shape">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { value: "round", label: "Round" },
-                          { value: "squash", label: "Squash" },
-                          { value: "square", label: "Square" },
-                          { value: "pin", label: "Pin" },
-                          { value: "swallow", label: "Swallow" },
-                          { value: "fish", label: "Fish" },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, boardTail: formData.boardTail === opt.value ? "" : opt.value })}
-                            className={cn(
-                              "rounded-full border px-3 py-1 text-sm transition-colors",
-                              formData.boardTail === opt.value
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border hover:border-primary/50",
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                </SellFormSection>
-
                 <SellFormSection
-                  title="Pickup & shipping"
+                  title="Pickup & shipping · where you're listing from"
                   description="Every surfboard needs a map location (pickup area or where you ship from). If you ship, set a flat shipping price (use 0 for free shipping)."
                 >
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>How can buyers get this board? *</Label>
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        {(
-                          [
-                            {
-                              value: "pickup_only" as const,
-                              title: "Local pickup",
-                              hint: "Buyer meets you",
-                            },
-                            {
-                              value: "shipping_only" as const,
-                              title: "Shipping only",
-                              hint: "You ship to buyer",
-                            },
-                            {
-                              value: "pickup_and_shipping" as const,
-                              title: "Pickup or shipping",
-                              hint: "Buyer chooses",
-                            },
-                          ] as const
-                        ).map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() =>
-                              setFormData({ ...formData, boardFulfillment: opt.value })
-                            }
-                            className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
-                              formData.boardFulfillment === opt.value
-                                ? "border-primary bg-primary/5"
-                                : "border-border hover:border-primary/40"
-                            }`}
-                          >
-                            <p className="font-medium">{opt.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{opt.hint}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {(formData.boardFulfillment === "shipping_only" ||
-                      formData.boardFulfillment === "pickup_and_shipping") && (
+                  <div className="space-y-8">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="boardShippingPrice">Shipping price ($) *</Label>
-                        <Input
-                          id="boardShippingPrice"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00 = free shipping"
-                          value={formData.boardShippingPrice}
-                          onChange={(e) =>
-                            setFormData({ ...formData, boardShippingPrice: e.target.value })
-                          }
-                        />
+                        <Label>How can buyers get this board? *</Label>
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          {(
+                            [
+                              {
+                                value: "pickup_only" as const,
+                                title: "Local pickup",
+                                hint: "Buyer meets you",
+                              },
+                              {
+                                value: "shipping_only" as const,
+                                title: "Shipping only",
+                                hint: "You ship to buyer",
+                              },
+                              {
+                                value: "pickup_and_shipping" as const,
+                                title: "Pickup or shipping",
+                                hint: "Buyer chooses",
+                              },
+                            ] as const
+                          ).map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() =>
+                                setFormData({ ...formData, boardFulfillment: opt.value })
+                              }
+                              className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
+                                formData.boardFulfillment === opt.value
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/40"
+                              }`}
+                            >
+                              <p className="font-medium">{opt.title}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{opt.hint}</p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
+                      {(formData.boardFulfillment === "shipping_only" ||
+                        formData.boardFulfillment === "pickup_and_shipping") && (
+                        <div className="space-y-2">
+                          <Label htmlFor="boardShippingPrice">Shipping price ($) *</Label>
+                          <Input
+                            id="boardShippingPrice"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00 = free shipping"
+                            value={formData.boardShippingPrice}
+                            onChange={(e) =>
+                              setFormData({ ...formData, boardShippingPrice: e.target.value })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <LocationPicker
+                      onLocationSelect={(loc) => {
+                        setFormData({
+                          ...formData,
+                          locationLat: loc.lat,
+                          locationLng: loc.lng,
+                          locationCity: loc.city,
+                          locationState: loc.state,
+                          locationDisplay: loc.displayName,
+                        })
+                      }}
+                      initialLat={formData.locationLat || undefined}
+                      initialLng={formData.locationLng || undefined}
+                      initialCity={formData.locationCity || undefined}
+                      initialState={formData.locationState || undefined}
+                      initialDisplay={formData.locationDisplay || undefined}
+                    />
                   </div>
-                </SellFormSection>
-
-                <SellFormSection
-                  title="Where you're listing from"
-                  description="Pickup area or where you ship from."
-                >
-                  <LocationPicker
-                    onLocationSelect={(loc) => {
-                      setFormData({
-                        ...formData,
-                        locationLat: loc.lat,
-                        locationLng: loc.lng,
-                        locationCity: loc.city,
-                        locationState: loc.state,
-                        locationDisplay: loc.displayName,
-                      })
-                    }}
-                    initialLat={formData.locationLat || undefined}
-                    initialLng={formData.locationLng || undefined}
-                    initialCity={formData.locationCity || undefined}
-                    initialState={formData.locationState || undefined}
-                    initialDisplay={formData.locationDisplay || undefined}
-                  />
                 </SellFormSection>
 
                 <SellFormSection title="Price & condition">
