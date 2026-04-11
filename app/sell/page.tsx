@@ -129,6 +129,11 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
+import {
+  SellSectionNav,
+  SellSectionNavCompact,
+  SELL_FORM_SECTION_NAV_ITEMS,
+} from "@/components/features/sell/sell-section-nav"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -145,13 +150,22 @@ function SellFormSection({
   title,
   children,
   description,
+  sectionId,
 }: {
   title: string
   children: React.ReactNode
   description?: string
+  /** Anchor id for in-page navigation (sell section stepper). */
+  sectionId?: string
 }) {
   return (
-    <section className="space-y-3 lg:space-y-4">
+    <section
+      id={sectionId}
+      className={cn(
+        "space-y-3 lg:space-y-4",
+        sectionId && "scroll-mt-24",
+      )}
+    >
       <div>
         <h2 className="text-base font-semibold tracking-tight text-foreground lg:text-lg">
           {title}
@@ -1987,7 +2001,7 @@ function SellPageContent() {
 
   return (
       <main className="flex-1 w-full bg-muted py-8">
-        <div className="container mx-auto max-w-2xl lg:max-w-3xl">
+        <div className="container mx-auto max-w-2xl lg:max-w-6xl">
           <Link
             href="/dashboard"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
@@ -2076,13 +2090,23 @@ function SellPageContent() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <form
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-14">
+              <div className="hidden shrink-0 lg:block lg:w-44 xl:w-48">
+                <SellSectionNav items={SELL_FORM_SECTION_NAV_ITEMS} />
+              </div>
+              <div className="min-w-0 w-full max-w-2xl lg:max-w-3xl">
+                <SellSectionNavCompact
+                  items={SELL_FORM_SECTION_NAV_ITEMS}
+                  className="mb-8 lg:hidden"
+                />
+                <form
               ref={formRef}
               onSubmit={handleSubmit}
               className="space-y-10 lg:space-y-12"
               aria-busy={loading}
             >
                 <SellFormSection
+                  sectionId="sell-section-title"
                   title="Listing title & brand / shaper"
                   description="Title is shown on your listing and in the URL (max length includes board length). Brand is optional — link from the catalog or enter any name."
                 >
@@ -2191,7 +2215,10 @@ function SellPageContent() {
                   </div>
                 </SellFormSection>
 
-                <SellFormSection title="Board shape / category · fin setup & tail">
+                <SellFormSection
+                  sectionId="sell-section-shape"
+                  title="Board shape / category · fin setup & tail"
+                >
                     <div className="space-y-8">
                       <div className="space-y-2">
                         <Label>Board shape / category *</Label>
@@ -2291,6 +2318,7 @@ function SellPageContent() {
                 </SellFormSection>
 
                 <SellFormSection
+                  sectionId="sell-section-dimensions"
                   title="Board dimensions"
                   description="Use any format you like (decimals or fractions). Volume is optional and independent of the other measurements."
                 >
@@ -2583,6 +2611,7 @@ function SellPageContent() {
                 </SellFormSection>
 
                 <SellFormSection
+                  sectionId="sell-section-delivery"
                   title="Pickup & shipping · where you're listing from"
                   description="Choose delivery options, then pin where the board is (pickup area or ship-from location) on the map."
                 >
@@ -2869,7 +2898,7 @@ function SellPageContent() {
                   </div>
                 </SellFormSection>
 
-                <SellFormSection title="Price & condition">
+                <SellFormSection sectionId="sell-section-price" title="Price & condition">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="price">Price ($) *</Label>
@@ -2905,7 +2934,7 @@ function SellPageContent() {
                 </div>
                 </SellFormSection>
 
-                <SellFormSection title="Description">
+                <SellFormSection sectionId="sell-section-description" title="Description">
                 <div className="space-y-2">
                   <Label htmlFor="description">
                     Description *
@@ -3079,7 +3108,7 @@ function SellPageContent() {
                 </div>
                 </SellFormSection>
 
-                <SellFormSection title="Photos">
+                <SellFormSection sectionId="sell-section-photos" title="Photos">
                 <div className="space-y-2">
                   <Label className="sr-only">Listing photos</Label>
                   {optimizingAny ? (
@@ -3217,6 +3246,7 @@ function SellPageContent() {
                 </SellFormSection>
 
                 <SellFormSection
+                  sectionId="sell-section-publish"
                   title={
                     editId
                       ? listingIsDraft
@@ -3347,7 +3377,9 @@ function SellPageContent() {
                   </Button>
                 )}
                 </SellFormSection>
-              </form>
+                </form>
+              </div>
+            </div>
               )}
         </div>
       </main>
