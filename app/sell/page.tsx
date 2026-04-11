@@ -32,6 +32,7 @@ import {
   AlertCircle,
   RefreshCw,
   Sparkles,
+  Heart,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -81,6 +82,7 @@ import {
   validateSellListingForm,
   buildResolvedListingTitle,
   LISTING_TITLE_MAX_LENGTH,
+  LISTING_MIN_PHOTOS,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
@@ -405,7 +407,7 @@ function SellPageContent() {
   // Count completed board fields for progress indicator
   const boardFieldsCompleted = useMemo(() => {
     return [
-      images.length >= 3,
+      images.length >= LISTING_MIN_PHOTOS,
       formData.title.trim(),
       formData.boardLengthFt.trim(),
       formData.boardWidthInches.trim(),
@@ -669,23 +671,6 @@ function SellPageContent() {
     }
   }, [draftHydrated, editId])
 
-  /** Get image dimensions from a file (vertical = height > width). */
-  function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file)
-      const img = new window.Image()
-      img.onload = () => {
-        URL.revokeObjectURL(url)
-        resolve({ width: img.naturalWidth, height: img.naturalHeight })
-      }
-      img.onerror = () => {
-        URL.revokeObjectURL(url)
-        reject(new Error("Failed to load image"))
-      }
-      img.src = url
-    })
-  }
-
   async function convertViaServer(file: File): Promise<File> {
     const form = new FormData()
     form.append("file", file)
@@ -726,21 +711,23 @@ function SellPageContent() {
       if (!prepared) {
         const src = slot.sourceFile
         if (!src) return
-        let file = await toJpegIfUnsupported(src)
-        const dims = await getImageDimensions(file)
-        if (dims.height <= dims.width) {
-          if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl)
-          setImages((prev) => prev.filter((s) => s.clientId !== clientId))
-          toast.error(
-            `"${src.name}" is not vertical. Portrait only — height must be greater than width.`,
-          )
-          return
-        }
+        const file = await toJpegIfUnsupported(src)
         prepared = await prepareListingImagePairFromFile(file)
+        let nextPreviewUrl = previewUrl
+        if (previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(previewUrl)
+        }
+        nextPreviewUrl = URL.createObjectURL(prepared.thumb)
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
-              ? { ...s, optimizePhase: "done", prepared, sourceFile: undefined }
+              ? {
+                  ...s,
+                  previewUrl: nextPreviewUrl,
+                  optimizePhase: "done",
+                  prepared,
+                  sourceFile: undefined,
+                }
               : s,
           ),
         )
@@ -2226,7 +2213,7 @@ function SellPageContent() {
                             }
                             alt={`Photo ${index + 1}`}
                             fill
-                            className="object-contain"
+                            className="object-cover object-center"
                             unoptimized
                           />
                           <button
@@ -2316,11 +2303,23 @@ function SellPageContent() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Minimum 3 photos required, maximum 12. Only vertical (portrait) photos — height greater than width. First image is the main photo. Any common phone/camera format is OK; unsupported types are converted to JPEG automatically.
+                    At least {LISTING_MIN_PHOTOS} photo, max 12. Upload a few angles of your board — top, bottom,
+                    rails, fins, whatever helps someone see what they&apos;re buying. The more you add, the less
+                    back-and-forth in messages. If a shot is horizontal we will rotate it into vertical; the first pic is your
+                    cover. Any normal phone pic works; we&apos;ll swap odd formats to JPEG. Thank you for listing on
+                    Reswell.{" "}
+                    <span className="inline-flex flex-wrap items-center gap-1">
+                      <span>Made with</span>
+                      <Heart
+                        className="h-4 w-4 shrink-0 fill-red-500 text-red-500"
+                        aria-hidden
+                      />
+                      <span>in Santa Barbara.</span>
+                    </span>
                   </p>
-                  {images.length > 0 && images.length < 3 && (
+                  {images.length >= LISTING_MIN_PHOTOS && images.length < 12 && (
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Add {3 - images.length} more photo{3 - images.length !== 1 ? "s" : ""} to meet the minimum (3 required).
+                      Room for {12 - images.length} more — a fuller gallery usually gets more interest.
                     </p>
                   )}
                 </div>
@@ -2341,7 +2340,7 @@ function SellPageContent() {
                         src={publishPreview.coverUrl || "/placeholder.svg"}
                         alt=""
                         fill
-                        className="object-cover"
+                        className="object-cover object-center"
                         unoptimized
                       />
                     </div>

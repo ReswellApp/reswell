@@ -141,8 +141,7 @@ export async function ShopListingDetailPage({
                 src={imageUrl}
                 alt={listing.title}
                 fill
-                className="object-contain"
-                style={{ objectFit: "contain" }}
+                className="object-cover object-center"
                 priority
               />
             ) : (

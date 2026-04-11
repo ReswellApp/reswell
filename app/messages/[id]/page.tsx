@@ -264,7 +264,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                     src={conversation.listing.listing_images[0].url || '/placeholder.svg'}
                     alt={capitalizeWords(conversation.listing?.title)}
                     fill
-                    className="object-contain"
+                    className="object-cover object-center"
                   />
                 ) : null}
               </div>

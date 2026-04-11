@@ -32,7 +32,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
   return (
     <div className="space-y-4 w-full min-w-0 max-w-[370px] md:max-w-[450px] mx-auto">
-      {/* Main Image - 3:4 ratio, show full image without cropping */}
+      {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
       <div
         className="relative w-full rounded-lg overflow-hidden bg-muted"
         style={{ paddingBottom: "133.33%" }}
@@ -43,7 +43,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
             alt={`${title} - Image ${selectedIndex + 1}`}
             fill
             className={cn(
-              "object-contain transition-opacity duration-300",
+              "object-cover object-center transition-opacity duration-300",
               sold && "[filter:grayscale(30%)]",
             )}
             priority
@@ -120,7 +120,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
                     src={image.url || "/placeholder.svg"}
                     alt={`${title} - Thumbnail ${index + 1}`}
                     fill
-                    className={cn("object-contain", sold && "[filter:grayscale(30%)]")}
+                    className={cn("object-cover object-center", sold && "[filter:grayscale(30%)]")}
                     sizes="64px"
                     placeholder="blur"
                     blurDataURL={squareShimmer}

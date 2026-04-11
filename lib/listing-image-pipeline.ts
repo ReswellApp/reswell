@@ -91,6 +91,32 @@ function canvasToImageBlob(
   })
 }
 
+/**
+ * Listing UIs expect portrait-oriented assets (height ≥ width). Landscape photos are rotated
+ * 90° counter-clockwise so the long edge becomes vertical — no user-facing rejection for orientation.
+ * Square images are unchanged.
+ */
+async function rotateLandscapeToPortraitIfNeeded(bitmap: ImageBitmap): Promise<ImageBitmap> {
+  if (bitmap.height >= bitmap.width) return bitmap
+  const w = bitmap.width
+  const h = bitmap.height
+  const canvas = document.createElement("canvas")
+  canvas.width = h
+  canvas.height = w
+  const ctx = canvas.getContext("2d")
+  if (!ctx) {
+    throw new Error("Canvas not available")
+  }
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+  ctx.translate(0, w)
+  ctx.rotate(-Math.PI / 2)
+  ctx.drawImage(bitmap, 0, 0)
+  const rotated = await createImageBitmap(canvas)
+  bitmap.close()
+  return rotated
+}
+
 async function renderResizedToBlob(
   bitmap: ImageBitmap,
   maxLongEdge: number,
@@ -113,8 +139,9 @@ async function renderResizedToBlob(
  * Single decode; produces full (≤2000px long edge) + thumb (≤400px) in one pipeline step.
  */
 export async function prepareListingImagePairFromFile(file: File): Promise<PreparedListingImagePair> {
-  const bitmap = await createImageBitmap(file)
+  let bitmap = await createImageBitmap(file)
   try {
+    bitmap = await rotateLandscapeToPortraitIfNeeded(bitmap)
     const useWebp = await canvasSupportsWebp()
     const [fullPack, thumbPack] = await Promise.all([
       renderResizedToBlob(bitmap, LISTING_FULL_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_FULL, useWebp),

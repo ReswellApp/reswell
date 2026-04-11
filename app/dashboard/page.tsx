@@ -236,8 +236,7 @@ export default async function DashboardPage() {
                           src={primaryImage.url || "/placeholder.svg"}
                           alt={capitalizeWords(listing.title)}
                           fill
-                          className="object-contain group-hover:scale-105 transition-transform"
-                          style={{ objectFit: "contain" }}
+                          className="object-cover object-center group-hover:scale-105 transition-transform"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

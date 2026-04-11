@@ -140,8 +140,7 @@ export default function ArchivedListingsPage() {
                           src={primaryImage.url}
                           alt={capitalizeWords(listing.title)}
                           fill
-                          className="object-contain"
-                          style={{ objectFit: "contain" }}
+                          className="object-cover object-center"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

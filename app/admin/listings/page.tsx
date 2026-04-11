@@ -298,8 +298,7 @@ export default function AdminListingsPage() {
                               src={listing.listing_images[0].url || "/placeholder.svg"}
                               alt=""
                               fill
-                              className="object-contain"
-                              style={{ objectFit: "contain" }}
+                              className="object-cover object-center"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

@@ -19,6 +19,9 @@ const PRICE_MAX = 999_999.99
  */
 export const LISTING_TITLE_MAX_LENGTH = 60
 
+/** Minimum photos required to publish. More is strongly encouraged in the sell UI. */
+export const LISTING_MIN_PHOTOS = 1
+
 export type SellFormValidationInput = {
   listingType: "board"
   title: string
@@ -177,9 +180,8 @@ export function validateSellListingForm(
   }
 
   if (!relaxed) {
-    const minPhotos = 3
-    if (opts.imageCount < minPhotos) {
-      return `At least ${minPhotos} photos are required for this listing.`
+    if (opts.imageCount < LISTING_MIN_PHOTOS) {
+      return `At least ${LISTING_MIN_PHOTOS} photo is required for this listing.`
     }
   }
 
