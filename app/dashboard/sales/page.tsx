@@ -151,7 +151,7 @@ export default async function SalesPage() {
               When someone buys your gear, the order shows up here with fulfillment details.
             </p>
             <Button asChild>
-              <Link href="/sell">Create a listing</Link>
+              <Link href="/sell?new=1">Create a listing</Link>
             </Button>
           </CardContent>
         </Card>

@@ -55,7 +55,7 @@ export default async function DashboardLayout({
           <aside className="lg:w-64 flex-shrink-0">
             <div className="sticky top-24 space-y-4">
               <Button asChild className="w-full">
-                <Link href="/sell">
+                <Link href="/sell?new=1">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Listing
                 </Link>

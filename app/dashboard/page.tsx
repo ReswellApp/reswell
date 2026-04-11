@@ -262,7 +262,7 @@ export default async function DashboardPage() {
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground mb-4">You have not created any listings yet</p>
               <Button asChild>
-                <Link href="/sell">Create Your First Listing</Link>
+                <Link href="/sell?new=1">Create Your First Listing</Link>
               </Button>
             </div>
           )}
@@ -277,7 +277,7 @@ export default async function DashboardPage() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/sell">
+              <Link href="/sell?new=1">
                 <Package className="h-6 w-6 mb-2" />
                 Create Listing
               </Link>

@@ -1,5 +1,11 @@
 import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
-import { flagsFromBoardFulfillment, type BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
+import {
+  flagsFromBoardFulfillment,
+  type BoardFulfillmentChoice,
+} from "@/lib/listing-fulfillment"
+
+/** How shipping cost is set when shipping is enabled (surfboard sell flow). */
+export type BoardShippingCostMode = "reswell" | "free" | "flat"
 import { isFinSetupTagSlug } from "@/lib/listing-fin-setup-tags"
 import { isTailShapeTagSlug } from "@/lib/listing-tail-shape-tags"
 import {
@@ -39,6 +45,7 @@ export type SellFormValidationInput = {
   boardFins: string
   boardTail: string
   boardFulfillment: BoardFulfillmentChoice
+  boardShippingCostMode: BoardShippingCostMode
   boardShippingPrice: string
   locationCity: string
   locationState: string
@@ -191,14 +198,17 @@ export function validateSellListingForm(
 
   const fulfillmentFlags = flagsFromBoardFulfillment(form.boardFulfillment)
   if (fulfillmentFlags.shipping_available) {
-    const raw = form.boardShippingPrice?.trim() ?? ""
-    if (!raw && !relaxed) {
-      return "Enter a shipping price when offering shipping (use 0 for free shipping)."
-    }
-    if (raw) {
-      const sp = parseFloat(raw)
-      if (!Number.isFinite(sp) || sp < 0) {
-        return "Shipping price must be a number ≥ 0."
+    const mode = form.boardShippingCostMode ?? "reswell"
+    if (mode === "flat") {
+      const raw = form.boardShippingPrice?.trim() ?? ""
+      if (!raw && !relaxed) {
+        return "Enter a flat shipping amount, or choose free shipping instead."
+      }
+      if (raw) {
+        const sp = parseFloat(raw)
+        if (!Number.isFinite(sp) || sp < 0) {
+          return "Flat shipping must be a number ≥ 0."
+        }
       }
     }
   }

@@ -23,7 +23,7 @@ export type SellListingDraftRecord = {
   imageBlobs: SellListingDraftImageBlob[]
 }
 
-function draftFormLooksFilled(formData: SellListingDraftFormSnapshot): boolean {
+export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot): boolean {
   const title = typeof formData.title === "string" ? formData.title.trim() : ""
   const price = typeof formData.price === "string" ? formData.price.trim() : ""
   const description = typeof formData.description === "string" ? formData.description.trim() : ""
@@ -57,7 +57,7 @@ export async function loadSellListingDraft(): Promise<SellListingDraftRecord | n
     db.close()
     if (!record || record.v !== SELL_LISTING_DRAFT_VERSION) return null
     const blobs = Array.isArray(record.imageBlobs) ? record.imageBlobs : []
-    if (blobs.length === 0 && !draftFormLooksFilled(record.formData)) return null
+    if (blobs.length === 0 && !sellDraftFormLooksFilled(record.formData)) return null
     return { ...record, imageBlobs: blobs }
   } catch {
     return null
@@ -99,7 +99,7 @@ export async function buildSellListingDraft(
     })
   }
   const formSnapshot = JSON.parse(JSON.stringify(formData)) as SellListingDraftFormSnapshot
-  if (imageBlobs.length === 0 && !draftFormLooksFilled(formSnapshot)) return null
+  if (imageBlobs.length === 0 && !sellDraftFormLooksFilled(formSnapshot)) return null
   return {
     v: SELL_LISTING_DRAFT_VERSION,
     listingType,

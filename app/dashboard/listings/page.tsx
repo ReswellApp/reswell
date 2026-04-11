@@ -25,11 +25,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from 'lucide-react'
+import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from "lucide-react"
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingProductCardClassName } from '@/lib/listing-card-styles'
+import {
+  clearSellServerDraftListingId,
+  getSellServerDraftListingId,
+} from "@/lib/sell-draft-local-meta"
 
 interface Listing {
   id: string
@@ -89,6 +93,22 @@ export default function MyListingsPage() {
     setLoading(false)
   }
 
+  async function handleDiscardDraft(id: string) {
+    const res = await fetch(`/api/listings/draft?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      toast.error('Could not discard draft')
+      return
+    }
+    if (getSellServerDraftListingId() === id) {
+      clearSellServerDraftListingId()
+    }
+    setListings((prev) => prev.filter((l) => l.id !== id))
+    toast.success('Draft removed')
+  }
+
   async function handleStatusChange(id: string, newStatus: string) {
     const { error } = await supabase
       .from('listings')
@@ -135,6 +155,7 @@ export default function MyListingsPage() {
       case 'active': return 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
       case 'sold': return 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
       case 'pending': return 'bg-neutral-50 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
+      case 'draft': return 'bg-amber-100 text-amber-950 dark:bg-amber-950/50 dark:text-amber-100'
       default: return 'bg-muted text-muted-foreground'
     }
   }
@@ -162,12 +183,14 @@ export default function MyListingsPage() {
 
   const ListingCard = ({ listing }: { listing: Listing }) => {
     const primaryImage = listing.listing_images?.find(img => img.is_primary) || listing.listing_images?.[0]
+    const isDraft = listing.status === 'draft'
+    const cardHref = isDraft ? `/sell?edit=${listing.id}` : getListingHref(listing.section, listing.id, listing.slug)
 
     return (
       <Card className={listingProductCardClassName}>
         <CardContent className="p-4">
           <div className="flex gap-4">
-            <Link href={getListingHref(listing.section, listing.id, listing.slug)} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+            <Link href={cardHref} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {primaryImage?.url ? (
                 <Image
                   src={primaryImage.url || "/placeholder.svg"}
@@ -184,10 +207,12 @@ export default function MyListingsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <Link href={getListingHref(listing.section, listing.id, listing.slug)} className="font-semibold text-foreground hover:text-primary truncate block">
+                  <Link href={cardHref} className="font-semibold text-foreground hover:text-primary truncate block">
                     {capitalizeWords(listing.title)}
                   </Link>
-                  <p className="text-lg font-bold text-black dark:text-white">${listing.price}</p>
+                  <p className="text-lg font-bold text-black dark:text-white">
+                    {isDraft ? <span className="text-muted-foreground font-normal text-base">Draft</span> : `$${listing.price}`}
+                  </p>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -196,16 +221,26 @@ export default function MyListingsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={getListingHref(listing.section, listing.id, listing.slug)}>
-                        <Eye className="h-4 w-4 mr-2" /> View
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/sell?edit=${listing.id}`}>
-                        <Edit className="h-4 w-4 mr-2" /> Edit
-                      </Link>
-                    </DropdownMenuItem>
+                    {isDraft ? (
+                      <DropdownMenuItem asChild>
+                        <Link href={`/sell?edit=${listing.id}`}>
+                          <Edit className="h-4 w-4 mr-2" /> Continue editing
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href={getListingHref(listing.section, listing.id, listing.slug)}>
+                            <Eye className="h-4 w-4 mr-2" /> View
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/sell?edit=${listing.id}`}>
+                            <Edit className="h-4 w-4 mr-2" /> Edit
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     {listing.status === 'active' && (
                       <DropdownMenuItem onClick={() => handleStatusChange(listing.id, 'sold')}>
                         Mark as Sold
@@ -216,15 +251,24 @@ export default function MyListingsPage() {
                         Relist
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => { setEndListingId(listing.id); setEndChoice(null); }}>
-                      <Archive className="h-4 w-4 mr-2" /> End listing
-                    </DropdownMenuItem>
+                    {isDraft ? (
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => void handleDiscardDraft(listing.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" /> Discard draft
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={() => { setEndListingId(listing.id); setEndChoice(null); }}>
+                        <Archive className="h-4 w-4 mr-2" /> End listing
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 <Badge variant="secondary" className={getStatusColor(listing.status)}>
-                  {listing.status}
+                  {isDraft ? "Draft" : listing.status}
                 </Badge>
                 <Badge variant="outline">{getSectionLabel(listing.section)}</Badge>
               </div>
@@ -251,7 +295,7 @@ export default function MyListingsPage() {
               <Archive className="h-4 w-4 mr-2" /> Archived
             </Button>
           </Link>
-          <Link href="/sell">
+          <Link href="/sell?new=1">
             <Button>
               <Plus className="h-4 w-4 mr-2" /> New Listing
             </Button>
@@ -284,7 +328,7 @@ export default function MyListingsPage() {
             <p className="text-muted-foreground mb-4">
               Start selling by creating your first listing
             </p>
-            <Link href="/sell">
+            <Link href="/sell?new=1">
               <Button>
                 <Plus className="h-4 w-4 mr-2" /> Create Listing
               </Button>
@@ -293,14 +337,18 @@ export default function MyListingsPage() {
         </Card>
       ) : (
         <Tabs defaultValue="all">
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 flex-wrap h-auto gap-1">
             <TabsTrigger value="all">All ({listings.length})</TabsTrigger>
+            <TabsTrigger value="draft">Drafts ({filterByStatus("draft").length})</TabsTrigger>
             <TabsTrigger value="active">Active ({filterByStatus('active').length})</TabsTrigger>
             <TabsTrigger value="sold">Sold ({filterByStatus('sold').length})</TabsTrigger>
             <TabsTrigger value="pending">Pending ({filterByStatus('pending').length})</TabsTrigger>
           </TabsList>
           <TabsContent value="all" className="space-y-4">
             {listings.map(listing => <ListingCard key={listing.id} listing={listing} />)}
+          </TabsContent>
+          <TabsContent value="draft" className="space-y-4">
+            {filterByStatus("draft").map(listing => <ListingCard key={listing.id} listing={listing} />)}
           </TabsContent>
           <TabsContent value="active" className="space-y-4">
             {filterByStatus('active').map(listing => <ListingCard key={listing.id} listing={listing} />)}

@@ -2,13 +2,16 @@
 
 import React, { Suspense } from "react"
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -44,6 +47,7 @@ const LocationPicker = dynamic(
   },
 )
 import {
+  boardFulfillmentFromChecks,
   boardFulfillmentFromFlags,
   flagsFromBoardFulfillment,
   type BoardFulfillmentChoice,
@@ -73,8 +77,15 @@ import {
   clearSellListingDraft,
   loadSellListingDraft,
   saveSellListingDraft,
+  sellDraftFormLooksFilled,
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
+import {
+  clearSellServerDraftListingId,
+  getSellServerDraftListingId,
+  setSellServerDraftListingId,
+} from "@/lib/sell-draft-local-meta"
+import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { cn } from "@/lib/utils"
 import { BrandInputWithSuggestions } from "@/components/brand-input-with-suggestions"
 import { listingDetailPath } from "@/lib/listing-query"
@@ -83,6 +94,7 @@ import {
   buildResolvedListingTitle,
   LISTING_TITLE_MAX_LENGTH,
   LISTING_MIN_PHOTOS,
+  type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
@@ -213,6 +225,23 @@ function SellPageContent() {
   const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
   const editId = searchParams.get("edit")
+  const startFresh = searchParams.get("new") === "1"
+
+  /** Instant resume: same-tab session knows the draft row id (no network). */
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return
+    if (startFresh) {
+      clearSellServerDraftListingId()
+      router.replace("/sell")
+      return
+    }
+    if (!editId) {
+      const sid = getSellServerDraftListingId()
+      if (sid) {
+        router.replace(`/sell?edit=${sid}`)
+      }
+    }
+  }, [editId, startFresh, router])
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
@@ -235,6 +264,8 @@ function SellPageContent() {
   ])
   const [editLoading, setEditLoading] = useState(!!editId)
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
+  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
+  const listingIsDraft = editListingStatus === "draft"
 
   useEffect(() => {
     if (!loading) return
@@ -260,6 +291,7 @@ function SellPageContent() {
     condition: "",
     brand: "",
     boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+    boardShippingCostMode: "reswell" as BoardShippingCostMode,
     boardShippingPrice: "",
     boardType: "",
     boardLengthFt: "",
@@ -302,6 +334,8 @@ function SellPageContent() {
     draftHydrated: false,
   })
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const serverDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
@@ -393,6 +427,7 @@ function SellPageContent() {
       boardFins: formData.boardFins,
       boardTail: formData.boardTail,
       boardFulfillment: formData.boardFulfillment,
+      boardShippingCostMode: formData.boardShippingCostMode,
       boardShippingPrice: formData.boardShippingPrice,
       locationCity: formData.locationCity,
       locationState: formData.locationState,
@@ -402,6 +437,11 @@ function SellPageContent() {
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
     [sellValidationForm],
+  )
+
+  const deliveryFlags = useMemo(
+    () => flagsFromBoardFulfillment(formData.boardFulfillment),
+    [formData.boardFulfillment],
   )
 
   // Count completed board fields for progress indicator
@@ -428,6 +468,84 @@ function SellPageContent() {
     return s
   }, [formData.boardLinkedBrandName, formData.brand])
 
+  const persistServerDraft = useCallback(
+    async (opts?: { keepalive?: boolean }) => {
+      if (!draftHydrated) return
+      if (editLoading) return
+      if (getImpersonation()) return
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+      if (editId && !listingIsDraft) return
+      if (!editId) {
+        const hasLocal =
+          sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot) ||
+          images.length > 0
+        if (!hasLocal) return
+      }
+      const body = {
+        listingId: editId,
+        title: formData.title,
+        description: formData.description,
+        price: formData.price,
+        condition: formData.condition,
+        category: formData.category,
+        brand: formData.brand,
+        boardFulfillment: formData.boardFulfillment,
+        boardShippingCostMode: formData.boardShippingCostMode,
+        boardShippingPrice: formData.boardShippingPrice,
+        boardType: formData.boardType,
+        boardLengthFt: formData.boardLengthFt,
+        boardLengthIn: formData.boardLengthIn,
+        boardWidthInches: formData.boardWidthInches,
+        boardThicknessInches: formData.boardThicknessInches,
+        boardVolumeL: formData.boardVolumeL,
+        boardFins: formData.boardFins,
+        boardTail: formData.boardTail,
+        boardBrandId: formData.boardBrandId,
+        locationLat: formData.locationLat,
+        locationLng: formData.locationLng,
+        locationCity: formData.locationCity,
+        locationState: formData.locationState,
+      }
+      const init: RequestInit = {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+      if (opts?.keepalive) init.keepalive = true
+      const res = await fetch("/api/listings/draft", init)
+      if (!res.ok) return
+      const json = (await res.json()) as { data?: { id?: string } }
+      const id = json?.data?.id
+      if (typeof id === "string") {
+        setSellServerDraftListingId(id)
+        if (!editId) {
+          await clearSellListingDraft()
+          router.replace(`/sell?edit=${id}`)
+        }
+      }
+    },
+    [
+      draftHydrated,
+      editId,
+      formData,
+      images.length,
+      listingIsDraft,
+      router,
+      supabase,
+      editLoading,
+    ],
+  )
+
+  useEffect(() => {
+    if (!editId) {
+      setEditListingStatus(null)
+    }
+  }, [editId])
+
   useEffect(() => {
     if (editId) {
       setDraftHydrated(true)
@@ -435,6 +553,53 @@ function SellPageContent() {
     }
     let cancelled = false
     void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (cancelled) return
+
+      if (user) {
+        const [res, idbDraft] = await Promise.all([
+          fetch("/api/listings/draft", { credentials: "include" }),
+          loadSellListingDraft(),
+        ])
+        if (cancelled) return
+        if (res.ok) {
+          const json = (await res.json()) as { data?: { draft?: { id: string } | null } }
+          const serverDraftId = json?.data?.draft?.id
+          if (typeof serverDraftId === "string" && serverDraftId) {
+            setSellServerDraftListingId(serverDraftId)
+            router.replace(`/sell?edit=${serverDraftId}`)
+            return
+          }
+        }
+        if (!idbDraft) {
+          setDraftHydrated(true)
+          return
+        }
+        setFormData((prev) => ({ ...prev, ...(idbDraft.formData as Partial<typeof prev>) }))
+        const restored: ListingPhotoSlot[] = []
+        for (const b of idbDraft.imageBlobs) {
+          const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
+          const clientId = crypto.randomUUID()
+          restored.push({
+            clientId,
+            previewUrl: URL.createObjectURL(file),
+            optimizePhase: "running",
+            uploadPhase: "idle",
+            progressFull: 0,
+            progressThumb: 0,
+            sourceFile: file,
+          })
+        }
+        if (restored.length) {
+          draftPhotosPendingRef.current = restored
+          setImages(restored)
+        }
+        setDraftHydrated(true)
+        return
+      }
+
       const draft = await loadSellListingDraft()
       if (cancelled) return
       if (!draft) {
@@ -465,7 +630,7 @@ function SellPageContent() {
     return () => {
       cancelled = true
     }
-  }, [editId])
+  }, [editId, router, supabase])
 
   useEffect(() => {
     if (editId || !draftHydrated) return
@@ -490,7 +655,39 @@ function SellPageContent() {
   }, [editId, draftHydrated, formData, images])
 
   useEffect(() => {
-    const flush = () => {
+    if (!draftHydrated) return
+    if (editLoading) return
+    if (getImpersonation()) return
+    if (editId && !listingIsDraft) return
+    if (!editId) {
+      const hasLocal =
+        sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot) ||
+        images.length > 0
+      if (!hasLocal) return
+    }
+    if (serverDraftPersistTimerRef.current) clearTimeout(serverDraftPersistTimerRef.current)
+    serverDraftPersistTimerRef.current = setTimeout(() => {
+      serverDraftPersistTimerRef.current = null
+      void persistServerDraft()
+    }, 900)
+    return () => {
+      if (serverDraftPersistTimerRef.current) clearTimeout(serverDraftPersistTimerRef.current)
+    }
+  }, [
+    draftHydrated,
+    editLoading,
+    editId,
+    listingIsDraft,
+    formData,
+    images.length,
+    persistServerDraft,
+  ])
+
+  const persistServerDraftRef = useRef(persistServerDraft)
+  persistServerDraftRef.current = persistServerDraft
+
+  useEffect(() => {
+    const flushIdb = () => {
       const r = sellDraftLatestRef.current
       if (r.editId || !r.draftHydrated) return
       void (async () => {
@@ -503,13 +700,17 @@ function SellPageContent() {
         else await clearSellListingDraft()
       })()
     }
-    const onVis = () => {
-      if (document.visibilityState === "hidden") flush()
+    const flushAll = () => {
+      flushIdb()
+      void persistServerDraftRef.current({ keepalive: true })
     }
-    window.addEventListener("pagehide", flush)
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flushAll()
+    }
+    window.addEventListener("pagehide", flushAll)
     document.addEventListener("visibilitychange", onVis)
     return () => {
-      window.removeEventListener("pagehide", flush)
+      window.removeEventListener("pagehide", flushAll)
       document.removeEventListener("visibilitychange", onVis)
     }
   }, [])
@@ -569,6 +770,11 @@ function SellPageContent() {
         return
       }
       setEditListingOwnerId(listing.user_id as string)
+      const st = (listing as { status?: string }).status
+      setEditListingStatus(typeof st === "string" ? st : null)
+      if (st === "draft") {
+        setSellServerDraftListingId(String(listing.id))
+      }
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
         setImpersonation(null)
@@ -585,6 +791,17 @@ function SellPageContent() {
       ) {
         boardShippingPrice = "0"
       }
+      let boardShippingCostMode: BoardShippingCostMode = "reswell"
+      if (
+        loadedFulfillment === "shipping_only" ||
+        loadedFulfillment === "pickup_and_shipping"
+      ) {
+        const p = listing.shipping_price
+        if (p != null && p !== "") {
+          const n = parseFloat(String(p).replace(/,/g, ""))
+          if (Number.isFinite(n) && n > 0) boardShippingCostMode = "flat"
+        }
+      }
       setFormData({
         title: listing.title ?? "",
         description: listing.description ?? "",
@@ -593,6 +810,7 @@ function SellPageContent() {
         condition: listing.condition ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         boardFulfillment: loadedFulfillment,
+        boardShippingCostMode,
         boardShippingPrice,
         boardType: listing.board_type ?? "",
         boardLengthFt: lengthFeet ? lengthFeet : "",
@@ -670,6 +888,26 @@ function SellPageContent() {
       void optimizeAndUploadSlot(s)
     }
   }, [draftHydrated, editId])
+
+  useEffect(() => {
+    if (!listingIsDraft || !editId || editLoading) return
+    const ready =
+      images.length > 0 &&
+      images.every((im) => im.uploadPhase === "done" && Boolean(im.url?.trim()))
+    if (!ready) return
+    if (draftImageSyncTimerRef.current) clearTimeout(draftImageSyncTimerRef.current)
+    draftImageSyncTimerRef.current = setTimeout(() => {
+      draftImageSyncTimerRef.current = null
+      void syncListingImages(editId).catch((e) => {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[sell] draft listing_images sync", e)
+        }
+      })
+    }, 1200)
+    return () => {
+      if (draftImageSyncTimerRef.current) clearTimeout(draftImageSyncTimerRef.current)
+    }
+  }, [listingIsDraft, editId, editLoading, images])
 
   async function convertViaServer(file: File): Promise<File> {
     const form = new FormData()
@@ -1052,9 +1290,13 @@ function SellPageContent() {
         local_pickup: fulfillmentFlags.local_pickup,
         shipping_price: fulfillmentFlags.shipping_available
           ? (() => {
-              const raw = fd.boardShippingPrice.trim()
-              if (adminImpersonationEditListing && !raw) return 0
-              return parseFloat(raw)
+              const mode = fd.boardShippingCostMode ?? "reswell"
+              if (mode === "flat") {
+                const raw = fd.boardShippingPrice.trim()
+                if (adminImpersonationEditListing && !raw) return 0
+                return parseFloat(raw)
+              }
+              return 0
             })()
           : null,
       }
@@ -1176,7 +1418,21 @@ function SellPageContent() {
         }
 
         if (ownerEditsOwnListing) {
-          const updatePayload = { ...editListingFields, updated_at: new Date().toISOString() }
+          let publishSlug: string | null = null
+          if (listingIsDraft) {
+            publishSlug = await generateUniqueListingSlug(supabase, resolvedListingTitle)
+          }
+          const updatePayload = {
+            ...editListingFields,
+            updated_at: new Date().toISOString(),
+            ...(listingIsDraft
+              ? {
+                  status: "active" as const,
+                  hidden_from_site: false,
+                  slug: publishSlug ?? undefined,
+                }
+              : {}),
+          }
           let { data: updated, error: updateError } = await supabase
             .from("listings")
             .update(updatePayload)
@@ -1195,6 +1451,13 @@ function SellPageContent() {
               .update({
                 ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
                 updated_at: new Date().toISOString(),
+                ...(listingIsDraft
+                  ? {
+                      status: "active" as const,
+                      hidden_from_site: false,
+                      slug: publishSlug ?? undefined,
+                    }
+                  : {}),
               })
               .eq("id", editId)
               .eq("user_id", user.id)
@@ -1410,6 +1673,7 @@ function SellPageContent() {
             toast.success("Your listing is live! 🎉")
           }
           void clearSellListingDraft()
+          clearSellServerDraftListingId()
           router.push(detailPath)
           return
         }
@@ -1437,6 +1701,7 @@ function SellPageContent() {
         else toast.success(editId ? "Listing updated!" : "Your listing is live! 🎉")
       }
       void clearSellListingDraft()
+      clearSellServerDraftListingId()
       router.push(detailPath)
     } catch (error: unknown) {
       const msg = submitErrorMessage(error, "Failed to create listing")
@@ -1528,6 +1793,7 @@ function SellPageContent() {
       condition: "good",
       brand: "Seed Brand",
       boardFulfillment: "pickup_only",
+      boardShippingCostMode: "reswell",
       boardShippingPrice: "",
       boardType,
       boardLengthFt: "5",
@@ -1566,10 +1832,18 @@ function SellPageContent() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-semibold tracking-tight text-foreground lg:text-3xl">
-                  {editId ? "Edit listing" : "Create a Listing"}
+                  {editId
+                    ? listingIsDraft
+                      ? "Continue your listing"
+                      : "Edit listing"
+                    : "Create a Listing"}
                 </h1>
                 <p className="text-sm text-muted-foreground lg:text-base">
-                  {editId ? "Update your listing details" : "List your surfboard for buyers on Reswell"}
+                  {editId
+                    ? listingIsDraft
+                      ? "Draft — finish details and publish when you are ready."
+                      : "Update your listing details"
+                    : "List your surfboard for buyers on Reswell"}
                 </p>
               </div>
               {viewerIsAdmin && (
@@ -1896,67 +2170,173 @@ function SellPageContent() {
 
                 <SellFormSection
                   title="Pickup & shipping · where you're listing from"
-                  description="Every surfboard needs a map location (pickup area or where you ship from). If you ship, set a flat shipping price (use 0 for free shipping)."
+                  description="Choose delivery options, then pin where the board is (pickup area or ship-from location) on the map."
                 >
                   <div className="space-y-8">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>How can buyers get this board? *</Label>
-                        <div className="grid gap-2 sm:grid-cols-3">
-                          {(
-                            [
-                              {
-                                value: "pickup_only" as const,
-                                title: "Local pickup",
-                                hint: "Buyer meets you",
-                              },
-                              {
-                                value: "shipping_only" as const,
-                                title: "Shipping only",
-                                hint: "You ship to buyer",
-                              },
-                              {
-                                value: "pickup_and_shipping" as const,
-                                title: "Pickup or shipping",
-                                hint: "Buyer chooses",
-                              },
-                            ] as const
-                          ).map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() =>
-                                setFormData({ ...formData, boardFulfillment: opt.value })
-                              }
-                              className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
-                                formData.boardFulfillment === opt.value
-                                  ? "border-primary bg-primary/5"
-                                  : "border-border hover:border-primary/40"
-                              }`}
+                    <div className="space-y-6">
+                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4 shadow-sm">
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground">
+                            Delivery options{" "}
+                            <span className="text-destructive" aria-hidden="true">
+                              *
+                            </span>
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            You can select both options.
+                          </p>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              id="sell-delivery-shipping"
+                              checked={deliveryFlags.shipping_available}
+                              onCheckedChange={(v) => {
+                                const want = v === true
+                                const cur = flagsFromBoardFulfillment(formData.boardFulfillment)
+                                let ns = want
+                                let np = cur.local_pickup
+                                if (!ns && !np) np = true
+                                setFormData({
+                                  ...formData,
+                                  boardFulfillment: boardFulfillmentFromChecks(ns, np),
+                                })
+                              }}
+                              className="mt-0.5"
+                            />
+                            <div className="space-y-0.5 min-w-0">
+                              <Label
+                                htmlFor="sell-delivery-shipping"
+                                className="text-sm font-medium leading-snug cursor-pointer flex flex-wrap items-center gap-2"
+                              >
+                                Shipping
+                                <Badge
+                                  variant="default"
+                                  className="border-0 bg-[#2563eb] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto"
+                                >
+                                  Items sell faster
+                                </Badge>
+                              </Label>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              id="sell-delivery-pickup"
+                              checked={deliveryFlags.local_pickup}
+                              onCheckedChange={(v) => {
+                                const want = v === true
+                                const cur = flagsFromBoardFulfillment(formData.boardFulfillment)
+                                let ns = cur.shipping_available
+                                let np = want
+                                if (!ns && !np) ns = true
+                                setFormData({
+                                  ...formData,
+                                  boardFulfillment: boardFulfillmentFromChecks(ns, np),
+                                })
+                              }}
+                              className="mt-0.5"
+                            />
+                            <Label
+                              htmlFor="sell-delivery-pickup"
+                              className="text-sm font-medium leading-snug cursor-pointer pt-0.5"
                             >
-                              <p className="font-medium">{opt.title}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{opt.hint}</p>
-                            </button>
-                          ))}
+                              Local pickup
+                            </Label>
+                          </div>
                         </div>
                       </div>
-                      {(formData.boardFulfillment === "shipping_only" ||
-                        formData.boardFulfillment === "pickup_and_shipping") && (
-                        <div className="space-y-2">
-                          <Label htmlFor="boardShippingPrice">Shipping price ($) *</Label>
-                          <Input
-                            id="boardShippingPrice"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="0.00 = free shipping"
-                            value={formData.boardShippingPrice}
-                            onChange={(e) =>
-                              setFormData({ ...formData, boardShippingPrice: e.target.value })
+
+                      {deliveryFlags.shipping_available ? (
+                        <div className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4 shadow-sm">
+                          <h3 className="text-sm font-semibold text-foreground">
+                            Shipping cost in the Continental U.S.{" "}
+                            <span className="text-destructive" aria-hidden="true">
+                              *
+                            </span>
+                          </h3>
+                          <RadioGroup
+                            value={formData.boardShippingCostMode}
+                            onValueChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                boardShippingCostMode: value as BoardShippingCostMode,
+                              })
                             }
-                          />
+                            className="space-y-3"
+                          >
+                            <label
+                              htmlFor="sell-ship-mode-reswell"
+                              className={cn(
+                                "flex gap-3 rounded-lg border p-4 cursor-pointer transition-colors",
+                                formData.boardShippingCostMode === "reswell"
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/35",
+                              )}
+                            >
+                              <RadioGroupItem
+                                value="reswell"
+                                id="sell-ship-mode-reswell"
+                                className="mt-0.5"
+                              />
+                              <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                                <span className="text-sm font-medium leading-snug">
+                                  Let Reswell determine the shipping cost for you
+                                </span>
+                                <Badge
+                                  variant="default"
+                                  className="border-0 bg-[#2563eb] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto shrink-0"
+                                >
+                                  Recommended
+                                </Badge>
+                              </div>
+                            </label>
+                            <label
+                              htmlFor="sell-ship-mode-free"
+                              className={cn(
+                                "flex gap-3 rounded-lg border p-4 cursor-pointer transition-colors",
+                                formData.boardShippingCostMode === "free"
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/35",
+                              )}
+                            >
+                              <RadioGroupItem value="free" id="sell-ship-mode-free" className="mt-0.5" />
+                              <span className="text-sm font-medium leading-snug pt-0.5">
+                                Offer free shipping
+                              </span>
+                            </label>
+                            <label
+                              htmlFor="sell-ship-mode-flat"
+                              className={cn(
+                                "flex gap-3 rounded-lg border p-4 cursor-pointer transition-colors",
+                                formData.boardShippingCostMode === "flat"
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/35",
+                              )}
+                            >
+                              <RadioGroupItem value="flat" id="sell-ship-mode-flat" className="mt-0.5" />
+                              <span className="text-sm font-medium leading-snug pt-0.5">
+                                Set a flat shipping rate
+                              </span>
+                            </label>
+                          </RadioGroup>
+                          {formData.boardShippingCostMode === "flat" ? (
+                            <div className="space-y-2 pl-7 sm:pl-8">
+                              <Label htmlFor="boardShippingPrice">Flat rate ($) *</Label>
+                              <Input
+                                id="boardShippingPrice"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={formData.boardShippingPrice}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, boardShippingPrice: e.target.value })
+                                }
+                              />
+                            </div>
+                          ) : null}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                     <LocationPicker
                       onLocationSelect={(loc) => {
@@ -2325,7 +2705,15 @@ function SellPageContent() {
                 </div>
                 </SellFormSection>
 
-                <SellFormSection title={editId ? "Save your listing" : "Publish your listing"}>
+                <SellFormSection
+                  title={
+                    editId
+                      ? listingIsDraft
+                        ? "Publish your listing"
+                        : "Save your listing"
+                      : "Publish your listing"
+                  }
+                >
                 {publishPreview && (
                   <div
                     className={cn(
@@ -2444,7 +2832,7 @@ function SellPageContent() {
                     className="w-full relative transition-shadow"
                     disabled={loading}
                   >
-                    {editId ? "Save changes" : "Create Listing"}
+                    {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
                   </Button>
                 )}
                 </SellFormSection>

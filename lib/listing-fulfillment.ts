@@ -26,6 +26,16 @@ export function flagsFromBoardFulfillment(
   }
 }
 
+/** Maps independent delivery toggles to the stored fulfillment mode. */
+export function boardFulfillmentFromChecks(
+  shippingAvailable: boolean,
+  localPickup: boolean
+): BoardFulfillmentChoice {
+  if (shippingAvailable && localPickup) return "pickup_and_shipping"
+  if (shippingAvailable) return "shipping_only"
+  return "pickup_only"
+}
+
 export function boardFulfillmentSummary(
   localPickup: boolean | null | undefined,
   shippingAvailable: boolean | null | undefined
