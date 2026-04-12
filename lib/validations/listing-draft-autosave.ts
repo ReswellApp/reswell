@@ -9,6 +9,7 @@ export const listingDraftAutosaveSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   price: z.string().optional(),
+  sellerPurchasePrice: z.string().optional(),
   condition: z.string().optional(),
   category: z.string().optional(),
   brand: z.string().optional(),

@@ -97,6 +97,7 @@ import {
   sellDraftFormLooksFilled,
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
+import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import {
   clearRemoteResumeDraftIdStorage,
   clearSellServerDraftListingId,
@@ -129,14 +130,18 @@ import {
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
   normalizeVolumeLitersInput,
-  reswellSuggestedPackageInchesFromBoard,
   shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
+import {
+  reswellSuggestedPackageInchesFromBoard,
+  reswellSuggestedShipWeightLbOzFromBoard,
+} from "@/lib/surfboard-shipping-estimates"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
+import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import {
   SellSectionNav,
   SellSectionNavCompact,
@@ -368,6 +373,7 @@ function SellPageContent() {
     title: "",
     description: "",
     price: "",
+    sellerPurchasePrice: "",
     category: "",
     condition: "",
     brand: "",
@@ -413,6 +419,7 @@ function SellPageContent() {
   const prevBoardWidthRef = useRef<string | undefined>(undefined)
   const prevBoardThicknessRef = useRef<string | undefined>(undefined)
   const reswellPkgLastAutoRef = useRef<{ l: string; w: string; h: string } | null>(null)
+  const reswellWeightLastAutoRef = useRef<{ lb: string; oz: string } | null>(null)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
     { value: string; label: string; board: boolean }[]
@@ -553,55 +560,90 @@ function SellPageContent() {
   useEffect(() => {
     if (!deliveryFlags.shipping_available || formData.boardShippingCostMode !== "reswell") {
       reswellPkgLastAutoRef.current = null
+      reswellWeightLastAutoRef.current = null
       return
     }
+
     const suggested = reswellSuggestedPackageInchesFromBoard({
       boardLength: formData.boardLength,
       boardWidthInches: formData.boardWidthInches,
       boardThicknessInches: formData.boardThicknessInches,
     })
-    if (!suggested) return
+    const weightSugg = reswellSuggestedShipWeightLbOzFromBoard({
+      boardLength: formData.boardLength,
+      boardVolumeL: formData.boardVolumeL,
+    })
 
-    const cur = {
-      l: formData.reswellPackageLengthIn,
-      w: formData.reswellPackageWidthIn,
-      h: formData.reswellPackageHeightIn,
-    }
-    const last = reswellPkgLastAutoRef.current
-    const allEmpty = !cur.l.trim() && !cur.w.trim() && !cur.h.trim()
-    const matchesLast =
-      last != null && cur.l === last.l && cur.w === last.w && cur.h === last.h
+    let dimPatch: {
+      reswellPackageLengthIn: string
+      reswellPackageWidthIn: string
+      reswellPackageHeightIn: string
+    } | null = null
 
-    if (!allEmpty && !matchesLast) {
-      return
+    if (suggested) {
+      const cur = {
+        l: formData.reswellPackageLengthIn,
+        w: formData.reswellPackageWidthIn,
+        h: formData.reswellPackageHeightIn,
+      }
+      const last = reswellPkgLastAutoRef.current
+      const allEmpty = !cur.l.trim() && !cur.w.trim() && !cur.h.trim()
+      const matchesLast =
+        last != null && cur.l === last.l && cur.w === last.w && cur.h === last.h
+
+      if (allEmpty || matchesLast) {
+        const next = {
+          l: suggested.lengthIn,
+          w: suggested.widthIn,
+          h: suggested.heightIn,
+        }
+        reswellPkgLastAutoRef.current = next
+        if (cur.l !== next.l || cur.w !== next.w || cur.h !== next.h) {
+          dimPatch = {
+            reswellPackageLengthIn: next.l,
+            reswellPackageWidthIn: next.w,
+            reswellPackageHeightIn: next.h,
+          }
+        }
+      }
     }
 
-    const next = {
-      l: suggested.lengthIn,
-      w: suggested.widthIn,
-      h: suggested.heightIn,
-    }
-    if (cur.l === next.l && cur.w === next.w && cur.h === next.h) {
-      reswellPkgLastAutoRef.current = next
-      return
+    let weightPatch: { reswellPackageWeightLb: string; reswellPackageWeightOz: string } | null =
+      null
+
+    if (weightSugg) {
+      const curLb = formData.reswellPackageWeightLb.trim()
+      const curOz = formData.reswellPackageWeightOz.trim()
+      const lastW = reswellWeightLastAutoRef.current
+      const wEmpty = !curLb && !curOz
+      const wMatch = lastW != null && curLb === lastW.lb && curOz === lastW.oz
+
+      if (wEmpty || wMatch) {
+        reswellWeightLastAutoRef.current = { lb: weightSugg.lb, oz: weightSugg.oz }
+        if (curLb !== weightSugg.lb || curOz !== weightSugg.oz) {
+          weightPatch = {
+            reswellPackageWeightLb: weightSugg.lb,
+            reswellPackageWeightOz: weightSugg.oz,
+          }
+        }
+      }
     }
 
-    reswellPkgLastAutoRef.current = next
-    setFormData((fd) => ({
-      ...fd,
-      reswellPackageLengthIn: next.l,
-      reswellPackageWidthIn: next.w,
-      reswellPackageHeightIn: next.h,
-    }))
+    if (!dimPatch && !weightPatch) return
+
+    setFormData((fd) => ({ ...fd, ...dimPatch, ...weightPatch }))
   }, [
     deliveryFlags.shipping_available,
     formData.boardShippingCostMode,
     formData.boardLength,
     formData.boardWidthInches,
     formData.boardThicknessInches,
+    formData.boardVolumeL,
     formData.reswellPackageLengthIn,
     formData.reswellPackageWidthIn,
     formData.reswellPackageHeightIn,
+    formData.reswellPackageWeightLb,
+    formData.reswellPackageWeightOz,
   ])
 
   // Count completed board fields for progress indicator
@@ -665,6 +707,7 @@ function SellPageContent() {
         title: formData.title,
         description: formData.description,
         price: formData.price,
+        sellerPurchasePrice: formData.sellerPurchasePrice,
         condition: formData.condition,
         category: formData.category,
         brand: formData.brand,
@@ -1017,6 +1060,12 @@ function SellPageContent() {
         title: listing.title ?? "",
         description: listing.description ?? "",
         price: String(listing.price ?? ""),
+        sellerPurchasePrice: (() => {
+          const v = (listing as { seller_purchase_price_usd?: number | string | null })
+            .seller_purchase_price_usd
+          if (v == null || v === "") return ""
+          return String(v)
+        })(),
         category: listing.category_id ?? "",
         condition: listing.condition ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
@@ -1502,6 +1551,16 @@ function SellPageContent() {
           !im.thumbnailUrl?.trim(),
       )
 
+      const sellerPurchaseRaw = submitForm.sellerPurchasePrice?.trim() ?? ""
+      if (
+        sellerPurchaseRaw &&
+        sellerPurchasePriceToDb(submitForm.sellerPurchasePrice) === null
+      ) {
+        toast.error("What you paid: enter a valid dollar amount or leave it blank.")
+        setLoading(false)
+        return
+      }
+
       const validationMessage = validateSellListingForm(
         { listingType: "board", ...submitForm } as SellFormValidationInput,
         {
@@ -1656,6 +1715,7 @@ function SellPageContent() {
           buyer_offers_enabled: fd.buyerOffers !== false,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
+          seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
         }
 
         if (ownerEditsOwnListing) {
@@ -1795,6 +1855,7 @@ function SellPageContent() {
           buyer_offers_enabled: fd.buyerOffers !== false,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
+          seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
         }
 
         if (listingImpersonation) {
@@ -2041,6 +2102,7 @@ function SellPageContent() {
       description:
         "Admin seed listing for QA — shortboard placeholder. Replace copy and photos before production use.",
       price: "0.50",
+      sellerPurchasePrice: "",
       category: cat,
       condition: "good",
       brand: "Seed Brand",
@@ -2657,6 +2719,19 @@ function SellPageContent() {
                     </div>
                 </SellFormSection>
 
+                <SellFormSection sectionId="sell-section-price" title="Price">
+                  <SellPriceFields
+                    listingPrice={formData.price}
+                    onListingPriceChange={(value) =>
+                      setFormData({ ...formData, price: value })
+                    }
+                    sellerPurchasePrice={formData.sellerPurchasePrice}
+                    onSellerPurchasePriceChange={(value) =>
+                      setFormData({ ...formData, sellerPurchasePrice: value })
+                    }
+                  />
+                </SellFormSection>
+
                 <SellFormSection
                   sectionId="sell-section-delivery"
                   title="Pickup & shipping · where you're listing from"
@@ -2768,16 +2843,32 @@ function SellPageContent() {
                                 id="sell-ship-mode-reswell"
                                 className="mt-0.5"
                               />
-                              <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-                                <span className="text-sm font-medium leading-snug">
-                                  Let Reswell determine the shipping cost for you
-                                </span>
-                                <Badge
-                                  variant="default"
-                                  className="border-0 bg-[#2563eb] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto shrink-0"
-                                >
-                                  Recommended
-                                </Badge>
+                              <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-sm font-medium leading-snug text-foreground">
+                                    Let Reswell determine the shipping cost for you
+                                  </span>
+                                  <Badge
+                                    variant="default"
+                                    className="border-0 bg-[#2563eb] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto shrink-0"
+                                  >
+                                    Recommended
+                                  </Badge>
+                                </div>
+                                {formData.boardShippingCostMode === "reswell" ? (
+                                  <p className="text-sm text-muted-foreground leading-relaxed">
+                                    We&apos;ll calculate shipping from your packed dimensions and add
+                                    it to the buyer&apos;s total at checkout. When an order is
+                                    placed, we&apos;ll email you the shipping label.{" "}
+                                    <Link
+                                      href="/terms"
+                                      className="text-foreground underline underline-offset-2 hover:text-primary"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      View terms
+                                    </Link>
+                                  </p>
+                                ) : null}
                               </div>
                             </label>
                             <label
@@ -2790,9 +2881,17 @@ function SellPageContent() {
                               )}
                             >
                               <RadioGroupItem value="free" id="sell-ship-mode-free" className="mt-0.5" />
-                              <span className="text-sm font-medium leading-snug pt-0.5">
-                                Offer free shipping
-                              </span>
+                              <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                                <span className="text-sm font-medium leading-snug text-foreground">
+                                  Offer free shipping
+                                </span>
+                                {formData.boardShippingCostMode === "free" ? (
+                                  <p className="text-sm text-muted-foreground leading-relaxed">
+                                    Attract more buyers by offering to cover shipping! You can adjust
+                                    the listing&apos;s price to make up for the cost.
+                                  </p>
+                                ) : null}
+                              </div>
                             </label>
                             <label
                               htmlFor="sell-ship-mode-flat"
@@ -2804,9 +2903,16 @@ function SellPageContent() {
                               )}
                             >
                               <RadioGroupItem value="flat" id="sell-ship-mode-flat" className="mt-0.5" />
-                              <span className="text-sm font-medium leading-snug pt-0.5">
-                                Set a flat shipping rate
-                              </span>
+                              <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                                <span className="text-sm font-medium leading-snug text-foreground">
+                                  Set a flat shipping rate
+                                </span>
+                                {formData.boardShippingCostMode === "flat" ? (
+                                  <p className="text-sm text-muted-foreground leading-relaxed">
+                                    Determine one cost that all buyers in this entire region will pay.
+                                  </p>
+                                ) : null}
+                              </div>
                             </label>
                           </RadioGroup>
                           {formData.boardShippingCostMode === "flat" ? (
@@ -2950,7 +3056,6 @@ function SellPageContent() {
                   <SellFormSection
                     sectionId="sell-section-reswell-package"
                     title="Reswell shipping: packed size & weight"
-                    description="Carriers bill by the box you ship in, not the board specs alone. Length, width, and height start from your dimensions section — adjust for padding, bag, or box. Enter the packed weight you’ll ship at."
                   >
                     <ReswellPackageDimensionsCard
                       showHeading={false}
@@ -2979,28 +3084,19 @@ function SellPageContent() {
                   </SellFormSection>
                 ) : null}
 
-                <SellFormSection sectionId="sell-section-price" title="Price & condition">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price ($) *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Condition *</Label>
+                <SellFormSection
+                  sectionId="sell-section-description"
+                  title="Description"
+                  description="Set condition, then describe the board for buyers."
+                >
+                <div className="space-y-6">
+                  <div className="max-w-md space-y-2">
+                    <Label htmlFor="sell-condition">Condition *</Label>
                     <Select
                       value={formData.condition}
                       onValueChange={(value) => setFormData({ ...formData, condition: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="sell-condition">
                         <SelectValue placeholder="Select condition" />
                       </SelectTrigger>
                       <SelectContent>
@@ -3012,10 +3108,6 @@ function SellPageContent() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                </SellFormSection>
-
-                <SellFormSection sectionId="sell-section-description" title="Description">
                 <div className="space-y-2">
                   <Label htmlFor="description">
                     Description *
@@ -3186,6 +3278,7 @@ function SellPageContent() {
                         </div>
                       </div>
                     </div>
+                </div>
                 </div>
                 </SellFormSection>
 

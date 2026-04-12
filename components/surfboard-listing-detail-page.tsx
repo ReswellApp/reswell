@@ -73,6 +73,8 @@ export async function SurfboardListingDetailPage({
     notFound()
   }
 
+  delete (board as Record<string, unknown>).seller_purchase_price_usd
+
   // Ensure seller profile never contains private data (email, etc.) before sending to client
   const p = board.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

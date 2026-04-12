@@ -10,6 +10,7 @@ import { flagsFromBoardFulfillment, type BoardFulfillmentChoice } from "@/lib/li
 import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
 import type { ListingDraftAutosaveInput } from "@/lib/validations/listing-draft-autosave"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
+import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -115,6 +116,7 @@ export function buildSurfboardDraftListingRow(
     buyer_offers_enabled: fd.buyerOffers !== false,
     brand: fd.brand?.trim() ? fd.brand.trim() : null,
     brand_id: fd.boardBrandId?.trim() || null,
+    seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice ?? ""),
     status: "draft",
     hidden_from_site: true,
     updated_at: new Date().toISOString(),

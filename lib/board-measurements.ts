@@ -513,51 +513,6 @@ export function boardDimensionDisplayFields(input: {
   }
 }
 
-/**
- * Suggested packed-box length × width × height (inches) for Reswell-calculated shipping,
- * derived from the board dimensions section: overall length, width, and thickness (rail height).
- * Sellers can adjust for padding, bags, and how they pack — this is a starting point only.
- */
-export function reswellSuggestedPackageInchesFromBoard(input: {
-  boardLength: string
-  boardWidthInches: string
-  boardThicknessInches: string
-}): { lengthIn: string; widthIn: string; heightIn: string } | null {
-  const { feetStr, inchesStr } = parseBoardLengthParts(input.boardLength)
-  const ft = parseLengthFeet(feetStr)
-  if (ft == null) return null
-  const inRaw = inchesStr.trim() === "" ? "0" : inchesStr.trim()
-  const inchesNum = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
-  if (!Number.isFinite(inchesNum) || inchesNum < 0 || inchesNum >= 12) {
-    return null
-  }
-  const totalLengthIn = ft * 12 + inchesNum
-  if (!Number.isFinite(totalLengthIn) || totalLengthIn <= 0) return null
-
-  const wRaw = input.boardWidthInches.trim()
-  const tRaw = input.boardThicknessInches.trim()
-  const wParsed =
-    wRaw === ""
-      ? null
-      : (parseBoardMeasurement(wRaw) ?? Number.parseFloat(wRaw))
-  const tParsed =
-    tRaw === ""
-      ? null
-      : (parseBoardMeasurement(tRaw) ?? Number.parseFloat(tRaw))
-
-  return {
-    lengthIn: formatDecimalDimension(totalLengthIn),
-    widthIn:
-      wParsed != null && Number.isFinite(wParsed) && wParsed > 0
-        ? formatDecimalDimension(wParsed)
-        : "",
-    heightIn:
-      tParsed != null && Number.isFinite(tParsed) && tParsed > 0
-        ? formatDecimalDimension(tParsed)
-        : "",
-  }
-}
-
 export function boardDimensionsToDbFields(input: {
   boardLength: string
   boardWidthInches: string

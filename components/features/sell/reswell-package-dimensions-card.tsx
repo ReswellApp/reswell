@@ -123,11 +123,6 @@ export function ReswellPackageDimensionsCard({
         </p>
       </div>
 
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        Length, width, and height below start from your board dimensions (overall length, width,
-        thickness). Add padding for a bag, bubble, or coffin box — adjust as needed.
-      </p>
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SuffixInput
           id="reswell-pkg-length-in"
