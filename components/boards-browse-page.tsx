@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -293,6 +294,14 @@ export async function BoardsBrowsePage(props: {
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
   const searchParams = await props.searchParams
+  if (searchParams.type === "foamie") {
+    const next = new URLSearchParams()
+    for (const [k, v] of Object.entries(searchParams)) {
+      if (k === "type" || v == null || v === "") continue
+      next.set(k, v)
+    }
+    redirect(next.toString() ? `/boards?${next.toString()}` : "/boards")
+  }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
 
   return (

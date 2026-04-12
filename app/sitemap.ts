@@ -11,7 +11,6 @@ const BOARD_TYPE_FILTERS = [
   "step-up",
   "fish",
   "gun",
-  "foamie",
 ]
 
 const BOARD_CONDITION_FILTERS = ["new", "like_new", "good", "fair"]

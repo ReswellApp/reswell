@@ -32,7 +32,6 @@ export const boardTypes = [
   { value: "step-up", label: "Step-Up" },
   { value: "fish", label: "Fish" },
   { value: "gun", label: "Gun" },
-  { value: "foamie", label: "Foam / Soft Top" },
   { value: "other", label: "Other" },
 ]
 

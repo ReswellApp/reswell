@@ -9,7 +9,6 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
   "step-up": "Step-Up",
   fish: "Fish Boards",
   gun: "Gun Boards",
-  foamie: "Foam / Soft-Top Boards",
   other: "Surfboards",
 }
 

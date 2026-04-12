@@ -13,7 +13,6 @@ export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "Step-Up", href: "/boards?type=step-up" },
   { label: "Fish", href: "/boards?type=fish" },
   { label: "Gun", href: "/boards?type=gun" },
-  { label: "Foam / Soft Top", href: "/boards?type=foamie" },
   { label: "Other", href: "/boards?type=other" },
 ]
 
@@ -70,7 +69,6 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
           { label: "Step-Up", href: "/boards?type=step-up" },
           { label: "Fish", href: "/boards?type=fish" },
           { label: "Gun", href: "/boards?type=gun" },
-          { label: "Foam / Soft Top", href: "/boards?type=foamie" },
           { label: "Other", href: "/boards?type=other" },
         ],
       },
