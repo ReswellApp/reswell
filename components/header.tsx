@@ -500,12 +500,6 @@ export function Header() {
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="flex items-center">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Dashboard
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
             <Link href="/dashboard/earnings" className="flex items-center justify-between">
               <span className="flex items-center">
                 <Banknote className="mr-2 h-4 w-4" />
@@ -516,6 +510,12 @@ export function Header() {
                   ${walletBalance.toFixed(2)}
                 </span>
               )}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard" className="flex items-center">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Dashboard
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
