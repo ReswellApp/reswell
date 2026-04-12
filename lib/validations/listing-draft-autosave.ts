@@ -34,6 +34,11 @@ export const listingDraftAutosaveSchema = z.object({
   locationLng: z.number().optional(),
   locationCity: z.string().optional(),
   locationState: z.string().optional(),
+  reswellPackageLengthIn: z.string().optional(),
+  reswellPackageWidthIn: z.string().optional(),
+  reswellPackageHeightIn: z.string().optional(),
+  reswellPackageWeightLb: z.string().optional(),
+  reswellPackageWeightOz: z.string().optional(),
 })
 
 export type ListingDraftAutosaveInput = z.infer<typeof listingDraftAutosaveSchema>

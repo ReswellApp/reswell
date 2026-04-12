@@ -53,6 +53,12 @@ export type SellFormValidationInput = {
   boardFulfillment: BoardFulfillmentChoice
   boardShippingCostMode: BoardShippingCostMode
   boardShippingPrice: string
+  /** Packed box for Reswell-calculated rates (in / lb / oz). */
+  reswellPackageLengthIn?: string
+  reswellPackageWidthIn?: string
+  reswellPackageHeightIn?: string
+  reswellPackageWeightLb?: string
+  reswellPackageWeightOz?: string
   /** Scheduled price drop (2 weeks) — seller sets floor via `autoPriceDropFloor`. */
   autoPriceDrop: boolean
   autoPriceDropFloor: string
@@ -236,6 +242,40 @@ export function validateSellListingForm(
         if (!Number.isFinite(sp) || sp < 0) {
           return "Flat shipping must be a number ≥ 0."
         }
+      }
+    }
+    if (mode === "reswell" && !relaxed) {
+      const parseInchField = (raw: string | undefined): number | null => {
+        const t = raw?.trim() ?? ""
+        if (!t) return null
+        const n = parseFloat(t.replace(/,/g, ""))
+        return Number.isFinite(n) ? n : null
+      }
+      const L = parseInchField(form.reswellPackageLengthIn)
+      const W = parseInchField(form.reswellPackageWidthIn)
+      const H = parseInchField(form.reswellPackageHeightIn)
+      if (L == null || L <= 0) {
+        return "Enter packed box length (inches) for Reswell-calculated shipping."
+      }
+      if (W == null || W <= 0) {
+        return "Enter packed box width (inches) for Reswell-calculated shipping."
+      }
+      if (H == null || H <= 0) {
+        return "Enter packed box height (inches) for Reswell-calculated shipping."
+      }
+      const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""
+      const ozRaw = form.reswellPackageWeightOz?.trim() ?? ""
+      const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
+      const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
+      if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0) {
+        return "Enter a valid packed weight (pounds and ounces)."
+      }
+      if (oz >= 16) {
+        return "Ounces must be under 16 — add whole pounds in the pounds field instead."
+      }
+      const totalOz = lb * 16 + oz
+      if (!Number.isFinite(totalOz) || totalOz <= 0) {
+        return "Enter the packed weight so we can quote shipping (pounds and/or ounces)."
       }
     }
   }

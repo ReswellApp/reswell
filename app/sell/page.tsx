@@ -129,12 +129,14 @@ import {
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
   normalizeVolumeLitersInput,
+  reswellSuggestedPackageInchesFromBoard,
   shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
+import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
   SellSectionNav,
   SellSectionNavCompact,
@@ -372,6 +374,11 @@ function SellPageContent() {
     boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
     boardShippingPrice: "",
+    reswellPackageLengthIn: "",
+    reswellPackageWidthIn: "",
+    reswellPackageHeightIn: "",
+    reswellPackageWeightLb: "",
+    reswellPackageWeightOz: "",
     autoPriceDrop: false,
     autoPriceDropFloor: "",
     buyerOffers: true,
@@ -405,6 +412,7 @@ function SellPageContent() {
   const prevBoardLengthRef = useRef<string | undefined>(undefined)
   const prevBoardWidthRef = useRef<string | undefined>(undefined)
   const prevBoardThicknessRef = useRef<string | undefined>(undefined)
+  const reswellPkgLastAutoRef = useRef<{ l: string; w: string; h: string } | null>(null)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
     { value: string; label: string; board: boolean }[]
@@ -520,6 +528,11 @@ function SellPageContent() {
       boardFulfillment: formData.boardFulfillment,
       boardShippingCostMode: formData.boardShippingCostMode,
       boardShippingPrice: formData.boardShippingPrice,
+      reswellPackageLengthIn: formData.reswellPackageLengthIn,
+      reswellPackageWidthIn: formData.reswellPackageWidthIn,
+      reswellPackageHeightIn: formData.reswellPackageHeightIn,
+      reswellPackageWeightLb: formData.reswellPackageWeightLb,
+      reswellPackageWeightOz: formData.reswellPackageWeightOz,
       autoPriceDrop: formData.autoPriceDrop,
       autoPriceDropFloor: formData.autoPriceDropFloor,
       locationCity: formData.locationCity,
@@ -536,6 +549,60 @@ function SellPageContent() {
     () => flagsFromBoardFulfillment(formData.boardFulfillment),
     [formData.boardFulfillment],
   )
+
+  useEffect(() => {
+    if (!deliveryFlags.shipping_available || formData.boardShippingCostMode !== "reswell") {
+      reswellPkgLastAutoRef.current = null
+      return
+    }
+    const suggested = reswellSuggestedPackageInchesFromBoard({
+      boardLength: formData.boardLength,
+      boardWidthInches: formData.boardWidthInches,
+      boardThicknessInches: formData.boardThicknessInches,
+    })
+    if (!suggested) return
+
+    const cur = {
+      l: formData.reswellPackageLengthIn,
+      w: formData.reswellPackageWidthIn,
+      h: formData.reswellPackageHeightIn,
+    }
+    const last = reswellPkgLastAutoRef.current
+    const allEmpty = !cur.l.trim() && !cur.w.trim() && !cur.h.trim()
+    const matchesLast =
+      last != null && cur.l === last.l && cur.w === last.w && cur.h === last.h
+
+    if (!allEmpty && !matchesLast) {
+      return
+    }
+
+    const next = {
+      l: suggested.lengthIn,
+      w: suggested.widthIn,
+      h: suggested.heightIn,
+    }
+    if (cur.l === next.l && cur.w === next.w && cur.h === next.h) {
+      reswellPkgLastAutoRef.current = next
+      return
+    }
+
+    reswellPkgLastAutoRef.current = next
+    setFormData((fd) => ({
+      ...fd,
+      reswellPackageLengthIn: next.l,
+      reswellPackageWidthIn: next.w,
+      reswellPackageHeightIn: next.h,
+    }))
+  }, [
+    deliveryFlags.shipping_available,
+    formData.boardShippingCostMode,
+    formData.boardLength,
+    formData.boardWidthInches,
+    formData.boardThicknessInches,
+    formData.reswellPackageLengthIn,
+    formData.reswellPackageWidthIn,
+    formData.reswellPackageHeightIn,
+  ])
 
   // Count completed board fields for progress indicator
   const boardFieldsCompleted = useMemo(() => {
@@ -604,6 +671,11 @@ function SellPageContent() {
         boardFulfillment: formData.boardFulfillment,
         boardShippingCostMode: formData.boardShippingCostMode,
         boardShippingPrice: formData.boardShippingPrice,
+        reswellPackageLengthIn: formData.reswellPackageLengthIn,
+        reswellPackageWidthIn: formData.reswellPackageWidthIn,
+        reswellPackageHeightIn: formData.reswellPackageHeightIn,
+        reswellPackageWeightLb: formData.reswellPackageWeightLb,
+        reswellPackageWeightOz: formData.reswellPackageWeightOz,
         autoPriceDrop: formData.autoPriceDrop,
         autoPriceDropFloor: formData.autoPriceDropFloor,
         buyerOffers: formData.buyerOffers,
@@ -951,6 +1023,11 @@ function SellPageContent() {
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
         boardShippingPrice,
+        reswellPackageLengthIn: "",
+        reswellPackageWidthIn: "",
+        reswellPackageHeightIn: "",
+        reswellPackageWeightLb: "",
+        reswellPackageWeightOz: "",
         autoPriceDrop: (() => {
           const f = (listing as { auto_price_drop_floor?: number | string | null })
             .auto_price_drop_floor
@@ -1970,6 +2047,11 @@ function SellPageContent() {
       boardFulfillment: "pickup_only",
       boardShippingCostMode: "reswell",
       boardShippingPrice: "",
+      reswellPackageLengthIn: "",
+      reswellPackageWidthIn: "",
+      reswellPackageHeightIn: "",
+      reswellPackageWeightLb: "",
+      reswellPackageWeightOz: "",
       autoPriceDrop: false,
       autoPriceDropFloor: "",
       buyerOffers: true,
@@ -2862,6 +2944,40 @@ function SellPageContent() {
                     />
                   </div>
                 </SellFormSection>
+
+                {deliveryFlags.shipping_available &&
+                formData.boardShippingCostMode === "reswell" ? (
+                  <SellFormSection
+                    sectionId="sell-section-reswell-package"
+                    title="Reswell shipping: packed size & weight"
+                    description="Carriers bill by the box you ship in, not the board specs alone. Length, width, and height start from your dimensions section — adjust for padding, bag, or box. Enter the packed weight you’ll ship at."
+                  >
+                    <ReswellPackageDimensionsCard
+                      showHeading={false}
+                      className="border-0 bg-transparent p-0 shadow-none rounded-none"
+                      lengthIn={formData.reswellPackageLengthIn}
+                      widthIn={formData.reswellPackageWidthIn}
+                      heightIn={formData.reswellPackageHeightIn}
+                      weightLb={formData.reswellPackageWeightLb}
+                      weightOz={formData.reswellPackageWeightOz}
+                      onLengthInChange={(v) =>
+                        setFormData({ ...formData, reswellPackageLengthIn: v })
+                      }
+                      onWidthInChange={(v) =>
+                        setFormData({ ...formData, reswellPackageWidthIn: v })
+                      }
+                      onHeightInChange={(v) =>
+                        setFormData({ ...formData, reswellPackageHeightIn: v })
+                      }
+                      onWeightLbChange={(v) =>
+                        setFormData({ ...formData, reswellPackageWeightLb: v })
+                      }
+                      onWeightOzChange={(v) =>
+                        setFormData({ ...formData, reswellPackageWeightOz: v })
+                      }
+                    />
+                  </SellFormSection>
+                ) : null}
 
                 <SellFormSection sectionId="sell-section-price" title="Price & condition">
                 <div className="grid gap-4 sm:grid-cols-2">
