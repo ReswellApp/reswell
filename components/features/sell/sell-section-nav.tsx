@@ -1,5 +1,7 @@
 "use client"
 
+import { Check } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
 export type SellSectionNavItem = {
@@ -27,13 +29,16 @@ export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
 ]
 
 /**
- * Vertical stepper matching the sell flow: hollow nodes, thick rail, labels on the right.
+ * Desktop sidebar: dots on a vertical rail with section labels; completed steps show a checkmark.
  */
 export function SellSectionNav({
   items,
+  sectionCompletion,
   className,
 }: {
   items: readonly SellSectionNavItem[]
+  /** When set, keys are section ids (see `SELL_FORM_SECTION_NAV_ITEMS`); completed steps render a check. */
+  sectionCompletion?: Readonly<Partial<Record<string, boolean>>>
   className?: string
 }) {
   return (
@@ -41,40 +46,49 @@ export function SellSectionNav({
       aria-label="Listing form sections"
       className={cn("sticky top-24", className)}
     >
-      <div className="relative">
-        <div
-          className="absolute left-2 top-2 bottom-2 w-[3px] -translate-x-1/2 rounded-full bg-foreground"
-          aria-hidden
-        />
-        <ul className="relative space-y-6">
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => scrollToSection(item.id)}
-                className={cn(
-                  "group flex w-full gap-3 text-left",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm",
-                )}
-              >
-                <span
-                  className="relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center"
-                  aria-hidden
-                >
-                  <span
+      <div className="w-full overflow-auto">
+        <div className="relative py-2">
+          <div
+            className="absolute left-[10px] top-2.5 bottom-2.5 w-px -translate-x-1/2 bg-foreground/25"
+            aria-hidden
+          />
+          <ul className="relative m-0 list-none space-y-5 p-0">
+            {items.map((item) => {
+              const complete = sectionCompletion?.[item.id] === true
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection(item.id)}
+                    aria-label={
+                      complete ? `${item.label}, completed` : `Go to ${item.label}`
+                    }
                     className={cn(
-                      "h-3.5 w-3.5 rounded-full border-[2.5px] border-foreground bg-muted ring-2 ring-muted",
-                      "transition-transform group-hover:scale-110",
+                      "group flex w-full items-start gap-2.5 rounded-sm text-left",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     )}
-                  />
-                </span>
-                <span className="max-w-[11rem] text-sm leading-snug text-foreground group-hover:underline group-hover:underline-offset-4">
-                  {item.label}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+                  >
+                    <span
+                      className="relative z-10 mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground transition-opacity group-hover:opacity-90"
+                      aria-hidden
+                    >
+                      {complete ? (
+                        <Check
+                          className="h-3 w-3 text-background"
+                          strokeWidth={3}
+                          aria-hidden
+                        />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0 max-w-[13rem] pt-0.5 text-sm leading-snug text-foreground group-hover:underline group-hover:underline-offset-4">
+                      {item.label}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       </div>
     </nav>
   )

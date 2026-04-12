@@ -147,6 +147,7 @@ import {
   SellSectionNavCompact,
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
+import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -544,6 +545,24 @@ function SellPageContent() {
       locationState: formData.locationState,
     }),
     [formData],
+  )
+
+  const imagesUploadReady = useMemo(
+    () =>
+      !images.some(
+        (im) =>
+          im.uploadPhase !== "done" || !im.url?.trim() || !im.thumbnailUrl?.trim(),
+      ),
+    [images],
+  )
+
+  const sellSectionCompletion = useMemo(
+    () =>
+      computeSellSectionCompletion(sellValidationForm, {
+        imageCount: images.length,
+        imagesUploadReady,
+      }),
+    [sellValidationForm, images.length, imagesUploadReady],
   )
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
@@ -2198,8 +2217,11 @@ function SellPageContent() {
             </div>
           ) : (
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-14">
-              <div className="hidden shrink-0 lg:block lg:w-44 xl:w-48">
-                <SellSectionNav items={SELL_FORM_SECTION_NAV_ITEMS} />
+              <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
+                <SellSectionNav
+                  items={SELL_FORM_SECTION_NAV_ITEMS}
+                  sectionCompletion={sellSectionCompletion}
+                />
               </div>
               <div className="min-w-0 w-full max-w-2xl lg:max-w-3xl">
                 <SellSectionNavCompact
