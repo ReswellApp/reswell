@@ -43,7 +43,6 @@ import { toast } from "sonner"
 import {
   Upload,
   Loader2,
-  Trash2,
   X,
   ChevronDown,
   ChevronLeft,
@@ -318,7 +317,6 @@ function SellPageContent() {
   const [localServerDraftId, setLocalServerDraftId] = useState<string | null>(null)
   /** Server draft id for “Continue” — primed from sessionStorage in useLayoutEffect (before paint). */
   const [remoteResumeDraftId, setRemoteResumeDraftId] = useState<string | null>(null)
-  const [isDiscardingResumeDraft, setIsDiscardingResumeDraft] = useState(false)
 
   const effectiveEditId = editId ?? localServerDraftId
   const isLocalOnlyServerDraft = Boolean(localServerDraftId && !editId)
@@ -347,30 +345,6 @@ function SellPageContent() {
       clearRemoteResumeDraftIdStorage()
     }
   }, [remoteResumeDraftId, localServerDraftId])
-
-  const handleDiscardResumeBannerDraft = useCallback(async () => {
-    const id = remoteResumeDraftId
-    if (!id) return
-    setIsDiscardingResumeDraft(true)
-    try {
-      const res = await fetch(`/api/listings/draft?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        credentials: "include",
-      })
-      if (!res.ok) {
-        toast.error("Could not delete draft")
-        return
-      }
-      void clearSellListingDraft()
-      clearSellServerDraftListingId()
-      clearRemoteResumeDraftIdStorage()
-      setRemoteResumeDraftId(null)
-      setLocalServerDraftId((prev) => (prev === id ? null : prev))
-      toast.success("Draft deleted")
-    } finally {
-      setIsDiscardingResumeDraft(false)
-    }
-  }, [remoteResumeDraftId])
 
   useEffect(() => {
     if (!loading) return
@@ -655,7 +629,15 @@ function SellPageContent() {
       }
       if (opts?.keepalive) init.keepalive = true
       const res = await fetch("/api/listings/draft", init)
-      if (!res.ok) return
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 403) {
+          clearSellServerDraftListingId()
+          clearRemoteResumeDraftIdStorage()
+          setRemoteResumeDraftId(null)
+          setLocalServerDraftId(null)
+        }
+        return
+      }
       const json = (await res.json()) as { data?: { id?: string } }
       const id = json?.data?.id
       if (typeof id === "string") {
@@ -698,6 +680,12 @@ function SellPageContent() {
       if (draft?.serverListingId) {
         setLocalServerDraftId(draft.serverListingId)
         setSellServerDraftListingId(draft.serverListingId)
+      } else if (!editId) {
+        const sid = getSellServerDraftListingId()
+        if (sid) {
+          setLocalServerDraftId(sid)
+          setSellServerDraftListingId(sid)
+        }
       }
       if (!draft) {
         setDraftHydrated(true)
@@ -2062,44 +2050,6 @@ function SellPageContent() {
             </div>
           </div>
 
-          {!editId &&
-          remoteResumeDraftId &&
-          remoteResumeDraftId !== localServerDraftId ? (
-            <div className="mb-6 flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Draft</span>
-                {" — "}
-                Continue where you left off.
-              </p>
-              <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  disabled={isDiscardingResumeDraft}
-                  aria-label="Delete draft"
-                  onClick={() => void handleDiscardResumeBannerDraft()}
-                >
-                  {isDiscardingResumeDraft ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  ) : (
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="shrink-0"
-                  disabled={isDiscardingResumeDraft}
-                  onClick={() => router.push(`/sell?edit=${remoteResumeDraftId}`)}
-                >
-                  Continue
-                </Button>
-              </div>
-            </div>
-          ) : null}
           {editLoading ? (
             <div className="flex items-center justify-center py-16 rounded-xl border border-border bg-card shadow-sm">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

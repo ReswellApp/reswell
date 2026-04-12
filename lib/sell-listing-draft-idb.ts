@@ -25,11 +25,33 @@ export type SellListingDraftRecord = {
   serverListingId?: string
 }
 
+function str(formData: SellListingDraftFormSnapshot, key: string): string {
+  const v = formData[key]
+  return typeof v === "string" ? v.trim() : ""
+}
+
+/** True when the user has entered enough that we should persist (IDB + server draft). */
 export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot): boolean {
-  const title = typeof formData.title === "string" ? formData.title.trim() : ""
-  const price = typeof formData.price === "string" ? formData.price.trim() : ""
-  const description = typeof formData.description === "string" ? formData.description.trim() : ""
-  return !!(title || price || description)
+  if (str(formData, "title") || str(formData, "price") || str(formData, "description")) {
+    return true
+  }
+  if (str(formData, "boardLength")) return true
+  if (str(formData, "category")) return true
+  if (str(formData, "condition")) return true
+  if (str(formData, "brand")) return true
+  if (str(formData, "boardType")) return true
+  if (
+    str(formData, "boardWidthInches") ||
+    str(formData, "boardThicknessInches") ||
+    str(formData, "boardVolumeL")
+  ) {
+    return true
+  }
+  if (str(formData, "boardFins") || str(formData, "boardTail")) return true
+  if (str(formData, "locationDisplay") || str(formData, "locationCity")) return true
+  if (formData.boardSkipOptionalDimensions === true) return true
+  if (formData.autoPriceDrop === true) return true
+  return false
 }
 
 function openDb(): Promise<IDBDatabase> {
