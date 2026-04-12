@@ -148,6 +148,7 @@ import {
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
 import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
+import { SurfboardShippingEstimatorDialog } from "@/components/features/sell/surfboard-shipping-estimator-dialog"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -368,6 +369,7 @@ function SellPageContent() {
   }, [images])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
   const [viewerIsAdmin, setViewerIsAdmin] = useState(false)
+  const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -2976,15 +2978,14 @@ function SellPageContent() {
                                     className="pl-8 tabular-nums"
                                   />
                                 </div>
-                                <Link
-                                  href="https://postcalc.usps.com/"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  type="button"
                                   className="inline-flex items-center gap-0.5 text-sm font-medium text-primary hover:underline"
+                                  onClick={() => setShippingEstimatorOpen(true)}
                                 >
                                   Shipping label cost estimator
                                   <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-                                </Link>
+                                </button>
                               </div>
                             </div>
                           ) : null}
@@ -3613,6 +3614,14 @@ function SellPageContent() {
             </div>
               )}
         </div>
+        <SurfboardShippingEstimatorDialog
+          open={shippingEstimatorOpen}
+          onOpenChange={setShippingEstimatorOpen}
+          boardLength={formData.boardLength}
+          boardWidthInches={formData.boardWidthInches}
+          boardThicknessInches={formData.boardThicknessInches}
+          boardVolumeL={formData.boardVolumeL}
+        />
       </main>
   )
 }

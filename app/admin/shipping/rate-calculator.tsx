@@ -27,8 +27,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { ChevronDown, ChevronUp, Loader2, Scale } from 'lucide-react'
 import { toast } from 'sonner'
-import { normalizeUsStateProvinceForShipping } from '@/lib/us-state-name-to-code'
 import type { AddressFields } from './address-fields'
+import {
+  buildShipmentBody,
+  extractRatesFromApiEnvelope,
+  rateMoneyTotal,
+} from '@/lib/shipping/shipengine-rate-helpers'
 import { AddressForm } from './shipping-address-form'
 import { RATE_SEED_LISTINGS } from './rate-seed-listings'
 
@@ -95,86 +99,6 @@ function newCompareRow(partial?: Partial<CompareRow>): CompareRow {
     widthIn: partial?.widthIn ?? '20',
     heightIn: partial?.heightIn ?? '6',
   }
-}
-
-function addressToPayload(a: AddressFields, role: 'from' | 'to') {
-  const country = a.country_code.trim().toUpperCase() || 'US'
-  const base: Record<string, unknown> = {
-    name: a.name.trim() || (role === 'from' ? 'Shipper' : 'Recipient'),
-    phone: a.phone.trim() || undefined,
-    company_name: a.company_name.trim() || undefined,
-    address_line1: a.address_line1.trim(),
-    address_line2: a.address_line2.trim() || undefined,
-    city_locality: a.city_locality.trim(),
-    state_province: normalizeUsStateProvinceForShipping(country, a.state_province),
-    postal_code: a.postal_code.trim(),
-    country_code: country,
-    address_residential_indicator: a.residential,
-  }
-  return base
-}
-
-function buildShipmentBody(
-  shipFrom: AddressFields,
-  shipTo: AddressFields,
-  opts: {
-    weightValue: number
-    weightUnit: 'ounce' | 'pound' | 'gram' | 'kilogram'
-    length: number
-    width: number
-    height: number
-    dimUnit: 'inch' | 'centimeter'
-    packageCode: string
-    validateAddress: 'no_validation' | 'validate_only' | 'validate_and_clean'
-  },
-) {
-  const pkg: Record<string, unknown> = {
-    package_code: opts.packageCode || 'package',
-    weight: { value: opts.weightValue, unit: opts.weightUnit },
-  }
-  if (opts.length > 0 && opts.width > 0 && opts.height > 0) {
-    pkg.dimensions = {
-      length: opts.length,
-      width: opts.width,
-      height: opts.height,
-      unit: opts.dimUnit,
-    }
-  }
-  return {
-    validate_address: opts.validateAddress,
-    ship_from: addressToPayload(shipFrom, 'from'),
-    ship_to: addressToPayload(shipTo, 'to'),
-    packages: [pkg],
-  }
-}
-
-function extractRatesFromApiEnvelope(envelope: unknown): Record<string, unknown>[] {
-  const root = asRecord(envelope)
-  const inner = root?.data !== undefined && root?.data !== null ? root.data : envelope
-  const se = asRecord(inner)
-  const rr = asRecord(se?.rate_response) ?? asRecord(se)
-  const rates = rr?.rates
-  return Array.isArray(rates) ? (rates as Record<string, unknown>[]) : []
-}
-
-function rateMoneyTotal(r: Record<string, unknown>): { total: number; currency: string } {
-  const keys = [
-    'shipping_amount',
-    'shipment_amount',
-    'insurance_amount',
-    'confirmation_amount',
-    'other_amount',
-  ] as const
-  let total = 0
-  let currency = 'usd'
-  for (const k of keys) {
-    const m = asRecord(r[k])
-    if (m && typeof m.amount === 'number') {
-      total += m.amount
-      if (typeof m.currency === 'string') currency = m.currency
-    }
-  }
-  return { total, currency }
 }
 
 type SortKey = 'price' | 'delivery' | 'service'
