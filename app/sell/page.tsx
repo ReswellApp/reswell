@@ -2916,19 +2916,56 @@ function SellPageContent() {
                             </label>
                           </RadioGroup>
                           {formData.boardShippingCostMode === "flat" ? (
-                            <div className="space-y-2 pl-7 sm:pl-8">
-                              <Label htmlFor="boardShippingPrice">Flat rate ($) *</Label>
-                              <Input
-                                id="boardShippingPrice"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={formData.boardShippingPrice}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, boardShippingPrice: e.target.value })
-                                }
-                              />
+                            <div className="rounded-lg border border-border bg-background p-4 sm:p-5 space-y-4">
+                              <h4 className="text-sm font-semibold text-foreground">
+                                Set a shipping rate for the Continental U.S.{" "}
+                                <span className="text-destructive" aria-hidden="true">
+                                  *
+                                </span>
+                              </h4>
+                              <div className="space-y-2 max-w-md">
+                                <Label
+                                  htmlFor="boardShippingPrice"
+                                  className="text-sm font-semibold text-foreground"
+                                >
+                                  Shipping Rate{" "}
+                                  <span className="text-destructive" aria-hidden="true">
+                                    *
+                                  </span>
+                                </Label>
+                                <div className="relative">
+                                  <span
+                                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-foreground tabular-nums"
+                                    aria-hidden
+                                  >
+                                    $
+                                  </span>
+                                  <Input
+                                    id="boardShippingPrice"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={formData.boardShippingPrice}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        boardShippingPrice: e.target.value,
+                                      })
+                                    }
+                                    className="pl-8 tabular-nums"
+                                  />
+                                </div>
+                                <Link
+                                  href="https://postcalc.usps.com/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-0.5 text-sm font-medium text-primary hover:underline"
+                                >
+                                  Shipping label cost estimator
+                                  <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                                </Link>
+                              </div>
                             </div>
                           ) : null}
                         </div>
