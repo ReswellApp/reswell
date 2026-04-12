@@ -457,6 +457,136 @@ export function Header() {
     window.location.href = "/"
   }
 
+  const isSellChromeMinimal =
+    pathname !== null && (pathname === "/sell" || pathname.startsWith("/sell/"))
+
+  const accountDropdown =
+    user ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="text-foreground">
+            <Avatar className="h-9 w-9">
+              {profileAvatarUrl && !avatarImageFailed ? (
+                <AvatarImage
+                  src={profileAvatarUrl}
+                  alt="Profile"
+                  onLoadingStatusChange={(status) => {
+                    if (status === "error") setAvatarImageFailed(true)
+                  }}
+                />
+              ) : null}
+              <AvatarFallback className="text-foreground">{resolvedInitial}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <div className="flex items-center gap-3 px-2 py-2">
+            <Avatar className="h-10 w-10 shrink-0 border border-border">
+              {profileAvatarUrl && !avatarImageFailed ? (
+                <AvatarImage
+                  src={profileAvatarUrl}
+                  alt=""
+                  onLoadingStatusChange={(status) => {
+                    if (status === "error") setAvatarImageFailed(true)
+                  }}
+                />
+              ) : null}
+              <AvatarFallback className="text-sm text-foreground">{resolvedInitial}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{resolvedDisplayName}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            </div>
+          </div>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard" className="flex items-center">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Dashboard
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/earnings" className="flex items-center justify-between">
+              <span className="flex items-center">
+                <Banknote className="mr-2 h-4 w-4" />
+                Earnings
+              </span>
+              {walletBalance !== null && (
+                <span className="text-xs font-medium text-foreground dark:text-white ml-2 tabular-nums">
+                  ${walletBalance.toFixed(2)}
+                </span>
+              )}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/listings" className="flex items-center">
+              <Package className="mr-2 h-4 w-4" />
+              My Listings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/profile" className="flex items-center">
+              <UserCircle className="mr-2 h-4 w-4" />
+              Profile
+            </Link>
+          </DropdownMenuItem>
+          {isAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/admin" className="flex items-center text-foreground">
+                  <User className="mr-2 h-4 w-4" />
+                  Admin Panel
+                </Link>
+              </DropdownMenuItem>
+            </>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut} className="text-foreground">
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : null
+
+  if (isSellChromeMinimal) {
+    return (
+      <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
+        <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
+          >
+            <span
+              className="text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl"
+              style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
+            >
+              Reswell
+            </span>
+          </Link>
+          <div className="flex shrink-0 items-center justify-end">
+            {!authLoaded ? (
+              <div className="h-9 w-9 shrink-0 rounded-full bg-muted animate-pulse" aria-hidden />
+            ) : user && accountDropdown ? (
+              accountDropdown
+            ) : authLoaded ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 text-foreground"
+                onClick={() => openLogin()}
+                aria-label="Log in or sign up"
+              >
+                <User className="h-6 w-6" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </header>
+    )
+  }
+
   return (
     <>
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
@@ -620,96 +750,7 @@ export function Header() {
                   </Button>
                 </Link>
 
-                <div className="ml-2 shrink-0 sm:ml-3 md:ml-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-foreground">
-                      <Avatar className="h-9 w-9">
-                        {profileAvatarUrl && !avatarImageFailed ? (
-                          <AvatarImage
-                            src={profileAvatarUrl}
-                            alt="Profile"
-                            onLoadingStatusChange={(status) => {
-                              if (status === "error") setAvatarImageFailed(true)
-                            }}
-                          />
-                        ) : null}
-                        <AvatarFallback className="text-foreground">{resolvedInitial}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <div className="flex items-center gap-3 px-2 py-2">
-                      <Avatar className="h-10 w-10 shrink-0 border border-border">
-                        {profileAvatarUrl && !avatarImageFailed ? (
-                          <AvatarImage
-                            src={profileAvatarUrl}
-                            alt=""
-                            onLoadingStatusChange={(status) => {
-                              if (status === "error") setAvatarImageFailed(true)
-                            }}
-                          />
-                        ) : null}
-                        <AvatarFallback className="text-sm text-foreground">{resolvedInitial}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {resolvedDisplayName}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                      </div>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="flex items-center">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/earnings" className="flex items-center justify-between">
-                        <span className="flex items-center">
-                          <Banknote className="mr-2 h-4 w-4" />
-                          Earnings
-                        </span>
-                        {walletBalance !== null && (
-                          <span className="text-xs font-medium text-foreground dark:text-white ml-2 tabular-nums">
-                            ${walletBalance.toFixed(2)}
-                          </span>
-                        )}
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/listings" className="flex items-center">
-                        <Package className="mr-2 h-4 w-4" />
-                        My Listings
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/profile" className="flex items-center">
-                        <UserCircle className="mr-2 h-4 w-4" />
-                        Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link href="/admin" className="flex items-center text-foreground">
-                            <User className="mr-2 h-4 w-4" />
-                            Admin Panel
-                          </Link>
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-foreground">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                </div>
+                <div className="ml-2 shrink-0 sm:ml-3 md:ml-4">{accountDropdown}</div>
               </div>
             ) : authLoaded ? (
               <div className="flex items-center gap-0">

@@ -9,6 +9,14 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,7 +41,6 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import {
-  ArrowLeft,
   Upload,
   Loader2,
   Trash2,
@@ -2000,15 +2007,60 @@ function SellPageContent() {
   }, [boardCategoryOptions, editId, images])
 
   return (
-      <main className="flex-1 w-full bg-muted py-8">
+      <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
         <div className="container mx-auto max-w-2xl lg:max-w-6xl">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Dashboard
-          </Link>
+          <h1 className="sr-only">
+            {editId
+              ? listingIsDraft
+                ? "Continue your listing"
+                : "Edit listing"
+              : "Create a Listing"}
+          </h1>
+          <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <Breadcrumb>
+                <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/">Home</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/listings">Listings</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                      {editId
+                        ? listingIsDraft
+                          ? "Continue your listing"
+                          : "Edit listing"
+                        : "Create a Listing"}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+              {viewerIsAdmin && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  disabled={
+                    loading ||
+                    boardCategoryOptions.length === 0 ||
+                    optimizingAny
+                  }
+                  onClick={applyAdminSeedListing}
+                >
+                  Fill seed listing
+                </Button>
+              )}
+            </div>
+          </div>
 
           {!editId &&
           remoteResumeDraftId &&
@@ -2048,43 +2100,6 @@ function SellPageContent() {
               </div>
             </div>
           ) : null}
-
-          <div className="mb-10 space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="space-y-1.5">
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground lg:text-3xl">
-                  {editId
-                    ? listingIsDraft
-                      ? "Continue your listing"
-                      : "Edit listing"
-                    : "Create a Listing"}
-                </h1>
-                <p className="text-sm text-muted-foreground lg:text-base">
-                  {editId
-                    ? listingIsDraft
-                      ? "Draft — finish details and publish when you are ready."
-                      : "Update your listing details"
-                    : "List your surfboard for buyers on Reswell"}
-                </p>
-              </div>
-              {viewerIsAdmin && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  disabled={
-                    loading ||
-                    boardCategoryOptions.length === 0 ||
-                    optimizingAny
-                  }
-                  onClick={applyAdminSeedListing}
-                >
-                  Fill seed listing
-                </Button>
-              )}
-            </div>
-          </div>
           {editLoading ? (
             <div className="flex items-center justify-center py-16 rounded-xl border border-border bg-card shadow-sm">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

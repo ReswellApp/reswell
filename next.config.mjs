@@ -108,6 +108,7 @@ const nextConfig = {
       { source: "/admin/claims", destination: "/admin", permanent: true },
       { source: "/admin/claims/:path*", destination: "/admin", permanent: true },
       { source: "/offers/:path*", destination: "/dashboard", permanent: true },
+      { source: "/listings", destination: "/dashboard/listings", permanent: true },
       { source: "/saved", destination: "/favorites", permanent: true },
       { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
       { source: "/dashboard/reports/:path*", destination: "/dashboard", permanent: true },
