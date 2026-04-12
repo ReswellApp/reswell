@@ -1,5 +1,6 @@
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { SHIPENGINE_PLACEHOLDER_US_PHONE } from "@/lib/shipping/shipengine-rate-helpers"
 
 /** Same shape as admin `AddressFields` — ShipEngine rate/label APIs expect this structure. */
 export type RateQuoteAddressFields = {
@@ -67,9 +68,10 @@ export function orderShippingJsonToRateQuoteAddress(ship: unknown): RateQuoteAdd
 
 export function addressToShipEnginePayload(a: RateQuoteAddressFields, role: "from" | "to") {
   const country = a.country_code.trim().toUpperCase() || "US"
+  const phone = a.phone.trim()
   const base: Record<string, unknown> = {
     name: a.name.trim() || (role === "from" ? "Shipper" : "Recipient"),
-    phone: a.phone.trim() || undefined,
+    phone: phone || SHIPENGINE_PLACEHOLDER_US_PHONE,
     company_name: a.company_name.trim() || undefined,
     address_line1: a.address_line1.trim(),
     address_line2: a.address_line2.trim() || undefined,

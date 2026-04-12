@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const result = await getTopSurfboardShippingRates(parsed.data, { topN: 3 })
+  const result = await getTopSurfboardShippingRates(parsed.data, { topN: 20 })
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 503 })
   }

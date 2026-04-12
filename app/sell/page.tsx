@@ -3621,6 +3621,8 @@ function SellPageContent() {
           boardWidthInches={formData.boardWidthInches}
           boardThicknessInches={formData.boardThicknessInches}
           boardVolumeL={formData.boardVolumeL}
+          locationLat={formData.locationLat}
+          locationLng={formData.locationLng}
         />
       </main>
   )

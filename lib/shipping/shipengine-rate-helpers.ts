@@ -24,11 +24,15 @@ function asRecord(v: unknown): Record<string, unknown> | null {
     : null
 }
 
+/** ShipEngine rejects empty `phone` on `ship_from` / `ship_to` when missing from our UI (rate quotes). */
+export const SHIPENGINE_PLACEHOLDER_US_PHONE = "5555555555"
+
 export function addressToPayload(a: ShippingAddressInput, role: "from" | "to") {
   const country = a.country_code.trim().toUpperCase() || "US"
+  const phone = a.phone.trim()
   const base: Record<string, unknown> = {
     name: a.name.trim() || (role === "from" ? "Shipper" : "Recipient"),
-    phone: a.phone.trim() || undefined,
+    phone: phone || SHIPENGINE_PLACEHOLDER_US_PHONE,
     company_name: a.company_name.trim() || undefined,
     address_line1: a.address_line1.trim(),
     address_line2: a.address_line2.trim() || undefined,
