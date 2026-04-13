@@ -115,6 +115,12 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                 <BreadcrumbItem>
+                  <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                    <Link href="/cart">Cart</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                <BreadcrumbItem>
                   <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
                     Checkout
                   </BreadcrumbPage>

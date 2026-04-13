@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? ""
 
@@ -276,7 +277,7 @@ export function StripeCardCheckout({
       : {
           theme: "stripe" as const,
           variables: {
-            colorPrimary: "#0066CC",
+            colorPrimary: BRAND_CTA_BLUE,
             borderRadius: "6px",
           },
         }

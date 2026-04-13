@@ -133,7 +133,7 @@ export function CheckoutClient({
 
   const payButtonClassName = cn(
     "h-[52px] w-full rounded-[6px] text-[16px] font-semibold shadow-none",
-    "bg-[#0066CC] text-white hover:bg-[#0052a3] focus-visible:ring-[#0066CC]/40",
+    "bg-[#3b63e3] text-white hover:bg-[#2d54d8] focus-visible:ring-[#3b63e3]/40",
   )
 
   return (
@@ -154,11 +154,11 @@ export function CheckoutClient({
                     className={cn(
                       "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
                       method === "pickup"
-                        ? "border-[#0066CC] bg-[#0066CC]/[0.04] shadow-[inset_0_0_0_1px_rgba(0,102,204,0.15)]"
+                        ? "border-[#3b63e3] bg-[#3b63e3]/[0.04] shadow-[inset_0_0_0_1px_rgba(59,99,227,0.15)]"
                         : "border-neutral-200 bg-white hover:border-neutral-300",
                     )}
                   >
-                    <RadioGroupItem value="pickup" id="fulfill-pickup" className="mt-0.5 border-neutral-400 text-[#0066CC]" />
+                    <RadioGroupItem value="pickup" id="fulfill-pickup" className="mt-0.5 border-neutral-400 text-[#3b63e3]" />
                     <div className="min-w-0">
                       <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <MapPin className="h-4 w-4 shrink-0 text-neutral-600" />
@@ -173,11 +173,11 @@ export function CheckoutClient({
                     className={cn(
                       "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
                       method === "shipping"
-                        ? "border-[#0066CC] bg-[#0066CC]/[0.04] shadow-[inset_0_0_0_1px_rgba(0,102,204,0.15)]"
+                        ? "border-[#3b63e3] bg-[#3b63e3]/[0.04] shadow-[inset_0_0_0_1px_rgba(59,99,227,0.15)]"
                         : "border-neutral-200 bg-white hover:border-neutral-300",
                     )}
                   >
-                    <RadioGroupItem value="shipping" id="fulfill-ship" className="mt-0.5 border-neutral-400 text-[#0066CC]" />
+                    <RadioGroupItem value="shipping" id="fulfill-ship" className="mt-0.5 border-neutral-400 text-[#3b63e3]" />
                     <div className="min-w-0">
                       <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <Truck className="h-4 w-4 shrink-0 text-neutral-600" />
@@ -249,16 +249,16 @@ export function CheckoutClient({
               className="mt-12 flex flex-wrap gap-x-4 gap-y-2 border-t border-neutral-200 pt-8 text-[13px]"
               aria-label="Policies"
             >
-              <Link href="/protection-policy" className="text-[#0066CC] underline-offset-2 hover:underline">
+              <Link href="/protection-policy" className="text-[#3b63e3] underline-offset-2 hover:underline">
                 Purchase protection
               </Link>
-              <Link href="/privacy" className="text-[#0066CC] underline-offset-2 hover:underline">
+              <Link href="/privacy" className="text-[#3b63e3] underline-offset-2 hover:underline">
                 Privacy policy
               </Link>
-              <Link href="/terms" className="text-[#0066CC] underline-offset-2 hover:underline">
+              <Link href="/terms" className="text-[#3b63e3] underline-offset-2 hover:underline">
                 Terms of service
               </Link>
-              <Link href="/cookies" className="text-[#0066CC] underline-offset-2 hover:underline">
+              <Link href="/cookies" className="text-[#3b63e3] underline-offset-2 hover:underline">
                 Cookies
               </Link>
             </nav>
@@ -277,7 +277,7 @@ export function CheckoutClient({
               <span className="text-[13px] font-medium uppercase tracking-wide text-neutral-500">Order summary</span>
               <Link
                 href="/cart"
-                className="flex items-center gap-1.5 text-[13px] font-medium text-[#0066CC] hover:underline"
+                className="flex items-center gap-1.5 text-[13px] font-medium text-[#3b63e3] hover:underline"
               >
                 <ShoppingBag className="h-4 w-4" aria-hidden />
                 Cart
@@ -317,7 +317,7 @@ export function CheckoutClient({
                 {seller && (
                   <p className="mt-2 text-[12px] text-neutral-500">
                     Sold by{" "}
-                    <Link href={sellerProfileHref(seller)} className="font-medium text-[#0066CC] hover:underline">
+                    <Link href={sellerProfileHref(seller)} className="font-medium text-[#3b63e3] hover:underline">
                       {sellerDisplayName(seller)}
                     </Link>
                   </p>

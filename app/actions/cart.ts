@@ -15,6 +15,13 @@ export type CartListingRow = {
   user_id: string
   local_pickup: boolean | null
   shipping_available: boolean | null
+  /** Seller flat shipping rate when shipping is offered; used for cart summary display. */
+  shipping_price: string | number | null
+  condition?: string | null
+  board_type?: string | null
+  length_feet?: number | null
+  length_inches?: number | null
+  length_inches_display?: string | null
   listing_images: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
   profiles: {
     display_name: string | null
@@ -168,6 +175,25 @@ export async function removeCartItem(listingId: string): Promise<{ ok: boolean; 
   return { ok: true, error: null }
 }
 
+export async function clearCart(): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { ok: false, error: "Unauthorized" }
+  }
+
+  const { error } = await supabase.from("cart_items").delete().eq("profile_id", user.id)
+
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+
+  revalidatePath("/cart")
+  return { ok: true, error: null }
+}
+
 export async function getCartPageItems(): Promise<{
   items: CartPageItem[]
   error: string | null
@@ -196,6 +222,12 @@ export async function getCartPageItems(): Promise<{
         user_id,
         local_pickup,
         shipping_available,
+        shipping_price,
+        condition,
+        board_type,
+        length_feet,
+        length_inches,
+        length_inches_display,
         listing_images ( url, thumbnail_url, is_primary ),
         profiles ( display_name, avatar_url, seller_slug, shop_verified, shop_name, is_shop )
       )

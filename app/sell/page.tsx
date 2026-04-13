@@ -2799,7 +2799,7 @@ function SellPageContent() {
                                 Shipping
                                 <Badge
                                   variant="default"
-                                  className="border-0 bg-[#2563eb] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto"
+                                  className="border-0 bg-[#3b63e3] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto"
                                 >
                                   Items sell faster
                                 </Badge>
@@ -2872,7 +2872,7 @@ function SellPageContent() {
                                   </span>
                                   <Badge
                                     variant="default"
-                                    className="border-0 bg-[#2563eb] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto shrink-0"
+                                    className="border-0 bg-[#3b63e3] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto shrink-0"
                                   >
                                     Recommended
                                   </Badge>

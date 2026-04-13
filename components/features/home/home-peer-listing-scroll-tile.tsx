@@ -51,6 +51,7 @@ export function HomePeerListingScrollTile({
   isFavorited,
   categoryPillLabel,
   layout = "homeScroll",
+  onFavoritedChange,
 }: {
   listing: HomePeerScrollListing
   userId: string | null
@@ -58,6 +59,8 @@ export function HomePeerListingScrollTile({
   /** When set (e.g. Browse by Category), overrides {@link formatListingTileCategoryPillText}. */
   categoryPillLabel?: string | null
   layout?: "homeScroll" | "grid"
+  /** Optional — e.g. cart favorites row removes a tile when unfavorited. */
+  onFavoritedChange?: (favorited: boolean) => void
 }) {
   const cart = computePeerCartPriceAction(userId, {
     id: listing.id,
@@ -117,6 +120,7 @@ export function HomePeerListingScrollTile({
       favorites={{
         initialFavorited: isFavorited,
         isLoggedIn: !!userId,
+        onFavoritedChange,
       }}
     />
   )

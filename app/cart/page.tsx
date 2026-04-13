@@ -2,7 +2,9 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCartPageItems } from "@/app/actions/cart"
+import { getFavoriteListingIds } from "@/app/actions/favorites"
 import { CartPageView } from "@/components/cart-page-view"
+import { getFavoriteListingsForCartCarousel } from "@/lib/db/favorites"
 
 export const metadata: Metadata = {
   title: "Cart — Reswell",
@@ -20,6 +22,20 @@ export default async function CartPage() {
   }
 
   const { items, error } = await getCartPageItems()
+  const cartListingIds = items.map((row) => row.listing.id)
 
-  return <CartPageView initialItems={items} loadError={error} />
+  const [{ favorites: favoritedListingIds }, carouselResult] = await Promise.all([
+    getFavoriteListingIds(),
+    getFavoriteListingsForCartCarousel(supabase, user.id, { excludeListingIds: cartListingIds }),
+  ])
+
+  return (
+    <CartPageView
+      initialItems={items}
+      loadError={error}
+      favoritedListingIds={favoritedListingIds}
+      favoriteCarouselListings={carouselResult.listings}
+      buyerId={user.id}
+    />
+  )
 }
