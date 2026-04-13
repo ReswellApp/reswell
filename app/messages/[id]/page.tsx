@@ -316,15 +316,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </Link>
         )}
 
-        {/* Messages — chronological, newest anchored above composer (iMessage-style) */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25">
+        {/* Messages — bounded scroll window (thread does not grow with the page) */}
+        <div
+          className={cn(
+            'flex shrink-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
+            'h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,38svh)]',
+          )}
+        >
           <div
             ref={messagesScrollRef}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            className="h-full min-h-0 overflow-y-auto overscroll-contain touch-pan-y"
             aria-label="Message thread"
           >
             {messages.length === 0 ? (
-              <div className="flex min-h-[min(280px,50vh)] flex-col items-center justify-center px-6 py-12 text-center">
+              <div className="flex h-full min-h-[12rem] flex-col items-center justify-center px-6 py-8 text-center">
                 <p className="text-[17px] font-medium text-foreground/90">No messages yet</p>
                 <p className="mt-1.5 max-w-[18rem] text-[15px] leading-relaxed text-muted-foreground">
                   Send a message to start the conversation.

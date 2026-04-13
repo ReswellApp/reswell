@@ -3,6 +3,7 @@ import Image from "next/image"
 import { Heart, ShieldCheck } from "lucide-react"
 import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
+import { allCategoriesForNav } from "@/lib/site-category-directory"
 
 const footerLinks = {
   marketplace: [
@@ -11,12 +12,6 @@ const footerLinks = {
     { name: "Sell your board", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
     { name: "Purchase Protection", href: "/protection-policy" },
-  ],
-  categories: [
-    { name: "All surfboards", href: "/boards" },
-    { name: "Shortboards", href: "/boards?type=shortboard" },
-    { name: "Longboards", href: "/boards?type=longboard" },
-    { name: "Mid-length", href: "/boards?type=funboard" },
   ],
   support: [
     { name: "Help Center", href: "/help" },
@@ -73,14 +68,14 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Categories</h3>
             <ul className="mt-4 space-y-3">
-              {footerLinks.categories.map((link) => (
-                <li key={link.name}>
+              {allCategoriesForNav.map((link) => (
+                <li key={link.href}>
                   <Link
                     href={link.href}
                     prefetch={boardsBrowseLinkPrefetch(link.href)}
                     className="text-sm text-muted-foreground transition-colors duration-smooth hover:text-foreground"
                   >
-                    {link.name}
+                    {link.label}
                   </Link>
                 </li>
               ))}
