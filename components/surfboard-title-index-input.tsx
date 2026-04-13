@@ -5,6 +5,21 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { getBoardModelsCatalogItems } from "@/app/actions/marketplace"
+import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
+
+/**
+ * User finished a full catalog label (typed or picked) and pressed space to keep typing —
+ * trimmed query still matches via substring filter, so we hide the list until they edit again.
+ */
+function shouldHideSuggestionsAfterSpacePastExactCatalogLabel(
+  value: string,
+  catalog: IndexBoardModelSelection[],
+): boolean {
+  if (!value.endsWith(" ")) return false
+  const t = value.trim()
+  if (!t) return false
+  return catalog.some((o) => o.label.trim() === t)
+}
 
 function filterIndexBoardModels(
   items: IndexBoardModelSelection[],
@@ -55,7 +70,18 @@ export function SurfboardTitleIndexInput({
   const [open, setOpen] = React.useState(false)
   const [highlight, setHighlight] = React.useState(0)
   const containerRef = React.useRef<HTMLDivElement>(null)
+  /** After a catalog pick, suppress suggestions while the user extends the title (e.g. space + model name). */
+  const pickedCatalogTitleRef = React.useRef<string | null>(null)
   const listId = React.useId()
+
+  const commitCatalogPick = React.useCallback(
+    (opt: IndexBoardModelSelection) => {
+      pickedCatalogTitleRef.current = titleFromIndexModelPick(opt).slice(0, LISTING_TITLE_MAX_LENGTH)
+      onSelectModel(opt)
+      setOpen(false)
+    },
+    [onSelectModel],
+  )
 
   React.useEffect(() => {
     let cancelled = false
@@ -93,9 +119,14 @@ export function SurfboardTitleIndexInput({
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open])
 
-  const q = value.trim()
+  const hideSuggestionsAfterExactLabelPlusSpace = React.useMemo(
+    () => shouldHideSuggestionsAfterSpacePastExactCatalogLabel(value, items),
+    [value, items],
+  )
+
   const showList =
     open &&
+    !hideSuggestionsAfterExactLabelPlusSpace &&
     (loadError != null && items.length === 0 ? true : items.length > 0) &&
     filtered.length > 0
 
@@ -113,10 +144,34 @@ export function SurfboardTitleIndexInput({
         aria-controls={showList ? listId : undefined}
         autoComplete="off"
         onChange={(e) => {
-          onChange(e.target.value)
+          const next = e.target.value
+          onChange(next)
+          const pick = pickedCatalogTitleRef.current
+          if (pick != null) {
+            if (next.startsWith(pick) && next !== pick) {
+              setOpen(false)
+              return
+            }
+            if (!next.startsWith(pick)) {
+              pickedCatalogTitleRef.current = null
+            }
+          }
+          if (shouldHideSuggestionsAfterSpacePastExactCatalogLabel(next, items)) {
+            setOpen(false)
+            return
+          }
           setOpen(true)
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          const pick = pickedCatalogTitleRef.current
+          if (pick != null && value.startsWith(pick) && value !== pick) {
+            return
+          }
+          if (shouldHideSuggestionsAfterSpacePastExactCatalogLabel(value, items)) {
+            return
+          }
+          setOpen(true)
+        }}
         onKeyDown={(e) => {
           if (!showList || filtered.length === 0) {
             if (e.key === "Escape") setOpen(false)
@@ -140,10 +195,7 @@ export function SurfboardTitleIndexInput({
           if (e.key === "Enter") {
             e.preventDefault()
             const opt = filtered[highlight]
-            if (opt) {
-              onSelectModel(opt)
-              setOpen(false)
-            }
+            if (opt) commitCatalogPick(opt)
           }
         }}
       />
@@ -169,8 +221,7 @@ export function SurfboardTitleIndexInput({
                 onMouseEnter={() => setHighlight(i)}
                 onMouseDown={(ev) => {
                   ev.preventDefault()
-                  onSelectModel(opt)
-                  setOpen(false)
+                  commitCatalogPick(opt)
                 }}
               >
                 <span className="truncate">{opt.label}</span>
