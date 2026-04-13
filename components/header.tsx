@@ -687,8 +687,8 @@ export function Header() {
 
             <Button
               asChild
-              size="sm"
-              className="hidden shrink-0 sm:inline-flex"
+              size="default"
+              className="hidden shrink-0 px-5 sm:inline-flex"
             >
               <Link href="/sell">Sell your Board</Link>
             </Button>
@@ -914,8 +914,8 @@ export function Header() {
             <div className="mb-6">
               <Button
                 asChild
-                size="sm"
-                className="h-10 w-full shrink-0 justify-center px-4"
+                size="default"
+                className="h-11 w-full shrink-0 justify-center px-5"
               >
                 <Link href="/sell" onClick={onMobileDrawerLinkClick}>
                   Sell your Board

@@ -208,6 +208,23 @@ function MessagesContent() {
 
   const totalUnreadChats = conversations.reduce((acc, conv) => acc + getUnreadCount(conv), 0)
 
+  function formatChatPreviewText(
+    lastMessage: Conversation['messages'][number] | undefined,
+    listingTitle: string | undefined,
+    currentId: string | null,
+  ): string {
+    if (!lastMessage?.content?.trim()) {
+      return listingTitle ?? 'No messages yet'
+    }
+    const body = lastMessage.content.trim()
+    const you = lastMessage.sender_id === currentId
+    const listing = listingTitle?.trim()
+    if (you) {
+      return listing ? `You · ${listing} — ${body}` : `You: ${body}`
+    }
+    return listing ? `${listing} — ${body}` : body
+  }
+
   const groupedShell =
     'overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none dark:border-border'
 
@@ -367,22 +384,25 @@ function MessagesContent() {
                   )}
                 </div>
               ) : (
-                <div className={cn('divide-y divide-border/60', groupedShell)}>
+                <div className={cn('divide-y divide-border/40', groupedShell)}>
                   {filteredConversations.map((conv) => {
                     const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
                     const lastMessage = conv.messages[conv.messages.length - 1]
                     const unreadCount = getUnreadCount(conv)
-                    const listingThumb = conv.listing?.listing_images?.[0]?.url
                     const initial = (otherUser?.display_name?.trim()?.[0] || '?').toUpperCase()
+                    const listingTitle = conv.listing?.title
+                      ? capitalizeWords(conv.listing.title)
+                      : undefined
+                    const previewText = formatChatPreviewText(lastMessage, listingTitle, currentUserId)
 
                     return (
                       <Link
                         key={conv.id}
                         href={`/messages/${conv.id}`}
-                        className="flex gap-3.5 px-4 py-3.5 transition-colors hover:bg-muted/45 active:bg-muted/65"
+                        className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/35 active:bg-muted/55 sm:px-5"
                       >
-                        <div className="relative h-[52px] w-[52px] shrink-0">
-                          <div className="relative h-[52px] w-[52px] overflow-hidden rounded-full bg-muted ring-1 ring-border/55">
+                        <div className="relative h-12 w-12 shrink-0">
+                          <div className="relative h-12 w-12 overflow-hidden rounded-full bg-muted">
                             {otherUser?.avatar_url ? (
                               <Image
                                 src={otherUser.avatar_url || '/placeholder.svg'}
@@ -391,73 +411,56 @@ function MessagesContent() {
                                 className="object-cover"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[18px] font-semibold text-muted-foreground">
+                              <div className="flex h-full w-full items-center justify-center text-[15px] font-medium text-muted-foreground">
                                 {initial}
                               </div>
                             )}
                           </div>
-                          {listingThumb ? (
-                            <div className="absolute -bottom-0.5 -right-0.5 h-[24px] w-[24px] overflow-hidden rounded-md border-2 border-card bg-muted shadow-sm ring-1 ring-border/40">
-                              <Image
-                                src={listingThumb}
-                                alt=""
-                                width={24}
-                                height={24}
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="absolute -bottom-0.5 -right-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-md border-2 border-card bg-muted ring-1 ring-border/40">
-                              <MessageCircle className="h-3 w-3 text-muted-foreground" strokeWidth={2} />
-                            </div>
-                          )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex min-w-0 items-center gap-1.5">
-                                <span className="truncate text-[17px] font-semibold leading-tight text-foreground">
-                                  {otherUser?.display_name || 'Unknown User'}
-                                </span>
-                                {otherUser?.shop_verified && (
-                                  <span className="shrink-0">
-                                    <VerifiedBadge size="sm" />
-                                  </span>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <span
+                                className={cn(
+                                  'truncate text-[17px] leading-tight tracking-tight text-foreground',
+                                  unreadCount > 0 ? 'font-semibold' : 'font-medium',
                                 )}
-                              </div>
-                              <p className="mt-0.5 truncate text-[13px] font-medium text-muted-foreground">
-                                Re: {capitalizeWords(conv.listing?.title) || 'General inquiry'}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
-                              <time
-                                className="whitespace-nowrap text-[13px] text-muted-foreground tabular-nums"
-                                dateTime={conv.last_message_at}
                               >
-                                {formatDistanceToNow(new Date(conv.last_message_at), {
-                                  addSuffix: true,
-                                })}
-                              </time>
-                              {unreadCount > 0 && (
-                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-[11px] font-semibold tabular-nums leading-none text-background">
-                                  {unreadCount > 99 ? '99+' : unreadCount}
+                                {otherUser?.display_name || 'Unknown User'}
+                              </span>
+                              {otherUser?.shop_verified && (
+                                <span className="shrink-0">
+                                  <VerifiedBadge size="sm" />
                                 </span>
                               )}
                             </div>
+                            <time
+                              className="shrink-0 text-[13px] tabular-nums text-muted-foreground"
+                              dateTime={conv.last_message_at}
+                            >
+                              {formatDistanceToNow(new Date(conv.last_message_at), {
+                                addSuffix: true,
+                              })}
+                            </time>
                           </div>
-                          {lastMessage && (
+                          <div className="mt-1 flex items-start justify-between gap-2">
                             <p
                               className={cn(
-                                'mt-1.5 truncate text-[15px] leading-snug text-muted-foreground',
-                                unreadCount > 0 && 'font-medium text-foreground/90',
+                                'min-w-0 flex-1 truncate text-[15px] leading-snug text-muted-foreground',
+                                unreadCount > 0 && 'font-medium text-foreground',
                               )}
                             >
-                              {lastMessage.sender_id === currentUserId && (
-                                <span className="text-muted-foreground">You · </span>
-                              )}
-                              {lastMessage.content}
+                              {previewText}
                             </p>
-                          )}
+                            {unreadCount > 0 && (
+                              <span
+                                className="mt-0.5 flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full bg-foreground px-1.5 text-[12px] font-semibold tabular-nums leading-none text-background"
+                                aria-label={`${unreadCount} unread`}
+                              >
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </Link>
                     )

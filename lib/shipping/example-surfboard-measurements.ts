@@ -1,5 +1,6 @@
 /**
  * Quick-fill rows for the sell-flow shipping estimator (weight + outer box inches).
+ * Surfboard length tiers only (no SUP, coffin bags, etc.).
  * Not used for rating logic — display and preset application only.
  */
 
@@ -50,23 +51,5 @@ export const EXAMPLE_SURFBOARD_MEASUREMENTS: ExampleMeasurementRow[] = [
     lengthIn: 96,
     widthIn: 24,
     heightIn: 9,
-  },
-  {
-    id: "sup",
-    title: "SUP (boxed)",
-    summary: "45 lb — 132 × 34 × 12 in",
-    weightLb: 45,
-    lengthIn: 132,
-    widthIn: 34,
-    heightIn: 12,
-  },
-  {
-    id: "travel",
-    title: "Travel / coffin",
-    summary: "38 lb — 102 × 28 × 10 in",
-    weightLb: 38,
-    lengthIn: 102,
-    widthIn: 28,
-    heightIn: 10,
   },
 ]

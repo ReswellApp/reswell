@@ -246,9 +246,9 @@ export function SurfboardShippingEstimatorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="max-h-[min(92vh,900px)] max-w-[min(100vw-1.5rem,52rem)] gap-0 overflow-hidden rounded-xl border border-neutral-200 bg-white p-0 shadow-none lg:max-w-5xl"
+        className="flex max-h-[min(92vh,900px)] max-w-[min(100vw-1.5rem,52rem)] flex-col gap-0 overflow-hidden rounded-xl border border-neutral-200 bg-white p-0 shadow-none lg:max-w-5xl"
       >
-        <DialogHeader className="space-y-0 border-0 px-10 pb-1 pt-8 text-center sm:px-14">
+        <DialogHeader className="shrink-0 space-y-0 border-0 px-10 pb-1 pt-8 text-center sm:px-14">
           <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
             Shipping label cost estimator
           </DialogTitle>
@@ -257,8 +257,8 @@ export function SurfboardShippingEstimatorDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="domestic" className="w-full">
-          <div className="flex justify-center border-b border-neutral-200">
+        <Tabs defaultValue="domestic" className="flex min-h-0 w-full flex-1 flex-col">
+          <div className="flex shrink-0 justify-center border-b border-neutral-200">
             <TabsList className="inline-flex h-auto gap-6 bg-transparent p-0">
               <TabsTrigger value="domestic" className={tabTriggerClass}>
                 Domestic
@@ -271,10 +271,11 @@ export function SurfboardShippingEstimatorDialog({
 
           <TabsContent
             value="domestic"
-            className="mt-0 flex max-h-[min(78vh,760px)] flex-col overflow-hidden overscroll-contain focus-visible:ring-0 data-[state=inactive]:hidden"
+            className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:ring-0 data-[state=inactive]:hidden"
           >
-            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-2 lg:gap-12 lg:px-2">
-              <div className="space-y-5 px-6 py-6 sm:px-8 sm:py-8 lg:pr-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-12 lg:px-2">
+                <div className="space-y-5 px-6 py-6 sm:px-8 sm:py-8 lg:pr-4">
                 <div className="space-y-2">
                   <Label htmlFor="sell-est-zip" className={labelBold}>
                     Your zip/postal code <span className="text-destructive" aria-hidden="true">*</span>
@@ -355,15 +356,15 @@ export function SurfboardShippingEstimatorDialog({
                     Get estimate
                   </Button>
                 </div>
-              </div>
+                </div>
 
-              <div className="flex flex-col border-t border-neutral-200 bg-white lg:border-l lg:border-t-0">
-                <div className="flex min-h-0 flex-1 flex-col p-6 sm:p-8">
-                  <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 sm:p-5">
+                <div className="flex flex-col border-t border-neutral-200 bg-white lg:border-l lg:border-t-0">
+                <div className="flex flex-col p-6 sm:p-8">
+                  <div className="flex flex-col rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 sm:p-5">
                     <h3 className="mb-4 text-center text-sm font-bold text-foreground">
                       Example measurements
                     </h3>
-                    <ul className="min-h-0 flex-1 divide-y divide-neutral-200 overflow-y-auto">
+                    <ul className="divide-y divide-neutral-200">
                       {EXAMPLE_SURFBOARD_MEASUREMENTS.map((row, i) => {
                         const Icon = EXAMPLE_ICONS[i % EXAMPLE_ICONS.length]
                         const line = row.summary.replace(/\s*—\s*/g, " - ")
@@ -391,11 +392,11 @@ export function SurfboardShippingEstimatorDialog({
                     </ul>
                   </div>
                 </div>
+                </div>
               </div>
-            </div>
 
             {displayRates.length > 0 ? (
-              <div className="shrink-0 border-t border-neutral-200 bg-white px-6 py-5 sm:px-8 sm:py-6">
+              <div className="border-t border-neutral-200 bg-white px-6 py-5 sm:px-8 sm:py-6">
                 <p className="text-xs leading-relaxed text-neutral-600">
                   These figures are live carrier quotes for the weight and dimensions you entered, using a
                   sample buyer in {sampleRouteHint}. Checkout label prices can differ by exact addresses,
@@ -404,7 +405,7 @@ export function SurfboardShippingEstimatorDialog({
                 <h4 className="mt-4 text-sm font-bold text-foreground">
                   Sample rates for this package (lowest quotes first)
                 </h4>
-                <ul className="mt-3 max-h-[min(36vh,260px)] space-y-0 divide-y divide-neutral-200 overflow-y-auto overscroll-contain">
+                <ul className="mt-3 space-y-0 divide-y divide-neutral-200">
                   {displayRates.map((r, i) => (
                     <li
                       key={`${r.carrierCode ?? r.carrierName}-${r.serviceName}-${i}`}
@@ -428,11 +429,12 @@ export function SurfboardShippingEstimatorDialog({
                 </p>
               </div>
             ) : null}
+            </div>
           </TabsContent>
 
           <TabsContent
             value="international"
-            className="mt-0 px-6 py-12 text-center focus-visible:ring-0 sm:px-10"
+            className="mt-0 min-h-0 flex-1 overflow-y-auto px-6 py-12 text-center focus-visible:ring-0 sm:px-10"
           >
             <p className="text-sm text-neutral-600">
               International estimates are not available yet. Open the{" "}
