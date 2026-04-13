@@ -22,10 +22,14 @@ function StripePayButton({
   listingTitle,
   amountLabel,
   disabled,
+  submitButtonLabel,
+  submitButtonClassName,
 }: {
   listingTitle: string
   amountLabel: string
   disabled: boolean
+  submitButtonLabel?: string
+  submitButtonClassName?: string
 }) {
   const stripe = useStripe()
   const elements = useElements()
@@ -116,7 +120,7 @@ function StripePayButton({
       <Button
         type="submit"
         size="lg"
-        className="w-full gap-2"
+        className={submitButtonClassName ?? "w-full gap-2"}
         disabled={disabled || busy || !stripe || !!elementLoadError}
       >
         {busy ? (
@@ -125,7 +129,7 @@ function StripePayButton({
             Processing…
           </>
         ) : (
-          <>Pay with card — {amountLabel}</>
+          <>{submitButtonLabel ?? `Pay with card — ${amountLabel}`}</>
         )}
       </Button>
     </form>
@@ -140,6 +144,8 @@ export function StripeCardCheckout({
   shippingAddressId,
   purchaseDetailsReady = true,
   needsShipping = false,
+  submitButtonLabel,
+  submitButtonClassName,
 }: {
   listingId: string
   listingTitle: string
@@ -148,6 +154,9 @@ export function StripeCardCheckout({
   shippingAddressId?: string | null
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
+  /** When set, replaces the default “Pay with card — $x” label. */
+  submitButtonLabel?: string
+  submitButtonClassName?: string
 }) {
   const { resolvedTheme } = useTheme()
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -264,7 +273,13 @@ export function StripeCardCheckout({
   const appearance =
     resolvedTheme === "dark"
       ? { theme: "night" as const, variables: { colorPrimary: "#fafafa" } }
-      : { theme: "stripe" as const }
+      : {
+          theme: "stripe" as const,
+          variables: {
+            colorPrimary: "#0066CC",
+            borderRadius: "6px",
+          },
+        }
 
   return (
     <Elements
@@ -279,6 +294,8 @@ export function StripeCardCheckout({
         listingTitle={listingTitle}
         amountLabel={`$${price.toFixed(2)}`}
         disabled={false}
+        submitButtonLabel={submitButtonLabel}
+        submitButtonClassName={submitButtonClassName}
       />
     </Elements>
   )

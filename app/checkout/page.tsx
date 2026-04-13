@@ -1,13 +1,20 @@
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
-import { ArrowLeft } from "lucide-react"
 import { CheckoutClient, type CheckoutCopy } from "@/components/checkout-client"
 import { findListingByParam } from "@/lib/listing-query"
 import { listingDetailHref } from "@/lib/listing-href"
+import { capitalizeWords } from "@/lib/listing-labels"
 import { getProfileAddresses } from "@/app/actions/addresses"
 import type { CheckoutSeller } from "@/components/checkout-client"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
 function listingCheckoutLoginRedirect(listingParam: string) {
   const params = new URLSearchParams()
@@ -85,16 +92,37 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
       }
     : null
 
+  const listingTitle = capitalizeWords(listing.title)
+
   return (
-    <main className="flex-1 py-8">
-      <div className="container mx-auto max-w-5xl px-4">
-        <Button variant="ghost" size="sm" className="mb-6 -ml-2" asChild>
-          <Link href={listingDetailHref(listing)} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to listing
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight mb-8">Checkout</h1>
+    <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
+      <div className="container mx-auto max-w-2xl lg:max-w-6xl">
+        <h1 className="sr-only">Checkout</h1>
+        <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <Breadcrumb>
+              <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                    <Link href="/">Home</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                    <Link href={listingDetailHref(listing)}>{listingTitle}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                    Checkout
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </div>
 
         <CheckoutClient
           listing={listing}

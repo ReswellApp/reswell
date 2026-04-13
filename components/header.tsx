@@ -457,8 +457,13 @@ export function Header() {
     window.location.href = "/"
   }
 
-  const isSellChromeMinimal =
-    pathname !== null && (pathname === "/sell" || pathname.startsWith("/sell/"))
+  /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
+  const isMinimalNavChrome =
+    pathname !== null &&
+    (pathname === "/sell" ||
+      pathname.startsWith("/sell/") ||
+      pathname === "/checkout" ||
+      pathname.startsWith("/checkout/"))
 
   const accountDropdown =
     user ? (
@@ -550,7 +555,7 @@ export function Header() {
       </DropdownMenu>
     ) : null
 
-  if (isSellChromeMinimal) {
+  if (isMinimalNavChrome) {
     return (
       <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">

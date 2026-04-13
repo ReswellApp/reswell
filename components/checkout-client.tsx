@@ -12,9 +12,9 @@ import { resolvePayableAmount, type PayableListing } from "@/lib/purchase-amount
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { ProfileAddressRow } from "@/lib/profile-address"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import { ImageOff, Truck, MapPin } from "lucide-react"
+import { ImageOff, Truck, MapPin, ShoppingBag } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const SURFBOARD_COPY = {
   itemLineLabel: "Board",
@@ -67,13 +67,6 @@ function sellerDisplayName(s: CheckoutSeller) {
   return s.display_name?.trim() || "Seller"
 }
 
-function sellerInitials(s: CheckoutSeller) {
-  const n = sellerDisplayName(s)
-  const parts = n.split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) return (parts[0]![0]! + parts[1]![0]!).toUpperCase()
-  return n.slice(0, 2).toUpperCase() || "?"
-}
-
 export function CheckoutClient({
   listing,
   copy = SURFBOARD_COPY,
@@ -123,185 +116,255 @@ export function CheckoutClient({
     )
   }
 
-  const deliverySelected = impliedFulfillment === "shipping"
-
   const paymentBlocked = !purchaseDetails.readyToPay
 
+  const shippingSummaryRight = (() => {
+    if (!needsShipping) {
+      return <span className="text-neutral-500">Local pickup</span>
+    }
+    if (!purchaseDetails.readyToPay) {
+      return <span className="text-neutral-400">Enter shipping address</span>
+    }
+    if (resolved.shipping === 0) {
+      return <span className="text-neutral-700">Free</span>
+    }
+    return <span className="tabular-nums text-neutral-900">${resolved.shipping.toFixed(2)}</span>
+  })()
+
+  const payButtonClassName = cn(
+    "h-[52px] w-full rounded-[6px] text-[16px] font-semibold shadow-none",
+    "bg-[#0066CC] text-white hover:bg-[#0052a3] focus-visible:ring-[#0066CC]/40",
+  )
+
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10 lg:items-start">
-      {/* Left: purchase details → fulfillment → payment (second on mobile) */}
-      <div className="order-2 lg:order-1 space-y-6">
-        {canPick && canShip && (
-          <div className="space-y-3 rounded-lg border bg-card p-4">
-            <Label className="text-base">How do you want to receive it?</Label>
-            <RadioGroup
-              value={method}
-              onValueChange={(v) => setMethod(v as "pickup" | "shipping")}
-              className="grid gap-3 sm:grid-cols-2"
-            >
-              <label
-                className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors ${
-                  method === "pickup" ? "border-primary bg-primary/5" : "border-border"
-                }`}
-              >
-                <RadioGroupItem value="pickup" id="fulfill-pickup" className="mt-1" />
-                <div>
-                  <span className="font-medium flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Local pickup
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Meet the seller and inspect the {copy.inspectNoun} in person.
-                  </p>
-                </div>
-              </label>
-              <label
-                className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors ${
-                  method === "shipping" ? "border-primary bg-primary/5" : "border-border"
-                }`}
-              >
-                <RadioGroupItem value="shipping" id="fulfill-ship" className="mt-1" />
-                <div>
-                  <span className="font-medium flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Ship to me
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {resolved.shipping > 0
-                      ? `Includes $${resolved.shipping.toFixed(2)} shipping (set by seller).`
-                      : "Seller offers free shipping."}
-                  </p>
-                </div>
-              </label>
-            </RadioGroup>
-          </div>
-        )}
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col lg:min-h-[calc(100dvh-4rem)]">
+      <div className="flex w-full flex-1 flex-col lg:flex-row">
+        {/* Left — forms */}
+        <div className="order-2 flex-1 bg-white px-4 py-8 sm:px-8 lg:order-1 lg:max-w-[640px] lg:shrink-0 lg:px-10 lg:py-10 xl:px-14">
+          <div className="mx-auto max-w-[520px] lg:mx-0">
+            {canPick && canShip && (
+              <div className="mb-10 space-y-3">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
+                <RadioGroup
+                  value={method}
+                  onValueChange={(v) => setMethod(v as "pickup" | "shipping")}
+                  className="grid gap-3 sm:grid-cols-2"
+                >
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
+                      method === "pickup"
+                        ? "border-[#0066CC] bg-[#0066CC]/[0.04] shadow-[inset_0_0_0_1px_rgba(0,102,204,0.15)]"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    )}
+                  >
+                    <RadioGroupItem value="pickup" id="fulfill-pickup" className="mt-0.5 border-neutral-400 text-[#0066CC]" />
+                    <div className="min-w-0">
+                      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <MapPin className="h-4 w-4 shrink-0 text-neutral-600" />
+                        Local pickup
+                      </span>
+                      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                        Meet the seller and inspect the {copy.inspectNoun} in person.
+                      </p>
+                    </div>
+                  </label>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
+                      method === "shipping"
+                        ? "border-[#0066CC] bg-[#0066CC]/[0.04] shadow-[inset_0_0_0_1px_rgba(0,102,204,0.15)]"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    )}
+                  >
+                    <RadioGroupItem value="shipping" id="fulfill-ship" className="mt-0.5 border-neutral-400 text-[#0066CC]" />
+                    <div className="min-w-0">
+                      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Truck className="h-4 w-4 shrink-0 text-neutral-600" />
+                        Ship to me
+                      </span>
+                      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                        {resolved.shipping > 0
+                          ? `Includes $${resolved.shipping.toFixed(2)} shipping (set by seller).`
+                          : "Seller offers free shipping."}
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+            )}
 
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Purchase details</h2>
-          <p className="text-sm text-muted-foreground">
-            {needsShipping
-              ? "Email, name, and where to ship. Add an address below if you don’t have one saved."
-              : "Email and contact name for your order."}
-          </p>
-        </div>
-
-        <CheckoutPurchaseDetails
-          buyerEmail={buyerEmail ?? null}
-          initialAddresses={initialAddresses}
-          needsShipping={needsShipping}
-          onStateChange={handlePurchaseDetailsChange}
-        />
-
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Payment</h2>
-          <PurchaseOptions
-            listingId={listing.id}
-            listingTitle={listing.title}
-            price={resolved.total}
-            fulfillment={fulfillmentForApi}
-            shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
-            purchaseDetailsReady={!paymentBlocked}
-            needsShipping={needsShipping}
-          />
-        </div>
-      </div>
-
-      {/* Right: seller + listing + summary + delivery + protection (first on mobile) */}
-      <div className="order-1 lg:order-2 space-y-6">
-        {seller && (
-          <Link
-            href={sellerProfileHref(seller)}
-            className="flex items-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/40"
-          >
-            <Avatar className="h-12 w-12 shrink-0 border border-border">
-              <AvatarImage src={seller.avatar_url || undefined} alt={sellerDisplayName(seller)} />
-              <AvatarFallback className="text-sm font-medium">{sellerInitials(seller)}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Seller</p>
-              <p className="font-semibold text-foreground truncate">{sellerDisplayName(seller)}</p>
-              <p className="text-xs text-primary mt-0.5">View profile</p>
-            </div>
-          </Link>
-        )}
-
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold leading-snug">{capitalizeWords(listing.title)}</h2>
-          <p className="text-sm text-muted-foreground">Order summary</p>
-        </div>
-
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border bg-muted">
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={capitalizeWords(listing.title)}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 480px"
-              priority
+            <CheckoutPurchaseDetails
+              buyerEmail={buyerEmail ?? null}
+              initialAddresses={initialAddresses}
+              needsShipping={needsShipping}
+              onStateChange={handlePurchaseDetailsChange}
             />
-          ) : (
-            <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
-              <ImageOff className="h-10 w-10 opacity-50" aria-hidden />
-              <span className="text-sm">No photo</span>
+
+            {needsShipping && (
+              <div className="mt-10 space-y-3">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Shipping</h2>
+                <div className="rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
+                  {!purchaseDetails.readyToPay
+                    ? "Enter your shipping address above to confirm delivery."
+                    : resolved.shipping > 0
+                      ? `Flat $${resolved.shipping.toFixed(2)} shipping from the seller — included in your total.`
+                      : "Free shipping from this seller — included in your total."}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-10 space-y-3">
+              <div>
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Payment</h2>
+                <p className="mt-1 text-[13px] text-neutral-500">All transactions are secure and encrypted.</p>
+              </div>
+              <div className="rounded-[8px] border border-neutral-200 bg-white p-4 sm:p-5">
+                <PurchaseOptions
+                  listingId={listing.id}
+                  listingTitle={listing.title}
+                  price={resolved.total}
+                  fulfillment={fulfillmentForApi}
+                  shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
+                  purchaseDetailsReady={!paymentBlocked}
+                  needsShipping={needsShipping}
+                  submitButtonLabel="Pay now"
+                  submitButtonClassName={payButtonClassName}
+                  hideStripeFooter
+                />
+                <p className="mt-3 text-center text-[12px] text-neutral-500">
+                  Secure payment processed by{" "}
+                  <span className="font-medium text-neutral-600">Stripe</span>
+                </p>
+              </div>
             </div>
-          )}
+
+            {needsShipping && (
+              <div className="mt-8">
+                <ProtectionTrustBlock />
+              </div>
+            )}
+
+            <nav
+              className="mt-12 flex flex-wrap gap-x-4 gap-y-2 border-t border-neutral-200 pt-8 text-[13px]"
+              aria-label="Policies"
+            >
+              <Link href="/protection-policy" className="text-[#0066CC] underline-offset-2 hover:underline">
+                Purchase protection
+              </Link>
+              <Link href="/privacy" className="text-[#0066CC] underline-offset-2 hover:underline">
+                Privacy policy
+              </Link>
+              <Link href="/terms" className="text-[#0066CC] underline-offset-2 hover:underline">
+                Terms of service
+              </Link>
+              <Link href="/cookies" className="text-[#0066CC] underline-offset-2 hover:underline">
+                Cookies
+              </Link>
+            </nav>
+          </div>
         </div>
 
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">{copy.itemLineLabel}</span>
-            <span className="tabular-nums text-foreground font-medium">${resolved.itemPrice.toFixed(2)}</span>
-          </div>
-          {deliverySelected && resolved.shipping > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Shipping</span>
-              <span className="tabular-nums text-foreground font-medium">${resolved.shipping.toFixed(2)}</span>
-            </div>
+        {/* Right — order summary */}
+        <aside
+          className={cn(
+            "order-1 border-b border-neutral-200 bg-[#F5F5F5] px-4 py-8 sm:px-8 lg:order-2 lg:w-[min(420px,42%)] lg:shrink-0 lg:border-b-0 lg:border-l lg:border-neutral-200 lg:px-8 lg:py-10",
+            "lg:min-h-[calc(100dvh-3.5rem)]",
           )}
-          {deliverySelected && resolved.shipping === 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Shipping</span>
-              <span>Free</span>
+        >
+          <div className="mx-auto max-w-[400px] lg:sticky lg:top-24 lg:mx-0">
+            <div className="mb-6 flex items-center justify-between">
+              <span className="text-[13px] font-medium uppercase tracking-wide text-neutral-500">Order summary</span>
+              <Link
+                href="/cart"
+                className="flex items-center gap-1.5 text-[13px] font-medium text-[#0066CC] hover:underline"
+              >
+                <ShoppingBag className="h-4 w-4" aria-hidden />
+                Cart
+              </Link>
             </div>
-          )}
-          <div className="flex justify-between font-semibold text-base border-t border-border pt-2 mt-1">
-            <span>Total</span>
-            <span className="tabular-nums text-foreground">${resolved.total.toFixed(2)}</span>
-          </div>
-        </div>
 
-        {!canPick && canShip && (
-          <div className="rounded-lg border bg-card p-4">
-            <div className="flex items-start gap-3">
-              <Truck className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden />
-              <div className="text-sm min-w-0">
-                <p className="font-medium">Delivery</p>
-                <p className="text-muted-foreground mt-1">
-                  {resolved.shipping > 0 ? (
-                    <>
-                      Flat{" "}
-                      <span className="text-foreground font-semibold tabular-nums">
-                        ${resolved.shipping.toFixed(2)}
-                      </span>{" "}
-                      shipping set by the seller — included in your total. Coordinate delivery details with the
-                      seller in messages after you pay.
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-foreground font-medium">Free shipping</span> from this seller. Your
-                      total is the {copy.priceContextNoun} price only; confirm the shipping address with the seller
-                      in messages after you pay.
-                    </>
-                  )}
+            <div className="flex gap-4">
+              <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[8px] border border-neutral-200/80 bg-white shadow-sm">
+                {imageUrl ? (
+                  <Image
+                    src={imageUrl}
+                    alt={capitalizeWords(listing.title)}
+                    fill
+                    className="object-cover"
+                    sizes="72px"
+                    priority
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-neutral-100">
+                    <ImageOff className="h-7 w-7 text-neutral-300" aria-hidden />
+                  </div>
+                )}
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1 text-[11px] font-semibold text-white shadow-sm">
+                  1
+                </span>
+              </div>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <Link
+                  href={backHref}
+                  className="text-[15px] font-semibold leading-snug text-foreground underline-offset-2 hover:underline"
+                >
+                  {capitalizeWords(listing.title)}
+                </Link>
+                <p className="mt-1 text-[13px] text-neutral-500">
+                  Qty 1 · {needsShipping ? "Shipping" : "Local pickup"}
+                </p>
+                {seller && (
+                  <p className="mt-2 text-[12px] text-neutral-500">
+                    Sold by{" "}
+                    <Link href={sellerProfileHref(seller)} className="font-medium text-[#0066CC] hover:underline">
+                      {sellerDisplayName(seller)}
+                    </Link>
+                  </p>
+                )}
+              </div>
+              <p className="shrink-0 pt-0.5 text-[15px] font-semibold tabular-nums text-foreground">
+                ${resolved.itemPrice.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <div className="flex gap-2">
+                <div
+                  className="flex h-11 min-w-0 flex-1 items-center rounded-[6px] border border-neutral-200 bg-white px-3 text-[13px] text-neutral-400"
+                  role="status"
+                >
+                  Discount code or gift card
+                </div>
+                <div
+                  className="flex h-11 shrink-0 items-center rounded-[6px] border border-neutral-200 bg-neutral-200/70 px-4 text-[13px] font-medium text-neutral-400"
+                  aria-hidden
+                >
+                  Apply
+                </div>
+              </div>
+              <p className="mt-2 text-[11px] text-neutral-400">Promo codes are not available for peer listings yet.</p>
+            </div>
+
+            <div className="mt-8 space-y-2.5 border-t border-neutral-200/90 pt-6 text-[14px]">
+              <div className="flex justify-between gap-4">
+                <span className="text-neutral-600">Subtotal</span>
+                <span className="tabular-nums font-medium text-foreground">${resolved.itemPrice.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-neutral-600">Shipping</span>
+                <div className="text-right text-[14px]">{shippingSummaryRight}</div>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-neutral-200/90 pt-4 text-[16px] font-semibold">
+                <span className="text-foreground">Total</span>
+                <p className="tabular-nums text-foreground">
+                  <span className="text-[13px] font-normal text-neutral-500">USD </span>
+                  ${resolved.total.toFixed(2)}
                 </p>
               </div>
             </div>
           </div>
-        )}
-
-        {impliedFulfillment === "shipping" && <ProtectionTrustBlock />}
+        </aside>
       </div>
     </div>
   )

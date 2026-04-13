@@ -27,10 +27,10 @@ import { listingConditionFilterRows } from "@/lib/listing-labels"
 export const boardTypes = [
   { value: "all", label: "All Board Types" },
   { value: "shortboard", label: "Shortboard" },
-  { value: "longboard", label: "Longboard" },
-  { value: "funboard", label: "Mid-length" },
-  { value: "step-up", label: "Step-Up" },
   { value: "fish", label: "Fish" },
+  { value: "funboard", label: "Mid-length" },
+  { value: "longboard", label: "Longboard" },
+  { value: "step-up", label: "Step-Up" },
   { value: "gun", label: "Gun" },
   { value: "other", label: "Other" },
 ]

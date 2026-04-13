@@ -16,6 +16,10 @@ interface PurchaseOptionsProps {
   purchaseDetailsReady?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
   needsShipping?: boolean
+  submitButtonLabel?: string
+  submitButtonClassName?: string
+  /** Hide the default one-line Stripe footer (when the parent already shows secure copy). */
+  hideStripeFooter?: boolean
 }
 
 export function PurchaseOptions({
@@ -26,6 +30,9 @@ export function PurchaseOptions({
   shippingAddressId,
   purchaseDetailsReady = true,
   needsShipping = false,
+  submitButtonLabel,
+  submitButtonClassName,
+  hideStripeFooter = false,
 }: PurchaseOptionsProps) {
   const showCard = stripeCardCheckoutEnabled()
 
@@ -51,8 +58,12 @@ export function PurchaseOptions({
         shippingAddressId={shippingAddressId ?? null}
         purchaseDetailsReady={purchaseDetailsReady}
         needsShipping={needsShipping}
+        submitButtonLabel={submitButtonLabel}
+        submitButtonClassName={submitButtonClassName}
       />
-      <p className="text-xs text-muted-foreground">Secure payment processed by Stripe.</p>
+      {!hideStripeFooter ? (
+        <p className="text-xs text-muted-foreground">Secure payment processed by Stripe.</p>
+      ) : null}
     </div>
   )
 }

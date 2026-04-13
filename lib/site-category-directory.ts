@@ -8,10 +8,10 @@ export type CategoryLink = { label: string; href: string }
 export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "All Surfboards", href: "/boards" },
   { label: "Shortboard", href: "/boards?type=shortboard" },
-  { label: "Longboard", href: "/boards?type=longboard" },
-  { label: "Mid-length", href: "/boards?type=funboard" },
-  { label: "Step-Up", href: "/boards?type=step-up" },
   { label: "Fish", href: "/boards?type=fish" },
+  { label: "Mid-length", href: "/boards?type=funboard" },
+  { label: "Longboard", href: "/boards?type=longboard" },
+  { label: "Step-Up", href: "/boards?type=step-up" },
   { label: "Gun", href: "/boards?type=gun" },
   { label: "Other", href: "/boards?type=other" },
 ]
@@ -64,10 +64,10 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
         heading: "By shape",
         links: [
           { label: "Shortboard", href: "/boards?type=shortboard" },
-          { label: "Longboard", href: "/boards?type=longboard" },
-          { label: "Mid-length", href: "/boards?type=funboard" },
-          { label: "Step-Up", href: "/boards?type=step-up" },
           { label: "Fish", href: "/boards?type=fish" },
+          { label: "Mid-length", href: "/boards?type=funboard" },
+          { label: "Longboard", href: "/boards?type=longboard" },
+          { label: "Step-Up", href: "/boards?type=step-up" },
           { label: "Gun", href: "/boards?type=gun" },
           { label: "Other", href: "/boards?type=other" },
         ],
