@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 
@@ -61,13 +62,7 @@ export async function markOrderShippedWithTracking(
     .filter((l) => l !== null)
     .join("\n")
 
-  const { data: conv } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("buyer_id", ctx.buyer_id)
-    .eq("seller_id", sellerUserId)
-    .eq("listing_id", ctx.listing_id)
-    .maybeSingle()
+  const conv = await getConversationForBuyerSeller(supabase, ctx.buyer_id, sellerUserId)
 
   if (conv) {
     await supabase.from("messages").insert({
@@ -77,7 +72,10 @@ export async function markOrderShippedWithTracking(
     })
     await supabase
       .from("conversations")
-      .update({ last_message_at: new Date().toISOString() })
+      .update({
+        last_message_at: new Date().toISOString(),
+        listing_id: ctx.listing_id,
+      })
       .eq("id", conv.id)
   }
 

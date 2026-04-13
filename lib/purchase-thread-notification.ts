@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 
 function shippingLines(shipping: Record<string, unknown> | null): string[] {
@@ -45,13 +46,7 @@ export async function postPurchaseThreadNotification(
   const { buyerId, sellerId, listingId, listingTitle, orderNum, total, fulfillment, shippingAddress } =
     params
 
-  let { data: conversation } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("buyer_id", buyerId)
-    .eq("seller_id", sellerId)
-    .eq("listing_id", listingId)
-    .maybeSingle()
+  let conversation = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
 
   if (!conversation) {
     const { data: created, error: convError } = await supabase
@@ -68,7 +63,9 @@ export async function postPurchaseThreadNotification(
       console.error("[purchase notification] conversation insert failed:", convError)
       return
     }
-    conversation = created
+    conversation = { id: created.id, listing_id: listingId }
+  } else {
+    await supabase.from("conversations").update({ listing_id: listingId }).eq("id", conversation.id)
   }
 
   const intro = `Order #${orderNum}\n\nI paid with card for "${listingTitle}" — $${total.toFixed(2)} total.`

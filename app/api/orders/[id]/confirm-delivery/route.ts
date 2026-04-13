@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(
@@ -65,13 +66,7 @@ export async function POST(
     .eq("id", order.listing_id)
     .maybeSingle()
 
-  const { data: conv } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("buyer_id", user.id)
-    .eq("seller_id", order.seller_id)
-    .eq("listing_id", order.listing_id)
-    .maybeSingle()
+  const conv = await getConversationForBuyerSeller(supabase, user.id, order.seller_id)
 
   if (conv) {
     await supabase.from("messages").insert({
@@ -81,7 +76,7 @@ export async function POST(
     })
     await supabase
       .from("conversations")
-      .update({ last_message_at: now })
+      .update({ last_message_at: now, listing_id: order.listing_id })
       .eq("id", conv.id)
   }
 

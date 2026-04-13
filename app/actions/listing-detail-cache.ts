@@ -18,3 +18,16 @@ export async function revalidateListingDetailAfterProfileUpdate() {
   revalidateListingDetailCache()
   return { ok: true as const }
 }
+
+/** Call after a seller creates or updates a listing so `/l/[slug]` reflects new fulfillment flags. */
+export async function revalidateListingDetailAfterListingMutation() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { ok: false as const }
+  }
+  revalidateListingDetailCache()
+  return { ok: true as const }
+}

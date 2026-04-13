@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -51,15 +52,16 @@ interface Listing {
 }
 
 export default function MyListingsPage() {
+  const pathname = usePathname()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [endListingId, setEndListingId] = useState<string | null>(null)
   const [endChoice, setEndChoice] = useState<'sold' | 'removed' | null>(null)
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createClient(), [pathname])
 
   useEffect(() => {
     fetchListings()
-  }, [])
+  }, [supabase])
 
   async function fetchListings() {
     const { data: { user } } = await supabase.auth.getUser()

@@ -51,7 +51,11 @@ export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProp
       const redirectTo = buildOAuthCallbackUrl(nextPath, window.location.origin)
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo },
+        options: {
+          redirectTo,
+          // Let users pick which Google account to use (shared device / multiple Google logins).
+          queryParams: { prompt: 'select_account' },
+        },
       })
       if (oauthError) throw oauthError
     } catch (err: unknown) {

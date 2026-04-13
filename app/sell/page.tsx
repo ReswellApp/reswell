@@ -4,7 +4,8 @@ import React, { Suspense } from "react"
 
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react"
 import Image from "next/image"
-import { useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { withBrowserSessionIfPresent } from "@/lib/auth/browser-session"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -69,6 +70,7 @@ import {
   flagsFromBoardFulfillment,
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
+import { resolveListingFulfillmentFlagsForSellSubmit } from "@/lib/sell-listing-fulfillment-flags"
 import { slugify } from "@/lib/slugify"
 import {
   clearImpersonation,
@@ -110,6 +112,7 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { cn } from "@/lib/utils"
 import { BrandInputWithSuggestions } from "@/components/brand-input-with-suggestions"
 import { listingDetailPath } from "@/lib/listing-query"
+import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import {
   validateSellListingForm,
   buildResolvedListingTitle,
@@ -270,8 +273,9 @@ function shippingPriceToFormValue(v: unknown): string {
 
 function SellPageContent() {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createClient(), [pathname])
   const editId = searchParams.get("edit")
   const startFresh = searchParams.get("new") === "1"
 
@@ -280,7 +284,7 @@ function SellPageContent() {
     if (typeof window === "undefined") return
     if (startFresh) {
       clearSellServerDraftListingId()
-      router.replace("/sell")
+      router.replace(withBrowserSessionIfPresent("/sell", pathname))
     }
   }, [startFresh, router])
 
@@ -1020,7 +1024,7 @@ function SellPageContent() {
       if (!mounted) return
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
-        router.replace("/sell")
+        router.replace(withBrowserSessionIfPresent("/sell", pathname))
         setEditLoading(false)
         return
       }
@@ -1038,7 +1042,7 @@ function SellPageContent() {
       }
       if ((listing as { section?: string }).section !== "surfboards") {
         toast.error("Only surfboard listings can be edited here.")
-        router.replace("/sell")
+        router.replace(withBrowserSessionIfPresent("/sell", pathname))
         setEditLoading(false)
         return
       }
@@ -1596,7 +1600,7 @@ function SellPageContent() {
 
       const fd = submitForm
 
-      const fulfillmentFlags = flagsFromBoardFulfillment(fd.boardFulfillment)
+      const fulfillmentFlags = resolveListingFulfillmentFlagsForSellSubmit(fd)
 
       const fulfillmentRow = {
         shipping_available: fulfillmentFlags.shipping_available,
@@ -2003,6 +2007,7 @@ function SellPageContent() {
           clearRemoteResumeDraftIdStorage()
           setLocalServerDraftId(null)
           setRemoteResumeDraftId(null)
+          await revalidateListingDetailAfterListingMutation()
           router.push(detailPath)
           return
         }
@@ -2034,6 +2039,7 @@ function SellPageContent() {
       clearRemoteResumeDraftIdStorage()
       setLocalServerDraftId(null)
       setRemoteResumeDraftId(null)
+      await revalidateListingDetailAfterListingMutation()
       router.push(detailPath)
     } catch (error: unknown) {
       const msg = submitErrorMessage(error, "Failed to create listing")
@@ -2787,6 +2793,17 @@ function SellPageContent() {
                                 setFormData({
                                   ...formData,
                                   boardFulfillment: boardFulfillmentFromChecks(ns, np),
+                                  ...(want
+                                    ? {}
+                                    : {
+                                        boardShippingCostMode: "reswell" as BoardShippingCostMode,
+                                        boardShippingPrice: "",
+                                        reswellPackageLengthIn: "",
+                                        reswellPackageWidthIn: "",
+                                        reswellPackageHeightIn: "",
+                                        reswellPackageWeightLb: "",
+                                        reswellPackageWeightOz: "",
+                                      }),
                                 })
                               }}
                               className="mt-0.5"

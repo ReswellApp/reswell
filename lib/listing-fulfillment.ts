@@ -23,6 +23,9 @@ export function flagsFromBoardFulfillment(
       return { local_pickup: false, shipping_available: true }
     case "pickup_and_shipping":
       return { local_pickup: true, shipping_available: true }
+    default:
+      // Corrupt drafts / legacy snapshots may not match the union at runtime.
+      return { local_pickup: true, shipping_available: false }
   }
 }
 
@@ -49,6 +52,26 @@ export function boardFulfillmentSummary(
     case "pickup_and_shipping":
       return "Pickup or shipping"
   }
+}
+
+/**
+ * One label per enabled option for listing detail metadata (e.g. condition · type · Local pickup · Shipping).
+ * When the seller set a flat shipping amount, include it so buyers see the add-on clearly.
+ */
+export function boardFulfillmentDetailLabels(
+  localPickup: boolean | null | undefined,
+  shippingAvailable: boolean | null | undefined,
+  shippingPrice?: number | string | null
+): string[] {
+  const labels: string[] = []
+  if (localPickup !== false) labels.push("Local pickup")
+  if (shippingAvailable) {
+    const n = Math.max(0, Number.parseFloat(String(shippingPrice ?? 0)) || 0)
+    labels.push(
+      n > 0 ? `Shipping (+$${n.toFixed(2)})` : "Shipping (rate at checkout)",
+    )
+  }
+  return labels
 }
 
 /** Buyer checkout choice when listing offers both. */

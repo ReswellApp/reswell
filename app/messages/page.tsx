@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailHref } from '@/lib/listing-href'
 import { cn } from '@/lib/utils'
+import { getConversationForBuyerSeller } from '@/lib/db/conversations'
 
 interface Notification {
   id: string
@@ -28,6 +29,7 @@ function activityKindLabel(type: string | undefined) {
   const t = (type || '').toLowerCase()
   if (t.includes('favorite') || t.includes('save') || t === 'listing_saved') return 'Favorite'
   if (t.includes('follow')) return 'Follow'
+  if (t.startsWith('offer_')) return 'Offer'
   return 'Activity'
 }
 
@@ -108,15 +110,9 @@ function MessagesContent() {
 
       setCurrentUserId(user.id)
 
-      // If we have user + listing params, find or create that conversation and redirect
+      // If we have user + listing params, open the single buyer↔seller thread (set listing context) and redirect
       if (userParam && listingParam && userParam !== user.id) {
-        let { data: conv } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('buyer_id', user.id)
-          .eq('seller_id', userParam)
-          .eq('listing_id', listingParam)
-          .single()
+        let conv = await getConversationForBuyerSeller(supabase, user.id, userParam)
 
         if (!conv) {
           const { data: newConv, error: createErr } = await supabase
@@ -128,7 +124,9 @@ function MessagesContent() {
             })
             .select('id')
             .single()
-          if (!createErr && newConv) conv = newConv
+          if (!createErr && newConv) conv = { id: newConv.id, listing_id: listingParam }
+        } else if (conv.listing_id !== listingParam) {
+          await supabase.from('conversations').update({ listing_id: listingParam }).eq('id', conv.id)
         }
         if (conv) {
           window.location.replace(`/messages/${conv.id}`)

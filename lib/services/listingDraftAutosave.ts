@@ -6,8 +6,13 @@ import {
   formatBoardLengthForTitle,
   formatBoardLengthInputFromParts,
 } from "@/lib/board-measurements"
-import { flagsFromBoardFulfillment, type BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
+import type { BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
+import { flagsFromBoardFulfillment } from "@/lib/listing-fulfillment"
 import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
+import {
+  boardFulfillmentChoiceFromListingFlags,
+  resolveListingFulfillmentFlagsForSellSubmit,
+} from "@/lib/sell-listing-fulfillment-flags"
 import type { ListingDraftAutosaveInput } from "@/lib/validations/listing-draft-autosave"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
@@ -49,8 +54,8 @@ export function buildSurfboardDraftListingRow(
   fd: ListingDraftAutosaveInput,
   defaultCategoryId: string,
 ): Record<string, unknown> {
-  const fulfillment = (fd.boardFulfillment ?? "pickup_only") as BoardFulfillmentChoice
-  const flags = flagsFromBoardFulfillment(fulfillment)
+  const flags = resolveListingFulfillmentFlagsForSellSubmit(fd)
+  const fulfillment = boardFulfillmentChoiceFromListingFlags(flags)
   const priceRaw = (fd.price ?? "").trim()
   const price = priceRaw ? parseFloat(priceRaw.replace(/,/g, "")) : 0
   const boardLengthCombined = resolveDraftBoardLength(fd)

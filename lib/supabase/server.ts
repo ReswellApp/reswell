@@ -1,6 +1,10 @@
+import {
+  getBrowserSessionIdFromHeaders,
+  supabaseAuthStorageKeyFromSessionId,
+} from '@/lib/auth/browser-session'
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 /**
  * Especially important if using Fluid compute: Don't put this client in a
@@ -16,11 +20,15 @@ export async function createClient() {
     )
   }
   const cookieStore = await cookies()
+  const headerList = await headers()
+  const browserSessionId = getBrowserSessionIdFromHeaders((name) => headerList.get(name))
+  const cookieStorageName = supabaseAuthStorageKeyFromSessionId(browserSessionId ?? undefined)
 
   return createServerClient(
     url,
     key,
     {
+      ...(cookieStorageName ? { cookieOptions: { name: cookieStorageName } } : {}),
       cookies: {
         getAll() {
           return cookieStore.getAll()

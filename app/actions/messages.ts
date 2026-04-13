@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 
 export async function sendListingMessage(input: {
@@ -25,17 +26,14 @@ export async function sendListingMessage(input: {
 
   const body = content.trim()
 
-  let conversation
-  const { data: existingConv } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("buyer_id", user.id)
-    .eq("seller_id", seller_id)
-    .eq("listing_id", listing_id || null)
-    .single()
+  let conversation: { id: string }
+  const existing = await getConversationForBuyerSeller(supabase, user.id, seller_id)
 
-  if (existingConv) {
-    conversation = existingConv
+  if (existing) {
+    conversation = { id: existing.id }
+    if (listing_id && existing.listing_id !== listing_id) {
+      await supabase.from("conversations").update({ listing_id }).eq("id", existing.id)
+    }
   } else {
     const { data: newConv, error: convError } = await supabase
       .from("conversations")
@@ -48,6 +46,9 @@ export async function sendListingMessage(input: {
       .single()
 
     if (convError) {
+      return { error: "Failed to create conversation" as const }
+    }
+    if (!newConv) {
       return { error: "Failed to create conversation" as const }
     }
     conversation = newConv

@@ -1,65 +1,83 @@
+import {
+  getBrowserSessionIdFromHeaders,
+  supabaseAuthStorageKeyFromSessionId,
+} from '@/lib/auth/browser-session'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function updateSession(request: NextRequest) {
+export type SessionMiddlewareContext = {
+  /** When set, middleware rewrites the URL to this pathname (internal routing). */
+  rewriteUrl?: URL
+  /** Supabase auth cookie storage suffix (from `/w/{uuid}/…`). */
+  browserSessionId?: string | null
+  /** Visible path before rewrite (for login ?redirect=). */
+  originalPathname?: string
+  /** Path after stripping `/w/{uuid}` (for route protection checks). */
+  strippedPath?: string
+}
+
+export async function updateSession(
+  request: NextRequest,
+  ctx?: SessionMiddlewareContext,
+) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Skip Supabase auth when env vars are not configured (e.g. local viewing)
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.next({ request })
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          )
-        },
-      },
-    },
+  const cookieStorageName = supabaseAuthStorageKeyFromSessionId(
+    ctx?.browserSessionId ?? undefined,
   )
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  const buildBaseResponse = () => {
+    if (ctx?.rewriteUrl) {
+      const requestHeaders = new Headers(request.headers)
+      if (ctx.browserSessionId) {
+        requestHeaders.set('x-reswell-browser-session', ctx.browserSessionId)
+      }
+      return NextResponse.rewrite(ctx.rewriteUrl, {
+        request: { headers: requestHeaders },
+      })
+    }
+    const requestHeaders = new Headers(request.headers)
+    const fromRequest = getBrowserSessionIdFromHeaders((name) => request.headers.get(name))
+    const sid = ctx?.browserSessionId ?? fromRequest
+    if (sid) {
+      requestHeaders.set('x-reswell-browser-session', sid)
+    }
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    })
+  }
 
-  // IMPORTANT: If you remove getUser() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
+  let supabaseResponse = buildBaseResponse()
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    ...(cookieStorageName ? { cookieOptions: { name: cookieStorageName } } : {}),
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        supabaseResponse = buildBaseResponse()
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options),
+        )
+      },
+    },
+  })
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes that require authentication.
-  // Important: do not use pathname.startsWith("/sell") — that matches "/sellers".
-  //
-  // `/sell` must stay **public**: link previews (iMessage, Slack, etc.) and OG crawlers
-  // have no session cookie; if we redirect them to `/auth/login`, they index the login
-  // page metadata instead of the sell route's Open Graph tags. The listing form still
-  // requires sign-in on submit (client + API).
-  //
-  // Next.js serves `opengraph-image` / `twitter-image` under `/sell/...`; those must
-  // not redirect or social previews lose images.
-  const pathname = request.nextUrl.pathname
+  const pathname =
+    ctx?.strippedPath ?? request.nextUrl.pathname
+  const pathnameForRedirects = ctx?.originalPathname ?? request.nextUrl.pathname
+
   const isPublicSellOgAsset =
     pathname === '/sell/opengraph-image' || pathname === '/sell/twitter-image'
   const isProtectedRoute =
@@ -71,37 +89,23 @@ export async function updateSession(request: NextRequest) {
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    url.searchParams.set('redirect', request.nextUrl.pathname)
+    url.searchParams.set('redirect', pathnameForRedirects)
     return NextResponse.redirect(url)
   }
 
-  // Admin route protection - check if user is admin
-  if (request.nextUrl.pathname.startsWith('/admin') && user) {
+  if (pathname.startsWith('/admin') && user) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single()
-    
+
     if (!profile?.is_admin) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
     }
   }
-
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
 
   return supabaseResponse
 }

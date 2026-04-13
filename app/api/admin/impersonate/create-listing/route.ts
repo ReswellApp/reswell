@@ -7,6 +7,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
+import { revalidateListingDetailCache } from "@/lib/listing-detail-cache"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -158,6 +159,8 @@ export async function POST(request: NextRequest) {
         : parseFloat(String(listingData.price)),
     photoUrl,
   })
+
+  revalidateListingDetailCache()
 
   return NextResponse.json({
     success: true,

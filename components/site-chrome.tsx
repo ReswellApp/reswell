@@ -11,7 +11,10 @@ import { ImpersonationBanner } from "@/components/impersonation-banner"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
-  return pathname.startsWith("/auth")
+  if (pathname.startsWith('/auth')) return true
+  // Isolated session URLs: /w/{uuid}/auth/...
+  if (/^\/w\/[^/]+\/auth(\/|$)/.test(pathname)) return true
+  return false
 }
 
 /**

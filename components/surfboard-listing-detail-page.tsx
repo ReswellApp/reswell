@@ -39,7 +39,7 @@ const ImageGallery = dynamic(
   },
 )
 import { TranslateableDescription } from "@/components/translateable-description"
-import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
+import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { ListingSellerStats } from "@/components/listing-seller-stats"
@@ -163,12 +163,47 @@ export async function SurfboardListingDetailPage({
     (board.status === "active" || board.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
+  const { data: offerSettingsRow } = await supabase
+    .from("offer_settings")
+    .select("minimum_offer_pct, offers_enabled")
+    .eq("listing_id", board.id)
+    .maybeSingle()
+
   const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
   const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
 
   const rawBoardType = board.board_type?.trim() || null
   const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
   const listingTitle = capitalizeWords(board.title)
+
+  const listPriceNum =
+    typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
+  const buyerOffersOn =
+    (board as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false
+  const offerPct = offerSettingsRow?.minimum_offer_pct ?? 70
+  const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
+  const acceptOffers =
+    buyerOffersOn && (!offerSettingsRow || offerSettingsRow.offers_enabled !== false)
+
+  const primaryImageUrl =
+    (images[0] as { thumbnail_url?: string | null; url?: string | null } | undefined)
+      ?.thumbnail_url ||
+    (images[0] as { url?: string | null } | undefined)?.url ||
+    null
+
+  const makeOfferConfig =
+    canPeerPurchase && acceptOffers && listPriceNum > 0
+      ? {
+          listingTitle,
+          listPrice: listPriceNum,
+          minOfferAmount,
+          minOfferPct: offerPct,
+          primaryImageUrl,
+          canPick: pickupOffered,
+          canShip: shippingOffered,
+          shippingFlatRate: Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0),
+        }
+      : undefined
 
   const listingLocationLine =
     board.city && board.state
@@ -264,7 +299,11 @@ export async function SurfboardListingDetailPage({
               {[
                 formatCondition(board.condition),
                 board.board_type ? formatBoardType(board.board_type) : null,
-                boardFulfillmentSummary(board.local_pickup, board.shipping_available),
+                ...boardFulfillmentDetailLabels(
+                  board.local_pickup,
+                  board.shipping_available,
+                  board.shipping_price,
+                ),
               ].filter(Boolean).join(" · ")}
             </p>
           </div>
@@ -283,6 +322,7 @@ export async function SurfboardListingDetailPage({
                     checkoutListingParam={board.slug ?? board.id}
                     section="surfboards"
                     isLoggedIn={!!user}
+                    makeOffer={makeOfferConfig}
                   />
                 </div>
               )}
@@ -320,6 +360,7 @@ export async function SurfboardListingDetailPage({
                       checkoutListingParam={board.slug ?? board.id}
                       section="surfboards"
                       isLoggedIn={!!user}
+                      makeOffer={makeOfferConfig}
                     />
                   </div>
                 )}
@@ -329,7 +370,11 @@ export async function SurfboardListingDetailPage({
                 {[
                   formatCondition(board.condition),
                   board.board_type ? formatBoardType(board.board_type) : null,
-                  boardFulfillmentSummary(board.local_pickup, board.shipping_available),
+                  ...boardFulfillmentDetailLabels(
+                    board.local_pickup,
+                    board.shipping_available,
+                    board.shipping_price,
+                  ),
                 ].filter(Boolean).join(" · ")}
               </p>
 

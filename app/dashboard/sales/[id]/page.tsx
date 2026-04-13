@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
+import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -178,13 +179,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
   const paidWithCard = !!sale.stripe_checkout_session_id
 
-  const { data: convRow } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("buyer_id", sale.buyer_id)
-    .eq("seller_id", user.id)
-    .eq("listing_id", sale.listing_id)
-    .maybeSingle()
+  const convRow = await getConversationForBuyerSeller(supabase, sale.buyer_id, user.id)
 
   const conversationId = convRow?.id ?? null
 

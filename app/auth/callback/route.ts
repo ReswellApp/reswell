@@ -1,3 +1,4 @@
+import { browserSessionIdFromSafePath } from "@/lib/auth/browser-session";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import {
   shouldTrackKlaviyoNewAccountForOAuthSession,
@@ -12,6 +13,7 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
   const next = safeRedirectPath(searchParams.get("next"));
+  const browserSessionId = browserSessionIdFromSafePath(next);
 
   // Handle PKCE flow (OAuth, etc.): session cookies must be set on this response.
   if (code) {
@@ -19,6 +21,7 @@ export async function GET(request: NextRequest) {
     const supabase = createRouteHandlerSupabaseClient(
       request,
       redirectResponse,
+      { browserSessionId },
     );
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
@@ -39,6 +42,7 @@ export async function GET(request: NextRequest) {
     const supabase = createRouteHandlerSupabaseClient(
       request,
       redirectResponse,
+      { browserSessionId },
     );
     const { data, error } = await supabase.auth.verifyOtp({
       token_hash,
