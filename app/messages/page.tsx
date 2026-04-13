@@ -60,6 +60,7 @@ interface Conversation {
     content: string
     is_read: boolean
     sender_id: string
+    created_at: string
   }[]
 }
 
@@ -142,10 +143,11 @@ function MessagesContent() {
             listing:listings(id, title, listing_images(url)),
             buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
             seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
-            messages(content, is_read, sender_id)
+            messages(content, is_read, sender_id, created_at)
           `)
           .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-          .order('last_message_at', { ascending: false }),
+          .order('last_message_at', { ascending: false })
+          .order('created_at', { ascending: true, referencedTable: 'messages' }),
         supabase
           .from('notifications')
           .select(`
@@ -206,21 +208,27 @@ function MessagesContent() {
 
   const totalUnreadChats = conversations.reduce((acc, conv) => acc + getUnreadCount(conv), 0)
 
+  function getLatestMessage(conv: Conversation): Conversation['messages'][number] | undefined {
+    if (!conv.messages?.length) return undefined
+    return [...conv.messages].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    ).at(-1)
+  }
+
   function formatChatPreviewText(
     lastMessage: Conversation['messages'][number] | undefined,
     listingTitle: string | undefined,
     currentId: string | null,
   ): string {
+    const listing = listingTitle?.trim() ? capitalizeWords(listingTitle.trim()) : ''
     if (!lastMessage?.content?.trim()) {
-      return listingTitle ?? 'No messages yet'
+      return listing || 'No messages yet'
     }
     const body = lastMessage.content.trim()
     const you = lastMessage.sender_id === currentId
-    const listing = listingTitle?.trim()
-    if (you) {
-      return listing ? `You · ${listing} — ${body}` : `You: ${body}`
-    }
-    return listing ? `${listing} — ${body}` : body
+    const segment = you ? `You · ${body}` : body
+    if (listing) return `${listing} · ${segment}`
+    return segment
   }
 
   const groupedShell =
@@ -385,7 +393,7 @@ function MessagesContent() {
                 <div className={cn('divide-y divide-border/40', groupedShell)}>
                   {filteredConversations.map((conv) => {
                     const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
-                    const lastMessage = conv.messages[conv.messages.length - 1]
+                    const lastMessage = getLatestMessage(conv)
                     const unreadCount = getUnreadCount(conv)
                     const initial = (otherUser?.display_name?.trim()?.[0] || '?').toUpperCase()
                     const listingTitle = conv.listing?.title
@@ -530,24 +538,28 @@ function MessagesContent() {
                               </div>
                             )}
                           </div>
-                          <div className="min-w-0 flex-1 py-0.5">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {kind}
-                            </p>
-                            <p className="mt-1 text-[15px] font-medium leading-snug text-foreground group-hover:text-foreground">
-                              {n.message || 'Someone saved your item'}
-                            </p>
+                          <div className="flex min-w-0 flex-1 flex-col py-0.5">
                             {listing?.title && (
-                              <p className="mt-1 truncate text-[13px] text-muted-foreground">
+                              <p className="truncate text-[13px] font-medium text-muted-foreground">
                                 {capitalizeWords(listing.title)}
                               </p>
                             )}
-                            <time
-                              className="mt-2 block text-[12px] tabular-nums text-muted-foreground"
-                              dateTime={n.created_at}
-                            >
-                              {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                            </time>
+                            <div className="mt-1.5 flex min-w-0 items-end justify-between gap-3">
+                              <div className="flex min-w-0 items-baseline gap-2">
+                                <span className="shrink-0 rounded-full bg-muted/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground ring-1 ring-border/40">
+                                  {kind}
+                                </span>
+                                <p className="min-w-0 truncate text-[15px] font-medium leading-snug text-foreground">
+                                  {n.message || 'Someone saved your item'}
+                                </p>
+                              </div>
+                              <time
+                                className="shrink-0 text-[12px] tabular-nums text-muted-foreground"
+                                dateTime={n.created_at}
+                              >
+                                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                              </time>
+                            </div>
                           </div>
                         </Link>
                       )

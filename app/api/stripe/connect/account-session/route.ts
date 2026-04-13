@@ -32,7 +32,12 @@ export async function POST() {
     return NextResponse.json({ error: ensured.error }, { status: 400 })
   }
 
-  await prefillConnectAccountMarketplaceBusinessProfile(supabase, ensured.stripeAccountId, user.id)
+  await prefillConnectAccountMarketplaceBusinessProfile(
+    supabase,
+    ensured.stripeAccountId,
+    user.id,
+    user.email ?? null,
+  )
 
   const session = await createConnectAccountSessionClientSecret(ensured.stripeAccountId)
   if ("error" in session) {

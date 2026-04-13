@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Send, Loader2, SortDesc, SortAsc } from 'lucide-react'
+import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { format, isToday, isYesterday } from 'date-fns'
@@ -48,8 +48,6 @@ interface Conversation {
   }
 }
 
-type MessageSort = 'newest' | 'oldest'
-
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [conversation, setConversation] = useState<Conversation | null>(null)
@@ -57,27 +55,47 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [messageSort, setMessageSort] = useState<MessageSort>('newest')
   const messagesScrollRef = useRef<HTMLDivElement>(null)
+  const stickToBottomRef = useRef(true)
   const supabase = createClient()
 
-  const displayMessages = useMemo(() => {
-    const sorted = [...messages].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    )
-    if (messageSort === 'newest') sorted.reverse()
-    return sorted
-  }, [messages, messageSort])
+  const orderedMessages = useMemo(
+    () =>
+      [...messages].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      ),
+    [messages],
+  )
 
-  const scrollThreadToPrimaryEdge = useCallback((sort: MessageSort) => {
+  const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesScrollRef.current
     if (!el) return
-    if (sort === 'newest') {
-      el.scrollTo({ top: 0, behavior: 'smooth' })
-    } else {
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-    }
+    el.scrollTo({ top: el.scrollHeight, behavior })
   }, [])
+
+  useEffect(() => {
+    stickToBottomRef.current = true
+  }, [id])
+
+  useEffect(() => {
+    const el = messagesScrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const thresholdPx = 72
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      stickToBottomRef.current = distanceFromBottom < thresholdPx
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [conversation])
+
+  useEffect(() => {
+    if (!stickToBottomRef.current) return
+    const idFrame = requestAnimationFrame(() => {
+      scrollThreadToBottom()
+    })
+    return () => cancelAnimationFrame(idFrame)
+  }, [orderedMessages, scrollThreadToBottom])
 
   useEffect(() => {
     async function fetchData() {
@@ -163,19 +181,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
   }, [id, supabase])
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      scrollThreadToPrimaryEdge(messageSort)
-    })
-    return () => cancelAnimationFrame(id)
-  }, [messages, messageSort, scrollThreadToPrimaryEdge])
-
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUserId || !conversation) return
 
     const content = newMessage.trim()
     setNewMessage('')
     setSending(true)
+    stickToBottomRef.current = true
 
     const tempId = `pending-${Date.now()}`
     const optimisticMessage: Message = {
@@ -304,97 +316,65 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </Link>
         )}
 
-        {/* Messages */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-border/40 bg-muted/50">
-          <div
-            className="flex shrink-0 items-center gap-1 border-b border-border/50 bg-muted/30 px-2 py-2 sm:px-3"
-            role="group"
-            aria-label="Message order"
-          >
-            <span className="hidden px-1.5 text-[12px] font-medium text-muted-foreground sm:inline">
-              Sort
-            </span>
-            <div className="flex w-full gap-1 rounded-xl border border-border/60 bg-background/80 p-0.5 shadow-[inset_0_1px_2px_rgba(17,17,17,0.04)] dark:bg-background/50">
-              <button
-                type="button"
-                onClick={() => setMessageSort('newest')}
-                className={cn(
-                  'flex min-h-touch min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[10px] px-2 py-2 text-[13px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-[14px]',
-                  messageSort === 'newest'
-                    ? 'bg-card text-foreground shadow-sm ring-1 ring-border/50'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-                aria-pressed={messageSort === 'newest'}
-              >
-                <SortDesc className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
-                <span className="truncate">Most recent</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMessageSort('oldest')}
-                className={cn(
-                  'flex min-h-touch min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[10px] px-2 py-2 text-[13px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-[14px]',
-                  messageSort === 'oldest'
-                    ? 'bg-card text-foreground shadow-sm ring-1 ring-border/50'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-                aria-pressed={messageSort === 'oldest'}
-              >
-                <SortAsc className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
-                <span className="truncate">Oldest</span>
-              </button>
-            </div>
-          </div>
+        {/* Messages — chronological, newest anchored above composer (iMessage-style) */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25">
           <div
             ref={messagesScrollRef}
-            className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-4"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            aria-label="Message thread"
           >
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-14 text-center">
-                <p className="text-[15px] text-muted-foreground">No messages yet.</p>
-                <p className="mt-1 text-[13px] text-muted-foreground/90">Say hello to start the conversation.</p>
+              <div className="flex min-h-[min(280px,50vh)] flex-col items-center justify-center px-6 py-12 text-center">
+                <p className="text-[17px] font-medium text-foreground/90">No messages yet</p>
+                <p className="mt-1.5 max-w-[18rem] text-[15px] leading-relaxed text-muted-foreground">
+                  Send a message to start the conversation.
+                </p>
               </div>
             ) : (
-              displayMessages.map((message) => {
-                const isOwn = message.sender_id === currentUserId
-                return (
-                  <div
-                    key={message.id}
-                    className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                  >
+              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-3 pt-4 sm:px-4 sm:pb-4">
+                {orderedMessages.map((message) => {
+                  const isOwn = message.sender_id === currentUserId
+                  return (
                     <div
-                      className={cn(
-                        'max-w-[min(100%,20rem)] rounded-[22px] px-4 py-2.5 shadow-sm',
-                        isOwn
-                          ? 'rounded-br-md bg-foreground text-background'
-                          : 'rounded-bl-md border border-border/50 bg-card text-foreground',
-                      )}
+                      key={message.id}
+                      className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
                     >
-                      <p className="whitespace-pre-wrap break-words text-[17px] leading-snug">{message.content}</p>
-                      <p
+                      <div
                         className={cn(
-                          'mt-1.5 text-[11px] tabular-nums',
-                          isOwn ? 'text-background/65' : 'text-muted-foreground',
+                          'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5',
+                          isOwn
+                            ? 'rounded-br-[6px] bg-foreground text-background shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+                            : 'rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm',
                         )}
                       >
-                        {formatMessageDate(message.created_at)}
-                      </p>
+                        <p className="whitespace-pre-wrap break-words text-[17px] leading-[1.35] tracking-[-0.01em]">
+                          {message.content}
+                        </p>
+                        <p
+                          className={cn(
+                            'mt-1 text-[11px] tabular-nums leading-none',
+                            isOwn ? 'text-background/55' : 'text-muted-foreground',
+                          )}
+                        >
+                          {formatMessageDate(message.created_at)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )
-              })
+                  )
+                })}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Input */}
-        <div className="mt-3 shrink-0 border-t border-border/60 pt-3">
+        {/* Composer */}
+        <div className="mt-3 shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               handleSend()
             }}
-            className="flex items-end gap-2 rounded-[26px] border border-border/80 bg-card px-2 py-1.5 shadow-[0_1px_3px_rgba(17,17,17,0.06)] dark:shadow-none"
+            className="flex items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm dark:border-border/80 dark:bg-card/95 dark:shadow-none"
           >
             <Input
               value={newMessage}

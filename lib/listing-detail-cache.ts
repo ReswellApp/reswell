@@ -5,8 +5,8 @@ import { findListingByParam } from "@/lib/listing-query"
 /** Next.js Data Cache tag — invalidate when any listing detail payload may have changed. */
 export const LISTING_DETAIL_CACHE_TAG = "listing-detail" as const
 
-/** Next.js Data Cache — public listing detail payloads (~24h, or on-demand via `revalidateListingDetailCache`). */
-const REVALIDATE_SECONDS = 86_400
+/** Next.js Data Cache — public listing detail payloads (~7 days, or on-demand via `revalidateListingDetailCache`). */
+const REVALIDATE_SECONDS = 7 * 24 * 60 * 60
 
 export const LISTING_META_SELECT =
   "id, slug, title, description, status, price, listing_images (url, is_primary, sort_order), categories (name, slug), section, user_id, hidden_from_site"

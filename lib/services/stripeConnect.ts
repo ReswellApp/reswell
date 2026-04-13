@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import {
+  getStripeConnectPrefillData,
+  type StripePrefillAddressRow,
+} from "@/lib/db/connectPrefill"
+import {
   getStripeConnectAccountByUserId,
   insertStripeConnectAccount,
   updateStripeConnectAccountByStripeId,
@@ -9,11 +13,18 @@ import {
 import { getStripe } from "@/lib/stripe-server"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { toUsStateCode } from "@/lib/utils/us-state-code"
 
 /** Satisfies Stripe’s business-profile checks for marketplace sellers without a personal website. */
 const MARKETPLACE_PRODUCT_DESCRIPTION =
   "Selling surfboards and related gear to buyers on Reswell, a US peer-to-peer marketplace. " +
   "Customers discover listings and purchase through Reswell; payouts are for completed sales on the platform."
+
+/** Fields we prefill on create/update — must match `AccountCreateParams` so `accounts.create` stays type-safe. */
+type StripeConnectAccountPrefillFields = Pick<
+  Stripe.AccountCreateParams,
+  "email" | "business_type" | "business_profile" | "individual"
+>
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -79,31 +90,122 @@ function marketplaceBusinessProfileUrl(origin: string, sellerSlug: string | null
   return base
 }
 
+function splitPersonName(raw: string | null | undefined): { firstName?: string; lastName?: string } {
+  const t = raw?.trim()
+  if (!t) return {}
+  const parts = t.split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return {}
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: parts[0] }
+  }
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") }
+}
+
+/** Stripe Connect expects E.164 for `individual.phone`. */
+function toE164UsPhone(phone: string | null | undefined): string | undefined {
+  if (!phone) return undefined
+  const trimmed = phone.trim()
+  if (trimmed.startsWith("+")) return trimmed
+  const digits = trimmed.replace(/\D/g, "")
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`
+  return undefined
+}
+
+function buildIndividualAddressFromRow(
+  addr: StripePrefillAddressRow | null,
+): Stripe.AddressParam | undefined {
+  if (!addr) return undefined
+  const line1 = addr.line1?.trim()
+  const city = addr.city?.trim()
+  const postal = addr.postal_code?.trim()
+  if (!line1 || !city || !postal) return undefined
+  const country = (addr.country ?? "US").trim().toUpperCase()
+  if (country !== "US") {
+    return undefined
+  }
+  const a: Stripe.AddressParam = {
+    line1,
+    city,
+    postal_code: postal,
+    country: "US",
+  }
+  if (addr.line2?.trim()) {
+    a.line2 = addr.line2.trim()
+  }
+  const state = toUsStateCode(addr.state)
+  if (state) {
+    a.state = state
+  }
+  return a
+}
+
+async function loadStripeConnectAccountPrefillParams(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string | null,
+): Promise<StripeConnectAccountPrefillFields> {
+  const data = await getStripeConnectPrefillData(supabase, userId)
+  const origin = publicSiteOrigin()
+  const profile = data.profile
+  const slug = profile?.seller_slug
+  const businessUrl = marketplaceBusinessProfileUrl(origin, slug ?? null)
+
+  const nameFromAddress = splitPersonName(data.address?.full_name)
+  const nameFromProfile = splitPersonName(profile?.display_name)
+  const firstName = nameFromAddress.firstName ?? nameFromProfile.firstName
+  const lastName = nameFromAddress.lastName ?? nameFromProfile.lastName
+
+  const individual: NonNullable<StripeConnectAccountPrefillFields["individual"]> = {}
+  const trimmedEmail = email?.trim()
+  if (trimmedEmail) {
+    individual.email = trimmedEmail
+  }
+  if (firstName) {
+    individual.first_name = firstName
+  }
+  if (lastName) {
+    individual.last_name = lastName
+  }
+  const phone = toE164UsPhone(data.address?.phone)
+  if (phone) {
+    individual.phone = phone
+  }
+  const indAddress = buildIndividualAddressFromRow(data.address)
+  if (indAddress) {
+    individual.address = indAddress
+  }
+
+  const params: StripeConnectAccountPrefillFields = {
+    business_type: "individual",
+    business_profile: {
+      url: businessUrl,
+      product_description: MARKETPLACE_PRODUCT_DESCRIPTION,
+    },
+  }
+  if (trimmedEmail) {
+    params.email = trimmedEmail
+  }
+  if (Object.keys(individual).length > 0) {
+    params.individual = individual
+  }
+  return params
+}
+
 /**
- * Sets `business_profile.url` to the seller’s public Reswell profile (or site home) and a full product description
- * so Stripe does not treat “website” / description as empty for marketplace sellers who have no standalone site.
+ * Syncs Reswell profile + default address into the connected account so Stripe onboarding asks for less
+ * (business URL, description, name, phone, mailing address when we have them).
  */
 export async function prefillConnectAccountMarketplaceBusinessProfile(
   supabase: SupabaseClient,
   stripeAccountId: string,
   userId: string,
+  email: string | null,
 ): Promise<void> {
-  const origin = publicSiteOrigin()
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("seller_slug")
-    .eq("id", userId)
-    .maybeSingle()
-
-  const url = marketplaceBusinessProfileUrl(origin, profile?.seller_slug ?? null)
   const stripe = getStripe()
   try {
-    await stripe.accounts.update(stripeAccountId, {
-      business_profile: {
-        url,
-        product_description: MARKETPLACE_PRODUCT_DESCRIPTION,
-      },
-    })
+    const prefill = await loadStripeConnectAccountPrefillParams(supabase, userId, email)
+    await stripe.accounts.update(stripeAccountId, prefill)
   } catch (e) {
     console.error("[stripe connect] prefillConnectAccountMarketplaceBusinessProfile", e)
   }
@@ -120,26 +222,15 @@ export async function ensureExpressConnectedAccount(
   }
 
   const stripe = getStripe()
-  const origin = publicSiteOrigin()
-
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("seller_slug")
-    .eq("id", userId)
-    .maybeSingle()
-  const businessUrl = marketplaceBusinessProfileUrl(origin, profileRow?.seller_slug ?? null)
+  const prefill = await loadStripeConnectAccountPrefillParams(supabase, userId, email)
 
   try {
     const account = await stripe.accounts.create({
       type: "express",
       country: "US",
-      email: email?.trim() || undefined,
+      ...prefill,
       capabilities: {
         transfers: { requested: true },
-      },
-      business_profile: {
-        url: businessUrl,
-        product_description: MARKETPLACE_PRODUCT_DESCRIPTION,
       },
       metadata: {
         reswell_user_id: userId,
