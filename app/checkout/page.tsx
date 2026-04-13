@@ -101,7 +101,7 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
         <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <Breadcrumb>
-              <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+              <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
                     <Link href="/">Home</Link>
@@ -121,7 +121,7 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                  <BreadcrumbPage className="font-normal text-[#5c6b89]">
                     Checkout
                   </BreadcrumbPage>
                 </BreadcrumbItem>

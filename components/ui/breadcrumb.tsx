@@ -9,7 +9,14 @@ const Breadcrumb = React.forwardRef<
   React.ComponentPropsWithoutRef<'nav'> & {
     separator?: React.ReactNode
   }
->(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />)
+>(({ className, ...props }, ref) => (
+  <nav
+    ref={ref}
+    aria-label="breadcrumb"
+    className={cn('w-full min-w-0 max-w-full', className)}
+    {...props}
+  />
+))
 Breadcrumb.displayName = 'Breadcrumb'
 
 const BreadcrumbList = React.forwardRef<
@@ -19,7 +26,9 @@ const BreadcrumbList = React.forwardRef<
   <ol
     ref={ref}
     className={cn(
-      'flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5',
+      'flex min-w-0 max-w-full flex-nowrap items-center gap-1.5 overflow-hidden text-sm text-muted-foreground sm:gap-2.5',
+      // First crumb stays readable; last segment uses remaining width and truncates on narrow viewports.
+      '[&>li:first-of-type]:shrink-0 [&>li:last-of-type]:min-w-0 [&>li:last-of-type]:flex-1 [&>li:last-of-type]:basis-0',
       className,
     )}
     {...props}
@@ -33,7 +42,7 @@ const BreadcrumbItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <li
     ref={ref}
-    className={cn('inline-flex items-center gap-1.5', className)}
+    className={cn('inline-flex min-w-0 shrink items-center gap-1.5', className)}
     {...props}
   />
 ))
@@ -50,7 +59,10 @@ const BreadcrumbLink = React.forwardRef<
   return (
     <Comp
       ref={ref}
-      className={cn('transition-colors hover:text-foreground', className)}
+      className={cn(
+        'min-w-0 max-w-full truncate transition-colors hover:text-foreground',
+        className,
+      )}
       {...props}
     />
   )
@@ -66,7 +78,7 @@ const BreadcrumbPage = React.forwardRef<
     role="link"
     aria-disabled="true"
     aria-current="page"
-    className={cn('font-normal text-foreground', className)}
+    className={cn('block min-w-0 max-w-full truncate font-normal text-foreground', className)}
     {...props}
   />
 ))
@@ -80,7 +92,7 @@ const BreadcrumbSeparator = ({
   <li
     role="presentation"
     aria-hidden="true"
-    className={cn('[&>svg]:w-3.5 [&>svg]:h-3.5', className)}
+    className={cn('inline-flex shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5', className)}
     {...props}
   >
     {children ?? <ChevronRight />}

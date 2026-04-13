@@ -20,6 +20,7 @@ import { ListingTile } from "@/components/listing-tile"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import {
+  boardTypeForDbFromBrowseParam,
   boardsBrowseBoardTypeLabel,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
@@ -77,7 +78,10 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     .eq("hidden_from_site", false)
 
   if (boardType !== "all") {
-    dbQuery = dbQuery.eq("board_type", boardType)
+    const dbBoardType = boardTypeForDbFromBrowseParam(boardType)
+    if (dbBoardType) {
+      dbQuery = dbQuery.eq("board_type", dbBoardType)
+    }
   }
 
   if (condition !== "all") {
@@ -302,6 +306,18 @@ export async function BoardsBrowsePage(props: {
     }
     redirect(next.toString() ? `/boards?${next.toString()}` : "/boards")
   }
+  if (searchParams.type === "funboard") {
+    const next = new URLSearchParams()
+    for (const [k, v] of Object.entries(searchParams)) {
+      if (v == null || v === "") continue
+      if (k === "type") {
+        next.set("type", "mid-length")
+        continue
+      }
+      next.set(k, v)
+    }
+    redirect(`/boards?${next.toString()}`)
+  }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
 
   return (
@@ -310,7 +326,7 @@ export async function BoardsBrowsePage(props: {
         <div className="container mx-auto">
           <div className="border-t border-neutral-200 mb-4 pt-4">
             <Breadcrumb>
-              <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+              <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
                     <Link href="/">Home</Link>
@@ -337,7 +353,7 @@ export async function BoardsBrowsePage(props: {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <h1 className="text-3xl font-bold text-center">Surfboards</h1>
+          <h1 className="text-3xl font-bold text-center">{typeCrumb ?? "Surfboards"}</h1>
           <p className="text-center text-muted-foreground mt-2">
             Find local boards for pickup from sellers in your area
           </p>

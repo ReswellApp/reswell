@@ -50,7 +50,10 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { HomePeerListingScrollTile } from "@/components/features/home"
-import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
+import {
+  boardsBrowseBoardTypeLabel,
+  browseTypeParamFromBoardType,
+} from "@/lib/marketplace-slug-metadata"
 
 export async function SurfboardListingDetailPage({
   listingParam,
@@ -174,6 +177,7 @@ export async function SurfboardListingDetailPage({
 
   const rawBoardType = board.board_type?.trim() || null
   const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
+  const browseBoardTypeParam = browseTypeParamFromBoardType(rawBoardType)
   const listingTitle = capitalizeWords(board.title)
 
   const listPriceNum =
@@ -215,7 +219,7 @@ export async function SurfboardListingDetailPage({
         <div className="container mx-auto">
           <div className="border-t border-neutral-200 mb-6 pt-4">
             <Breadcrumb>
-              <BreadcrumbList className="flex-nowrap gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+              <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
                     <Link href="/">Home</Link>
@@ -232,14 +236,20 @@ export async function SurfboardListingDetailPage({
                     <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <Link href={`/boards?type=${encodeURIComponent(rawBoardType ?? "")}`}>
+                        <Link
+                          href={
+                            browseBoardTypeParam
+                              ? `/boards?type=${encodeURIComponent(browseBoardTypeParam)}`
+                              : "/boards"
+                          }
+                        >
                           {typeCrumb}
                         </Link>
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                      <BreadcrumbPage className="font-normal text-[#5c6b89]">
                         {listingTitle}
                       </BreadcrumbPage>
                     </BreadcrumbItem>
@@ -253,7 +263,7 @@ export async function SurfboardListingDetailPage({
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className="max-w-[min(100%,18rem)] truncate font-normal text-[#5c6b89] sm:max-w-md">
+                      <BreadcrumbPage className="font-normal text-[#5c6b89]">
                         {listingTitle}
                       </BreadcrumbPage>
                     </BreadcrumbItem>

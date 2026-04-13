@@ -7,7 +7,7 @@ const BASE = publicSiteOrigin()
 const BOARD_TYPE_FILTERS = [
   "shortboard",
   "longboard",
-  "funboard",
+  "mid-length",
   "step-up",
   "fish",
   "gun",

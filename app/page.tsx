@@ -26,6 +26,7 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import { surfboardBrowseLinks } from "@/lib/site-category-directory"
+import { boardTypeForDbFromBrowseParam } from "@/lib/marketplace-slug-metadata"
 import { HomeListingScrollRow, HomePeerListingScrollTile } from "@/components/features/home"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 
@@ -212,8 +213,10 @@ export default async function HomePage() {
 
   const browseCategoryTiles: { category: (typeof categories)[number]; listing: BrowseListingRow }[] = []
   for (const cat of categories) {
+    const dbTypeKey =
+      cat.slug === null ? null : boardTypeForDbFromBrowseParam(cat.slug) ?? cat.slug
     const listing =
-      cat.slug === null ? sortedForBrowse[0] : latestByBoardType.get(cat.slug)
+      cat.slug === null ? sortedForBrowse[0] : dbTypeKey ? latestByBoardType.get(dbTypeKey) : undefined
     if (listing) {
       browseCategoryTiles.push({ category: cat, listing })
     }

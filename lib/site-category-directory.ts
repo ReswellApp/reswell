@@ -9,7 +9,7 @@ export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "All Surfboards", href: "/boards" },
   { label: "Shortboard", href: "/boards?type=shortboard" },
   { label: "Fish", href: "/boards?type=fish" },
-  { label: "Mid-length", href: "/boards?type=funboard" },
+  { label: "Mid-length", href: "/boards?type=mid-length" },
   { label: "Longboard", href: "/boards?type=longboard" },
   { label: "Step-Up", href: "/boards?type=step-up" },
   { label: "Gun", href: "/boards?type=gun" },
@@ -65,7 +65,7 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
         links: [
           { label: "Shortboard", href: "/boards?type=shortboard" },
           { label: "Fish", href: "/boards?type=fish" },
-          { label: "Mid-length", href: "/boards?type=funboard" },
+          { label: "Mid-length", href: "/boards?type=mid-length" },
           { label: "Longboard", href: "/boards?type=longboard" },
           { label: "Step-Up", href: "/boards?type=step-up" },
           { label: "Gun", href: "/boards?type=gun" },

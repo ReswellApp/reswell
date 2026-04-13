@@ -5,11 +5,31 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
 const BOARD_TYPE_LABELS: Record<string, string> = {
   shortboard: "Shortboards",
   longboard: "Longboards",
-  funboard: "Mid-length",
-  "step-up": "Step-Up",
-  fish: "Fish Boards",
-  gun: "Gun Boards",
-  other: "Surfboards",
+  "mid-length": "Mid-lengths",
+  funboard: "Mid-lengths",
+  "step-up": "Step-Ups",
+  fish: "Fish",
+  gun: "Guns",
+  other: "Other boards",
+}
+
+/** `listings.board_type` filter value for a `/boards?type=` query (DB still uses `funboard` for mid-length). */
+export function boardTypeForDbFromBrowseParam(
+  type: string | undefined | null,
+): string | undefined {
+  if (!type || type === "all") return undefined
+  if (type === "mid-length") return "funboard"
+  return type
+}
+
+/** Canonical `type=` query value for a stored `listings.board_type` (browse URLs and breadcrumbs). */
+export function browseTypeParamFromBoardType(
+  boardType: string | undefined | null,
+): string | undefined {
+  if (!boardType?.trim()) return undefined
+  const t = boardType.trim()
+  if (t === "funboard") return "mid-length"
+  return t
 }
 
 /** Display label for `/boards?type=` (used in UI breadcrumbs and metadata). */

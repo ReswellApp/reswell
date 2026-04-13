@@ -28,7 +28,7 @@ export const boardTypes = [
   { value: "all", label: "All Board Types" },
   { value: "shortboard", label: "Shortboard" },
   { value: "fish", label: "Fish" },
-  { value: "funboard", label: "Mid-length" },
+  { value: "mid-length", label: "Mid-length" },
   { value: "longboard", label: "Longboard" },
   { value: "step-up", label: "Step-Up" },
   { value: "gun", label: "Gun" },
