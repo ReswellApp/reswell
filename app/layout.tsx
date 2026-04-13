@@ -5,7 +5,6 @@ import { Inter, Caveat } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
-import { BrowserSessionInit } from '@/components/browser-session-init'
 import { SiteChrome } from '@/components/site-chrome'
 import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { LOCALE_COOKIE_NAME } from '@/lib/translations'
@@ -75,7 +74,6 @@ export default async function RootLayout({
     <html lang={locale} className="overflow-x-hidden">
       <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
         <LocaleProvider initialLocale={locale}>
-          <BrowserSessionInit />
           <PresenceHeartbeatLoader />
           <SiteChrome>{children}</SiteChrome>
           <Toaster />

@@ -1,6 +1,5 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { updatePresenceHeartbeat } from '@/app/actions/account'
@@ -16,8 +15,7 @@ async function ping() {
 }
 
 export function PresenceHeartbeat() {
-  const pathname = usePathname()
-  const supabase = useMemo(() => createClient(), [pathname])
+  const supabase = useMemo(() => createClient(), [])
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {

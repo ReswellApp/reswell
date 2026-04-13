@@ -53,10 +53,6 @@ import { surfboardBrowseLinks } from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
-import {
-  parseBrowserSessionRoute,
-  withBrowserSessionIfPresent,
-} from "@/lib/auth/browser-session"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -332,11 +328,7 @@ export function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const headerSearchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [pathname])
-  const withSession = useCallback(
-    (href: string) => withBrowserSessionIfPresent(href, pathname),
-    [pathname],
-  )
+  const supabase = useMemo(() => createClient(), [])
   const { openLogin, openSignUp } = useAuthModal()
 
   const resolvedDisplayName = useMemo(
@@ -462,18 +454,16 @@ export function Header() {
   async function handleSignOut() {
     await supabase.auth.signOut()
     setUser(null)
-    window.location.href = withSession("/")
+    window.location.href = "/"
   }
 
   /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
-  const logicalPath =
-    pathname !== null ? parseBrowserSessionRoute(pathname)?.strippedPath ?? pathname : null
   const isMinimalNavChrome =
-    logicalPath !== null &&
-    (logicalPath === "/sell" ||
-      logicalPath.startsWith("/sell/") ||
-      logicalPath === "/checkout" ||
-      logicalPath.startsWith("/checkout/"))
+    pathname !== null &&
+    (pathname === "/sell" ||
+      pathname.startsWith("/sell/") ||
+      pathname === "/checkout" ||
+      pathname.startsWith("/checkout/"))
 
   const accountDropdown =
     user ? (
@@ -515,7 +505,7 @@ export function Header() {
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href={withSession("/dashboard/earnings")} className="flex items-center justify-between">
+            <Link href="/dashboard/earnings" className="flex items-center justify-between">
               <span className="flex items-center">
                 <Banknote className="mr-2 h-4 w-4" />
                 Earnings
@@ -528,19 +518,19 @@ export function Header() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={withSession("/dashboard")} className="flex items-center">
+            <Link href="/dashboard" className="flex items-center">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Dashboard
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={withSession("/dashboard/listings")} className="flex items-center">
+            <Link href="/dashboard/listings" className="flex items-center">
               <Package className="mr-2 h-4 w-4" />
               My Listings
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={withSession("/dashboard/profile")} className="flex items-center">
+            <Link href="/dashboard/profile" className="flex items-center">
               <UserCircle className="mr-2 h-4 w-4" />
               Profile
             </Link>
@@ -549,7 +539,7 @@ export function Header() {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href={withSession("/admin")} className="flex items-center text-foreground">
+                <Link href="/admin" className="flex items-center text-foreground">
                   <User className="mr-2 h-4 w-4" />
                   Admin Panel
                 </Link>
@@ -570,7 +560,7 @@ export function Header() {
       <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <Link
-            href={withSession("/")}
+            href="/"
             className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
             <span
@@ -613,7 +603,7 @@ export function Header() {
         >
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link
-            href={withSession("/")}
+            href="/"
             className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
             <span
@@ -705,10 +695,10 @@ export function Header() {
               size="default"
               className="hidden shrink-0 px-5 sm:inline-flex"
             >
-              <Link href={withSession("/sell")}>Sell your Board</Link>
+              <Link href="/sell">Sell your Board</Link>
             </Button>
 
-            <Link href={withSession("/feed")}>
+            <Link href="/feed">
               <Button
                 variant="ghost"
                 size="icon"
@@ -722,8 +712,8 @@ export function Header() {
             <Link
               href={
                 user
-                  ? withSession("/favorites")
-                  : `${withSession("/auth/login")}?redirect=${encodeURIComponent(withSession("/favorites"))}`
+                  ? "/favorites"
+                  : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
               }
               onClick={
                 user
@@ -731,7 +721,7 @@ export function Header() {
                   : (e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                       e.preventDefault()
-                      openLogin(withSession("/favorites"))
+                      openLogin("/favorites")
                     }
               }
             >
@@ -754,7 +744,7 @@ export function Header() {
             {authLoaded && user ? (
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
                 <CartHeaderLink />
-                <Link href={withSession("/messages")} className="relative hidden sm:inline-flex">
+                <Link href="/messages" className="relative hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="text-foreground">
                     <MessageSquare className="h-6 w-6" />
                     {unreadMessages > 0 && (
@@ -774,7 +764,7 @@ export function Header() {
             ) : authLoaded ? (
               <div className="flex items-center gap-0">
                 <Link
-                  href={withSession("/auth/login")}
+                  href="/auth/login"
                   onClick={(e) => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
@@ -785,7 +775,7 @@ export function Header() {
                   Log in
                 </Link>
                 <Link
-                  href={withSession("/auth/sign-up")}
+                  href="/auth/sign-up"
                   onClick={(e) => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
@@ -879,7 +869,7 @@ export function Header() {
             {!user && (
               <div className="mb-6 flex flex-col gap-1">
                 <Link
-                  href={withSession("/auth/login")}
+                  href="/auth/login"
                   onClick={(e) => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
@@ -891,7 +881,7 @@ export function Header() {
                   Sign In
                 </Link>
                 <Link
-                  href={withSession("/auth/sign-up")}
+                  href="/auth/sign-up"
                   onClick={(e) => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
@@ -906,7 +896,7 @@ export function Header() {
             )}
             {user && authLoaded && (
               <Link
-                href={withSession("/dashboard")}
+                href="/dashboard"
                 onClick={onMobileDrawerLinkClick}
                 className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
               >
@@ -936,7 +926,7 @@ export function Header() {
                 size="default"
                 className="h-11 w-full shrink-0 justify-center px-5"
               >
-                <Link href={withSession("/sell")} onClick={onMobileDrawerLinkClick}>
+                <Link href="/sell" onClick={onMobileDrawerLinkClick}>
                   Sell your Board
                 </Link>
               </Button>
@@ -966,7 +956,7 @@ export function Header() {
               ))}
               <hr className="my-2 border-border" />
               <Link
-                href={withSession("/feed")}
+                href="/feed"
                 onClick={onMobileDrawerLinkClick}
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
               >
@@ -974,7 +964,7 @@ export function Header() {
                 Feed
               </Link>
               <Link
-                href={withSession("/cart")}
+                href="/cart"
                 onClick={onMobileDrawerLinkClick}
                 className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
               >
@@ -984,8 +974,8 @@ export function Header() {
               <Link
                 href={
                   user
-                    ? withSession("/favorites")
-                    : `${withSession("/auth/login")}?redirect=${encodeURIComponent(withSession("/favorites"))}`
+                    ? "/favorites"
+                    : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
                 }
                 onClick={
                   user
@@ -993,7 +983,7 @@ export function Header() {
                     : (e) => {
                         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                         e.preventDefault()
-                        openLogin(withSession("/favorites"))
+                        openLogin("/favorites")
                         queueMicrotask(() => setMobileMenuOpen(false))
                       }
                 }

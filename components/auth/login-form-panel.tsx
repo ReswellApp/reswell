@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
-import { newBrowserSessionLoginPath } from "@/lib/auth/browser-session"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 
 export function LoginFormPanel({
@@ -125,13 +124,6 @@ export function LoginFormPanel({
               </Link>
             )}
           </div>
-          {variant === "page" ? (
-            <p className="text-center text-xs text-muted-foreground">
-              <Link href={newBrowserSessionLoginPath()} className="underline underline-offset-4">
-                Sign in with a different account (separate tab session)
-              </Link>
-            </p>
-          ) : null}
         </form>
       </CardContent>
     </Card>

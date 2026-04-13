@@ -4,8 +4,7 @@ import React, { Suspense } from "react"
 
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react"
 import Image from "next/image"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { withBrowserSessionIfPresent } from "@/lib/auth/browser-session"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -273,9 +272,8 @@ function shippingPriceToFormValue(v: unknown): string {
 
 function SellPageContent() {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [pathname])
+  const supabase = useMemo(() => createClient(), [])
   const editId = searchParams.get("edit")
   const startFresh = searchParams.get("new") === "1"
 
@@ -284,7 +282,7 @@ function SellPageContent() {
     if (typeof window === "undefined") return
     if (startFresh) {
       clearSellServerDraftListingId()
-      router.replace(withBrowserSessionIfPresent("/sell", pathname))
+      router.replace("/sell")
     }
   }, [startFresh, router])
 
@@ -1024,7 +1022,7 @@ function SellPageContent() {
       if (!mounted) return
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
-        router.replace(withBrowserSessionIfPresent("/sell", pathname))
+        router.replace("/sell")
         setEditLoading(false)
         return
       }
@@ -1042,7 +1040,7 @@ function SellPageContent() {
       }
       if ((listing as { section?: string }).section !== "surfboards") {
         toast.error("Only surfboard listings can be edited here.")
-        router.replace(withBrowserSessionIfPresent("/sell", pathname))
+        router.replace("/sell")
         setEditLoading(false)
         return
       }

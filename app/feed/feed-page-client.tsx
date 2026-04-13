@@ -182,7 +182,7 @@ export function FeedPageClient({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [pathname])
+  const supabase = useMemo(() => createClient(), [])
 
   const tab = searchParams.get("tab") === "sold" ? "sold" : "new"
   const [newListingCount, setNewListingCount] = useState(0)
