@@ -78,7 +78,7 @@ export function SavedListContent() {
           length_inches,
           shipping_available,
           listing_images(url, is_primary),
-          profiles(display_name, shop_verified),
+          profiles!listings_user_id_fkey(display_name, shop_verified),
           categories(name)
         )
       `)

@@ -92,7 +92,7 @@ export default async function HomePage() {
     .select(`
       *,
       listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles (display_name, avatar_url, location, sales_count, shop_verified),
+      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name)
     `)
     .eq("status", "active")
@@ -112,7 +112,7 @@ export default async function HomePage() {
     .select(`
       *,
       listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles (display_name, avatar_url, location, sales_count, shop_verified),
+      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name)
     `)
     .eq("status", "active")
@@ -150,7 +150,7 @@ export default async function HomePage() {
         `
         *,
         listing_images (url, thumbnail_url, sort_order, is_primary),
-        profiles (display_name, avatar_url, sales_count, shop_verified),
+        profiles!listings_user_id_fkey (display_name, avatar_url, sales_count, shop_verified),
         categories (name)
       `
       )
@@ -185,7 +185,7 @@ export default async function HomePage() {
       `
       *,
       listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles (display_name, avatar_url, location, sales_count, shop_verified),
+      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name)
     `,
     )

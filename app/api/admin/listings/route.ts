@@ -54,13 +54,13 @@ export async function GET(request: NextRequest) {
   const selectWithHidden = `
     id, user_id, slug, title, price, status, section, views, created_at,
     hidden_from_site,
-    profiles(display_name, email),
+    profiles!listings_user_id_fkey(display_name, email),
     listing_images(url)
   `
 
   const selectWithoutHidden = `
     id, user_id, slug, title, price, status, section, views, created_at,
-    profiles(display_name, email),
+    profiles!listings_user_id_fkey(display_name, email),
     listing_images(url)
   `
 

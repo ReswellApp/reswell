@@ -61,7 +61,7 @@ export default async function AdminDashboard() {
   // Fetch recent listings
   const { data: recentListings } = await supabase
     .from('listings')
-    .select('id, title, price, section, status, created_at, profiles(display_name)')
+    .select('id, title, price, section, status, created_at, profiles!listings_user_id_fkey(display_name)')
     .order('created_at', { ascending: false })
     .limit(5)
 
@@ -228,13 +228,13 @@ export default async function AdminDashboard() {
                   section: string
                   status: string
                   created_at: string
-                  profiles: { display_name: string } | null
+                  profiles: { display_name: string } | { display_name: string }[] | null
                 }) => (
                   <div key={listing.id} className="flex items-center justify-between">
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate">{capitalizeWords(listing.title)}</p>
                       <p className="text-xs text-muted-foreground">
-                        by {listing.profiles?.display_name || 'Unknown'} &middot; {listing.section}
+                        by {(Array.isArray(listing.profiles) ? listing.profiles[0]?.display_name : listing.profiles?.display_name) || 'Unknown'} &middot; {listing.section}
                       </p>
                     </div>
                     <div className="text-right">

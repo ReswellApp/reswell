@@ -229,7 +229,7 @@ export async function getCartPageItems(): Promise<{
         length_inches,
         length_inches_display,
         listing_images ( url, thumbnail_url, is_primary ),
-        profiles ( display_name, avatar_url, seller_slug, shop_verified, shop_name, is_shop )
+        profiles!listings_user_id_fkey ( display_name, avatar_url, seller_slug, shop_verified, shop_name, is_shop )
       )
     `,
     )

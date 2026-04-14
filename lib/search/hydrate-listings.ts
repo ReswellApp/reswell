@@ -19,7 +19,7 @@ const SELECT = `
   length_feet,
   length_inches,
   listing_images (url, is_primary),
-  profiles (display_name, avatar_url, location, sales_count, shop_verified),
+  profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
 

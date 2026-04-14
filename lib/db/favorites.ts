@@ -53,7 +53,7 @@ export async function getFavoriteListingsForCartCarousel(
         hidden_from_site,
         listing_images ( url, thumbnail_url, is_primary ),
         categories ( name ),
-        profiles ( display_name, shop_verified )
+        profiles!listings_user_id_fkey ( display_name, shop_verified )
       )
     `,
     )

@@ -69,7 +69,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       *,
       listing_images (url, thumbnail_url, is_primary),
       categories (name),
-      profiles (display_name, avatar_url, location, sales_count, shop_verified)
+      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified)
     `,
       { count: "exact" },
     )

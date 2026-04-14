@@ -108,7 +108,7 @@ async function FeedData() {
     length_feet,
     length_inches,
     listing_images (url, is_primary),
-    profiles (display_name, avatar_url, location, sales_count),
+    profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count),
     categories (name, slug)
   `
 
@@ -139,7 +139,7 @@ async function FeedData() {
         length_feet,
         length_inches,
         listing_images (url, is_primary),
-        profiles (display_name, avatar_url, location, sales_count),
+        profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count),
         categories (name, slug)
       `)
       .eq("status", "active")
