@@ -1067,7 +1067,15 @@ function SellPageContent() {
         boardShippingPrice = "0"
       }
       let boardShippingCostMode: BoardShippingCostMode = "reswell"
+      const storedShipMode = (listing as { board_shipping_cost_mode?: string | null })
+        .board_shipping_cost_mode
       if (
+        storedShipMode === "reswell" ||
+        storedShipMode === "free" ||
+        storedShipMode === "flat"
+      ) {
+        boardShippingCostMode = storedShipMode
+      } else if (
         loadedFulfillment === "shipping_only" ||
         loadedFulfillment === "pickup_and_shipping"
       ) {
@@ -1614,6 +1622,9 @@ function SellPageContent() {
               return 0
             })()
           : null,
+        board_shipping_cost_mode: fulfillmentFlags.shipping_available
+          ? (fd.boardShippingCostMode ?? "reswell")
+          : null,
       }
 
       const boardLocationLat = fd.locationLat ? fd.locationLat : null
@@ -1730,6 +1741,7 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
+          board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
           auto_price_drop_floor: fd.autoPriceDrop
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,
@@ -1870,6 +1882,7 @@ function SellPageContent() {
           shipping_available: fulfillmentRow.shipping_available,
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
+          board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
           auto_price_drop_floor: fd.autoPriceDrop
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,

@@ -313,6 +313,8 @@ export async function SurfboardListingDetailPage({
                   board.local_pickup,
                   board.shipping_available,
                   board.shipping_price,
+                  (board as { board_shipping_cost_mode?: "reswell" | "flat" | "free" | null })
+                    .board_shipping_cost_mode ?? null,
                 ),
               ].filter(Boolean).join(" · ")}
             </p>
@@ -384,6 +386,8 @@ export async function SurfboardListingDetailPage({
                     board.local_pickup,
                     board.shipping_available,
                     board.shipping_price,
+                    (board as { board_shipping_cost_mode?: "reswell" | "flat" | "free" | null })
+                      .board_shipping_cost_mode ?? null,
                   ),
                 ].filter(Boolean).join(" · ")}
               </p>

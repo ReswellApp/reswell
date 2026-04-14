@@ -57,19 +57,31 @@ export function boardFulfillmentSummary(
 /**
  * One label per enabled option for listing detail metadata (e.g. condition · type · Local pickup · Shipping).
  * When the seller set a flat shipping amount, include it so buyers see the add-on clearly.
+ * For Reswell-calculated shipping, `shipping_price` is often 0 until checkout; use `boardShippingCostMode`
+ * so the listing can say the price is determined at checkout vs free shipping.
  */
 export function boardFulfillmentDetailLabels(
   localPickup: boolean | null | undefined,
   shippingAvailable: boolean | null | undefined,
-  shippingPrice?: number | string | null
+  shippingPrice?: number | string | null,
+  boardShippingCostMode?: "reswell" | "flat" | "free" | null,
 ): string[] {
   const labels: string[] = []
   if (localPickup !== false) labels.push("Local pickup")
   if (shippingAvailable) {
     const n = Math.max(0, Number.parseFloat(String(shippingPrice ?? 0)) || 0)
-    labels.push(
-      n > 0 ? `Shipping (+$${n.toFixed(2)})` : "Shipping (rate at checkout)",
-    )
+    const mode = boardShippingCostMode ?? null
+
+    if (mode === "free") {
+      labels.push("Free shipping")
+    } else if (n > 0) {
+      labels.push(`Shipping (+$${n.toFixed(2)})`)
+    } else if (mode === "reswell") {
+      labels.push("Shipping (price determined in checkout)")
+    } else {
+      // Legacy rows (mode unknown) with $0 shipping, or flat $0: neutral copy
+      labels.push("Shipping (rate at checkout)")
+    }
   }
   return labels
 }

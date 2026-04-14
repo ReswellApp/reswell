@@ -618,7 +618,7 @@ export function ThreadCommentsPanel({
         >
           <div className="px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
             {isLoggedIn ? (
-              <form onSubmit={(e) => void submitTopLevel(e)} className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+              <form onSubmit={(e) => void submitTopLevel(e)} className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                 <div className="min-w-0 flex-1 space-y-1">
                   <Textarea
                     ref={textareaRef}

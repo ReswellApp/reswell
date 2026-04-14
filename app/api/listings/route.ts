@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     shipping_available,
     local_pickup,
     shipping_price,
+    board_shipping_cost_mode,
     city,
     state,
     // Surfboard specific
@@ -110,6 +111,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const modeRaw =
+    board_shipping_cost_mode === 'reswell' ||
+    board_shipping_cost_mode === 'flat' ||
+    board_shipping_cost_mode === 'free'
+      ? board_shipping_cost_mode
+      : null
+
   const listingInsertRow = {
     user_id: user.id,
     title: resolvedTitle,
@@ -122,6 +130,7 @@ export async function POST(request: NextRequest) {
     shipping_available: shipping_available || false,
     local_pickup: local_pickup !== false,
     shipping_price: shipping_price ? parseFloat(shipping_price) : null,
+    board_shipping_cost_mode: section === 'surfboards' ? modeRaw : null,
     city,
     state,
     board_type,

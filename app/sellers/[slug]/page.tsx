@@ -247,12 +247,23 @@ export default async function SellerProfilePage({
   }
 
   const allListings = listings || []
-  const currentListings = allListings.filter(
-    (l) => l.status === "active" && !l.archived_at
-  )
-  const pastListings = allListings.filter(
-    (l) => (l.status !== "active" || l.archived_at) && l.status !== "removed"
-  )
+
+  /** In-flight checkout (reserved) counts as current inventory, not "previous". */
+  const inCurrentInventory = (l: (typeof allListings)[number]) =>
+    !l.archived_at && (l.status === "active" || l.status === "pending_sale")
+
+  const currentListings = allListings.filter(inCurrentInventory)
+
+  /**
+   * Public shop history: never show site-hidden (moderation) rows here, even for the seller.
+   * User-ended / archived unsold listings use status `removed` (see endSellerListing archive).
+   */
+  const pastListings = allListings.filter((l) => {
+    if (inCurrentInventory(l)) return false
+    if (l.hidden_from_site) return false
+    if (l.status === "removed" || l.status === "draft") return false
+    return true
+  })
 
   const newListings = currentListings.filter((l) => l.section === "new")
   const boardListings = currentListings.filter(

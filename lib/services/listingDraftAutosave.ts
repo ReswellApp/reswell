@@ -111,6 +111,9 @@ export function buildSurfboardDraftListingRow(
       fd.boardShippingPrice ?? "",
       fd.boardShippingCostMode as BoardShippingCostMode | undefined,
     ),
+    board_shipping_cost_mode: flags.shipping_available
+      ? ((fd.boardShippingCostMode ?? "reswell") as BoardShippingCostMode)
+      : null,
     auto_price_drop_floor: (() => {
       if (fd.autoPriceDrop !== true) return null
       const t = (fd.autoPriceDropFloor ?? "").trim().replace(/,/g, "")
