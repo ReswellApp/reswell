@@ -355,7 +355,7 @@ export async function BoardsBrowsePage(props: {
           </div>
           <h1 className="text-3xl font-bold text-center">{typeCrumb ?? "Surfboards"}</h1>
           <p className="text-center text-muted-foreground mt-2">
-            Find local boards for pickup from sellers in your area
+            Find boards with shipping to your door, or local pickup when sellers offer it
           </p>
         </div>
       </section>

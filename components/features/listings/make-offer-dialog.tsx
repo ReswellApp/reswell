@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { HandCoins, ImageOff, Loader2 } from "lucide-react"
+import { CircleDollarSign, ImageOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -404,7 +404,7 @@ export function MakeOfferTriggerButton({
       disabled={disabled}
       onClick={onClick}
     >
-      <HandCoins className="h-5 w-5 shrink-0" aria-hidden />
+      <CircleDollarSign className="h-5 w-5 shrink-0" aria-hidden />
       Make an offer
     </Button>
   )
