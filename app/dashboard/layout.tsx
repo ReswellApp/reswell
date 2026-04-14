@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Package,
   PackageCheck,
-  Archive,
   ShoppingBag,
   Plus,
   Store,
@@ -20,7 +19,6 @@ import {
 const sidebarLinks = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
-  { name: "Archived", href: "/dashboard/listings/archived", icon: Archive },
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   { name: "Followers", href: "/dashboard/followers", icon: Users },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },

@@ -47,6 +47,7 @@ import { HeaderNavSearch } from "@/components/header-nav-search"
 import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
@@ -430,6 +431,8 @@ export function Header() {
       mobileSearchRef.current.value = ""
     }
   }, [mobileMenuOpen])
+
+  useBodyScrollLock(mobileMenuOpen)
 
   useLayoutEffect(() => {
     const el = headerMainRowRef.current

@@ -318,3 +318,11 @@
     animation: none;
   }
 }
+
+/* Radix Dialog / Sheet / AlertDialog use react-remove-scroll (body[data-scroll-locked]).
+   In some browsers the document scrolls on `html`; locking only `body` leaves background
+   scroll. Mirror the lock on `html` while any modal scroll lock is active. */
+html:has(body[data-scroll-locked]) {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}

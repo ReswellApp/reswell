@@ -2,11 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -15,48 +13,37 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { postEndListing } from "@/lib/listing-end-request"
 
 interface EndListingButtonProps {
   listingId: string
 }
 
+type EndChoice = "delete" | "archive" | null
+
 export function EndListingButton({ listingId }: EndListingButtonProps) {
   const [open, setOpen] = useState(false)
-  const [choice, setChoice] = useState<"sold" | "removed" | null>(null)
+  const [choice, setChoice] = useState<EndChoice>(null)
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
   const router = useRouter()
 
   async function handleConfirm() {
     if (!choice) return
     setLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        toast.error("You need to be signed in.")
+      const result = await postEndListing(listingId, choice)
+      if (!result.ok) {
+        toast.error(result.error)
         return
       }
 
-      const { error } = await supabase
-        .from("listings")
-        .update({
-          status: choice,
-          archived_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", listingId)
-        .eq("user_id", user.id)
-
-      if (error) {
-        toast.error("Failed to end listing")
+      if (result.mode === "delete") {
+        toast.success("Listing deleted")
+        router.push("/dashboard/listings")
         return
       }
 
-      toast.success(
-        choice === "sold"
-          ? "Listing marked as sold and archived"
-          : "Listing removed and archived for 30 days"
-      )
+      toast.success("Listing archived for 30 days")
       router.push("/dashboard/listings/archived")
     } finally {
       setLoading(false)
@@ -74,44 +61,62 @@ export function EndListingButton({ listingId }: EndListingButtonProps) {
       >
         End listing
       </Button>
-      <AlertDialog open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setChoice(null) } }}>
+      <AlertDialog
+        open={open}
+        onOpenChange={(v) => {
+          if (!v) {
+            setOpen(false)
+            setChoice(null)
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>End this listing?</AlertDialogTitle>
+            <AlertDialogTitle>End listing</AlertDialogTitle>
             <AlertDialogDescription>
-              The listing will be archived for 30 days and then permanently deleted. Choose how you want to end it.
+              Archive keeps the listing for 30 days, then it can be permanently removed by our
+              cleanup. Delete removes it from the database immediately. Choose an option:
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2 py-2">
             <Button
-              variant={choice === "sold" ? "default" : "outline"}
+              variant={choice === "archive" ? "default" : "outline"}
               className="justify-start"
               type="button"
-              onClick={() => setChoice("sold")}
+              onClick={() => setChoice("archive")}
             >
-              Mark as sold
+              Archive listing
             </Button>
             <Button
-              variant={choice === "removed" ? "default" : "outline"}
+              variant={choice === "delete" ? "destructive" : "outline"}
               className="justify-start"
               type="button"
-              onClick={() => setChoice("removed")}
+              onClick={() => setChoice("delete")}
             >
-              Remove listing (not sold)
+              Delete listing
             </Button>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirm}
+            <Button
+              type="button"
+              variant={choice === "delete" ? "destructive" : "default"}
               disabled={!choice || loading}
+              onClick={() => void handleConfirm()}
             >
-              {loading ? "Ending..." : "End listing"}
-            </AlertDialogAction>
+              {loading
+                ? choice === "delete"
+                  ? "Deleting…"
+                  : "Archiving…"
+                : choice === "delete"
+                  ? "Delete listing"
+                  : choice === "archive"
+                    ? "Archive listing"
+                    : "Continue"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   )
 }
-

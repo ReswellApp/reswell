@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -29,6 +28,7 @@ import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from "lucide-
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { cn } from '@/lib/utils'
 import { listingProductCardClassName } from '@/lib/listing-card-styles'
 import {
   clearRemoteResumeDraftIdStorage,
@@ -36,6 +36,7 @@ import {
   getRemoteResumeDraftIdFromStorage,
   getSellServerDraftListingId,
 } from "@/lib/sell-draft-local-meta"
+import { postEndListing } from "@/lib/listing-end-request"
 
 interface Listing {
   id: string
@@ -54,7 +55,8 @@ export default function MyListingsPage() {
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [endListingId, setEndListingId] = useState<string | null>(null)
-  const [endChoice, setEndChoice] = useState<'sold' | 'removed' | null>(null)
+  const [endChoice, setEndChoice] = useState<'delete' | 'archive' | null>(null)
+  const [endListingLoading, setEndListingLoading] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -130,29 +132,24 @@ export default function MyListingsPage() {
 
   async function handleEndListing() {
     if (!endListingId || !endChoice) return
-    const newStatus = endChoice
-
-    const { error } = await supabase
-      .from('listings')
-      .update({
-        status: newStatus,
-        archived_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', endListingId)
-
-    if (!error) {
-      setListings(prev => prev.filter(l => l.id !== endListingId))
-      toast.success(
-        newStatus === 'sold'
-          ? 'Listing marked as sold and archived'
-          : 'Listing removed and archived. It will be deleted after 30 days.'
-      )
-    } else {
-      toast.error('Failed to end listing')
+    setEndListingLoading(true)
+    try {
+      const result = await postEndListing(endListingId, endChoice)
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+      setListings((prev) => prev.filter((l) => l.id !== endListingId))
+      if (result.mode === 'delete') {
+        toast.success('Listing deleted')
+      } else {
+        toast.success('Listing archived for 30 days, then eligible for removal')
+      }
+    } finally {
+      setEndListingLoading(false)
+      setEndListingId(null)
+      setEndChoice(null)
     }
-    setEndListingId(null)
-    setEndChoice(null)
   }
 
   const getStatusColor = (status: string) => {
@@ -369,39 +366,58 @@ export default function MyListingsPage() {
 
       <AlertDialog
         open={!!endListingId}
-        onOpenChange={(open) => { if (!open) { setEndListingId(null); setEndChoice(null); } }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEndListingId(null)
+            setEndChoice(null)
+            setEndListingLoading(false)
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>End listing</AlertDialogTitle>
             <AlertDialogDescription>
-              The listing will be archived for 30 days, then permanently deleted. Choose how to end it:
+              Archive keeps the listing for 30 days, then it can be permanently removed by our cleanup.
+              Delete removes it from the database immediately. Choose an option:
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2 py-2">
             <Button
-              variant={endChoice === 'sold' ? 'default' : 'outline'}
+              type="button"
+              variant={endChoice === 'archive' ? 'default' : 'outline'}
               className="justify-start"
-              onClick={() => setEndChoice('sold')}
+              onClick={() => setEndChoice('archive')}
             >
-              Mark as sold
+              Archive listing
             </Button>
             <Button
-              variant={endChoice === 'removed' ? 'default' : 'outline'}
-              className="justify-start"
-              onClick={() => setEndChoice('removed')}
+              type="button"
+              variant={endChoice === 'delete' ? 'destructive' : 'outline'}
+              className={cn('justify-start', endChoice === 'delete' && 'border-destructive')}
+              onClick={() => setEndChoice('delete')}
             >
-              Remove listing (not sold)
+              Delete listing
             </Button>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleEndListing}
-              disabled={!endChoice}
+            <AlertDialogCancel disabled={endListingLoading}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant={endChoice === 'delete' ? 'destructive' : 'default'}
+              disabled={!endChoice || endListingLoading}
+              onClick={() => void handleEndListing()}
             >
-              End listing
-            </AlertDialogAction>
+              {endListingLoading
+                ? endChoice === 'delete'
+                  ? 'Deleting…'
+                  : 'Archiving…'
+                : endChoice === 'delete'
+                  ? 'Delete listing'
+                  : endChoice === 'archive'
+                    ? 'Archive listing'
+                    : 'Continue'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

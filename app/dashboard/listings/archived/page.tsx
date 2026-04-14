@@ -110,7 +110,7 @@ export default function ArchivedListingsPage() {
             <Archive className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No archived listings</h3>
             <p className="text-muted-foreground mb-4">
-              When you end a listing (sold or removed), it will appear here for 30 days before being deleted.
+              When you archive a listing, it will appear here for 30 days before it can be permanently removed.
             </p>
             <Link href="/dashboard/listings">
               <Button variant="outline">
