@@ -551,6 +551,8 @@ export function SearchInputWithSuggest({
         className={cn(
           leftIcon && "pl-10",
           showClear && (loading ? "pr-16" : "pr-10"),
+          showClear &&
+            "[&::-webkit-search-cancel-button]:hidden [&::-moz-search-clear]:hidden",
           inputClassName,
         )}
         autoComplete="off"
