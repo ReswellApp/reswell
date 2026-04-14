@@ -3,7 +3,6 @@
 import { type ReactNode, useTransition, Suspense } from "react"
 import { BoardsListingsFilters, boardTypes, boardConditions, boardSortOptions } from "@/components/boards-listings-filters"
 import { ActiveFilterChips } from "@/components/active-filter-chips"
-import { RouteTransitionMark } from "@/components/route-transition-mark"
 import { cn } from "@/lib/utils"
 
 const TYPE_LABEL: Record<string, string> = Object.fromEntries(
@@ -71,17 +70,12 @@ export function BoardsBrowseClient({
       </Suspense>
 
       <div
-        className={cn("relative mt-4", isPending && "min-h-[min(50vh,28rem)]")}
+        className={cn(
+          "relative mt-4 transition-[opacity] duration-300 ease-out motion-reduce:transition-none",
+          isPending && "opacity-[0.97]",
+        )}
         aria-busy={isPending}
       >
-        {isPending ? (
-          <div
-            className="absolute inset-0 z-20 flex items-stretch justify-center bg-white/90 backdrop-blur-[0.5px]"
-            aria-hidden
-          >
-            <RouteTransitionMark variant="overlay" />
-          </div>
-        ) : null}
         {children}
       </div>
     </>

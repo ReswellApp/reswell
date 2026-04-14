@@ -69,7 +69,8 @@ interface BoardsListingsFiltersProps {
   transitionStart?: (cb: () => void) => void
 }
 
-const DEBOUNCE_MS = 320
+/** Debounce before syncing keyword/location to the URL so results update as you type without thrashing. */
+const DEBOUNCE_MS = 380
 
 export function BoardsListingsFilters({
   initialQ = "",
@@ -107,41 +108,54 @@ export function BoardsListingsFilters({
 
   const skipTextDebounceRef = useRef(true)
   const skipSelectApplyRef = useRef(true)
+  /**
+   * After `router.replace`, RSC props update with trimmed URL values. We store what we committed
+   * so we can skip resetting local text state when it matches (avoids clobbering mid-typing and
+   * survives React Strict Mode double-invoking effects).
+   */
+  const expectedAfterReplaceRef = useRef<{ q: string; location: string } | null>(null)
 
-  // Sync filter UI when server re-renders with new searchParams (back/forward nav)
+  // Sync filter UI when server re-renders with new searchParams (back/forward, external links).
+  // Skip resetting free-text fields when the payload matches what we just pushed from this form.
   useEffect(() => {
     skipTextDebounceRef.current = true
     skipSelectApplyRef.current = true
-    setQ(initialQ)
-    setLocation(initialLocation)
+
     setType(initialType)
     setCondition(initialCondition)
     setSort(initialSort)
+
+    const incomingQ = (initialQ ?? "").trim()
+    const incomingLoc = (initialLocation ?? "").trim()
+    const expected = expectedAfterReplaceRef.current
+    if (expected && expected.q === incomingQ && expected.location === incomingLoc) {
+      expectedAfterReplaceRef.current = null
+      return
+    }
+
+    expectedAfterReplaceRef.current = null
+    setQ(initialQ)
+    setLocation(initialLocation)
     setUserLat(null)
     setUserLng(null)
   }, [initialQ, initialLocation, initialType, initialCondition, initialSort])
 
   const pushSearchParams = useCallback(
     async (override?: Partial<FilterSnapshot>) => {
-      const f = { ...filtersRef.current, ...override }
-      const params = new URLSearchParams()
-      if (f.q.trim()) params.set("q", f.q.trim())
-      if (f.location.trim()) params.set("location", f.location.trim())
-      if (f.type && f.type !== "all") params.set("type", f.type)
-      if (f.condition && f.condition !== "all") params.set("condition", f.condition)
-      if (f.sort && f.sort !== "newest") params.set("sort", f.sort)
-      params.set("page", "1")
+      const merged = { ...filtersRef.current, ...override }
+      const locationForGeocode = merged.location.trim()
 
-      let lat = f.userLat
-      let lng = f.userLng
-      if ((lat == null || lng == null) && f.location.trim()) {
+      let resolvedLat = merged.userLat
+      let resolvedLng = merged.userLng
+
+      if ((resolvedLat == null || resolvedLng == null) && locationForGeocode) {
         try {
-          const res = await fetch(`/api/geocode?q=${encodeURIComponent(f.location.trim())}`)
+          const res = await fetch(`/api/geocode?q=${encodeURIComponent(locationForGeocode)}`)
           if (res.ok) {
             const data = (await res.json()) as { lat?: number; lng?: number }
             if (data.lat != null && data.lng != null) {
-              lat = data.lat
-              lng = data.lng
+              resolvedLat = data.lat
+              resolvedLng = data.lng
             }
           }
         } catch {
@@ -149,11 +163,36 @@ export function BoardsListingsFilters({
         }
       }
 
-      if (lat != null && lng != null) {
-        params.set("lat", String(lat))
-        params.set("lng", String(lng))
+      // After any await, use the latest filter state so `q` / location match what the user typed
+      // while geocode was in flight (avoids replacing the URL with a stale snapshot).
+      const live = { ...filtersRef.current, ...override }
+      const liveLocation = live.location.trim()
+      if (liveLocation !== locationForGeocode) {
+        resolvedLat = live.userLat
+        resolvedLng = live.userLng
       }
 
+      const params = new URLSearchParams()
+      if (live.q.trim()) params.set("q", live.q.trim())
+      if (liveLocation) params.set("location", liveLocation)
+      if (live.type && live.type !== "all") params.set("type", live.type)
+      if (live.condition && live.condition !== "all") params.set("condition", live.condition)
+      if (live.sort && live.sort !== "newest") params.set("sort", live.sort)
+      params.set("page", "1")
+
+      if (
+        resolvedLat != null &&
+        resolvedLng != null &&
+        (liveLocation === locationForGeocode || (live.userLat != null && live.userLng != null))
+      ) {
+        params.set("lat", String(resolvedLat))
+        params.set("lng", String(resolvedLng))
+      }
+
+      expectedAfterReplaceRef.current = {
+        q: live.q.trim(),
+        location: liveLocation,
+      }
       startTransition(() => {
         router.replace(
           `${pathname}${params.toString() ? `?${params.toString()}` : ""}`,
@@ -164,7 +203,7 @@ export function BoardsListingsFilters({
     [pathname, router, startTransition],
   )
 
-  // Debounce free-text and location fields
+  // Keyword + location: debounced URL sync (live results). Submit still applies immediately.
   useEffect(() => {
     if (skipTextDebounceRef.current) {
       skipTextDebounceRef.current = false
