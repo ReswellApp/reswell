@@ -41,10 +41,12 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
 import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
@@ -330,6 +332,7 @@ export function Header() {
   const headerSearchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
   const { openLogin, openSignUp } = useAuthModal()
+  const isMobileViewport = useIsMobile()
 
   const resolvedDisplayName = useMemo(
     () => (user ? headerDisplayName(profileDisplayName, user) : ""),
@@ -555,6 +558,50 @@ export function Header() {
       </DropdownMenu>
     ) : null
 
+  const headerSearchOverlayForm = (
+    <SiteSearchBar
+      compact
+      onSubmit={async (e) => {
+        e.preventDefault()
+        const q = searchQuery.trim()
+        if (!q) {
+          clearNavSearchQuery()
+          setSearchQuery("")
+          setSearchOpen(false)
+          await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+          return
+        }
+        router.push(`/search?q=${encodeURIComponent(q)}`)
+        setSearchQuery("")
+        clearNavSearchQuery()
+        setSearchOpen(false)
+      }}
+      className="w-full"
+    >
+      <SearchInputWithSuggest
+        value={searchQuery}
+        onChange={setSearchQuery}
+        onSelect={(text) => {
+          router.push(`/search?q=${encodeURIComponent(text)}`)
+          setSearchQuery("")
+          clearNavSearchQuery()
+          setSearchOpen(false)
+        }}
+        onNavigate={() => {
+          setSearchQuery("")
+          clearNavSearchQuery()
+          setSearchOpen(false)
+        }}
+        placeholder="Search surfboards…"
+        section=""
+        listboxId="nav-search-suggestions-tablet"
+        inputClassName={siteSearchInputClassName({ compact: true })}
+        className="w-full"
+        autoFocus={searchOpen}
+      />
+    </SiteSearchBar>
+  )
+
   if (isMinimalNavChrome) {
     return (
       <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
@@ -627,68 +674,57 @@ export function Header() {
               The invisible placeholder reserves space equal to the logged-in
               desktop layout so the search bar never shifts horizontally. */}
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5 text-foreground">
-            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+            {isMobileViewport ? (
+              <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "flex h-10 w-10 text-foreground hover:bg-muted",
+                      !headerRowCompact && "md:hidden",
+                    )}
+                    aria-label="Search"
+                  >
+                    <Search className="h-[22px] w-[22px]" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="top"
                   className={cn(
-                    "flex h-10 w-10 text-foreground hover:bg-muted",
-                    !headerRowCompact && "md:hidden",
+                    "z-[100] w-full max-w-none gap-0 border-border bg-popover p-4 shadow-lg",
+                    "rounded-none border-x-0 border-t-0 pt-[max(1rem,env(safe-area-inset-top))]",
+                    "[&>button:last-child]:hidden",
                   )}
-                  aria-label="Search"
                 >
-                  <Search className="h-[22px] w-[22px]" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[min(100vw-2rem,380px)] rounded-xl border border-border bg-popover p-4 shadow-lg"
-                align="end"
-                sideOffset={8}
-              >
-                <SiteSearchBar
-                  compact
-                  onSubmit={async (e) => {
-                    e.preventDefault()
-                    const q = searchQuery.trim()
-                    if (!q) {
-                      clearNavSearchQuery()
-                      setSearchQuery("")
-                      setSearchOpen(false)
-                      await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
-                      return
-                    }
-                    router.push(`/search?q=${encodeURIComponent(q)}`)
-                    setSearchQuery("")
-                    clearNavSearchQuery()
-                    setSearchOpen(false)
-                  }}
-                  className="w-full"
+                  <SheetTitle className="sr-only">Search listings</SheetTitle>
+                  {headerSearchOverlayForm}
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "flex h-10 w-10 text-foreground hover:bg-muted",
+                      !headerRowCompact && "md:hidden",
+                    )}
+                    aria-label="Search"
+                  >
+                    <Search className="h-[22px] w-[22px]" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[min(100vw-2rem,380px)] rounded-xl border border-border bg-popover p-4 shadow-lg"
+                  align="center"
+                  sideOffset={8}
                 >
-                  <SearchInputWithSuggest
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    onSelect={(text) => {
-                      router.push(`/search?q=${encodeURIComponent(text)}`)
-                      setSearchQuery("")
-                      clearNavSearchQuery()
-                      setSearchOpen(false)
-                    }}
-                    onNavigate={() => {
-                      setSearchQuery("")
-                      clearNavSearchQuery()
-                      setSearchOpen(false)
-                    }}
-                    placeholder="Search surfboards…"
-                    section=""
-                    listboxId="nav-search-suggestions-tablet"
-                    inputClassName={siteSearchInputClassName({ compact: true })}
-                    className="w-full"
-                    autoFocus={searchOpen}
-                  />
-                </SiteSearchBar>
-              </PopoverContent>
-            </Popover>
+                  {headerSearchOverlayForm}
+                </PopoverContent>
+              </Popover>
+            )}
 
             <Button
               asChild
