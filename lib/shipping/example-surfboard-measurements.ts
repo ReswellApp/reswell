@@ -36,7 +36,7 @@ export const EXAMPLE_SURFBOARD_MEASUREMENTS: ExampleMeasurementRow[] = [
   },
   {
     id: "mid",
-    title: "Mid-length",
+    title: "Hybrid",
     summary: "24 lb — 84 × 22 × 8 in",
     weightLb: 24,
     lengthIn: 84,

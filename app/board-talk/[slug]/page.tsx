@@ -9,6 +9,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { formatDistanceToNow } from "date-fns"
 import { ThreadDeleteButton } from "@/components/forum/thread-delete-button"
 import { AdminThreadEditor } from "@/components/forum/admin-thread-editor"
+import { absoluteUrl } from "@/lib/site-metadata"
 
 type ThreadCore = {
   id: string
@@ -28,12 +29,44 @@ function commentLikeCountsFromRows(rows: { comment_id: string }[] | null | undef
   return out
 }
 
+function threadExcerpt(body: string | null | undefined): string | undefined {
+  if (!body?.trim()) return undefined
+  const plain = body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+  if (!plain) return undefined
+  return plain.length > 170 ? `${plain.slice(0, 167)}…` : plain
+}
+
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await props.params
   const supabase = await createClient()
-  const { data } = await supabase.from("forum_threads").select("title").eq("slug", slug).maybeSingle()
-  if (!data?.title) return { title: "Board Talk" }
-  return { title: `${data.title} · Board Talk` }
+  const { data } = await supabase
+    .from("forum_threads")
+    .select("title, body")
+    .eq("slug", slug)
+    .maybeSingle()
+  if (!data?.title) {
+    return { title: "Board Talk — Reswell", description: "Community discussions about surfboards and gear." }
+  }
+  const excerpt = threadExcerpt((data as { body?: string | null }).body)
+  const title = `${data.title} · Board Talk — Reswell`
+  const description = excerpt ?? `Join the conversation: ${data.title} — Board Talk on Reswell.`
+  const path = `/board-talk/${slug}`
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      title: data.title,
+      description,
+      type: "article",
+      url: absoluteUrl(path),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: data.title,
+      description,
+    },
+  }
 }
 
 export default async function ThreadDetailPage(props: { params: Promise<{ slug: string }> }) {

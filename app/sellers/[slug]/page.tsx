@@ -26,6 +26,7 @@ import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { FollowButton } from "@/components/follows/follow-button"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
+import { absoluteUrl } from "@/lib/site-metadata"
 
 const PROFILE_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -103,7 +104,7 @@ export async function generateMetadata({
       title: displayName,
       description,
       type: "profile",
-      url: canonicalPath,
+      url: absoluteUrl(canonicalPath),
       images: social
         ? [
             {

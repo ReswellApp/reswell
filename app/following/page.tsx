@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { FollowingFeedClient } from "./following-feed-client"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
-export const metadata = {
-  title: "Your Feed — Reswell",
-  description: "New listings from sellers you follow on Reswell.",
-}
+export const metadata = pageSeoMetadata({
+  title: "Following feed — Reswell",
+  description: "New listings and updates from sellers you follow on Reswell.",
+  path: "/following",
+  robots: { index: false, follow: false },
+})
 
 export default async function FollowingFeedPage() {
   const supabase = await createClient()

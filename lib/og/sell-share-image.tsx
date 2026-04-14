@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og"
+import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
 
-export const SELL_OG_SIZE = { width: 1200, height: 630 } as const
+export const SELL_OG_SIZE = STANDARD_OG_SIZE
 
 /** Share / Open Graph art for the sell flow — generated at request time (no static asset to maintain). */
 export function sellShareImageResponse() {

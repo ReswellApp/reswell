@@ -134,7 +134,7 @@ const ARTICLES: FieldNoteArticle[] = [
       },
       {
         kind: "p",
-        text: "Breadth. Someone three states over might have the exact mid-length you have been sketching. Clear photos, honest descriptions, and patient messaging rebuild some of the trust you would get across a shop counter.",
+        text: "Breadth. Someone three states over might have the exact hybrid you have been sketching. Clear photos, honest descriptions, and patient messaging rebuild some of the trust you would get across a shop counter.",
       },
       {
         kind: "h2",

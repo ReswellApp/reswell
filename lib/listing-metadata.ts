@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { listingDetailPath } from "@/lib/listing-query"
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
+import { absoluteUrl } from "@/lib/site-metadata"
 
 export function primaryListingImageUrl(
   images:
@@ -17,7 +18,7 @@ export function primaryListingImageUrl(
   return url || undefined
 }
 
-type ListingMetaInput = {
+export type ListingMetaInput = {
   id: string
   slug?: string | null
   title?: string | null
@@ -28,6 +29,21 @@ type ListingMetaInput = {
     | Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }>
     | null
   categories?: { name?: string | null; slug?: string | null } | Array<{ name?: string | null; slug?: string | null }> | null
+}
+
+/** Short subtitle for OG images (category, optional shop price). */
+export function buildListingShareSubtitle(
+  listing: ListingMetaInput,
+  options?: { pricePrefix?: string },
+): string | undefined {
+  const cat = listing.categories
+  const catRow = cat && (Array.isArray(cat) ? cat[0] : cat)
+  const categoryLabel = catRow?.name ? formatCategory(catRow.name) : ""
+  const parts: string[] = []
+  if (options?.pricePrefix) parts.push(options.pricePrefix)
+  if (categoryLabel) parts.push(categoryLabel)
+  if (parts.length === 0) return undefined
+  return parts.join(" · ")
 }
 
 /**
@@ -60,7 +76,6 @@ export function metadataForListingDetail(
   }
   description = description.slice(0, 180)
 
-  const imageUrl = primaryListingImageUrl(listing.listing_images)
   const canonicalPath = listingDetailPath(listing)
   const ogTitle = `${displayTitle}${titleSuffix}`
 
@@ -72,21 +87,12 @@ export function metadataForListingDetail(
       title: ogTitle,
       description,
       type: "article",
-      url: canonicalPath,
-      images: imageUrl
-        ? [
-            {
-              url: imageUrl,
-              alt: displayTitle,
-            },
-          ]
-        : undefined,
+      url: absoluteUrl(canonicalPath),
     },
     twitter: {
-      card: imageUrl ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: ogTitle,
       description,
-      images: imageUrl ? [imageUrl] : undefined,
     },
   }
 }

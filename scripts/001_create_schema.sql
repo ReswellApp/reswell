@@ -46,8 +46,8 @@ INSERT INTO public.categories (name, slug, description, board) VALUES
   ('Wetsuits', 'new-wetsuits', 'Brand new wetsuits', FALSE),
   ('Board Bags', 'new-board-bags', 'Brand new board bags', FALSE),
   ('Shortboard', 'shortboard', 'Performance shortboards', TRUE),
-  ('Fish', 'fish', 'Fish and retro shapes', TRUE),
-  ('Mid-length', 'mid-length', 'Mid-length surfboards — between shortboard and longboard.', TRUE),
+  ('Groveler', 'groveler', 'Small-wave grovelers and hybrid shapes.', TRUE),
+  ('Hybrid', 'hybrid', 'Hybrid surfboards — between shortboard and longboard.', TRUE),
   ('Longboard', 'longboard', 'Classic longboards', TRUE)
 ON CONFLICT (slug) DO NOTHING;
 

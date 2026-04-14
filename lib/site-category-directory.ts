@@ -8,8 +8,8 @@ export type CategoryLink = { label: string; href: string }
 export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "All Surfboards", href: "/boards" },
   { label: "Shortboard", href: "/boards?type=shortboard" },
-  { label: "Fish", href: "/boards?type=fish" },
-  { label: "Mid-length", href: "/boards?type=mid-length" },
+  { label: "Groveler", href: "/boards?type=groveler" },
+  { label: "Hybrid", href: "/boards?type=hybrid" },
   { label: "Longboard", href: "/boards?type=longboard" },
   { label: "Step-Up", href: "/boards?type=step-up" },
   { label: "Gun", href: "/boards?type=gun" },
@@ -69,8 +69,8 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
         heading: "By shape",
         links: [
           { label: "Shortboard", href: "/boards?type=shortboard" },
-          { label: "Fish", href: "/boards?type=fish" },
-          { label: "Mid-length", href: "/boards?type=mid-length" },
+          { label: "Groveler", href: "/boards?type=groveler" },
+          { label: "Hybrid", href: "/boards?type=hybrid" },
           { label: "Longboard", href: "/boards?type=longboard" },
           { label: "Step-Up", href: "/boards?type=step-up" },
           { label: "Gun", href: "/boards?type=gun" },
@@ -86,7 +86,7 @@ const HEADER_CATEGORIES_DROPDOWN_IDS = new Set(["surfboards"])
 /** Surfboard shapes shown in the header Categories dropdown only (full list stays on /categories). */
 const headerSurfboardsDropdownShapes: CategoryLink[] = [
   { label: "Shortboard", href: "/boards?type=shortboard" },
-  { label: "Fish", href: "/boards?type=fish" },
+  { label: "Groveler", href: "/boards?type=groveler" },
   { label: "Longboard", href: "/boards?type=longboard" },
 ]
 

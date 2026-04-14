@@ -1,12 +1,14 @@
 import type { Metadata } from "next"
 import { CollectionsPressSection } from "@/components/collections/collections-press-section"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
 export const revalidate = 120
 
-export const metadata: Metadata = {
-  title: "Collections",
-  description: "Surf stories and community features on Reswell.",
-}
+export const metadata: Metadata = pageSeoMetadata({
+  title: "Collections — Reswell",
+  description: "Editorial features, press, and surf stories on Reswell.",
+  path: "/collections",
+})
 
 export default function CollectionsPage() {
   return (

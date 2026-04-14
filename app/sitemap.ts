@@ -7,9 +7,9 @@ const BASE = publicSiteOrigin()
 const BOARD_TYPE_FILTERS = [
   "shortboard",
   "longboard",
-  "mid-length",
+  "hybrid",
   "step-up",
-  "fish",
+  "groveler",
   "gun",
 ]
 

@@ -15,16 +15,18 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
 const THUMB_PER_SELLER = 6
 const LISTINGS_FETCH_CAP = 4000
 
-export const metadata = {
-  title: "Sellers - Reswell",
+export const metadata = pageSeoMetadata({
+  title: "Surf sellers — Reswell",
   description:
-    "Browse local surf sellers on Reswell. See their gear and shop profiles.",
-}
+    "Browse local surf sellers on Reswell — shop profiles, verified shops, and peer listings near you.",
+  path: "/sellers",
+})
 
 type ListingThumb = {
   id: string

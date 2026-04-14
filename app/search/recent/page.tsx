@@ -1,5 +1,5 @@
-import type { Metadata } from "next"
 import { SearchPageView } from "../search-page-view"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
 interface SearchParams {
   category?: string
@@ -7,21 +7,12 @@ interface SearchParams {
 
 export const dynamic = "force-dynamic"
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: "Recently listed surfboards | Reswell",
-    description:
-      "Browse the latest surfboard listings on Reswell — a curated feed from active sellers.",
-    alternates: {
-      canonical: "/search/recent",
-    },
-    openGraph: {
-      title: "Recently listed surfboards | Reswell",
-      description: "Browse the latest surfboard listings — curated new posts on Reswell.",
-      url: "/search/recent",
-    },
-  }
-}
+export const metadata = pageSeoMetadata({
+  title: "Recently listed surfboards | Reswell",
+  description:
+    "Browse the latest surfboard listings on Reswell — a curated feed from active sellers.",
+  path: "/search/recent",
+})
 
 export default async function SearchRecentPage(props: {
   searchParams: Promise<SearchParams>

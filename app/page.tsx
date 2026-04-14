@@ -29,6 +29,14 @@ import { surfboardBrowseLinks } from "@/lib/site-category-directory"
 import { boardTypeForDbFromBrowseParam } from "@/lib/marketplace-slug-metadata"
 import { HomeListingScrollRow, HomePeerListingScrollTile } from "@/components/features/home"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
+import { pageSeoMetadata } from "@/lib/site-metadata"
+
+export const metadata = pageSeoMetadata({
+  title: "Reswell — Buy & sell surfboards",
+  description:
+    "Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.",
+  path: "/",
+})
 
 function boardBrowseSlugFromHref(href: string): string | null {
   const q = href.split("?")[1]

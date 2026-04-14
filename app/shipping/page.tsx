@@ -5,12 +5,14 @@ import { createClient } from "@/lib/supabase/server"
 import { ShippingLabelTool } from "@/components/shipping-label-tool"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
-export const metadata = {
-  title: "Shipping Guide - Reswell",
+export const metadata = pageSeoMetadata({
+  title: "Shipping guide — Reswell",
   description:
-    "How to ship and receive surfboards on Reswell. Seller and buyer responsibilities, packaging tips, local pickup, and seller label printing.",
-}
+    "How to ship and receive surfboards on Reswell — packaging, pickup, labels, and buyer/seller responsibilities.",
+  path: "/shipping",
+})
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

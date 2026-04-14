@@ -67,16 +67,21 @@ export function formatCategory(name: string | null | undefined): string {
 const BOARD_TYPE_LABELS: Record<string, string> = {
   shortboard: "Shortboard",
   longboard: "Longboard",
-  funboard: "Mid-length",
+  hybrid: "Hybrid",
+  funboard: "Hybrid",
   "step-up": "Step-Up",
-  fish: "Fish",
+  groveler: "Groveler",
   gun: "Gun",
   other: "Other",
 }
 
 export function formatBoardType(boardType: string | null | undefined): string {
   if (!boardType) return ""
-  return BOARD_TYPE_LABELS[boardType] ?? boardType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  const raw = boardType.trim()
+  if (!raw) return ""
+  const key =
+    raw === "fish" ? "groveler" : raw === "funboard" ? "hybrid" : raw
+  return BOARD_TYPE_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 /** Text for the small category pill on listing tiles: DB category first, then surfboard type. */

@@ -5,11 +5,14 @@ import { getCartPageItems } from "@/app/actions/cart"
 import { getFavoriteListingIds } from "@/app/actions/favorites"
 import { CartPageView } from "@/components/cart-page-view"
 import { getFavoriteListingsForCartCarousel } from "@/lib/db/favorites"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageSeoMetadata({
   title: "Cart — Reswell",
-  description: "Saved marketplace listings ready for checkout.",
-}
+  description: "Review saved marketplace listings and continue to checkout.",
+  path: "/cart",
+  robots: { index: false, follow: false },
+})
 
 export default async function CartPage() {
   const supabase = await createClient()

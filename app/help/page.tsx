@@ -1,11 +1,13 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { HelpCircle } from "lucide-react"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
-export const metadata = {
-  title: "Help Center - Reswell",
-  description: "Get answers to common questions about buying and selling surfboards on Reswell.",
-}
+export const metadata = pageSeoMetadata({
+  title: "Help Center — Reswell",
+  description: "Get answers about buying and selling surfboards, Reswell Bucks, shipping, and messaging.",
+  path: "/help",
+})
 
 const faqs = [
   {

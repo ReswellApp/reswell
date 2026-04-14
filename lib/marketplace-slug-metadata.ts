@@ -5,20 +5,22 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
 const BOARD_TYPE_LABELS: Record<string, string> = {
   shortboard: "Shortboards",
   longboard: "Longboards",
-  "mid-length": "Mid-lengths",
-  funboard: "Mid-lengths",
+  hybrid: "Hybrid",
+  "mid-length": "Hybrid",
+  funboard: "Hybrid",
   "step-up": "Step-Ups",
-  fish: "Fish",
+  groveler: "Groveler",
   gun: "Guns",
   other: "Other boards",
 }
 
-/** `listings.board_type` filter value for a `/boards?type=` query (DB still uses `funboard` for mid-length). */
+/** `listings.board_type` filter value for a `/boards?type=` query. */
 export function boardTypeForDbFromBrowseParam(
   type: string | undefined | null,
 ): string | undefined {
   if (!type || type === "all") return undefined
-  if (type === "mid-length") return "funboard"
+  if (type === "mid-length" || type === "funboard") return "hybrid"
+  if (type === "fish") return "groveler"
   return type
 }
 
@@ -28,14 +30,21 @@ export function browseTypeParamFromBoardType(
 ): string | undefined {
   if (!boardType?.trim()) return undefined
   const t = boardType.trim()
-  if (t === "funboard") return "mid-length"
+  if (t === "funboard") return "hybrid"
+  if (t === "fish") return "groveler"
   return t
 }
 
 /** Display label for `/boards?type=` (used in UI breadcrumbs and metadata). */
 export function boardsBrowseBoardTypeLabel(type: string | undefined | null): string | undefined {
   if (!type || type === "all") return undefined
-  if (BOARD_TYPE_LABELS[type]) return BOARD_TYPE_LABELS[type]
+  const key =
+    type === "fish"
+      ? "groveler"
+      : type === "mid-length" || type === "funboard"
+        ? "hybrid"
+        : type
+  if (BOARD_TYPE_LABELS[key]) return BOARD_TYPE_LABELS[key]
   return type.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
@@ -57,8 +66,16 @@ export type BoardsBrowseSearchParams = {
 }
 
 export function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Metadata {
+  const browseType =
+    sp.type && sp.type !== "all"
+      ? sp.type === "fish"
+        ? "groveler"
+        : sp.type === "mid-length" || sp.type === "funboard"
+          ? "hybrid"
+          : sp.type
+      : undefined
   const typeLabel =
-    sp.type && sp.type !== "all" ? BOARD_TYPE_LABELS[sp.type] ?? "Surfboards" : "Surfboards"
+    browseType ? BOARD_TYPE_LABELS[browseType] ?? "Surfboards" : "Surfboards"
   const condLabel =
     sp.condition && sp.condition !== "all"
       ? BOARDS_CONDITION_LABELS[sp.condition] ?? ""
@@ -69,11 +86,11 @@ export function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Metadata 
   const title = `${titleParts}${locationLabel} For Sale | Reswell`
   const description = [
     `Browse ${condLabel ? condLabel.toLowerCase() + " " : ""}${typeLabel.toLowerCase()} for sale${locationLabel}.`,
-    "Find shortboards, longboards, fish, and more from local surfers on Reswell.",
+    "Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
   ].join(" ")
 
   const canonical = new URL("/boards", publicSiteOrigin() + "/")
-  if (sp.type && sp.type !== "all") canonical.searchParams.set("type", sp.type)
+  if (browseType) canonical.searchParams.set("type", browseType)
   if (sp.condition && sp.condition !== "all") canonical.searchParams.set("condition", sp.condition)
   if (sp.location) canonical.searchParams.set("location", sp.location)
   if (sp.sort && sp.sort !== "newest") canonical.searchParams.set("sort", sp.sort)
@@ -82,7 +99,12 @@ export function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Metadata 
     title,
     description,
     alternates: { canonical: canonical.toString() },
-    openGraph: { title, description, type: "website" },
+    openGraph: { title, description, type: "website", url: canonical.toString() },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   }
 }
 
@@ -91,5 +113,10 @@ export function metadataForCategoryName(categoryName: string): Metadata {
   const label = formatCategory(categoryName)
   const title = `${label} | Reswell`
   const description = `Browse ${label.toLowerCase()} on Reswell.`
-  return { title, description, openGraph: { title, description } }
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "website" },
+    twitter: { card: "summary_large_image", title, description },
+  }
 }

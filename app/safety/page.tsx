@@ -1,11 +1,14 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, MessageSquare, Eye, MapPin, AlertTriangle } from "lucide-react"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
-export const metadata = {
-  title: "Safety Tips - Reswell",
-  description: "Stay safe when buying and selling surf gear. Best practices for meeting sellers, payments, and avoiding scams.",
-}
+export const metadata = pageSeoMetadata({
+  title: "Safety tips — Reswell",
+  description:
+    "Best practices for buying and selling surf gear — meetups, payments, and avoiding scams.",
+  path: "/safety",
+})
 
 const tips = [
   {

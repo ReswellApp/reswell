@@ -1,10 +1,12 @@
 import Link from "next/link"
 import { Shield } from "lucide-react"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
-export const metadata = {
-  title: "Privacy Policy - Reswell",
-  description: "Reswell privacy policy. How we collect, use, and protect your information.",
-}
+export const metadata = pageSeoMetadata({
+  title: "Privacy Policy — Reswell",
+  description: "How Reswell collects, uses, and protects your personal information.",
+  path: "/privacy",
+})
 
 export default function PrivacyPolicyPage() {
   return (

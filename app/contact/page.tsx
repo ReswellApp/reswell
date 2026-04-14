@@ -1,11 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { MessageSquare, HelpCircle } from "lucide-react"
 import { ContactForm } from "./contact-form"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
-export const metadata = {
-  title: "Contact Us - Reswell",
-  description: "Get in touch with the Reswell team for support, feedback, or questions.",
-}
+export const metadata = pageSeoMetadata({
+  title: "Contact — Reswell",
+  description: "Reach the Reswell team for support, feedback, partnership, or account questions.",
+  path: "/contact",
+})
 
 export default function ContactPage() {
   return (

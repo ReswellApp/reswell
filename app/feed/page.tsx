@@ -6,15 +6,17 @@ import { formatGmv } from "@/lib/format-gmv"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { formatDecimalDimension } from "@/lib/board-measurements"
 import { FeedPageClient, type SoldFeedListing, type SoldTickerItem } from "./feed-page-client"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
 const LIMIT = 50
 const SOLD_LIMIT = 40
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageSeoMetadata({
   title: "Feed — new listings & recently sold | Reswell",
   description:
     "Browse the latest surfboard listings on Reswell, plus recently sold items — a live view of marketplace activity.",
-}
+  path: "/feed",
+})
 
 function mapActiveRow(
   row: Record<string, unknown>,

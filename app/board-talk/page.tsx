@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Heart, Plus } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 
 type ThreadRow = {
   id: string
@@ -17,10 +18,11 @@ type ThreadRow = {
   user_id: string
 }
 
-export const metadata: Metadata = {
-  title: "Board Talk",
-  description: "Community posts, stoke, and conversation.",
-}
+export const metadata: Metadata = pageSeoMetadata({
+  title: "Board Talk — Reswell",
+  description: "Community posts, Q&A, and surfboard discussions — join the conversation.",
+  path: "/board-talk",
+})
 
 function countByKey(rows: { thread_id: string }[] | null | undefined): Record<string, number> {
   const out: Record<string, number> = {}

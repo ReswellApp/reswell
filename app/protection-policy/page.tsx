@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ShieldCheck, Package, Tag, AlertTriangle, HelpCircle, CheckCircle2, XCircle } from 'lucide-react'
+import { pageSeoMetadata } from '@/lib/site-metadata'
 
-export const metadata: Metadata = {
-  title: 'Reswell Purchase Protection | Safe Surf Gear Marketplace',
+export const metadata: Metadata = pageSeoMetadata({
+  title: 'Purchase Protection — Reswell',
   description:
-    'Every order on Reswell is backed by Purchase Protection. Every dollar you paid — item price and shipping — is guaranteed back. No caps. No limits. No exceptions.',
-}
+    'Every eligible order on Reswell is backed by Purchase Protection — item price and shipping covered under the policy terms.',
+  path: '/protection-policy',
+})
 
 function Section({
   icon: Icon,

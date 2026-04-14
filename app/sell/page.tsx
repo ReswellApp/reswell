@@ -202,9 +202,9 @@ function SellFormSection({
 const boardCategoryMap: Record<string, string> = {
   shortboard: "7e434a96-f3f7-4a73-b733-704a769195e6",
   longboard: "47a0d0bb-8738-43b4-a0fe-a5b2acc72fa3",
-  funboard: "93b8eeaf-366b-4823-8bb9-98d42c5fefba",
+  hybrid: "93b8eeaf-366b-4823-8bb9-98d42c5fefba",
   "step-up": "91c4e8a2-3f5b-4d1c-9e6a-7b8c9d0e1f2a",
-  fish: "f3ccddc0-f0f3-45d3-ad43-51bcf9935b45",
+  groveler: "f3ccddc0-f0f3-45d3-ad43-51bcf9935b45",
   gun: "7e434a96-f3f7-4a73-b733-704a769195e6", // default to shortboard category
   other: "7e434a96-f3f7-4a73-b733-704a769195e6",
 }
@@ -216,10 +216,10 @@ function boardTypeFromCategoryId(categoryId: string): string {
     .map(([bt]) => bt)
   if (keys.length === 0) return "other"
   if (keys.includes("shortboard")) return "shortboard"
-  if (keys.includes("funboard")) return "funboard"
+  if (keys.includes("hybrid")) return "hybrid"
   if (keys.includes("step-up")) return "step-up"
   if (keys.includes("longboard")) return "longboard"
-  if (keys.includes("fish")) return "fish"
+  if (keys.includes("groveler")) return "groveler"
   if (keys.includes("gun")) return "gun"
   return keys[0]
 }
@@ -2445,7 +2445,7 @@ function SellPageContent() {
                             { value: "square", label: "Square" },
                             { value: "pin", label: "Pin" },
                             { value: "swallow", label: "Swallow" },
-                            { value: "fish", label: "Fish" },
+                            { value: "groveler", label: "Groveler" },
                           ].map((opt) => (
                             <button
                               key={opt.value}
