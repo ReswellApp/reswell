@@ -8,6 +8,9 @@ import {
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import type { CreateListingOfferBody } from "@/lib/validations/create-listing-offer"
 import { trackKlaviyoOfferMade } from "@/lib/klaviyo/track-offer-made"
+import { appendConversationMessage } from "@/lib/services/conversationThread"
+import { syncOfferThreadIfMissing } from "@/lib/services/syncOfferMessagesThread"
+import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -106,6 +109,10 @@ export async function createListingOffer(
 
   const pending = await findPendingOfferForBuyer(supabase, listingId, buyerId)
   if (pending) {
+    const repaired = await syncOfferThreadIfMissing(pending.id)
+    if (!repaired.ok) {
+      console.error("[createListingOffer] sync existing pending offer thread:", repaired.reason)
+    }
     return {
       ok: false,
       status: 409,
@@ -153,6 +160,20 @@ export async function createListingOffer(
     console.error("[createListingOffer] insert offer_messages:", msgErr)
     await supabase.from("offers").delete().eq("id", offerId)
     return { ok: false, status: 500, error: "Could not submit your offer. Try again in a moment." }
+  }
+
+  const threadContent = formatOfferThreadContent(amount, note)
+
+  const threadResult = await appendConversationMessage(supabase, {
+    buyerId,
+    sellerId: listing.user_id,
+    listingId,
+    senderId: buyerId,
+    content: threadContent,
+    offerId,
+  })
+  if (!threadResult.ok) {
+    console.error("[createListingOffer] mirror offer to messages thread failed")
   }
 
   const title = (listing.title ?? "your listing").trim() || "your listing"

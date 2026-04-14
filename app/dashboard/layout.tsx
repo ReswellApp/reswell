@@ -14,6 +14,7 @@ import {
   UserCircle,
   Banknote,
   Users,
+  Handshake,
 } from "lucide-react"
 
 const sidebarLinks = [
@@ -22,6 +23,7 @@ const sidebarLinks = [
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   { name: "Followers", href: "/dashboard/followers", icon: Users },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+  { name: "Offers", href: "/dashboard/offers", icon: Handshake },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]

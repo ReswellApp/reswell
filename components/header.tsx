@@ -39,6 +39,7 @@ import {
   Clock,
   ChevronDown,
   ShoppingCart,
+  Handshake,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -536,6 +537,12 @@ export function Header() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
+            <Link href="/dashboard/offers" className="flex items-center">
+              <Handshake className="mr-2 h-4 w-4" />
+              Offers
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Link href="/dashboard/profile" className="flex items-center">
               <UserCircle className="mr-2 h-4 w-4" />
               Profile
@@ -957,6 +964,16 @@ export function Header() {
                   </p>
                   <p className="truncate text-sm text-muted-foreground">{user.email}</p>
                 </div>
+              </Link>
+            )}
+            {user && authLoaded && (
+              <Link
+                href="/dashboard/offers"
+                onClick={onMobileDrawerLinkClick}
+                className="mb-4 flex items-center gap-2 rounded-lg px-2 py-3 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground min-h-touch"
+              >
+                <Handshake className="h-5 w-5 shrink-0" aria-hidden />
+                Offers
               </Link>
             )}
             <div className="mb-6">

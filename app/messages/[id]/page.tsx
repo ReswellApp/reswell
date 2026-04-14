@@ -13,6 +13,13 @@ import { format, isToday, isYesterday } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { sendConversationReply } from '@/app/actions/messages'
+import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
+import {
+  OfferLegacyMirrorCard,
+  OfferNegotiationEventCard,
+} from '@/components/features/messages/offer-negotiation-event-card'
+import type { OfferRowLite } from '@/components/features/messages/seller-offer-response-dialog'
+import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiation-message'
 
 interface Message {
   id: string
@@ -20,6 +27,7 @@ interface Message {
   sender_id: string
   is_read: boolean
   created_at: string
+  offer_id?: string | null
 }
 
 interface Conversation {
@@ -52,6 +60,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const { id } = use(params)
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [offersById, setOffersById] = useState<Record<string, OfferRowLite>>({})
+  const [listingOfferMinPct, setListingOfferMinPct] = useState(70)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -66,6 +76,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       ),
     [messages],
   )
+
+  const listPriceNum = useMemo(() => {
+    const p = conversation?.listing?.price
+    if (p === undefined || p === null) return 0
+    const n = typeof p === 'number' ? p : parseFloat(String(p))
+    return Math.round(n * 100) / 100
+  }, [conversation?.listing?.price])
+
+  const minOfferAmount = useMemo(() => {
+    return Math.round(listPriceNum * (listingOfferMinPct / 100) * 100) / 100
+  }, [listPriceNum, listingOfferMinPct])
+
+  const listingTitleForOffers = conversation?.listing?.title ?? ''
 
   const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesScrollRef.current
@@ -97,60 +120,83 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     return () => cancelAnimationFrame(idFrame)
   }, [orderedMessages, scrollThreadToBottom])
 
-  useEffect(() => {
-    async function fetchData() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setCurrentUserId(user.id)
+  const loadThread = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setCurrentUserId(user.id)
 
-      // Fetch conversation
-      const { data: convData } = await supabase
-        .from('conversations')
-        .select(`
+    const { data: convData } = await supabase
+      .from('conversations')
+      .select(`
           *,
           listing:listings(id, title, price, section, slug, listing_images(url)),
           buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
           seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
         `)
-        .eq('id', id)
-        .single()
+      .eq('id', id)
+      .single()
 
-      if (convData) {
-        setConversation(convData as Conversation)
-      }
-
-      // Fetch messages
-      const { data: msgData } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', id)
-        .order('created_at', { ascending: true })
-
-      if (msgData) {
-        setMessages(msgData)
-      }
-
-      // Mark messages in this conversation as read
-      await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('conversation_id', id)
-        .neq('sender_id', user.id)
-
-      // Mark notifications as read when viewing messages (badge includes notifications)
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-
-      // Notify header to refresh unread badge (delay so DB commit and listener are ready)
-      if (typeof window !== 'undefined') {
-        window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+    if (convData) {
+      setConversation(convData as Conversation)
+      if (convData.listing_id) {
+        const { data: settings } = await supabase
+          .from('offer_settings')
+          .select('minimum_offer_pct')
+          .eq('listing_id', convData.listing_id)
+          .maybeSingle()
+        setListingOfferMinPct(settings?.minimum_offer_pct ?? 70)
+      } else {
+        setListingOfferMinPct(70)
       }
     }
 
-    fetchData()
+    const { data: msgData } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', id)
+      .order('created_at', { ascending: true })
+
+    const rows = (msgData ?? []) as Message[]
+    setMessages(rows)
+
+    const offerIds = [...new Set(rows.map((m) => m.offer_id).filter(Boolean))] as string[]
+    if (offerIds.length > 0) {
+      const { data: offerRows } = await supabase
+        .from('offers')
+        .select('id, status, current_amount, buyer_id, seller_id, listing_id')
+        .in('id', offerIds)
+      if (offerRows?.length) {
+        const next: Record<string, OfferRowLite> = {}
+        for (const o of offerRows) {
+          next[o.id as string] = o as OfferRowLite
+        }
+        setOffersById(next)
+      } else {
+        setOffersById({})
+      }
+    } else {
+      setOffersById({})
+    }
+
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', id)
+      .neq('sender_id', user.id)
+
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+    }
+  }, [id, supabase])
+
+  useEffect(() => {
+    void loadThread()
 
     // Subscribe to new messages
     const channel = supabase
@@ -172,6 +218,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             )
             return [...withoutPending, msg]
           })
+          if (msg.offer_id) {
+            void supabase
+              .from('offers')
+              .select('id, status, current_amount, buyer_id, seller_id, listing_id')
+              .eq('id', msg.offer_id)
+              .maybeSingle()
+              .then(({ data: o }) => {
+                if (o) {
+                  setOffersById((prev) => ({ ...prev, [o.id]: o as OfferRowLite }))
+                }
+              })
+          } else {
+            void loadThread()
+          }
         }
       )
       .subscribe()
@@ -179,7 +239,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [id, supabase])
+  }, [id, supabase, loadThread])
 
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUserId || !conversation) return
@@ -339,6 +399,65 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-3 pt-4 sm:px-4 sm:pb-4">
                 {orderedMessages.map((message) => {
                   const isOwn = message.sender_id === currentUserId
+                  const offer =
+                    message.offer_id && offersById[message.offer_id]
+                      ? offersById[message.offer_id]
+                      : undefined
+                  const isSeller = currentUserId === conversation.seller_id
+
+                  if (offer && message.offer_id) {
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <OfferMessageCard
+                          messageContent={message.content}
+                          offer={offer}
+                          isSeller={isSeller}
+                          listingTitle={listingTitleForOffers}
+                          listPrice={listPriceNum}
+                          minOfferAmount={minOfferAmount}
+                          minOfferPct={listingOfferMinPct}
+                          createdAt={message.created_at}
+                          onThreadRefresh={loadThread}
+                        />
+                      </div>
+                    )
+                  }
+
+                  const negotiationKind = parseOfferNegotiationMessage(message.content)
+                  if (negotiationKind) {
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <OfferNegotiationEventCard
+                          kind={negotiationKind}
+                          content={message.content}
+                          createdAt={message.created_at}
+                          isOwn={isOwn}
+                          showSellerDashboardLink={isSeller && isOwn}
+                        />
+                      </div>
+                    )
+                  }
+
+                  if (message.content.trimStart().startsWith('Offer:') && !message.offer_id) {
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <OfferLegacyMirrorCard
+                          content={message.content}
+                          createdAt={message.created_at}
+                        />
+                      </div>
+                    )
+                  }
+
                   return (
                     <div
                       key={message.id}

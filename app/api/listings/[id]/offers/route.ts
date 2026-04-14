@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { createListingOffer } from "@/lib/services/createListingOffer"
@@ -45,6 +46,8 @@ export async function POST(
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
+
+  revalidatePath("/dashboard/offers")
 
   return NextResponse.json({ data: { offerId: result.offerId } }, { status: 201 })
 }

@@ -111,6 +111,13 @@ function MessagesContent() {
 
       setCurrentUserId(user.id)
 
+      // Repair offer rows that never mirrored into `messages` (legacy / failed sync)
+      try {
+        await fetch("/api/me/offers-sync-threads", { method: "POST", credentials: "include" })
+      } catch {
+        // non-blocking
+      }
+
       // If we have user + listing params, open the single buyer↔seller thread (set listing context) and redirect
       if (userParam && listingParam && userParam !== user.id) {
         let conv = await getConversationForBuyerSeller(supabase, user.id, userParam)
