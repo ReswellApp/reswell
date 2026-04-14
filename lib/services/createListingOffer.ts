@@ -7,6 +7,7 @@ import {
 } from "@/lib/db/offers"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import type { CreateListingOfferBody } from "@/lib/validations/create-listing-offer"
+import { trackKlaviyoOfferMade } from "@/lib/klaviyo/track-offer-made"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -155,6 +156,19 @@ export async function createListingOffer(
   }
 
   const title = (listing.title ?? "your listing").trim() || "your listing"
+
+  void trackKlaviyoOfferMade({
+    offerId,
+    listingId,
+    listingTitle: title,
+    listingSlug: listing.slug?.trim() ? listing.slug : null,
+    listingSection: listing.section,
+    listPrice: listPrice,
+    offerAmount: amount,
+    buyerUserId: buyerId,
+    sellerUserId: listing.user_id,
+  })
+
   let service
   try {
     service = createServiceRoleClient()

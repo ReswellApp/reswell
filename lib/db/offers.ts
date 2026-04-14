@@ -9,6 +9,7 @@ export type OfferSettingsRow = {
 export type ListingRowForOffer = {
   id: string
   user_id: string
+  slug: string | null
   title: string | null
   price: string | number
   status: string
@@ -27,7 +28,7 @@ export async function fetchListingForOffer(
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, user_id, title, price, status, section, hidden_from_site, buyer_offers_enabled, shipping_available, local_pickup, shipping_price",
+      "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, shipping_available, local_pickup, shipping_price",
     )
     .eq("id", listingId)
     .maybeSingle()
