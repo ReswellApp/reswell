@@ -106,7 +106,9 @@ const nextConfig = {
       },
       { source: "/admin/claims", destination: "/admin", permanent: true },
       { source: "/admin/claims/:path*", destination: "/admin", permanent: true },
-      { source: "/offers/:path*", destination: "/dashboard", permanent: true },
+      // Legacy / bookmarked URLs → offers hub (was incorrectly sending to /dashboard only)
+      { source: "/offers", destination: "/dashboard/offers", permanent: true },
+      { source: "/offers/:path*", destination: "/dashboard/offers", permanent: true },
       { source: "/listings", destination: "/dashboard/listings", permanent: true },
       { source: "/saved", destination: "/favorites", permanent: true },
       { source: "/dashboard/reports", destination: "/dashboard", permanent: true },

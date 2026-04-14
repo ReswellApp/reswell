@@ -61,7 +61,12 @@ async function attachSellerCounterNotesForOffers(
 export async function fetchOffersMadeForDashboard(
   supabase: SupabaseClient,
   buyerId: string,
-): Promise<{ offers: DashboardOfferRow[]; sellersById: Record<string, DashboardProfileLite> }> {
+): Promise<{
+  offers: DashboardOfferRow[]
+  sellersById: Record<string, DashboardProfileLite>
+  /** Set when the offers query fails (e.g. missing table, wrong env). Shown in dev UI. */
+  fetchError?: string
+}> {
   const { data, error } = await supabase
     .from("offers")
     .select(
@@ -94,7 +99,11 @@ export async function fetchOffersMadeForDashboard(
 
   if (error) {
     console.error("[fetchOffersMadeForDashboard]", error)
-    return { offers: [], sellersById: {} }
+    return {
+      offers: [],
+      sellersById: {},
+      fetchError: error.message,
+    }
   }
 
   let offers = (data ?? []) as DashboardOfferRow[]
@@ -122,7 +131,11 @@ export async function fetchOffersMadeForDashboard(
 export async function fetchOffersReceivedForDashboard(
   supabase: SupabaseClient,
   sellerId: string,
-): Promise<{ offers: DashboardOfferRow[]; buyersById: Record<string, DashboardProfileLite> }> {
+): Promise<{
+  offers: DashboardOfferRow[]
+  buyersById: Record<string, DashboardProfileLite>
+  fetchError?: string
+}> {
   const { data, error } = await supabase
     .from("offers")
     .select(
@@ -155,7 +168,11 @@ export async function fetchOffersReceivedForDashboard(
 
   if (error) {
     console.error("[fetchOffersReceivedForDashboard]", error)
-    return { offers: [], buyersById: {} }
+    return {
+      offers: [],
+      buyersById: {},
+      fetchError: error.message,
+    }
   }
 
   const offers = (data ?? []) as DashboardOfferRow[]
