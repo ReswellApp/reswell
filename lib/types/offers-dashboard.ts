@@ -29,4 +29,6 @@ export type DashboardOfferRow = {
   buyer_id: string
   seller_id: string
   listings: DashboardListingEmbed | DashboardListingEmbed[] | null
+  /** Latest seller counter note when status is COUNTERED (offers you made). */
+  seller_counter_note?: string | null
 }

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SellerOfferResponseDialog, type OfferRowLite } from "@/components/features/messages/seller-offer-response-dialog"
+import { BuyerCounterOfferDialog } from "@/components/features/offers/buyer-counter-offer-dialog"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { cn } from "@/lib/utils"
@@ -76,12 +77,14 @@ function OfferRow({
   counterparty,
   listingTitle,
   onRespondOpen,
+  onViewCounterOpen,
 }: {
   offer: DashboardOfferRow
   role: "buyer" | "seller"
   counterparty: DashboardProfileLite | undefined
   listingTitle: string
   onRespondOpen: (o: DashboardOfferRow) => void
+  onViewCounterOpen?: (o: DashboardOfferRow) => void
 }) {
   const listing = dashboardListingForOffer(offer)
   const href = listing ? listingDetailHref(listing) : "#"
@@ -92,6 +95,9 @@ function OfferRow({
 
   const showRespond =
     role === "seller" && offer.status === "PENDING" && Number.isFinite(listPrice) && listPrice > 0
+
+  const showViewCounter =
+    role === "buyer" && offer.status === "COUNTERED" && typeof onViewCounterOpen === "function"
 
   return (
     <Card className="overflow-hidden border-border/70 shadow-sm transition-colors hover:border-border">
@@ -129,10 +135,23 @@ function OfferRow({
           </div>
 
           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[15px] tabular-nums">
-            <div>
-              <span className="text-muted-foreground">Offer </span>
-              <span className="font-semibold text-foreground">${money(offer.current_amount)}</span>
-            </div>
+            {role === "buyer" && offer.status === "COUNTERED" ? (
+              <>
+                <div>
+                  <span className="text-muted-foreground">Your offer </span>
+                  <span className="font-semibold text-foreground">${money(offer.initial_amount)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Seller&apos;s counter </span>
+                  <span className="font-semibold text-foreground">${money(offer.current_amount)}</span>
+                </div>
+              </>
+            ) : (
+              <div>
+                <span className="text-muted-foreground">Offer </span>
+                <span className="font-semibold text-foreground">${money(offer.current_amount)}</span>
+              </div>
+            )}
             {listing && (
               <div>
                 <span className="text-muted-foreground">List </span>
@@ -159,6 +178,16 @@ function OfferRow({
                 Open messages
               </Link>
             </Button>
+            {showViewCounter && (
+              <Button
+                size="sm"
+                className="rounded-lg"
+                type="button"
+                onClick={() => onViewCounterOpen?.(offer)}
+              >
+                View counteroffer
+              </Button>
+            )}
             {showRespond && (
               <Button
                 size="sm"
@@ -199,6 +228,8 @@ export function DashboardOffersView({
     setTab(defaultTab)
   }, [defaultTab])
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [buyerCounterOffer, setBuyerCounterOffer] = useState<DashboardOfferRow | null>(null)
+  const [buyerCounterOpen, setBuyerCounterOpen] = useState(false)
 
   const syncUrl = (next: "made" | "received") => {
     const path =
@@ -212,6 +243,11 @@ export function DashboardOffersView({
   const openRespond = (o: DashboardOfferRow) => {
     setDialogOffer(o)
     setDialogOpen(true)
+  }
+
+  const openBuyerCounter = (o: DashboardOfferRow) => {
+    setBuyerCounterOffer(o)
+    setBuyerCounterOpen(true)
   }
 
   const listingForDialog = dialogOffer ? dashboardListingForOffer(dialogOffer) : null
@@ -235,6 +271,14 @@ export function DashboardOffersView({
 
   const titleForDialog = listingForDialog?.title?.trim()
     ? capitalizeWords(listingForDialog.title)
+    : "Listing"
+
+  const listingForBuyerCounter = buyerCounterOffer ? dashboardListingForOffer(buyerCounterOffer) : null
+  const listPriceBuyerCounter = listingForBuyerCounter
+    ? Math.round(parseFloat(String(listingForBuyerCounter.price)) * 100) / 100
+    : 0
+  const titleBuyerCounter = listingForBuyerCounter?.title?.trim()
+    ? capitalizeWords(listingForBuyerCounter.title)
     : "Listing"
 
   return (
@@ -295,6 +339,7 @@ export function DashboardOffersView({
                 counterparty={sellersById[o.seller_id]}
                 listingTitle={dashboardListingForOffer(o)?.title ?? ""}
                 onRespondOpen={openRespond}
+                onViewCounterOpen={openBuyerCounter}
               />
             ))
           )}
@@ -333,6 +378,28 @@ export function DashboardOffersView({
           listPrice={listPriceNum}
           minOfferAmount={minOfferAmount}
           minOfferPct={minPct}
+          onCompleted={async () => {
+            router.refresh()
+          }}
+        />
+      )}
+
+      {buyerCounterOffer && (
+        <BuyerCounterOfferDialog
+          open={buyerCounterOpen}
+          onOpenChange={(open) => {
+            setBuyerCounterOpen(open)
+            if (!open) setBuyerCounterOffer(null)
+          }}
+          offer={{
+            id: buyerCounterOffer.id,
+            status: buyerCounterOffer.status,
+            initial_amount: buyerCounterOffer.initial_amount,
+            current_amount: buyerCounterOffer.current_amount,
+            seller_counter_note: buyerCounterOffer.seller_counter_note,
+          }}
+          listingTitle={titleBuyerCounter}
+          listPrice={listPriceBuyerCounter}
           onCompleted={async () => {
             router.refresh()
           }}

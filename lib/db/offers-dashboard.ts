@@ -14,6 +14,47 @@ function mapProfiles(
   return map
 }
 
+/** Latest seller counter note per offer (for buyer “I made” cards when status is COUNTERED). */
+async function attachSellerCounterNotesForOffers(
+  supabase: SupabaseClient,
+  offers: DashboardOfferRow[],
+): Promise<DashboardOfferRow[]> {
+  const ids = offers.filter((o) => o.status === "COUNTERED").map((o) => o.id)
+  if (ids.length === 0) {
+    return offers
+  }
+
+  const { data, error } = await supabase
+    .from("offer_messages")
+    .select("offer_id, note, created_at")
+    .in("offer_id", ids)
+    .eq("sender_role", "SELLER")
+    .eq("action", "COUNTER")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[attachSellerCounterNotesForOffers]", error)
+    return offers.map((o) =>
+      o.status === "COUNTERED" ? { ...o, seller_counter_note: null } : o,
+    )
+  }
+
+  const latestNoteByOffer = new Map<string, string | null>()
+  for (const row of data ?? []) {
+    const oid = row.offer_id as string
+    if (!latestNoteByOffer.has(oid)) {
+      const n = row.note
+      latestNoteByOffer.set(oid, typeof n === "string" && n.trim() !== "" ? n.trim() : null)
+    }
+  }
+
+  return offers.map((o) =>
+    o.status === "COUNTERED"
+      ? { ...o, seller_counter_note: latestNoteByOffer.get(o.id) ?? null }
+      : o,
+  )
+}
+
 /**
  * Offers the user submitted as buyer (all statuses), with listing + counterparty seller profile.
  */
@@ -56,7 +97,9 @@ export async function fetchOffersMadeForDashboard(
     return { offers: [], sellersById: {} }
   }
 
-  const offers = (data ?? []) as DashboardOfferRow[]
+  let offers = (data ?? []) as DashboardOfferRow[]
+  offers = await attachSellerCounterNotesForOffers(supabase, offers)
+
   const sellerIds = [...new Set(offers.map((o) => o.seller_id))]
   if (sellerIds.length === 0) {
     return { offers, sellersById: {} }
