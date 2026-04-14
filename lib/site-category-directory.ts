@@ -19,6 +19,11 @@ export const surfboardBrowseLinks: CategoryLink[] = [
 /** Header Categories dropdown + /categories page: surfboards only. */
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
+/** Footer Categories column: board shapes only (no “All Surfboards” or “Other”). */
+export const footerCategoryLinks: CategoryLink[] = surfboardBrowseLinks.filter(
+  (link) => link.href !== "/boards" && link.href !== "/boards?type=other"
+)
+
 export type CategoryDirectorySection = {
   title: string
   description?: string

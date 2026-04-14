@@ -3,7 +3,7 @@ import Image from "next/image"
 import { Heart, ShieldCheck } from "lucide-react"
 import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
-import { allCategoriesForNav } from "@/lib/site-category-directory"
+import { footerCategoryLinks } from "@/lib/site-category-directory"
 
 const footerLinks = {
   marketplace: [
@@ -68,7 +68,7 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Categories</h3>
             <ul className="mt-4 space-y-3">
-              {allCategoriesForNav.map((link) => (
+              {footerCategoryLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
