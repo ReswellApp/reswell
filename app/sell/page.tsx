@@ -146,7 +146,7 @@ import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import {
   SellSectionNav,
-  SellSectionNavCompact,
+  SellSectionNavHorizontal,
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
 import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
@@ -2243,8 +2243,9 @@ function SellPageContent() {
                 />
               </div>
               <div className="min-w-0 w-full max-w-2xl lg:max-w-3xl">
-                <SellSectionNavCompact
+                <SellSectionNavHorizontal
                   items={SELL_FORM_SECTION_NAV_ITEMS}
+                  sectionCompletion={sellSectionCompletion}
                   className="mb-8 lg:hidden"
                 />
                 <form
@@ -2517,7 +2518,7 @@ function SellPageContent() {
                                     w.focus({ preventScroll: true })
                                   }
                                 }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 required
                                 autoComplete="off"
                                 spellCheck={false}
@@ -2589,7 +2590,7 @@ function SellPageContent() {
                                     })
                                   }
                                 }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board width in inches"
@@ -2636,7 +2637,7 @@ function SellPageContent() {
                                     })
                                   }
                                 }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board thickness in inches"
@@ -2672,7 +2673,7 @@ function SellPageContent() {
                                     boardVolumeL: normalizeVolumeLitersInput(e.target.value),
                                   }))
                                 }
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board volume in liters"

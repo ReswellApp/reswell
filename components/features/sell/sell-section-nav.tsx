@@ -29,6 +29,78 @@ export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
 ]
 
 /**
+ * Mobile / tablet: same stepper as desktop (circles, checkmarks, connector) in a horizontal row.
+ * Short labels + horizontal scroll keep all eight steps usable on narrow screens.
+ */
+export function SellSectionNavHorizontal({
+  items,
+  sectionCompletion,
+  className,
+}: {
+  items: readonly SellSectionNavItem[]
+  sectionCompletion?: Readonly<Partial<Record<string, boolean>>>
+  className?: string
+}) {
+  return (
+    <nav
+      aria-label="Listing form sections"
+      className={cn(
+        "rounded-lg border border-border bg-card/80 py-3 shadow-sm backdrop-blur-sm",
+        className,
+      )}
+    >
+      <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
+        <ol className="mx-auto flex w-max min-w-full items-start justify-center gap-0 px-3 pb-0.5 pt-0.5 sm:px-4">
+          {items.map((item, index) => {
+            const complete = sectionCompletion?.[item.id] === true
+            const label = item.shortLabel ?? item.label
+            return (
+              <li key={item.id} className="flex items-start">
+                {index > 0 ? (
+                  <div
+                    className="mt-2.5 h-px w-2 shrink-0 bg-foreground/25 sm:w-3"
+                    aria-hidden
+                  />
+                ) : null}
+                <div className="flex w-[3rem] shrink-0 flex-col items-center px-0.5 sm:w-14">
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection(item.id)}
+                    aria-label={
+                      complete ? `${item.label}, completed` : `Go to ${item.label}`
+                    }
+                    className={cn(
+                      "flex w-full flex-col items-center gap-1.5 rounded-sm",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    )}
+                  >
+                    <span
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground transition-opacity hover:opacity-90"
+                      aria-hidden
+                    >
+                      {complete ? (
+                        <Check
+                          className="h-3 w-3 text-background"
+                          strokeWidth={3}
+                          aria-hidden
+                        />
+                      ) : null}
+                    </span>
+                    <span className="w-full text-center text-[10px] leading-tight text-foreground sm:text-xs">
+                      {label}
+                    </span>
+                  </button>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+    </nav>
+  )
+}
+
+/**
  * Desktop sidebar: dots on a vertical rail with section labels; completed steps show a checkmark.
  */
 export function SellSectionNav({
@@ -89,44 +161,6 @@ export function SellSectionNav({
             })}
           </ul>
         </div>
-      </div>
-    </nav>
-  )
-}
-
-/** Compact text links for small screens — same targets as the stepper. */
-export function SellSectionNavCompact({
-  items,
-  className,
-}: {
-  items: readonly SellSectionNavItem[]
-  className?: string
-}) {
-  return (
-    <nav
-      aria-label="Jump to form section"
-      className={cn(
-        "rounded-lg border border-border bg-card/80 px-3 py-2.5 shadow-sm backdrop-blur-sm",
-        className,
-      )}
-    >
-      <div className="flex flex-wrap gap-x-1 gap-y-1 text-xs leading-relaxed">
-        {items.map((item, i) => (
-          <span key={item.id} className="inline-flex items-center">
-            {i > 0 ? (
-              <span className="mx-1 text-muted-foreground select-none" aria-hidden>
-                ·
-              </span>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => scrollToSection(item.id)}
-              className="text-foreground underline-offset-2 hover:underline"
-            >
-              {item.shortLabel ?? item.label}
-            </button>
-          </span>
-        ))}
       </div>
     </nav>
   )

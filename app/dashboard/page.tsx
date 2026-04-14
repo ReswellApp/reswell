@@ -126,37 +126,45 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold">
+      <div className="max-w-3xl">
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
           Welcome back, {profile?.display_name || user.user_metadata?.full_name || "User"}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground sm:text-base">
           Here is what is happening with your listings
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats — 2×2 until xl so iPad / small laptop rows are not four cramped columns */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4 xl:gap-4">
         {stats.map((stat) => (
-          <Link key={stat.name} href={stat.href}>
-            <Card className={`hover:shadow-md transition-shadow ${(stat as { highlight?: boolean }).highlight ? "border-primary/20 bg-primary/5" : ""}`}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
+          <Link key={stat.name} href={stat.href} className="min-w-0">
+            <Card
+              className={`h-full overflow-hidden hover:shadow-md transition-shadow ${
+                (stat as { highlight?: boolean }).highlight ? "border-primary/20 bg-primary/5" : ""
+              }`}
+            >
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">{stat.name}</p>
-                    <p className={`text-3xl font-bold ${(stat as { highlight?: boolean }).highlight ? "text-primary" : ""}`}>
+                    <p
+                      className={`mt-0.5 text-2xl font-bold tabular-nums sm:text-3xl ${
+                        (stat as { highlight?: boolean }).highlight ? "text-primary" : ""
+                      }`}
+                    >
                       {stat.value}
                       {stat.total !== undefined && stat.total > 0 && (
-                        <span className="text-lg text-muted-foreground font-normal">
+                        <span className="text-base text-muted-foreground font-normal sm:text-lg">
                           /{stat.total}
                         </span>
                       )}
                     </p>
                   </div>
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <stat.icon className="h-6 w-6" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-11 sm:w-11">
+                    <stat.icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
                   </div>
                 </div>
               </CardContent>
@@ -182,7 +190,7 @@ export default async function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="flex items-end gap-6">
+            <div className="flex flex-wrap items-end gap-6">
               <div>
                 <p className="text-3xl font-bold text-foreground">
                   {followerCount.toLocaleString()}
@@ -210,8 +218,8 @@ export default async function DashboardPage() {
 
       {/* Recent Listings */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Your Recent Listings</CardTitle>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+          <CardTitle className="text-lg">Your Recent Listings</CardTitle>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/dashboard/listings">
               View All
@@ -221,7 +229,7 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent>
           {recentListings && recentListings.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 xl:gap-5">
               {recentListings.map((listing) => {
                 const primaryImage = listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || listing.listing_images?.[0]
                 return (
@@ -247,10 +255,10 @@ export default async function DashboardPage() {
                         {listing.status}
                       </Badge>
                     </div>
-                    <h3 className="font-medium line-clamp-2 min-h-[2.8em] group-hover:text-primary transition-colors">
+                    <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.75rem] sm:text-base sm:min-h-[3.25rem] group-hover:text-primary transition-colors">
                       {capitalizeWords(listing.title)}
                     </h3>
-                    <p className="text-sm font-bold text-black dark:text-white">
+                    <p className="text-base font-bold tabular-nums text-black dark:text-white">
                       ${listing.price.toFixed(2)}
                     </p>
                   </Link>
@@ -272,10 +280,10 @@ export default async function DashboardPage() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle className="text-lg">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
               <Link href="/sell?new=1">
                 <Package className="h-6 w-6 mb-2" />

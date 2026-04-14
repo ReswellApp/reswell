@@ -164,7 +164,7 @@ export async function respondToCounterOfferService(
     supabase,
     offer,
     buyerUserId,
-    `Counteroffer accepted — $${current.toFixed(2)} for “${title}”. Complete checkout from your messages or listing when ready.`,
+    `Counteroffer accepted — $${current.toFixed(2)} for “${title}”. You can purchase at this price from messages or the listing when you choose; you’re not required to.`,
   )
 
   if (service) {

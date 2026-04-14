@@ -58,7 +58,9 @@ export function BuyerCounterOfferDialog({
         return
       }
       toast.success(
-        action === "accept" ? "Counteroffer accepted. You can check out from messages." : "Counteroffer declined.",
+        action === "accept"
+          ? "Counteroffer accepted. You can check out at this price from messages when you’re ready—you’re not required to buy."
+          : "Counteroffer declined.",
       )
       onOpenChange(false)
       await onCompleted()
@@ -143,8 +145,8 @@ export function BuyerCounterOfferDialog({
 
         <DialogFooter className="sm:justify-start">
           <p className="text-left text-[13px] leading-snug text-muted-foreground">
-            Accepting agrees to buy at this price (plus any shipping or taxes at checkout). You can complete
-            purchase from Messages or the listing.
+            Accepting records this agreed price for checkout if you decide to buy (shipping and taxes still
+            apply at payment). You’re not required to complete a purchase.
           </p>
         </DialogFooter>
       </DialogContent>

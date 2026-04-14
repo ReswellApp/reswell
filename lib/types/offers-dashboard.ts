@@ -5,7 +5,11 @@ export type DashboardListingEmbed = {
   section: string
   price: string | number
   status: string
-  listing_images: { url: string; is_primary: boolean | null }[] | null
+  listing_images: {
+    url: string
+    is_primary: boolean | null
+    thumbnail_url?: string | null
+  }[] | null
 }
 
 export type DashboardProfileLite = {

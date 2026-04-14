@@ -174,7 +174,7 @@ export async function respondToOfferService(
       supabase,
       offer,
       sellerUserId,
-      `Offer accepted — $${current.toFixed(2)} for “${title}”. Complete checkout from your messages or listing when ready.`,
+      `Offer accepted — $${current.toFixed(2)} for “${title}”. You can purchase at this price from messages or the listing when you choose; you’re not required to.`,
     )
 
     if (service) {

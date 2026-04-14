@@ -966,16 +966,6 @@ export function Header() {
                 </div>
               </Link>
             )}
-            {user && authLoaded && (
-              <Link
-                href="/dashboard/offers"
-                onClick={onMobileDrawerLinkClick}
-                className="mb-4 flex items-center gap-2 rounded-lg px-2 py-3 text-lg font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground min-h-touch"
-              >
-                <Handshake className="h-5 w-5 shrink-0" aria-hidden />
-                Offers
-              </Link>
-            )}
             <div className="mb-6">
               <Button
                 asChild

@@ -89,7 +89,7 @@ export async function fetchOffersMadeForDashboard(
         section,
         price,
         status,
-        listing_images (url, is_primary)
+        listing_images (url, is_primary, thumbnail_url)
       )
     `,
     )
@@ -158,7 +158,7 @@ export async function fetchOffersReceivedForDashboard(
         section,
         price,
         status,
-        listing_images (url, is_primary)
+        listing_images (url, is_primary, thumbnail_url)
       )
     `,
     )

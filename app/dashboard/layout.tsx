@@ -49,10 +49,10 @@ export default async function DashboardLayout({
   const isShop = profile?.is_shop || false
 
   return (
-      <div className="flex-1 container mx-auto py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex-1 container mx-auto py-6 sm:py-8">
+        <div className="flex flex-col gap-8 lg:flex-row lg:gap-10 xl:gap-12">
           {/* Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
+          <aside className="shrink-0 lg:w-56 xl:w-64">
             <div className="sticky top-24 space-y-4">
               <Button asChild className="w-full">
                 <Link href="/sell?new=1">

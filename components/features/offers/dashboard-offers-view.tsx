@@ -19,6 +19,9 @@ import { SellerOfferResponseDialog, type OfferRowLite } from "@/components/featu
 import { BuyerCounterOfferDialog } from "@/components/features/offers/buyer-counter-offer-dialog"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { portraitShimmer } from "@/lib/image-shimmer"
+import { homeListingScrollImageSizes } from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
 import type {
   DashboardOfferRow,
@@ -53,21 +56,21 @@ function statusLabel(status: string): string {
   }
 }
 
-/** Left accent on the details pane — subtle signal without loud UI chrome. */
+/** Left accent on the details pane — stage hue, flat (no alpha). */
 function statusContentAccent(status: string): string {
   switch (status) {
     case "PENDING":
-      return "border-l-amber-500/75 dark:border-l-amber-400/60"
+      return "border-l-amber-500 dark:border-l-amber-400"
     case "ACCEPTED":
     case "COMPLETED":
-      return "border-l-emerald-600/70 dark:border-l-emerald-500/55"
+      return "border-l-emerald-600 dark:border-l-emerald-500"
     case "COUNTERED":
-      return "border-l-sky-600/65 dark:border-l-sky-500/55"
+      return "border-l-sky-600 dark:border-l-sky-500"
     case "DECLINED":
     case "WITHDRAWN":
-      return "border-l-neutral-400/70 dark:border-l-neutral-500/50"
+      return "border-l-neutral-400 dark:border-l-neutral-500"
     case "EXPIRED":
-      return "border-l-neutral-500/60 dark:border-l-neutral-600/45"
+      return "border-l-neutral-500 dark:border-l-neutral-600"
     default:
       return "border-l-border"
   }
@@ -76,19 +79,19 @@ function statusContentAccent(status: string): string {
 function statusBadgeClass(status: string): string {
   switch (status) {
     case "PENDING":
-      return "border-amber-200/90 bg-amber-500/[0.11] text-amber-950 dark:border-amber-500/35 dark:bg-amber-500/15 dark:text-amber-50"
+      return "border-amber-300 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
     case "ACCEPTED":
     case "COMPLETED":
-      return "border-emerald-200/90 bg-emerald-500/[0.11] text-emerald-950 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-50"
+      return "border-emerald-300 bg-emerald-100 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100"
     case "COUNTERED":
-      return "border-sky-200/90 bg-sky-500/[0.11] text-sky-950 dark:border-sky-500/35 dark:bg-sky-500/15 dark:text-sky-50"
+      return "border-sky-300 bg-sky-100 text-sky-950 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-100"
     case "DECLINED":
     case "WITHDRAWN":
-      return "border-border/80 bg-muted/50 text-muted-foreground"
+      return "border-neutral-300 bg-neutral-100 text-neutral-700 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-300"
     case "EXPIRED":
-      return "border-border bg-muted/70 text-muted-foreground"
+      return "border-neutral-400 bg-neutral-200 text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200"
     default:
-      return "border-border bg-muted/40 text-foreground"
+      return "border-border bg-muted text-foreground"
   }
 }
 
@@ -96,14 +99,6 @@ function displayName(p: DashboardProfileLite | undefined): string {
   if (!p) return "Member"
   if (p.is_shop && p.shop_name?.trim()) return p.shop_name.trim()
   return p.display_name?.trim() || "Member"
-}
-
-function primaryImage(
-  images: { url: string; is_primary: boolean | null }[] | null | undefined,
-): string | null {
-  if (!images?.length) return null
-  const pr = images.find((i) => i.is_primary)
-  return (pr ?? images[0]).url
 }
 
 type PriceLine = { label: string; value: string; emphasize?: boolean }
@@ -177,7 +172,8 @@ function OfferRow({
 }) {
   const listing = dashboardListingForOffer(offer)
   const href = listing ? listingDetailHref(listing) : "#"
-  const img = primaryImage(listing?.listing_images ?? null)
+  const imageSrc = listingCardImageSrc(listing?.listing_images ?? null)
+  const hasListingImage = Boolean(imageSrc)
   const listPrice = listing ? parseFloat(String(listing.price)) : 0
   const otherId = role === "buyer" ? offer.seller_id : offer.buyer_id
   const messagesHref = `/messages?user=${otherId}&listing=${offer.listing_id}`
@@ -194,60 +190,60 @@ function OfferRow({
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-sm ring-1 ring-black/[0.03] transition-[border-color,box-shadow] duration-300 dark:bg-card/60 dark:ring-white/[0.06]",
-        "hover:border-border hover:shadow-md",
+        "group overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-[border-color,box-shadow] duration-200 dark:bg-card/80",
+        "hover:border-border/90 hover:shadow",
       )}
     >
       <div className="flex flex-col sm:flex-row sm:items-stretch">
         <Link
           href={href}
-          className="relative aspect-[5/4] w-full shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:w-[152px] sm:min-h-[168px] lg:w-[168px]"
+          className={cn(
+            "relative aspect-[3/4] w-full max-w-[13rem] shrink-0 overflow-hidden bg-muted sm:max-w-none sm:w-52",
+            "mx-auto sm:mx-0",
+          )}
+          aria-label={listingTitle ? `View listing: ${listingTitle}` : "View listing"}
         >
-          {img ? (
-            <>
-              <Image
-                src={img}
-                alt=""
-                fill
-                className="object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
-                sizes="(max-width: 640px) 100vw, 168px"
-              />
-              <div
-                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.06] to-transparent sm:bg-gradient-to-r sm:from-transparent sm:to-black/[0.04]"
-                aria-hidden
-              />
-            </>
+          {hasListingImage ? (
+            <Image
+              src={imageSrc}
+              alt={listingTitle ? capitalizeWords(listingTitle) : "Listing"}
+              fill
+              sizes={homeListingScrollImageSizes}
+              placeholder="blur"
+              blurDataURL={portraitShimmer}
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
           ) : (
-            <div className="flex h-full min-h-[7rem] w-full items-center justify-center text-[11px] text-muted-foreground sm:min-h-0">
-              No photo
+            <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+              No Image
             </div>
           )}
         </Link>
 
         <div
           className={cn(
-            "flex min-w-0 flex-1 flex-col border-l-[3px] px-4 py-4 sm:px-5 sm:py-5",
+            "flex min-w-0 flex-1 flex-col border-l-2 px-3 py-3 sm:px-4 sm:py-3.5",
             statusContentAccent(offer.status),
           )}
         >
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
             <div className="min-w-0 flex-1">
               <Link
                 href={href}
-                className="line-clamp-2 text-[17px] font-semibold leading-snug tracking-tight text-foreground transition-colors hover:text-foreground/80"
+                className="line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors hover:text-foreground/80"
               >
                 {capitalizeWords(listingTitle || "Listing")}
               </Link>
-              <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">
-                <span className="text-muted-foreground/90">{role === "buyer" ? "Seller" : "Buyer"}</span>
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                <span>{role === "buyer" ? "Seller" : "Buyer"}</span>
                 <span className="mx-1.5 text-border">·</span>
-                <span className="font-medium text-foreground/95">{displayName(counterparty)}</span>
+                <span className="font-medium text-foreground/90">{displayName(counterparty)}</span>
               </p>
             </div>
             <Badge
               variant="outline"
               className={cn(
-                "shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-semibold tracking-tight",
+                "shrink-0 rounded-md px-2 py-px text-[11px] font-medium tracking-tight",
                 statusBadgeClass(offer.status),
               )}
             >
@@ -255,80 +251,74 @@ function OfferRow({
             </Badge>
           </div>
 
-          <div className="mt-4 rounded-xl border border-border/50 bg-muted/[0.35] p-3 dark:bg-muted/20">
-            <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90">
-              Pricing
-            </p>
-            <dl className="space-y-2">
-              {priceLines.map((line) => (
-                <div
-                  key={line.label}
+          <div className="mt-2.5 flex flex-wrap items-end gap-x-5 gap-y-2 border-t border-border/40 pt-2.5">
+            {priceLines.map((line) => (
+              <div
+                key={line.label}
+                className={cn(
+                  "flex min-w-0 flex-col gap-0.5 tabular-nums",
+                  line.emphasize && "rounded-md bg-muted/50 px-2 py-1 dark:bg-muted/25",
+                )}
+              >
+                <span
                   className={cn(
-                    "flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 tabular-nums",
-                    line.emphasize &&
-                      "rounded-lg bg-background/90 px-2.5 py-2 shadow-sm ring-1 ring-border/45 dark:bg-background/35",
+                    "text-[11px] leading-none text-muted-foreground",
+                    line.emphasize && "font-medium text-foreground/80",
                   )}
                 >
-                  <dt
-                    className={cn(
-                      "text-[13px] text-muted-foreground",
-                      line.emphasize && "font-medium text-foreground/85",
-                    )}
-                  >
-                    {line.label}
-                  </dt>
-                  <dd
-                    className={cn(
-                      "text-right text-[15px] font-medium text-foreground",
-                      line.emphasize && "text-[17px] font-semibold tracking-tight",
-                    )}
-                  >
-                    {line.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+                  {line.label}
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-medium text-foreground",
+                    line.emphasize && "text-base font-semibold tracking-tight",
+                  )}
+                >
+                  {line.value}
+                </span>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3 shrink-0 opacity-65" aria-hidden />
               Updated {formatDistanceToNow(new Date(offer.updated_at), { addSuffix: true })}
             </span>
-            <span className="hidden h-3 w-px bg-border sm:block" aria-hidden />
-            <span className="inline-flex items-center gap-1.5">
-              <Timer className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+            <span className="hidden h-2.5 w-px bg-border sm:block" aria-hidden />
+            <span className="inline-flex items-center gap-1">
+              <Timer className="h-3 w-3 shrink-0 opacity-65" aria-hidden />
               Expires {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}
             </span>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/50 pt-4">
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/40 pt-2.5">
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-full border-border/80 px-3.5 text-xs font-medium"
+              className="h-7 rounded-md border-border/70 px-2.5 text-[11px] font-medium"
               asChild
             >
               <Link href={href}>
-                <ArrowUpRight className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                <ArrowUpRight className="h-3 w-3 opacity-75" aria-hidden />
                 View listing
               </Link>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 rounded-full border-border/80 px-3.5 text-xs font-medium"
+              className="h-7 rounded-md border-border/70 px-2.5 text-[11px] font-medium"
               asChild
             >
               <Link href={messagesHref}>
-                <MessageCircle className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                <MessageCircle className="h-3 w-3 opacity-75" aria-hidden />
                 Messages
               </Link>
             </Button>
             {showViewCounter && (
               <Button
                 size="sm"
-                className="h-8 rounded-full px-4 text-xs font-semibold"
+                className="h-7 rounded-md px-3 text-[11px] font-semibold"
                 type="button"
                 onClick={() => onViewCounterOpen?.(offer)}
               >
@@ -338,7 +328,7 @@ function OfferRow({
             {showRespond && (
               <Button
                 size="sm"
-                className="h-8 rounded-full px-4 text-xs font-semibold"
+                className="h-7 rounded-md px-3 text-[11px] font-semibold"
                 type="button"
                 onClick={() => onRespondOpen(offer)}
               >
@@ -429,17 +419,16 @@ export function DashboardOffersView({
     : "Listing"
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header className="space-y-1">
-        <div className="flex items-center gap-2">
-          <Handshake className="h-7 w-7 text-foreground" aria-hidden />
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        <div className="flex items-center gap-1.5">
+          <Handshake className="h-5 w-5 text-foreground/90" aria-hidden />
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             Offers
           </h1>
         </div>
-        <p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-          Track offers you&apos;ve made and offers buyers have placed on your listings. Respond from
-          here or continue the conversation in Messages.
+        <p className="max-w-xl text-sm leading-snug text-muted-foreground">
+          Offers you&apos;ve made and offers on your listings. Respond here or in Messages.
         </p>
       </header>
 
@@ -452,26 +441,26 @@ export function DashboardOffersView({
         }}
         className="w-full"
       >
-        <TabsList className="grid h-12 w-full max-w-lg grid-cols-2 rounded-xl bg-muted/80 p-1">
-          <TabsTrigger value="made" className="rounded-lg text-[15px] font-semibold">
+        <TabsList className="grid h-9 w-full max-w-md grid-cols-2 rounded-lg border border-border/50 bg-muted/50 p-0.5">
+          <TabsTrigger value="made" className="rounded-md text-xs font-medium sm:text-sm">
             I made
             {madeCount > 0 && (
-              <span className="ml-1.5 tabular-nums text-[13px] font-medium text-muted-foreground">
+              <span className="ml-1 tabular-nums text-[11px] font-normal text-muted-foreground sm:text-xs">
                 ({madeCount})
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="received" className="rounded-lg text-[15px] font-semibold">
+          <TabsTrigger value="received" className="rounded-md text-xs font-medium sm:text-sm">
             On my listings
             {receivedCount > 0 && (
-              <span className="ml-1.5 tabular-nums text-[13px] font-medium text-muted-foreground">
+              <span className="ml-1 tabular-nums text-[11px] font-normal text-muted-foreground sm:text-xs">
                 ({receivedCount})
               </span>
             )}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="made" className="mt-6 space-y-4 focus-visible:outline-none">
+        <TabsContent value="made" className="mt-4 space-y-3 focus-visible:outline-none">
           {made.length === 0 ? (
             <EmptyOffers
               title="No offers yet"
@@ -492,7 +481,7 @@ export function DashboardOffersView({
           )}
         </TabsContent>
 
-        <TabsContent value="received" className="mt-6 space-y-4 focus-visible:outline-none">
+        <TabsContent value="received" className="mt-4 space-y-3 focus-visible:outline-none">
           {received.length === 0 ? (
             <EmptyOffers
               title="No incoming offers"
@@ -560,12 +549,12 @@ function EmptyOffers({ title, body }: { title: string; body: string }) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-14 text-center",
+        "rounded-xl border border-dashed border-border/70 bg-muted/15 px-5 py-10 text-center sm:py-12",
       )}
     >
-      <Handshake className="mx-auto h-10 w-10 text-muted-foreground/70" aria-hidden />
-      <p className="mt-4 text-[17px] font-semibold text-foreground">{title}</p>
-      <p className="mx-auto mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">{body}</p>
+      <Handshake className="mx-auto h-8 w-8 text-muted-foreground/65" aria-hidden />
+      <p className="mt-3 text-base font-semibold text-foreground">{title}</p>
+      <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>
   )
 }

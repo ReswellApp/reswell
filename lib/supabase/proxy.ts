@@ -62,16 +62,23 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isPublicSellOgAsset =
     pathname === '/sell/opengraph-image' || pathname === '/sell/twitter-image'
+  /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
+  const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
   const isProtectedRoute =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/messages') ||
     pathname.startsWith('/admin') ||
     (pathname.startsWith('/sell/') && !isPublicSellOgAsset)
 
-  if (isProtectedRoute && !user) {
+  const requiresAuth = isProtectedRoute || isOffersShortcut
+
+  if (requiresAuth && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    url.searchParams.set('redirect', request.nextUrl.pathname)
+    const redirectTarget = isOffersShortcut
+      ? `/dashboard/offers${request.nextUrl.search}`
+      : `${request.nextUrl.pathname}${request.nextUrl.search}`
+    url.searchParams.set('redirect', redirectTarget)
     return NextResponse.redirect(url)
   }
 
