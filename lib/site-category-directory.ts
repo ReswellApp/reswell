@@ -11,8 +11,7 @@ export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "Groveler", href: "/boards?type=groveler" },
   { label: "Hybrid", href: "/boards?type=hybrid" },
   { label: "Longboard", href: "/boards?type=longboard" },
-  { label: "Step-Up", href: "/boards?type=step-up" },
-  { label: "Gun", href: "/boards?type=gun" },
+  { label: "Step-Up / Gun", href: "/boards?type=step-up-gun" },
   { label: "Other", href: "/boards?type=other" },
 ]
 
@@ -72,8 +71,7 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
           { label: "Groveler", href: "/boards?type=groveler" },
           { label: "Hybrid", href: "/boards?type=hybrid" },
           { label: "Longboard", href: "/boards?type=longboard" },
-          { label: "Step-Up", href: "/boards?type=step-up" },
-          { label: "Gun", href: "/boards?type=gun" },
+          { label: "Step-Up / Gun", href: "/boards?type=step-up-gun" },
           { label: "Other", href: "/boards?type=other" },
         ],
       },

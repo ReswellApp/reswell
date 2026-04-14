@@ -8,9 +8,10 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
   hybrid: "Hybrid",
   "mid-length": "Hybrid",
   funboard: "Hybrid",
-  "step-up": "Step-Ups",
+  "step-up-gun": "Step-Up / Gun",
+  "step-up": "Step-Up / Gun",
   groveler: "Groveler",
-  gun: "Guns",
+  gun: "Step-Up / Gun",
   other: "Other boards",
 }
 
@@ -21,6 +22,7 @@ export function boardTypeForDbFromBrowseParam(
   if (!type || type === "all") return undefined
   if (type === "mid-length" || type === "funboard") return "hybrid"
   if (type === "fish") return "groveler"
+  if (type === "step-up" || type === "gun") return "step-up-gun"
   return type
 }
 
@@ -32,6 +34,7 @@ export function browseTypeParamFromBoardType(
   const t = boardType.trim()
   if (t === "funboard") return "hybrid"
   if (t === "fish") return "groveler"
+  if (t === "step-up" || t === "gun") return "step-up-gun"
   return t
 }
 
@@ -43,7 +46,9 @@ export function boardsBrowseBoardTypeLabel(type: string | undefined | null): str
       ? "groveler"
       : type === "mid-length" || type === "funboard"
         ? "hybrid"
-        : type
+        : type === "step-up" || type === "gun"
+          ? "step-up-gun"
+          : type
   if (BOARD_TYPE_LABELS[key]) return BOARD_TYPE_LABELS[key]
   return type.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
@@ -72,7 +77,9 @@ export function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Metadata 
         ? "groveler"
         : sp.type === "mid-length" || sp.type === "funboard"
           ? "hybrid"
-          : sp.type
+          : sp.type === "step-up" || sp.type === "gun"
+            ? "step-up-gun"
+            : sp.type
       : undefined
   const typeLabel =
     browseType ? BOARD_TYPE_LABELS[browseType] ?? "Surfboards" : "Surfboards"

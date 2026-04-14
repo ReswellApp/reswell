@@ -8,9 +8,8 @@ const BOARD_TYPE_FILTERS = [
   "shortboard",
   "longboard",
   "hybrid",
-  "step-up",
   "groveler",
-  "gun",
+  "step-up-gun",
 ]
 
 const BOARD_CONDITION_FILTERS = ["new", "like_new", "good", "fair"]

@@ -69,9 +69,10 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
   longboard: "Longboard",
   hybrid: "Hybrid",
   funboard: "Hybrid",
-  "step-up": "Step-Up",
+  "step-up-gun": "Step-Up / Gun",
+  "step-up": "Step-Up / Gun",
   groveler: "Groveler",
-  gun: "Gun",
+  gun: "Step-Up / Gun",
   other: "Other",
 }
 
@@ -80,7 +81,13 @@ export function formatBoardType(boardType: string | null | undefined): string {
   const raw = boardType.trim()
   if (!raw) return ""
   const key =
-    raw === "fish" ? "groveler" : raw === "funboard" ? "hybrid" : raw
+    raw === "fish"
+      ? "groveler"
+      : raw === "funboard"
+        ? "hybrid"
+        : raw === "step-up" || raw === "gun"
+          ? "step-up-gun"
+          : raw
   return BOARD_TYPE_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 

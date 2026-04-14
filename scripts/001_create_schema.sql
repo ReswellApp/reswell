@@ -53,7 +53,7 @@ ON CONFLICT (slug) DO NOTHING;
 
 -- Fixed id matches `boardCategoryMap` in app/sell/page.tsx and migration `20260511120000_categories_step_up_mid_length.sql`.
 INSERT INTO public.categories (id, name, slug, description, board) VALUES
-  ('91c4e8a2-3f5b-4d1c-9e6a-7b8c9d0e1f2a', 'Step-Up', 'step-up', 'Step-up surfboards for heavier waves.', TRUE)
+  ('91c4e8a2-3f5b-4d1c-9e6a-7b8c9d0e1f2a', 'Step-Up / Gun', 'step-up-gun', 'Step-ups and guns for heavier waves and bigger surf.', TRUE)
 ON CONFLICT (slug) DO NOTHING;
 
 -- Listings table

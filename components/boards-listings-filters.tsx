@@ -30,8 +30,7 @@ export const boardTypes = [
   { value: "groveler", label: "Groveler" },
   { value: "hybrid", label: "Hybrid" },
   { value: "longboard", label: "Longboard" },
-  { value: "step-up", label: "Step-Up" },
-  { value: "gun", label: "Gun" },
+  { value: "step-up-gun", label: "Step-Up / Gun" },
   { value: "other", label: "Other" },
 ]
 
