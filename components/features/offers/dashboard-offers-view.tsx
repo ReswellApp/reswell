@@ -13,7 +13,6 @@ import {
   Timer,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SellerOfferResponseDialog, type OfferRowLite } from "@/components/features/messages/seller-offer-response-dialog"
 import { BuyerCounterOfferDialog } from "@/components/features/offers/buyer-counter-offer-dialog"
@@ -53,45 +52,6 @@ function statusLabel(status: string): string {
       return "Completed"
     default:
       return status
-  }
-}
-
-/** Left accent on the details pane — stage hue, flat (no alpha). */
-function statusContentAccent(status: string): string {
-  switch (status) {
-    case "PENDING":
-      return "border-l-amber-500 dark:border-l-amber-400"
-    case "ACCEPTED":
-    case "COMPLETED":
-      return "border-l-emerald-600 dark:border-l-emerald-500"
-    case "COUNTERED":
-      return "border-l-sky-600 dark:border-l-sky-500"
-    case "DECLINED":
-    case "WITHDRAWN":
-      return "border-l-neutral-400 dark:border-l-neutral-500"
-    case "EXPIRED":
-      return "border-l-neutral-500 dark:border-l-neutral-600"
-    default:
-      return "border-l-border"
-  }
-}
-
-function statusBadgeClass(status: string): string {
-  switch (status) {
-    case "PENDING":
-      return "border-amber-300 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
-    case "ACCEPTED":
-    case "COMPLETED":
-      return "border-emerald-300 bg-emerald-100 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100"
-    case "COUNTERED":
-      return "border-sky-300 bg-sky-100 text-sky-950 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-100"
-    case "DECLINED":
-    case "WITHDRAWN":
-      return "border-neutral-300 bg-neutral-100 text-neutral-700 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-300"
-    case "EXPIRED":
-      return "border-neutral-400 bg-neutral-200 text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200"
-    default:
-      return "border-border bg-muted text-foreground"
   }
 }
 
@@ -222,8 +182,7 @@ function OfferRow({
 
         <div
           className={cn(
-            "flex min-w-0 flex-1 flex-col border-l-2 px-3 py-3 sm:px-4 sm:py-3.5",
-            statusContentAccent(offer.status),
+            "flex min-w-0 flex-1 flex-col border-l-2 border-l-border px-3 py-3 sm:px-4 sm:py-3.5",
           )}
         >
           <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
@@ -240,15 +199,9 @@ function OfferRow({
                 <span className="font-medium text-foreground/90">{displayName(counterparty)}</span>
               </p>
             </div>
-            <Badge
-              variant="outline"
-              className={cn(
-                "shrink-0 rounded-md px-2 py-px text-[11px] font-medium tracking-tight",
-                statusBadgeClass(offer.status),
-              )}
-            >
+            <span className="shrink-0 text-[11px] font-medium tracking-tight text-muted-foreground">
               {statusLabel(offer.status)}
-            </Badge>
+            </span>
           </div>
 
           <div className="mt-2.5 flex flex-wrap items-end gap-x-5 gap-y-2 border-t border-border/40 pt-2.5">
