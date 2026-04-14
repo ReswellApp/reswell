@@ -12,7 +12,6 @@ import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { cn } from "@/lib/utils"
 import { listingDetailHref } from "@/lib/listing-href"
 
 const RECENT_SEARCHES_KEY = "reswell_recent_searches"

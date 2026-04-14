@@ -33,6 +33,7 @@ import {
   LogOut,
   Package,
   Heart,
+  Plus,
   UserCircle,
   LayoutDashboard,
   Banknote,
@@ -435,6 +436,18 @@ export function Header() {
 
   useBodyScrollLock(mobileMenuOpen)
 
+  /** Hamburger + slide-out are lg-only; close when crossing desktop width so scroll lock cannot stick. */
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const mq = window.matchMedia("(min-width: 1024px)")
+    const closeIfDesktop = () => {
+      if (mq.matches) setMobileMenuOpen(false)
+    }
+    mq.addEventListener("change", closeIfDesktop)
+    closeIfDesktop()
+    return () => mq.removeEventListener("change", closeIfDesktop)
+  }, [])
+
   useLayoutEffect(() => {
     const el = headerMainRowRef.current
     if (!el || typeof ResizeObserver === "undefined") return
@@ -738,8 +751,35 @@ export function Header() {
 
             <Button
               asChild
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-10 w-10 text-foreground hover:bg-muted"
+            >
+              <Link
+                href={
+                  user
+                    ? "/sell?new=1"
+                    : `/auth/login?redirect=${encodeURIComponent("/sell?new=1")}`
+                }
+                onClick={
+                  user
+                    ? undefined
+                    : (e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                        e.preventDefault()
+                        openLogin("/sell?new=1")
+                      }
+                }
+                aria-label="Create listing"
+              >
+                <Plus className="h-[22px] w-[22px]" aria-hidden />
+              </Link>
+            </Button>
+
+            <Button
+              asChild
               size="default"
-              className="hidden shrink-0 px-5 sm:inline-flex"
+              className="hidden shrink-0 px-5 md:inline-flex"
             >
               <Link href="/sell">Sell your Board</Link>
             </Button>
@@ -834,12 +874,12 @@ export function Header() {
               </div>
             ) : null}
 
-            {/* Mobile menu toggle: two-line hamburger when closed, X when open */}
+            {/* Menu toggle: phone & tablet only (below lg). Desktop/Mac use category bar + primary nav. */}
             <button
               type="button"
               className={cn(
                 "flex h-10 w-10 min-w-[2.5rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                !headerRowCompact && "md:hidden",
+                "ml-2 lg:hidden",
                 mobileLogoHovered && !mobileMenuOpen
                   ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
                   : "border-border bg-white text-foreground",
@@ -863,11 +903,7 @@ export function Header() {
 
       {/* Mobile slide-out menu (pure CSS, no Radix Dialog) */}
       {mobileMenuOpen && (
-        <div
-          className={cn("fixed inset-0 z-50", !headerRowCompact && "md:hidden")}
-          role="dialog"
-          aria-modal="true"
-        >
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
           {/* Backdrop */}
           <button
             type="button"

@@ -12,6 +12,7 @@ import {
   Wallet,
   Users,
   Lightbulb,
+  Handshake,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
@@ -26,7 +27,9 @@ export default async function DashboardPage() {
     favoritesAgg,
     unreadMsgRes,
     unreadNotifAgg,
-    recentListingsRes,
+    publishedListingsRes,
+    draftListingsRes,
+    pendingOffersReceivedRes,
     walletRes,
     profileRes,
     followersRes,
@@ -50,8 +53,21 @@ export default async function DashboardPage() {
       .from("listings")
       .select("*, listing_images (url, is_primary)")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
+      .neq("status", "draft")
+      .order("updated_at", { ascending: false })
       .limit(4),
+    supabase
+      .from("listings")
+      .select("*, listing_images (url, is_primary)")
+      .eq("user_id", user.id)
+      .eq("status", "draft")
+      .order("updated_at", { ascending: false })
+      .limit(4),
+    supabase
+      .from("offers")
+      .select("*", { count: "exact", head: true })
+      .eq("seller_id", user.id)
+      .eq("status", "PENDING"),
     supabase
       .from("wallets")
       .select("id, balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
@@ -73,7 +89,9 @@ export default async function DashboardPage() {
   const unreadMsgCount = unreadMsgRes.data
   const unreadNotifCount = unreadNotifAgg.count
   const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
-  const recentListings = recentListingsRes.data
+  const publishedListings = publishedListingsRes.data
+  const draftListings = draftListingsRes.data
+  const pendingOffersReceived = pendingOffersReceivedRes.count ?? 0
   const walletRow = walletRes.data
   const profile = profileRes.data
   const followerCount = followersRes.data?.follower_count ?? 0
@@ -112,6 +130,12 @@ export default async function DashboardPage() {
       href: "/dashboard/listings",
     },
     {
+      name: "Pending offers",
+      value: pendingOffersReceived,
+      icon: Handshake,
+      href: "/dashboard/offers?tab=received",
+    },
+    {
       name: "Favorites",
       value: favoriteCount || 0,
       icon: Heart,
@@ -137,8 +161,8 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats — 2×2 until xl so iPad / small laptop rows are not four cramped columns */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4 xl:gap-4">
+      {/* Stats — 2×2 on sm; five cards on xl */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-5 xl:gap-4">
         {stats.map((stat) => (
           <Link key={stat.name} href={stat.href} className="min-w-0">
             <Card
@@ -147,26 +171,27 @@ export default async function DashboardPage() {
               }`}
             >
               <CardContent className="p-5 sm:p-6">
+                {/* Label + icon on one row so the value row stays full-width (avoids overlap in narrow 5-up layouts). */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-muted-foreground">{stat.name}</p>
-                    <p
-                      className={`mt-0.5 text-2xl font-bold tabular-nums sm:text-3xl ${
-                        (stat as { highlight?: boolean }).highlight ? "text-primary" : ""
-                      }`}
-                    >
-                      {stat.value}
-                      {stat.total !== undefined && stat.total > 0 && (
-                        <span className="text-base text-muted-foreground font-normal sm:text-lg">
-                          /{stat.total}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-11 sm:w-11">
-                    <stat.icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+                  <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">
+                    {stat.name}
+                  </p>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-10 sm:w-10">
+                    <stat.icon className="h-[1.125rem] w-[1.125rem] sm:h-5 sm:w-5" aria-hidden />
                   </div>
                 </div>
+                <p
+                  className={`mt-3 min-w-0 break-words text-2xl font-bold tabular-nums tracking-tight sm:text-3xl ${
+                    (stat as { highlight?: boolean }).highlight ? "text-primary" : ""
+                  }`}
+                >
+                  {stat.value}
+                  {stat.total !== undefined && stat.total > 0 && (
+                    <span className="text-base font-normal text-muted-foreground sm:text-lg">
+                      /{stat.total}
+                    </span>
+                  )}
+                </p>
               </CardContent>
             </Card>
           </Link>
@@ -216,10 +241,10 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      {/* Recent Listings */}
+      {/* Published listings (active, sold, etc. — not drafts) */}
       <Card>
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-          <CardTitle className="text-lg">Your Recent Listings</CardTitle>
+          <CardTitle className="text-lg">Your listings</CardTitle>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/dashboard/listings">
               View All
@@ -228,10 +253,12 @@ export default async function DashboardPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          {recentListings && recentListings.length > 0 ? (
+          {publishedListings && publishedListings.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 xl:gap-5">
-              {recentListings.map((listing) => {
-                const primaryImage = listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) || listing.listing_images?.[0]
+              {publishedListings.map((listing) => {
+                const primaryImage =
+                  listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
+                  listing.listing_images?.[0]
                 return (
                   <Link
                     key={listing.id}
@@ -268,14 +295,71 @@ export default async function DashboardPage() {
           ) : (
             <div className="text-center py-8">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">You have not created any listings yet</p>
+              <p className="text-muted-foreground mb-4">
+                No published listings yet{draftListings && draftListings.length > 0 ? " — finish a draft below" : ""}
+              </p>
               <Button asChild>
-                <Link href="/sell?new=1">Create Your First Listing</Link>
+                <Link href="/sell?new=1">Create a listing</Link>
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Drafts — only when there is at least one */}
+      {draftListings && draftListings.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+            <CardTitle className="text-lg">Drafts</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard/listings">
+                View All
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 xl:gap-5">
+              {draftListings.map((listing) => {
+                const primaryImage =
+                  listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
+                  listing.listing_images?.[0]
+                return (
+                  <Link
+                    key={listing.id}
+                    href={`/dashboard/listings/${listing.id}/edit`}
+                    className="group min-w-0"
+                  >
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
+                      {primaryImage?.url ? (
+                        <Image
+                          src={primaryImage.url || "/placeholder.svg"}
+                          alt={capitalizeWords(listing.title)}
+                          fill
+                          className="object-cover object-center group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                          No Image
+                        </div>
+                      )}
+                      <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
+                        draft
+                      </Badge>
+                    </div>
+                    <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.75rem] sm:text-base sm:min-h-[3.25rem] group-hover:text-primary transition-colors">
+                      {capitalizeWords(listing.title)}
+                    </h3>
+                    <p className="text-base font-bold tabular-nums text-black dark:text-white">
+                      ${listing.price.toFixed(2)}
+                    </p>
+                  </Link>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Actions */}
       <Card>

@@ -4,29 +4,9 @@ import Link from "next/link"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Button } from "@/components/ui/button"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import {
-  LayoutDashboard,
-  Package,
-  PackageCheck,
-  ShoppingBag,
-  Plus,
-  Store,
-  UserCircle,
-  Banknote,
-  Users,
-  Handshake,
-} from "lucide-react"
-
-const sidebarLinks = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "My Listings", href: "/dashboard/listings", icon: Package },
-  { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
-  { name: "Followers", href: "/dashboard/followers", icon: Users },
-  { name: "Offers", href: "/dashboard/offers", icon: Handshake },
-  { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-  { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
-  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
-]
+import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
+import { DashboardMobileNav } from "@/components/features/dashboard/dashboard-mobile-nav"
+import { Plus, Store } from "lucide-react"
 
 export default async function DashboardLayout({
   children,
@@ -48,11 +28,15 @@ export default async function DashboardLayout({
   
   const isShop = profile?.is_shop || false
 
+  const shopHref = isShop ? sellerProfileHref(profile) : null
+
   return (
       <div className="flex-1 container mx-auto py-6 sm:py-8">
-        <div className="flex flex-col gap-8 lg:flex-row lg:gap-10 xl:gap-12">
+        <DashboardMobileNav sellerProfileHref={shopHref} />
+
+        <div className="mt-6 flex flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-10 xl:gap-12">
           {/* Sidebar */}
-          <aside className="shrink-0 lg:w-56 xl:w-64">
+          <aside className="hidden shrink-0 lg:block lg:w-56 xl:w-64">
             <div className="sticky top-24 space-y-4">
               <Button asChild className="w-full">
                 <Link href="/sell?new=1">
@@ -61,8 +45,8 @@ export default async function DashboardLayout({
                 </Link>
               </Button>
               
-              <nav className="space-y-1">
-                {sidebarLinks.map((link) => {
+              <nav className="hidden space-y-1 lg:block">
+                {DASHBOARD_NAV_LINKS.map((link) => {
                   const Icon = link.icon
                   return (
                     <Link
