@@ -71,6 +71,60 @@ function primaryImage(
   return (pr ?? images[0]).url
 }
 
+type PriceLine = { label: string; value: string; emphasize?: boolean }
+
+function offerTilePriceLines(
+  role: "buyer" | "seller",
+  offer: DashboardOfferRow,
+  listPriceKnown: boolean,
+  listPrice: number,
+): PriceLine[] {
+  const lines: PriceLine[] = []
+  const initial = money(offer.initial_amount)
+  const current = money(offer.current_amount)
+  const asking = money(listPrice)
+
+  if (listPriceKnown && Number.isFinite(listPrice) && listPrice > 0) {
+    lines.push({ label: "Asking price", value: `$${asking}` })
+  }
+
+  if (role === "buyer") {
+    if (offer.status === "COUNTERED") {
+      lines.push({ label: "Your offer", value: `$${initial}` })
+      lines.push({ label: "Seller's counter", value: `$${current}`, emphasize: true })
+      return lines
+    }
+    lines.push({ label: "Your offer", value: `$${current}`, emphasize: true })
+    return lines
+  }
+
+  // seller
+  if (offer.status === "COUNTERED") {
+    lines.push({ label: "Buyer offer", value: `$${initial}` })
+    lines.push({ label: "Your counter", value: `$${current}`, emphasize: true })
+    return lines
+  }
+
+  if (offer.status === "PENDING") {
+    lines.push({ label: "Buyer offer", value: `$${current}`, emphasize: true })
+    return lines
+  }
+
+  if (offer.status === "ACCEPTED" || offer.status === "COMPLETED") {
+    lines.push({ label: "Agreed price", value: `$${current}`, emphasize: true })
+    return lines
+  }
+
+  // Declined, expired, withdrawn, etc. — show last amount on the offer + opening if different
+  if (initial !== current) {
+    lines.push({ label: "Buyer offer (first)", value: `$${initial}` })
+    lines.push({ label: "Last amount", value: `$${current}`, emphasize: true })
+  } else {
+    lines.push({ label: "Offer amount", value: `$${current}`, emphasize: true })
+  }
+  return lines
+}
+
 function OfferRow({
   offer,
   role,
@@ -98,6 +152,9 @@ function OfferRow({
 
   const showViewCounter =
     role === "buyer" && offer.status === "COUNTERED" && typeof onViewCounterOpen === "function"
+
+  const listPriceKnown = !!listing && Number.isFinite(listPrice) && listPrice > 0
+  const priceLines = offerTilePriceLines(role, offer, listPriceKnown, listPrice)
 
   return (
     <Card className="overflow-hidden border-border/70 shadow-sm transition-colors hover:border-border">
@@ -134,30 +191,28 @@ function OfferRow({
             </Badge>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[15px] tabular-nums">
-            {role === "buyer" && offer.status === "COUNTERED" ? (
-              <>
-                <div>
-                  <span className="text-muted-foreground">Your offer </span>
-                  <span className="font-semibold text-foreground">${money(offer.initial_amount)}</span>
+          <div className="mt-3 rounded-xl border border-border/60 bg-muted/25 px-3 py-2.5">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Pricing
+            </p>
+            <dl className="space-y-1.5 text-[15px] tabular-nums">
+              {priceLines.map((line) => (
+                <div
+                  key={line.label}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5"
+                >
+                  <dt className="text-[13px] text-muted-foreground">{line.label}</dt>
+                  <dd
+                    className={cn(
+                      "text-right font-medium text-foreground",
+                      line.emphasize && "text-[16px] font-semibold",
+                    )}
+                  >
+                    {line.value}
+                  </dd>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Seller&apos;s counter </span>
-                  <span className="font-semibold text-foreground">${money(offer.current_amount)}</span>
-                </div>
-              </>
-            ) : (
-              <div>
-                <span className="text-muted-foreground">Offer </span>
-                <span className="font-semibold text-foreground">${money(offer.current_amount)}</span>
-              </div>
-            )}
-            {listing && (
-              <div>
-                <span className="text-muted-foreground">List </span>
-                <span className="font-medium">${money(listing.price)}</span>
-              </div>
-            )}
+              ))}
+            </dl>
           </div>
 
           <p className="mt-2 text-[12px] text-muted-foreground">
