@@ -10,7 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
+    "@anthropic-ai/sdk": "^0.88.0",
     "@easypost/api": "^8.7.0",
     "@elastic/elasticsearch": "^8.19.1",
     "@hookform/resolvers": "^3.9.1",
@@ -55,14 +55,13 @@
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
     "date-fns": "4.1.0",
-    "dependencies": "^0.0.1",
     "embla-carousel-react": "8.5.1",
     "heic-convert": "^2.1.0",
     "input-otp": "1.4.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",
     "motion": "^12.38.0",
-    "next": "16.0.7",
+    "next": "^16.2.3",
     "next-themes": "^0.4.6",
     "react": "^19",
     "react-day-picker": "8.10.1",
@@ -76,7 +75,6 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "vercel": "^50.42.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -86,6 +84,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.10.19",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
     "typescript": "5.7.3"
