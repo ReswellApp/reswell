@@ -5,11 +5,16 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
-import { MessageCircle, ExternalLink, Handshake } from "lucide-react"
+import {
+  ArrowUpRight,
+  Clock,
+  Handshake,
+  MessageCircle,
+  Timer,
+} from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { SellerOfferResponseDialog, type OfferRowLite } from "@/components/features/messages/seller-offer-response-dialog"
 import { BuyerCounterOfferDialog } from "@/components/features/offers/buyer-counter-offer-dialog"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -48,13 +53,43 @@ function statusLabel(status: string): string {
   }
 }
 
-function statusVariant(
-  status: string,
-): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "ACCEPTED") return "default"
-  if (status === "DECLINED" || status === "EXPIRED") return "secondary"
-  if (status === "PENDING") return "outline"
-  return "secondary"
+/** Left accent on the details pane — subtle signal without loud UI chrome. */
+function statusContentAccent(status: string): string {
+  switch (status) {
+    case "PENDING":
+      return "border-l-amber-500/75 dark:border-l-amber-400/60"
+    case "ACCEPTED":
+    case "COMPLETED":
+      return "border-l-emerald-600/70 dark:border-l-emerald-500/55"
+    case "COUNTERED":
+      return "border-l-sky-600/65 dark:border-l-sky-500/55"
+    case "DECLINED":
+    case "WITHDRAWN":
+      return "border-l-neutral-400/70 dark:border-l-neutral-500/50"
+    case "EXPIRED":
+      return "border-l-neutral-500/60 dark:border-l-neutral-600/45"
+    default:
+      return "border-l-border"
+  }
+}
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case "PENDING":
+      return "border-amber-200/90 bg-amber-500/[0.11] text-amber-950 dark:border-amber-500/35 dark:bg-amber-500/15 dark:text-amber-50"
+    case "ACCEPTED":
+    case "COMPLETED":
+      return "border-emerald-200/90 bg-emerald-500/[0.11] text-emerald-950 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-50"
+    case "COUNTERED":
+      return "border-sky-200/90 bg-sky-500/[0.11] text-sky-950 dark:border-sky-500/35 dark:bg-sky-500/15 dark:text-sky-50"
+    case "DECLINED":
+    case "WITHDRAWN":
+      return "border-border/80 bg-muted/50 text-muted-foreground"
+    case "EXPIRED":
+      return "border-border bg-muted/70 text-muted-foreground"
+    default:
+      return "border-border bg-muted/40 text-foreground"
+  }
 }
 
 function displayName(p: DashboardProfileLite | undefined): string {
@@ -157,55 +192,95 @@ function OfferRow({
   const priceLines = offerTilePriceLines(role, offer, listPriceKnown, listPrice)
 
   return (
-    <Card className="overflow-hidden border-border/70 shadow-sm transition-colors hover:border-border">
-      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5">
+    <article
+      className={cn(
+        "group overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-sm ring-1 ring-black/[0.03] transition-[border-color,box-shadow] duration-300 dark:bg-card/60 dark:ring-white/[0.06]",
+        "hover:border-border hover:shadow-md",
+      )}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-stretch">
         <Link
           href={href}
-          className="relative h-24 w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:h-auto sm:w-28"
+          className="relative aspect-[5/4] w-full shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:w-[152px] sm:min-h-[168px] lg:w-[168px]"
         >
           {img ? (
-            <Image src={img} alt="" fill className="object-cover" sizes="112px" />
+            <>
+              <Image
+                src={img}
+                alt=""
+                fill
+                className="object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
+                sizes="(max-width: 640px) 100vw, 168px"
+              />
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/[0.06] to-transparent sm:bg-gradient-to-r sm:from-transparent sm:to-black/[0.04]"
+                aria-hidden
+              />
+            </>
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground">
+            <div className="flex h-full min-h-[7rem] w-full items-center justify-center text-[11px] text-muted-foreground sm:min-h-0">
               No photo
             </div>
           )}
         </Link>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col border-l-[3px] px-4 py-4 sm:px-5 sm:py-5",
+            statusContentAccent(offer.status),
+          )}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <Link
                 href={href}
-                className="line-clamp-2 text-[17px] font-semibold leading-snug text-foreground hover:underline"
+                className="line-clamp-2 text-[17px] font-semibold leading-snug tracking-tight text-foreground transition-colors hover:text-foreground/80"
               >
                 {capitalizeWords(listingTitle || "Listing")}
               </Link>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                {role === "buyer" ? "Seller" : "Buyer"}:{" "}
-                <span className="font-medium text-foreground">{displayName(counterparty)}</span>
+              <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">
+                <span className="text-muted-foreground/90">{role === "buyer" ? "Seller" : "Buyer"}</span>
+                <span className="mx-1.5 text-border">·</span>
+                <span className="font-medium text-foreground/95">{displayName(counterparty)}</span>
               </p>
             </div>
-            <Badge variant={statusVariant(offer.status)} className="shrink-0">
+            <Badge
+              variant="outline"
+              className={cn(
+                "shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-semibold tracking-tight",
+                statusBadgeClass(offer.status),
+              )}
+            >
               {statusLabel(offer.status)}
             </Badge>
           </div>
 
-          <div className="mt-3 rounded-xl border border-border/60 bg-muted/25 px-3 py-2.5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="mt-4 rounded-xl border border-border/50 bg-muted/[0.35] p-3 dark:bg-muted/20">
+            <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90">
               Pricing
             </p>
-            <dl className="space-y-1.5 text-[15px] tabular-nums">
+            <dl className="space-y-2">
               {priceLines.map((line) => (
                 <div
                   key={line.label}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5"
+                  className={cn(
+                    "flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 tabular-nums",
+                    line.emphasize &&
+                      "rounded-lg bg-background/90 px-2.5 py-2 shadow-sm ring-1 ring-border/45 dark:bg-background/35",
+                  )}
                 >
-                  <dt className="text-[13px] text-muted-foreground">{line.label}</dt>
+                  <dt
+                    className={cn(
+                      "text-[13px] text-muted-foreground",
+                      line.emphasize && "font-medium text-foreground/85",
+                    )}
+                  >
+                    {line.label}
+                  </dt>
                   <dd
                     className={cn(
-                      "text-right font-medium text-foreground",
-                      line.emphasize && "text-[16px] font-semibold",
+                      "text-right text-[15px] font-medium text-foreground",
+                      line.emphasize && "text-[17px] font-semibold tracking-tight",
                     )}
                   >
                     {line.value}
@@ -215,28 +290,45 @@ function OfferRow({
             </dl>
           </div>
 
-          <p className="mt-2 text-[12px] text-muted-foreground">
-            Updated {formatDistanceToNow(new Date(offer.updated_at), { addSuffix: true })} · Expires{" "}
-            {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+              Updated {formatDistanceToNow(new Date(offer.updated_at), { addSuffix: true })}
+            </span>
+            <span className="hidden h-3 w-px bg-border sm:block" aria-hidden />
+            <span className="inline-flex items-center gap-1.5">
+              <Timer className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+              Expires {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}
+            </span>
+          </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="rounded-lg" asChild>
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/50 pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-full border-border/80 px-3.5 text-xs font-medium"
+              asChild
+            >
               <Link href={href}>
-                <ExternalLink className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                <ArrowUpRight className="h-3.5 w-3.5 opacity-80" aria-hidden />
                 View listing
               </Link>
             </Button>
-            <Button variant="outline" size="sm" className="rounded-lg" asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-full border-border/80 px-3.5 text-xs font-medium"
+              asChild
+            >
               <Link href={messagesHref}>
-                <MessageCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                Open messages
+                <MessageCircle className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                Messages
               </Link>
             </Button>
             {showViewCounter && (
               <Button
                 size="sm"
-                className="rounded-lg"
+                className="h-8 rounded-full px-4 text-xs font-semibold"
                 type="button"
                 onClick={() => onViewCounterOpen?.(offer)}
               >
@@ -246,7 +338,7 @@ function OfferRow({
             {showRespond && (
               <Button
                 size="sm"
-                className="rounded-lg"
+                className="h-8 rounded-full px-4 text-xs font-semibold"
                 type="button"
                 onClick={() => onRespondOpen(offer)}
               >
@@ -255,8 +347,8 @@ function OfferRow({
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   )
 }
 
