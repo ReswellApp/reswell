@@ -204,13 +204,13 @@ function OfferRow({
             </span>
           </div>
 
-          <div className="mt-2.5 flex flex-wrap items-end gap-x-5 gap-y-2 border-t border-border/40 pt-2.5">
+          <div className="mt-2.5 flex flex-wrap items-start gap-x-5 gap-y-2 border-t border-border/40 pt-2.5">
             {priceLines.map((line) => (
               <div
                 key={line.label}
                 className={cn(
-                  "flex min-w-0 flex-col gap-0.5 tabular-nums",
-                  line.emphasize && "rounded-md bg-muted/50 px-2 py-1 dark:bg-muted/25",
+                  "flex min-w-0 flex-col gap-0.5 py-1 tabular-nums",
+                  line.emphasize && "rounded-md bg-muted/50 px-2 dark:bg-muted/25",
                 )}
               >
                 <span

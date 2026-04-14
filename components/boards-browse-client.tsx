@@ -41,8 +41,8 @@ export function BoardsBrowseClient({
 
   return (
     <>
-      <div className="border-b py-3 min-w-0 overflow-x-auto overflow-y-hidden px-1 sm:px-2">
-        <div className="min-w-0">
+      <div className="border-b py-3 w-full min-w-0 px-1 sm:px-2">
+        <div className="min-w-0 w-full max-w-full">
           <BoardsListingsFilters
             transitionStart={startTransition}
             initialQ={initialQ}

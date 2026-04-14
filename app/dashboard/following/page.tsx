@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 
-/** @deprecated Merged into /dashboard/followers */
+/** @deprecated Followers & following live under Profile */
 export default function DashboardFollowingRedirectPage() {
-  redirect("/dashboard/followers")
+  redirect("/dashboard/profile#followers")
 }

@@ -1,10 +1,9 @@
 import type { LucideIcon } from "lucide-react"
 import {
   LayoutDashboard,
-  Package,
   Banknote,
-  Users,
   Handshake,
+  Package,
   ShoppingBag,
   PackageCheck,
   UserCircle,
@@ -18,11 +17,10 @@ export interface DashboardNavLink {
 
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
-  { name: "Followers", href: "/dashboard/followers", icon: Users },
-  { name: "Offers", href: "/dashboard/offers", icon: Handshake },
+  { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
+  { name: "Offers", href: "/dashboard/offers", icon: Handshake },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]

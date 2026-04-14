@@ -207,7 +207,7 @@ export default async function DashboardPage() {
               Your followers
             </CardTitle>
             <Link
-              href="/dashboard/followers"
+              href="/dashboard/profile#followers"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
             >
               View stats

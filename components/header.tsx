@@ -41,6 +41,8 @@ import {
   ChevronDown,
   ShoppingCart,
   Handshake,
+  ShoppingBag,
+  PackageCheck,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -547,6 +549,18 @@ export function Header() {
             <Link href="/dashboard/listings" className="flex items-center">
               <Package className="mr-2 h-4 w-4" />
               My Listings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/orders" className="flex items-center">
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              Orders
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/sales" className="flex items-center">
+              <PackageCheck className="mr-2 h-4 w-4" />
+              Sales
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>

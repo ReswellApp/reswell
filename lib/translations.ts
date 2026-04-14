@@ -13,6 +13,7 @@ type Translations = {
     title: string
     subtitle: string
     profileTab: string
+    followersTab: string
     profile: {
       title: string
       description: string
@@ -79,6 +80,7 @@ const en: Translations = {
     title: 'Profile',
     subtitle: 'Manage your account and public profile',
     profileTab: 'Profile',
+    followersTab: 'Followers',
     profile: {
       title: 'Profile Information',
       description: 'Update your public profile details',
@@ -145,6 +147,7 @@ const es: Translations = {
     title: 'Perfil',
     subtitle: 'Administra tu cuenta y perfil público',
     profileTab: 'Perfil',
+    followersTab: 'Seguidores',
     profile: {
       title: 'Información del perfil',
       description: 'Actualiza los detalles de tu perfil público',

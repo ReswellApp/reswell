@@ -236,9 +236,9 @@ export function BoardsListingsFilters({
         e.preventDefault()
         void pushSearchParams()
       }}
-      className="grid grid-cols-2 gap-2 items-center md:flex md:flex-nowrap md:gap-2 md:items-center"
+      className="grid w-full min-w-0 max-w-full grid-cols-2 gap-2 items-center md:flex md:flex-wrap md:gap-2 md:items-center"
     >
-      <div className="col-span-2 flex items-center gap-2 min-w-[200px] md:col-auto md:w-[300px] md:min-w-[300px] md:shrink-0">
+      <div className="col-span-2 flex max-w-full items-center gap-2 min-w-[200px] md:col-auto md:w-[300px] md:min-w-0 md:max-w-full md:shrink-0">
         <div className="relative flex-1 min-w-[160px]">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 z-[1] h-4 w-4 text-muted-foreground pointer-events-none" />
           <LocationInputSuggest
@@ -318,7 +318,7 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="col-span-2 w-full min-w-0 md:col-auto md:shrink-0 md:w-[360px] md:min-w-[min(360px,100%)] md:max-w-full">
+      <div className="col-span-2 w-full min-w-0 md:col-auto md:w-[360px] md:min-w-[min(360px,100%)] md:max-w-full md:shrink-0">
         <SiteSearchShell
           actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
         >
