@@ -34,6 +34,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    // Default is 'attachment', which sets Content-Disposition on /_next/image so
+    // opening or sharing those URLs downloads the file instead of showing it in-tab.
+    contentDispositionType: 'inline',
     remotePatterns: [
       // User listing + avatar photos (Supabase project subdomains)
       {
