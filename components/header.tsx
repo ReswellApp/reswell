@@ -430,6 +430,30 @@ export function Header() {
     }
   }, [supabase])
 
+  /** Keep dropdown earnings in sync when `wallets` changes (e.g. admin reset, sales, payouts). */
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase
+      .channel(`header_wallet_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "wallets",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [supabase, user?.id])
+
   useEffect(() => {
     if (mobileMenuOpen && mobileSearchRef.current) {
       mobileSearchRef.current.value = ""

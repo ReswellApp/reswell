@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, UserCog } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2 } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -55,6 +55,16 @@ interface ListingRow {
   listing_images: { url: string }[]
 }
 
+interface WalletSummary {
+  balance: number
+  pendingBalance: number
+  totalBalance: number
+  lifetime_earned: number
+  lifetime_spent: number
+  lifetime_cashed_out: number
+  walletId: string | null
+}
+
 export default function AdminUserDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -63,6 +73,10 @@ export default function AdminUserDetailPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [listings, setListings] = useState<ListingRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null)
+  const [walletLoading, setWalletLoading] = useState(true)
+  const [walletError, setWalletError] = useState<string | null>(null)
+  const [walletResetting, setWalletResetting] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -83,6 +97,39 @@ export default function AdminUserDetailPage() {
       setLoading(false)
     }
     load()
+  }, [id])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadWallet() {
+      setWalletLoading(true)
+      setWalletError(null)
+      try {
+        const res = await fetch(`/api/admin/users/${id}/wallet`)
+        const body = (await res.json()) as { data?: WalletSummary; error?: string }
+        if (!res.ok) {
+          if (!cancelled) {
+            setWalletSummary(null)
+            setWalletError(body.error || 'Could not load wallet')
+          }
+          return
+        }
+        if (!cancelled && body.data) {
+          setWalletSummary(body.data)
+        }
+      } catch {
+        if (!cancelled) {
+          setWalletSummary(null)
+          setWalletError('Could not load wallet')
+        }
+      } finally {
+        if (!cancelled) setWalletLoading(false)
+      }
+    }
+    loadWallet()
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
   async function startImpersonation() {
@@ -126,6 +173,41 @@ export default function AdminUserDetailPage() {
       void revalidateListingDetailAfterProfileUpdate()
     } else {
       toast.error('Failed to update profile')
+    }
+  }
+
+  async function resetWalletEarnings() {
+    if (
+      !confirm(
+        'Reset this account’s Reswell Bucks earnings to $0.00?\n\nThis clears available and pending balances, zeros lifetime totals, and removes wallet activity and PayPal payout history for this user. Orders and listings are not changed.',
+      )
+    ) {
+      return
+    }
+    setWalletResetting(true)
+    try {
+      const res = await fetch(`/api/admin/users/${id}/wallet`, { method: 'POST' })
+      const body = (await res.json()) as {
+        success?: boolean
+        data?: WalletSummary
+        error?: string
+      }
+      if (!res.ok) {
+        toast.error(body.error || 'Could not reset wallet')
+        return
+      }
+      if (body.data) {
+        setWalletSummary(body.data)
+      } else {
+        const r = await fetch(`/api/admin/users/${id}/wallet`)
+        const j = (await r.json()) as { data?: WalletSummary }
+        if (r.ok && j.data) setWalletSummary(j.data)
+      }
+      toast.success('Wallet earnings reset to $0.00')
+    } catch {
+      toast.error('Could not reset wallet')
+    } finally {
+      setWalletResetting(false)
     }
   }
 
@@ -237,6 +319,69 @@ export default function AdminUserDetailPage() {
               </p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="h-5 w-5" />
+            Earnings (Reswell Bucks)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {walletLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading wallet…
+            </div>
+          ) : walletError ? (
+            <p className="text-sm text-destructive">{walletError}</p>
+          ) : walletSummary ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total (incl. pending)</p>
+                  <p className="text-lg font-semibold tabular-nums">
+                    ${walletSummary.totalBalance.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Available</p>
+                  <p className="text-lg font-semibold tabular-nums">
+                    ${walletSummary.balance.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                  <p className="text-lg font-semibold tabular-nums">
+                    ${walletSummary.pendingBalance.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Lifetime earned ${walletSummary.lifetime_earned.toFixed(2)} · spent $
+                {walletSummary.lifetime_spent.toFixed(2)} · cashed out ${walletSummary.lifetime_cashed_out.toFixed(2)}
+              </p>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="gap-2"
+                disabled={walletResetting}
+                onClick={resetWalletEarnings}
+              >
+                {walletResetting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Reset earnings to $0.00
+              </Button>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">No wallet data.</p>
+          )}
         </CardContent>
       </Card>
 
