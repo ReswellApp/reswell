@@ -25,7 +25,7 @@ export function SellPriceFields({
 }: SellPriceFieldsProps) {
   return (
     <div className="max-w-lg space-y-4">
-      <p className="text-sm leading-relaxed text-muted-foreground">
+      <p className="text-sm leading-relaxed text-muted-foreground/45">
         Fair, competitive listings tend to sell faster on Reswell.
       </p>
 
@@ -38,7 +38,7 @@ export function SellPriceFields({
         </Label>
         <div className="relative">
           <span
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
             aria-hidden
           >
             $
@@ -51,7 +51,7 @@ export function SellPriceFields({
             placeholder="0.00"
             value={listingPrice}
             onChange={(e) => onListingPriceChange(e.target.value)}
-            className="pl-8 tabular-nums"
+            className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
             required
           />
         </div>
@@ -66,7 +66,7 @@ export function SellPriceFields({
               What you paid for the board
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3 pt-0">
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="text-sm leading-relaxed text-muted-foreground/45">
                 Keep track of what you paid for the board versus what it sells for. This info is for
                 your benefit only.
               </p>
@@ -76,7 +76,7 @@ export function SellPriceFields({
                 </Label>
                 <div className="relative">
                   <span
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
                     aria-hidden
                   >
                     $
@@ -89,10 +89,10 @@ export function SellPriceFields({
                     placeholder="0.00"
                     value={sellerPurchasePrice}
                     onChange={(e) => onSellerPurchasePriceChange(e.target.value)}
-                    className="pl-8 tabular-nums"
+                    className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">Not shown publicly.</p>
+                <p className="text-xs text-muted-foreground/45">Not shown publicly.</p>
               </div>
             </AccordionContent>
           </AccordionItem>

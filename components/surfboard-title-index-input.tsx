@@ -134,7 +134,7 @@ export function SurfboardTitleIndexInput({
     <div ref={containerRef} className="relative">
       <Input
         id={id}
-        className={cn(className)}
+        className={cn("placeholder:text-muted-foreground/45", className)}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
@@ -206,7 +206,7 @@ export function SurfboardTitleIndexInput({
           className="absolute z-50 mt-1 max-h-[min(320px,50vh)] w-full overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md"
         >
           {loadError && items.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">{loadError}</div>
+            <div className="px-3 py-2 text-sm text-muted-foreground/45">{loadError}</div>
           ) : (
             filtered.map((opt, i) => (
               <button
@@ -230,7 +230,7 @@ export function SurfboardTitleIndexInput({
           )}
         </div>
       ) : null}
-      <p className="text-xs text-muted-foreground mt-1.5">
+      <p className="text-xs text-muted-foreground/45 mt-1.5">
         Search and pick a board from our directory to link brand and model. Or set brand in the next section — including
         requesting a new directory entry there.
       </p>

@@ -56,6 +56,10 @@ INSERT INTO public.categories (id, name, slug, description, board) VALUES
   ('91c4e8a2-3f5b-4d1c-9e6a-7b8c9d0e1f2a', 'Step-Up / Gun', 'step-up-gun', 'Step-ups and guns for heavier waves and bigger surf.', TRUE)
 ON CONFLICT (slug) DO NOTHING;
 
+INSERT INTO public.categories (id, name, slug, description, board) VALUES
+  ('c3d4e5f6-a7b8-49c0-b123-456789abcdef', 'Other', 'other', 'Other surfboard shapes not listed above.', TRUE)
+ON CONFLICT (slug) DO NOTHING;
+
 -- Listings table
 CREATE TABLE IF NOT EXISTS public.listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

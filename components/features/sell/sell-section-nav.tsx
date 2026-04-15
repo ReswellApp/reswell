@@ -29,8 +29,8 @@ export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
 ]
 
 /**
- * Mobile / tablet: same stepper as desktop (circles, checkmarks, connector) in a horizontal row.
- * Short labels + horizontal scroll keep all eight steps usable on narrow screens.
+ * Tablet (md–lg): horizontal stepper (circles, checkmarks, connector); hidden on small phones
+ * and replaced by the vertical rail at lg+.
  */
 export function SellSectionNavHorizontal({
   items,

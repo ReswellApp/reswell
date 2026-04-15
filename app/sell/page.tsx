@@ -155,6 +155,11 @@ import {
   boardCategoryMap,
   boardTypeFromCategoryId,
 } from "@/lib/utils/board-type-from-category-id"
+import {
+  orderSurfboardSellCategoryOptions,
+  SELL_BOARD_CATEGORY_UNSELECTED_LABEL,
+  SELL_BOARD_CATEGORY_UNSELECTED_VALUE,
+} from "@/lib/surfboard-sell-categories"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -192,7 +197,7 @@ function SellFormSection({
           {title}
         </h2>
         {description ? (
-          <p className="text-sm text-muted-foreground mt-1 lg:text-base lg:mt-1.5">{description}</p>
+          <p className="text-sm text-muted-foreground/45 mt-1 lg:text-base lg:mt-1.5">{description}</p>
         ) : null}
       </div>
       <Card className="shadow-sm hover:shadow-sm lg:shadow-md">
@@ -403,11 +408,11 @@ function SellPageContent() {
   const reswellWeightLastAutoRef = useRef<{ lb: string; oz: string } | null>(null)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
-    { value: string; label: string; board: boolean }[]
+    { value: string; label: string; board: boolean; slug?: string | null }[]
   >([])
 
   const boardCategoryOptions = useMemo(
-    () => sellCategoryOptions.filter((c) => c.board === true),
+    () => orderSurfboardSellCategoryOptions(sellCategoryOptions.filter((c) => c.board === true)),
     [sellCategoryOptions],
   )
 
@@ -432,9 +437,8 @@ function SellPageContent() {
     void (async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("id, name, board")
+        .select("id, name, board, slug")
         .eq("board", true)
-        .order("name")
       if (cancelled) return
       if (error) return
       setSellCategoryOptions(
@@ -442,6 +446,7 @@ function SellPageContent() {
           value: r.id,
           label: r.name ?? "",
           board: true,
+          slug: r.slug ?? null,
         })),
       )
     })()
@@ -466,22 +471,6 @@ function SellPageContent() {
       cancelled = true
     }
   }, [supabase])
-
-  useEffect(() => {
-    if (editId || sellCategoryOptions.length === 0 || !draftHydrated) return
-    setFormData((prev) => {
-      if (prev.category) return prev
-      const first =
-        sellCategoryOptions.find((c) => c.board === true) ?? sellCategoryOptions[0]
-      if (!first) return prev
-      return {
-        ...prev,
-        category: first.value,
-        boardType:
-          first.board === true ? boardTypeFromCategoryId(first.value) : prev.boardType,
-      }
-    })
-  }, [editId, sellCategoryOptions, draftHydrated])
 
   sellDraftLatestRef.current = {
     listingType,
@@ -654,6 +643,7 @@ function SellPageContent() {
     return [
       images.length >= LISTING_MIN_PHOTOS,
       formData.title.trim(),
+      formData.category.trim(),
       formData.boardLength.trim(),
       widthOk,
       thickOk,
@@ -666,6 +656,7 @@ function SellPageContent() {
   }, [
     images.length,
     formData.title,
+    formData.category,
     formData.boardLength,
     formData.boardWidthInches,
     formData.boardThicknessInches,
@@ -2224,7 +2215,7 @@ function SellPageContent() {
                 <SellSectionNavHorizontal
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
-                  className="mb-8 lg:hidden"
+                  className="mb-8 hidden md:block lg:hidden"
                 />
                 <form
               ref={formRef}
@@ -2246,7 +2237,7 @@ function SellPageContent() {
                             "text-xs tabular-nums",
                             resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
                               ? "font-medium text-destructive"
-                              : "text-muted-foreground",
+                              : "text-muted-foreground/45",
                           )}
                           aria-live="polite"
                         >
@@ -2289,6 +2280,7 @@ function SellPageContent() {
                               <BrandInputWithSuggestions
                                 id="surf-brand"
                                 showHint={false}
+                                className="placeholder:text-muted-foreground/45"
                                 value={formData.brand}
                                 onChange={(v) => setFormData({ ...formData, brand: v })}
                               />
@@ -2297,7 +2289,7 @@ function SellPageContent() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-9 shrink-0 self-start text-xs text-muted-foreground"
+                              className="h-9 shrink-0 self-start text-xs text-muted-foreground/45"
                               onClick={() =>
                                 setFormData((f) => ({
                                   ...f,
@@ -2312,7 +2304,7 @@ function SellPageContent() {
                               Clear link
                             </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground/45">
                             Suggestions from our brand list — you can enter any brand.
                           </p>
                         </div>
@@ -2320,12 +2312,13 @@ function SellPageContent() {
                         <BrandInputWithSuggestions
                           id="surf-brand"
                           placeholder="e.g., Channel Islands"
+                          className="placeholder:text-muted-foreground/45"
                           value={formData.brand}
                           onChange={(v) => setFormData({ ...formData, brand: v })}
                         />
                       )}
                       {suggestedBrand ? (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground/45">
                           Suggested:{" "}
                           <span className="font-medium text-foreground">{suggestedBrand}</span>
                           {" — "}
@@ -2350,9 +2343,21 @@ function SellPageContent() {
                       <div className="space-y-2">
                         <Label>Board shape / category *</Label>
                         <Select
-                          value={formData.category}
+                          value={
+                            formData.category.trim()
+                              ? formData.category
+                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
+                          }
                           disabled={!!editId}
                           onValueChange={(value) => {
+                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                category: "",
+                                boardType: "",
+                              }))
+                              return
+                            }
                             setFormData((prev) => ({
                               ...prev,
                               category: value,
@@ -2361,7 +2366,7 @@ function SellPageContent() {
                           }}
                         >
                           <SelectTrigger aria-label="Board shape or category">
-                            <SelectValue placeholder="Select a category" />
+                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
                           </SelectTrigger>
                           <SelectContent>
                             {boardCategoryOptions.length === 0 ? (
@@ -2371,25 +2376,32 @@ function SellPageContent() {
                                   : "No board categories found — add rows with board = true in public.categories."}
                               </SelectItem>
                             ) : (
-                              boardCategoryOptions.map((cat) => (
-                                <SelectItem key={cat.value} value={cat.value}>
-                                  {cat.label}
-                                </SelectItem>
-                              ))
+                              <>
+                                {!editId && (
+                                  <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
+                                    {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
+                                  </SelectItem>
+                                )}
+                                {boardCategoryOptions.map((cat) => (
+                                  <SelectItem key={cat.value} value={cat.value}>
+                                    {cat.label}
+                                  </SelectItem>
+                                ))}
+                              </>
                             )}
                           </SelectContent>
                         </Select>
                         {editId && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground/45">
                             Category can&apos;t be changed while editing.
                           </p>
                         )}
-                        <div className="flex items-center justify-between text-sm text-muted-foreground pb-1 pt-1">
-                          <span>{boardFieldsCompleted} of 10 fields complete</span>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground/45 pb-1 pt-1">
+                          <span>{boardFieldsCompleted} of 11 fields complete</span>
                           <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
                             <div
                               className="h-full rounded-full bg-primary transition-all duration-300"
-                              style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
+                              style={{ width: `${(boardFieldsCompleted / 11) * 100}%` }}
                             />
                           </div>
                         </div>
@@ -2453,7 +2465,7 @@ function SellPageContent() {
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Length *</Label>
+                          <Label className="text-xs text-muted-foreground/45">Length *</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
@@ -2513,10 +2525,10 @@ function SellPageContent() {
                                     {`Then type inches after the apostrophe (for example six foot two as 6'2).`}
                                   </span>
                                   <span
-                                    className="pointer-events-none shrink-0 select-none text-sm tabular-nums text-muted-foreground/55"
+                                    className="pointer-events-none shrink-0 select-none text-sm tabular-nums text-muted-foreground/45"
                                     aria-hidden
                                   >
-                                    <span className="font-medium text-muted-foreground/70">'</span>
+                                    <span className="font-medium text-muted-foreground/55">'</span>
                                     <span>·</span>
                                     <span className="opacity-80">_</span>
                                   </span>
@@ -2535,7 +2547,7 @@ function SellPageContent() {
 
                         {/* Width */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Width</Label>
+                          <Label className="text-xs text-muted-foreground/45">Width</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
@@ -2574,7 +2586,7 @@ function SellPageContent() {
                                 aria-label="Board width in inches"
                               />
                             </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
+                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground/45 tabular-nums">
                               in
                             </span>
                           </div>
@@ -2582,7 +2594,7 @@ function SellPageContent() {
 
                         {/* Thickness */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Thickness</Label>
+                          <Label className="text-xs text-muted-foreground/45">Thickness</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
@@ -2621,7 +2633,7 @@ function SellPageContent() {
                                 aria-label="Board thickness in inches"
                               />
                             </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
+                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground/45 tabular-nums">
                               in
                             </span>
                           </div>
@@ -2629,7 +2641,7 @@ function SellPageContent() {
 
                         {/* Volume */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Volume</Label>
+                          <Label className="text-xs text-muted-foreground/45">Volume</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
@@ -2657,7 +2669,7 @@ function SellPageContent() {
                                 aria-label="Board volume in liters"
                               />
                             </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
+                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground/45 tabular-nums">
                               L
                             </span>
                           </div>
@@ -2671,7 +2683,7 @@ function SellPageContent() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-6 shrink-0 gap-0.5 whitespace-nowrap px-1.5 text-[10px] font-normal text-muted-foreground hover:text-foreground"
+                              className="h-6 shrink-0 gap-0.5 whitespace-nowrap px-1.5 text-[10px] font-normal text-muted-foreground/45 hover:text-foreground"
                               aria-label={
                                 formData.boardSkipOptionalDimensions
                                   ? "Open optional dimensions: add width, thickness, or liters"
@@ -2688,7 +2700,7 @@ function SellPageContent() {
                             className="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden p-0"
                           >
                             <div className="border-b border-border bg-muted/30 px-3.5 py-3.5">
-                              <p className="text-sm leading-relaxed text-muted-foreground">
+                              <p className="text-sm leading-relaxed text-muted-foreground/45">
                                 Listings with length, width, thickness, and volume filled in tend to
                                 sell better—buyers know exactly what they&apos;re comparing.
                               </p>
@@ -2765,7 +2777,7 @@ function SellPageContent() {
                               *
                             </span>
                           </h3>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-sm text-muted-foreground/45 mt-1">
                             You can select both options.
                           </p>
                         </div>
@@ -2885,7 +2897,7 @@ function SellPageContent() {
                                   </Badge>
                                 </div>
                                 {formData.boardShippingCostMode === "reswell" ? (
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
+                                  <p className="text-sm text-muted-foreground/45 leading-relaxed">
                                     We&apos;ll calculate shipping from your packed dimensions and add
                                     it to the buyer&apos;s total at checkout. When an order is
                                     placed, we&apos;ll email you the shipping label.{" "}
@@ -2915,7 +2927,7 @@ function SellPageContent() {
                                   Offer free shipping
                                 </span>
                                 {formData.boardShippingCostMode === "free" ? (
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
+                                  <p className="text-sm text-muted-foreground/45 leading-relaxed">
                                     Attract more buyers by offering to cover shipping! You can adjust
                                     the listing&apos;s price to make up for the cost.
                                   </p>
@@ -2937,7 +2949,7 @@ function SellPageContent() {
                                   Set a flat shipping rate
                                 </span>
                                 {formData.boardShippingCostMode === "flat" ? (
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
+                                  <p className="text-sm text-muted-foreground/45 leading-relaxed">
                                     Determine one cost that all buyers in this entire region will pay.
                                   </p>
                                 ) : null}
@@ -2964,7 +2976,7 @@ function SellPageContent() {
                                 </Label>
                                 <div className="relative">
                                   <span
-                                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-foreground tabular-nums"
+                                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
                                     aria-hidden
                                   >
                                     $
@@ -2982,7 +2994,7 @@ function SellPageContent() {
                                         boardShippingPrice: e.target.value,
                                       })
                                     }
-                                    className="pl-8 tabular-nums"
+                                    className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
                                   />
                                 </div>
                                 <button
@@ -3011,7 +3023,7 @@ function SellPageContent() {
                             <h3 className="text-sm font-semibold text-foreground">
                               Sell your board even faster
                             </h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
+                            <p className="text-sm text-muted-foreground/45 leading-relaxed">
                               Increase your chances of selling with price drops and offers.
                             </p>
                           </div>
@@ -3037,7 +3049,7 @@ function SellPageContent() {
                               >
                                 Drop the price in 2 weeks
                               </Label>
-                              <p className="text-sm text-muted-foreground leading-relaxed">
+                              <p className="text-sm text-muted-foreground/45 leading-relaxed">
                                 If it hasn&apos;t sold, we can lower your list price after two weeks.
                                 You choose the floor — we won&apos;t go below that price.
                               </p>
@@ -3061,8 +3073,9 @@ function SellPageContent() {
                                     autoPriceDropFloor: e.target.value,
                                   })
                                 }
+                                className="placeholder:text-muted-foreground/45"
                               />
-                              <p className="text-xs text-muted-foreground leading-relaxed">
+                              <p className="text-xs text-muted-foreground/45 leading-relaxed">
                                 Must be less than your list price. When automation ships, this is the
                                 minimum your listing will show after the scheduled drop.
                               </p>
@@ -3089,7 +3102,7 @@ function SellPageContent() {
                             >
                               Allow buyers to make offers
                             </Label>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
+                            <p className="text-sm text-muted-foreground/45 leading-relaxed">
                               Lets you negotiate a final price with buyers before checkout.
                             </p>
                           </div>
@@ -3184,7 +3197,7 @@ function SellPageContent() {
                     <Textarea
                       id="description"
                       placeholder="Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
-                      className="min-h-[120px] resize-none"
+                      className="min-h-[120px] resize-none placeholder:text-muted-foreground/45"
                       value={formData.description}
                       onChange={(e) => {
                         setFormData({ ...formData, description: e.target.value })
@@ -3195,7 +3208,7 @@ function SellPageContent() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground/45">
                       {formData.description.length} / 1000
                     </span>
                     {descriptionGenerated && (
@@ -3300,7 +3313,7 @@ function SellPageContent() {
                           )}
                         </Button>
                         {formData.description.trim() && !isGeneratingDescription && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground/45">
                             Will replace your current description
                           </span>
                         )}
@@ -3308,7 +3321,7 @@ function SellPageContent() {
 
                       {/* Quick add chips */}
                       <div className="space-y-1.5">
-                        <p className="text-xs text-muted-foreground">Quick add:</p>
+                        <p className="text-xs text-muted-foreground/45">Quick add:</p>
                         <div className="flex flex-wrap gap-1.5">
                           {[
                             "Has been reglassed",
@@ -3351,7 +3364,7 @@ function SellPageContent() {
                 <div className="space-y-2">
                   <Label className="sr-only">Listing photos</Label>
                   {optimizingAny ? (
-                    <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground/45 flex items-center gap-2">
                       <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
                       Optimizing images…
                     </p>
@@ -3414,13 +3427,13 @@ function SellPageContent() {
                         </div>
                         {image.optimizePhase === "running" && image.uploadPhase === "idle" ? (
                           <div className="shrink-0 px-1 py-1 bg-background/90 border-t border-border/60">
-                            <p className="text-[9px] text-muted-foreground text-center leading-tight">
+                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
                               Optimizing…
                             </p>
                           </div>
                         ) : image.uploadPhase === "uploading" ? (
                           <div className="shrink-0 px-1 pb-1 pt-0.5 space-y-0.5 bg-background/90 border-t border-border/60">
-                            <p className="text-[9px] text-muted-foreground text-center leading-tight">
+                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
                               Uploading
                             </p>
                             <Progress value={image.progressFull} className="h-1" title="Full size" />
@@ -3448,8 +3461,8 @@ function SellPageContent() {
                     ))}
                     {images.length < 12 && (
                       <label className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors overflow-hidden">
-                        <Upload className="h-6 w-6 text-muted-foreground pointer-events-none" />
-                        <span className="text-xs text-muted-foreground mt-1 pointer-events-none">Add</span>
+                        <Upload className="h-6 w-6 text-muted-foreground/45 pointer-events-none" />
+                        <span className="text-xs text-muted-foreground/45 mt-1 pointer-events-none">Add</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -3461,7 +3474,7 @@ function SellPageContent() {
                       </label>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground/45">
                     At least {LISTING_MIN_PHOTOS} photo, max 12. Upload a few angles of your board — top, bottom,
                     rails, fins, whatever helps someone see what they&apos;re buying. The more you add, the less
                     back-and-forth in messages. If a shot is horizontal we will rotate it into vertical; the first pic is your
@@ -3477,7 +3490,7 @@ function SellPageContent() {
                     </span>
                   </p>
                   {images.length >= LISTING_MIN_PHOTOS && images.length < 12 && (
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                    <p className="text-xs text-muted-foreground/45">
                       Room for {12 - images.length} more — a fuller gallery usually gets more interest.
                     </p>
                   )}
@@ -3534,7 +3547,7 @@ function SellPageContent() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground/45">
                         ${publishPreview.price}
                         {publishPreview.detailHref && publishPreview.status === "live" && (
                           <>
@@ -3550,7 +3563,7 @@ function SellPageContent() {
                       </p>
                       {publishPreview.status === "error" && (
                         <div className="pt-2 space-y-2">
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground/45">
                             {publishPreview.failedStepLabel ? (
                               <>
                                 <span className="font-medium text-foreground">
@@ -3601,7 +3614,7 @@ function SellPageContent() {
                         />
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground/45">
                       {editId ? "Save in progress — please keep this tab open." : "Upload in progress — please keep this tab open."}
                     </p>
                   </div>

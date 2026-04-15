@@ -51,10 +51,10 @@ function SuffixInput({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="rounded-lg pr-10"
+          className="rounded-lg pr-10 placeholder:text-muted-foreground/45"
         />
         <span
-          className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm tabular-nums text-muted-foreground"
+          className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm tabular-nums text-muted-foreground/45"
           aria-hidden
         >
           {suffix}
@@ -93,7 +93,7 @@ export function ReswellPackageDimensionsCard({
               *
             </span>
           </h3>
-          <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+          <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
             Carriers bill by the box you ship in, not the board specs alone. Underestimating size or
             weight can mean extra charges later — measure the bag or box you&apos;ll actually use.
           </p>
@@ -117,7 +117,7 @@ export function ReswellPackageDimensionsCard({
             faster options, or when it&apos;s the better rate for the lane.
           </p>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground/45">
           Reswell picks the rate type at checkout from what you enter here and the buyer&apos;s
           address.
         </p>

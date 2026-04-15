@@ -20,6 +20,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
+import { boardCategoryMap } from "@/lib/utils/board-type-from-category-id"
 
 function shippingPriceToDb(
   fulfillment: BoardFulfillmentChoice,
@@ -132,15 +133,23 @@ export function buildSurfboardDraftListingRow(
 }
 
 async function fetchDefaultBoardCategoryId(supabase: SupabaseClient): Promise<string | null> {
+  const preferred = boardCategoryMap.shortboard
   const { data, error } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("id", preferred)
+    .maybeSingle()
+  if (!error && data?.id) return data.id as string
+
+  const { data: fallback, error: fbErr } = await supabase
     .from("categories")
     .select("id")
     .eq("board", true)
     .order("name")
     .limit(1)
     .maybeSingle()
-  if (error || !data?.id) return null
-  return data.id as string
+  if (fbErr || !fallback?.id) return null
+  return fallback.id as string
 }
 
 export async function upsertSurfboardListingDraft(

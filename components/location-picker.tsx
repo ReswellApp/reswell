@@ -310,7 +310,7 @@ export function LocationPicker({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div ref={rootRef} className="relative flex-1">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-muted-foreground/45"
             aria-hidden
           />
           <Input
@@ -330,13 +330,13 @@ export function LocationPicker({
               if (suggestions.length > 0) setListOpen(true)
             }}
             placeholder="Start typing a city, ZIP, or beach…"
-            className="h-11 pl-10 pr-10"
+            className="h-11 pl-10 pr-10 placeholder:text-muted-foreground/45"
             aria-label="Where you’re listing from"
             autoComplete="off"
           />
           {suggestLoading ? (
             <Loader2
-              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground"
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground/45"
               aria-hidden
             />
           ) : null}
@@ -365,7 +365,7 @@ export function LocationPicker({
                     <MapPin
                       className={cn(
                         "mt-0.5 h-4 w-4 shrink-0",
-                        i === highlightIndex ? "text-primary" : "text-muted-foreground",
+                        i === highlightIndex ? "text-primary" : "text-muted-foreground/45",
                       )}
                       aria-hidden
                     />
@@ -430,11 +430,11 @@ export function LocationPicker({
               )}
             </div>
             <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/45">
                 {highlightSaved ? "Saved to your listing" : "You’re listing from"}
               </p>
               <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground/45 leading-relaxed">
                 Type in the box above to change — we never show your exact street.
               </p>
             </div>

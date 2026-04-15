@@ -11,6 +11,7 @@ const CANONICAL_NAME_BY_CATEGORY_ID: Record<string, string> = {
   [boardCategoryMap.hybrid]: "Hybrid",
   [boardCategoryMap["step-up-gun"]]: "Step-Up / Gun",
   [boardCategoryMap.groveler]: "Groveler",
+  [boardCategoryMap.other]: "Other",
 }
 
 /** Slug-only fallbacks when `id` is unknown or duplicated across environments. */
@@ -25,6 +26,7 @@ const CANONICAL_NAME_BY_SLUG: Record<string, string> = {
   fish: "Groveler",
   funboard: "Hybrid",
   "mid-length": "Hybrid",
+  other: "Other",
 }
 
 export function canonicalSurfboardCategoryName(row: {
