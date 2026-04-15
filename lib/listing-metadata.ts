@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import { listingDetailPath } from "@/lib/listing-query"
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
-import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
-import { absoluteUrl } from "@/lib/site-metadata"
+import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
 
 export function primaryListingImageUrl(
   images:
@@ -49,6 +48,9 @@ export function buildListingShareSubtitle(
 
 /**
  * Shared SEO + Open Graph + Twitter metadata for marketplace listing detail pages.
+ *
+ * `og:image` / `twitter:image` use the listing’s primary photo URL (absolute https), matching
+ * pre–dynamic-OG behavior. Listings without images fall back to the site brand asset.
  */
 export function metadataForListingDetail(
   listing: ListingMetaInput,
@@ -77,11 +79,12 @@ export function metadataForListingDetail(
   }
   description = description.slice(0, 180)
 
+  const rawListingImage = primaryListingImageUrl(listing.listing_images)
+  const listingImageAbs = absolutePublicMediaUrl(rawListingImage)
+  const fallbackBrandImage = absoluteUrl("/og-image.jpg")
+  const shareImageUrl = listingImageAbs ?? fallbackBrandImage
   const canonicalPath = listingDetailPath(listing)
   const ogTitle = `${displayTitle}${titleSuffix}`
-  const ogImagePath = `${canonicalPath}/opengraph-image`
-  const ogImageUrl = absoluteUrl(ogImagePath)
-  const ogImageAlt = ogTitle
 
   return {
     title,
@@ -91,13 +94,12 @@ export function metadataForListingDetail(
       title: ogTitle,
       description,
       type: "article",
+      siteName: "Reswell",
       url: absoluteUrl(canonicalPath),
       images: [
         {
-          url: ogImageUrl,
-          width: STANDARD_OG_SIZE.width,
-          height: STANDARD_OG_SIZE.height,
-          alt: ogImageAlt,
+          url: shareImageUrl,
+          alt: ogTitle,
         },
       ],
     },
@@ -105,7 +107,7 @@ export function metadataForListingDetail(
       card: "summary_large_image",
       title: ogTitle,
       description,
-      images: [ogImageUrl],
+      images: [shareImageUrl],
     },
   }
 }

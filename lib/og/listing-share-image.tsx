@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { fetchImageAsPngDataUri } from "@/lib/og/fetch-image-for-og"
 import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
+import { absoluteUrl } from "@/lib/site-metadata"
 
 export const LISTING_OG_SIZE = STANDARD_OG_SIZE
 
@@ -69,7 +71,21 @@ export async function listingShareImageResponse(opts: {
 }) {
   const inter = await getInterFonts()
   const title = truncate(opts.title, 82)
-  const photoUrl = opts.photoUrl?.trim() || undefined
+  const brandFallbackPhotoUrl = absoluteUrl("/og-image.jpg")
+  const primary = opts.photoUrl?.trim()
+  let imgSrc: string
+  if (primary) {
+    const dataUri = await fetchImageAsPngDataUri(primary)
+    if (dataUri) {
+      imgSrc = dataUri
+    } else {
+      const fallback = await fetchImageAsPngDataUri(brandFallbackPhotoUrl)
+      imgSrc = fallback ?? brandFallbackPhotoUrl
+    }
+  } else {
+    const fallback = await fetchImageAsPngDataUri(brandFallbackPhotoUrl)
+    imgSrc = fallback ?? brandFallbackPhotoUrl
+  }
   const domain = ogSiteDomainLabel()
   const fontFamily = inter ? "Inter" : SYSTEM_UI
 
@@ -119,51 +135,32 @@ export async function listingShareImageResponse(opts: {
               Sold
             </div>
           ) : null}
-          {photoUrl ? (
-            <div
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "12px 20px",
+              boxSizing: "border-box",
+            }}
+          >
+            <img
+              src={imgSrc}
+              alt=""
+              width={1160}
+              height={IMAGE_SECTION_HEIGHT - 24}
               style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "12px 20px",
-                boxSizing: "border-box",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                objectPosition: "center",
               }}
-            >
-              <img
-                src={photoUrl}
-                alt=""
-                width={1160}
-                height={IMAGE_SECTION_HEIGHT - 24}
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  width: "auto",
-                  height: "auto",
-                  objectFit: "contain",
-                  objectPosition: "center",
-                }}
-              />
-            </div>
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fafafa",
-                color: "#c7c7cc",
-                fontSize: 28,
-                fontWeight: 700,
-                letterSpacing: 0.15,
-              }}
-            >
-              Reswell
-            </div>
-          )}
+            />
+          </div>
         </div>
 
         {/* Title + domain only (top border separates hero from meta, no extra pixel vs 630 canvas) */}

@@ -2,6 +2,8 @@ import { listingShareImageResponse } from "@/lib/og/listing-share-image"
 import { brandShareImageResponse } from "@/lib/og/brand-share-image"
 import { getBoardsBrowseOgPayload } from "@/lib/boards-og-data"
 
+export const runtime = "nodejs"
+
 /** Refresh share art so category pages pick up newly listed boards. */
 export const revalidate = 120
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
+import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { boardTypeForDbFromBrowseParam, boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 
 export type BoardsOgPayload =
@@ -50,7 +51,7 @@ export async function getBoardsBrowseOgPayload(typeParam: string | undefined): P
     return { ok: false }
   }
 
-  const photoUrl = primaryListingImageUrl(row.listing_images)
+  const photoUrl = absolutePublicMediaUrl(primaryListingImageUrl(row.listing_images))
   const rawTitle = typeof row.title === "string" ? row.title.trim() : ""
   const displayTitle = capitalizeWords(rawTitle || "Surfboard")
 

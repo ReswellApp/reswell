@@ -2,6 +2,8 @@ import { getBoardsBrowseOgPayload } from "@/lib/boards-og-data"
 import { brandShareImageResponse, BRAND_OG_SIZE } from "@/lib/og/brand-share-image"
 import { listingShareImageResponse } from "@/lib/og/listing-share-image"
 
+export const runtime = "nodejs"
+
 export const size = BRAND_OG_SIZE
 export const contentType = "image/png"
 
