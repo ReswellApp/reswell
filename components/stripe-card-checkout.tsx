@@ -211,11 +211,18 @@ export function StripeCardCheckout({
         const data = (await res.json()) as { clientSecret?: string; error?: string }
         if (cancelled) return
         if (!res.ok) {
+          console.error("[StripeCardCheckout] create-payment-intent failed", {
+            status: res.status,
+            error: data.error,
+          })
           setError(data.error ?? "Could not start card payment")
           return
         }
         if (data.clientSecret) {
           setClientSecret(data.clientSecret)
+        } else {
+          console.error("[StripeCardCheckout] no clientSecret in response", data)
+          setError("Could not start card payment — no client secret returned")
         }
       } catch {
         if (!cancelled) setError("Could not start card payment")
