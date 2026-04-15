@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { formatCategory, LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
+import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
 
 const BOARD_TYPE_LABELS: Record<string, string> = {
   shortboard: "Shortboards",
@@ -70,17 +72,17 @@ export type BoardsBrowseSearchParams = {
   lng?: string
 }
 
-export function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Metadata {
-  const browseType =
-    sp.type && sp.type !== "all"
-      ? sp.type === "fish"
-        ? "groveler"
-        : sp.type === "mid-length" || sp.type === "funboard"
-          ? "hybrid"
-          : sp.type === "step-up" || sp.type === "gun"
-            ? "step-up-gun"
-            : sp.type
-      : undefined
+/** Canonical `type=` value for browse URLs, OG, and DB filters (legacy aliases → current slug). */
+export function normalizedBoardsBrowseTypeFromParam(type: string | undefined | null): string | undefined {
+  if (!type?.trim() || type === "all") return undefined
+  if (type === "fish") return "groveler"
+  if (type === "mid-length" || type === "funboard") return "hybrid"
+  if (type === "step-up" || type === "gun") return "step-up-gun"
+  return type.trim()
+}
+
+export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Promise<Metadata> {
+  const browseType = normalizedBoardsBrowseTypeFromParam(sp.type)
   const typeLabel =
     browseType ? BOARD_TYPE_LABELS[browseType] ?? "Surfboards" : "Surfboards"
   const condLabel =
@@ -102,15 +104,41 @@ export function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Metadata 
   if (sp.location) canonical.searchParams.set("location", sp.location)
   if (sp.sort && sp.sort !== "newest") canonical.searchParams.set("sort", sp.sort)
 
+  const ogImageParams = new URLSearchParams()
+  if (browseType) ogImageParams.set("type", browseType)
+  const ogImagePath = `/api/og/boards${ogImageParams.size ? `?${ogImageParams.toString()}` : ""}`
+  const generatedOgImageUrl = absoluteUrl(ogImagePath)
+
+  const { getBoardsBrowseOgPayload } = await import("@/lib/boards-og-data")
+  const ogPayload = await getBoardsBrowseOgPayload(sp.type)
+  const listingPhotoUrl = ogPayload.ok ? absolutePublicMediaUrl(ogPayload.photoUrl) : undefined
+
+  /** Prefer the real listing photo so link previews match inventory (layout no longer injects a default wave). */
+  const shareImageUrl = listingPhotoUrl ?? generatedOgImageUrl
+
   return {
     title,
     description,
     alternates: { canonical: canonical.toString() },
-    openGraph: { title, description, type: "website", url: canonical.toString() },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: canonical.toString(),
+      images: [
+        {
+          url: shareImageUrl,
+          width: listingPhotoUrl ? undefined : STANDARD_OG_SIZE.width,
+          height: listingPhotoUrl ? undefined : STANDARD_OG_SIZE.height,
+          alt: ogPayload.ok ? ogPayload.title : `${typeLabel} on Reswell`,
+        },
+      ],
+    },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [shareImageUrl],
     },
   }
 }

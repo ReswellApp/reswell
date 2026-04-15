@@ -22,7 +22,7 @@ export async function generateMetadata(props: {
   const flat = flattenSearchParams(rawSp)
 
   if (slug === "boards") {
-    return metadataForBoardsBrowse(flat as BoardsBrowseSearchParams)
+    return await metadataForBoardsBrowse(flat as BoardsBrowseSearchParams)
   }
 
   return { title: "Reswell" }

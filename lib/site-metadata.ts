@@ -8,6 +8,14 @@ export function absoluteUrl(path: string): string {
   return `${normalizedBase}${p}`
 }
 
+/** Absolute URL for listing/storage images (already-absolute https left unchanged). */
+export function absolutePublicMediaUrl(url: string | null | undefined): string | undefined {
+  if (!url?.trim()) return undefined
+  const u = url.trim()
+  if (/^https?:\/\//i.test(u)) return u
+  return absoluteUrl(u)
+}
+
 /**
  * Consistent title, description, canonical, and Open Graph / Twitter tags for static pages.
  * Prefer colocated `opengraph-image.tsx` for unique share art; this sets text metadata.

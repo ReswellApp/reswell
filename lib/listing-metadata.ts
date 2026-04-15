@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { listingDetailPath } from "@/lib/listing-query"
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
+import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 export function primaryListingImageUrl(
@@ -78,6 +79,9 @@ export function metadataForListingDetail(
 
   const canonicalPath = listingDetailPath(listing)
   const ogTitle = `${displayTitle}${titleSuffix}`
+  const ogImagePath = `${canonicalPath}/opengraph-image`
+  const ogImageUrl = absoluteUrl(ogImagePath)
+  const ogImageAlt = ogTitle
 
   return {
     title,
@@ -88,11 +92,20 @@ export function metadataForListingDetail(
       description,
       type: "article",
       url: absoluteUrl(canonicalPath),
+      images: [
+        {
+          url: ogImageUrl,
+          width: STANDARD_OG_SIZE.width,
+          height: STANDARD_OG_SIZE.height,
+          alt: ogImageAlt,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
       description,
+      images: [ogImageUrl],
     },
   }
 }

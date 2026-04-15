@@ -41,7 +41,6 @@ export const metadata: Metadata = {
     title: 'Reswell — Buy & sell surfboards',
     description:
       'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
-    images: [{ url: '/images/og-image.jpg', width: 1024, height: 1024, alt: 'Reswell' }],
     type: 'website',
   },
   twitter: {
@@ -49,7 +48,6 @@ export const metadata: Metadata = {
     title: 'Reswell — Buy & sell surfboards',
     description:
       'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
-    images: ['/images/og-image.jpg'],
   },
 }
 

@@ -8,13 +8,13 @@ export default async function Image(props: { params: Promise<{ listing: string }
   const { listing: listingParam } = await props.params
   const payload = await getListingOgImagePayload(listingParam)
   if (!payload.ok) {
-    return listingShareImageResponse({
+    return await listingShareImageResponse({
       title: "Listing on Reswell",
       line2: "Peer-to-peer surfboard marketplace",
       sold: false,
     })
   }
-  return listingShareImageResponse({
+  return await listingShareImageResponse({
     title: payload.title,
     line2: payload.line2,
     photoUrl: payload.photoUrl,

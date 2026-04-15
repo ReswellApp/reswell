@@ -1,7 +1,43 @@
 import { ImageResponse } from "next/og"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
 
 export const LISTING_OG_SIZE = STANDARD_OG_SIZE
+
+/** ~two-thirds image — matches marketplace link previews (Reverb / iMessage). */
+const IMAGE_SECTION_HEIGHT = 422
+const FOOTER_HEIGHT = STANDARD_OG_SIZE.height - IMAGE_SECTION_HEIGHT
+
+/** Inter Latin (WOFF) — Satori renders clean type vs generic fallback. */
+const INTER_400_URL =
+  "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.8/files/inter-latin-400-normal.woff"
+const INTER_700_URL =
+  "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.8/files/inter-latin-700-normal.woff"
+
+const SYSTEM_UI =
+  'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+
+let interFontsResolved: Promise<{ regular: ArrayBuffer; bold: ArrayBuffer } | null> | null = null
+
+/** Loads Inter once; returns null if CDN unreachable so OG route still returns PNG. */
+function getInterFonts(): Promise<{ regular: ArrayBuffer; bold: ArrayBuffer } | null> {
+  if (!interFontsResolved) {
+    interFontsResolved = (async () => {
+      try {
+        const [r400, r700] = await Promise.all([
+          fetch(INTER_400_URL),
+          fetch(INTER_700_URL),
+        ])
+        if (!r400.ok || !r700.ok) return null
+        const [regular, bold] = await Promise.all([r400.arrayBuffer(), r700.arrayBuffer()])
+        return { regular, bold }
+      } catch {
+        return null
+      }
+    })()
+  }
+  return interFontsResolved
+}
 
 function truncate(s: string, max: number): string {
   const t = s.trim()
@@ -9,145 +45,176 @@ function truncate(s: string, max: number): string {
   return `${t.slice(0, max - 1).trim()}…`
 }
 
+function ogSiteDomainLabel(): string {
+  try {
+    const h = new URL(publicSiteOrigin()).hostname
+    return h.replace(/^www\./, "")
+  } catch {
+    return "reswell.app"
+  }
+}
+
 /**
- * Share art for marketplace listing URLs — title, optional price line, optional photo.
+ * Share art for `/l/[listing]` — marketplace-style card: large photo on white,
+ * then a shaded strip with bold title + domain only (matches iMessage / Reverb previews).
+ *
+ * `line2` is accepted for API compatibility (e.g. boards browse) but not drawn — previews stay title + domain only.
  */
-export function listingShareImageResponse(opts: {
+export async function listingShareImageResponse(opts: {
   title: string
   line2?: string
   /** Public HTTPS URL (e.g. Supabase storage). */
   photoUrl?: string | null
   sold?: boolean
 }) {
-  const title = truncate(opts.title, 64)
-  const line2 = opts.line2 ? truncate(opts.line2, 120) : undefined
+  const inter = await getInterFonts()
+  const title = truncate(opts.title, 82)
   const photoUrl = opts.photoUrl?.trim() || undefined
+  const domain = ogSiteDomainLabel()
+  const fontFamily = inter ? "Inter" : SYSTEM_UI
 
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          position: "relative",
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          flexDirection: "row",
-          background: "linear-gradient(145deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)",
-          fontFamily:
-            'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        }}
-      >
+  const jsx = (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        background: "#ffffff",
+        fontFamily,
+        borderRadius: 20,
+        overflow: "hidden",
+      }}
+    >
+        {/* Hero — white field + centered product (contain), Reverb-style */}
         <div
           style={{
-            flex: 1,
+            position: "relative",
+            width: "100%",
+            height: IMAGE_SECTION_HEIGHT,
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
             justifyContent: "center",
-            paddingLeft: 64,
-            paddingRight: 48,
-            gap: 20,
-            minWidth: 0,
+            background: "#ffffff",
+            overflow: "hidden",
           }}
         >
           {opts.sold ? (
             <div
               style={{
-                alignSelf: "flex-start",
-                padding: "10px 18px",
-                borderRadius: 999,
-                background: "rgba(248, 113, 113, 0.95)",
-                color: "#450a0a",
-                fontSize: 22,
+                position: "absolute",
+                top: 16,
+                right: 16,
+                zIndex: 2,
+                padding: "6px 14px",
+                borderRadius: 6,
+                background: "rgba(255, 255, 255, 0.95)",
+                color: "#dc2626",
+                fontSize: 16,
                 fontWeight: 700,
-                letterSpacing: 0.5,
+                letterSpacing: 0.2,
+                border: "1px solid rgba(0,0,0,0.06)",
               }}
             >
-              SOLD
+              Sold
             </div>
           ) : null}
+          {photoUrl ? (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "12px 20px",
+                boxSizing: "border-box",
+              }}
+            >
+              <img
+                src={photoUrl}
+                alt=""
+                width={1160}
+                height={IMAGE_SECTION_HEIGHT - 24}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                  objectPosition: "center",
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#fafafa",
+                color: "#c7c7cc",
+                fontSize: 28,
+                fontWeight: 700,
+                letterSpacing: 0.15,
+              }}
+            >
+              Reswell
+            </div>
+          )}
+        </div>
+
+        {/* Title + domain only (top border separates hero from meta, no extra pixel vs 630 canvas) */}
+        <div
+          style={{
+            width: "100%",
+            height: FOOTER_HEIGHT,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "0 40px",
+            background: "#ebebed",
+            boxSizing: "border-box",
+            borderTop: "1px solid #e5e5ea",
+          }}
+        >
           <div
             style={{
-              fontSize: 52,
+              fontSize: 38,
               fontWeight: 700,
-              color: "#f8fafc",
-              lineHeight: 1.1,
-              letterSpacing: -1.2,
+              color: "#000000",
+              lineHeight: 1.22,
+              letterSpacing: -0.35,
             }}
           >
             {title}
           </div>
-          {line2 ? (
-            <div
-              style={{
-                fontSize: 28,
-                fontWeight: 500,
-                color: "#cbd5e1",
-                lineHeight: 1.35,
-              }}
-            >
-              {line2}
-            </div>
-          ) : null}
           <div
             style={{
-              marginTop: 28,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              fontSize: 24,
-              color: "#94a3b8",
-              fontWeight: 600,
+              fontSize: 21,
+              fontWeight: 400,
+              color: "#636366",
+              marginTop: 10,
+              letterSpacing: 0.1,
             }}
           >
-            <span style={{ fontSize: 28 }}>🌊</span>
-            <span>reswell.app</span>
+            {domain}
           </div>
         </div>
-
-        <div
-          style={{
-            width: 480,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 40,
-          }}
-        >
-          {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt=""
-              width={400}
-              height={400}
-              style={{
-                width: 400,
-                height: 400,
-                objectFit: "cover",
-                borderRadius: 24,
-                border: "4px solid rgba(148, 163, 184, 0.35)",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 400,
-                height: 400,
-                borderRadius: 24,
-                background: "linear-gradient(160deg, rgba(56, 189, 248, 0.35) 0%, rgba(15, 23, 42, 0.9) 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#e2e8f0",
-                fontSize: 120,
-                fontWeight: 700,
-              }}
-            >
-              R
-            </div>
-          )}
-        </div>
       </div>
-    ),
-    { ...LISTING_OG_SIZE },
   )
+
+  return new ImageResponse(jsx, {
+    ...LISTING_OG_SIZE,
+    ...(inter
+      ? {
+          fonts: [
+            { name: "Inter", data: inter.regular, weight: 400, style: "normal" },
+            { name: "Inter", data: inter.bold, weight: 700, style: "normal" },
+          ],
+        }
+      : {}),
+  })
 }
