@@ -614,11 +614,24 @@ function parseDescription(raw: string, type: string): { title: string; subtitle:
     return { title: `Sold — ${itemName}`, subtitle: parts }
   }
 
-  // e.g. Refund — "Board" (partial refund …)
+  // Buyer refund credit: 'Refund — "Title" ($X.XX returned to your balance)'
+  const buyerRefundMatch = raw.match(/^Refund — "(.+?)"\s*\(\$[\d.]+\s+returned to your balance\)/)
+  if (buyerRefundMatch) {
+    return { title: `Refund — ${buyerRefundMatch[1]}`, subtitle: "Refunded to your Reswell Bucks" }
+  }
+
+  // Seller refund debit: 'Refund — "Board" (partial/full refund …)'
   const refundMatch = raw.match(/^Refund — "(.+?)"/)
   if (refundMatch) {
     const itemName = refundMatch[1]
-    return { title: `Refund — ${itemName}`, subtitle: "Card sale reversed" }
+    const isWallet = /Reswell Bucks/i.test(raw)
+    const isPending = /pending earnings/i.test(raw)
+    const subtitle = isWallet
+      ? "Reswell Bucks sale reversed"
+      : isPending
+        ? "Pending earnings reversed"
+        : "Card sale reversed"
+    return { title: `Refund — ${itemName}`, subtitle }
   }
 
   // e.g. 'Purchased "Title" (incl. shipping $X.XX)'

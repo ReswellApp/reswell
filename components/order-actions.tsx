@@ -5,9 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Truck, CheckCircle2, Package, Loader2, AlertCircle } from "lucide-react"
+import { Truck, CheckCircle2, Package, Loader2, AlertCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   deliveryStatusLabel,
   deliveryStatusBadgeVariant,
@@ -271,6 +281,114 @@ export function BuyerPickupCode({
         <p className="text-3xl font-mono font-bold tracking-[0.3em] text-center py-2">
           {pickupCode}
         </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Seller: issue refund ──────────────────────────────────────
+
+export function SellerRefundButton({
+  orderId,
+  orderStatus,
+  amount,
+  paymentMethod,
+}: {
+  orderId: string
+  orderStatus: string
+  amount: number
+  paymentMethod: string
+}) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  if (orderStatus !== "confirmed") return null
+
+  const isCard = paymentMethod === "stripe"
+  const refundTarget = isCard ? "their card" : "their Reswell Bucks balance"
+
+  const submit = async () => {
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}/refund`, { method: "POST" })
+      const data = (await res.json()) as { error?: string; refund_type?: string }
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not issue refund")
+        return
+      }
+      if (data.refund_type === "stripe") {
+        toast.success("Refund issued — the buyer's card will be refunded by Stripe shortly.")
+      } else {
+        toast.success("Refund complete — Reswell Bucks returned to the buyer.")
+      }
+      setOpen(false)
+      router.refresh()
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="destructive" className="w-full gap-2">
+          <RotateCcw className="h-4 w-4" />
+          Issue refund
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Refund ${amount.toFixed(2)} to the buyer?</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <span className="block">
+              This will refund <strong>${amount.toFixed(2)}</strong> to {refundTarget} and
+              debit your seller earnings. The listing will be re-activated for sale.
+            </span>
+            <span className="block font-medium text-destructive">
+              This action cannot be undone.
+            </span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+          <Button variant="destructive" onClick={submit} disabled={busy}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Confirm refund
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+// ── Seller: refunded order banner ─────────────────────────────
+
+export function SellerRefundedBanner({
+  amount,
+  refundedAt,
+}: {
+  amount: number
+  refundedAt: string | null
+}) {
+  const dateStr = refundedAt
+    ? new Date(refundedAt).toLocaleDateString(undefined, { dateStyle: "medium" })
+    : null
+
+  return (
+    <Card className="border-destructive/30 bg-destructive/5">
+      <CardContent className="flex items-start gap-3 p-4">
+        <RotateCcw className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold text-destructive">Order refunded</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            ${amount.toFixed(2)} was refunded to the buyer
+            {dateStr ? ` on ${dateStr}` : ""}.
+            Your seller earnings for this order have been reversed.
+          </p>
+        </div>
       </CardContent>
     </Card>
   )

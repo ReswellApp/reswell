@@ -15,6 +15,8 @@ import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-
 import {
   SellerTrackingForm,
   SellerPickupVerify,
+  SellerRefundButton,
+  SellerRefundedBanner,
   DeliveryStatusBadge,
   PayoutStatusBadge,
   TrackingInfo,
@@ -43,6 +45,7 @@ type SaleDetail = {
   seller_earnings: number | string
   status: string
   created_at: string
+  refunded_at: string | null
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
   delivery_status: string
@@ -50,6 +53,7 @@ type SaleDetail = {
   tracking_carrier: string | null
   buyer_id: string
   listing_id: string
+  payment_method: string | null
   stripe_checkout_session_id: string | null
   listings:
     | {
@@ -124,6 +128,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       seller_earnings,
       status,
       created_at,
+      refunded_at,
       shipping_address,
       fulfillment_method,
       delivery_status,
@@ -131,6 +136,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       tracking_carrier,
       buyer_id,
       listing_id,
+      payment_method,
       stripe_checkout_session_id,
       listings (
         id,
@@ -248,12 +254,31 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         <PayoutStatusBadge payout={payoutRow} />
       </div>
 
+      {/* Refunded banner */}
+      {sale.status === "refunded" && (
+        <SellerRefundedBanner
+          amount={Number(sale.amount)}
+          refundedAt={sale.refunded_at}
+        />
+      )}
+
+      {/* Seller action: issue refund */}
+      {sale.status === "confirmed" && (
+        <SellerRefundButton
+          orderId={sale.id}
+          orderStatus={sale.status}
+          amount={Number(sale.amount)}
+          paymentMethod={sale.payment_method ?? (paidWithCard ? "stripe" : "reswell_bucks")}
+        />
+      )}
+
       {/* Seller action: add tracking for shipping orders */}
-      {sale.fulfillment_method === "shipping" && (
+      {sale.status !== "refunded" && sale.fulfillment_method === "shipping" && (
         <SellerTrackingForm orderId={sale.id} deliveryStatus={sale.delivery_status} />
       )}
 
-      {sale.fulfillment_method === "shipping" &&
+      {sale.status !== "refunded" &&
+        sale.fulfillment_method === "shipping" &&
         listing?.section === "surfboards" &&
         sale.delivery_status === "pending" && (
           <div className="flex flex-wrap gap-2">
@@ -272,7 +297,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         )}
 
       {/* Seller action: verify pickup code for local pickup */}
-      {sale.fulfillment_method === "pickup" && (
+      {sale.status !== "refunded" && sale.fulfillment_method === "pickup" && (
         <SellerPickupVerify orderId={sale.id} deliveryStatus={sale.delivery_status} />
       )}
 

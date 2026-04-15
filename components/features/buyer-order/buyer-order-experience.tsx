@@ -11,6 +11,7 @@ import {
   Loader2,
   MessageCircle,
   Package,
+  RotateCcw,
   ScrollText,
   Shield,
   Truck,
@@ -53,6 +54,8 @@ export type BuyerOrderExperienceProps = {
   trackingNumber: string | null
   trackingCarrier: string | null
   paidWithCard: boolean
+  paymentMethod: string | null
+  refundedAt: string | null
   listingTitle: string
   sellerName: string
   messagesHref: string
@@ -68,16 +71,36 @@ type JourneyStep = {
 }
 
 function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
-  const { fulfillmentMethod, deliveryStatus, trackingNumber, status } = props
+  const { fulfillmentMethod, deliveryStatus, trackingNumber, status, paymentMethod, refundedAt, amount } = props
   const ship = fulfillmentMethod === "shipping"
 
   if (status === "refunded") {
+    const refundDateStr = refundedAt
+      ? new Date(refundedAt).toLocaleDateString(undefined, { dateStyle: "medium" })
+      : null
+    const isCard = paymentMethod === "stripe"
+    const fundsDesc = isCard
+      ? "Your card refund has been submitted to Stripe. It typically takes 5-10 business days to appear on your statement."
+      : `$${amount.toFixed(2)} in Reswell Bucks has been credited back to your wallet balance.`
+
     return [
       {
-        key: "refunded",
-        title: "Order refunded",
-        description: "This purchase was refunded. If you have questions, contact support.",
-        state: "current",
+        key: "placed",
+        title: "Order placed",
+        description: "Your original purchase was confirmed.",
+        state: "done",
+      },
+      {
+        key: "refund-issued",
+        title: `Refund issued${refundDateStr ? ` — ${refundDateStr}` : ""}`,
+        description: `A full refund of $${amount.toFixed(2)} was processed for this order.`,
+        state: "done",
+      },
+      {
+        key: "funds-returned",
+        title: isCard ? "Card refund in progress" : "Reswell Bucks returned",
+        description: fundsDesc,
+        state: isCard ? "current" : "done",
       },
     ]
   }
@@ -192,6 +215,8 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
     }
   }
 
+  const isRefunded = props.status === "refunded"
+
   const dateLabel = new Date(props.createdAtIso).toLocaleString(undefined, {
     dateStyle: "long",
     timeStyle: "short",
@@ -199,23 +224,34 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
 
   return (
     <div className="space-y-8">
-      <Card className="overflow-hidden border-primary/15 bg-gradient-to-b from-primary/[0.06] to-background shadow-sm">
+      <Card className={`overflow-hidden shadow-sm ${
+        isRefunded
+          ? "border-destructive/20 bg-gradient-to-b from-destructive/[0.04] to-background"
+          : "border-primary/15 bg-gradient-to-b from-primary/[0.06] to-background"
+      }`}>
         <CardHeader className="pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary/80">
-                What happens next
+              <p className={`text-[11px] font-semibold uppercase tracking-wider ${
+                isRefunded ? "text-destructive/80" : "text-primary/80"
+              }`}>
+                {isRefunded ? "Refund processed" : "What happens next"}
               </p>
               <CardTitle className="mt-1 text-xl font-semibold tracking-tight">
-                Your purchase is protected on Reswell
+                {isRefunded
+                  ? `$${props.amount.toFixed(2)} refund issued`
+                  : "Your purchase is protected on Reswell"}
               </CardTitle>
               <CardDescription className="text-[15px] leading-relaxed mt-2 max-w-2xl">
-                Follow the steps below. Message your seller anytime, track shipment when available, and
-                reach our team if something doesn&apos;t look right.
+                {isRefunded
+                  ? "This order has been fully refunded. See the timeline below for details on when to expect your funds."
+                  : "Follow the steps below. Message your seller anytime, track shipment when available, and reach our team if something doesn\u2019t look right."}
               </CardDescription>
             </div>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Shield className="h-5 w-5" aria-hidden />
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+              isRefunded ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+            }`}>
+              {isRefunded ? <RotateCcw className="h-5 w-5" aria-hidden /> : <Shield className="h-5 w-5" aria-hidden />}
             </div>
           </div>
         </CardHeader>
@@ -244,7 +280,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
       </Card>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        {trackUrl ? (
+        {!isRefunded && trackUrl ? (
           <Button className="gap-2" asChild>
             <a href={trackUrl} target="_blank" rel="noopener noreferrer">
               <Truck className="h-4 w-4" />
@@ -252,7 +288,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
               <ExternalLink className="h-3.5 w-3.5 opacity-70" />
             </a>
           </Button>
-        ) : props.fulfillmentMethod === "shipping" ? (
+        ) : !isRefunded && props.fulfillmentMethod === "shipping" ? (
           <Button type="button" variant="secondary" disabled className="gap-2">
             <Truck className="h-4 w-4" />
             Tracking when seller ships
@@ -347,13 +383,23 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         ) : null}
       </div>
 
-      <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
-        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-        <span>
-          Refunds on card payments are processed by our team after review — we may ask you to work with the
-          seller first. Never mark delivery complete until you&apos;ve received and inspected your item.
-        </span>
-      </p>
+      {isRefunded ? (
+        <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
+          <span>
+            This order has been fully refunded. If you have any questions about the refund timeline or
+            amount, contact our support team.
+          </span>
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+          <span>
+            Refunds on card payments are processed by our team after review — we may ask you to work with the
+            seller first. Never mark delivery complete until you&apos;ve received and inspected your item.
+          </span>
+        </p>
+      )}
 
       <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
         <DialogContent className="sm:max-w-lg">

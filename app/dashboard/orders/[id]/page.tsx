@@ -41,6 +41,8 @@ type OrderDetail = {
   amount: number | string
   status: string
   created_at: string
+  refunded_at: string | null
+  payment_method: string | null
   fulfillment_method: string | null
   delivery_status: string
   tracking_number: string | null
@@ -106,6 +108,8 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       amount,
       status,
       created_at,
+      refunded_at,
+      payment_method,
       fulfillment_method,
       delivery_status,
       tracking_number,
@@ -232,6 +236,8 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         trackingNumber={order.tracking_number}
         trackingCarrier={order.tracking_carrier}
         paidWithCard={paidWithCard}
+        paymentMethod={order.payment_method}
+        refundedAt={order.refunded_at}
         listingTitle={title}
         sellerName={sellerName}
         messagesHref={`/messages?user=${encodeURIComponent(order.seller_id)}&listing=${encodeURIComponent(order.listing_id)}`}
@@ -239,16 +245,18 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         canRequestRefundHelp={order.status === "confirmed" && canSubmitRefundHelpRequest(order)}
       />
 
-      {/* Buyer action: confirm delivery for shipped orders */}
-      <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
+      {/* Buyer action: confirm delivery for shipped orders (hidden when refunded) */}
+      {order.status !== "refunded" && (
+        <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
+      )}
 
-      {/* Buyer: show pickup code for local pickup */}
-      {order.fulfillment_method === "pickup" && order.pickup_code && (
+      {/* Buyer: show pickup code for local pickup (hidden when refunded) */}
+      {order.status !== "refunded" && order.fulfillment_method === "pickup" && order.pickup_code && (
         <BuyerPickupCode pickupCode={order.pickup_code} deliveryStatus={order.delivery_status} />
       )}
 
       {/* Tracking info from seller */}
-      {order.tracking_number && (
+      {order.status !== "refunded" && order.tracking_number && (
         <TrackingInfo
           trackingNumber={order.tracking_number}
           trackingCarrier={order.tracking_carrier}
