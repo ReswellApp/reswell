@@ -25,8 +25,8 @@ export async function POST(
   }
 
   const result = await verifyOrderPickupForSeller({
+    supabase,
     orderId,
-    sellerUserId: user.id,
     code,
   })
 
