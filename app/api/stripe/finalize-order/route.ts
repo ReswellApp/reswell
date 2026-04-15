@@ -38,6 +38,11 @@ export async function POST(request: NextRequest) {
 
   const result = await completeMarketplaceOrderFromPaymentIntent(pi)
   if (!result.ok) {
+    console.error("[finalize-order] completeMarketplaceOrder failed:", {
+      error: result.error,
+      status: result.status,
+      piId: pi.id,
+    })
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
 

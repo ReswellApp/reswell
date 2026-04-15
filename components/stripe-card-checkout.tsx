@@ -61,11 +61,14 @@ function StripePayButton({
         })
 
         if (error) {
-          const hint =
-            error.type === "invalid_request_error"
-              ? " If this keeps happening, confirm your Stripe publishable and secret keys are from the same account and both test or both live."
-              : ""
-          toast.error((error.message ?? "Payment failed") + hint)
+          console.error("Stripe confirmPayment error", {
+            type: error.type,
+            code: error.code,
+            decline_code: error.decline_code,
+            message: error.message,
+            param: error.param,
+          })
+          toast.error(error.message ?? "Payment failed")
           return
         }
 

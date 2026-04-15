@@ -1,11 +1,16 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { getStripe } from "@/lib/stripe-server"
+import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
     return NextResponse.json({ error: "Card payments are not configured" }, { status: 503 })
+  }
+
+  const keyConfigError = getStripeCheckoutKeyConfigError()
+  if (keyConfigError) {
+    return NextResponse.json({ error: keyConfigError }, { status: 503 })
   }
 
   const supabase = await createClient()
@@ -91,22 +96,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Amount is below the minimum charge" }, { status: 400 })
   }
 
-  const stripe = getStripe()
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amountCents,
-    currency: "usd",
-    automatic_payment_methods: { enabled: true },
-    metadata: {
-      listing_id: listing.id,
-      buyer_id: user.id,
-      fulfillment: impliedFulfillment,
-      amount_cents: String(amountCents),
-      ...(addressId ? { address_id: addressId } : {}),
-    },
-    description: `Reswell — ${listing.title}`.slice(0, 1000),
-  })
+  try {
+    const stripe = getStripe()
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountCents,
+      currency: "usd",
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        listing_id: listing.id,
+        buyer_id: user.id,
+        fulfillment: impliedFulfillment,
+        amount_cents: String(amountCents),
+        ...(addressId ? { address_id: addressId } : {}),
+      },
+      description: `Reswell — ${listing.title}`.slice(0, 1000),
+    })
 
-  return NextResponse.json({
-    clientSecret: paymentIntent.client_secret,
-  })
+    return NextResponse.json({
+      clientSecret: paymentIntent.client_secret,
+    })
+  } catch (err: unknown) {
+    const stripeErr = err as { type?: string; code?: string; message?: string; statusCode?: number }
+    console.error("[create-payment-intent] Stripe API error:", {
+      type: stripeErr.type,
+      code: stripeErr.code,
+      message: stripeErr.message,
+      statusCode: stripeErr.statusCode,
+    })
+    return NextResponse.json(
+      { error: stripeErr.message ?? "Could not create payment" },
+      { status: stripeErr.statusCode ?? 500 },
+    )
+  }
 }
