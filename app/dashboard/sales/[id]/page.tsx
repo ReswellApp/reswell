@@ -28,7 +28,7 @@ import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-
 import {
   SellerTrackingForm,
   SellerPickupVerify,
-  SellerRefundButton,
+  SellerRequestSupportButton,
   SellerRefundedBanner,
   DeliveryStatusBadge,
   PayoutStatusBadge,
@@ -428,13 +428,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             />
           )}
 
-          {/* Refund button */}
-          {sale.status === "confirmed" && (
-            <SellerRefundButton
+          {/* Support request (refund / cancel / return — admin handles it) */}
+          {sale.status !== "refunded" && (
+            <SellerRequestSupportButton
               orderId={sale.id}
               orderStatus={sale.status}
-              amount={Number(sale.amount)}
-              paymentMethod={sale.payment_method ?? (paidWithCard ? "stripe" : "reswell_bucks")}
             />
           )}
         </div>

@@ -15,6 +15,7 @@ import {
   Truck,
   Box,
   LifeBuoy,
+  ShoppingBag,
 } from 'lucide-react'
 
 const adminNavItems = [
@@ -23,6 +24,7 @@ const adminNavItems = [
   { href: '/admin/listings', label: 'Listings', icon: Package },
   { href: '/admin/listings/brand-requests', label: 'Brand requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/order-support', label: 'Order support', icon: LifeBuoy },
   { href: '/admin/contact-messages', label: 'Contact messages', icon: MessageSquare },
   { href: '/admin/shipping', label: 'Shipping', icon: Truck },

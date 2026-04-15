@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
 import { LifeBuoy } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -63,9 +64,17 @@ export default function AdminOrderSupportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Buyer order support</h1>
+        <h1 className="text-2xl font-bold text-foreground">Support requests</h1>
         <p className="text-muted-foreground">
-          Requests from buyers (questions, cancellations, refund assistance). Pair with email follow-up.
+          Requests from buyers and sellers (questions, cancellations, refund assistance, returns).
+          Click <strong>View</strong> to open the order detail where admins can issue refunds.
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Browse all orders in{' '}
+          <Link href="/admin/orders" className="font-medium text-primary underline underline-offset-4">
+            Orders
+          </Link>
+          .
         </p>
       </div>
 
@@ -90,6 +99,7 @@ export default function AdminOrderSupportPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Contacted seller first</TableHead>
                   <TableHead className="max-w-[min(40vw,420px)]">Message</TableHead>
+                  <TableHead className="w-[1%] whitespace-nowrap text-right">Order page</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -118,6 +128,14 @@ export default function AdminOrderSupportPage() {
                     </TableCell>
                     <TableCell className="text-sm align-top whitespace-pre-wrap break-words">
                       {r.body}
+                    </TableCell>
+                    <TableCell className="text-right align-top">
+                      <Link
+                        href={`/admin/orders/${r.order_id}`}
+                        className="text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/90"
+                      >
+                        View
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}

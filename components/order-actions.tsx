@@ -290,44 +290,50 @@ export function BuyerPickupCode({
   )
 }
 
-// ── Seller: issue refund ──────────────────────────────────────
+// ── Seller: request support (refund / cancel / return) ───────
+// Sellers cannot issue refunds directly. This sends a request to
+// the admin team via order_support_requests.
 
-export function SellerRefundButton({
+export function SellerRequestSupportButton({
   orderId,
   orderStatus,
-  amount,
-  paymentMethod,
 }: {
   orderId: string
   orderStatus: string
-  amount: number
-  paymentMethod: string
 }) {
-  const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
+  const [requestType, setRequestType] = useState<"refund_request" | "cancel_request" | "return_request">("refund_request")
+  const [body, setBody] = useState("")
 
-  if (orderStatus !== "confirmed") return null
+  if (orderStatus === "refunded") return null
 
-  const isCard = paymentMethod === "stripe"
-  const refundTarget = isCard ? "their card" : "their Reswell Bucks balance"
+  const typeLabels: Record<typeof requestType, string> = {
+    refund_request: "Request refund",
+    cancel_request: "Request cancellation",
+    return_request: "Request return",
+  }
 
   const submit = async () => {
+    if (body.trim().length < 10) {
+      toast.error("Please add a bit more detail (at least 10 characters).")
+      return
+    }
     setBusy(true)
     try {
-      const res = await fetch(`/api/orders/${orderId}/refund`, { method: "POST" })
-      const data = (await res.json()) as { error?: string; refund_type?: string }
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/seller-support`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_type: requestType, body: body.trim() }),
+      })
+      const data = (await res.json()) as { error?: string }
       if (!res.ok) {
-        toast.error(data.error ?? "Could not issue refund")
+        toast.error(data.error ?? "Could not send request")
         return
       }
-      if (data.refund_type === "stripe") {
-        toast.success("Refund issued — the buyer's card will be refunded by Stripe shortly.")
-      } else {
-        toast.success("Refund complete — Reswell Bucks returned to the buyer.")
-      }
+      toast.success("Request sent — our team will review it and follow up.")
       setOpen(false)
-      router.refresh()
+      setBody("")
     } catch {
       toast.error("Something went wrong")
     } finally {
@@ -338,29 +344,43 @@ export function SellerRefundButton({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive">
+        <Button variant="outline" className="w-full gap-2 text-muted-foreground">
           <RotateCcw className="h-4 w-4" />
-          Issue refund
+          Request refund, cancel, or return
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Refund ${amount.toFixed(2)} to the buyer?</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <span className="block">
-              This will refund <strong>${amount.toFixed(2)}</strong> to {refundTarget} and
-              debit your seller earnings. The listing will be re-activated for sale.
-            </span>
-            <span className="block font-medium text-destructive">
-              This action cannot be undone.
-            </span>
+          <AlertDialogTitle>Submit a request to Reswell support</AlertDialogTitle>
+          <AlertDialogDescription>
+            Select what you need and provide details. Our team will review and action it.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="flex flex-wrap gap-2">
+            {(["refund_request", "cancel_request", "return_request"] as const).map((t) => (
+              <Button
+                key={t}
+                size="sm"
+                variant={requestType === t ? "default" : "outline"}
+                onClick={() => setRequestType(t)}
+              >
+                {typeLabels[t]}
+              </Button>
+            ))}
+          </div>
+          <textarea
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[100px]"
+            placeholder="Tell us what happened and why you're requesting this…"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+          />
+        </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-          <Button variant="destructive" onClick={submit} disabled={busy}>
+          <Button onClick={submit} disabled={busy || body.trim().length < 10}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Confirm refund
+            Submit request
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

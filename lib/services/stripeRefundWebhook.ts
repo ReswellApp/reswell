@@ -117,7 +117,232 @@ async function syncOrderAndPayoutsFromStripeRefundState(
 }
 
 /**
- * When Stripe refunds a card payment, reverse the seller’s proportional share in the wallet **only if**
+ * Reconcile `orders` / `payouts` / **wallet** (and re-list when fully refunded) from Stripe's current
+ * refund totals. Use when a new Stripe refund cannot be created because the charge was already refunded
+ * (e.g. Dashboard refund, duplicate seller click) but Supabase was never updated.
+ *
+ * Iterates all succeeded refunds and creates any missing wallet clawback rows (idempotent via the
+ * unique index `wallet_transactions_stripe_refund_uidx`).
+ */
+export async function syncMarketplaceOrderFromStripePaymentIntent(
+  supabase: SupabaseClient,
+  paymentIntentId: string,
+): Promise<
+  | { ok: true; orderId: string; fullyRefunded: boolean }
+  | { ok: false; reason: "order_not_found" }
+  | { ok: false; reason: "stripe_error"; message: string }
+> {
+  const stripe = getStripe()
+  let pi: Stripe.PaymentIntent
+  try {
+    pi = await stripe.paymentIntents.retrieve(paymentIntentId)
+  } catch (e) {
+    return {
+      ok: false,
+      reason: "stripe_error",
+      message: e instanceof Error ? e.message : String(e),
+    }
+  }
+
+  let refundsList: Stripe.ApiList<Stripe.Refund>
+  try {
+    refundsList = await stripe.refunds.list({ payment_intent: paymentIntentId, limit: 100 })
+  } catch (e) {
+    return {
+      ok: false,
+      reason: "stripe_error",
+      message: e instanceof Error ? e.message : String(e),
+    }
+  }
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, seller_id, seller_earnings, listing_id, amount")
+    .eq("stripe_checkout_session_id", paymentIntentId)
+    .eq("payment_method", "stripe")
+    .maybeSingle()
+
+  if (!order) {
+    return { ok: false, reason: "order_not_found" }
+  }
+
+  // Snapshot payout status before sync mutations change it
+  const { data: payoutRow } = await supabase
+    .from("payouts")
+    .select("status")
+    .eq("order_id", order.id)
+    .maybeSingle()
+  const earningsReleasedToAvailable = payoutRow?.status === "pending"
+
+  const fullyRefunded = await syncOrderAndPayoutsFromStripeRefundState(
+    supabase,
+    { id: order.id, seller_earnings: order.seller_earnings },
+    pi,
+    refundsList,
+  )
+
+  // Reconcile seller wallet for each succeeded refund that has no wallet tx yet
+  const sellerEarnings = Number(order.seller_earnings)
+  if (Number.isFinite(sellerEarnings) && sellerEarnings > 0 && pi.amount > 0) {
+    await reconcileWalletForMissingRefunds(supabase, {
+      orderId: order.id,
+      sellerId: order.seller_id,
+      listingId: order.listing_id,
+      sellerEarnings,
+      piAmountCents: pi.amount,
+      orderTotalUsd: Number(order.amount),
+      succeededRefunds: refundsList.data.filter((r) => r.status === "succeeded"),
+      earningsReleasedToAvailable,
+    })
+  }
+
+  if (fullyRefunded && order.listing_id) {
+    await relistAfterRefund(supabase, order.listing_id)
+  }
+
+  return { ok: true, orderId: order.id, fullyRefunded }
+}
+
+/**
+ * For each succeeded Stripe refund without a matching `wallet_transactions` row, create the seller
+ * clawback entry. Relies on the unique index for idempotency if a webhook fires concurrently.
+ */
+async function reconcileWalletForMissingRefunds(
+  supabase: SupabaseClient,
+  opts: {
+    orderId: string
+    sellerId: string
+    listingId: string
+    sellerEarnings: number
+    piAmountCents: number
+    orderTotalUsd: number
+    succeededRefunds: Stripe.Refund[]
+    earningsReleasedToAvailable: boolean
+  },
+): Promise<void> {
+  if (opts.succeededRefunds.length === 0) return
+
+  const refundIds = opts.succeededRefunds.map((r) => r.id)
+  const { data: existingRows } = await supabase
+    .from("wallet_transactions")
+    .select("reference_id")
+    .eq("reference_type", "stripe_refund")
+    .in("reference_id", refundIds)
+
+  const existing = new Set((existingRows ?? []).map((r) => r.reference_id as string))
+  const missing = opts.succeededRefunds.filter((r) => !existing.has(r.id))
+  if (missing.length === 0) return
+
+  const { data: wallet } = await supabase
+    .from("wallets")
+    .select("*")
+    .eq("user_id", opts.sellerId)
+    .maybeSingle()
+
+  if (!wallet) {
+    console.error("[sync refund] seller wallet not found", { seller: opts.sellerId })
+    return
+  }
+
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("title")
+    .eq("id", opts.listingId)
+    .maybeSingle()
+  const title = typeof listing?.title === "string" ? listing.title : "Listing"
+
+  let curBalance = parseFloat(String(wallet.balance ?? 0))
+  let curPending = parseFloat(
+    String((wallet as { pending_balance?: string | number | null }).pending_balance ?? 0),
+  )
+  let curEarned = parseFloat(String(wallet.lifetime_earned ?? 0))
+
+  const sellerCents = Math.round(opts.sellerEarnings * 100)
+
+  for (const refund of missing) {
+    const clawbackCents = Math.round((sellerCents * refund.amount) / opts.piAmountCents)
+    const clawbackUsd = roundMoney(clawbackCents / 100)
+    if (clawbackUsd <= 0) continue
+
+    const refundUsd = refund.amount / 100
+    const partialNote =
+      refund.amount < opts.piAmountCents
+        ? `partial refund $${refundUsd.toFixed(2)} of $${opts.orderTotalUsd.toFixed(2)} card total`
+        : `full refund $${refundUsd.toFixed(2)} (card total $${opts.orderTotalUsd.toFixed(2)})`
+
+    if (opts.earningsReleasedToAvailable) {
+      const newBalance = roundMoney(Math.max(0, curBalance - clawbackUsd))
+      const newEarned = roundMoney(Math.max(0, curEarned - clawbackUsd))
+
+      const { error: txErr } = await supabase.from("wallet_transactions").insert({
+        wallet_id: wallet.id,
+        user_id: opts.sellerId,
+        type: "refund",
+        amount: -clawbackUsd,
+        balance_after: newBalance.toFixed(2),
+        description: `Refund — "${title}" (${partialNote}, card; Stripe ${refund.id})`,
+        status: "completed",
+        reference_id: refund.id,
+        reference_type: "stripe_refund",
+      })
+
+      if (txErr) {
+        if ((txErr as { code?: string }).code === "23505") continue
+        console.error("[sync refund] wallet tx insert", txErr)
+        continue
+      }
+      curBalance = newBalance
+      curEarned = newEarned
+    } else {
+      const clawFromPending = roundMoney(Math.min(clawbackUsd, Math.max(0, curPending)))
+      const newPending = roundMoney(Math.max(0, curPending - clawFromPending))
+      const newEarned = roundMoney(Math.max(0, curEarned - clawFromPending))
+
+      const { error: txErr } = await supabase.from("wallet_transactions").insert({
+        wallet_id: wallet.id,
+        user_id: opts.sellerId,
+        type: "refund",
+        amount: -clawFromPending,
+        balance_after: roundMoney(curBalance).toFixed(2),
+        description: `Refund — "${title}" (${partialNote}; pending earnings; Stripe ${refund.id})`,
+        status: "completed",
+        reference_id: refund.id,
+        reference_type: "stripe_refund",
+      })
+
+      if (txErr) {
+        if ((txErr as { code?: string }).code === "23505") continue
+        console.error("[sync refund] wallet tx insert (pending)", txErr)
+        continue
+      }
+      curPending = newPending
+      curEarned = newEarned
+    }
+  }
+
+  if (opts.earningsReleasedToAvailable) {
+    await supabase
+      .from("wallets")
+      .update({
+        balance: curBalance.toFixed(2),
+        lifetime_earned: curEarned.toFixed(2),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", wallet.id)
+  } else {
+    await supabase
+      .from("wallets")
+      .update({
+        pending_balance: curPending.toFixed(2),
+        lifetime_earned: curEarned.toFixed(2),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", wallet.id)
+  }
+}
+
+/**
+ * When Stripe refunds a card payment, reverse the seller's proportional share in the wallet **only if**
  * those earnings were already credited after fulfillment (`payouts.status = pending`). If the payout was
  * still `held`, the seller never received wallet funds — we record the refund for idempotency and update
  * orders/payouts only. Idempotent per Stripe refund id (`re_…`).
