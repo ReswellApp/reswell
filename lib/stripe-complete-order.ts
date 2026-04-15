@@ -11,7 +11,6 @@ import {
 import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
-import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
@@ -26,8 +25,8 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
 }
 
 /**
- * Re-send Purchase Successful + Sale Successful for an order already stored (idempotent finalize / webhook).
- * Klaviyo dedupes by `unique_id` (`purchase-successful-{orderId}` / `sale-successful-{orderId}`).
+ * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
+ * Seller Sale Successful Klaviyo fires when earnings are released after fulfillment.
  */
 async function emitPurchaseSuccessfulKlaviyoForOrderId(
   serviceSupabase: ReturnType<typeof createServiceRoleClient>,
@@ -36,7 +35,7 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
   const { data: order } = await serviceSupabase
     .from("orders")
     .select(
-      "id, order_num, buyer_id, seller_id, listing_id, amount, platform_fee, seller_earnings, fulfillment_method, payment_method",
+      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method",
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -52,30 +51,11 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
   if (!listing) return
 
   const buyerEmail = await getAuthEmailForUserId(order.buyer_id)
-  const sellerEmail = await getAuthEmailForUserId(order.seller_id)
   const rawAmount = order.amount as unknown
   const amount =
     typeof rawAmount === "number"
       ? rawAmount
       : parseFloat(typeof rawAmount === "string" ? rawAmount : String(rawAmount))
-
-  const rawPlatformFee = order.platform_fee as unknown
-  const platformFee =
-    typeof rawPlatformFee === "number"
-      ? rawPlatformFee
-      : parseFloat(
-          typeof rawPlatformFee === "string" ? rawPlatformFee : String(rawPlatformFee ?? 0),
-        )
-
-  const rawSellerEarnings = order.seller_earnings as unknown
-  const sellerEarnings =
-    typeof rawSellerEarnings === "number"
-      ? rawSellerEarnings
-      : parseFloat(
-          typeof rawSellerEarnings === "string"
-            ? rawSellerEarnings
-            : String(rawSellerEarnings ?? 0),
-        )
 
   const fulfillmentMethod =
     order.fulfillment_method === "pickup" ? "pickup" : "shipping"
@@ -96,24 +76,7 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
     paymentMethod,
   })
 
-  // Same user as buyer + seller → one Klaviyo profile would get both metrics and both flows (duplicate emails).
-  if (order.buyer_id !== order.seller_id) {
-    await trackKlaviyoSellerOrderConfirmed({
-      sellerUserId: order.seller_id,
-      sellerEmail,
-      orderId: order.id,
-      orderNum: (order as { order_num?: string | null }).order_num ?? null,
-      listingId: listing.id,
-      listingTitle: listing.title ?? "",
-      listingSection: listing.section ?? "",
-      listingSlug: listing.slug ?? null,
-      orderAmount: Number.isFinite(amount) ? amount : 0,
-      sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
-      platformFee: Number.isFinite(platformFee) ? platformFee : 0,
-      fulfillmentMethod,
-      paymentMethod,
-    })
-  }
+  // Seller "Sale Successful" Klaviyo fires when earnings are released after fulfillment (see releaseOrderSellerEarningsAfterFulfillment).
 }
 
 /**
@@ -172,8 +135,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  const sellerEmail = await getAuthEmailForUserId(listing.user_id)
-
   if (listing.user_id === buyerId) {
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
@@ -207,9 +168,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   const price = resolved.total
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, {
-    cardPayment: true,
-  })
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price)
 
   if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
     console.error("[stripe-complete-order] invalid seller_earnings", {
@@ -220,35 +179,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     })
     return {
       ok: false,
-      error:
-        "Order total is too low after card processing fees for the system to record this sale. Refund from Stripe if needed.",
+      error: "Could not compute seller earnings for this order. Refund from Stripe if needed.",
       status: 500,
     }
   }
-
-  let { data: sellerWallet } = await serviceSupabase
-    .from("wallets")
-    .select("*")
-    .eq("user_id", listing.user_id)
-    .maybeSingle()
-
-  if (!sellerWallet) {
-    const { data: newWallet, error: walletInsertErr } = await serviceSupabase
-      .from("wallets")
-      .insert({ user_id: listing.user_id })
-      .select()
-      .single()
-    if (walletInsertErr) {
-      console.error("[stripe-complete-order] seller wallet insert:", walletInsertErr)
-    }
-    sellerWallet = newWallet
-  }
-
-  if (!sellerWallet) {
-    return { ok: false, error: "Seller wallet error", status: 500 }
-  }
-
-  const newSellerBalance = parseFloat(sellerWallet.balance) + sellerEarnings
 
   const fulfillmentMethod =
     lp && sa
@@ -346,34 +280,63 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not create order", status: 500 }
   }
 
+  let { data: sellerWallet } = await serviceSupabase
+    .from("wallets")
+    .select("*")
+    .eq("user_id", listing.user_id)
+    .maybeSingle()
+
+  if (!sellerWallet) {
+    const { data: newWallet, error: walletInsertErr } = await serviceSupabase
+      .from("wallets")
+      .insert({ user_id: listing.user_id })
+      .select()
+      .single()
+    if (walletInsertErr) {
+      console.error("[stripe-complete-order] seller wallet insert:", walletInsertErr)
+    }
+    sellerWallet = newWallet
+  }
+
+  if (!sellerWallet) {
+    return { ok: false, error: "Seller wallet error", status: 500 }
+  }
+
+  const wRow = sellerWallet as typeof sellerWallet & { pending_balance?: string | number | null }
+  const prevAvailable = parseFloat(String(sellerWallet.balance ?? 0))
+  const prevPending = parseFloat(String(wRow.pending_balance ?? 0))
+  const newPending = Math.round((prevPending + sellerEarnings) * 100) / 100
+  const newLifetimeEarned =
+    Math.round((parseFloat(String(sellerWallet.lifetime_earned ?? 0)) + sellerEarnings) * 100) / 100
+
   const { error: sellerWalletUpdateErr } = await serviceSupabase
     .from("wallets")
     .update({
-      balance: newSellerBalance,
-      lifetime_earned: parseFloat(sellerWallet.lifetime_earned) + sellerEarnings,
+      pending_balance: newPending.toFixed(2),
+      lifetime_earned: newLifetimeEarned.toFixed(2),
       updated_at: new Date().toISOString(),
     })
     .eq("id", sellerWallet.id)
 
   if (sellerWalletUpdateErr) {
-    console.error("[stripe-complete-order] seller wallet update:", sellerWalletUpdateErr)
-    return { ok: false, error: "Could not credit seller", status: 500 }
+    console.error("[stripe-complete-order] seller wallet pending update:", sellerWalletUpdateErr)
+    return { ok: false, error: "Could not record pending seller earnings", status: 500 }
   }
 
-  const { error: txErr } = await serviceSupabase.from("wallet_transactions").insert({
+  const { error: pendingTxErr } = await serviceSupabase.from("wallet_transactions").insert({
     wallet_id: sellerWallet.id,
     user_id: listing.user_id,
     type: "sale",
     amount: sellerEarnings,
-    balance_after: newSellerBalance,
-    description: `Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)}, card)`,
+    balance_after: prevAvailable.toFixed(2),
+    description: `Pending — Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)}, card — available after delivery)`,
     reference_id: purchase.id,
-    reference_type: "listing",
+    reference_type: "order_pending_earnings",
   })
 
-  if (txErr) {
-    console.error("[stripe-complete-order] wallet_transactions:", txErr)
-    return { ok: false, error: "Could not record sale", status: 500 }
+  if (pendingTxErr) {
+    console.error("[stripe-complete-order] pending wallet_transactions:", pendingTxErr)
+    return { ok: false, error: "Could not record pending sale", status: 500 }
   }
 
   const { error: listingErr } = await serviceSupabase
@@ -413,24 +376,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     paymentMethod: "stripe",
   })
-
-  if (buyerId !== listing.user_id) {
-    await trackKlaviyoSellerOrderConfirmed({
-      sellerUserId: listing.user_id,
-      sellerEmail,
-      orderId: purchase.id,
-      orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
-      listingId: listing.id,
-      listingTitle: listing.title,
-      listingSection: listing.section,
-      listingSlug: null,
-      orderAmount: price,
-      sellerEarnings,
-      platformFee,
-      fulfillmentMethod: isPickup ? "pickup" : "shipping",
-      paymentMethod: "stripe",
-    })
-  }
 
   return { ok: true, orderId: purchase.id }
 }

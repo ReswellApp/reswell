@@ -41,8 +41,10 @@ async function resolvePaymentIntentId(
 }
 
 /**
- * When Stripe refunds a card payment, reverse the seller’s proportional share of earnings in the wallet
- * and keep orders / payouts aligned. Idempotent per Stripe refund id (`re_…`).
+ * When Stripe refunds a card payment, reverse the seller’s proportional share in the wallet **only if**
+ * those earnings were already credited after fulfillment (`payouts.status = pending`). If the payout was
+ * still `held`, the seller never received wallet funds — we record the refund for idempotency and update
+ * orders/payouts only. Idempotent per Stripe refund id (`re_…`).
  */
 export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promise<void> {
   if (refund.status !== "succeeded") {
@@ -95,6 +97,15 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     return
   }
 
+  const { data: payoutRow } = await supabase
+    .from("payouts")
+    .select("status")
+    .eq("order_id", order.id)
+    .maybeSingle()
+
+  /** After fulfillment, payout is `pending` and seller share sits in spendable `balance`. Before that, it is in `pending_balance`. */
+  const earningsReleasedToSellerWallet = payoutRow?.status === "pending"
+
   const sellerEarnings = Number(order.seller_earnings)
   if (!Number.isFinite(sellerEarnings) || sellerEarnings <= 0) {
     console.error("[stripe refund webhook] invalid seller_earnings", { orderId: order.id })
@@ -110,21 +121,30 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     return
   }
 
-  const { data: wallet } = await supabase
+  let { data: wallet } = await supabase
     .from("wallets")
     .select("*")
     .eq("user_id", order.seller_id)
     .maybeSingle()
 
   if (!wallet) {
-    console.error("[stripe refund webhook] seller wallet missing", { seller: order.seller_id })
-    return
+    const { data: insertedWallet, error: walletInsertErr } = await supabase
+      .from("wallets")
+      .insert({ user_id: order.seller_id })
+      .select()
+      .single()
+    if (walletInsertErr || !insertedWallet) {
+      console.error("[stripe refund webhook] seller wallet missing", { seller: order.seller_id })
+      return
+    }
+    wallet = insertedWallet
   }
 
   const prevBalance = Number.parseFloat(String(wallet.balance))
+  const prevPending = Number.parseFloat(
+    String((wallet as { pending_balance?: string | number | null }).pending_balance ?? 0),
+  )
   const prevEarned = Number.parseFloat(String(wallet.lifetime_earned))
-  const newBalance = roundMoney(prevBalance - clawbackUsd)
-  const newLifetimeEarned = roundMoney(prevEarned - clawbackUsd)
 
   const { data: listing } = await supabase
     .from("listings")
@@ -140,43 +160,91 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
       ? `partial refund $${refundUsd.toFixed(2)} of $${orderTotalUsd.toFixed(2)} card total`
       : `full refund $${refundUsd.toFixed(2)} (card total $${orderTotalUsd.toFixed(2)})`
 
-  const { error: txErr } = await supabase.from("wallet_transactions").insert({
-    wallet_id: wallet.id,
-    user_id: order.seller_id,
-    type: "refund",
-    amount: -clawbackUsd,
-    balance_after: newBalance,
-    description: `Refund — "${title}" (${partialNote}, card; Stripe ${refund.id})`,
-    status: "completed",
-    reference_id: refund.id,
-    reference_type: "stripe_refund",
-  })
+  if (earningsReleasedToSellerWallet) {
+    const newBalance = roundMoney(prevBalance - clawbackUsd)
+    const newLifetimeEarned = roundMoney(prevEarned - clawbackUsd)
 
-  if (txErr) {
-    if (isUniqueViolation(txErr)) {
+    const { error: txErr } = await supabase.from("wallet_transactions").insert({
+      wallet_id: wallet.id,
+      user_id: order.seller_id,
+      type: "refund",
+      amount: -clawbackUsd,
+      balance_after: newBalance,
+      description: `Refund — "${title}" (${partialNote}, card; Stripe ${refund.id})`,
+      status: "completed",
+      reference_id: refund.id,
+      reference_type: "stripe_refund",
+    })
+
+    if (txErr) {
+      if (isUniqueViolation(txErr)) {
+        return
+      }
+      console.error("[stripe refund webhook] wallet_transactions insert", txErr)
       return
     }
-    console.error("[stripe refund webhook] wallet_transactions insert", txErr)
-    return
-  }
 
-  const { error: walletErr } = await supabase
-    .from("wallets")
-    .update({
-      balance: newBalance.toFixed(2),
-      lifetime_earned: newLifetimeEarned.toFixed(2),
-      updated_at: new Date().toISOString(),
+    const { error: walletErr } = await supabase
+      .from("wallets")
+      .update({
+        balance: newBalance.toFixed(2),
+        lifetime_earned: newLifetimeEarned.toFixed(2),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", wallet.id)
+
+    if (walletErr) {
+      console.error("[stripe refund webhook] wallet update", walletErr)
+      await supabase
+        .from("wallet_transactions")
+        .delete()
+        .eq("reference_type", "stripe_refund")
+        .eq("reference_id", refund.id)
+      return
+    }
+  } else {
+    const clawFromPending = roundMoney(Math.min(clawbackUsd, Math.max(0, prevPending)))
+    const newPending = roundMoney(Math.max(0, prevPending - clawFromPending))
+    const newLifetimeEarned = roundMoney(prevEarned - clawFromPending)
+
+    const { error: txErr } = await supabase.from("wallet_transactions").insert({
+      wallet_id: wallet.id,
+      user_id: order.seller_id,
+      type: "refund",
+      amount: -clawFromPending,
+      balance_after: roundMoney(prevBalance).toFixed(2),
+      description: `Refund — "${title}" (${partialNote}; pending earnings; Stripe ${refund.id})`,
+      status: "completed",
+      reference_id: refund.id,
+      reference_type: "stripe_refund",
     })
-    .eq("id", wallet.id)
 
-  if (walletErr) {
-    console.error("[stripe refund webhook] wallet update", walletErr)
-    await supabase
-      .from("wallet_transactions")
-      .delete()
-      .eq("reference_type", "stripe_refund")
-      .eq("reference_id", refund.id)
-    return
+    if (txErr) {
+      if (isUniqueViolation(txErr)) {
+        return
+      }
+      console.error("[stripe refund webhook] wallet_transactions insert (pending bucket)", txErr)
+      return
+    }
+
+    const { error: walletErr } = await supabase
+      .from("wallets")
+      .update({
+        pending_balance: newPending.toFixed(2),
+        lifetime_earned: newLifetimeEarned.toFixed(2),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", wallet.id)
+
+    if (walletErr) {
+      console.error("[stripe refund webhook] wallet update (pending refund)", walletErr)
+      await supabase
+        .from("wallet_transactions")
+        .delete()
+        .eq("reference_type", "stripe_refund")
+        .eq("reference_id", refund.id)
+      return
+    }
   }
 
   const totalRefundedCents = refundsList.data

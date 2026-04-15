@@ -1,5 +1,5 @@
 /**
- * Server-only: Klaviyo Events API — fires when a seller’s listing is purchased (payment captured).
+ * Server-only: Klaviyo Events API — fires when seller earnings are released to the wallet (fulfillment complete).
  *
  * **Metric name in Klaviyo:** `Sale Successful` — use as the flow trigger (Flows → Metric).
  *

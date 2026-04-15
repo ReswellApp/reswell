@@ -4,9 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { generatePickupCode } from "@/lib/order-status"
-import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
-import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
@@ -48,7 +46,7 @@ export async function POST(request: NextRequest) {
   }
 
   const price = resolved.total
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price, { cardPayment: false })
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price)
 
   const { data: buyerWallet } = await supabase
     .from("wallets")
@@ -73,30 +71,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  let { data: sellerWallet } = await serviceSupabase
-    .from("wallets")
-    .select("*")
-    .eq("user_id", listing.user_id)
-    .maybeSingle()
-
-  if (!sellerWallet) {
-    const { data: newWallet, error: walletInsertErr } = await serviceSupabase
-      .from("wallets")
-      .insert({ user_id: listing.user_id })
-      .select()
-      .single()
-    if (walletInsertErr) {
-      console.error("[wallet/purchase] seller wallet insert:", walletInsertErr)
-    }
-    sellerWallet = newWallet
-  }
-
-  if (!sellerWallet) {
-    return NextResponse.json({ error: "Seller wallet error" }, { status: 500 })
-  }
-
   const newBuyerBalance = parseFloat(buyerWallet.balance) - price
-  const newSellerBalance = parseFloat(sellerWallet.balance) + sellerEarnings
 
   const { error: buyerUpdateError } = await supabase
     .from("wallets")
@@ -109,20 +84,6 @@ export async function POST(request: NextRequest) {
 
   if (buyerUpdateError) {
     return NextResponse.json({ error: "Failed to process payment" }, { status: 500 })
-  }
-
-  const { error: sellerWalletUpdateErr } = await serviceSupabase
-    .from("wallets")
-    .update({
-      balance: newSellerBalance,
-      lifetime_earned: parseFloat(sellerWallet.lifetime_earned) + sellerEarnings,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", sellerWallet.id)
-
-  if (sellerWalletUpdateErr) {
-    console.error("[wallet/purchase] seller wallet update:", sellerWalletUpdateErr)
-    return NextResponse.json({ error: "Failed to credit seller" }, { status: 500 })
   }
 
   const isPickup = fulfillment === "pickup" || (!listing.shipping_available && listing.local_pickup !== false)
@@ -153,6 +114,63 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not create order" }, { status: 500 })
   }
 
+  let { data: sellerWallet } = await serviceSupabase
+    .from("wallets")
+    .select("*")
+    .eq("user_id", listing.user_id)
+    .maybeSingle()
+
+  if (!sellerWallet) {
+    const { data: nw, error: wIns } = await serviceSupabase
+      .from("wallets")
+      .insert({ user_id: listing.user_id })
+      .select()
+      .single()
+    if (wIns) console.error("[wallet/purchase] seller wallet insert:", wIns)
+    sellerWallet = nw
+  }
+
+  if (!sellerWallet) {
+    return NextResponse.json({ error: "Seller wallet error" }, { status: 500 })
+  }
+
+  const sw = sellerWallet as typeof sellerWallet & { pending_balance?: string | number | null }
+  const prevAvailable = parseFloat(String(sellerWallet.balance ?? 0))
+  const prevPending = parseFloat(String(sw.pending_balance ?? 0))
+  const newPending = Math.round((prevPending + sellerEarnings) * 100) / 100
+  const newLifetimeEarned =
+    Math.round((parseFloat(String(sellerWallet.lifetime_earned ?? 0)) + sellerEarnings) * 100) / 100
+
+  const { error: sellerPendingErr } = await serviceSupabase
+    .from("wallets")
+    .update({
+      pending_balance: newPending.toFixed(2),
+      lifetime_earned: newLifetimeEarned.toFixed(2),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", sellerWallet.id)
+
+  if (sellerPendingErr) {
+    console.error("[wallet/purchase] seller pending update:", sellerPendingErr)
+    return NextResponse.json({ error: "Could not record seller pending earnings" }, { status: 500 })
+  }
+
+  const { error: sellerPendingTxErr } = await serviceSupabase.from("wallet_transactions").insert({
+    wallet_id: sellerWallet.id,
+    user_id: listing.user_id,
+    type: "sale",
+    amount: sellerEarnings,
+    balance_after: prevAvailable.toFixed(2),
+    description: `Pending — Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)} — available after delivery)`,
+    reference_id: purchase.id,
+    reference_type: "order_pending_earnings",
+  })
+
+  if (sellerPendingTxErr) {
+    console.error("[wallet/purchase] seller pending tx:", sellerPendingTxErr)
+    return NextResponse.json({ error: "Could not record pending sale" }, { status: 500 })
+  }
+
   const { error: buyerTxErr } = await supabase.from("wallet_transactions").insert({
     wallet_id: buyerWallet.id,
     user_id: user.id,
@@ -167,22 +185,6 @@ export async function POST(request: NextRequest) {
   if (buyerTxErr) {
     console.error("[wallet/purchase] buyer wallet_transactions:", buyerTxErr)
     return NextResponse.json({ error: "Could not record purchase" }, { status: 500 })
-  }
-
-  const { error: sellerTxErr } = await serviceSupabase.from("wallet_transactions").insert({
-    wallet_id: sellerWallet.id,
-    user_id: listing.user_id,
-    type: "sale",
-    amount: sellerEarnings,
-    balance_after: newSellerBalance,
-    description: `Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)})`,
-    reference_id: purchase.id,
-    reference_type: "listing",
-  })
-
-  if (sellerTxErr) {
-    console.error("[wallet/purchase] seller wallet_transactions:", sellerTxErr)
-    return NextResponse.json({ error: "Could not record sale" }, { status: 500 })
   }
 
   const { error: listingErr } = await serviceSupabase
@@ -210,7 +212,6 @@ export async function POST(request: NextRequest) {
   })
 
   if (purchase?.id) {
-    const sellerEmail = await getAuthEmailForUserId(listing.user_id)
     await trackKlaviyoBuyerOrderConfirmed({
       buyerUserId: user.id,
       buyerEmail: user.email ?? null,
@@ -223,22 +224,6 @@ export async function POST(request: NextRequest) {
       fulfillmentMethod: isPickup ? "pickup" : "shipping",
       paymentMethod: "reswell_bucks",
     })
-    if (user.id !== listing.user_id) {
-      await trackKlaviyoSellerOrderConfirmed({
-        sellerUserId: listing.user_id,
-        sellerEmail,
-        orderId: purchase.id,
-        orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
-        listingId: listing.id,
-        listingTitle: listing.title,
-        listingSection: listing.section,
-        orderAmount: price,
-        sellerEarnings,
-        platformFee,
-        fulfillmentMethod: isPickup ? "pickup" : "shipping",
-        paymentMethod: "reswell_bucks",
-      })
-    }
   }
 
   return NextResponse.json({

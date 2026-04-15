@@ -18,6 +18,8 @@ export default async function AdminDashboard() {
 
   let platformPurchaseFees: {
     totalFees: number
+    totalFeesFulfilled: number
+    fulfilledOrderCount: number
     confirmedCount: number
     totalSaleVolume: number
   } | null = null
@@ -28,15 +30,20 @@ export default async function AdminDashboard() {
       const adminDb = createServiceRoleClient()
       const { data: orderRows, error: ordersError } = await adminDb
         .from('orders')
-        .select('platform_fee, amount')
+        .select('platform_fee, amount, delivery_status')
         .eq('status', 'confirmed')
 
       if (ordersError) {
         platformFeesError = 'Could not load purchase fee totals.'
       } else {
         const rows = orderRows ?? []
+        const fulfilled = rows.filter((r) =>
+          r.delivery_status === 'delivered' || r.delivery_status === 'picked_up',
+        )
         platformPurchaseFees = {
           totalFees: rows.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0),
+          totalFeesFulfilled: fulfilled.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0),
+          fulfilledOrderCount: fulfilled.length,
           confirmedCount: rows.length,
           totalSaleVolume: rows.reduce((s, r) => s + Number(r.amount ?? 0), 0),
         }
@@ -132,21 +139,21 @@ export default async function AdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Coins className="h-5 w-5 text-primary" />
-              Platform Reswell Bucks (fees from purchases)
+              Platform fee revenue (7%)
             </CardTitle>
             <p className="text-sm text-muted-foreground font-normal">
-              Total marketplace fees collected on completed purchases (Reswell Bucks and card
-              checkout). Same units as listing prices in the app.
+              Card payments settle on the platform Stripe account at checkout. Seller earnings credit after
+              fulfillment. Fees below are the 7% marketplace fee on order totals (same currency as listings).
             </p>
           </CardHeader>
           <CardContent>
             {platformFeesError ? (
               <p className="text-sm text-muted-foreground">{platformFeesError}</p>
             ) : platformPurchaseFees ? (
-              <div className="grid gap-6 sm:grid-cols-3">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Platform fees
+                    7% fee (all paid orders)
                   </p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
                     ${platformPurchaseFees.totalFees.toFixed(2)}
@@ -154,7 +161,18 @@ export default async function AdminDashboard() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Completed purchases
+                    7% fee (fulfillment complete)
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                    ${platformPurchaseFees.totalFeesFulfilled.toFixed(2)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {platformPurchaseFees.fulfilledOrderCount} orders delivered or picked up
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Paid orders
                   </p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
                     {platformPurchaseFees.confirmedCount}

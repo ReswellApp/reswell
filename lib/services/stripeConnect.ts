@@ -459,11 +459,17 @@ export async function cashOutToStripeConnectedAccount(
       .from("wallets")
       .update({
         balance: s.balance,
+        pending_balance: s.pending_balance,
         lifetime_cashed_out: s.lifetime_cashed_out,
         updated_at: new Date().toISOString(),
       })
       .eq("id", wallet.id)
-    wallet = { ...wallet, balance: s.balance, lifetime_cashed_out: s.lifetime_cashed_out }
+    wallet = {
+      ...wallet,
+      balance: s.balance,
+      pending_balance: s.pending_balance,
+      lifetime_cashed_out: s.lifetime_cashed_out,
+    }
   }
 
   const available = roundMoney(parseFloat(String(wallet.balance)))

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(
@@ -67,6 +68,12 @@ export async function POST(
     })
     .eq("order_id", orderId)
     .eq("status", "held")
+
+  const release = await releaseOrderSellerEarningsAfterFulfillment(orderId)
+  if (!release.ok) {
+    console.error("[verify-pickup] release seller earnings:", release.error)
+    return NextResponse.json({ error: release.error }, { status: 500 })
+  }
 
   const { data: listing } = await supabase
     .from("listings")

@@ -6,7 +6,8 @@ import { NextRequest, NextResponse } from "next/server"
  * POST /api/orders/:id/refund
  * Issues a full Stripe refund for a confirmed card order.
  * Only the seller can trigger this (buyer-initiated refunds can be added later).
- * The Stripe webhook (`refund.created` / `refund.updated`, status succeeded) reverses seller earnings in the wallet.
+ * The Stripe webhook (`refund.created` / `refund.updated`, status succeeded) adjusts seller wallet only if
+ * earnings were already released after fulfillment; otherwise it updates orders/payouts only.
  */
 export async function POST(
   _request: NextRequest,

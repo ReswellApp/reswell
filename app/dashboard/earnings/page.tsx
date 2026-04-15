@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import PayoutModal from "@/components/PayoutModal"
+import { MARKETPLACE_FEE_PERCENT, SELLER_SHARE_PERCENT } from "@/lib/seller-fees"
 import {
   StripeBankPayoutSection,
   type StripeConnectStatusPayload,
@@ -47,6 +48,7 @@ import { getEarningsWalletData } from "@/app/actions/wallet"
 interface WalletData {
   id: string
   balance: string
+  pending_balance?: string
   lifetime_earned: string
   lifetime_spent: string
   lifetime_cashed_out: string
@@ -230,9 +232,11 @@ export default function EarningsPage() {
   const walletBalance = wallet ? parseFloat(wallet.balance) : 0
   const lifetimeEarned = wallet ? parseFloat(wallet.lifetime_earned) : 0
   const lifetimeCashedOut = wallet ? parseFloat(wallet.lifetime_cashed_out) : 0
+  const pendingRaw = wallet ? parseFloat(wallet.pending_balance ?? "0") : 0
 
   const displayAvailable = walletBalance
-  const displayPending = 0
+  const displayPending = Number.isFinite(pendingRaw) ? pendingRaw : 0
+  const displayTotal = displayAvailable + displayPending
 
   useEffect(() => {
     setPaypalDisplayBalance(displayAvailable)
@@ -308,7 +312,7 @@ export default function EarningsPage() {
       </div>
 
       {/* ── Balance summary ───────────────────────────────────────────────────── */}
-      <Card className={displayAvailable > 0 ? "border-primary/30 bg-primary/5" : ""}>
+      <Card className={displayTotal > 0 ? "border-primary/30 bg-primary/5" : ""}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
@@ -317,22 +321,35 @@ export default function EarningsPage() {
                 Your Reswell Bucks balance
               </div>
 
-              <div className="flex items-baseline gap-6 mt-2 flex-wrap">
+              <div className="mt-2 space-y-3">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Available</p>
-                  <p className="text-4xl font-bold text-primary">${displayAvailable.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Total (including pending)</p>
+                  <p className="text-4xl font-bold text-primary">${displayTotal.toFixed(2)}</p>
                 </div>
-                {displayPending > 0 && (
+                <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Pending</p>
-                    <p className="text-2xl font-semibold text-muted-foreground">${displayPending.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">Available to spend</p>
+                    <p className="text-xl font-semibold tabular-nums">${displayAvailable.toFixed(2)}</p>
                   </div>
-                )}
+                  {displayPending > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">Pending (until delivery)</p>
+                      <p className="text-xl font-semibold tabular-nums text-muted-foreground">
+                        ${displayPending.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           <div className="mt-4 text-sm text-muted-foreground space-y-1">
+            <p>
+              Pending earnings show as soon as a buyer pays; they move to <span className="text-foreground">available</span>{" "}
+              after the buyer confirms delivery or local pickup is verified. You can only shop or cash out from available
+              funds.
+            </p>
             <p>
               {stripePayoutsEnabled
                 ? "Cash out to your bank (ACH) or PayPal — choose the option that works best for you."
@@ -535,7 +552,9 @@ export default function EarningsPage() {
                 <ArrowDownLeft className="h-4 w-4" /> Earn
               </div>
               <p className="text-muted-foreground">
-                When a buyer purchases your listing, earnings are credited to your balance after marketplace fees.
+                When a buyer pays, you receive {SELLER_SHARE_PERCENT}% of the sale (platform fee {MARKETPLACE_FEE_PERCENT}%)
+                — it shows as <span className="text-foreground">pending</span> right away and moves to{" "}
+                <span className="text-foreground">available</span> after delivery or pickup is completed.
               </p>
             </div>
             <div className="space-y-1">
@@ -543,7 +562,8 @@ export default function EarningsPage() {
                 <ArrowUpRight className="h-4 w-4" /> Spend
               </div>
               <p className="text-muted-foreground">
-                Use your balance to buy gear from other sellers — no extra fees for internal purchases.
+                Only <span className="text-foreground">available</span> funds can be used to buy from other sellers — pending
+                earnings unlock after delivery or pickup.
               </p>
             </div>
             <div className="space-y-1">
@@ -566,7 +586,20 @@ export default function EarningsPage() {
 // ─── Description parser ───────────────────────────────────────────────────────
 
 function parseDescription(raw: string, type: string): { title: string; subtitle: string } {
-  // e.g. 'Sold "Longboard Pickle x Stix - 9\'3"" (card, 7% + processing fee)'
+  if (raw.startsWith("Pending — ")) {
+    const m = raw.match(/^Pending — Sold "(.+?)"\s*/)
+    if (m) {
+      return { title: `Pending — ${m[1]}`, subtitle: "Awaiting delivery or pickup" }
+    }
+  }
+  if (raw.startsWith("Available — ")) {
+    const m = raw.match(/^Available — Sold "(.+?)"\s*/)
+    if (m) {
+      return { title: `Available — ${m[1]}`, subtitle: "Ready to spend or cash out" }
+    }
+  }
+
+  // e.g. 'Sold "Longboard Pickle x Stix - 9\'3"" (7% fee: $X.XX, card)'
   const soldMatch = raw.match(/^Sold "(.+?)"\s*(?:\(([^)]+)\))?$/)
   if (soldMatch) {
     const itemName = soldMatch[1]
@@ -630,33 +663,33 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
     )
   }
 
-  // Recalculate running balances chronologically from $0
-  // (DB balance_after may be stale from earlier data issues)
-  const sorted = [...transactions].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  )
-  let running = 0
-  const balanceMap = new Map<string, number>()
-  for (const t of sorted) {
-    running = Math.round((running + parseFloat(t.amount)) * 100) / 100
-    balanceMap.set(t.id, running)
-  }
-
   return (
     <Card>
       <CardContent className="p-0">
         <div className="divide-y">
           {transactions.map((t) => {
             const amt = parseFloat(t.amount)
-            const isPositive = amt >= 0
-            const balAfter = balanceMap.get(t.id) ?? 0
+            const isRelease =
+              t.description.startsWith("Available — ") && Math.abs(amt) < 0.0001
+            const incoming = amt > 0.0001
+            const balAfter = Number.isFinite(parseFloat(t.balance_after))
+              ? parseFloat(t.balance_after)
+              : 0
             const { title, subtitle } = parseDescription(t.description, t.type)
             return (
               <div key={t.id} className="flex items-center gap-3 px-4 py-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${isPositive ? "bg-neutral-100" : "bg-muted"}`}>
-                  {isPositive
-                    ? <ArrowDownLeft className="h-4 w-4 text-neutral-700" />
-                    : <ArrowUpRight className="h-4 w-4 text-muted-foreground" />}
+                <div
+                  className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
+                    isRelease ? "bg-emerald-50 dark:bg-emerald-950/40" : incoming ? "bg-neutral-100" : "bg-muted"
+                  }`}
+                >
+                  {isRelease ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                  ) : incoming ? (
+                    <ArrowDownLeft className="h-4 w-4 text-neutral-700" />
+                  ) : (
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{title}</p>
@@ -669,11 +702,17 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className={`text-sm font-semibold ${isPositive ? "text-neutral-900" : "text-muted-foreground"}`}>
-                    {isPositive ? "+" : ""}${Math.abs(amt).toFixed(2)}
+                  <p className={`text-sm font-semibold ${incoming || isRelease ? "text-neutral-900" : "text-muted-foreground"}`}>
+                    {isRelease ? (
+                      <span className="text-emerald-700 dark:text-emerald-400 font-medium">Released to available</span>
+                    ) : (
+                      <>
+                        {incoming ? "+" : ""}${Math.abs(amt).toFixed(2)}
+                      </>
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Bal: ${balAfter.toFixed(2)}
+                    Available: ${balAfter.toFixed(2)}
                   </p>
                 </div>
               </div>

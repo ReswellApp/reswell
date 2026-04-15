@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { FileText } from "lucide-react"
-import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
+import { MARKETPLACE_FEE_PERCENT, SELLER_SHARE_PERCENT } from "@/lib/seller-fees"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 export const metadata = pageSeoMetadata({
@@ -64,8 +64,9 @@ export default function TermsOfServicePage() {
               <p className="leading-relaxed">
                 Reswell Bucks are an in-app currency used for purchases on the platform. They have no cash value
                 outside the platform except when cashed out according to our wallet and cash-out rules. For used
-                gear sales, the platform charges a {MARKETPLACE_FEE_PERCENT}% marketplace fee; card payments also
-                include payment processing (~2.9% + $0.30). Cash-out to real currency: 0% standard payout; 1%
+                gear sales, the platform charges a {MARKETPLACE_FEE_PERCENT}% marketplace fee; you receive the
+                remainder of the sale price ({SELLER_SHARE_PERCENT}%). Payment processing on card
+                purchases is not deducted from your earnings. Cash-out to real currency: 0% standard payout; 1%
                 instant payout. Other details are in the app. You are responsible for any taxes that apply to your
                 sales or income.
               </p>

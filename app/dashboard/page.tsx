@@ -70,7 +70,7 @@ export default async function DashboardPage() {
       .eq("status", "PENDING"),
     supabase
       .from("wallets")
-      .select("id, balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+      .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
       .single(),
     supabase.from("profiles").select("*").eq("id", user.id).single(),
@@ -100,13 +100,14 @@ export default async function DashboardPage() {
   let walletBalance = 0
   if (walletRow) {
     const r = reconcileWalletAggregates(walletRow)
-    walletBalance = r.balance
+    walletBalance = r.totalBalance
     if (r.needsPersist) {
       const s = walletAggregateStrings(r)
       await supabase
         .from("wallets")
         .update({
           balance: s.balance,
+          pending_balance: s.pending_balance,
           lifetime_cashed_out: s.lifetime_cashed_out,
           updated_at: new Date().toISOString(),
         })
