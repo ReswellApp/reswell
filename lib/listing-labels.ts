@@ -91,7 +91,11 @@ export function formatBoardType(boardType: string | null | undefined): string {
   return BOARD_TYPE_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-/** Text for the small category pill on listing tiles: DB category first, then surfboard type. */
+/**
+ * Text for the small category pill on listing tiles.
+ * For surfboards, `listings.board_type` is canonical (browse filters + admin category updates keep it in sync with `category_id`).
+ * Prefer it over embedded `categories.name`, which can lag or disagree after category moves.
+ */
 export function formatListingTileCategoryPillText(listing: {
   section: string
   board_type?: string | null
@@ -99,9 +103,15 @@ export function formatListingTileCategoryPillText(listing: {
 }): string | null {
   const cat = listing.categories
   const row = Array.isArray(cat) ? cat?.[0] : cat
-  if (row?.name?.trim()) return formatCategory(row.name)
-  if (listing.section === "surfboards" && listing.board_type?.trim()) {
-    return formatBoardType(listing.board_type)
+
+  if (listing.section === "surfboards") {
+    if (listing.board_type?.trim()) {
+      return formatBoardType(listing.board_type)
+    }
+    if (row?.name?.trim()) return formatCategory(row.name)
+    return null
   }
+
+  if (row?.name?.trim()) return formatCategory(row.name)
   return null
 }

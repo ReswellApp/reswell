@@ -33,11 +33,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Eye, EyeOff, Trash2, Flag, Package, RotateCcw, Pencil, Tag } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { MoreVertical, Eye, EyeOff, Trash2, Flag, Package, RotateCcw, Pencil, Tag, Layers } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { getAdminSession } from '@/app/actions/account'
+
+function normalizeCategoryId(id: string | undefined | null): string {
+  return (id ?? '').trim().toLowerCase()
+}
 
 interface Listing {
   id: string
@@ -49,9 +60,17 @@ interface Listing {
   section: string
   views: number
   created_at: string
+  category_id: string
+  categories: { name: string } | null
   hidden_from_site?: boolean | null
   profiles: { display_name: string; email: string }
   listing_images: { url: string }[]
+}
+
+interface CategoryOption {
+  id: string
+  name: string
+  board: boolean
 }
 
 export default function AdminListingsPage() {
@@ -62,6 +81,11 @@ export default function AdminListingsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [isAdminUser, setIsAdminUser] = useState(false)
+  const [categoryDialogListing, setCategoryDialogListing] = useState<Listing | null>(null)
+  const [categoryPick, setCategoryPick] = useState('')
+  const [categorySaving, setCategorySaving] = useState(false)
+  const [dialogCategoryRows, setDialogCategoryRows] = useState<CategoryOption[]>([])
+  const [dialogCategoriesLoading, setDialogCategoriesLoading] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -79,6 +103,67 @@ export default function AdminListingsPage() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!categoryDialogListing) {
+      setDialogCategoryRows([])
+      return
+    }
+
+    const listing = categoryDialogListing
+    const section =
+      listing.section === 'surfboards' || listing.section === 'new' ? listing.section : null
+    if (!section) {
+      setDialogCategoryRows([])
+      return
+    }
+
+    let cancelled = false
+    setDialogCategoriesLoading(true)
+
+    void fetch(`/api/admin/categories?section=${encodeURIComponent(section)}`, {
+      credentials: 'include',
+    })
+      .then(async (res) => {
+        const json = (await res.json()) as { categories?: CategoryOption[]; error?: string }
+        if (cancelled) return
+        if (!res.ok) {
+          toast.error(typeof json.error === 'string' ? json.error : 'Failed to load categories')
+          setDialogCategoryRows([])
+          return
+        }
+        let rows = [...(json.categories ?? [])]
+        const targetId = listing.category_id.trim().toLowerCase()
+        const hasCurrent = rows.some((r) => r.id.trim().toLowerCase() === targetId)
+        if (!hasCurrent) {
+          rows.push({
+            id: listing.category_id.trim(),
+            name: listing.categories?.name ?? 'Current category',
+            board: section === 'surfboards',
+          })
+        }
+        rows.sort((a, b) => a.name.localeCompare(b.name))
+        setDialogCategoryRows(rows)
+        const target = listing.category_id.trim().toLowerCase()
+        const match = rows.find((r) => r.id.trim().toLowerCase() === target)
+        if (match) {
+          setCategoryPick(match.id)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error('Failed to load categories')
+          setDialogCategoryRows([])
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDialogCategoriesLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [categoryDialogListing])
 
   async function fetchListings() {
     const params = new URLSearchParams()
@@ -154,6 +239,57 @@ export default function AdminListingsPage() {
     } else {
       const data = await res.json().catch(() => ({ error: 'Failed to delete listing' }))
       toast.error(data.error || 'Failed to delete listing')
+    }
+  }
+
+  async function saveListingCategory() {
+    if (!categoryDialogListing) return
+    const nextId = normalizeCategoryId(categoryPick)
+    if (!nextId) {
+      toast.error('Select a category')
+      return
+    }
+    const currentId = normalizeCategoryId(categoryDialogListing.category_id)
+    if (currentId && nextId === currentId) {
+      setCategoryDialogListing(null)
+      return
+    }
+
+    setCategorySaving(true)
+    try {
+      const res = await fetch(
+        `/api/admin/listings/${encodeURIComponent(categoryDialogListing.id)}/category`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category_id: categoryPick.trim() }),
+        },
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(typeof data.error === 'string' ? data.error : 'Failed to update category')
+        return
+      }
+      const label =
+        dialogCategoryRows.find((c) => c.id === categoryPick)?.name ??
+        categoryDialogListing.categories?.name ??
+        'Category'
+      setListings((prev) =>
+        prev.map((l) =>
+          l.id === categoryDialogListing.id
+            ? {
+                ...l,
+                category_id: categoryPick.trim(),
+                categories: { name: label },
+              }
+            : l,
+        ),
+      )
+      toast.success('Category updated')
+      setCategoryDialogListing(null)
+    } finally {
+      setCategorySaving(false)
     }
   }
 
@@ -260,6 +396,72 @@ export default function AdminListingsPage() {
         </CardContent>
       </Card>
 
+      <Dialog
+        open={categoryDialogListing !== null}
+        onOpenChange={(open) => {
+          if (!open) setCategoryDialogListing(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change category</DialogTitle>
+          </DialogHeader>
+          {categoryDialogListing ? (
+            <div className="space-y-3 py-1">
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {capitalizeWords(categoryDialogListing.title)}
+              </p>
+              <Select
+                value={categoryPick || undefined}
+                onValueChange={setCategoryPick}
+                disabled={dialogCategoriesLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      dialogCategoriesLoading ? 'Loading categories…' : 'Select category'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {dialogCategoryRows.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => setCategoryDialogListing(null)}
+              disabled={categorySaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              className="min-w-[5.5rem] shrink-0 disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:border disabled:border-border"
+              onClick={() => void saveListingCategory()}
+              disabled={
+                categorySaving ||
+                dialogCategoriesLoading ||
+                dialogCategoryRows.length === 0 ||
+                !normalizeCategoryId(categoryPick)
+              }
+              aria-label={categorySaving ? 'Saving category' : 'Save category'}
+            >
+              {categorySaving ? 'Saving…' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Listings Table */}
       <Card>
         <CardContent className="p-0">
@@ -280,6 +482,7 @@ export default function AdminListingsPage() {
                   <TableHead>Listing</TableHead>
                   <TableHead>Seller</TableHead>
                   <TableHead>Section</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Views</TableHead>
@@ -326,6 +529,11 @@ export default function AdminListingsPage() {
                         {listing.section}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-muted-foreground max-w-[140px]">
+                      <span className="line-clamp-2 text-sm">
+                        {listing.categories?.name ?? '—'}
+                      </span>
+                    </TableCell>
                     <TableCell className="font-semibold text-black dark:text-white">${listing.price}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(listing.status)}>
@@ -351,6 +559,14 @@ export default function AdminListingsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => editListing(listing)}>
                             <Pencil className="h-4 w-4 mr-2" /> Edit Listing
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setCategoryPick(listing.category_id.trim())
+                              setCategoryDialogListing(listing)
+                            }}
+                          >
+                            <Layers className="h-4 w-4 mr-2" /> Change category
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleSiteVisibility(listing)}>
                             {listing.hidden_from_site ? (

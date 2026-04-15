@@ -7,6 +7,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from '@/lib/listing-dimensions-display'
+import { applyCanonicalSurfboardCategoryToListingRow } from '@/lib/surfboard-category-display'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -53,14 +54,18 @@ export async function GET(request: NextRequest) {
 
   const selectWithHidden = `
     id, user_id, slug, title, price, status, section, views, created_at,
+    category_id,
     hidden_from_site,
     profiles!listings_user_id_fkey(display_name, email),
+    categories(name, slug),
     listing_images(url)
   `
 
   const selectWithoutHidden = `
     id, user_id, slug, title, price, status, section, views, created_at,
+    category_id,
     profiles!listings_user_id_fkey(display_name, email),
+    categories(name, slug),
     listing_images(url)
   `
 
@@ -91,10 +96,12 @@ export async function GET(request: NextRequest) {
         console.error('[admin listings GET] retry:', retry.error)
         return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })
       }
-      const listings = (retry.data ?? []).map((row: Record<string, unknown>) => ({
-        ...row,
-        hidden_from_site: false,
-      }))
+      const listings = (retry.data ?? []).map((row: Record<string, unknown>) =>
+        applyCanonicalSurfboardCategoryToListingRow({
+          ...row,
+          hidden_from_site: false,
+        }),
+      )
       return NextResponse.json({ listings })
     }
 
@@ -102,7 +109,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })
   }
 
-  return NextResponse.json({ listings: data ?? [] })
+  const listings = (data ?? []).map((row: Record<string, unknown>) =>
+    applyCanonicalSurfboardCategoryToListingRow(row),
+  )
+  return NextResponse.json({ listings })
 }
 
 function listingDimensionDisplayTrim(v: unknown): string | null {
