@@ -11,6 +11,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { LocalDateTime } from "@/components/ui/local-datetime"
 import {
   BuyerConfirmDelivery,
   BuyerPickupCode,
@@ -164,6 +165,8 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           ? "Shipping"
           : "Local pickup"
 
+  const isRefunded = order.status === "refunded"
+
   const convRow = await getConversationForBuyerSeller(supabase, user.id, order.seller_id)
 
   const conversationId = convRow?.id ?? null
@@ -202,10 +205,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           Order #{formatOrderNumForCustomer(order.order_num, order.id)}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {new Date(order.created_at).toLocaleString(undefined, {
-            dateStyle: "long",
-            timeStyle: "short",
-          })}
+          <LocalDateTime iso={order.created_at} dateStyle="long" timeStyle="short" />
         </p>
       </div>
 
@@ -289,9 +289,23 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
               <p className="text-sm text-muted-foreground mt-1">Sold by {sellerName}</p>
             </div>
           </div>
-          <div className="border-t pt-4 flex justify-between text-lg font-semibold">
-            <span>Total paid</span>
-            <span className="tabular-nums">${Number(order.amount).toFixed(2)}</span>
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex justify-between text-lg font-semibold">
+              <span>Total paid</span>
+              <span
+                className={`tabular-nums ${isRefunded ? "line-through text-muted-foreground font-normal" : ""}`}
+              >
+                ${Number(order.amount).toFixed(2)}
+              </span>
+            </div>
+            {isRefunded && (
+              <div className="flex justify-between items-baseline gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2.5 text-base font-semibold">
+                <span className="text-emerald-900 dark:text-emerald-100">Refunded to you (full amount)</span>
+                <span className="tabular-nums text-emerald-700 dark:text-emerald-300">
+                  ${Number(order.amount).toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

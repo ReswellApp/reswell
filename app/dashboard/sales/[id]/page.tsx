@@ -3,14 +3,27 @@ import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Package, Truck, MapPin, CreditCard } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import {
+  ArrowLeft,
+  Package,
+  Truck,
+  MapPin,
+  CreditCard,
+  DollarSign,
+  User,
+  Clock,
+  Hash,
+  ExternalLink,
+} from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import {
   SellerTrackingForm,
@@ -96,7 +109,6 @@ function fulfillmentLabel(method: string | null, hasShipAddr: boolean): string {
   return hasShipAddr ? "Ship to buyer" : "Local pickup"
 }
 
-/** Avoid caching a mistaken 404; each sale is user-specific and dynamic. */
 export const dynamic = "force-dynamic"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -115,9 +127,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   if (!user) return null
 
-  // Keep the same `orders` + `listings` embed shape as `/dashboard/sales` so the detail view
-  // loads whenever the list row exists. Payouts are loaded separately — embedding `payouts` here
-  // has caused PostgREST to fail the whole request while the list query still succeeds.
   const { data: row, error } = await supabase
     .from("orders")
     .select(
@@ -184,9 +193,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
   const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
   const paidWithCard = !!sale.stripe_checkout_session_id
+  const isShipping = sale.fulfillment_method === "shipping" || !!addrBlock
+  const isPickup = sale.fulfillment_method === "pickup"
+  const isRefunded = sale.status === "refunded"
+  const platformFee = Number(sale.amount) - Number(sale.seller_earnings)
 
   const convRow = await getConversationForBuyerSeller(supabase, sale.buyer_id, user.id)
-
   const conversationId = convRow?.id ?? null
 
   let initialMessages: OrderThreadMessage[] = []
@@ -207,191 +219,337 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       .neq("sender_id", user.id)
   }
 
+  const orderNumber = formatOrderNumForCustomer(sale.order_num, sale.id)
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/dashboard/sales" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            All sales
-          </Link>
-        </Button>
+    <div className="space-y-6 pb-12">
+      {/* ── Back link ── */}
+      <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
+        <Link href="/dashboard/sales" className="gap-1.5">
+          <ArrowLeft className="h-4 w-4" />
+          All sales
+        </Link>
+      </Button>
+
+      {/* ── Page header ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold font-mono tracking-tight">
+              #{orderNumber}
+            </h1>
+            <Badge variant={orderStatusBadgeVariant(sale.status)} className="text-xs">
+              {orderStatusLabel(sale.status)}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              <LocalDateTime iso={sale.created_at} dateStyle="medium" timeStyle="short" />
+            </span>
+            <span className="flex items-center gap-1.5">
+              {paidWithCard ? (
+                <>
+                  <CreditCard className="h-3.5 w-3.5" />
+                  Card (Stripe)
+                </>
+              ) : (
+                <>
+                  <DollarSign className="h-3.5 w-3.5" />
+                  Reswell Bucks
+                </>
+              )}
+            </span>
+            <span className="flex items-center gap-1.5">
+              {isShipping ? (
+                <Truck className="h-3.5 w-3.5" />
+              ) : (
+                <MapPin className="h-3.5 w-3.5" />
+              )}
+              {fulfill}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <DeliveryStatusBadge status={sale.delivery_status} />
+          <PayoutStatusBadge payout={payoutRow} />
+        </div>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold font-mono tracking-tight">
-          Sale #{formatOrderNumForCustomer(sale.order_num, sale.id)}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          {new Date(sale.created_at).toLocaleString(undefined, {
-            dateStyle: "long",
-            timeStyle: "short",
-          })}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Badge variant={orderStatusBadgeVariant(sale.status)}>{orderStatusLabel(sale.status)}</Badge>
-        <Badge variant="outline" className="gap-1">
-          {paidWithCard ? (
-            <>
-              <CreditCard className="h-3.5 w-3.5" />
-              Card (Stripe)
-            </>
-          ) : (
-            "Reswell Bucks"
-          )}
-        </Badge>
-        <Badge variant="outline" className="gap-1">
-          {fulfill.includes("Ship") ? (
-            <Truck className="h-3.5 w-3.5" />
-          ) : (
-            <MapPin className="h-3.5 w-3.5" />
-          )}
-          {fulfill}
-        </Badge>
-        <DeliveryStatusBadge status={sale.delivery_status} />
-        <PayoutStatusBadge payout={payoutRow} />
-      </div>
-
-      {/* Refunded banner */}
-      {sale.status === "refunded" && (
+      {/* ── Refunded banner (full width, before columns) ── */}
+      {isRefunded && (
         <SellerRefundedBanner
           amount={Number(sale.amount)}
           refundedAt={sale.refunded_at}
         />
       )}
 
-      {/* Seller action: issue refund */}
-      {sale.status === "confirmed" && (
-        <SellerRefundButton
-          orderId={sale.id}
-          orderStatus={sale.status}
-          amount={Number(sale.amount)}
-          paymentMethod={sale.payment_method ?? (paidWithCard ? "stripe" : "reswell_bucks")}
-        />
-      )}
-
-      {/* Seller action: add tracking for shipping orders */}
-      {sale.status !== "refunded" && sale.fulfillment_method === "shipping" && (
-        <SellerTrackingForm orderId={sale.id} deliveryStatus={sale.delivery_status} />
-      )}
-
-      {sale.status !== "refunded" &&
-        sale.fulfillment_method === "shipping" &&
-        listing?.section === "surfboards" &&
-        sale.delivery_status === "pending" && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link href={`/shipping?order=${encodeURIComponent(sale.id)}`}>
-                Print shipping label
-              </Link>
-            </Button>
-            <p className="text-sm text-muted-foreground self-center">
-              Label purchase via ShipEngine.{" "}
-              <Link href="/shipping" className="underline font-medium text-foreground">
-                Full shipping guide
-              </Link>
-            </p>
-          </div>
-        )}
-
-      {/* Seller action: verify pickup code for local pickup */}
-      {sale.status !== "refunded" && sale.fulfillment_method === "pickup" && (
-        <SellerPickupVerify orderId={sale.id} deliveryStatus={sale.delivery_status} />
-      )}
-
-      {/* Show tracking info if already added */}
-      {sale.tracking_number && (
-        <TrackingInfo
-          trackingNumber={sale.tracking_number}
-          trackingCarrier={sale.tracking_carrier}
-        />
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Buyer</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="font-medium text-foreground">{buyerName}</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            They completed checkout for this order. Use messages below to coordinate.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Item</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="relative h-24 w-24 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
-              {img ? (
-                <Image src={img} alt="" fill className="object-cover" sizes="96px" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-8 w-8 text-muted-foreground" />
+      {/* ── Two-column layout ── */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* ── Main column ── */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Order summary card */}
+          <Card>
+            <CardContent className="p-0">
+              {/* Item row */}
+              <div className="flex gap-4 p-6">
+                <div className="relative h-20 w-20 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
+                  {img ? (
+                    <Image src={img} alt={title} fill className="object-cover" sizes="80px" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Package className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              {listingHref ? (
-                <Link href={listingHref} className="font-semibold text-foreground hover:text-primary">
-                  {title}
-                </Link>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      {listingHref ? (
+                        <Link
+                          href={listingHref}
+                          className="font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5"
+                        >
+                          {title}
+                          <ExternalLink className="h-3.5 w-3.5 opacity-50" />
+                        </Link>
+                      ) : (
+                        <p className="font-semibold text-foreground">{title}</p>
+                      )}
+                      {listing?.section && (
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {capitalizeWords(listing.section)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Financial breakdown */}
+              <div className="p-6 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Order total</span>
+                  <span
+                    className={`tabular-nums font-medium ${isRefunded ? "line-through text-muted-foreground" : ""}`}
+                  >
+                    ${Number(sale.amount).toFixed(2)}
+                  </span>
+                </div>
+                {platformFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Platform fee</span>
+                    <span
+                      className={`tabular-nums text-muted-foreground ${isRefunded ? "line-through" : ""}`}
+                    >
+                      -${platformFee.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                {isRefunded && (
+                  <>
+                    <Separator />
+                    <div className="flex justify-between items-baseline gap-3 rounded-lg border border-destructive/15 bg-destructive/[0.04] px-3 py-2.5">
+                      <span className="text-sm font-semibold text-destructive">
+                        Refund to buyer (full order)
+                      </span>
+                      <span className="text-lg font-bold tabular-nums text-destructive">
+                        ${Number(sale.amount).toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <Separator />
+                <div className="flex justify-between items-baseline">
+                  <span className="font-semibold">
+                    {isRefunded ? "Your earnings (reversed)" : "Your earnings"}
+                  </span>
+                  <span className={`text-xl font-bold tabular-nums ${isRefunded ? "line-through text-muted-foreground" : ""}`}>
+                    ${Number(sale.seller_earnings).toFixed(2)}
+                  </span>
+                </div>
+                {isRefunded && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    The buyer is refunded the full order total. The earnings line is your net share
+                    that was reversed (after the platform fee).
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Seller actions ── */}
+
+          {/* Tracking form for shipping orders */}
+          {!isRefunded && sale.fulfillment_method === "shipping" && (
+            <SellerTrackingForm orderId={sale.id} deliveryStatus={sale.delivery_status} />
+          )}
+
+          {/* Shipping label for surfboard orders */}
+          {!isRefunded &&
+            sale.fulfillment_method === "shipping" &&
+            listing?.section === "surfboards" &&
+            sale.delivery_status === "pending" && (
+              <Card>
+                <CardContent className="flex items-center justify-between gap-4 p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+                      <Truck className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Shipping label</p>
+                      <p className="text-xs text-muted-foreground">
+                        Purchase via ShipEngine
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/shipping?order=${encodeURIComponent(sale.id)}`}>
+                      Print label
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+          {/* Pickup verification for local pickup */}
+          {!isRefunded && isPickup && (
+            <SellerPickupVerify orderId={sale.id} deliveryStatus={sale.delivery_status} />
+          )}
+
+          {/* Tracking info when already added */}
+          {sale.tracking_number && (
+            <TrackingInfo
+              trackingNumber={sale.tracking_number}
+              trackingCarrier={sale.tracking_carrier}
+            />
+          )}
+
+          {/* Refund button */}
+          {sale.status === "confirmed" && (
+            <SellerRefundButton
+              orderId={sale.id}
+              orderStatus={sale.status}
+              amount={Number(sale.amount)}
+              paymentMethod={sale.payment_method ?? (paidWithCard ? "stripe" : "reswell_bucks")}
+            />
+          )}
+        </div>
+
+        {/* ── Sidebar ── */}
+        <div className="space-y-6">
+          {/* Buyer card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Buyer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <p className="font-semibold text-foreground">{buyerName}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Completed checkout for this order.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Fulfillment card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                {isShipping ? (
+                  <Truck className="h-4 w-4" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+                {isShipping ? "Shipping" : "Fulfillment"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {addrBlock ? (
+                <div className="space-y-1 text-sm">
+                  {ship?.name && (
+                    <p className="font-medium text-foreground">{ship.name}</p>
+                  )}
+                  <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
+                    {addrBlock}
+                  </p>
+                  {ship?.phone && (
+                    <p className="text-muted-foreground">
+                      {ship.phone}
+                    </p>
+                  )}
+                </div>
+              ) : isPickup ? (
+                <p className="text-sm text-muted-foreground">
+                  Local pickup. Coordinate a time and place with the buyer via messages.
+                </p>
               ) : (
-                <p className="font-semibold text-foreground">{title}</p>
+                <p className="text-sm text-muted-foreground">
+                  No shipping address provided.
+                </p>
               )}
-            </div>
-          </div>
-          <div className="border-t pt-4 space-y-2 text-sm">
-            <div className="flex justify-between text-muted-foreground">
-              <span>Order total</span>
-              <span className="tabular-nums">${Number(sale.amount).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-semibold text-foreground">
-              <span>Your earnings</span>
-              <span className="tabular-nums">${Number(sale.seller_earnings).toFixed(2)}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {addrBlock && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Shipping address</CardTitle>
-            <CardDescription>Provided by the buyer at checkout for delivery.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm space-y-1">
-            {ship?.name && <p className="font-medium text-foreground">{ship.name}</p>}
-            <p className="text-muted-foreground whitespace-pre-line">{addrBlock}</p>
-            {ship?.phone && <p className="text-muted-foreground">Phone: {ship.phone}</p>}
-            {ship?.email && <p className="text-muted-foreground">Email: {ship.email}</p>}
-          </CardContent>
-        </Card>
-      )}
+          {/* Order details card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Hash className="h-4 w-4" />
+                Order details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <dl className="space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Order ID</dt>
+                  <dd className="font-mono text-xs text-foreground">
+                    #{orderNumber}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd>
+                    <Badge variant={orderStatusBadgeVariant(sale.status)} className="text-xs">
+                      {orderStatusLabel(sale.status)}
+                    </Badge>
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Payment</dt>
+                  <dd className="text-foreground">
+                    {paidWithCard ? "Card (Stripe)" : "Reswell Bucks"}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Fulfillment</dt>
+                  <dd className="text-foreground">{fulfill}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Date</dt>
+                  <dd className="text-foreground">
+                    <LocalDateOnly iso={sale.created_at} dateStyle="medium" />
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
 
-      {!addrBlock && sale.fulfillment_method === "pickup" && (
-        <Card>
-          <CardContent className="pt-6 text-sm text-muted-foreground">
-            <p>
-              This order is <span className="font-medium text-foreground">local pickup</span>. Use
-              messages to agree on a time and place with the buyer.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <OrderMessageThread
-        conversationId={conversationId}
-        initialMessages={initialMessages}
-        counterpartyName={buyerName}
-        currentUserId={user.id}
-        variant="seller"
-      />
+          {/* Messages */}
+          <OrderMessageThread
+            conversationId={conversationId}
+            initialMessages={initialMessages}
+            counterpartyName={buyerName}
+            currentUserId={user.id}
+            variant="seller"
+          />
+        </div>
+      </div>
     </div>
   )
 }

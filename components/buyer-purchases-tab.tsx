@@ -7,10 +7,11 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Package, ChevronRight, Receipt } from "lucide-react"
+import { Package, ChevronRight, Receipt, RotateCcw } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { LocalDateOnly } from "@/components/ui/local-datetime"
 
 type Row = {
   id: string
@@ -191,11 +192,15 @@ export function BuyerOrdersTab() {
                   </div>
                   <p className="font-medium text-foreground line-clamp-1">{title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(row.created_at).toLocaleDateString(undefined, {
-                      dateStyle: "medium",
-                    })}{" "}
-                    · ${Number(row.amount).toFixed(2)} · {fulfill}
+                    <LocalDateOnly iso={row.created_at} dateStyle="medium" /> · $
+                    {Number(row.amount).toFixed(2)} · {fulfill}
                   </p>
+                  {row.status === "refunded" && (
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-0.5">
+                      <RotateCcw className="h-3 w-3" />
+                      Refund issued
+                    </p>
+                  )}
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
               </Link>

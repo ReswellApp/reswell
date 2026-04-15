@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { deliveryStatusLabel } from "@/lib/order-status"
 import { Button } from "@/components/ui/button"
+import { LocalDateTime } from "@/components/ui/local-datetime"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
@@ -217,11 +218,6 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
 
   const isRefunded = props.status === "refunded"
 
-  const dateLabel = new Date(props.createdAtIso).toLocaleString(undefined, {
-    dateStyle: "long",
-    timeStyle: "short",
-  })
-
   return (
     <div className="space-y-8">
       <Card className={`overflow-hidden shadow-sm ${
@@ -314,7 +310,9 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Placed</span>
-                <span className="text-right">{dateLabel}</span>
+                <span className="text-right">
+                  <LocalDateTime iso={props.createdAtIso} dateStyle="long" timeStyle="short" />
+                </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Item</span>

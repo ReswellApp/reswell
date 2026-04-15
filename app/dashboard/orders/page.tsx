@@ -4,10 +4,11 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Receipt, Package, Truck, MapPin } from "lucide-react"
+import { Receipt, Package, Truck, MapPin, RotateCcw } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { LocalDateTime } from "@/components/ui/local-datetime"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -184,7 +185,7 @@ export default async function OrdersPage() {
               href={`/dashboard/orders/${row.id}`}
               className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <Card className="h-full transition-colors hover:bg-muted/40 hover:border-primary/25">
+              <Card className={`h-full transition-colors ${row.status === "refunded" ? "border-destructive/20 bg-destructive/[0.02]" : "hover:bg-muted/40 hover:border-primary/25"}`}>
                 <CardHeader className="pb-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
@@ -193,10 +194,7 @@ export default async function OrdersPage() {
                         Order #{formatOrderNumForCustomer(row.order_num, row.id)}
                       </CardTitle>
                       <CardDescription>
-                        {new Date(row.created_at).toLocaleString(undefined, {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })}
+                        <LocalDateTime iso={row.created_at} dateStyle="medium" timeStyle="short" />
                       </CardDescription>
                     </div>
                     <Badge variant={orderStatusBadgeVariant(row.status)}>
@@ -238,13 +236,24 @@ export default async function OrdersPage() {
                   <div className="border-t pt-3 space-y-1 text-sm">
                     <div className="flex justify-between text-muted-foreground">
                       <span>Order total</span>
-                      <span className="tabular-nums">${Number(row.amount).toFixed(2)}</span>
+                      <span className={`tabular-nums ${row.status === "refunded" ? "line-through" : ""}`}>
+                        ${Number(row.amount).toFixed(2)}
+                      </span>
                     </div>
                     <div className="flex justify-between font-semibold text-foreground pt-1">
                       <span>Payment</span>
                       <span>{paidWith}</span>
                     </div>
                   </div>
+
+                  {row.status === "refunded" && (
+                    <div className="rounded-lg bg-destructive/5 border border-destructive/15 p-2.5 flex items-center gap-2 text-sm">
+                      <RotateCcw className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      <span className="text-destructive font-medium">
+                        Refund issued — ${Number(row.amount).toFixed(2)} is being returned to you
+                      </span>
+                    </div>
+                  )}
 
                   {addrBlock && (
                     <div className="rounded-lg bg-muted/50 p-3 text-sm">

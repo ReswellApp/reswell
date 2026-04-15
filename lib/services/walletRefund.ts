@@ -40,6 +40,16 @@ export async function applyWalletOrderRefund(
     return { ok: false, error: "Order is already refunded", status: 409 }
   }
 
+  // Snapshot before mutating payouts: cancel sets status to `cancelled`, which must not be confused
+  // with `pending` (seller earnings already moved to spendable balance after fulfillment).
+  const { data: payoutBefore } = await supabase
+    .from("payouts")
+    .select("status")
+    .eq("order_id", order.id)
+    .maybeSingle()
+
+  const earningsReleasedToAvailable = payoutBefore?.status === "pending"
+
   // --- 1. Mark order refunded ---
   const { error: orderErr } = await supabase
     .from("orders")
@@ -64,7 +74,13 @@ export async function applyWalletOrderRefund(
 
   // --- 3. Claw back seller earnings ---
   if (sellerEarnings > 0) {
-    await clawbackSellerEarnings(supabase, order, sellerEarnings, nowIso)
+    await clawbackSellerEarnings(
+      supabase,
+      order,
+      sellerEarnings,
+      nowIso,
+      earningsReleasedToAvailable,
+    )
   }
 
   // --- 4. Credit buyer ---
@@ -83,6 +99,7 @@ async function clawbackSellerEarnings(
   order: WalletOrderRow,
   clawbackUsd: number,
   nowIso: string,
+  earningsReleasedToAvailable: boolean,
 ): Promise<void> {
   let { data: wallet } = await supabase
     .from("wallets")
@@ -94,14 +111,6 @@ async function clawbackSellerEarnings(
     console.error("[wallet refund] seller wallet not found", { seller: order.seller_id })
     return
   }
-
-  const { data: payoutRow } = await supabase
-    .from("payouts")
-    .select("status")
-    .eq("order_id", order.id)
-    .maybeSingle()
-
-  const earningsReleased = payoutRow?.status === "pending" || payoutRow?.status === "cancelled"
 
   const prevBalance = parseFloat(String(wallet.balance ?? 0))
   const prevPending = parseFloat(
@@ -118,7 +127,7 @@ async function clawbackSellerEarnings(
   const title = typeof listing?.title === "string" ? listing.title : "Listing"
   const desc = `Refund — "${title}" (full refund $${clawbackUsd.toFixed(2)}, Reswell Bucks; order ${order.id.slice(0, 8)})`
 
-  if (earningsReleased) {
+  if (earningsReleasedToAvailable) {
     const newBalance = roundMoney(Math.max(0, prevBalance - clawbackUsd))
     const newEarned = roundMoney(Math.max(0, prevEarned - clawbackUsd))
 

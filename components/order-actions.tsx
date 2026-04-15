@@ -73,18 +73,19 @@ export function SellerTrackingForm({
   }
 
   return (
-    <Card className="border-primary/30">
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Truck className="h-5 w-5" />
+    <Card className="border-primary/20 bg-primary/[0.02]">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <Truck className="h-4 w-4 text-primary" />
+          </div>
           Add tracking
         </CardTitle>
-        <CardDescription>
-          Ship the item, then add the tracking number. Your payout is held until the buyer confirms
-          delivery.
+        <CardDescription className="text-xs">
+          Ship the item and add the tracking number. Your payout is held until delivery is confirmed.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 pt-2">
         <Input
           placeholder="Tracking number"
           value={trackingNumber}
@@ -95,8 +96,8 @@ export function SellerTrackingForm({
           value={carrier}
           onChange={(e) => setCarrier(e.target.value)}
         />
-        <Button onClick={submit} disabled={busy} className="w-full">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+        <Button onClick={submit} disabled={busy} className="w-full gap-2">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
           Submit tracking
         </Button>
       </CardContent>
@@ -148,32 +149,35 @@ export function SellerPickupVerify({
   }
 
   return (
-    <Card className="border-primary/30">
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Package className="h-5 w-5" />
+    <Card className="border-primary/20 bg-primary/[0.02]">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <Package className="h-4 w-4 text-primary" />
+          </div>
           Verify pickup
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Ask the buyer for their 6-digit pickup code. Entering it releases your payout.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 pt-2">
         <Input
           placeholder="6-digit pickup code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           maxLength={6}
           inputMode="numeric"
+          className="text-center text-lg font-mono tracking-widest"
         />
         {error && (
-          <p className="text-sm text-destructive flex items-center gap-1">
-            <AlertCircle className="h-3.5 w-3.5" />
+          <p className="text-sm text-destructive flex items-center gap-1.5">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             {error}
           </p>
         )}
-        <Button onClick={submit} disabled={busy} className="w-full">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+        <Button onClick={submit} disabled={busy} className="w-full gap-2">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
           Verify code
         </Button>
       </CardContent>
@@ -334,7 +338,7 @@ export function SellerRefundButton({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="w-full gap-2">
+        <Button variant="outline" className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive">
           <RotateCcw className="h-4 w-4" />
           Issue refund
         </Button>
@@ -378,19 +382,19 @@ export function SellerRefundedBanner({
     : null
 
   return (
-    <Card className="border-destructive/30 bg-destructive/5">
-      <CardContent className="flex items-start gap-3 p-4">
-        <RotateCcw className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-        <div>
-          <p className="font-semibold text-destructive">Order refunded</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            ${amount.toFixed(2)} was refunded to the buyer
-            {dateStr ? ` on ${dateStr}` : ""}.
-            Your seller earnings for this order have been reversed.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 flex items-start gap-3">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10 shrink-0">
+        <RotateCcw className="h-4 w-4 text-destructive" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-destructive">Order refunded</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          The buyer receives a full refund of ${amount.toFixed(2)}
+          {dateStr ? ` on ${dateStr}` : ""} — the entire amount they paid. Your net earnings after fees
+          are reversed from your account.
+        </p>
+      </div>
+    </div>
   )
 }
 
@@ -405,22 +409,17 @@ export function TrackingInfo({
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Truck className="h-5 w-5" />
-          Tracking
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1 text-sm">
-        {trackingCarrier && (
-          <p className="text-muted-foreground">
-            Carrier: <span className="font-medium text-foreground">{trackingCarrier}</span>
+      <CardContent className="flex items-center gap-4 p-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0">
+          <Truck className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="text-sm font-medium">Tracking added</p>
+          <p className="text-sm text-muted-foreground truncate">
+            {trackingCarrier && <span>{trackingCarrier} · </span>}
+            <span className="font-mono">{trackingNumber}</span>
           </p>
-        )}
-        <p className="text-muted-foreground">
-          Tracking #:{" "}
-          <span className="font-mono font-medium text-foreground">{trackingNumber}</span>
-        </p>
+        </div>
       </CardContent>
     </Card>
   )

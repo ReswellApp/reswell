@@ -1,6 +1,7 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import { applyWalletOrderRefund } from "@/lib/services/walletRefund"
+import { relistAfterRefund } from "@/lib/services/listingRelist"
 import { NextRequest, NextResponse } from "next/server"
 
 /**
@@ -74,10 +75,26 @@ export async function POST(
       return NextResponse.json({ error: "Stripe refund failed: " + msg }, { status: 502 })
     }
 
+    // Immediately reflect the refund so the UI updates on page refresh.
+    // The webhook handles wallet clawback and is fully idempotent.
+    const nowIso = new Date().toISOString()
+    await serviceSupabase
+      .from("orders")
+      .update({ status: "refunded", refunded_at: nowIso, updated_at: nowIso })
+      .eq("id", orderId)
+      .neq("status", "refunded")
+
+    await serviceSupabase
+      .from("payouts")
+      .update({ status: "cancelled", updated_at: nowIso })
+      .eq("order_id", orderId)
+
+    await relistAfterRefund(serviceSupabase, order.listing_id)
+
     return NextResponse.json({
       success: true,
       refund_type: "stripe" as const,
-      message: "Refund issued — order will update shortly via webhook",
+      message: "Refund issued — the buyer's card will be refunded by Stripe shortly",
     })
   }
 
