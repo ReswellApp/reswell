@@ -1,4 +1,5 @@
 import type Stripe from "stripe"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 
@@ -40,6 +41,76 @@ async function resolvePaymentIntentId(
   return null
 }
 
+type OrderRefundSyncRow = {
+  id: string
+  seller_earnings: string | number | null
+}
+
+/**
+ * Persist buyer-visible order status and payout rows from Stripe refund totals.
+ * Safe to call when seller earnings are missing or clawback rounds to zero — those cases previously
+ * exited early and left `orders.status` stuck on `confirmed` after a full refund.
+ */
+async function syncOrderAndPayoutsFromStripeRefundState(
+  supabase: SupabaseClient,
+  order: OrderRefundSyncRow,
+  pi: Stripe.PaymentIntent,
+  refundsList: Stripe.ApiList<Stripe.Refund>,
+): Promise<void> {
+  const totalRefundedCents = refundsList.data
+    .filter((r) => r.status === "succeeded")
+    .reduce((sum, r) => sum + r.amount, 0)
+  const isFullyRefunded = totalRefundedCents >= pi.amount
+
+  const sellerEarningsNum = Number(order.seller_earnings)
+  const sellerCents =
+    Number.isFinite(sellerEarningsNum) && sellerEarningsNum > 0
+      ? Math.round(sellerEarningsNum * 100)
+      : 0
+
+  const remainingSellerCents =
+    sellerCents > 0
+      ? Math.round((sellerCents * Math.max(0, pi.amount - totalRefundedCents)) / pi.amount)
+      : 0
+  const remainingSellerShare = roundMoney(remainingSellerCents / 100)
+
+  const nowIso = new Date().toISOString()
+
+  if (isFullyRefunded) {
+    const { error: orderErr } = await supabase
+      .from("orders")
+      .update({ status: "refunded", updated_at: nowIso })
+      .eq("id", order.id)
+      .neq("status", "refunded")
+
+    if (orderErr) {
+      console.error("[stripe refund webhook] order status update", orderErr)
+    }
+
+    const { error: payoutCancelErr } = await supabase
+      .from("payouts")
+      .update({ status: "cancelled", updated_at: nowIso })
+      .eq("order_id", order.id)
+
+    if (payoutCancelErr) {
+      console.error("[stripe refund webhook] payouts cancel", payoutCancelErr)
+    }
+  } else if (sellerCents > 0) {
+    const { error: payoutAdjErr } = await supabase
+      .from("payouts")
+      .update({
+        amount: Math.max(0, remainingSellerShare),
+        updated_at: nowIso,
+      })
+      .eq("order_id", order.id)
+      .in("status", ["held", "pending"])
+
+    if (payoutAdjErr) {
+      console.error("[stripe refund webhook] payouts amount adjust", payoutAdjErr)
+    }
+  }
+}
+
 /**
  * When Stripe refunds a card payment, reverse the seller’s proportional share in the wallet **only if**
  * those earnings were already credited after fulfillment (`payouts.status = pending`). If the payout was
@@ -60,17 +131,6 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
   }
 
   const stripe = getStripe()
-
-  const { data: existingTx } = await supabase
-    .from("wallet_transactions")
-    .select("id")
-    .eq("reference_type", "stripe_refund")
-    .eq("reference_id", refund.id)
-    .maybeSingle()
-
-  if (existingTx) {
-    return
-  }
 
   const piId = await resolvePaymentIntentId(refund, stripe)
   if (!piId) {
@@ -97,6 +157,18 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     return
   }
 
+  const { data: existingTx } = await supabase
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", "stripe_refund")
+    .eq("reference_id", refund.id)
+    .maybeSingle()
+
+  if (existingTx) {
+    await syncOrderAndPayoutsFromStripeRefundState(supabase, order, pi, refundsList)
+    return
+  }
+
   const { data: payoutRow } = await supabase
     .from("payouts")
     .select("status")
@@ -109,6 +181,7 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
   const sellerEarnings = Number(order.seller_earnings)
   if (!Number.isFinite(sellerEarnings) || sellerEarnings <= 0) {
     console.error("[stripe refund webhook] invalid seller_earnings", { orderId: order.id })
+    await syncOrderAndPayoutsFromStripeRefundState(supabase, order, pi, refundsList)
     return
   }
 
@@ -118,8 +191,11 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
 
   if (clawbackUsd <= 0) {
     console.warn("[stripe refund webhook] zero clawback skipped", { refund: refund.id, orderId: order.id })
+    await syncOrderAndPayoutsFromStripeRefundState(supabase, order, pi, refundsList)
     return
   }
+
+  await syncOrderAndPayoutsFromStripeRefundState(supabase, order, pi, refundsList)
 
   let { data: wallet } = await supabase
     .from("wallets")
@@ -244,52 +320,6 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
         .eq("reference_type", "stripe_refund")
         .eq("reference_id", refund.id)
       return
-    }
-  }
-
-  const totalRefundedCents = refundsList.data
-    .filter((r) => r.status === "succeeded")
-    .reduce((sum, r) => sum + r.amount, 0)
-  const isFullyRefunded = totalRefundedCents >= pi.amount
-
-  const remainingSellerCents = Math.round(
-    (sellerCents * Math.max(0, pi.amount - totalRefundedCents)) / pi.amount,
-  )
-  const remainingSellerShare = roundMoney(remainingSellerCents / 100)
-
-  const nowIso = new Date().toISOString()
-
-  if (isFullyRefunded) {
-    const { error: orderErr } = await supabase
-      .from("orders")
-      .update({ status: "refunded", updated_at: nowIso })
-      .eq("id", order.id)
-      .neq("status", "refunded")
-
-    if (orderErr) {
-      console.error("[stripe refund webhook] order status update", orderErr)
-    }
-
-    const { error: payoutCancelErr } = await supabase
-      .from("payouts")
-      .update({ status: "cancelled", updated_at: nowIso })
-      .eq("order_id", order.id)
-
-    if (payoutCancelErr) {
-      console.error("[stripe refund webhook] payouts cancel", payoutCancelErr)
-    }
-  } else {
-    const { error: payoutAdjErr } = await supabase
-      .from("payouts")
-      .update({
-        amount: Math.max(0, remainingSellerShare),
-        updated_at: nowIso,
-      })
-      .eq("order_id", order.id)
-      .in("status", ["held", "pending"])
-
-    if (payoutAdjErr) {
-      console.error("[stripe refund webhook] payouts amount adjust", payoutAdjErr)
     }
   }
 }

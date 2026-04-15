@@ -24,6 +24,98 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
   return Boolean(err.message?.toLowerCase().includes("duplicate"))
 }
 
+/** Keep wallet_transactions.description within typical DB limits (long listing titles). */
+function walletPendingSaleDescription(listingTitle: string, platformFeeUsd: number): string {
+  const safeTitle =
+    listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
+  const raw = `Pending — Sold "${safeTitle}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFeeUsd.toFixed(2)}, card — available after delivery)`
+  return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
+}
+
+/**
+ * If the order row was committed but wallet_transactions insert failed (e.g. transient DB error),
+ * a retry would previously return "already processed" without ever creating the ledger row.
+ * Inserts only the missing activity row; wallet balances were already updated on the first attempt.
+ */
+async function recoverMissingOrderPendingLedger(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  orderId: string,
+  buyerIdFromPi: string,
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  if (!buyerIdFromPi) {
+    return { ok: false, error: "Invalid payment metadata", status: 400 }
+  }
+
+  const { data: orderRow, error: orderErr } = await serviceSupabase
+    .from("orders")
+    .select("id, buyer_id, seller_id, listing_id, seller_earnings, platform_fee")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (orderErr || !orderRow) {
+    return { ok: false, error: "Could not load order for recovery", status: 500 }
+  }
+  if (orderRow.buyer_id !== buyerIdFromPi) {
+    return { ok: false, error: "Invalid payment", status: 403 }
+  }
+
+  const { data: existingLedger } = await serviceSupabase
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", "order_pending_earnings")
+    .eq("reference_id", orderId)
+    .maybeSingle()
+
+  if (existingLedger?.id) {
+    return { ok: true }
+  }
+
+  const { data: listing } = await serviceSupabase
+    .from("listings")
+    .select("id, title, user_id")
+    .eq("id", orderRow.listing_id)
+    .maybeSingle()
+
+  if (!listing || listing.user_id !== orderRow.seller_id) {
+    return { ok: false, error: "Could not recover pending sale", status: 500 }
+  }
+
+  const { data: sellerWallet } = await serviceSupabase
+    .from("wallets")
+    .select("*")
+    .eq("user_id", orderRow.seller_id)
+    .maybeSingle()
+
+  if (!sellerWallet) {
+    return { ok: false, error: "Seller wallet error", status: 500 }
+  }
+
+  const sellerEarnings = parseFloat(String(orderRow.seller_earnings ?? 0))
+  const platformFee = parseFloat(String(orderRow.platform_fee ?? 0))
+  const prevAvailable = parseFloat(String(sellerWallet.balance ?? 0))
+
+  const { error: insertErr } = await serviceSupabase.from("wallet_transactions").insert({
+    wallet_id: sellerWallet.id,
+    user_id: orderRow.seller_id,
+    type: "sale",
+    amount: sellerEarnings,
+    balance_after: prevAvailable.toFixed(2),
+    description: walletPendingSaleDescription(String(listing.title ?? ""), platformFee),
+    reference_id: String(orderId),
+    reference_type: "order_pending_earnings",
+  })
+
+  if (insertErr) {
+    if (isUniqueViolation(insertErr)) {
+      return { ok: true }
+    }
+    console.error("[stripe-complete-order] recover pending wallet_transactions:", insertErr)
+    return { ok: false, error: "Could not record pending sale", status: 500 }
+  }
+
+  return { ok: true }
+}
+
 /**
  * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
  * Seller Sale Successful Klaviyo fires when earnings are released after fulfillment.
@@ -107,6 +199,26 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     .maybeSingle()
 
   if (existing?.id) {
+    const { data: pendingLedger } = await serviceSupabase
+      .from("wallet_transactions")
+      .select("id")
+      .eq("reference_type", "order_pending_earnings")
+      .eq("reference_id", existing.id)
+      .maybeSingle()
+
+    if (pendingLedger?.id) {
+      await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
+      return { ok: true, orderId: existing.id, alreadyProcessed: true }
+    }
+
+    const recovered = await recoverMissingOrderPendingLedger(
+      serviceSupabase,
+      existing.id,
+      pi.metadata.buyer_id?.trim() ?? "",
+    )
+    if (!recovered.ok) {
+      return recovered
+    }
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
@@ -329,14 +441,29 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     type: "sale",
     amount: sellerEarnings,
     balance_after: prevAvailable.toFixed(2),
-    description: `Pending — Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)}, card — available after delivery)`,
-    reference_id: purchase.id,
+    description: walletPendingSaleDescription(String(listing.title ?? ""), platformFee),
+    reference_id: String(purchase.id),
     reference_type: "order_pending_earnings",
   })
 
   if (pendingTxErr) {
-    console.error("[stripe-complete-order] pending wallet_transactions:", pendingTxErr)
-    return { ok: false, error: "Could not record pending sale", status: 500 }
+    if (isUniqueViolation(pendingTxErr)) {
+      const { data: racedLedger } = await serviceSupabase
+        .from("wallet_transactions")
+        .select("id")
+        .eq("reference_type", "order_pending_earnings")
+        .eq("reference_id", String(purchase.id))
+        .maybeSingle()
+      if (racedLedger?.id) {
+        // Concurrent request won the insert; continue.
+      } else {
+        console.error("[stripe-complete-order] pending wallet_transactions duplicate without row:", pendingTxErr)
+        return { ok: false, error: "Could not record pending sale", status: 500 }
+      }
+    } else {
+      console.error("[stripe-complete-order] pending wallet_transactions:", pendingTxErr)
+      return { ok: false, error: "Could not record pending sale", status: 500 }
+    }
   }
 
   const { error: listingErr } = await serviceSupabase
