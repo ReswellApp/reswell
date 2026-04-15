@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
 
 export type VerifyPickupResult =
@@ -9,68 +9,78 @@ export type VerifyPickupResult =
     }
   | { ok: false; error: string; status: number }
 
-type RpcPayload = {
-  ok?: boolean
-  error?: string
-  buyer_id?: string
-  listing_id?: string
-}
-
-function mapRpcError(code: string | undefined): { error: string; status: number } {
-  switch (code) {
-    case "unauthorized":
-      return { error: "Unauthorized", status: 401 }
-    case "code_required":
-      return { error: "Pickup code is required", status: 400 }
-    case "not_found":
-      return { error: "Order not found", status: 404 }
-    case "not_pickup":
-      return { error: "This order is not a pickup order", status: 400 }
-    case "already_picked_up":
-      return { error: "Pickup already confirmed", status: 409 }
-    case "invalid_code":
-      return { error: "Invalid pickup code", status: 403 }
-    default:
-      return { error: "Could not verify pickup", status: 500 }
-  }
-}
-
 /**
- * Seller verifies the buyer's pickup code via SECURITY DEFINER RPC (`verify_order_pickup_for_seller`).
- * That updates `orders` and `payouts` in Postgres with the caller's JWT (`auth.uid()`), avoiding
- * REST/RLS mismatches. Wallet release still uses `release_order_seller_earnings_to_wallet` (service role).
+ * Seller verifies the buyer's pickup code. Uses the service role client for DB
+ * operations (bypasses RLS) while the caller is authenticated via the route.
+ * Mirrors the direct-query pattern used by confirm-delivery for shipping orders.
  */
 export async function verifyOrderPickupForSeller(input: {
-  supabase: SupabaseClient
+  sellerId: string
   orderId: string
   code: string
 }): Promise<VerifyPickupResult> {
-  const { supabase, orderId, code } = input
+  const { sellerId, orderId, code } = input
+  const trimmedCode = code.trim()
 
-  const { data, error: rpcErr } = await supabase.rpc("verify_order_pickup_for_seller", {
-    p_order_id: orderId,
-    p_code: code.trim(),
-  })
+  if (!trimmedCode) {
+    return { ok: false, error: "Pickup code is required", status: 400 }
+  }
 
-  if (rpcErr) {
-    console.error("[verifyOrderPickupForSeller] rpc", rpcErr)
+  let supabase
+  try {
+    supabase = createServiceRoleClient()
+  } catch (e) {
+    console.error("[verifyOrderPickupForSeller] service client", e)
+    return { ok: false, error: "Server configuration error", status: 500 }
+  }
+
+  const { data: order, error: fetchErr } = await supabase
+    .from("orders")
+    .select("id, seller_id, buyer_id, listing_id, fulfillment_method, delivery_status, pickup_code")
+    .eq("id", orderId)
+    .eq("seller_id", sellerId)
+    .maybeSingle()
+
+  if (fetchErr) {
+    console.error("[verifyOrderPickupForSeller] fetch order", fetchErr)
     return { ok: false, error: "Failed to verify pickup", status: 500 }
   }
 
-  const payload = data as RpcPayload | null
-  if (!payload || typeof payload !== "object") {
-    return { ok: false, error: "Invalid verify response", status: 500 }
+  if (!order) {
+    return { ok: false, error: "Order not found", status: 404 }
   }
 
-  if (payload.ok !== true) {
-    return { ok: false, ...mapRpcError(payload.error) }
+  if (order.fulfillment_method !== "pickup") {
+    return { ok: false, error: "This order is not a pickup order", status: 400 }
   }
 
-  const buyerId = payload.buyer_id
-  const listingId = payload.listing_id
-  if (!buyerId || !listingId) {
-    return { ok: false, error: "Invalid verify response", status: 500 }
+  if (order.delivery_status === "picked_up") {
+    return { ok: false, error: "Pickup already confirmed", status: 409 }
   }
+
+  const storedCode = (order.pickup_code ?? "").trim()
+  if (storedCode !== trimmedCode) {
+    return { ok: false, error: "Invalid pickup code", status: 403 }
+  }
+
+  const now = new Date().toISOString()
+
+  const { error: updateErr } = await supabase
+    .from("orders")
+    .update({ delivery_status: "picked_up", updated_at: now })
+    .eq("id", orderId)
+
+  if (updateErr) {
+    console.error("[verifyOrderPickupForSeller] update order", updateErr)
+    return { ok: false, error: "Failed to update order", status: 500 }
+  }
+
+  await supabase
+    .from("payouts")
+    .update({ status: "pending", hold_reason: null, released_at: now, updated_at: now })
+    .eq("order_id", orderId)
+    .eq("seller_id", sellerId)
+    .eq("status", "held")
 
   const release = await releaseOrderSellerEarningsAfterFulfillment(orderId)
   if (!release.ok) {
@@ -78,5 +88,5 @@ export async function verifyOrderPickupForSeller(input: {
     return { ok: false, error: release.error, status: 500 }
   }
 
-  return { ok: true, buyerId, listingId }
+  return { ok: true, buyerId: order.buyer_id, listingId: order.listing_id }
 }
