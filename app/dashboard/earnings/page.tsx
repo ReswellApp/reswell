@@ -581,6 +581,13 @@ function parseDescription(raw: string, type: string): { title: string; subtitle:
     return { title: `Sold — ${itemName}`, subtitle: parts }
   }
 
+  // e.g. Refund — "Board" (partial refund …)
+  const refundMatch = raw.match(/^Refund — "(.+?)"/)
+  if (refundMatch) {
+    const itemName = refundMatch[1]
+    return { title: `Refund — ${itemName}`, subtitle: "Card sale reversed" }
+  }
+
   // e.g. 'Purchased "Title" (incl. shipping $X.XX)'
   const purchasedMatch = raw.match(/^Purchased "(.+?)"(.*)$/)
   if (purchasedMatch) {

@@ -2,13 +2,14 @@ import { NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe-server"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { tryHandleStripeConnectEvent } from "@/lib/services/stripeConnectWebhook"
+import { tryHandleStripeRefundEvent } from "@/lib/services/stripeRefundWebhook"
 import type Stripe from "stripe"
 
 export const runtime = "nodejs"
 
 /**
  * Stripe → Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`
- * Events: `payment_intent.succeeded`, `account.updated`, `transfer.reversed`
+ * Events: `payment_intent.succeeded`, `refund.created`, `refund.updated`, `account.updated`, `transfer.reversed`
  * Signing secret: `STRIPE_WEBHOOK_SECRET` in env.
  *
  * Use the **canonical** host Vercel serves without a redirect (www vs apex). Stripe does not follow
@@ -40,6 +41,11 @@ export async function POST(request: Request) {
 
   const connectHandled = await tryHandleStripeConnectEvent(event)
   if (connectHandled) {
+    return NextResponse.json({ received: true })
+  }
+
+  const refundHandled = await tryHandleStripeRefundEvent(event)
+  if (refundHandled) {
     return NextResponse.json({ received: true })
   }
 

@@ -30,6 +30,29 @@ function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+/** Settled USD on the platform account — required for `transfers.create` to connected accounts. */
+async function getPlatformAvailableUsdCents(stripe: Stripe): Promise<number> {
+  const balance = await stripe.balance.retrieve()
+  const usd = balance.available.find((b) => b.currency === "usd")
+  return usd?.amount ?? 0
+}
+
+function userFacingMessageForStripeTransferError(e: unknown): string {
+  if (e instanceof Stripe.errors.StripeError) {
+    const code = e.code
+    if (code === "balance_insufficient") {
+      return (
+        "Card sales are still settling through Stripe, so this amount can’t be sent to your bank yet. " +
+        "Try again in a few business days, or contact support if your sales have already settled."
+      )
+    }
+    if (code === "amount_too_small") {
+      return "The amount is too small for Stripe to transfer. Try a slightly higher amount or contact support."
+    }
+  }
+  return "Stripe could not send funds to your connected account. Check your payout setup or try again."
+}
+
 function pickDefaultBank(
   account: Stripe.Account,
 ): { externalId: string; last4: string | null; bankName: string | null } | null {
@@ -415,14 +438,6 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
-  if (!row.payouts_enabled) {
-    return {
-      ok: false,
-      error: "Complete bank setup and verification before cashing out.",
-      status: 400,
-    }
-  }
-
   let { data: wallet } = await supabase.from("wallets").select("*").eq("user_id", userId).single()
 
   if (!wallet) {
@@ -461,13 +476,74 @@ export async function cashOutToStripeConnectedAccount(
   }
 
   const stripe = getStripe()
+  const amountCents = Math.round(amountUsd * 100)
+
+  let platformAvailableCents: number
+  try {
+    platformAvailableCents = await getPlatformAvailableUsdCents(stripe)
+  } catch (e) {
+    console.error("[stripe connect] balance.retrieve before transfer", e)
+    return {
+      ok: false,
+      error: "Could not verify payout funds. Try again shortly.",
+      status: 502,
+    }
+  }
+
+  if (platformAvailableCents < amountCents) {
+    console.warn("[stripe connect] platform balance insufficient for transfer", {
+      platformAvailableCents,
+      amountCents,
+      userId,
+    })
+    return {
+      ok: false,
+      error:
+        "Your app balance is available, but settled card funds in Stripe aren’t enough for this transfer yet. " +
+        "This often happens while recent charges are still pending (typically a few business days), or if wallet " +
+        "credits didn’t come from Stripe card payments. Try again after more sales settle, or contact support.",
+      status: 400,
+    }
+  }
+
+  let connected: Stripe.Account
+  try {
+    connected = await stripe.accounts.retrieve(row.stripe_account_id)
+  } catch (e) {
+    console.error("[stripe connect] accounts.retrieve before transfer", e)
+    return {
+      ok: false,
+      error: "Could not verify your payout profile. Try again or open Manage payout banks in Stripe.",
+      status: 502,
+    }
+  }
+
+  await syncStripeConnectAccountRow(supabase, connected.id)
+
+  if (!connected.payouts_enabled) {
+    return {
+      ok: false,
+      error: "Complete bank setup and verification before cashing out.",
+      status: 400,
+    }
+  }
+
+  if (connected.capabilities?.transfers !== "active") {
+    return {
+      ok: false,
+      error:
+        "Stripe hasn’t finished activating transfers on your payout profile. Open Manage payout banks and complete any verification Stripe requests.",
+      status: 400,
+    }
+  }
+
   const transferRowId = randomUUID()
 
   let transfer: Stripe.Transfer
   try {
     transfer = await stripe.transfers.create(
       {
-        amount: Math.round(amountUsd * 100),
+        amount: amountCents,
         currency: "usd",
         destination: row.stripe_account_id,
         metadata: {
@@ -483,8 +559,7 @@ export async function cashOutToStripeConnectedAccount(
     console.error("[stripe connect] transfers.create", e)
     return {
       ok: false,
-      error:
-        "Stripe could not send funds to your connected account. Check your payout setup or try again.",
+      error: userFacingMessageForStripeTransferError(e),
       status: 502,
     }
   }
