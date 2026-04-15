@@ -454,6 +454,23 @@ export function Header() {
     }
   }, [supabase, user?.id])
 
+  /** Lightweight wallet-only resync on route changes — catches staleness when Realtime misses an update. */
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    supabase
+      .from("wallets")
+      .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data: wallet }) => {
+        if (!cancelled && wallet) {
+          setWalletBalance(reconcileWalletAggregates(wallet).totalBalance)
+        }
+      })
+    return () => { cancelled = true }
+  }, [supabase, user?.id, pathname])
+
   useEffect(() => {
     if (mobileMenuOpen && mobileSearchRef.current) {
       mobileSearchRef.current.value = ""

@@ -10,7 +10,6 @@ export type AdminOrderDetail = {
   payment_method: string
   fulfillment_method: string | null
   created_at: string
-  updated_at: string
   refunded_at: string | null
   buyer_id: string
   seller_id: string
@@ -38,7 +37,7 @@ export async function getOrderDetailForAdmin(
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, order_num, status, amount, platform_fee, seller_earnings, payment_method, fulfillment_method, created_at, updated_at, refunded_at, buyer_id, seller_id, listing_id, stripe_checkout_session_id",
+      "id, order_num, status, amount, platform_fee, seller_earnings, payment_method, fulfillment_method, created_at, refunded_at, buyer_id, seller_id, listing_id, stripe_checkout_session_id",
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -79,7 +78,6 @@ export async function getOrderDetailForAdmin(
       payment_method: order.payment_method as string,
       fulfillment_method: (order.fulfillment_method as string | null) ?? null,
       created_at: order.created_at as string,
-      updated_at: order.updated_at as string,
       refunded_at: (order.refunded_at as string | null) ?? null,
       buyer_id: buyerId,
       seller_id: sellerId,

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loader2, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
+import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 
 type RefundApiResponse =
   | {
@@ -65,6 +66,7 @@ export function AdminIssueRefundButton({
       toast.success(data.message)
       setOpen(false)
       onComplete?.()
+      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
     } catch {
       toast.error("Something went wrong")
