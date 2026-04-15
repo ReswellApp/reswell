@@ -4,7 +4,7 @@ import { z } from "zod"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 const schema = z.object({
-  request_type: z.enum(["refund_request", "cancel_request", "return_request"]),
+  request_type: z.enum(["refund_request", "cancel_request"]),
   body: z.string().min(10).max(8000),
 })
 
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
 /**
  * POST /api/orders/:id/seller-support
  *
- * Sellers submit refund / cancel / return requests for admin review.
+ * Sellers submit refund or cancellation requests for admin review (returns are buyer-only).
  * Inserts into `order_support_requests` via service role (RLS on that table
  * only allows the buyer; sellers use this authenticated path instead).
  */

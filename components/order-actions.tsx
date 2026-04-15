@@ -290,9 +290,9 @@ export function BuyerPickupCode({
   )
 }
 
-// ── Seller: request support (refund / cancel / return) ───────
-// Sellers cannot issue refunds directly. This sends a request to
-// the admin team via order_support_requests.
+// ── Seller: request support (refund or cancel via Reswell) ──
+// Sellers cannot issue refunds or cancel orders directly. This sends a request to
+// the admin team via order_support_requests. Returns are buyer-only.
 
 export function SellerRequestSupportButton({
   orderId,
@@ -303,15 +303,14 @@ export function SellerRequestSupportButton({
 }) {
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
-  const [requestType, setRequestType] = useState<"refund_request" | "cancel_request" | "return_request">("refund_request")
+  const [requestType, setRequestType] = useState<"refund_request" | "cancel_request">("refund_request")
   const [body, setBody] = useState("")
 
   if (orderStatus === "refunded") return null
 
   const typeLabels: Record<typeof requestType, string> = {
-    refund_request: "Request refund",
-    cancel_request: "Request cancellation",
-    return_request: "Request return",
+    refund_request: "Ask Reswell to issue a refund",
+    cancel_request: "Ask Reswell to cancel the order",
   }
 
   const submit = async () => {
@@ -346,19 +345,20 @@ export function SellerRequestSupportButton({
       <AlertDialogTrigger asChild>
         <Button variant="outline" className="w-full gap-2 text-muted-foreground">
           <RotateCcw className="h-4 w-4" />
-          Request refund, cancel, or return
+          Ask Reswell for a refund or cancellation
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Submit a request to Reswell support</AlertDialogTitle>
           <AlertDialogDescription>
-            Select what you need and provide details. Our team will review and action it.
+            You can’t issue a refund or cancel the order yourself — tell us what you need and we’ll
+            review it. Returns are handled on the buyer side.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-4 py-2">
           <div className="flex flex-wrap gap-2">
-            {(["refund_request", "cancel_request", "return_request"] as const).map((t) => (
+            {(["refund_request", "cancel_request"] as const).map((t) => (
               <Button
                 key={t}
                 size="sm"
