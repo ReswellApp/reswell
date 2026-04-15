@@ -836,7 +836,24 @@ export function Header() {
               size="default"
               className="hidden shrink-0 px-5 md:inline-flex"
             >
-              <Link href="/sell">Sell your Board</Link>
+              <Link
+                href={
+                  user
+                    ? "/sell"
+                    : `/auth/login?redirect=${encodeURIComponent("/sell")}`
+                }
+                onClick={
+                  user
+                    ? undefined
+                    : (e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                        e.preventDefault()
+                        openLogin("/sell")
+                      }
+                }
+              >
+                Sell your Board
+              </Link>
             </Button>
 
             <Link href="/feed">
@@ -1063,7 +1080,20 @@ export function Header() {
                 size="default"
                 className="h-11 w-full shrink-0 justify-center px-5"
               >
-                <Link href="/sell" onClick={onMobileDrawerLinkClick}>
+                <Link
+                  href={
+                    user
+                      ? "/sell"
+                      : `/auth/login?redirect=${encodeURIComponent("/sell")}`
+                  }
+                  onClick={(e) => {
+                    onMobileDrawerLinkClick(e)
+                    if (user) return
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openLogin("/sell")
+                  }}
+                >
                   Sell your Board
                 </Link>
               </Button>

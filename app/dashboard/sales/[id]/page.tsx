@@ -21,7 +21,14 @@ import {
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import {
+  ORDER_STATUS_LIST,
+  orderStatusBadgeVariant,
+  orderStatusIsRefunded,
+  orderStatusIsRefundInProgress,
+  orderStatusLocksDuringRefund,
+  orderStatusLabel,
+} from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
@@ -30,6 +37,7 @@ import {
   SellerPickupVerify,
   SellerRequestSupportButton,
   SellerRefundedBanner,
+  SellerRefundInProgressBanner,
   DeliveryStatusBadge,
   PayoutStatusBadge,
   TrackingInfo,
@@ -195,7 +203,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const paidWithCard = !!sale.stripe_checkout_session_id
   const isShipping = sale.fulfillment_method === "shipping" || !!addrBlock
   const isPickup = sale.fulfillment_method === "pickup"
-  const isRefunded = sale.status === "refunded"
+  const isRefunded = orderStatusIsRefunded(sale.status)
+  const isRefunding = orderStatusIsRefundInProgress(sale.status)
+  const fulfillmentLocked = orderStatusLocksDuringRefund(sale.status)
   const platformFee = Number(sale.amount) - Number(sale.seller_earnings)
 
   const convRow = await getConversationForBuyerSeller(supabase, sale.buyer_id, user.id)
@@ -277,7 +287,10 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* ── Refunded banner (full width, before columns) ── */}
+      {/* ── Refund banners (full width, before columns) ── */}
+      {isRefunding && (
+        <SellerRefundInProgressBanner amount={Number(sale.amount)} paidWithCard={paidWithCard} />
+      )}
       {isRefunded && (
         <SellerRefundedBanner
           amount={Number(sale.amount)}
@@ -349,6 +362,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     </span>
                   </div>
                 )}
+                {isRefunding && (
+                  <p className="text-xs text-muted-foreground rounded-md border border-amber-500/20 bg-amber-500/[0.04] px-2.5 py-2">
+                    Totals stay as recorded until Stripe finishes the refund; your earnings line will mark
+                    reversed once the order is fully refunded.
+                  </p>
+                )}
                 {isRefunded && (
                   <>
                     <Separator />
@@ -365,9 +384,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 <Separator />
                 <div className="flex justify-between items-baseline">
                   <span className="font-semibold">
-                    {isRefunded ? "Your earnings (reversed)" : "Your earnings"}
+                    {isRefunded ? "Your earnings (reversed)" : isRefunding ? "Your earnings (pending reversal)" : "Your earnings"}
                   </span>
-                  <span className={`text-xl font-bold tabular-nums ${isRefunded ? "line-through text-muted-foreground" : ""}`}>
+                  <span
+                    className={`text-xl font-bold tabular-nums ${isRefunded ? "line-through text-muted-foreground" : isRefunding ? "text-muted-foreground" : ""}`}
+                  >
                     ${Number(sale.seller_earnings).toFixed(2)}
                   </span>
                 </div>
@@ -384,12 +405,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           {/* ── Seller actions ── */}
 
           {/* Tracking form for shipping orders */}
-          {!isRefunded && sale.fulfillment_method === "shipping" && (
+          {!fulfillmentLocked && sale.fulfillment_method === "shipping" && (
             <SellerTrackingForm orderId={sale.id} deliveryStatus={sale.delivery_status} />
           )}
 
           {/* Shipping label for surfboard orders */}
-          {!isRefunded &&
+          {!fulfillmentLocked &&
             sale.fulfillment_method === "shipping" &&
             listing?.section === "surfboards" &&
             sale.delivery_status === "pending" && (
@@ -416,7 +437,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             )}
 
           {/* Pickup verification for local pickup */}
-          {!isRefunded && isPickup && (
+          {!fulfillmentLocked && isPickup && (
             <SellerPickupVerify orderId={sale.id} deliveryStatus={sale.delivery_status} />
           )}
 
@@ -429,7 +450,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           )}
 
           {/* Support request (refund / cancel / return — admin handles it) */}
-          {sale.status !== "refunded" && (
+          {sale.status === "confirmed" && (
             <SellerRequestSupportButton
               orderId={sale.id}
               orderStatus={sale.status}

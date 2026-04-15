@@ -52,19 +52,16 @@ export async function updateSession(request: NextRequest) {
   // Protected routes that require authentication.
   // Important: do not use pathname.startsWith("/sell") — that matches "/sellers".
   //
-  // `/sell` must stay **public**: link previews (iMessage, Slack, etc.) and OG crawlers
-  // have no session cookie; if we redirect them to `/auth/login`, they index the login
-  // page metadata instead of the sell route's Open Graph tags. The listing form still
-  // requires sign-in on submit (client + API).
-  //
-  // Next.js serves `opengraph-image` / `twitter-image` under `/sell/...`; those must
-  // not redirect or social previews lose images.
+  // `/sell` (listing flow) requires a session. Next.js serves `opengraph-image` /
+  // `twitter-image` under `/sell/...`; those paths must not redirect or social previews
+  // lose images — exclude them below.
   const pathname = request.nextUrl.pathname
   const isPublicSellOgAsset =
     pathname === '/sell/opengraph-image' || pathname === '/sell/twitter-image'
   /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
   const isProtectedRoute =
+    pathname === '/sell' ||
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/messages') ||
     pathname.startsWith('/admin') ||

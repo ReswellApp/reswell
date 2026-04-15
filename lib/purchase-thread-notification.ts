@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
+import type { OrderPlacedMessagePayload } from "@/lib/validations/order-placed-message-metadata"
 
 function shippingLines(shipping: Record<string, unknown> | null): string[] {
   if (!shipping) return []
@@ -29,6 +30,34 @@ function shippingLines(shipping: Record<string, unknown> | null): string[] {
  * Opens or reuses the listing thread and posts a buyer message with payment + fulfillment details
  * so the seller sees the order in Messages without emailing infrastructure.
  */
+function paymentPhrase(method: OrderPlacedMessagePayload["paymentMethod"]): string {
+  return method === "reswell_bucks" ? "Reswell Bucks" : "card"
+}
+
+function buildPurchaseThreadPlainText(params: {
+  orderNum: string
+  listingTitle: string
+  total: number
+  fulfillment: "pickup" | "shipping"
+  shippingAddress: Record<string, unknown> | null
+  paymentMethod: OrderPlacedMessagePayload["paymentMethod"]
+}): string {
+  const { orderNum, listingTitle, total, fulfillment, shippingAddress, paymentMethod } = params
+
+  const header = `Order #${orderNum} — $${total.toFixed(2)} total`
+  const itemLine = `Item: "${listingTitle}"`
+  const payLine = `Paid with ${paymentPhrase(paymentMethod)}`
+
+  const fulfillmentLine =
+    fulfillment === "shipping"
+      ? "Fulfillment: shipping — use your order/sale dashboard for tracking once shipped."
+      : "Fulfillment: local pickup — reply in this thread to coordinate a pickup time."
+
+  const shipBlock = fulfillment === "shipping" ? shippingLines(shippingAddress).join("\n") : ""
+
+  return [header, "", itemLine, payLine, "", fulfillmentLine, shipBlock].filter(Boolean).join("\n").trim()
+}
+
 export async function postPurchaseThreadNotification(
   supabase: SupabaseClient,
   params: {
@@ -36,15 +65,28 @@ export async function postPurchaseThreadNotification(
     sellerId: string
     listingId: string
     listingTitle: string
+    /** `orders.id` — used for dashboard links in the thread UI. */
+    orderId: string
     /** `orders.order_num` (customer-facing reference). */
     orderNum: string
     total: number
     fulfillment: "pickup" | "shipping"
     shippingAddress: Record<string, unknown> | null
+    paymentMethod: OrderPlacedMessagePayload["paymentMethod"]
   }
 ): Promise<void> {
-  const { buyerId, sellerId, listingId, listingTitle, orderNum, total, fulfillment, shippingAddress } =
-    params
+  const {
+    buyerId,
+    sellerId,
+    listingId,
+    listingTitle,
+    orderId,
+    orderNum,
+    total,
+    fulfillment,
+    shippingAddress,
+    paymentMethod,
+  } = params
 
   let conversation = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
 
@@ -68,14 +110,24 @@ export async function postPurchaseThreadNotification(
     await supabase.from("conversations").update({ listing_id: listingId }).eq("id", conversation.id)
   }
 
-  const intro = `Order #${orderNum}\n\nI paid with card for "${listingTitle}" — $${total.toFixed(2)} total.`
-  const fulfillmentLine =
-    fulfillment === "shipping"
-      ? "Fulfillment: please ship to the address I entered at checkout (also saved on your sale record)."
-      : "Fulfillment: local pickup — reply here when you’re free to meet."
+  const content = buildPurchaseThreadPlainText({
+    orderNum,
+    listingTitle,
+    total,
+    fulfillment,
+    shippingAddress,
+    paymentMethod,
+  })
 
-  const shipBlock = fulfillment === "shipping" ? shippingLines(shippingAddress).join("\n") : ""
-  const content = [intro, "", fulfillmentLine, shipBlock].filter(Boolean).join("\n").trim()
+  const metadata: OrderPlacedMessagePayload = {
+    kind: "order_placed",
+    orderId,
+    orderNum,
+    listingTitle,
+    total,
+    fulfillment,
+    paymentMethod,
+  }
 
   const { data: inserted, error: msgError } = await supabase
     .from("messages")
@@ -83,6 +135,7 @@ export async function postPurchaseThreadNotification(
       conversation_id: conversation.id,
       sender_id: buyerId,
       content,
+      metadata,
     })
     .select("id, created_at")
     .single()

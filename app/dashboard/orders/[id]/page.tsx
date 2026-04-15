@@ -9,7 +9,12 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import {
+  orderStatusBadgeVariant,
+  orderStatusIsRefunded,
+  orderStatusLocksDuringRefund,
+  orderStatusLabel,
+} from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import {
@@ -165,7 +170,8 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           ? "Shipping"
           : "Local pickup"
 
-  const isRefunded = order.status === "refunded"
+  const isRefunded = orderStatusIsRefunded(order.status)
+  const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
 
   const convRow = await getConversationForBuyerSeller(supabase, user.id, order.seller_id)
 
@@ -246,17 +252,17 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       />
 
       {/* Buyer action: confirm delivery for shipped orders (hidden when refunded) */}
-      {order.status !== "refunded" && (
+      {!fulfillmentLocked && (
         <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
       )}
 
       {/* Buyer: show pickup code for local pickup (hidden when refunded) */}
-      {order.status !== "refunded" && order.fulfillment_method === "pickup" && order.pickup_code && (
+      {!fulfillmentLocked && order.fulfillment_method === "pickup" && order.pickup_code && (
         <BuyerPickupCode pickupCode={order.pickup_code} deliveryStatus={order.delivery_status} />
       )}
 
       {/* Tracking info from seller */}
-      {order.status !== "refunded" && order.tracking_number && (
+      {!fulfillmentLocked && order.tracking_number && (
         <TrackingInfo
           trackingNumber={order.tracking_number}
           trackingCarrier={order.tracking_carrier}
@@ -298,6 +304,13 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                 ${Number(order.amount).toFixed(2)}
               </span>
             </div>
+            {order.status === "refunding" && (
+              <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5 text-sm text-amber-950 dark:text-amber-100">
+                Refund in progress — your payment is being returned
+                {paidWithCard ? " through Stripe" : ""}. This order will show as fully refunded when it
+                finishes (card statements can take several business days).
+              </div>
+            )}
             {isRefunded && (
               <div className="flex justify-between items-baseline gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2.5 text-base font-semibold">
                 <span className="text-emerald-900 dark:text-emerald-100">Refunded to you (full amount)</span>

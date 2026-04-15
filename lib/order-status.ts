@@ -2,7 +2,7 @@ import type { BadgeProps } from "@/components/ui/badge"
 
 // ── Order status ──────────────────────────────────────────────
 
-export const ORDER_STATUS_LIST = ["pending", "confirmed", "refunded"] as const
+export const ORDER_STATUS_LIST = ["pending", "confirmed", "refunding", "refunded"] as const
 export type OrderStatus = (typeof ORDER_STATUS_LIST)[number]
 
 export function isOrderStatus(value: string): value is OrderStatus {
@@ -15,6 +15,8 @@ export function orderStatusLabel(status: string): string {
       return "Pending"
     case "confirmed":
       return "Confirmed"
+    case "refunding":
+      return "Refund in progress"
     case "refunded":
       return "Refunded"
     default:
@@ -28,11 +30,28 @@ export function orderStatusBadgeVariant(status: string): BadgeProps["variant"] {
       return "secondary"
     case "pending":
       return "outline"
+    case "refunding":
+      return "outline"
     case "refunded":
       return "destructive"
     default:
       return "outline"
   }
+}
+
+/** True when the order is fully refunded (not merely a Stripe refund in flight). */
+export function orderStatusIsRefunded(status: string): boolean {
+  return status === "refunded"
+}
+
+/** Stripe (or admin) has started a refund; settlement may still be pending. */
+export function orderStatusIsRefundInProgress(status: string): boolean {
+  return status === "refunding"
+}
+
+/** Hide post-purchase actions (tracking, pickup, confirm delivery) while refunding or refunded. */
+export function orderStatusLocksDuringRefund(status: string): boolean {
+  return status === "refunded" || status === "refunding"
 }
 
 // ── Delivery status ───────────────────────────────────────────

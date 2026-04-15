@@ -20,6 +20,8 @@ import {
 } from '@/components/features/messages/offer-negotiation-event-card'
 import type { OfferRowLite } from '@/components/features/messages/seller-offer-response-dialog'
 import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiation-message'
+import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
+import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
 
 interface Message {
   id: string
@@ -28,6 +30,7 @@ interface Message {
   is_read: boolean
   created_at: string
   offer_id?: string | null
+  metadata?: unknown | null
 }
 
 interface Conversation {
@@ -421,6 +424,22 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           minOfferPct={listingOfferMinPct}
                           createdAt={message.created_at}
                           onThreadRefresh={loadThread}
+                        />
+                      </div>
+                    )
+                  }
+
+                  const orderPlaced = parseOrderPlacedMessageMetadata(message.metadata)
+                  if (orderPlaced) {
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <OrderPlacedMessageCard
+                          payload={orderPlaced}
+                          createdAt={message.created_at}
+                          viewerIsSeller={isSeller}
                         />
                       </div>
                     )

@@ -9,7 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Package, ChevronRight, Receipt, RotateCcw } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { ORDER_STATUS_LIST, orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import {
+  ORDER_STATUS_LIST,
+  orderStatusBadgeVariant,
+  orderStatusIsRefunded,
+  orderStatusIsRefundInProgress,
+  orderStatusLabel,
+} from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
 
@@ -195,10 +201,16 @@ export function BuyerOrdersTab() {
                     <LocalDateOnly iso={row.created_at} dateStyle="medium" /> · $
                     {Number(row.amount).toFixed(2)} · {fulfill}
                   </p>
-                  {row.status === "refunded" && (
+                  {orderStatusIsRefundInProgress(row.status) && (
+                    <p className="text-xs text-amber-800 dark:text-amber-200 font-medium flex items-center gap-1 mt-0.5">
+                      <RotateCcw className="h-3 w-3" />
+                      Refund in progress
+                    </p>
+                  )}
+                  {orderStatusIsRefunded(row.status) && (
                     <p className="text-xs text-destructive font-medium flex items-center gap-1 mt-0.5">
                       <RotateCcw className="h-3 w-3" />
-                      Refund issued
+                      Refund complete
                     </p>
                   )}
                 </div>

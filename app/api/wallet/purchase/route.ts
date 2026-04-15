@@ -202,6 +202,7 @@ export async function POST(request: NextRequest) {
     sellerId: listing.user_id,
     listingId: listing.id,
     listingTitle: listing.title,
+    orderId: purchase.id,
     orderNum: formatOrderNumForCustomer(
       (purchase as { order_num?: string | null }).order_num,
       purchase.id,
@@ -209,6 +210,7 @@ export async function POST(request: NextRequest) {
     total: price,
     fulfillment: isPickup ? "pickup" : "shipping",
     shippingAddress: null,
+    paymentMethod: "reswell_bucks",
   })
 
   if (purchase?.id) {

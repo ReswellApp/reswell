@@ -568,6 +568,58 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
 }
 
 /**
+ * When Stripe creates a refund (e.g. Dashboard) it is often `pending` before `succeeded`.
+ * Surface `refunding` in-app immediately; wallet clawback and full reconciliation run on success.
+ */
+export async function markMarketplaceOrderRefundingFromStripeRefund(refund: Stripe.Refund): Promise<void> {
+  if (refund.status !== "pending" && refund.status !== "requires_action") {
+    return
+  }
+
+  let supabase
+  try {
+    supabase = createServiceRoleClient()
+  } catch (e) {
+    console.error("[stripe refund webhook] service client (mark refunding)", e)
+    return
+  }
+
+  const stripe = getStripe()
+  const piId = await resolvePaymentIntentId(refund, stripe)
+  if (!piId) {
+    console.warn("[stripe refund webhook] could not resolve payment_intent (mark refunding)", {
+      refund: refund.id,
+    })
+    return
+  }
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, status")
+    .eq("stripe_checkout_session_id", piId)
+    .eq("payment_method", "stripe")
+    .maybeSingle()
+
+  if (!order || order.status === "refunded") {
+    return
+  }
+  if (order.status !== "confirmed" && order.status !== "refunding") {
+    return
+  }
+
+  const nowIso = new Date().toISOString()
+  const { error: updErr } = await supabase
+    .from("orders")
+    .update({ status: "refunding", updated_at: nowIso })
+    .eq("id", order.id)
+    .in("status", ["confirmed", "refunding"])
+
+  if (updErr) {
+    console.error("[stripe refund webhook] mark refunding status", updErr)
+  }
+}
+
+/**
  * @returns true if this event was a refund lifecycle event (consumed for webhook routing).
  */
 export async function tryHandleStripeRefundEvent(event: Stripe.Event): Promise<boolean> {
@@ -577,14 +629,22 @@ export async function tryHandleStripeRefundEvent(event: Stripe.Event): Promise<b
 
   const refund = event.data.object as Stripe.Refund
 
-  if (refund.status !== "succeeded") {
+  if (refund.status === "succeeded") {
+    try {
+      await applyMarketplaceStripeRefund(refund)
+    } catch (e) {
+      console.error("[stripe refund webhook] applyMarketplaceStripeRefund", e)
+    }
     return true
   }
 
-  try {
-    await applyMarketplaceStripeRefund(refund)
-  } catch (e) {
-    console.error("[stripe refund webhook] applyMarketplaceStripeRefund", e)
+  if (refund.status === "pending" || refund.status === "requires_action") {
+    try {
+      await markMarketplaceOrderRefundingFromStripeRefund(refund)
+    } catch (e) {
+      console.error("[stripe refund webhook] markMarketplaceOrderRefundingFromStripeRefund", e)
+    }
+    return true
   }
 
   return true

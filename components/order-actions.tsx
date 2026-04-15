@@ -306,7 +306,7 @@ export function SellerRequestSupportButton({
   const [requestType, setRequestType] = useState<"refund_request" | "cancel_request">("refund_request")
   const [body, setBody] = useState("")
 
-  if (orderStatus === "refunded") return null
+  if (orderStatus === "refunded" || orderStatus === "refunding") return null
 
   const typeLabels: Record<typeof requestType, string> = {
     refund_request: "Ask Reswell to issue a refund",
@@ -412,6 +412,34 @@ export function SellerRefundedBanner({
           The buyer receives a full refund of ${amount.toFixed(2)}
           {dateStr ? ` on ${dateStr}` : ""} — the entire amount they paid. Your net earnings after fees
           are reversed from your account.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** Stripe (or admin) has started a refund; settlement may still be pending. */
+export function SellerRefundInProgressBanner({
+  amount,
+  paidWithCard,
+}: {
+  amount: number
+  paidWithCard: boolean
+}) {
+  return (
+    <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-4 flex items-start gap-3">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/15 shrink-0">
+        <RotateCcw className="h-4 w-4 text-amber-800 dark:text-amber-200" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Refund in progress</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          A refund of ${amount.toFixed(2)} is processing
+          {paidWithCard ? " to the buyer’s card through Stripe" : ""}. This sale will show as fully
+          refunded when it completes.{" "}
+          {paidWithCard
+            ? "Bank timelines vary; the buyer may not see the credit for several business days."
+            : "You’ll get a confirmation here when it finishes."}
         </p>
       </div>
     </div>

@@ -481,6 +481,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     sellerId: listing.user_id,
     listingId: listing.id,
     listingTitle: listing.title,
+    orderId: purchase.id,
     orderNum: formatOrderNumForCustomer(
       (purchase as { order_num?: string | null }).order_num,
       purchase.id,
@@ -488,6 +489,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     total: price,
     fulfillment: isPickup ? "pickup" : "shipping",
     shippingAddress: shippingAddressJson,
+    paymentMethod: "card",
   })
 
   await trackKlaviyoBuyerOrderConfirmed({

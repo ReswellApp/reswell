@@ -41,6 +41,12 @@ function statusBadge(status: string) {
   switch (status) {
     case "confirmed":
       return <Badge variant="secondary">Confirmed</Badge>
+    case "refunding":
+      return (
+        <Badge variant="outline" className="border-amber-500/40 text-amber-950 dark:text-amber-100">
+          Refund in progress
+        </Badge>
+      )
     case "refunded":
       return <Badge variant="destructive">Refunded</Badge>
     case "pending":
@@ -135,6 +141,7 @@ export default function AdminOrdersPage() {
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="confirmed">Confirmed</SelectItem>
+            <SelectItem value="refunding">Refund in progress</SelectItem>
             <SelectItem value="refunded">Refunded</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
           </SelectContent>

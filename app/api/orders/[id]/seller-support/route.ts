@@ -58,6 +58,10 @@ export async function POST(
     return NextResponse.json({ error: "This order is already refunded" }, { status: 409 })
   }
 
+  if (order.status === "refunding") {
+    return NextResponse.json({ error: "A refund is already in progress for this order" }, { status: 409 })
+  }
+
   const orderRef = formatOrderNumForCustomer(
     (order as { order_num?: string | null }).order_num ?? null,
     orderId,

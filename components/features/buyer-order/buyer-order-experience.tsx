@@ -75,6 +75,34 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
   const { fulfillmentMethod, deliveryStatus, trackingNumber, status, paymentMethod, refundedAt, amount } = props
   const ship = fulfillmentMethod === "shipping"
 
+  if (status === "refunding") {
+    const isCard = paymentMethod === "stripe"
+    return [
+      {
+        key: "placed",
+        title: "Order placed",
+        description: "Your original purchase was confirmed.",
+        state: "done",
+      },
+      {
+        key: "refund-started",
+        title: "Refund in progress",
+        description: isCard
+          ? `We’re processing a full refund of $${amount.toFixed(2)} to your card through Stripe. This screen will update to “Refunded” when the refund completes.`
+          : `We’re processing a full refund of $${amount.toFixed(2)} to your Reswell Bucks balance.`,
+        state: "current",
+      },
+      {
+        key: "funds-settle",
+        title: isCard ? "Refund appears on your statement" : "Wallet updated",
+        description: isCard
+          ? "Banks often take several business days to show the credit after Stripe marks the refund complete."
+          : "Your wallet balance updates as soon as the refund finishes processing.",
+        state: "upcoming",
+      },
+    ]
+  }
+
   if (status === "refunded") {
     const refundDateStr = refundedAt
       ? new Date(refundedAt).toLocaleDateString(undefined, { dateStyle: "medium" })
@@ -217,37 +245,64 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
   }
 
   const isRefunded = props.status === "refunded"
+  const isRefunding = props.status === "refunding"
 
   return (
     <div className="space-y-8">
-      <Card className={`overflow-hidden shadow-sm ${
-        isRefunded
-          ? "border-destructive/20 bg-gradient-to-b from-destructive/[0.04] to-background"
-          : "border-primary/15 bg-gradient-to-b from-primary/[0.06] to-background"
-      }`}>
+      <Card
+        className={`overflow-hidden shadow-sm ${
+          isRefunded
+            ? "border-destructive/20 bg-gradient-to-b from-destructive/[0.04] to-background"
+            : isRefunding
+              ? "border-amber-500/25 bg-gradient-to-b from-amber-500/[0.07] to-background"
+              : "border-primary/15 bg-gradient-to-b from-primary/[0.06] to-background"
+        }`}
+      >
         <CardHeader className="pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className={`text-[11px] font-semibold uppercase tracking-wider ${
-                isRefunded ? "text-destructive/80" : "text-primary/80"
-              }`}>
-                {isRefunded ? "Refund processed" : "What happens next"}
+              <p
+                className={`text-[11px] font-semibold uppercase tracking-wider ${
+                  isRefunded
+                    ? "text-destructive/80"
+                    : isRefunding
+                      ? "text-amber-800 dark:text-amber-200/90"
+                      : "text-primary/80"
+                }`}
+              >
+                {isRefunded ? "Refund processed" : isRefunding ? "Refund in progress" : "What happens next"}
               </p>
               <CardTitle className="mt-1 text-xl font-semibold tracking-tight">
                 {isRefunded
                   ? `$${props.amount.toFixed(2)} refund issued`
-                  : "Your purchase is protected on Reswell"}
+                  : isRefunding
+                    ? `Refund processing — $${props.amount.toFixed(2)}`
+                    : "Your purchase is protected on Reswell"}
               </CardTitle>
               <CardDescription className="text-[15px] leading-relaxed mt-2 max-w-2xl">
                 {isRefunded
                   ? "This order has been fully refunded. See the timeline below for details on when to expect your funds."
-                  : "Follow the steps below. Message your seller anytime, track shipment when available, and reach our team if something doesn\u2019t look right."}
+                  : isRefunding
+                    ? props.paidWithCard
+                      ? "Stripe is returning your payment. This page updates automatically when the refund completes; your bank may take a few days to show the credit."
+                      : "Your refund is being finalized. This page updates when it completes."
+                    : "Follow the steps below. Message your seller anytime, track shipment when available, and reach our team if something doesn\u2019t look right."}
               </CardDescription>
             </div>
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-              isRefunded ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
-            }`}>
-              {isRefunded ? <RotateCcw className="h-5 w-5" aria-hidden /> : <Shield className="h-5 w-5" aria-hidden />}
+            <div
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                isRefunded
+                  ? "bg-destructive/10 text-destructive"
+                  : isRefunding
+                    ? "bg-amber-500/15 text-amber-900 dark:text-amber-100"
+                    : "bg-primary/10 text-primary"
+              }`}
+            >
+              {isRefunded || isRefunding ? (
+                <RotateCcw className="h-5 w-5" aria-hidden />
+              ) : (
+                <Shield className="h-5 w-5" aria-hidden />
+              )}
             </div>
           </div>
         </CardHeader>
@@ -276,7 +331,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
       </Card>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        {!isRefunded && trackUrl ? (
+        {!isRefunded && !isRefunding && trackUrl ? (
           <Button className="gap-2" asChild>
             <a href={trackUrl} target="_blank" rel="noopener noreferrer">
               <Truck className="h-4 w-4" />
@@ -284,7 +339,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
               <ExternalLink className="h-3.5 w-3.5 opacity-70" />
             </a>
           </Button>
-        ) : !isRefunded && props.fulfillmentMethod === "shipping" ? (
+        ) : !isRefunded && !isRefunding && props.fulfillmentMethod === "shipping" ? (
           <Button type="button" variant="secondary" disabled className="gap-2">
             <Truck className="h-4 w-4" />
             Tracking when seller ships
@@ -381,7 +436,15 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         ) : null}
       </div>
 
-      {isRefunded ? (
+      {isRefunding ? (
+        <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" />
+          <span>
+            A refund is underway for this order. You don’t need to do anything — refresh this page if the
+            status doesn’t update after a few minutes.
+          </span>
+        </p>
+      ) : isRefunded ? (
         <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
           <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
           <span>

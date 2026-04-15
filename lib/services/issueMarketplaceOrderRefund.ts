@@ -60,6 +60,42 @@ export async function issueMarketplaceOrderRefund(
     return { ok: false, error: "Order is already refunded", status: 409 }
   }
 
+  if (order.status === "refunding") {
+    if (order.payment_method !== "stripe" || !order.stripe_checkout_session_id) {
+      return {
+        ok: false,
+        error: "This order is not waiting on a Stripe card refund.",
+        status: 400,
+      }
+    }
+    const sync = await syncMarketplaceOrderFromStripePaymentIntent(
+      serviceSupabase,
+      order.stripe_checkout_session_id,
+    )
+    if (!sync.ok) {
+      console.error("[issue refund] sync while refunding", sync)
+      if (sync.reason === "order_not_found") {
+        return {
+          ok: false,
+          error: "This payment is not linked to an order in our system.",
+          status: 502,
+        }
+      }
+      return {
+        ok: false,
+        error: "Could not sync refund status from Stripe: " + sync.message,
+        status: 502,
+      }
+    }
+    return {
+      ok: true,
+      refund_type: "stripe",
+      message: sync.fullyRefunded
+        ? "Refund completed in Stripe — order updated."
+        : "Refund status synced from Stripe. If the refund is still processing, check again shortly.",
+    }
+  }
+
   if (order.status !== "confirmed") {
     return { ok: false, error: "Only confirmed orders can be refunded", status: 400 }
   }
@@ -122,8 +158,29 @@ export async function issueMarketplaceOrderRefund(
       return { ok: false, error: "Stripe refund failed: " + msg, status: 502 }
     }
 
-    // 3. Mark order refunded + cancel payouts
     const nowIso = new Date().toISOString()
+
+    if (stripeRefund.status !== "succeeded") {
+      await serviceSupabase
+        .from("orders")
+        .update({ status: "refunding", updated_at: nowIso })
+        .eq("id", order.id)
+        .eq("status", "confirmed")
+
+      await serviceSupabase
+        .from("payouts")
+        .update({ status: "cancelled", updated_at: nowIso })
+        .eq("order_id", order.id)
+
+      return {
+        ok: true,
+        refund_type: "stripe",
+        message:
+          "Refund started — Stripe is processing it. This order will move to Refunded when Stripe completes the refund. Card refunds can take several business days to appear on the buyer’s statement.",
+      }
+    }
+
+    // 3. Mark order refunded + cancel payouts
     await serviceSupabase
       .from("orders")
       .update({ status: "refunded", refunded_at: nowIso, updated_at: nowIso })

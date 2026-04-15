@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
+import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import { createClient } from "@/lib/supabase/client"
 
@@ -159,7 +160,7 @@ export default function AdminOrderDetailPage() {
               Created {format(new Date(o.created_at), "MMM d, yyyy HH:mm")}
             </CardDescription>
           </div>
-          <Badge variant={o.status === "refunded" ? "destructive" : "secondary"}>{o.status}</Badge>
+          <Badge variant={orderStatusBadgeVariant(o.status)}>{orderStatusLabel(o.status)}</Badge>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -205,7 +206,7 @@ export default function AdminOrderDetailPage() {
           </div>
 
           {/* Admin actions */}
-          {o.status === "confirmed" && canRefund && (
+          {(o.status === "confirmed" || o.status === "refunding") && canRefund && (
             <div className="flex flex-col gap-3 border-t border-border/60 pt-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Admin actions</p>
               <div className="flex flex-wrap gap-3">
@@ -220,10 +221,21 @@ export default function AdminOrderDetailPage() {
             </div>
           )}
 
-          {o.status === "confirmed" && !canRefund && (
+          {(o.status === "confirmed" || o.status === "refunding") && !canRefund && (
             <div className="border-t border-border/60 pt-4">
               <p className="text-muted-foreground text-sm">
                 Only a full admin can issue refunds. Employees can review this order and escalate.
+              </p>
+            </div>
+          )}
+
+          {o.status === "refunding" && (
+            <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-4">
+              <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Refund in progress</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                This order is waiting on Stripe to finish the refund. Buyers and sellers see “Refund in
+                progress” on their dashboards. Use sync below if Stripe shows succeeded but this order is
+                still stuck.
               </p>
             </div>
           )}

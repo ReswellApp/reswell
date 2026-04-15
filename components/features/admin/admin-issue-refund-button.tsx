@@ -47,8 +47,9 @@ export function AdminIssueRefundButton({
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
 
-  if (orderStatus !== "confirmed") return null
+  if (orderStatus !== "confirmed" && orderStatus !== "refunding") return null
 
+  const isSyncOnly = orderStatus === "refunding"
   const isCard = paymentMethod === "stripe"
   const refundTarget = isCard ? "the buyer's card" : "the buyer's Reswell Bucks balance"
 
@@ -80,28 +81,47 @@ export function AdminIssueRefundButton({
       <AlertDialogTrigger asChild>
         <Button
           variant="outline"
-          className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+          className={
+            isSyncOnly
+              ? "gap-2 border-amber-500/30 text-amber-950 dark:text-amber-100 hover:bg-amber-500/10"
+              : "gap-2 border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+          }
         >
           <RotateCcw className="h-4 w-4" />
-          Issue refund (admin)
+          {isSyncOnly ? "Sync refund from Stripe" : "Issue refund (admin)"}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Refund ${amount.toFixed(2)} to the buyer?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {isSyncOnly
+              ? "Sync refund status from Stripe?"
+              : `Refund $${amount.toFixed(2)} to the buyer?`}
+          </AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
-            <span className="block">
-              This runs the same full refund as the seller: ${amount.toFixed(2)} to {refundTarget}, seller
-              earnings reversed, payouts cancelled where applicable, and the listing re-listed if sold.
-            </span>
-            <span className="block font-medium text-destructive">This action cannot be undone.</span>
+            {isSyncOnly ? (
+              <span className="block">
+                Fetches the latest refund state from Stripe and updates this order (for example after a
+                Dashboard refund or when a pending refund has just completed). No new refund is created if
+                one already exists.
+              </span>
+            ) : (
+              <>
+                <span className="block">
+                  This runs the same full refund as the seller: ${amount.toFixed(2)} to {refundTarget},
+                  seller earnings reversed, payouts cancelled where applicable, and the listing re-listed
+                  if sold.
+                </span>
+                <span className="block font-medium text-destructive">This action cannot be undone.</span>
+              </>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-          <Button variant="destructive" onClick={submit} disabled={busy}>
+          <Button variant={isSyncOnly ? "default" : "destructive"} onClick={submit} disabled={busy}>
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Confirm refund
+            {isSyncOnly ? "Sync from Stripe" : "Confirm refund"}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -36,6 +36,12 @@ export function validateBuyerSupportForOrder(
     if (order.status === "refunded") {
       return { ok: false, error: "This order is already refunded." }
     }
+    if (order.status === "refunding") {
+      return {
+        ok: false,
+        error: "A refund is already in progress for this order. Check back shortly or contact support if it does not complete.",
+      }
+    }
     if (!canSubmitRefundHelpRequest(order)) {
       return { ok: false, error: "Refund help is not available for this order state." }
     }

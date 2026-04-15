@@ -4,7 +4,7 @@ import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { z } from "zod"
 
 const querySchema = z.object({
-  status: z.enum(["all", "confirmed", "refunded", "pending"]).optional().default("all"),
+  status: z.enum(["all", "confirmed", "refunding", "refunded", "pending"]).optional().default("all"),
   q: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),
   offset: z.coerce.number().int().min(0).optional().default(0),
