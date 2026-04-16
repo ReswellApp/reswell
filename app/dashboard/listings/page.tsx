@@ -143,7 +143,7 @@ export default function MyListingsPage() {
       if (result.mode === 'delete') {
         toast.success('Listing deleted')
       } else {
-        toast.success('Listing archived for 30 days, then eligible for removal')
+        toast.success('Listing archived for 30 days')
       }
     } finally {
       setEndListingLoading(false)
@@ -378,8 +378,8 @@ export default function MyListingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>End listing</AlertDialogTitle>
             <AlertDialogDescription>
-              Archive keeps the listing for 30 days, then it can be permanently removed by our cleanup.
-              Delete removes it from the database immediately. Choose an option:
+              Archive keeps your listing for 30 days in Archived listings; after that, it can’t be
+              recovered. Delete removes it permanently right away. Choose an option:
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2 py-2">
