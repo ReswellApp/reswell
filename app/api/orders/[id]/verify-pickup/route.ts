@@ -24,11 +24,7 @@ export async function POST(
     return NextResponse.json({ error: "Pickup code is required" }, { status: 400 })
   }
 
-  const result = await verifyOrderPickupForSeller({
-    sellerId: user.id,
-    orderId,
-    code,
-  })
+  const result = await verifyOrderPickupForSeller(supabase, { orderId, code })
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status })
