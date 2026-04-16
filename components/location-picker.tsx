@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { LocationInputSuggest, type LocationSuggestion } from "@/components/location-input-suggest"
 import { MapPin, Search, Crosshair, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -22,19 +22,11 @@ interface LocationPickerProps {
   initialDisplay?: string
 }
 
-type GeocodeSuggestion = {
-  label: string
-  lat: number
-  lng: number
-  city?: string
-  state?: string
-}
-
 function hasCoords(lat: number, lng: number) {
   return lat !== 0 && lng !== 0 && Number.isFinite(lat) && Number.isFinite(lng)
 }
 
-function cityStateFromSuggestion(s: GeocodeSuggestion): { city: string; state: string } {
+function cityStateFromSuggestion(s: LocationSuggestion): { city: string; state: string } {
   let city = (s.city ?? "").trim()
   let state = (s.state ?? "").trim()
   if (city && state) return { city, state }
@@ -47,7 +39,6 @@ function cityStateFromSuggestion(s: GeocodeSuggestion): { city: string; state: s
   return { city, state }
 }
 
-const SUGGEST_DEBOUNCE_MS = 280
 const LISTBOX_ID = "listing-location-suggestions"
 
 export function LocationPicker({
@@ -72,17 +63,12 @@ export function LocationPicker({
   const [state, setState] = useState(initialState ?? "")
   const [displayName, setDisplayName] = useState(initialDisplay ?? "")
   const [searchQuery, setSearchQuery] = useState(initialDisplay ?? "")
-  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([])
-  const [listOpen, setListOpen] = useState(false)
-  const [highlightIndex, setHighlightIndex] = useState(0)
-  const [suggestLoading, setSuggestLoading] = useState(false)
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [locating, setLocating] = useState(false)
 
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const userTypingRef = useRef(true)
-  const rootRef = useRef<HTMLDivElement>(null)
 
   const flashSaved = useCallback(() => {
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
@@ -98,52 +84,35 @@ export function LocationPicker({
     [onLocationSelect, flashSaved],
   )
 
-  const pickSuggestion = useCallback(
-    (s: GeocodeSuggestion) => {
-      userTypingRef.current = false
-      setListOpen(false)
-      setSuggestions([])
-      setSearchError(null)
-      const { city: c, state: st } = cityStateFromSuggestion(s)
-      setLat(s.lat)
-      setLng(s.lng)
-      setCity(c)
-      setState(st)
-      setDisplayName(s.label)
-      setSearchQuery(s.label)
-      pushToListing({
-        lat: s.lat,
-        lng: s.lng,
-        city: c,
-        state: st,
-        displayName: s.label,
-      })
-    },
-    [pushToListing],
-  )
-
   const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
+    const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=12&addressdetails=1`,
-        { headers: { "Accept-Language": "en", "User-Agent": "ReswellSurfMarketplace/1" } },
-      )
-      const data = await res.json()
-      const addr = data.address || {}
-      const resolvedCity = addr.city || addr.town || addr.village || addr.hamlet || ""
-      const resolvedState = addr.state || ""
-      const display = [resolvedCity, resolvedState].filter(Boolean).join(", ")
-      const label = display || (typeof data.display_name === "string" ? data.display_name : "") || ""
+      const [labelRes, structRes] = await Promise.all([
+        fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`),
+        fetch(`/api/geocode/structured?lat=${latitude}&lng=${longitude}`),
+      ])
+      let displayName = fallback
+      let resolvedCity = ""
+      let resolvedState = ""
+      if (labelRes.ok) {
+        const d = (await labelRes.json()) as { displayName?: string }
+        if (typeof d.displayName === "string" && d.displayName.trim()) {
+          displayName = d.displayName.trim()
+        }
+      }
+      if (structRes.ok) {
+        const s = (await structRes.json()) as {
+          city_locality?: string | null
+          state_province?: string | null
+        }
+        if (s.city_locality?.trim()) resolvedCity = s.city_locality.trim()
+        if (s.state_province?.trim()) resolvedState = s.state_province.trim()
+      }
       setCity(resolvedCity)
       setState(resolvedState)
-      setDisplayName(label || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`)
-      return {
-        city: resolvedCity,
-        state: resolvedState,
-        displayName: label || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-      }
+      setDisplayName(displayName)
+      return { city: resolvedCity, state: resolvedState, displayName }
     } catch {
-      const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
       setCity("")
       setState("")
       setDisplayName(fallback)
@@ -166,69 +135,12 @@ export function LocationPicker({
     }
   }, [initialLat, initialLng, initialCity, initialState, initialDisplay])
 
-  useEffect(() => {
-    if (!userTypingRef.current) {
-      return
-    }
-
-    const q = searchQuery.trim()
-    if (q.length < 2) {
-      setSuggestions([])
-      setListOpen(false)
-      setSuggestLoading(false)
-      return
-    }
-
-    const ac = new AbortController()
-    const timer = setTimeout(() => {
-      void (async () => {
-        setSuggestLoading(true)
-        setSearchError(null)
-        try {
-          const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(q)}`, {
-            signal: ac.signal,
-          })
-          const data = (await res.json()) as { suggestions?: GeocodeSuggestion[] }
-          const list = Array.isArray(data.suggestions) ? data.suggestions : []
-          if (!ac.signal.aborted) {
-            setSuggestions(list)
-            setHighlightIndex(0)
-            setListOpen(list.length > 0)
-          }
-        } catch {
-          if (!ac.signal.aborted) {
-            setSuggestions([])
-            setListOpen(false)
-          }
-        } finally {
-          setSuggestLoading(false)
-        }
-      })()
-    }, SUGGEST_DEBOUNCE_MS)
-
-    return () => {
-      clearTimeout(timer)
-      ac.abort()
-    }
-  }, [searchQuery])
-
-  useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setListOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", onDocMouseDown)
-    return () => document.removeEventListener("mousedown", onDocMouseDown)
-  }, [])
-
   function handleUseMyLocation() {
     if (!navigator.geolocation) {
       setSearchError("Your browser doesn’t support location. Try the search box instead.")
       return
     }
     setSearchError(null)
-    setListOpen(false)
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -255,126 +167,51 @@ export function LocationPicker({
     )
   }
 
-  function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      if (!listOpen && suggestions.length > 0) {
-        setListOpen(true)
-        setHighlightIndex(0)
-        return
-      }
-      if (suggestions.length > 0) {
-        setHighlightIndex((i) => Math.min(i + 1, suggestions.length - 1))
-        setListOpen(true)
-      }
-      return
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault()
-      if (suggestions.length > 0) {
-        setHighlightIndex((i) => Math.max(i - 1, 0))
-        setListOpen(true)
-      }
-      return
-    }
-    if (e.key === "Escape") {
-      e.preventDefault()
-      setListOpen(false)
-      return
-    }
-    if (e.key === "Enter") {
-      e.preventDefault()
-      if (listOpen && suggestions.length > 0) {
-        const s = suggestions[highlightIndex] ?? suggestions[0]
-        if (s) pickSuggestion(s)
-        return
-      }
-      if (suggestions.length > 0) {
-        pickSuggestion(suggestions[0])
-        return
-      }
-      setSearchError("Keep typing — pick a place from the list, or try a ZIP or city name.")
-    }
-  }
-
   const showListingFrom = seeded || hasCoords(lat, lng)
-  const activeOptionId =
-    listOpen && suggestions[highlightIndex]
-      ? `${LISTBOX_ID}-opt-${highlightIndex}`
-      : undefined
 
   return (
     <div className="space-y-4">
       <Label className="text-base font-medium">Where are you listing from?</Label>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-        <div ref={rootRef} className="relative flex-1">
+        <div className="relative flex-1">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-muted-foreground/45"
             aria-hidden
           />
-          <Input
-            role="combobox"
-            aria-expanded={listOpen}
-            aria-controls={listOpen ? LISTBOX_ID : undefined}
-            aria-activedescendant={activeOptionId}
-            aria-autocomplete="list"
+          <LocationInputSuggest
+            name="listing-location"
+            listboxId={LISTBOX_ID}
             value={searchQuery}
-            onChange={(e) => {
+            onChange={(v) => {
               userTypingRef.current = true
-              setSearchQuery(e.target.value)
+              setSearchQuery(v)
               setSearchError(null)
             }}
-            onKeyDown={onInputKeyDown}
-            onFocus={() => {
-              if (suggestions.length > 0) setListOpen(true)
+            onPickSuggestion={(s: LocationSuggestion) => {
+              userTypingRef.current = false
+              setSearchError(null)
+              if (!hasCoords(s.lat, s.lng)) return
+              const { city: c, state: st } = cityStateFromSuggestion(s)
+              setLat(s.lat)
+              setLng(s.lng)
+              setCity(c)
+              setState(st)
+              setDisplayName(s.label)
+              setSearchQuery(s.label)
+              pushToListing({
+                lat: s.lat,
+                lng: s.lng,
+                city: c,
+                state: st,
+                displayName: s.label,
+              })
             }}
+            debounceMs={280}
             placeholder="Start typing a city, ZIP, or beach…"
-            className="h-11 pl-10 pr-10 placeholder:text-muted-foreground/45"
+            inputClassName="h-11 pl-10 pr-10 placeholder:text-muted-foreground/45"
             aria-label="Where you’re listing from"
-            autoComplete="off"
           />
-          {suggestLoading ? (
-            <Loader2
-              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground/45"
-              aria-hidden
-            />
-          ) : null}
-
-          {listOpen && suggestions.length > 0 ? (
-            <ul
-              id={LISTBOX_ID}
-              role="listbox"
-              className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-[min(18rem,calc(100vh-12rem))] overflow-auto rounded-xl border border-border/80 bg-popover py-1 text-popover-foreground shadow-lg ring-1 ring-black/5 dark:ring-white/10"
-            >
-              {suggestions.map((s, i) => (
-                <li key={`${s.lat}-${s.lng}-${s.label}`} role="presentation">
-                  <button
-                    type="button"
-                    id={`${LISTBOX_ID}-opt-${i}`}
-                    role="option"
-                    aria-selected={i === highlightIndex}
-                    className={cn(
-                      "flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm outline-none transition-colors",
-                      i === highlightIndex ? "bg-muted" : "hover:bg-muted/70",
-                    )}
-                    onMouseEnter={() => setHighlightIndex(i)}
-                    onMouseDown={(ev) => ev.preventDefault()}
-                    onClick={() => pickSuggestion(s)}
-                  >
-                    <MapPin
-                      className={cn(
-                        "mt-0.5 h-4 w-4 shrink-0",
-                        i === highlightIndex ? "text-primary" : "text-muted-foreground/45",
-                      )}
-                      aria-hidden
-                    />
-                    <span className="min-w-0 leading-snug text-foreground">{s.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </div>
 
         <Button

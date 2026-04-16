@@ -1,13 +1,34 @@
 "use client"
 
-import { useEffect, useId, useRef } from "react"
+import { useEffect, useId, useRef, useState, useCallback } from "react"
 import type { KeyboardEvent } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import type { AddressFields } from "./address-fields"
 import { useGeocodeAddressSuggest, type GeocodeSuggestionRow } from "./geocode-address-suggest"
+import {
+  GooglePlacesAddressInput,
+  type GoogleResolvedAddress,
+} from "@/components/features/checkout/google-places-address-input"
+
+const HAS_GOOGLE_KEY = Boolean(
+  typeof process !== "undefined" && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim(),
+)
+
+function googleResolvedToPatch(a: GoogleResolvedAddress): Partial<AddressFields> {
+  const cc = (a.country || "US").slice(0, 2).toUpperCase()
+  return {
+    address_line1: a.line1,
+    address_line2: a.line2,
+    city_locality: a.city,
+    state_province: normalizeUsStateProvinceForShipping(cc, a.state),
+    postal_code: a.postal_code,
+    country_code: cc,
+  }
+}
 
 function SuggestListbox({
   id,
@@ -54,7 +75,7 @@ function SuggestListbox({
   )
 }
 
-/** Address line 1 — suggestions while typing; keeps the field value. */
+/** Address line 1 — Google Places when configured; otherwise OSM-backed suggestions. */
 export function AddressLine1Suggest({
   value,
   onChange,
@@ -75,9 +96,21 @@ export function AddressLine1Suggest({
   const listId = `${genId}-line1-list`
   const hintId = `${inputId}-kbd-hint`
   const containerRef = useRef<HTMLDivElement>(null)
+  const [useOsmFallback, setUseOsmFallback] = useState(!HAS_GOOGLE_KEY)
+
+  const onGoogleResolved = useCallback(
+    (a: GoogleResolvedAddress) => {
+      onApplyPatch(googleResolvedToPatch(a))
+    },
+    [onApplyPatch],
+  )
+
+  const onGoogleFail = useCallback(() => {
+    setUseOsmFallback(true)
+  }, [])
 
   const { rows, open, setOpen, suggestLoading, resolving, active, setActive, pick, handleKeyDown } =
-    useGeocodeAddressSuggest(value, onApplyPatch, { enabled: !disabled })
+    useGeocodeAddressSuggest(value, onApplyPatch, { enabled: !disabled && useOsmFallback })
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -97,6 +130,31 @@ export function AddressLine1Suggest({
       return
     }
     handleKeyDown(e)
+  }
+
+  if (!useOsmFallback) {
+    return (
+      <div className="relative space-y-1.5 sm:col-span-2">
+        <Label htmlFor={inputId} className="text-[12px] font-medium text-muted-foreground">
+          Address line 1
+        </Label>
+        <GooglePlacesAddressInput
+          id={inputId}
+          name="address-line1"
+          listboxId={`${genId}-admin-google-places-line1`}
+          value={value}
+          onChange={onChange}
+          onAddressResolved={onGoogleResolved}
+          onProviderError={onGoogleFail}
+          placeholder="Street number and name"
+          inputClassName={cn(inputClassName, "text-[13px]")}
+          disabled={disabled}
+        />
+        <p id={hintId} className="text-[10px] text-muted-foreground/75">
+          Choose a suggestion to fill city, state, and ZIP — or type manually.
+        </p>
+      </div>
+    )
   }
 
   return (

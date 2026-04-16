@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { loadGoogleMapsWithPlaces } from "@/lib/maps/load-google-maps"
+import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-components"
 import { Building2, Loader2, MapPin } from "lucide-react"
 
 export type LocationSuggestion = {
@@ -16,12 +18,19 @@ export type LocationSuggestion = {
 
 type SuggestMode = "location" | "address"
 
+type GoogleLocationRow = {
+  placeId: string
+  description: string
+  mainText: string
+  secondaryText: string
+}
+
 interface LocationInputSuggestProps {
   value: string
   onChange: (value: string) => void
   /** When the user picks a row, coords are known so Apply can skip a second geocode. */
   onPickSuggestion: (place: LocationSuggestion) => void
-  /** Use `/api/geocode/suggest?address=1` for US street-level matches (checkout, admin shipping). */
+  /** Use `/api/geocode/suggest?address=1` for US street-level matches (checkout OSM fallback). */
   suggestMode?: SuggestMode
   /**
    * When false, picking a row does not write `label` into the input (caller fills from structured geocode).
@@ -37,7 +46,13 @@ interface LocationInputSuggestProps {
   minLength?: number
   debounceMs?: number
   disabled?: boolean
+  /** Passed to the underlying input (accessibility). */
+  "aria-label"?: string
 }
+
+const HAS_GOOGLE_KEY = Boolean(
+  typeof process !== "undefined" && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim(),
+)
 
 const LOCATION_SUGGEST_CACHE_MAX = 64
 
@@ -80,6 +95,29 @@ async function fetchSuggestions(
   if (!res.ok) return []
   const data = (await res.json()) as { suggestions?: LocationSuggestion[] }
   return Array.isArray(data.suggestions) ? data.suggestions : []
+}
+
+async function forwardGeocodeServer(q: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`)
+    if (!res.ok) return null
+    const data = (await res.json()) as { lat?: number; lng?: number; error?: string }
+    if (data.error || data.lat == null || data.lng == null) return null
+    return { lat: data.lat, lng: data.lng }
+  } catch {
+    return null
+  }
+}
+
+function mapGooglePredictions(
+  predictions: google.maps.places.AutocompletePrediction[],
+): GoogleLocationRow[] {
+  return predictions.map((p) => ({
+    placeId: p.place_id,
+    description: p.description,
+    mainText: p.structured_formatting?.main_text ?? p.description.split(",")[0]?.trim() ?? p.description,
+    secondaryText: p.structured_formatting?.secondary_text ?? "",
+  }))
 }
 
 /** Split API label into a street line and locality for denser list rows. */
@@ -152,14 +190,19 @@ export function LocationInputSuggest({
   minLength = 2,
   debounceMs = 180,
   disabled = false,
+  "aria-label": ariaLabel,
 }: LocationInputSuggestProps) {
   const [open, setOpen] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
+  const [googleRows, setGoogleRows] = useState<GoogleLocationRow[]>([])
   const [fetchEmpty, setFetchEmpty] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
+  const [googleLocationReady, setGoogleLocationReady] = useState(false)
+  const [googleLocationFailed, setGoogleLocationFailed] = useState(() => !HAS_GOOGLE_KEY)
+  const [resolvingPick, setResolvingPick] = useState(false)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -168,18 +211,26 @@ export function LocationInputSuggest({
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
 
   const qTrim = value.trim()
   const isAddress = suggestMode === "address"
+  const preferGoogleLocation = suggestMode === "location" && HAS_GOOGLE_KEY
+  const useGoogleLocationPath = preferGoogleLocation && googleLocationReady && !googleLocationFailed
+  const mapsBootPending = preferGoogleLocation && !googleLocationReady && !googleLocationFailed
+
+  const listHasResults = useGoogleLocationPath ? googleRows.length > 0 : suggestions.length > 0
+
   /** Address mode: dropdown opens once we have a response (keeps focus on the field while loading). */
   const panelOpen =
     open &&
     inputFocused &&
     qTrim.length >= minLength &&
     !suppressOpenUntilTypingRef.current &&
-    (suggestions.length > 0 ||
-      fetchEmpty ||
-      (!isAddress && loading))
+    !mapsBootPending &&
+    (useGoogleLocationPath
+      ? googleRows.length > 0 || fetchEmpty || loading
+      : suggestions.length > 0 || fetchEmpty || (!isAddress && loading))
 
   const invalidatePending = useCallback(() => {
     generationRef.current += 1
@@ -195,15 +246,48 @@ export function LocationInputSuggest({
     Boolean(inputRef.current && document.activeElement === inputRef.current)
 
   useEffect(() => {
+    if (!preferGoogleLocation) {
+      setGoogleLocationReady(false)
+      setGoogleLocationFailed(true)
+      return
+    }
+    let cancelled = false
+    setGoogleLocationFailed(false)
+    void loadGoogleMapsWithPlaces()
+      .then((g) => {
+        if (cancelled) return
+        autocompleteServiceRef.current = new g.maps.places.AutocompleteService()
+        setGoogleLocationReady(true)
+      })
+      .catch(() => {
+        if (!cancelled) setGoogleLocationFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [preferGoogleLocation])
+
+  useEffect(() => {
     if (disabled) return
     const q = value.trim()
     if (q.length < minLength) {
       invalidatePending()
       setSuggestions([])
+      setGoogleRows([])
       setOpen(false)
       setLoading(false)
       setFetchEmpty(false)
       setActiveIndex(-1)
+      return
+    }
+
+    if (mapsBootPending) {
+      invalidatePending()
+      setSuggestions([])
+      setGoogleRows([])
+      setFetchEmpty(false)
+      setActiveIndex(-1)
+      setLoading(true)
       return
     }
 
@@ -217,10 +301,95 @@ export function LocationInputSuggest({
     abortRef.current?.abort()
     abortRef.current = null
 
+    // —— Google Maps JS API (city / ZIP / region) — same loader as checkout address field
+    if (useGoogleLocationPath) {
+      setLoading(true)
+      setGoogleRows([])
+      setActiveIndex(-1)
+      setSuggestions([])
+
+      debounceRef.current = setTimeout(() => {
+        if (runId !== generationRef.current) return
+        const svc = autocompleteServiceRef.current
+        if (!svc) {
+          setLoading(false)
+          return
+        }
+
+        const finish = (
+          predictions: google.maps.places.AutocompletePrediction[] | null,
+          status: string,
+          allowRetry: boolean,
+        ) => {
+          if (runId !== generationRef.current) return
+          const g = window.google
+          if (!g) {
+            setLoading(false)
+            return
+          }
+          if (status === g.maps.places.PlacesServiceStatus.OK && predictions?.length) {
+            setGoogleRows(mapGooglePredictions(predictions))
+            setFetchEmpty(false)
+            setActiveIndex(0)
+            const allowOpen = !suppressOpenUntilTypingRef.current
+            setOpen(isInputFocused() && allowOpen)
+            setLoading(false)
+            return
+          }
+          if (
+            status !== g.maps.places.PlacesServiceStatus.ZERO_RESULTS &&
+            status !== g.maps.places.PlacesServiceStatus.OK
+          ) {
+            setGoogleRows([])
+            setFetchEmpty(true)
+            setActiveIndex(-1)
+            const allowOpen = !suppressOpenUntilTypingRef.current
+            setOpen(isInputFocused() && allowOpen)
+            setLoading(false)
+            return
+          }
+          if (allowRetry) {
+            svc.getPlacePredictions(
+              {
+                input: q,
+                componentRestrictions: { country: "us" },
+              },
+              (predictions2, status2) => finish(predictions2, status2, false),
+            )
+            return
+          }
+          setGoogleRows([])
+          setFetchEmpty(true)
+          setActiveIndex(-1)
+          const allowOpen = !suppressOpenUntilTypingRef.current
+          setOpen(isInputFocused() && allowOpen)
+          setLoading(false)
+        }
+
+        svc.getPlacePredictions(
+          {
+            input: q,
+            componentRestrictions: { country: "us" },
+            types: ["(regions)"],
+          },
+          (predictions, status) => finish(predictions, status, true),
+        )
+      }, debounceMs)
+
+      return () => {
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current)
+          debounceRef.current = null
+        }
+      }
+    }
+
+    // —— HTTP: OSM-backed /api/geocode/suggest (address mode, or location when Google unavailable)
     const cachedImmediate = readSuggestCache(q, suggestMode)
     if (cachedImmediate !== undefined) {
       if (runId !== generationRef.current) return
       setSuggestions(cachedImmediate)
+      setGoogleRows([])
       setFetchEmpty(cachedImmediate.length === 0)
       setActiveIndex(cachedImmediate.length > 0 ? 0 : -1)
       setLoading(false)
@@ -231,6 +400,7 @@ export function LocationInputSuggest({
 
     setLoading(true)
     setSuggestions([])
+    setGoogleRows([])
     setActiveIndex(-1)
 
     debounceRef.current = setTimeout(() => {
@@ -276,9 +446,18 @@ export function LocationInputSuggest({
       }
       abortRef.current?.abort()
     }
-  }, [value, minLength, debounceMs, disabled, invalidatePending, suggestMode])
+  }, [
+    value,
+    minLength,
+    debounceMs,
+    disabled,
+    invalidatePending,
+    suggestMode,
+    useGoogleLocationPath,
+    mapsBootPending,
+  ])
 
-  const hasResults = suggestions.length > 0
+  const hasResults = listHasResults
   const showListbox = panelOpen && hasResults && !loading
 
   useEffect(() => {
@@ -319,7 +498,7 @@ export function LocationInputSuggest({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [invalidatePending])
 
-  const pick = useCallback(
+  const pickHttp = useCallback(
     (item: LocationSuggestion) => {
       invalidatePending()
       suppressOpenUntilTypingRef.current = true
@@ -330,7 +509,68 @@ export function LocationInputSuggest({
       onPickSuggestion(item)
       setOpen(false)
       setSuggestions([])
+      setGoogleRows([])
       setActiveIndex(-1)
+    },
+    [invalidatePending, onChange, onPickSuggestion, pickSetsInputValue],
+  )
+
+  const pickGoogleRow = useCallback(
+    (row: GoogleLocationRow) => {
+      invalidatePending()
+      suppressOpenUntilTypingRef.current = true
+      setFetchEmpty(false)
+      setOpen(false)
+      setGoogleRows([])
+      setSuggestions([])
+      setActiveIndex(-1)
+      setResolvingPick(true)
+
+      void loadGoogleMapsWithPlaces()
+        .then((g) => {
+          const svc = new g.maps.places.PlacesService(document.createElement("div"))
+          svc.getDetails(
+            {
+              placeId: row.placeId,
+              fields: ["geometry", "address_components", "formatted_address"],
+            },
+            (place, status) => {
+              setResolvingPick(false)
+              const loc = place?.geometry?.location
+              const ok = status === g.maps.places.PlacesServiceStatus.OK && loc
+              if (ok) {
+                const lat = loc.lat()
+                const lng = loc.lng()
+                const parsed = parseGoogleAddressComponents(place.address_components ?? [])
+                const label = (place.formatted_address ?? row.description).trim()
+                if (pickSetsInputValue) onChange(label)
+                onPickSuggestion({
+                  label,
+                  lat,
+                  lng,
+                  city: parsed.city || undefined,
+                  state: parsed.state || undefined,
+                })
+                return
+              }
+              void (async () => {
+                const fallback = await forwardGeocodeServer(row.description)
+                if (fallback) {
+                  const label = row.description.trim()
+                  if (pickSetsInputValue) onChange(label)
+                  onPickSuggestion({
+                    label,
+                    lat: fallback.lat,
+                    lng: fallback.lng,
+                  })
+                  return
+                }
+                if (pickSetsInputValue) onChange(row.description.trim())
+              })()
+            },
+          )
+        })
+        .catch(() => setResolvingPick(false))
     },
     [invalidatePending, onChange, onPickSuggestion, pickSetsInputValue],
   )
@@ -350,16 +590,23 @@ export function LocationInputSuggest({
       return
     }
 
+    const len = useGoogleLocationPath ? googleRows.length : suggestions.length
     if (e.key === "ArrowDown") {
       e.preventDefault()
-      setActiveIndex((i) => (i + 1) % suggestions.length)
+      setActiveIndex((i) => (i + 1) % len)
     } else if (e.key === "ArrowUp") {
       e.preventDefault()
-      setActiveIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1))
+      setActiveIndex((i) => (i <= 0 ? len - 1 : i - 1))
     } else if (e.key === "Enter") {
       e.preventDefault()
-      const item = suggestions[activeIndex >= 0 ? activeIndex : 0]
-      if (item) pick(item)
+      const idx = activeIndex >= 0 ? activeIndex : 0
+      if (useGoogleLocationPath) {
+        const row = googleRows[idx]
+        if (row) pickGoogleRow(row)
+      } else {
+        const item = suggestions[idx]
+        if (item) pickHttp(item)
+      }
     } else if (e.key === "Escape") {
       e.preventDefault()
       setOpen(false)
@@ -373,6 +620,8 @@ export function LocationInputSuggest({
   const panelLeft = dropdownRect
     ? Math.min(dropdownRect.left, typeof window !== "undefined" ? window.innerWidth - panelWidth - 12 : dropdownRect.left)
     : 0
+
+  const showGoogleAttribution = useGoogleLocationPath && showListbox
 
   const dropdownPanel =
     portalReady &&
@@ -434,6 +683,66 @@ export function LocationInputSuggest({
               </p>
             </div>
           </div>
+        ) : useGoogleLocationPath ? (
+          <div className="flex max-h-[min(55vh,320px)] flex-col">
+            <div className="max-h-[min(48vh,268px)] overflow-y-auto overscroll-contain py-1">
+              {googleRows.map((row, idx) => (
+                <button
+                  key={row.placeId}
+                  type="button"
+                  role="option"
+                  aria-selected={idx === activeIndex}
+                  id={`${listboxId}-opt-${idx}`}
+                  className={cn(
+                    "flex w-full min-h-touch cursor-pointer items-start gap-2.5 px-3 py-2.5 text-left transition-colors",
+                    "hover:bg-muted/70 active:bg-muted",
+                    idx === activeIndex ? "bg-muted" : "",
+                  )}
+                  onMouseDown={(ev) => {
+                    ev.preventDefault()
+                    pickGoogleRow(row)
+                  }}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                >
+                  <MapPin
+                    className={cn(
+                      "mt-0.5 h-4 w-4 shrink-0",
+                      idx === activeIndex ? "text-primary" : "text-muted-foreground/70",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 flex-1 leading-snug">
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium text-foreground">
+                        <HighlightMatch text={row.mainText} query={qTrim} />
+                      </span>
+                      {row.secondaryText ? (
+                        <span className="text-[13px] leading-snug text-neutral-500">{row.secondaryText}</span>
+                      ) : null}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            {showGoogleAttribution ? (
+              <div className="border-t border-border/60 bg-muted/15 px-3 py-2">
+                <p className="text-[10px] text-muted-foreground">
+                  <a
+                    href="https://developers.google.com/maps/documentation/javascript/policies#logo"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    Powered by Google
+                  </a>
+                </p>
+              </div>
+            ) : null}
+            <div className="border-t border-border/60 bg-muted/15 px-3 py-2 text-[11px] text-muted-foreground">
+              <span className="tabular-nums">↑↓</span> move · <span className="tabular-nums">Enter</span> select ·{" "}
+              <span className="tabular-nums">Esc</span> close
+            </div>
+          </div>
         ) : (
           <div className={cn("flex flex-col", isAddress ? "max-h-[min(60vh,340px)]" : "max-h-[min(55vh,320px)]")}>
             <div
@@ -468,7 +777,7 @@ export function LocationInputSuggest({
                     )}
                     onMouseDown={(ev) => {
                       ev.preventDefault()
-                      pick(s)
+                      pickHttp(s)
                     }}
                     onMouseEnter={() => setActiveIndex(idx)}
                   >
@@ -521,6 +830,8 @@ export function LocationInputSuggest({
       document.body,
     )
 
+  const inputBusy = loading || resolvingPick || mapsBootPending
+
   return (
     <div ref={containerRef} className={cn("relative min-w-0", isAddress && "isolate", className)}>
       <Input
@@ -528,11 +839,12 @@ export function LocationInputSuggest({
         id={id}
         name={name}
         placeholder={placeholder}
+        aria-label={ariaLabel}
         value={value}
         disabled={disabled}
         autoComplete="off"
         aria-expanded={panelOpen}
-        aria-busy={loading}
+        aria-busy={inputBusy}
         aria-controls={panelOpen ? listboxId : undefined}
         aria-activedescendant={
           showListbox && activeIndex >= 0 ? `${listboxId}-opt-${activeIndex}` : undefined
@@ -549,11 +861,13 @@ export function LocationInputSuggest({
           const q = value.trim()
           if (q.length >= minLength) {
             setOpen(true)
-            const cached = readSuggestCache(q, suggestMode)
-            if (cached !== undefined) {
-              setSuggestions(cached)
-              setFetchEmpty(cached.length === 0)
-              setActiveIndex(cached.length > 0 ? 0 : -1)
+            if (!useGoogleLocationPath) {
+              const cached = readSuggestCache(q, suggestMode)
+              if (cached !== undefined) {
+                setSuggestions(cached)
+                setFetchEmpty(cached.length === 0)
+                setActiveIndex(cached.length > 0 ? 0 : -1)
+              }
             }
           }
         }}
@@ -565,14 +879,14 @@ export function LocationInputSuggest({
         onKeyDown={onKeyDown}
         className={cn(
           inputClassName,
-          isAddress && loading && "pr-10",
+          (isAddress && loading) || resolvingPick || mapsBootPending ? "pr-10" : "",
           panelOpen &&
             (isAddress
               ? "ring-1 ring-[#3b63e3]/30 ring-offset-0"
               : "ring-2 ring-ring/35 ring-offset-2 ring-offset-background"),
         )}
       />
-      {isAddress && loading ? (
+      {(isAddress && loading) || resolvingPick || mapsBootPending ? (
         <Loader2
           className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#3b63e3]/80"
           aria-hidden

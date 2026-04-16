@@ -184,7 +184,7 @@ export function MakeOfferDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="max-h-[min(90vh,720px)] w-[calc(100%-1.5rem)] max-w-md overflow-y-auto p-5 sm:p-6"
+        className="w-[calc(100%-1.5rem)] max-w-md p-5 sm:p-6"
       >
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle className="text-xl font-semibold">Make an Offer</DialogTitle>

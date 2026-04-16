@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
+import { getGoogleGeocodingApiKey, googleReverseStructured } from "@/lib/maps/google-geocoding-server"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
 const HEADERS = {
@@ -10,13 +11,20 @@ const HEADERS = {
 
 /**
  * Reverse geocode lat/lng into fields suitable for ShipEngine-style address forms.
- * Uses OpenStreetMap Nominatim (same as /api/geocode/suggest).
+ * Prefers Google Geocoding API when a key is configured; otherwise OpenStreetMap Nominatim.
  */
 export async function GET(request: NextRequest) {
   const lat = Number(request.nextUrl.searchParams.get("lat"))
   const lng = Number(request.nextUrl.searchParams.get("lng"))
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return NextResponse.json({ error: "Invalid lat or lng" }, { status: 400 })
+  }
+
+  if (getGoogleGeocodingApiKey()) {
+    const structured = await googleReverseStructured(lat, lng)
+    if (structured) {
+      return NextResponse.json(structured)
+    }
   }
 
   const url = new URL("https://nominatim.openstreetmap.org/reverse")

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
+import { getGoogleGeocodingApiKey, googleGeocodeUsZip } from "@/lib/maps/google-geocoding-server"
+
 export const dynamic = "force-dynamic"
 
 const NOMINATIM_HEADERS = {
@@ -8,13 +10,26 @@ const NOMINATIM_HEADERS = {
 } as const
 
 /**
- * Resolve a US ZIP code to city/state for shipping rate estimates (Nominatim).
+ * Resolve a US ZIP code to city/state for shipping rate estimates.
+ * Prefers Google Geocoding API when a key is configured; otherwise OpenStreetMap Nominatim.
  */
 export async function GET(request: NextRequest) {
   const raw = request.nextUrl.searchParams.get("zip")?.trim() ?? ""
   const five = raw.replace(/\D/g, "").slice(0, 5)
   if (five.length !== 5) {
     return NextResponse.json({ error: "Enter a 5-digit US ZIP code" }, { status: 400 })
+  }
+
+  if (getGoogleGeocodingApiKey()) {
+    const g = await googleGeocodeUsZip(five)
+    if (g) {
+      return NextResponse.json({
+        postal_code: g.postal_code,
+        city_locality: g.city_locality,
+        state_province: g.state_province,
+        address_line1: g.address_line1,
+      })
+    }
   }
 
   const url = new URL("https://nominatim.openstreetmap.org/search")
