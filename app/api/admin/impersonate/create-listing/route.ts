@@ -7,7 +7,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { revalidateListingDetailCache } from "@/lib/listing-detail-cache"
+import { revalidatePath } from "next/cache"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     photoUrl,
   })
 
-  revalidateListingDetailCache()
+  revalidatePath(`/l/${listing.slug}`, "page")
 
   return NextResponse.json({
     success: true,

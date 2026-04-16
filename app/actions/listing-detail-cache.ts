@@ -1,7 +1,6 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { revalidateListingDetailCache } from "@/lib/listing-detail-cache"
 
 /**
  * Call after a user or admin updates profile fields that appear on `/l/[slug]`
@@ -15,7 +14,6 @@ export async function revalidateListingDetailAfterProfileUpdate() {
   if (!user) {
     return { ok: false as const }
   }
-  revalidateListingDetailCache()
   return { ok: true as const }
 }
 
@@ -28,6 +26,5 @@ export async function revalidateListingDetailAfterListingMutation() {
   if (!user) {
     return { ok: false as const }
   }
-  revalidateListingDetailCache()
   return { ok: true as const }
 }

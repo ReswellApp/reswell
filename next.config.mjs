@@ -44,6 +44,12 @@ const nextConfig = {
         hostname: '**.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      // Custom domain for the same Supabase Storage public bucket (some DB rows use this host)
+      {
+        protocol: 'https',
+        hostname: 'app.reswell.app',
+        pathname: '/storage/v1/object/public/**',
+      },
       // Admin sell-form “Fill seed listing” placeholder photos (picsum)
       {
         protocol: 'https',

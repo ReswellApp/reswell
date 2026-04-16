@@ -1,5 +1,4 @@
-import { revalidatePath, revalidateTag } from "next/cache"
-import { revalidateListingDetailCache } from "@/lib/listing-detail-cache"
+import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
@@ -83,7 +82,6 @@ export async function PATCH(
   if (slug) {
     revalidatePath(`/l/${slug}`, "page")
   }
-  revalidateListingDetailCache()
 
   revalidatePath("/boards")
   revalidatePath("/feed")
@@ -91,7 +89,6 @@ export async function PATCH(
   revalidatePath("/shop")
   revalidatePath("/")
   revalidatePath("/sellers")
-  revalidateTag("sold-feed-stats", "max")
 
   return NextResponse.json({ success: true })
 }

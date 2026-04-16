@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 
 const MARKETPLACE_SECTIONS = ["surfboards"] as const
@@ -41,7 +40,8 @@ async function sumSoldPricesPaged(supabase: ReturnType<typeof anonSupabase>): Pr
   return total
 }
 
-async function fetchSoldFeedStats(): Promise<{ soldCount: number; gmvTotal: number }> {
+/** Public marketplace sold stats (surfboards). */
+export async function getSoldFeedStats(): Promise<{ soldCount: number; gmvTotal: number }> {
   const supabase = anonSupabase()
 
   const { count, error: countError } = await supabase
@@ -61,14 +61,4 @@ async function fetchSoldFeedStats(): Promise<{ soldCount: number; gmvTotal: numb
     soldCount: count ?? 0,
     gmvTotal,
   }
-}
-
-const getCachedSoldFeedStats = unstable_cache(fetchSoldFeedStats, ["marketplace-sold-feed-stats"], {
-  revalidate: 600,
-  tags: ["sold-feed-stats"],
-})
-
-/** Cached ~10 minutes — public marketplace sold stats (surfboards). */
-export function getSoldFeedStats(): Promise<{ soldCount: number; gmvTotal: number }> {
-  return getCachedSoldFeedStats()
 }
