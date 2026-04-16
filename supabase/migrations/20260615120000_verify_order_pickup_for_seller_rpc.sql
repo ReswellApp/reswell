@@ -1,7 +1,17 @@
--- Seller verifies buyer pickup code: updates orders + payouts in one DB round-trip.
--- SECURITY DEFINER avoids PostgREST/RLS edge cases that blocked REST updates for some deployments.
--- Caller identity is auth.uid() only (no spoofable seller id).
+-- Pickup verification: ensure required columns exist, then create the RPC.
 
+-- 1) Columns missing from partially-applied 20260427/20260429 migrations.
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+ALTER TABLE public.payouts
+  ADD COLUMN IF NOT EXISTS hold_reason text;
+
+ALTER TABLE public.payouts
+  ADD COLUMN IF NOT EXISTS released_at timestamptz;
+
+-- 2) Seller verifies buyer pickup code in one DB round-trip.
+--    SECURITY DEFINER bypasses RLS; caller identity is auth.uid().
 CREATE OR REPLACE FUNCTION public.verify_order_pickup_for_seller(
   p_order_id uuid,
   p_code text

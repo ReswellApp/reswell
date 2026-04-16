@@ -2,6 +2,7 @@ import type Stripe from "stripe"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripeConnectTransferByStripeId } from "@/lib/db/stripeConnect"
 import { syncStripeConnectAccountRow } from "@/lib/services/stripeConnect"
+import { roundMoney } from "@/lib/utils/stripe-connect-cashout"
 
 /**
  * Returns true when the event was a Connect lifecycle event we handled (so the webhook can ACK).
@@ -41,8 +42,8 @@ export async function tryHandleStripeConnectEvent(event: Stripe.Event): Promise<
           ? transferRef.id
           : null
 
-    if (!transferId || typeof reversal.amount !== "number") {
-      console.warn("[stripe webhook] transfer.reversed missing transfer id or amount")
+    if (!transferId) {
+      console.warn("[stripe webhook] transfer.reversed missing transfer id")
       return true
     }
 
@@ -52,7 +53,8 @@ export async function tryHandleStripeConnectEvent(event: Stripe.Event): Promise<
       return true
     }
 
-    const refundUsd = Math.round((reversal.amount / 100) * 100) / 100
+    // Refund the full wallet debit recorded for this cash-out (includes instant fee that never left the platform).
+    const refundUsd = roundMoney(parseFloat(String(row.amount)))
     const nowIso = new Date().toISOString()
 
     const { error: rpcErr } = await supabase.rpc("refund_to_available_balance", {

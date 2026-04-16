@@ -43,7 +43,12 @@ CREATE TABLE IF NOT EXISTS public.stripe_connect_transfers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
   amount numeric(12, 2) NOT NULL,
+  fee_amount numeric(12, 2) NOT NULL DEFAULT 0,
+  payout_speed text NOT NULL DEFAULT 'standard'
+    CONSTRAINT stripe_connect_transfers_payout_speed_chk
+      CHECK (payout_speed IN ('standard', 'instant')),
   stripe_transfer_id text UNIQUE,
+  stripe_payout_id text,
   status text NOT NULL DEFAULT 'PROCESSING'
     CHECK (
       status IN (
@@ -58,12 +63,40 @@ CREATE TABLE IF NOT EXISTS public.stripe_connect_transfers (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Existing databases may already have stripe_connect_transfers without these columns; CREATE TABLE IF NOT EXISTS
+-- does not add them. Ensure columns + check exist before indexes reference stripe_payout_id.
+ALTER TABLE public.stripe_connect_transfers
+  ADD COLUMN IF NOT EXISTS fee_amount numeric(12, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE public.stripe_connect_transfers
+  ADD COLUMN IF NOT EXISTS payout_speed text NOT NULL DEFAULT 'standard';
+
+ALTER TABLE public.stripe_connect_transfers
+  ADD COLUMN IF NOT EXISTS stripe_payout_id text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'stripe_connect_transfers_payout_speed_chk'
+  ) THEN
+    ALTER TABLE public.stripe_connect_transfers
+      ADD CONSTRAINT stripe_connect_transfers_payout_speed_chk
+      CHECK (payout_speed IN ('standard', 'instant'));
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS stripe_connect_transfers_user_created_idx
   ON public.stripe_connect_transfers (user_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS stripe_connect_transfers_stripe_id_idx
   ON public.stripe_connect_transfers (stripe_transfer_id)
   WHERE stripe_transfer_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS stripe_connect_transfers_stripe_payout_id_idx
+  ON public.stripe_connect_transfers (stripe_payout_id)
+  WHERE stripe_payout_id IS NOT NULL;
 
 ALTER TABLE public.stripe_connect_transfers ENABLE ROW LEVEL SECURITY;
 
@@ -81,3 +114,10 @@ CREATE POLICY "stripe_connect_transfers_insert_own"
 
 COMMENT ON TABLE public.stripe_connect_transfers IS
   'Platform → Connect balance transfers funding seller ACH; reversed via Stripe webhook refunds wallet.';
+
+COMMENT ON COLUMN public.stripe_connect_transfers.fee_amount IS
+  'Reswell platform fee (USD) included in the wallet debit for instant payouts; 0 for standard ACH.';
+COMMENT ON COLUMN public.stripe_connect_transfers.payout_speed IS
+  'standard: transfer only (Stripe schedules bank payout); instant: immediate payout to bank where supported.';
+COMMENT ON COLUMN public.stripe_connect_transfers.stripe_payout_id IS
+  'Connected-account payout id when payout_speed = instant (po_...).';

@@ -1,6 +1,11 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
+import {
+  instantBankPayoutFeeUsd,
+  netUsdAfterInstantBankFee,
+  STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE,
+} from "@/lib/utils/stripe-connect-cashout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,9 +28,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { StripeConnectSetupDialog } from "@/components/features/earnings/stripe-connect-setup-dialog"
-import { Building2, CheckCircle2, Loader2, Shield, Trash2 } from "lucide-react"
+import { Building2, CheckCircle2, Loader2, Shield, Trash2, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 /** Mirrors Stripe Connect external bank accounts returned by `/api/stripe/connect/status`. */
 export interface StripeConnectBankAccountRow {
@@ -55,7 +61,10 @@ export interface StripeConnectStatusPayload {
 interface StripeTransferHistoryRow {
   id: string
   amount: string | number
+  fee_amount?: string | number | null
+  payout_speed?: string | null
   stripe_transfer_id: string | null
+  stripe_payout_id?: string | null
   status: string
   created_at: string
 }
@@ -98,6 +107,7 @@ export function StripeBankPayoutSection({
   const [setupUseManagement, setSetupUseManagement] = useState(false)
   const [cashOpen, setCashOpen] = useState(false)
   const [amountStr, setAmountStr] = useState("")
+  const [payoutSpeed, setPayoutSpeed] = useState<"standard" | "instant">("standard")
   const [submitting, setSubmitting] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<StripeConnectBankAccountRow | null>(null)
   const [removeBusy, setRemoveBusy] = useState(false)
@@ -129,8 +139,24 @@ export function StripeBankPayoutSection({
 
   const openCashOut = useCallback(() => {
     setAmountStr(availableBalance > 0 ? availableBalance.toFixed(2) : "")
+    setPayoutSpeed("standard")
     setCashOpen(true)
   }, [availableBalance])
+
+  const parsedAmount = useMemo(() => {
+    const n = parseFloat(amountStr)
+    return Number.isFinite(n) ? n : NaN
+  }, [amountStr])
+
+  const instantFeePreview = useMemo(() => {
+    if (payoutSpeed !== "instant" || !Number.isFinite(parsedAmount)) return null
+    return instantBankPayoutFeeUsd(parsedAmount)
+  }, [payoutSpeed, parsedAmount])
+
+  const netAfterInstantPreview = useMemo(() => {
+    if (payoutSpeed !== "instant" || !Number.isFinite(parsedAmount)) return null
+    return netUsdAfterInstantBankFee(parsedAmount)
+  }, [payoutSpeed, parsedAmount])
 
   const submitCashOut = useCallback(async () => {
     const amount = parseFloat(amountStr)
@@ -143,7 +169,7 @@ export function StripeBankPayoutSection({
       const res = await fetch("/api/payouts/stripe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, speed: payoutSpeed }),
       })
       const data = (await res.json()) as { error?: string; message?: string }
       if (!res.ok) {
@@ -158,7 +184,7 @@ export function StripeBankPayoutSection({
     } finally {
       setSubmitting(false)
     }
-  }, [amountStr, onRefresh])
+  }, [amountStr, payoutSpeed, onRefresh])
 
   const setDefaultBank = useCallback(
     async (externalAccountId: string) => {
@@ -400,6 +426,16 @@ export function StripeBankPayoutSection({
                 {transferHistory.map((row) => {
                   const amt =
                     typeof row.amount === "string" ? parseFloat(row.amount) : row.amount
+                  const feeRaw = row.fee_amount
+                  const feeNum =
+                    feeRaw != null && feeRaw !== ""
+                      ? typeof feeRaw === "string"
+                        ? parseFloat(feeRaw)
+                        : feeRaw
+                      : 0
+                  const isInstant = row.payout_speed?.toLowerCase() === "instant"
+                  const ref =
+                    row.stripe_payout_id?.trim() || row.stripe_transfer_id?.trim() || "—"
                   return (
                     <li
                       key={row.id}
@@ -412,11 +448,24 @@ export function StripeBankPayoutSection({
                           year: "numeric",
                         })}
                       </span>
-                      <span className="font-medium tabular-nums shrink-0">
+                      <span className="font-medium tabular-nums shrink-0 inline-flex flex-wrap items-center gap-2">
                         ${Number.isFinite(amt) ? amt.toFixed(2) : row.amount}
+                        {isInstant ? (
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] uppercase tracking-wide h-5 px-1.5"
+                          >
+                            Instant
+                          </Badge>
+                        ) : null}
+                        {Number.isFinite(feeNum) && feeNum > 0 ? (
+                          <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                            fee ${feeNum.toFixed(2)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="text-muted-foreground truncate min-w-0 font-mono text-[11px] sm:text-xs">
-                        {row.stripe_transfer_id ?? "—"}
+                        {ref}
                       </span>
                       <span className="ml-auto shrink-0">
                         <TransferStatusBadge status={row.status} />
@@ -444,8 +493,18 @@ export function StripeBankPayoutSection({
           <DialogHeader>
             <DialogTitle>Cash out to bank</DialogTitle>
             <DialogDescription>
-              We&apos;ll move funds from your Reswell balance to your Stripe-connected account. Your
-              bank receives payouts on Stripe&apos;s schedule (typically 2–3 business days).
+              {payoutSpeed === "instant" ? (
+                <>
+                  We&apos;ll send funds from your Reswell balance through Stripe Connect with an{" "}
+                  <span className="font-medium text-foreground">instant payout</span> to your bank when
+                  your account and bank support it (timing depends on your bank).
+                </>
+              ) : (
+                <>
+                  We&apos;ll move funds from your Reswell balance to your Stripe-connected account. Your
+                  bank receives payouts on Stripe&apos;s schedule (typically 2–3 business days).
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -467,6 +526,71 @@ export function StripeBankPayoutSection({
                 Available: ${availableBalance.toFixed(2)} · Minimum $10.00
               </p>
             </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Speed</Label>
+              <RadioGroup
+                value={payoutSpeed}
+                onValueChange={(v) => setPayoutSpeed(v as "standard" | "instant")}
+                className="grid gap-3"
+              >
+                <label
+                  htmlFor="payout-standard"
+                  className={cn(
+                    "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
+                    payoutSpeed === "standard" && "ring-2 ring-primary/30 bg-muted/20",
+                  )}
+                >
+                  <RadioGroupItem value="standard" id="payout-standard" className="mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <span className="font-medium leading-tight block">Standard (free)</span>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                      ACH — typically 2–3 business days. No extra fee.
+                    </p>
+                  </div>
+                </label>
+                <label
+                  htmlFor="payout-instant"
+                  className={cn(
+                    "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
+                    payoutSpeed === "instant" && "ring-2 ring-primary/30 bg-muted/20",
+                  )}
+                >
+                  <RadioGroupItem value="instant" id="payout-instant" className="mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <span className="font-medium leading-tight inline-flex items-center gap-1.5">
+                      <Zap className="h-3.5 w-3.5" aria-hidden />
+                      Instant
+                    </span>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                      {(STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE * 100).toFixed(1)}% fee — funds usually arrive within
+                      minutes when Stripe supports instant payout to your linked account.
+                    </p>
+                  </div>
+                </label>
+              </RadioGroup>
+            </div>
+
+            {payoutSpeed === "instant" &&
+            instantFeePreview != null &&
+            netAfterInstantPreview != null &&
+            Number.isFinite(parsedAmount) ? (
+              <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground space-y-1">
+                <div className="flex justify-between gap-2">
+                  <span>Instant fee ({(STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE * 100).toFixed(1)}%)</span>
+                  <span className="tabular-nums text-foreground">${instantFeePreview.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between gap-2 font-medium text-foreground">
+                  <span>Estimated to your bank</span>
+                  <span className="tabular-nums">${netAfterInstantPreview.toFixed(2)}</span>
+                </div>
+                <p className="text-[11px] leading-snug pt-1 border-t border-border/50">
+                  The fee is deducted from your cash-out amount; your wallet is debited the full amount
+                  entered above.
+                </p>
+              </div>
+            ) : null}
+
             <Button
               type="button"
               className="w-full rounded-full"

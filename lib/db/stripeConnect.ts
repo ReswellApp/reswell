@@ -16,7 +16,10 @@ export interface StripeConnectTransferRow {
   id: string
   user_id: string
   amount: string | number
+  fee_amount?: string | number | null
+  payout_speed?: string | null
   stripe_transfer_id: string | null
+  stripe_payout_id?: string | null
   status: string
   failure_reason: string | null
   created_at: string

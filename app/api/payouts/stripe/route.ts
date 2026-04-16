@@ -18,7 +18,9 @@ export async function GET() {
 
   const { data: rows } = await supabase
     .from("stripe_connect_transfers")
-    .select("id, amount, stripe_transfer_id, status, created_at")
+    .select(
+      "id, amount, fee_amount, payout_speed, stripe_transfer_id, stripe_payout_id, status, created_at",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50)
@@ -55,7 +57,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  const result = await cashOutToStripeConnectedAccount(supabase, user.id, parsed.data.amount)
+  const result = await cashOutToStripeConnectedAccount(
+    supabase,
+    user.id,
+    parsed.data.amount,
+    parsed.data.speed,
+  )
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error },
@@ -67,5 +74,9 @@ export async function POST(req: Request) {
     success: true,
     transferId: result.transferId,
     message: result.message,
+    feeUsd: result.feeUsd,
+    netToBankUsd: result.netToBankUsd,
+    speed: result.speed,
+    stripePayoutId: result.stripePayoutId,
   })
 }

@@ -75,7 +75,10 @@ interface PayPalPayoutHistoryItem {
 interface StripeTransferHistoryItem {
   id: string
   amount: string | number
+  fee_amount?: string | number | null
+  payout_speed?: string | null
   stripe_transfer_id: string | null
+  stripe_payout_id?: string | null
   status: string
   created_at: string
 }

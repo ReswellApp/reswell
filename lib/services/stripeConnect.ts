@@ -14,6 +14,11 @@ import { getStripe } from "@/lib/stripe-server"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { toUsStateCode } from "@/lib/utils/us-state-code"
+import {
+  instantBankPayoutFeeUsd,
+  netUsdAfterInstantBankFee,
+  roundMoney,
+} from "@/lib/utils/stripe-connect-cashout"
 
 /** Satisfies Stripe’s business-profile checks for marketplace sellers without a personal website. */
 const MARKETPLACE_PRODUCT_DESCRIPTION =
@@ -25,10 +30,6 @@ type StripeConnectAccountPrefillFields = Pick<
   Stripe.AccountCreateParams,
   "email" | "business_type" | "business_profile" | "individual"
 >
-
-function roundMoney(n: number): number {
-  return Math.round(n * 100) / 100
-}
 
 /** Settled USD on the platform account — required for `transfers.create` to connected accounts. */
 async function getPlatformAvailableUsdCents(stripe: Stripe): Promise<number> {
@@ -51,6 +52,23 @@ function userFacingMessageForStripeTransferError(e: unknown): string {
     }
   }
   return "Stripe could not send funds to your connected account. Check your payout setup or try again."
+}
+
+function userFacingMessageForStripeInstantPayoutError(e: unknown): string {
+  if (e instanceof Stripe.errors.StripeError) {
+    if (e.code === "instant_payouts_unsupported") {
+      return (
+        "Instant payout isn’t available for this payout account yet. Use standard delivery (2–3 business days), " +
+        "or open Manage payout banks in Stripe to add an eligible debit card or bank."
+      )
+    }
+    if (e.code === "amount_too_small") {
+      return "The amount is too small for Stripe to pay out instantly. Try a slightly higher amount or use standard delivery."
+    }
+  }
+  return (
+    "Stripe couldn’t start an instant payout to your bank. Try standard delivery, or verify your payout account in Stripe."
+  )
 }
 
 function pickDefaultBank(
@@ -415,6 +433,10 @@ export type ConnectCashOutResult =
       ok: true
       transferId: string
       amountUsd: number
+      feeUsd: number
+      netToBankUsd: number
+      speed: "standard" | "instant"
+      stripePayoutId: string | null
       message: string
     }
   | { ok: false; error: string; status?: number }
@@ -423,10 +445,22 @@ export async function cashOutToStripeConnectedAccount(
   supabase: SupabaseClient,
   userId: string,
   amountUsdRaw: number,
+  speed: "standard" | "instant" = "standard",
 ): Promise<ConnectCashOutResult> {
   const amountUsd = roundMoney(amountUsdRaw)
   if (amountUsd < 10) {
     return { ok: false, error: "Minimum payout amount is $10.00", status: 400 }
+  }
+
+  const feeUsd = speed === "instant" ? instantBankPayoutFeeUsd(amountUsd) : 0
+  const netTransferUsd = speed === "instant" ? netUsdAfterInstantBankFee(amountUsd) : amountUsd
+  if (speed === "instant" && netTransferUsd < 1) {
+    return {
+      ok: false,
+      error:
+        "After the instant payout fee, the amount is too small for Stripe to send. Choose a larger amount or use standard delivery.",
+      status: 400,
+    }
   }
 
   const row = await getStripeConnectAccountByUserId(supabase, userId)
@@ -482,7 +516,7 @@ export async function cashOutToStripeConnectedAccount(
   }
 
   const stripe = getStripe()
-  const amountCents = Math.round(amountUsd * 100)
+  const transferAmountCents = Math.round(netTransferUsd * 100)
 
   let platformAvailableCents: number
   try {
@@ -496,10 +530,10 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
-  if (platformAvailableCents < amountCents) {
+  if (platformAvailableCents < transferAmountCents) {
     console.warn("[stripe connect] platform balance insufficient for transfer", {
       platformAvailableCents,
-      amountCents,
+      transferAmountCents,
       userId,
     })
     return {
@@ -549,12 +583,13 @@ export async function cashOutToStripeConnectedAccount(
   try {
     transfer = await stripe.transfers.create(
       {
-        amount: amountCents,
+        amount: transferAmountCents,
         currency: "usd",
         destination: row.stripe_account_id,
         metadata: {
           reswell_connect_transfer_id: transferRowId,
           reswell_user_id: userId,
+          reswell_payout_speed: speed,
         },
       },
       {
@@ -570,11 +605,48 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
+  let stripePayoutId: string | null = null
+  if (speed === "instant") {
+    try {
+      const payout = await stripe.payouts.create(
+        {
+          amount: transferAmountCents,
+          currency: "usd",
+          method: "instant",
+          metadata: {
+            reswell_connect_transfer_id: transferRowId,
+            reswell_user_id: userId,
+          },
+        },
+        {
+          idempotencyKey: `connect_instant_payout_${transferRowId}`,
+          stripeAccount: row.stripe_account_id,
+        },
+      )
+      stripePayoutId = payout.id
+    } catch (e) {
+      console.error("[stripe connect] payouts.create instant", e)
+      try {
+        await stripe.transfers.createReversal(transfer.id)
+      } catch (revErr) {
+        console.error("[stripe connect] createReversal after instant payout failure", revErr)
+      }
+      return {
+        ok: false,
+        error: userFacingMessageForStripeInstantPayoutError(e),
+        status: 502,
+      }
+    }
+  }
+
   const { error: insertErr } = await supabase.from("stripe_connect_transfers").insert({
     id: transferRowId,
     user_id: userId,
     amount: amountUsd,
+    fee_amount: feeUsd,
+    payout_speed: speed,
     stripe_transfer_id: transfer.id,
+    stripe_payout_id: stripePayoutId,
     status: "SUCCEEDED",
   })
 
@@ -601,13 +673,19 @@ export async function cashOutToStripeConnectedAccount(
     console.error("[stripe connect] wallet update after transfer", walletErr)
   }
 
+  const feeLabel = `fee: $${feeUsd.toFixed(2)}`
+  const routeLabel =
+    speed === "instant" && stripePayoutId
+      ? `instant payout: ${stripePayoutId}`
+      : `transfer: ${transfer.id}`
+
   const { error: txErr } = await supabase.from("wallet_transactions").insert({
     wallet_id: wallet.id,
     user_id: userId,
     type: "cashout",
     amount: -amountUsd,
     balance_after: newBalance,
-    description: `Cash-out $${amountUsd.toFixed(2)} via bank (Stripe, fee: $0.00, transfer: ${transfer.id})`,
+    description: `Cash-out $${amountUsd.toFixed(2)} via bank (Stripe, ${feeLabel}, ${routeLabel})`,
     status: "completed",
     reference_id: transferRowId,
     reference_type: "stripe_connect_transfer",
@@ -617,10 +695,29 @@ export async function cashOutToStripeConnectedAccount(
     console.error("[stripe connect] wallet_transactions insert", txErr)
   }
 
+  const netToBankUsd = roundMoney(netTransferUsd)
+
+  if (speed === "instant") {
+    return {
+      ok: true,
+      transferId: transfer.id,
+      amountUsd,
+      feeUsd,
+      netToBankUsd,
+      speed,
+      stripePayoutId,
+      message: `Instant payout started — up to $${netToBankUsd.toFixed(2)} is heading to your bank (typically within minutes; timing depends on your bank).`,
+    }
+  }
+
   return {
     ok: true,
     transferId: transfer.id,
     amountUsd,
+    feeUsd: 0,
+    netToBankUsd: amountUsd,
+    speed,
+    stripePayoutId: null,
     message: `Sent $${amountUsd.toFixed(2)} to your Stripe balance — your bank will receive it on Stripe’s payout schedule (typically 2–3 business days).`,
   }
 }
