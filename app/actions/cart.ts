@@ -17,6 +17,7 @@ export type CartListingRow = {
   shipping_available: boolean | null
   /** Seller flat shipping rate when shipping is offered; used for cart summary display. */
   shipping_price: string | number | null
+  board_shipping_cost_mode?: string | null
   condition?: string | null
   board_type?: string | null
   length_feet?: number | null
@@ -223,6 +224,7 @@ export async function getCartPageItems(): Promise<{
         local_pickup,
         shipping_available,
         shipping_price,
+        board_shipping_cost_mode,
         condition,
         board_type,
         length_feet,

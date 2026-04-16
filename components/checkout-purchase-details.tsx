@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { createProfileAddress } from "@/app/actions/addresses"
+import {
+  CheckoutAddressLine1Field,
+  type ResolvedCheckoutAddress,
+} from "@/components/features/checkout/checkout-address-line1-field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -60,6 +64,18 @@ export function CheckoutPurchaseDetails({
     country: "US",
   })
   const [saving, setSaving] = useState(false)
+
+  const applyResolvedAddress = useCallback((addr: ResolvedCheckoutAddress) => {
+    setDraft((d) => ({
+      ...d,
+      line1: addr.line1.trim() || d.line1,
+      line2: addr.line2.trim(),
+      city: addr.city.trim() || d.city,
+      state: addr.state.trim() || d.state,
+      postal_code: addr.postal_code.trim() || d.postal_code,
+      country: (addr.country.trim() || d.country).slice(0, 2).toUpperCase() || d.country,
+    }))
+  }, [])
 
   useEffect(() => {
     if (!needsShipping) return
@@ -307,12 +323,21 @@ export function CheckoutPurchaseDetails({
                   <Label htmlFor="addr-line1" className="text-[13px] font-normal text-neutral-600">
                     Address line 1
                   </Label>
-                  <Input
+                  <p className="text-[12px] leading-relaxed text-neutral-500">
+                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
+                      ? "US addresses (Google). Choose a suggestion to fill city, state, and ZIP — or type manually."
+                      : "US addresses only. Suggestions as you type; choosing one fills city, state, and ZIP."}
+                  </p>
+                  <CheckoutAddressLine1Field
                     id="addr-line1"
-                    autoComplete="address-line1"
+                    name="address-line1"
+                    listboxId="checkout-address-line1-suggest"
+                    placeholder="Street number and name"
+                    debounceMs={150}
                     value={draft.line1}
-                    onChange={(e) => setDraft((d) => ({ ...d, line1: e.target.value }))}
-                    className={fieldClass}
+                    onChange={(v) => setDraft((d) => ({ ...d, line1: v }))}
+                    onAddressResolved={applyResolvedAddress}
+                    inputClassName={fieldClass}
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">

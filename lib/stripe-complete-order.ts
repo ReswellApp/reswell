@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import type Stripe from "stripe"
-import { resolvePayableAmount } from "@/lib/purchase-amount"
+import {
+  computePeerCheckoutTotalsUsd,
+  effectiveBoardShippingMode,
+} from "@/lib/services/peerListingShippingQuote"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import {
   profileAddressToOrderShippingJson,
@@ -238,7 +241,33 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const { data: listing, error: listingError } = await serviceSupabase
     .from("listings")
     .select(
-      "id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status",
+      `
+      id,
+      user_id,
+      title,
+      price,
+      section,
+      shipping_available,
+      local_pickup,
+      shipping_price,
+      board_shipping_cost_mode,
+      status,
+      latitude,
+      longitude,
+      shipping_packed_length_in,
+      shipping_packed_width_in,
+      shipping_packed_height_in,
+      shipping_packed_weight_oz,
+      length_feet,
+      length_inches,
+      length_inches_display,
+      width,
+      width_inches_display,
+      thickness,
+      thickness_inches_display,
+      volume,
+      volume_display
+    `,
     )
     .eq("id", listingId)
     .single()
@@ -269,22 +298,66 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         : null
       : undefined
 
-  const resolved = resolvePayableAmount(listing, fulfillmentParam)
-  if (!resolved.ok) {
-    return { ok: false, error: "Could not verify order", status: 400 }
+  if (lp && sa && !fulfillmentParam) {
+    return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
-  const expectedCents = Math.round(resolved.total * 100)
+  const impliedFulfillment: "pickup" | "shipping" =
+    lp && sa
+      ? fulfillmentParam === "shipping"
+        ? "shipping"
+        : "pickup"
+      : !lp && sa
+        ? "shipping"
+        : "pickup"
+
+  const addressIdMeta = pi.metadata.address_id?.trim()
+  let buyerAddress: ProfileAddressRow | null = null
+  if (impliedFulfillment === "shipping" && addressIdMeta) {
+    const { data: addrRow } = await serviceSupabase
+      .from("addresses")
+      .select("*")
+      .eq("id", addressIdMeta)
+      .eq("profile_id", buyerId)
+      .maybeSingle()
+    if (addrRow) {
+      buyerAddress = addrRow as ProfileAddressRow
+    }
+  }
+
+  const metaReswell = pi.metadata.reswell_shipping_cents?.trim()
+  const itemCents = Math.round(parseFloat(String(listing.price)) * 100)
+
+  let expectedCents: number
+  if (
+    impliedFulfillment === "shipping" &&
+    effectiveBoardShippingMode(listing) === "reswell" &&
+    metaReswell &&
+    /^\d+$/.test(metaReswell)
+  ) {
+    expectedCents = itemCents + parseInt(metaReswell, 10)
+  } else {
+    const totals = await computePeerCheckoutTotalsUsd({
+      listing: listing as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"],
+      fulfillment: impliedFulfillment,
+      buyerAddress,
+    })
+    if (!totals.ok) {
+      return { ok: false, error: totals.error, status: 400 }
+    }
+    expectedCents = Math.round(totals.totalUsd * 100)
+  }
+
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
   }
 
-  const price = resolved.total
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price)
+  const chargedUsd = pi.amount / 100
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(chargedUsd)
 
   if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
     console.error("[stripe-complete-order] invalid seller_earnings", {
-      price,
+      chargedUsd,
       platformFee,
       sellerEarnings,
       listingId: listing.id,
@@ -306,8 +379,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         : "pickup"
 
   let shippingAddressJson: Record<string, unknown> | null = null
-  const addressIdMeta = pi.metadata.address_id?.trim()
-  if (fulfillmentMethod === "shipping" && addressIdMeta) {
+  if (fulfillmentMethod === "shipping" && buyerAddress) {
+    shippingAddressJson = profileAddressToOrderShippingJson(
+      buyerAddress,
+      buyerEmail,
+    ) as Record<string, unknown>
+  } else if (fulfillmentMethod === "shipping" && addressIdMeta) {
     const { data: addrRow } = await serviceSupabase
       .from("addresses")
       .select("*")
@@ -335,7 +412,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       listing_id: listing.id,
       buyer_id: buyerId,
       seller_id: listing.user_id,
-      amount: price,
+      amount: chargedUsd,
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
       status: "confirmed",
@@ -486,7 +563,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       (purchase as { order_num?: string | null }).order_num,
       purchase.id,
     ),
-    total: price,
+    total: chargedUsd,
     fulfillment: isPickup ? "pickup" : "shipping",
     shippingAddress: shippingAddressJson,
     paymentMethod: "card",
@@ -501,7 +578,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     listingTitle: listing.title,
     listingSection: listing.section,
     listingSlug: null,
-    amount: price,
+    amount: chargedUsd,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     paymentMethod: "stripe",
   })

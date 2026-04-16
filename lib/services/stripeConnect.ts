@@ -43,8 +43,8 @@ function userFacingMessageForStripeTransferError(e: unknown): string {
     const code = e.code
     if (code === "balance_insufficient") {
       return (
-        "Card sales are still settling through Stripe, so this amount can’t be sent to your bank yet. " +
-        "Try again in a few business days, or contact support if your sales have already settled."
+        "This amount can’t leave for your bank yet—buyers’ card payments are still finishing processing. " +
+        "Try again in a few business days, or contact support if you think your sales have already settled."
       )
     }
     if (code === "amount_too_small") {
@@ -439,7 +439,7 @@ export type ConnectCashOutResult =
       stripePayoutId: string | null
       message: string
     }
-  | { ok: false; error: string; status?: number }
+  | { ok: false; error: string; errorDetail?: string; status?: number }
 
 export async function cashOutToStripeConnectedAccount(
   supabase: SupabaseClient,
@@ -538,10 +538,12 @@ export async function cashOutToStripeConnectedAccount(
     })
     return {
       ok: false,
-      error:
-        "Your app balance is available, but settled card funds in Stripe aren’t enough for this transfer yet. " +
-        "This often happens while recent charges are still pending (typically a few business days), or if wallet " +
-        "credits didn’t come from Stripe card payments. Try again after more sales settle, or contact support.",
+      error: "Hang tight — we’re almost ready to send this",
+      errorDetail:
+        "Your money is still yours. Sometimes your Reswell balance updates before every buyer payment has finished " +
+        "the usual card-network clearing step, and we can only transfer funds once that process is complete " +
+        "(often within a few business days of a sale). Try this cash-out again soon — in most cases it goes through " +
+        "after a short wait. If this keeps happening or you’d like us to double-check anything, we’re happy to help.",
       status: 400,
     }
   }

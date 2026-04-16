@@ -11,6 +11,7 @@ import { flagsFromBoardFulfillment } from "@/lib/listing-fulfillment"
 import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
 import {
   boardFulfillmentChoiceFromListingFlags,
+  reswellPackageFieldsToDb,
   resolveListingFulfillmentFlagsForSellSubmit,
 } from "@/lib/sell-listing-fulfillment-flags"
 import type { ListingDraftAutosaveInput } from "@/lib/validations/listing-draft-autosave"
@@ -57,6 +58,7 @@ export function buildSurfboardDraftListingRow(
 ): Record<string, unknown> {
   const flags = resolveListingFulfillmentFlagsForSellSubmit(fd)
   const fulfillment = boardFulfillmentChoiceFromListingFlags(flags)
+  const packed = reswellPackageFieldsToDb(fd)
   const priceRaw = (fd.price ?? "").trim()
   const price = priceRaw ? parseFloat(priceRaw.replace(/,/g, "")) : 0
   const boardLengthCombined = resolveDraftBoardLength(fd)
@@ -115,6 +117,7 @@ export function buildSurfboardDraftListingRow(
     board_shipping_cost_mode: flags.shipping_available
       ? ((fd.boardShippingCostMode ?? "reswell") as BoardShippingCostMode)
       : null,
+    ...packed,
     auto_price_drop_floor: (() => {
       if (fd.autoPriceDrop !== true) return null
       const t = (fd.autoPriceDropFloor ?? "").trim().replace(/,/g, "")

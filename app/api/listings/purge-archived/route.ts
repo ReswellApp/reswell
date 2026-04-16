@@ -1,4 +1,9 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { deleteListingDocument } from "@/lib/elasticsearch/listings-index"
+import {
+  fetchListingImageUrlsForListingIds,
+  removeListingImageFilesFromStorage,
+} from "@/lib/services/listingStorageCleanup"
 import { NextResponse } from "next/server"
 
 const ARCHIVE_DAYS = 30
@@ -40,6 +45,8 @@ export async function GET(request: Request) {
   }
 
   const ids = toDelete.map((r) => r.id)
+  const imageUrls = await fetchListingImageUrlsForListingIds(supabase, ids)
+
   const { error: deleteError } = await supabase
     .from("listings")
     .delete()
@@ -47,6 +54,20 @@ export async function GET(request: Request) {
 
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 })
+  }
+
+  for (const id of ids) {
+    try {
+      await deleteListingDocument(id)
+    } catch {
+      /* ES optional */
+    }
+  }
+
+  try {
+    await removeListingImageFilesFromStorage(supabase, imageUrls)
+  } catch {
+    /* best-effort storage cleanup */
   }
 
   return NextResponse.json({ deleted: ids.length, ids })

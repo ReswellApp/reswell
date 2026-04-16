@@ -1,7 +1,19 @@
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { verifyOrderPickupForSeller } from "@/lib/services/orderPickupVerification"
+import type { OrderCompletedMessagePayload } from "@/lib/validations/order-completed-message-metadata"
 import { NextRequest, NextResponse } from "next/server"
+
+function buildPickupCompleteThreadPlainText(params: {
+  orderNum: string
+  listingTitle: string
+}): string {
+  const header = `Order #${params.orderNum} — pickup complete`
+  const itemLine = `Item: "${params.listingTitle}"`
+  const tail = "Pickup confirmed. View your order or sale dashboard anytime for details."
+  return [header, "", itemLine, "", tail].join("\n")
+}
 
 export async function POST(
   request: NextRequest,
@@ -32,11 +44,23 @@ export async function POST(
 
   const now = new Date().toISOString()
 
-  const { data: listing } = await supabase
-    .from("listings")
-    .select("title")
-    .eq("id", result.listingId)
-    .maybeSingle()
+  const [{ data: listing }, { data: orderRow }] = await Promise.all([
+    supabase.from("listings").select("title").eq("id", result.listingId).maybeSingle(),
+    supabase.from("orders").select("order_num").eq("id", orderId).maybeSingle(),
+  ])
+
+  const listingTitle = listing?.title ?? "the item"
+  const orderNum = formatOrderNumForCustomer(
+    (orderRow as { order_num?: string | null } | null)?.order_num ?? null,
+    orderId,
+  )
+
+  const metadata: OrderCompletedMessagePayload = {
+    kind: "order_completed",
+    orderId,
+    orderNum,
+    listingTitle,
+  }
 
   const conv = await getConversationForBuyerSeller(supabase, result.buyerId, user.id)
 
@@ -44,7 +68,8 @@ export async function POST(
     await supabase.from("messages").insert({
       conversation_id: conv.id,
       sender_id: user.id,
-      content: `Pickup confirmed for "${listing?.title ?? "the item"}". Payout is now available.`,
+      content: buildPickupCompleteThreadPlainText({ orderNum, listingTitle }),
+      metadata,
     })
     await supabase
       .from("conversations")

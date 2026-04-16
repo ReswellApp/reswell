@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { listingDraftAutosaveSchema } from "@/lib/validations/listing-draft-autosave"
 import { upsertSurfboardListingDraft } from "@/lib/services/listingDraftAutosave"
+import { deleteListingDocument } from "@/lib/elasticsearch/listings-index"
+import {
+  fetchListingImageUrlsForListingIds,
+  removeListingImageFilesFromStorage,
+} from "@/lib/services/listingStorageCleanup"
 
 export async function GET() {
   try {
@@ -112,10 +117,25 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Not a draft" }, { status: 400 })
     }
 
+    const imageUrls = await fetchListingImageUrlsForListingIds(supabase, [id])
+
     const { error: delErr } = await supabase.from("listings").delete().eq("id", id)
     if (delErr) {
       return NextResponse.json({ error: "Failed to delete draft" }, { status: 500 })
     }
+
+    try {
+      await deleteListingDocument(id)
+    } catch {
+      /* ES optional */
+    }
+
+    try {
+      await removeListingImageFilesFromStorage(supabase, imageUrls)
+    } catch {
+      /* best-effort storage cleanup */
+    }
+
     return NextResponse.json({ data: { ok: true } }, { status: 200 })
   } catch {
     return NextResponse.json({ error: "Failed to delete draft" }, { status: 500 })

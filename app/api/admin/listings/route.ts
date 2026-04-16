@@ -8,6 +8,11 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from '@/lib/listing-dimensions-display'
 import { applyCanonicalSurfboardCategoryToListingRow } from '@/lib/surfboard-category-display'
+import { deleteListingDocument } from '@/lib/elasticsearch/listings-index'
+import {
+  fetchListingImageUrlsForListingIds,
+  removeListingImageFilesFromStorage,
+} from '@/lib/services/listingStorageCleanup'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -349,9 +354,10 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
   }
 
+  const imageUrls = await fetchListingImageUrlsForListingIds(service, [listingId])
+
   const { error } = await service.from('listings').delete().eq('id', listingId)
   if (error) {
-    // Most common blocker: listing is referenced by order_items (FK constraint)
     if (error.code === '23503') {
       return NextResponse.json(
         { error: 'Listing has related order history and cannot be permanently deleted.' },
@@ -360,6 +366,18 @@ export async function DELETE(request: NextRequest) {
     }
     console.error('[admin listings] delete failed:', error)
     return NextResponse.json({ error: 'Failed to delete listing' }, { status: 500 })
+  }
+
+  try {
+    await deleteListingDocument(listingId)
+  } catch {
+    /* ES optional */
+  }
+
+  try {
+    await removeListingImageFilesFromStorage(service, imageUrls)
+  } catch {
+    /* best-effort storage cleanup */
   }
 
   return NextResponse.json({ success: true })

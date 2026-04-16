@@ -129,7 +129,9 @@ export function CartPageView({
       const withShip = availRows.filter(({ listing }) => listing.shipping_available)
       if (withShip.length > 0) {
         const rates = withShip.map(({ listing }) => Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0))
-        shipLabel = rates.every((r) => r === 0) ? "FREE" : "Calculated at checkout"
+        const hasReswell = withShip.some(({ listing }) => listing.board_shipping_cost_mode === "reswell")
+        shipLabel =
+          rates.every((r) => r === 0) && !hasReswell ? "FREE" : "Calculated at checkout"
       } else if (availRows.some(({ listing }) => listing.local_pickup !== false)) {
         shipLabel = "Pickup only"
       }

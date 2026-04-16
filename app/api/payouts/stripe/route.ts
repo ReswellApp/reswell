@@ -65,7 +65,10 @@ export async function POST(req: Request) {
   )
   if (!result.ok) {
     return NextResponse.json(
-      { error: result.error },
+      {
+        error: result.error,
+        ...(result.errorDetail ? { errorDetail: result.errorDetail } : {}),
+      },
       { status: result.status ?? 400 },
     )
   }

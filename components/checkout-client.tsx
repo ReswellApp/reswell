@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { CheckoutPurchaseDetails, type PurchaseDetailsState } from "@/components/checkout-purchase-details"
 import { PurchaseOptions } from "@/components/purchase-options"
@@ -88,6 +88,8 @@ export function CheckoutClient({
   const impliedFulfillment: "pickup" | "shipping" =
     canPick && canShip ? method : !canPick && canShip ? "shipping" : "pickup"
 
+  const needsShipping = impliedFulfillment === "shipping"
+
   const resolved = useMemo(() => {
     return resolvePayableAmount(listing, impliedFulfillment)
   }, [listing, impliedFulfillment])
@@ -97,13 +99,69 @@ export function CheckoutClient({
     shippingAddressId: null,
   })
 
+  const [shipQuote, setShipQuote] = useState<{
+    shippingUsd: number
+    totalUsd: number
+    usedReswellQuote: boolean
+  } | null>(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteError, setQuoteError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!needsShipping || !purchaseDetails.shippingAddressId) {
+      setShipQuote(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+    let cancelled = false
+    setQuoteLoading(true)
+    setQuoteError(null)
+    void (async () => {
+      try {
+        const res = await fetch("/api/checkout/shipping-quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            listing_id: listing.id,
+            address_id: purchaseDetails.shippingAddressId,
+          }),
+        })
+        const data = (await res.json()) as {
+          error?: string
+          data?: { shippingUsd: number; totalUsd: number; usedReswellQuote: boolean }
+        }
+        if (cancelled) return
+        if (!res.ok || !data.data) {
+          setShipQuote(null)
+          setQuoteError(data.error?.trim() || "Could not calculate shipping for this address.")
+          return
+        }
+        setShipQuote({
+          shippingUsd: data.data.shippingUsd,
+          totalUsd: data.data.totalUsd,
+          usedReswellQuote: data.data.usedReswellQuote,
+        })
+      } catch {
+        if (!cancelled) {
+          setShipQuote(null)
+          setQuoteError("Could not calculate shipping for this address.")
+        }
+      } finally {
+        if (!cancelled) setQuoteLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [needsShipping, listing.id, purchaseDetails.shippingAddressId])
+
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
   }, [])
 
   const backHref = listingDetailHref(listing)
   const imageUrl = primaryListingImageUrl(listing.listing_images)
-  const needsShipping = impliedFulfillment === "shipping"
 
   if (!resolved.ok) {
     return (
@@ -116,7 +174,22 @@ export function CheckoutClient({
     )
   }
 
-  const paymentBlocked = !purchaseDetails.readyToPay
+  const displayTotals =
+    needsShipping && shipQuote
+      ? {
+          itemPrice: resolved.itemPrice,
+          shipping: shipQuote.shippingUsd,
+          total: shipQuote.totalUsd,
+        }
+      : {
+          itemPrice: resolved.itemPrice,
+          shipping: resolved.shipping,
+          total: resolved.total,
+        }
+
+  const shippingQuoteReady =
+    !needsShipping || (!!shipQuote && !quoteLoading && !quoteError)
+  const paymentBlocked = !purchaseDetails.readyToPay || !shippingQuoteReady
 
   const shippingSummaryRight = (() => {
     if (!needsShipping) {
@@ -125,10 +198,16 @@ export function CheckoutClient({
     if (!purchaseDetails.readyToPay) {
       return <span className="text-neutral-400">Enter shipping address</span>
     }
-    if (resolved.shipping === 0) {
+    if (quoteLoading) {
+      return <span className="text-neutral-500">Calculating…</span>
+    }
+    if (quoteError) {
+      return <span className="text-destructive">Unavailable</span>
+    }
+    if (displayTotals.shipping === 0) {
       return <span className="text-neutral-700">Free</span>
     }
-    return <span className="tabular-nums text-neutral-900">${resolved.shipping.toFixed(2)}</span>
+    return <span className="tabular-nums text-neutral-900">${displayTotals.shipping.toFixed(2)}</span>
   })()
 
   const payButtonClassName = cn(
@@ -184,9 +263,13 @@ export function CheckoutClient({
                         Ship to me
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                        {resolved.shipping > 0
-                          ? `Includes $${resolved.shipping.toFixed(2)} shipping (set by seller).`
-                          : "Seller offers free shipping."}
+                        {shipQuote?.usedReswellQuote
+                          ? displayTotals.shipping > 0
+                            ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
+                            : "Seller offers free shipping."
+                          : displayTotals.shipping > 0
+                            ? `Includes $${displayTotals.shipping.toFixed(2)} shipping (set by seller).`
+                            : "Seller offers free shipping."}
                       </p>
                     </div>
                   </label>
@@ -204,12 +287,23 @@ export function CheckoutClient({
             {needsShipping && (
               <div className="mt-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Shipping</h2>
+                {quoteError && purchaseDetails.readyToPay ? (
+                  <p className="rounded-[8px] border border-destructive/30 bg-destructive/5 px-4 py-3.5 text-[13px] leading-relaxed text-destructive">
+                    {quoteError}
+                  </p>
+                ) : null}
                 <div className="rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
                   {!purchaseDetails.readyToPay
                     ? "Enter your shipping address above to confirm delivery."
-                    : resolved.shipping > 0
-                      ? `Flat $${resolved.shipping.toFixed(2)} shipping from the seller — included in your total.`
-                      : "Free shipping from this seller — included in your total."}
+                    : quoteLoading
+                      ? "Getting live carrier rates for your address…"
+                      : shipQuote?.usedReswellQuote
+                        ? displayTotals.shipping > 0
+                          ? `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
+                          : "Free shipping from this seller — included in your total."
+                        : displayTotals.shipping > 0
+                          ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
+                          : "Free shipping from this seller — included in your total."}
                 </div>
               </div>
             )}
@@ -223,7 +317,7 @@ export function CheckoutClient({
                 <PurchaseOptions
                   listingId={listing.id}
                   listingTitle={listing.title}
-                  price={resolved.total}
+                  price={displayTotals.total}
                   fulfillment={fulfillmentForApi}
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
@@ -324,7 +418,7 @@ export function CheckoutClient({
                 )}
               </div>
               <p className="shrink-0 pt-0.5 text-[15px] font-semibold tabular-nums text-foreground">
-                ${resolved.itemPrice.toFixed(2)}
+                ${displayTotals.itemPrice.toFixed(2)}
               </p>
             </div>
 
@@ -349,7 +443,7 @@ export function CheckoutClient({
             <div className="mt-8 space-y-2.5 border-t border-neutral-200/90 pt-6 text-[14px]">
               <div className="flex justify-between gap-4">
                 <span className="text-neutral-600">Subtotal</span>
-                <span className="tabular-nums font-medium text-foreground">${resolved.itemPrice.toFixed(2)}</span>
+                <span className="tabular-nums font-medium text-foreground">${displayTotals.itemPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-neutral-600">Shipping</span>
@@ -359,7 +453,7 @@ export function CheckoutClient({
                 <span className="text-foreground">Total</span>
                 <p className="tabular-nums text-foreground">
                   <span className="text-[13px] font-normal text-neutral-500">USD </span>
-                  ${resolved.total.toFixed(2)}
+                  ${displayTotals.total.toFixed(2)}
                 </p>
               </div>
             </div>

@@ -34,6 +34,116 @@ function parseInchField(raw: string | undefined): number | null {
 }
 
 /**
+ * Persists packed box + weight for Reswell-calculated shipping. Returns `null` when not applicable
+ * or when Reswell package fields are incomplete (caller should rely on form validation for UX).
+ */
+export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
+  shipping_packed_length_in: number | null
+  shipping_packed_width_in: number | null
+  shipping_packed_height_in: number | null
+  shipping_packed_weight_oz: number | null
+} {
+  const mode = fd.boardShippingCostMode ?? "reswell"
+  if (mode !== "reswell") {
+    return {
+      shipping_packed_length_in: null,
+      shipping_packed_width_in: null,
+      shipping_packed_height_in: null,
+      shipping_packed_weight_oz: null,
+    }
+  }
+  const L = parseInchField(fd.reswellPackageLengthIn)
+  const W = parseInchField(fd.reswellPackageWidthIn)
+  const H = parseInchField(fd.reswellPackageHeightIn)
+  const lbRaw = fd.reswellPackageWeightLb?.trim() ?? ""
+  const ozRaw = fd.reswellPackageWeightOz?.trim() ?? ""
+  const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
+  const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
+  if (
+    L == null ||
+    L <= 0 ||
+    W == null ||
+    W <= 0 ||
+    H == null ||
+    H <= 0 ||
+    !Number.isFinite(lb) ||
+    lb < 0 ||
+    !Number.isFinite(oz) ||
+    oz < 0 ||
+    oz >= 16
+  ) {
+    return {
+      shipping_packed_length_in: null,
+      shipping_packed_width_in: null,
+      shipping_packed_height_in: null,
+      shipping_packed_weight_oz: null,
+    }
+  }
+  const totalOz = lb * 16 + oz
+  if (!Number.isFinite(totalOz) || totalOz <= 0) {
+    return {
+      shipping_packed_length_in: null,
+      shipping_packed_width_in: null,
+      shipping_packed_height_in: null,
+      shipping_packed_weight_oz: null,
+    }
+  }
+  return {
+    shipping_packed_length_in: L,
+    shipping_packed_width_in: W,
+    shipping_packed_height_in: H,
+    shipping_packed_weight_oz: totalOz,
+  }
+}
+
+/** Restores sell-form strings from persisted `listings.shipping_packed_*` columns. */
+export function reswellPackageFormFromDbRow(row: {
+  shipping_packed_length_in?: number | string | null
+  shipping_packed_width_in?: number | string | null
+  shipping_packed_height_in?: number | string | null
+  shipping_packed_weight_oz?: number | string | null
+}): {
+  reswellPackageLengthIn: string
+  reswellPackageWidthIn: string
+  reswellPackageHeightIn: string
+  reswellPackageWeightLb: string
+  reswellPackageWeightOz: string
+} {
+  const empty = {
+    reswellPackageLengthIn: "",
+    reswellPackageWidthIn: "",
+    reswellPackageHeightIn: "",
+    reswellPackageWeightLb: "",
+    reswellPackageWeightOz: "",
+  }
+  const L = row.shipping_packed_length_in
+  const W = row.shipping_packed_width_in
+  const H = row.shipping_packed_height_in
+  const ozTotal = row.shipping_packed_weight_oz
+  if (L == null || L === "" || W == null || W === "" || H == null || H === "" || ozTotal == null || ozTotal === "") {
+    return empty
+  }
+  const nL = typeof L === "number" ? L : parseFloat(String(L).replace(/,/g, ""))
+  const nW = typeof W === "number" ? W : parseFloat(String(W).replace(/,/g, ""))
+  const nH = typeof H === "number" ? H : parseFloat(String(H).replace(/,/g, ""))
+  const totalOz = typeof ozTotal === "number" ? ozTotal : parseFloat(String(ozTotal).replace(/,/g, ""))
+  if (!Number.isFinite(nL) || !Number.isFinite(nW) || !Number.isFinite(nH) || !Number.isFinite(totalOz)) {
+    return empty
+  }
+  const lb = Math.floor(totalOz / 16)
+  const ozRem = Math.round((totalOz - lb * 16) * 100) / 100
+  const ozStr =
+    Number.isInteger(ozRem) ? String(ozRem) : ozRem.toFixed(2).replace(/\.?0+$/, "")
+  return {
+    reswellPackageLengthIn: String(nL),
+    reswellPackageWidthIn: String(nW),
+    reswellPackageHeightIn: String(nH),
+    reswellPackageWeightLb: String(lb),
+    reswellPackageWeightOz: ozStr,
+  }
+}
+
+/**
  * True when the seller has configured a shipping path in the sell UI (mode + fields).
  * Matches the intent of {@link validateSellListingForm} shipping checks without requiring
  * the same relaxed/admin branches — used so DB flags stay aligned with visible options.

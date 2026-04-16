@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useCallback, useMemo, useState } from "react"
 import {
   instantBankPayoutFeeUsd,
@@ -28,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { StripeConnectSetupDialog } from "@/components/features/earnings/stripe-connect-setup-dialog"
-import { Building2, CheckCircle2, Loader2, Shield, Trash2, Zap } from "lucide-react"
+import { AlertCircle, Building2, CheckCircle2, Loader2, Shield, Trash2, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -112,6 +113,8 @@ export function StripeBankPayoutSection({
   const [removeTarget, setRemoveTarget] = useState<StripeConnectBankAccountRow | null>(null)
   const [removeBusy, setRemoveBusy] = useState(false)
   const [defaultBusyId, setDefaultBusyId] = useState<string | null>(null)
+  /** Full-screen layer inside the cash-out dialog for readable payout errors (replaces easy-to-miss toasts). */
+  const [cashOutError, setCashOutError] = useState<{ title: string; detail: string } | null>(null)
 
   const bankRows: StripeConnectBankAccountRow[] = useMemo(() => {
     const fromApi = connectStatus?.bankAccounts
@@ -138,6 +141,7 @@ export function StripeBankPayoutSection({
     Boolean(bankRows.some((b) => b.last4))
 
   const openCashOut = useCallback(() => {
+    setCashOutError(null)
     setAmountStr(availableBalance > 0 ? availableBalance.toFixed(2) : "")
     setPayoutSpeed("standard")
     setCashOpen(true)
@@ -171,16 +175,26 @@ export function StripeBankPayoutSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount, speed: payoutSpeed }),
       })
-      const data = (await res.json()) as { error?: string; message?: string }
+      const data = (await res.json()) as {
+        error?: string
+        errorDetail?: string
+        message?: string
+      }
       if (!res.ok) {
-        toast.error(data.error ?? "Payout failed")
+        const err = data.error ?? "Payout failed"
+        const detail = data.errorDetail?.trim()
+        if (detail) {
+          setCashOutError({ title: err, detail })
+        } else {
+          toast.error(err, { duration: 20_000 })
+        }
         return
       }
       toast.success(data.message ?? "Funds sent to your Stripe balance")
       setCashOpen(false)
       await onRefresh()
     } catch {
-      toast.error("Something went wrong. Try again.")
+      toast.error("Something went wrong. Try again.", { duration: 20_000 })
     } finally {
       setSubmitting(false)
     }
@@ -488,26 +502,40 @@ export function StripeBankPayoutSection({
         useManagement={setupUseManagement}
       />
 
-      <Dialog open={cashOpen} onOpenChange={setCashOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Cash out to bank</DialogTitle>
-            <DialogDescription>
-              {payoutSpeed === "instant" ? (
-                <>
-                  We&apos;ll send funds from your Reswell balance through Stripe Connect with an{" "}
-                  <span className="font-medium text-foreground">instant payout</span> to your bank when
-                  your account and bank support it (timing depends on your bank).
-                </>
-              ) : (
-                <>
-                  We&apos;ll move funds from your Reswell balance to your Stripe-connected account. Your
-                  bank receives payouts on Stripe&apos;s schedule (typically 2–3 business days).
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
+      <Dialog
+        open={cashOpen}
+        onOpenChange={(open) => {
+          setCashOpen(open)
+          if (!open) setCashOutError(null)
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md gap-0 overflow-hidden p-0"
+          showCloseButton={!cashOutError}
+        >
+          <div className="relative p-6">
+            <div
+              className={cn(cashOutError && "pointer-events-none select-none")}
+              inert={cashOutError ? true : undefined}
+            >
+              <DialogHeader>
+                <DialogTitle>Cash out to bank</DialogTitle>
+                <DialogDescription>
+                  {payoutSpeed === "instant" ? (
+                    <>
+                      We&apos;ll send funds from your Reswell balance through Stripe Connect with an{" "}
+                      <span className="font-medium text-foreground">instant payout</span> to your bank when
+                      your account and bank support it (timing depends on your bank).
+                    </>
+                  ) : (
+                    <>
+                      We&apos;ll move funds from your Reswell balance to your Stripe-connected account. Your
+                      bank receives payouts on Stripe&apos;s schedule (typically 2–3 business days).
+                    </>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label htmlFor="stripe-cash-amount">Amount</Label>
               <div className="relative">
@@ -524,6 +552,11 @@ export function StripeBankPayoutSection({
               </div>
               <p className="text-xs text-muted-foreground">
                 Available: ${availableBalance.toFixed(2)} · Minimum $10.00
+              </p>
+              <p className="text-xs text-muted-foreground leading-snug">
+                Bank transfers use buyer payments that have fully finished processing. Your balance can update
+                before every dollar is ready to send—if a transfer is declined, try again after recent sales have
+                settled (often a few business days).
               </p>
             </div>
 
@@ -609,6 +642,58 @@ export function StripeBankPayoutSection({
                 </>
               )}
             </Button>
+              </div>
+            </div>
+
+            {cashOutError ? (
+              <div
+                className="absolute inset-0 z-[100] flex flex-col rounded-lg bg-background/98 p-6 shadow-[inset_0_0_0_1px_hsl(var(--border))] backdrop-blur-[2px] supports-[backdrop-filter]:bg-background/90"
+                role="alert"
+                aria-labelledby="stripe-cashout-error-title"
+                aria-describedby="stripe-cashout-error-desc"
+              >
+                <div className="flex min-h-0 flex-1 flex-col gap-4">
+                  <div className="flex gap-3">
+                    <AlertCircle
+                      className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500"
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <h2
+                        id="stripe-cashout-error-title"
+                        className="pr-2 text-base font-semibold leading-snug text-foreground"
+                      >
+                        {cashOutError.title}
+                      </h2>
+                      <p
+                        id="stripe-cashout-error-desc"
+                        className="max-h-[min(50vh,320px)] overflow-y-auto text-sm leading-relaxed text-muted-foreground"
+                      >
+                        {cashOutError.detail}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex w-full shrink-0 flex-col gap-2">
+                    <Button
+                      type="button"
+                      className="w-full rounded-full"
+                      autoFocus
+                      onClick={() => setCashOutError(null)}
+                    >
+                      Back to cash out
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full rounded-full"
+                      asChild
+                    >
+                      <Link href="/contact">Contact support</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

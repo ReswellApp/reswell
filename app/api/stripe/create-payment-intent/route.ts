@@ -1,7 +1,36 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
-import { resolvePayableAmount } from "@/lib/purchase-amount"
+import type { ProfileAddressRow } from "@/lib/profile-address"
+import { computePeerCheckoutTotalsUsd } from "@/lib/services/peerListingShippingQuote"
+
+const LISTING_SELECT = `
+  id,
+  user_id,
+  title,
+  price,
+  section,
+  shipping_available,
+  local_pickup,
+  shipping_price,
+  board_shipping_cost_mode,
+  status,
+  latitude,
+  longitude,
+  shipping_packed_length_in,
+  shipping_packed_width_in,
+  shipping_packed_height_in,
+  shipping_packed_weight_oz,
+  length_feet,
+  length_inches,
+  length_inches_display,
+  width,
+  width_inches_display,
+  thickness,
+  thickness_inches_display,
+  volume,
+  volume_display
+`
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
@@ -34,11 +63,9 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select(
-      "id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status",
-    )
+    .select(LISTING_SELECT)
     .eq("id", listingId)
-    .eq("status", "active")
+    .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
     .single()
 
@@ -63,35 +90,47 @@ export async function POST(request: NextRequest) {
   const fulfillment =
     lp && sa ? (body.fulfillment === "shipping" || body.fulfillment === "pickup" ? body.fulfillment : null) : undefined
 
-  const resolved = resolvePayableAmount(listing, fulfillment)
-  if (!resolved.ok) {
-    return NextResponse.json({ error: resolved.error }, { status: 400 })
+  if (lp && sa && !fulfillment) {
+    return NextResponse.json({ error: "Choose pickup or shipping for this listing" }, { status: 400 })
   }
 
   const impliedFulfillment: "pickup" | "shipping" =
     lp && sa
-      ? (fulfillment === "shipping" ? "shipping" : "pickup")
+      ? fulfillment === "shipping"
+        ? "shipping"
+        : "pickup"
       : !lp && sa
         ? "shipping"
         : "pickup"
 
   const addressId = body.address_id?.trim() || null
+  let buyerAddress: ProfileAddressRow | null = null
   if (impliedFulfillment === "shipping") {
     if (!addressId) {
       return NextResponse.json({ error: "Shipping address is required" }, { status: 400 })
     }
     const { data: addr, error: addrErr } = await supabase
       .from("addresses")
-      .select("id")
+      .select("*")
       .eq("id", addressId)
       .eq("profile_id", user.id)
       .maybeSingle()
     if (addrErr || !addr) {
       return NextResponse.json({ error: "Invalid shipping address" }, { status: 400 })
     }
+    buyerAddress = addr as ProfileAddressRow
   }
 
-  const amountCents = Math.round(resolved.total * 100)
+  const totals = await computePeerCheckoutTotalsUsd({
+    listing: listing as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"],
+    fulfillment: impliedFulfillment,
+    buyerAddress,
+  })
+  if (!totals.ok) {
+    return NextResponse.json({ error: totals.error }, { status: 422 })
+  }
+
+  const amountCents = Math.round(totals.totalUsd * 100)
   if (amountCents < 50) {
     return NextResponse.json({ error: "Amount is below the minimum charge" }, { status: 400 })
   }
@@ -108,6 +147,9 @@ export async function POST(request: NextRequest) {
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         ...(addressId ? { address_id: addressId } : {}),
+        ...(totals.usedReswellQuote
+          ? { reswell_shipping_cents: String(Math.round(totals.shippingUsd * 100)) }
+          : {}),
       },
       description: `Reswell — ${listing.title}`.slice(0, 1000),
     })

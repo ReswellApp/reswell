@@ -3,6 +3,10 @@ import {
   deleteListingDocument,
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
+import {
+  fetchListingImageUrlsForListingIds,
+  removeListingImageFilesFromStorage,
+} from "@/lib/services/listingStorageCleanup"
 
 type ListingEndRow = {
   id: string
@@ -85,6 +89,8 @@ export async function endSellerListing(
     return { ok: true, mode: "archive" }
   }
 
+  const imageUrls = await fetchListingImageUrlsForListingIds(supabase, [listingId])
+
   const { error } = await supabase
     .from("listings")
     .delete()
@@ -107,6 +113,12 @@ export async function endSellerListing(
     await deleteListingDocument(listingId)
   } catch {
     // ES optional
+  }
+
+  try {
+    await removeListingImageFilesFromStorage(supabase, imageUrls)
+  } catch {
+    // best-effort cleanup after DB delete
   }
 
   return { ok: true, mode: "delete" }

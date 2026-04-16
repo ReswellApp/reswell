@@ -404,9 +404,10 @@ export async function GET(request: NextRequest) {
   try {
     let parsed: ParsedHit[] = []
 
-    if (isZipOrNumericQuery(q)) {
-      parsed = await fetchNominatimParsed(q, detailFull)
-    } else if (detailFull) {
+    if (detailFull) {
+      // Full-address / street mode (`address=1`): always merge Photon + Nominatim.
+      // Do not use the digit-only branch below — Nominatim alone often returns nothing for partial
+      // ZIP fragments (e.g. "816") or short numeric prefixes; Photon handles those as typeahead.
       const [photon, nomi] = await Promise.all([
         fetchPhotonParsed(q, true),
         fetchNominatimParsed(q, true),
@@ -418,6 +419,8 @@ export async function GET(request: NextRequest) {
         if (!byLabel.has(k)) byLabel.set(k, row)
       }
       parsed = [...byLabel.values()]
+    } else if (isZipOrNumericQuery(q)) {
+      parsed = await fetchNominatimParsed(q, false)
     } else {
       parsed = await fetchPhotonParsed(q, false)
       const keywordOk = parsed.some((row) => matchesAllTokens(row.haystack, tokens))

@@ -20,7 +20,9 @@ import {
 } from '@/components/features/messages/offer-negotiation-event-card'
 import type { OfferRowLite } from '@/components/features/messages/seller-offer-response-dialog'
 import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiation-message'
+import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
+import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
 
 interface Message {
@@ -438,6 +440,22 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       >
                         <OrderPlacedMessageCard
                           payload={orderPlaced}
+                          createdAt={message.created_at}
+                          viewerIsSeller={isSeller}
+                        />
+                      </div>
+                    )
+                  }
+
+                  const orderCompleted = parseOrderCompletedMessageMetadata(message.metadata)
+                  if (orderCompleted) {
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <OrderCompletedMessageCard
+                          payload={orderCompleted}
                           createdAt={message.created_at}
                           viewerIsSeller={isSeller}
                         />

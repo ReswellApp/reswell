@@ -69,7 +69,11 @@ import {
   flagsFromBoardFulfillment,
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
-import { resolveListingFulfillmentFlagsForSellSubmit } from "@/lib/sell-listing-fulfillment-flags"
+import {
+  reswellPackageFieldsToDb,
+  reswellPackageFormFromDbRow,
+  resolveListingFulfillmentFlagsForSellSubmit,
+} from "@/lib/sell-listing-fulfillment-flags"
 import { slugify } from "@/lib/slugify"
 import {
   clearImpersonation,
@@ -1070,11 +1074,31 @@ function SellPageContent() {
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
         boardShippingPrice,
-        reswellPackageLengthIn: "",
-        reswellPackageWidthIn: "",
-        reswellPackageHeightIn: "",
-        reswellPackageWeightLb: "",
-        reswellPackageWeightOz: "",
+        ...(() => {
+          const fromDb = reswellPackageFormFromDbRow(
+            listing as {
+              shipping_packed_length_in?: number | string | null
+              shipping_packed_width_in?: number | string | null
+              shipping_packed_height_in?: number | string | null
+              shipping_packed_weight_oz?: number | string | null
+            },
+          )
+          const hasAny =
+            fromDb.reswellPackageLengthIn.trim() !== "" ||
+            fromDb.reswellPackageWidthIn.trim() !== "" ||
+            fromDb.reswellPackageHeightIn.trim() !== "" ||
+            fromDb.reswellPackageWeightLb.trim() !== "" ||
+            fromDb.reswellPackageWeightOz.trim() !== ""
+          return hasAny
+            ? fromDb
+            : {
+                reswellPackageLengthIn: "",
+                reswellPackageWidthIn: "",
+                reswellPackageHeightIn: "",
+                reswellPackageWeightLb: "",
+                reswellPackageWeightOz: "",
+              }
+        })(),
         autoPriceDrop: (() => {
           const f = (listing as { auto_price_drop_floor?: number | string | null })
             .auto_price_drop_floor
@@ -1688,6 +1712,7 @@ function SellPageContent() {
 
         const dimDb = boardDimensionsToDbFields(fd)
         const dimDisplay = boardDimensionDisplayFields(fd)
+        const packedRow = reswellPackageFieldsToDb(fd)
         const editListingFields = {
           title: resolvedListingTitle,
           description: fd.description,
@@ -1711,6 +1736,7 @@ function SellPageContent() {
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
+          ...packedRow,
           auto_price_drop_floor: fd.autoPriceDrop
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,
@@ -1828,6 +1854,7 @@ function SellPageContent() {
       } else {
         const dimDbNew = boardDimensionsToDbFields(fd)
         const dimDisplayNew = boardDimensionDisplayFields(fd)
+        const packedRowNew = reswellPackageFieldsToDb(fd)
         const listingFields = {
           title: resolvedListingTitle,
           description: fd.description,
@@ -1852,6 +1879,7 @@ function SellPageContent() {
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
+          ...packedRowNew,
           auto_price_drop_floor: fd.autoPriceDrop
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,
