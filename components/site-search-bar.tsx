@@ -10,8 +10,8 @@ export function siteSearchInputClassName(options?: { compact?: boolean }) {
   return cn(
     "w-full border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground",
     options?.compact
-      ? "h-10 min-h-[2.5rem] px-0 pl-3 text-sm md:text-sm"
-      : "h-12 text-[15px] pl-4",
+      ? "h-10 min-h-[2.5rem] px-0 pl-3 text-base md:text-sm"
+      : "h-12 pl-4 text-base md:text-[15px]",
   )
 }
 
