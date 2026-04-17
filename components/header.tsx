@@ -1117,31 +1117,28 @@ export function Header() {
                 </div>
               </Link>
             )}
-            <div className="mb-6">
-              <Button
-                asChild
-                size="default"
-                className="h-11 w-full shrink-0 justify-center px-5"
+            <nav className="flex flex-col gap-1 mb-6">
+              <Link
+                href={
+                  user
+                    ? "/sell"
+                    : `/auth/login?redirect=${encodeURIComponent("/sell")}`
+                }
+                onClick={
+                  user
+                    ? onMobileDrawerLinkClick
+                    : (e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                        e.preventDefault()
+                        openLogin("/sell")
+                        queueMicrotask(() => setMobileMenuOpen(false))
+                      }
+                }
+                className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center gap-2"
               >
-                <Link
-                  href={
-                    user
-                      ? "/sell"
-                      : `/auth/login?redirect=${encodeURIComponent("/sell")}`
-                  }
-                  onClick={(e) => {
-                    onMobileDrawerLinkClick(e)
-                    if (user) return
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openLogin("/sell")
-                  }}
-                >
-                  Sell your Board
-                </Link>
-              </Button>
-            </div>
-            <nav className="flex flex-col gap-1">
+                <Plus className="h-5 w-5 shrink-0" aria-hidden />
+                Sell your board
+              </Link>
               {boardShapeNav.map((item) => (
                 <Link
                   key={item.href}

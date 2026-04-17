@@ -61,6 +61,9 @@ import {
   Sparkles,
   Heart,
   Zap,
+  FileEdit,
+  Save,
+  Plus,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -109,14 +112,12 @@ import {
   saveSellListingDraft,
   sellDraftFormLooksFilled,
   type SellListingDraftFormSnapshot,
+  type SellListingDraftRecord,
 } from "@/lib/sell-listing-draft-idb"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import {
   clearRemoteResumeDraftIdStorage,
   clearSellServerDraftListingId,
-  getRemoteResumeDraftIdFromStorage,
-  getSellServerDraftListingId,
-  setRemoteResumeDraftIdStorage,
   setSellServerDraftListingId,
 } from "@/lib/sell-draft-local-meta"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
@@ -265,110 +266,8 @@ function shippingPriceToFormValue(v: unknown): string {
   return String(n)
 }
 
-function SellPageContent() {
-  const listingPhotosInputId = useId()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [])
-  const editId = searchParams.get("edit")
-  const startFresh = searchParams.get("new") === "1"
-
-  /** Start blank: clear session hint only (no auto-redirect — avoids loading flash). */
-  useLayoutEffect(() => {
-    if (typeof window === "undefined") return
-    if (startFresh) {
-      clearSellServerDraftListingId()
-      router.replace("/sell")
-    }
-  }, [startFresh, router])
-
-  /**
-   * Instant “Continue draft” hint: `remoteResumeDraftId` storage is cleared when local state
-   * matches the server row, but `serverDraftListingId` session still holds the row id — use it
-   * here so the strip does not wait on GET /api/listings/draft after a full navigation.
-   */
-  useLayoutEffect(() => {
-    if (typeof window === "undefined" || editId) return
-    const remote = getRemoteResumeDraftIdFromStorage()
-    const server = getSellServerDraftListingId()
-    const hint = remote ?? server
-    if (hint) setRemoteResumeDraftId(hint)
-  }, [editId])
-
-  const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
-  const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
-  useEffect(() => {
-    clearImpersonationStorageIfCookieMissing()
-    setImpersonation(getImpersonation())
-  }, [])
-
-  const [loading, setLoading] = useState(false)
-  const [submitStepIndex, setSubmitStepIndex] = useState(0)
-  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
-  const [descriptionGenerated, setDescriptionGenerated] = useState(false)
-  const submitStepIndexRef = useRef(0)
-  const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
-  const formRef = useRef<HTMLFormElement>(null)
-  const uploadToastIdRef = useRef<string | number | null>(null)
-  const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
-  const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
-    ...LISTING_UPLOAD_STEP_LABELS,
-  ])
-  const [editLoading, setEditLoading] = useState(!!editId)
-  const [draftHydrated, setDraftHydrated] = useState(!!editId)
-  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
-  const listingIsDraft = editListingStatus === "draft"
-  /** Server draft row id while staying on `/sell` (no ?edit=) — source of truth with IDB. */
-  const [localServerDraftId, setLocalServerDraftId] = useState<string | null>(null)
-  /** Server draft id for “Continue” — primed from sessionStorage in useLayoutEffect (before paint). */
-  const [remoteResumeDraftId, setRemoteResumeDraftId] = useState<string | null>(null)
-
-  const effectiveEditId = editId ?? localServerDraftId
-  const isLocalOnlyServerDraft = Boolean(localServerDraftId && !editId)
-  const draftRowForImages = editId ?? localServerDraftId
-  const treatAsDraftForSync =
-    listingIsDraft || isLocalOnlyServerDraft
-
-  const localServerDraftIdRef = useRef<string | null>(null)
-  useEffect(() => {
-    localServerDraftIdRef.current = localServerDraftId
-  }, [localServerDraftId])
-
-  useEffect(() => {
-    if (searchParams.get("new") !== "1") return
-    setLocalServerDraftId(null)
-    setRemoteResumeDraftId(null)
-    void clearSellListingDraft()
-    clearSellServerDraftListingId()
-    clearRemoteResumeDraftIdStorage()
-  }, [searchParams])
-
-  useEffect(() => {
-    if (!remoteResumeDraftId || !localServerDraftId) return
-    if (remoteResumeDraftId === localServerDraftId) {
-      setRemoteResumeDraftId(null)
-      clearRemoteResumeDraftIdStorage()
-    }
-  }, [remoteResumeDraftId, localServerDraftId])
-
-  useEffect(() => {
-    if (!loading) return
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-      e.returnValue = ""
-    }
-    window.addEventListener("beforeunload", onBeforeUnload)
-    return () => window.removeEventListener("beforeunload", onBeforeUnload)
-  }, [loading])
-  const [images, setImages] = useState<ListingPhotoSlot[]>([])
-  const imagesRef = useRef<ListingPhotoSlot[]>([])
-  useEffect(() => {
-    imagesRef.current = images
-  }, [images])
-  const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
-  const [viewerIsAdmin, setViewerIsAdmin] = useState(false)
-  const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
-  const [formData, setFormData] = useState({
+function createInitialSellFormData() {
+  return {
     title: "",
     description: "",
     price: "",
@@ -392,23 +291,108 @@ function SellPageContent() {
     boardWidthInches: "",
     boardThicknessInches: "",
     boardVolumeL: "",
-    /** Opt out of requiring width/thickness/liters (length still required). */
     boardSkipOptionalDimensions: false,
     boardFins: "",
     boardTail: "",
-    /** Directory brand UUID when linked via board index (matches listings.brand_id) */
     boardBrandId: "",
     boardIndexBrandSlug: "",
     boardIndexModelSlug: "",
     boardIndexLabel: "",
-    /** Catalog brand name when linked via title picker — used for “Suggested” under Brand / shaper */
     boardLinkedBrandName: "",
     locationLat: 0,
     locationLng: 0,
     locationCity: "",
     locationState: "",
     locationDisplay: "",
-  })
+  }
+}
+
+function SellPageContent() {
+  const listingPhotosInputId = useId()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const supabase = useMemo(() => createClient(), [])
+  const editId = searchParams.get("edit")
+  const startFresh = searchParams.get("new") === "1"
+
+  /** Start blank: clear session hint only (no auto-redirect — avoids loading flash). */
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return
+    if (startFresh) {
+      clearSellServerDraftListingId()
+      router.replace("/sell")
+    }
+  }, [startFresh, router])
+
+  const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
+  const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
+  useEffect(() => {
+    clearImpersonationStorageIfCookieMissing()
+    setImpersonation(getImpersonation())
+  }, [])
+
+  const [loading, setLoading] = useState(false)
+  const [saveDraftBusy, setSaveDraftBusy] = useState(false)
+  const [startNewListingBusy, setStartNewListingBusy] = useState(false)
+  const [submitStepIndex, setSubmitStepIndex] = useState(0)
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [descriptionGenerated, setDescriptionGenerated] = useState(false)
+  const submitStepIndexRef = useRef(0)
+  const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const uploadToastIdRef = useRef<string | number | null>(null)
+  const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
+  const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
+    ...LISTING_UPLOAD_STEP_LABELS,
+  ])
+  const [editLoading, setEditLoading] = useState(!!editId)
+  const [draftHydrated, setDraftHydrated] = useState(!!editId)
+  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
+  const listingIsDraft = editListingStatus === "draft"
+  /** Server draft row id while staying on `/sell` (no ?edit=) — source of truth with IDB. */
+  const [localServerDraftId, setLocalServerDraftId] = useState<string | null>(null)
+  /** Latest surfboard draft row id from the server — shown until the user chooses “Continue draft”. */
+  const [availableServerDraftId, setAvailableServerDraftId] = useState<string | null>(null)
+  /** IDB snapshot for this user — applied only after “Continue draft” (browser-only recovery). */
+  const [deferredIdbDraft, setDeferredIdbDraft] = useState<SellListingDraftRecord | null>(null)
+
+  const authUserIdRef = useRef<string | null>(null)
+  const sellDraftUserIdRef = useRef<string | null>(null)
+  const editIdRef = useRef<string | null>(editId)
+
+  const effectiveEditId = editId ?? localServerDraftId
+  const isLocalOnlyServerDraft = Boolean(localServerDraftId && !editId)
+  const draftRowForImages = editId ?? localServerDraftId
+  const treatAsDraftForSync =
+    listingIsDraft || isLocalOnlyServerDraft
+
+  const localServerDraftIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    localServerDraftIdRef.current = localServerDraftId
+  }, [localServerDraftId])
+
+  useEffect(() => {
+    editIdRef.current = editId
+  }, [editId])
+
+  useEffect(() => {
+    if (!loading) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ""
+    }
+    window.addEventListener("beforeunload", onBeforeUnload)
+    return () => window.removeEventListener("beforeunload", onBeforeUnload)
+  }, [loading])
+  const [images, setImages] = useState<ListingPhotoSlot[]>([])
+  const imagesRef = useRef<ListingPhotoSlot[]>([])
+  useEffect(() => {
+    imagesRef.current = images
+  }, [images])
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false)
+  const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
+  const [formData, setFormData] = useState(createInitialSellFormData)
 
   const boardDimLengthRef = useRef<HTMLInputElement>(null)
   const boardDimWidthRef = useRef<HTMLInputElement>(null)
@@ -689,21 +673,155 @@ function SellPageContent() {
     return s
   }, [formData.boardLinkedBrandName, formData.brand])
 
-  const persistServerDraft = useCallback(
-    async (opts?: { keepalive?: boolean }) => {
-      if (!draftHydrated) return
-      if (editLoading) return
-      if (getImpersonation()) return
+  /** True when the user has not entered listing content — show “Continue draft” if a draft exists. */
+  const sellFormLooksEmpty = useMemo(
+    () =>
+      !sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot) &&
+      images.length === 0,
+    [formData, images.length],
+  )
+
+  const reloadDeferredDraftHints = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const uid = user?.id ?? null
+    authUserIdRef.current = uid
+    sellDraftUserIdRef.current = uid
+    if (!user) {
+      setAvailableServerDraftId(null)
+      setDeferredIdbDraft(null)
+      return
+    }
+    const idbDraft = await loadSellListingDraft(user.id)
+    let serverDraftId: string | null = null
+    const res = await fetch("/api/listings/draft", { credentials: "include" })
+    if (res.ok) {
+      const json = (await res.json()) as { data?: { draft?: { id: string } | null } }
+      const rid = json?.data?.draft?.id
+      if (typeof rid === "string" && rid) serverDraftId = rid
+    }
+    setAvailableServerDraftId(serverDraftId)
+    setDeferredIdbDraft(idbDraft)
+  }, [supabase])
+
+  /** `/sell?new=1` — blank form; server draft row stays (Continue draft reloads from API). */
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return
+    for (const im of imagesRef.current) {
+      if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
+    }
+    draftPhotosPendingRef.current = null
+    setFormData(createInitialSellFormData())
+    setImages([])
+    setRemovedImageIds([])
+    setPublishPreview(null)
+    setDescriptionGenerated(false)
+    setLocalServerDraftId(null)
+    setDeferredIdbDraft(null)
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) return
-      if (editId && !listingIsDraft) return
+      if (user) await clearSellListingDraft(user.id)
+    })()
+    clearSellServerDraftListingId()
+    clearRemoteResumeDraftIdStorage()
+    void reloadDeferredDraftHints()
+  }, [searchParams, supabase, reloadDeferredDraftHints])
+
+  const applyDeferredIdbRecord = useCallback((draft: SellListingDraftRecord) => {
+    setFormData((prev) => {
+      const fromDraft = draft.formData as Partial<typeof prev> & {
+        boardLengthFt?: string
+        boardLengthIn?: string
+      }
+      const merged = { ...prev, ...fromDraft }
+      let boardLength = merged.boardLength
+      if (typeof boardLength !== "string" || !boardLength.trim()) {
+        const legacyFt = typeof fromDraft.boardLengthFt === "string" ? fromDraft.boardLengthFt : ""
+        const legacyIn =
+          typeof fromDraft.boardLengthIn === "string" ? fromDraft.boardLengthIn : ""
+        boardLength = legacyFt.trim()
+          ? formatBoardLengthInputFromParts(legacyFt, legacyIn)
+          : ""
+      }
+      const next = { ...merged, boardLength }
+      delete (next as Record<string, unknown>).boardLengthFt
+      delete (next as Record<string, unknown>).boardLengthIn
+      return next
+    })
+    const restored: ListingPhotoSlot[] = []
+    for (const b of draft.imageBlobs) {
+      const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
+      const clientId = crypto.randomUUID()
+      restored.push({
+        clientId,
+        previewUrl: URL.createObjectURL(file),
+        optimizePhase: "running",
+        uploadPhase: "idle",
+        progressFull: 0,
+        progressThumb: 0,
+        sourceFile: file,
+      })
+    }
+    if (restored.length) {
+      draftPhotosPendingRef.current = restored
+      setImages(restored)
+    }
+  }, [])
+
+  const handleContinueDraft = useCallback(async () => {
+    if (availableServerDraftId) {
+      router.push(`/sell?edit=${availableServerDraftId}`)
+      return
+    }
+    const draft = deferredIdbDraft
+    if (!draft) return
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error("Please sign in to continue your draft")
+      router.push("/auth/login?redirect=/sell")
+      return
+    }
+    if (draft.userId && draft.userId !== user.id) {
+      toast.error("That draft belongs to another account.")
+      return
+    }
+    applyDeferredIdbRecord(draft)
+    setDeferredIdbDraft(null)
+    setAvailableServerDraftId(null)
+    if (draft.serverListingId) {
+      setLocalServerDraftId(draft.serverListingId)
+      setSellServerDraftListingId(draft.serverListingId)
+    }
+  }, [
+    availableServerDraftId,
+    deferredIdbDraft,
+    router,
+    supabase,
+    applyDeferredIdbRecord,
+  ])
+
+  type PersistDraftResult = { ok: false } | { ok: true; listingId: string }
+
+  const persistServerDraft = useCallback(
+    async (opts?: { keepalive?: boolean }): Promise<PersistDraftResult> => {
+      if (!draftHydrated) return { ok: false }
+      if (editLoading) return { ok: false }
+      if (getImpersonation()) return { ok: false }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return { ok: false }
+      if (editId && !listingIsDraft) return { ok: false }
       if (!editId && !localServerDraftId) {
         const hasLocal =
           sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot) ||
           images.length > 0
-        if (!hasLocal) return
+        if (!hasLocal) return { ok: false }
       }
       const body = {
         listingId: editId ?? localServerDraftId,
@@ -751,21 +869,21 @@ function SellPageContent() {
         if (res.status === 404 || res.status === 403) {
           clearSellServerDraftListingId()
           clearRemoteResumeDraftIdStorage()
-          setRemoteResumeDraftId(null)
+          setAvailableServerDraftId(null)
           setLocalServerDraftId(null)
         }
-        return
+        return { ok: false }
       }
       const json = (await res.json()) as { data?: { id?: string } }
       const id = json?.data?.id
-      if (typeof id === "string") {
-        setSellServerDraftListingId(id)
-        setLocalServerDraftId(id)
-        if (remoteResumeDraftId === id) {
-          setRemoteResumeDraftId(null)
-          clearRemoteResumeDraftIdStorage()
-        }
-      }
+      const resolvedId =
+        typeof id === "string" && id
+          ? id
+          : editId ?? localServerDraftId ?? ""
+      if (!resolvedId) return { ok: false }
+      setSellServerDraftListingId(resolvedId)
+      setLocalServerDraftId(resolvedId)
+      return { ok: true, listingId: resolvedId }
     },
     [
       draftHydrated,
@@ -774,11 +892,86 @@ function SellPageContent() {
       formData,
       images.length,
       listingIsDraft,
-      remoteResumeDraftId,
       supabase,
       editLoading,
     ],
   )
+
+  const showDraftActionButtons =
+    !loading &&
+    !editLoading &&
+    !getImpersonation() &&
+    ((Boolean(editId) && listingIsDraft) ||
+      (Boolean(localServerDraftId) && !editId))
+
+  const handleSaveDraft = useCallback(async () => {
+    setSaveDraftBusy(true)
+    try {
+      if (!sellDraftUserIdRef.current) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          toast.error("Sign in to save your draft")
+          return
+        }
+        sellDraftUserIdRef.current = user.id
+      }
+      const result = await persistServerDraft()
+      if (!result.ok) {
+        toast.error("Could not save draft — add details or sign in and try again.")
+        return
+      }
+      const r = sellDraftLatestRef.current
+      const built = await buildSellListingDraft(
+        r.listingType,
+        r.formData,
+        r.images.map((i) => ({ file: i.sourceFile })),
+        editIdRef.current ?? localServerDraftIdRef.current,
+        sellDraftUserIdRef.current,
+      )
+      if (built) await saveSellListingDraft(built)
+      toast.success("Draft saved", {
+        description: "Use Continue draft on this page or My Listings to reopen.",
+        action: {
+          label: "Open draft",
+          onClick: () =>
+            router.push(`/sell?edit=${encodeURIComponent(result.listingId)}`),
+        },
+      })
+    } finally {
+      setSaveDraftBusy(false)
+    }
+  }, [persistServerDraft, supabase, router])
+
+  const handleStartNewListing = useCallback(async () => {
+    setStartNewListingBusy(true)
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      for (const im of imagesRef.current) {
+        if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
+      }
+      draftPhotosPendingRef.current = null
+      setFormData(createInitialSellFormData())
+      setImages([])
+      setRemovedImageIds([])
+      setLocalServerDraftId(null)
+      setPublishPreview(null)
+      setDescriptionGenerated(false)
+      clearSellServerDraftListingId()
+      clearRemoteResumeDraftIdStorage()
+      if (user) await clearSellListingDraft(user.id)
+      await reloadDeferredDraftHints()
+      toast.message("Starting a new listing — your previous draft is still saved.")
+      if (editId) {
+        router.replace("/sell")
+      }
+    } finally {
+      setStartNewListingBusy(false)
+    }
+  }, [editId, router, reloadDeferredDraftHints])
 
   useEffect(() => {
     if (!editId) {
@@ -786,6 +979,7 @@ function SellPageContent() {
     }
   }, [editId])
 
+  /** Blank /sell: load draft availability only — form stays empty until the user continues. */
   useEffect(() => {
     if (editId) {
       setDraftHydrated(true)
@@ -793,99 +987,41 @@ function SellPageContent() {
     }
     let cancelled = false
     void (async () => {
-      const draft = await loadSellListingDraft()
-      if (cancelled) return
-      if (draft?.serverListingId) {
-        setLocalServerDraftId(draft.serverListingId)
-        setSellServerDraftListingId(draft.serverListingId)
-      } else if (!editId) {
-        const sid = getSellServerDraftListingId()
-        if (sid) {
-          setLocalServerDraftId(sid)
-          setSellServerDraftListingId(sid)
-        }
-      }
-      if (!draft) {
-        setDraftHydrated(true)
-        return
-      }
-      setFormData((prev) => {
-        const fromDraft = draft.formData as Partial<typeof prev> & {
-          boardLengthFt?: string
-          boardLengthIn?: string
-        }
-        const merged = { ...prev, ...fromDraft }
-        let boardLength = merged.boardLength
-        if (typeof boardLength !== "string" || !boardLength.trim()) {
-          const legacyFt = typeof fromDraft.boardLengthFt === "string" ? fromDraft.boardLengthFt : ""
-          const legacyIn =
-            typeof fromDraft.boardLengthIn === "string" ? fromDraft.boardLengthIn : ""
-          boardLength = legacyFt.trim()
-            ? formatBoardLengthInputFromParts(legacyFt, legacyIn)
-            : ""
-        }
-        const next = { ...merged, boardLength }
-        delete (next as Record<string, unknown>).boardLengthFt
-        delete (next as Record<string, unknown>).boardLengthIn
-        return next
-      })
-      const restored: ListingPhotoSlot[] = []
-      for (const b of draft.imageBlobs) {
-        const file = new File([b.buffer], b.name, { type: b.type || "image/jpeg" })
-        const clientId = crypto.randomUUID()
-        restored.push({
-          clientId,
-          previewUrl: URL.createObjectURL(file),
-          optimizePhase: "running",
-          uploadPhase: "idle",
-          progressFull: 0,
-          progressThumb: 0,
-          sourceFile: file,
-        })
-      }
-      if (restored.length) {
-        draftPhotosPendingRef.current = restored
-        setImages(restored)
-      }
-      setDraftHydrated(true)
+      await reloadDeferredDraftHints()
+      if (!cancelled) setDraftHydrated(true)
     })()
     return () => {
       cancelled = true
     }
-  }, [editId])
+  }, [editId, reloadDeferredDraftHints])
 
-  /** Revalidate server draft in background — does not block first paint (banner uses sessionStorage). */
+  /** Clear session draft hints when the account changes; reload /sell draft availability for the new user. */
   useEffect(() => {
-    if (editId) return
-    let cancelled = false
-    void (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user || cancelled) return
-      const res = await fetch("/api/listings/draft", { credentials: "include" })
-      if (!res.ok || cancelled) return
-      const json = (await res.json()) as { data?: { draft?: { id: string } | null } }
-      const rid = json?.data?.draft?.id
-      if (typeof rid !== "string" || !rid) {
-        clearRemoteResumeDraftIdStorage()
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null
+      const prev = authUserIdRef.current
+      if (prev !== null && uid !== null && prev !== uid) {
         clearSellServerDraftListingId()
-        setRemoteResumeDraftId(null)
-        return
-      }
-      setSellServerDraftListingId(rid)
-      if (rid !== localServerDraftIdRef.current) {
-        setRemoteResumeDraftId(rid)
-        setRemoteResumeDraftIdStorage(rid)
-      } else {
-        setRemoteResumeDraftId(null)
         clearRemoteResumeDraftIdStorage()
+        setLocalServerDraftId(null)
+        if (!editIdRef.current) {
+          void reloadDeferredDraftHints()
+        }
       }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [editId, supabase])
+      if (uid === null) {
+        clearSellServerDraftListingId()
+        clearRemoteResumeDraftIdStorage()
+        setLocalServerDraftId(null)
+        setAvailableServerDraftId(null)
+        setDeferredIdbDraft(null)
+      }
+      authUserIdRef.current = uid
+      sellDraftUserIdRef.current = uid
+    })
+    return () => subscription.unsubscribe()
+  }, [supabase, reloadDeferredDraftHints])
 
   useEffect(() => {
     if (editId || !draftHydrated) return
@@ -900,9 +1036,13 @@ function SellPageContent() {
           r.formData,
           r.images.map((i) => ({ file: i.sourceFile })),
           localServerDraftIdRef.current,
+          sellDraftUserIdRef.current,
         )
         if (built) await saveSellListingDraft(built)
-        else await clearSellListingDraft()
+        else {
+          const uid = sellDraftUserIdRef.current
+          if (uid) await clearSellListingDraft(uid)
+        }
       })()
     }, 600)
     return () => {
@@ -952,9 +1092,14 @@ function SellPageContent() {
           r.listingType,
           r.formData,
           r.images.map((i) => ({ file: i.sourceFile })),
+          localServerDraftIdRef.current,
+          sellDraftUserIdRef.current,
         )
         if (built) await saveSellListingDraft(built)
-        else await clearSellListingDraft()
+        else {
+          const uid = sellDraftUserIdRef.current
+          if (uid) await clearSellListingDraft(uid)
+        }
       })()
     }
     const flushAll = () => {
@@ -2019,11 +2164,12 @@ function SellPageContent() {
           } else {
             toast.success("Your listing is live! 🎉")
           }
-          void clearSellListingDraft()
+          void clearSellListingDraft(user.id)
           clearSellServerDraftListingId()
           clearRemoteResumeDraftIdStorage()
           setLocalServerDraftId(null)
-          setRemoteResumeDraftId(null)
+          setAvailableServerDraftId(null)
+          setDeferredIdbDraft(null)
           await revalidateListingDetailAfterListingMutation()
           router.push(detailPath)
           return
@@ -2051,11 +2197,12 @@ function SellPageContent() {
         if (tidDone != null) toast.success(msg, { id: tidDone })
         else toast.success(effectiveEditId ? "Listing updated!" : "Your listing is live! 🎉")
       }
-      void clearSellListingDraft()
+      void clearSellListingDraft(user.id)
       clearSellServerDraftListingId()
       clearRemoteResumeDraftIdStorage()
       setLocalServerDraftId(null)
-      setRemoteResumeDraftId(null)
+      setAvailableServerDraftId(null)
+      setDeferredIdbDraft(null)
       await revalidateListingDetailAfterListingMutation()
       router.push(detailPath)
     } catch (error: unknown) {
@@ -2217,22 +2364,80 @@ function SellPageContent() {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              {viewerIsAdmin && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  disabled={
-                    loading ||
-                    boardCategoryOptions.length === 0 ||
-                    optimizingAny
-                  }
-                  onClick={applyAdminSeedListing}
-                >
-                  Fill seed listing
-                </Button>
-              )}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2 shrink-0">
+                {showDraftActionButtons && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={
+                        saveDraftBusy ||
+                        startNewListingBusy ||
+                        boardCategoryOptions.length === 0 ||
+                        optimizingAny
+                      }
+                      onClick={() => void handleSaveDraft()}
+                    >
+                      <Save className="h-4 w-4 mr-2" aria-hidden />
+                      Save draft
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={
+                        saveDraftBusy ||
+                        startNewListingBusy ||
+                        boardCategoryOptions.length === 0 ||
+                        optimizingAny
+                      }
+                      onClick={() => void handleStartNewListing()}
+                    >
+                      <Plus className="h-4 w-4 mr-2" aria-hidden />
+                      New listing
+                    </Button>
+                  </>
+                )}
+                {!editId &&
+                  draftHydrated &&
+                  sellFormLooksEmpty &&
+                  (availableServerDraftId != null || deferredIdbDraft != null) && (
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={
+                        loading ||
+                        boardCategoryOptions.length === 0 ||
+                        optimizingAny
+                      }
+                      onClick={() => void handleContinueDraft()}
+                    >
+                      <FileEdit className="h-4 w-4 mr-2" aria-hidden />
+                      Continue draft
+                    </Button>
+                  )}
+                {viewerIsAdmin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={
+                      loading ||
+                      boardCategoryOptions.length === 0 ||
+                      optimizingAny
+                    }
+                    onClick={applyAdminSeedListing}
+                  >
+                    Fill seed listing
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
