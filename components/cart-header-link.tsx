@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { createClient } from "@/lib/supabase/client"
 
 export function CartHeaderLink() {
@@ -43,7 +44,12 @@ export function CartHeaderLink() {
 
   if (count === null) {
     return (
-      <div className="h-11 w-11 shrink-0" aria-hidden />
+      <div
+        className="hidden h-11 w-11 shrink-0 items-center justify-center sm:flex"
+        aria-hidden
+      >
+        <Skeleton className="h-10 w-10 rounded-lg" />
+      </div>
     )
   }
 

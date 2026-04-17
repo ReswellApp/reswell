@@ -62,6 +62,7 @@ import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-us
 import { useAuthModal } from "@/components/auth/auth-modal-context"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { CartHeaderLink } from "@/components/cart-header-link"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 type ProfileAvatarFields = {
@@ -173,7 +174,8 @@ function HeaderDesktopCategoryBar({
   const leftSlotRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
   const zeroWidthRetriesRef = useRef(0)
-  const [visibleCount, setVisibleCount] = useState<number>(boardShapeNav.length)
+  /** `null` until the first layout pass has real link widths (avoids a flash of all links then a jump into "More"). */
+  const [visibleCount, setVisibleCount] = useState<number | null>(null)
 
   const recalc = useCallback(() => {
     const slot = leftSlotRef.current
@@ -229,9 +231,18 @@ function HeaderDesktopCategoryBar({
     }
   }, [recalc])
 
-  const visibleNav = boardShapeNav.slice(0, visibleCount)
-  const overflowNav = boardShapeNav.slice(visibleCount)
-  const showMore = overflowNav.length > 0
+  /** If measurement never resolves (e.g. unusual font timing), show all links rather than skeleton forever. */
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setVisibleCount((v) => (v === null ? boardShapeNav.length : v))
+    }, 2500)
+    return () => window.clearTimeout(id)
+  }, [])
+
+  const layoutReady = visibleCount !== null
+  const visibleNav = layoutReady ? boardShapeNav.slice(0, visibleCount) : []
+  const overflowNav = layoutReady ? boardShapeNav.slice(visibleCount) : []
+  const showMore = layoutReady && overflowNav.length > 0
 
   return (
     <div className="relative hidden border-t border-border md:block">
@@ -252,19 +263,31 @@ function HeaderDesktopCategoryBar({
       </div>
 
       <div className="container mx-auto flex min-w-0 items-stretch">
-        <div ref={leftSlotRef} className="flex min-w-0 flex-1 items-center gap-8 overflow-hidden">
-          {visibleNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              prefetch={boardsBrowseLinkPrefetch(item.href)}
-              className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
-                navItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
-              }`}
-            >
-              {item.name}
-            </Link>
-          ))}
+        <div
+          ref={leftSlotRef}
+          className="flex min-w-0 flex-1 items-center gap-8 overflow-hidden"
+          aria-busy={!layoutReady}
+        >
+          {!layoutReady
+            ? boardShapeNav.slice(0, 8).map((item, i) => (
+                <Skeleton
+                  key={item.href}
+                  className="h-4 shrink-0 self-center"
+                  style={{ width: `${52 + (i % 6) * 14}px` }}
+                />
+              ))
+            : visibleNav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  prefetch={boardsBrowseLinkPrefetch(item.href)}
+                  className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
+                    navItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
 
           {showMore ? (
             <DropdownMenu>
@@ -697,7 +720,7 @@ export function Header() {
           </Link>
           <div className="flex shrink-0 items-center justify-end">
             {!authLoaded ? (
-              <div className="h-9 w-9 shrink-0 rounded-full bg-muted animate-pulse" aria-hidden />
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
             ) : user && accountDropdown ? (
               accountDropdown
             ) : authLoaded ? (
@@ -742,7 +765,11 @@ export function Header() {
           {/* Main search (md+ when row is wide enough); icon + drawer when row is cramped */}
           {!headerRowCompact ? (
             <Suspense
-              fallback={<div className="hidden min-w-0 flex-1 md:block" aria-hidden />}
+              fallback={
+                <div className="hidden min-w-0 flex-1 px-2 md:block" aria-hidden>
+                  <Skeleton className="h-10 min-h-[2.5rem] w-full rounded-full" />
+                </div>
+              }
             >
               <HeaderNavSearch />
             </Suspense>
@@ -894,9 +921,13 @@ export function Header() {
                 space as the logged-in action cluster while the auth check is in-flight.
                 This prevents the search bar from shifting once the real buttons appear. */}
             {!authLoaded && (
-              <div className="hidden sm:flex items-center gap-1 md:gap-0.5 pointer-events-none select-none" aria-hidden>
-                <div className="h-10 w-10 rounded-lg" />
-                <div className="hidden h-10 w-10 rounded-lg lg:flex" />
+              <div
+                className="pointer-events-none hidden select-none gap-1 sm:flex sm:items-center sm:gap-1.5 md:gap-0.5"
+                aria-hidden
+              >
+                <Skeleton className="h-11 w-11 shrink-0 rounded-lg" />
+                <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+                <Skeleton className="ml-2 h-9 w-9 shrink-0 rounded-full sm:ml-3 md:ml-4" />
               </div>
             )}
 
@@ -918,7 +949,7 @@ export function Header() {
                   </Button>
                 </Link>
 
-                <div className="ml-2 hidden shrink-0 sm:ml-3 md:ml-4 min-[390px]:block">
+                <div className="ml-2 shrink-0 sm:ml-3 md:ml-4 max-[360px]:hidden">
                   {accountDropdown}
                 </div>
               </div>
