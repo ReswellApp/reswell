@@ -177,8 +177,8 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                   role="option"
                   aria-selected={i === highlight}
                   className={cn(
-                    "flex w-full cursor-pointer select-none items-center gap-3 px-4 py-2.5 text-left text-sm outline-none min-h-touch transition-colors",
-                    i === highlight ? "bg-accent text-accent-foreground" : "hover:bg-muted/80",
+                    "flex w-full cursor-pointer select-none items-center gap-3 px-4 py-2.5 text-left text-sm outline-none min-h-touch transition-colors hover:bg-muted/80",
+                    i === highlight && "bg-muted/80",
                   )}
                   onMouseEnter={() => setHighlight(i)}
                   onMouseDown={(ev) => {
