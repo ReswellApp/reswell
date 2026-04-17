@@ -801,6 +801,12 @@ export function Header() {
                     "rounded-none border-x-0 border-t-0 pt-[max(1rem,env(safe-area-inset-top))]",
                     "[&>button:last-child]:hidden",
                   )}
+                  onInteractOutside={(event) => {
+                    const t = event.target as HTMLElement | null
+                    if (t?.closest?.("[data-search-suggest-panel]")) {
+                      event.preventDefault()
+                    }
+                  }}
                 >
                   <SheetTitle className="sr-only">Search listings</SheetTitle>
                   {headerSearchOverlayForm}

@@ -15,6 +15,29 @@ import { listingDetailHref } from "@/lib/listing-href"
 /** Max rows in the combined Suggestions list (titles / categories / brands). */
 const SUGGEST_COMBINED_CAP = 24
 
+/** Matches `hooks/use-mobile` — below this, suggestion panel uses full input width (no 400px floor). */
+const SUGGEST_PANEL_COMPACT_VIEWPORT_PX = 768
+
+function getSuggestPanelLayout(dropdownRect: {
+  top: number
+  left: number
+  width: number
+}) {
+  if (typeof window === "undefined") return null
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const gutter = vw < 640 ? 12 : 16
+  const maxAllowableWidth = Math.max(200, vw - 2 * gutter)
+  const compactViewport = vw < SUGGEST_PANEL_COMPACT_VIEWPORT_PX
+  const width = compactViewport
+    ? Math.min(dropdownRect.width, maxAllowableWidth)
+    : Math.min(Math.max(dropdownRect.width, 400), 520, maxAllowableWidth)
+  const left = Math.max(gutter, Math.min(dropdownRect.left, vw - width - gutter))
+  const spaceBelow = vh - dropdownRect.top - gutter
+  const maxHeight = Math.min(520, Math.max(160, spaceBelow), vh * 0.72)
+  return { width, left, maxHeight }
+}
+
 export type SuggestListing = {
   id: string
   slug: string | null
@@ -232,9 +255,18 @@ export function SearchInputWithSuggest({
     update()
     window.addEventListener("scroll", update, true)
     window.addEventListener("resize", update)
+    const vv = window.visualViewport
+    if (vv) {
+      vv.addEventListener("resize", update)
+      vv.addEventListener("scroll", update)
+    }
     return () => {
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
+      if (vv) {
+        vv.removeEventListener("resize", update)
+        vv.removeEventListener("scroll", update)
+      }
     }
   }, [showDropdown])
 
@@ -267,42 +299,42 @@ export function SearchInputWithSuggest({
     setSuggestions(null)
   }
 
-  const panelWidth = dropdownRect
-    ? Math.min(Math.max(dropdownRect.width, 400), 520)
-    : 400
-  const panelLeft = dropdownRect
-    ? Math.min(dropdownRect.left, typeof window !== "undefined" ? window.innerWidth - panelWidth - 16 : dropdownRect.left)
-    : 0
+  const panelLayout =
+    dropdownRect && typeof window !== "undefined" ? getSuggestPanelLayout(dropdownRect) : null
 
   const dropdownPanel =
     showDropdown &&
     dropdownRect &&
+    panelLayout &&
     typeof document !== "undefined" &&
     createPortal(
       <div
         ref={dropdownRef}
         id={listboxId}
         role="listbox"
+        data-search-suggest-panel=""
         className={cn(
-          "fixed z-[100] overflow-hidden border bg-popover text-popover-foreground",
+          "fixed z-[160] overflow-hidden border bg-popover text-popover-foreground touch-pan-y",
           boardsTitleStyle
             ? "rounded-md border-border shadow-md"
-            : "rounded-2xl border-border/80 shadow-xl shadow-black/10",
+            : "max-sm:rounded-xl rounded-2xl border-border/80 shadow-xl shadow-black/10 max-sm:shadow-2xl",
         )}
         style={{
           top: dropdownRect.top,
-          left: panelLeft,
-          width: panelWidth,
-          maxHeight: "min(70vh, 520px)",
+          left: panelLayout.left,
+          width: panelLayout.width,
+          maxHeight: panelLayout.maxHeight,
         }}
       >
         {listings.length > 0 && (
           <>
-            <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-4 py-2.5">
-              <span className="text-sm font-semibold tracking-tight text-foreground">Top listings</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:flex-nowrap sm:gap-3 sm:px-4 sm:py-2.5">
+              <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">
+                Top listings
+              </span>
               <Link
                 href={`/search?q=${encodeURIComponent(value.trim())}`}
-                className="shrink-0 text-sm font-medium text-cerulean hover:text-pacific hover:underline"
+                className="shrink-0 text-xs font-medium text-cerulean hover:text-pacific hover:underline sm:text-sm"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.preventDefault()
@@ -314,7 +346,7 @@ export function SearchInputWithSuggest({
                 View all results
               </Link>
             </div>
-            <ul className="max-h-[min(45vh,360px)] overflow-y-auto py-1">
+            <ul className="max-h-[min(42dvh,280px)] overflow-y-auto overscroll-contain py-1 sm:max-h-[min(45vh,360px)]">
               {listings.map((item) => {
                 const meta = [
                   listingSectionLabel(item.section),
@@ -329,7 +361,7 @@ export function SearchInputWithSuggest({
                   <li key={item.id} role="none">
                     <Link
                       href={listingHref(item)}
-                      className="mx-1 flex gap-3 rounded-xl px-2 py-2.5 outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80"
+                      className="mx-1 flex gap-2 rounded-lg px-2 py-2 outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80 sm:gap-3 sm:rounded-xl sm:py-2.5"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={(e) => {
                         e.preventDefault()
@@ -338,14 +370,14 @@ export function SearchInputWithSuggest({
                         dismissForNavigation()
                       }}
                     >
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14 sm:rounded-lg">
                         {item.imageUrl ? (
                           <Image
                             src={item.imageUrl}
                             alt=""
                             fill
                             className="object-cover"
-                            sizes="56px"
+                            sizes="(max-width:640px) 48px, 56px"
                             unoptimized
                           />
                         ) : (
@@ -355,11 +387,13 @@ export function SearchInputWithSuggest({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 font-semibold leading-snug text-foreground">
+                        <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:text-base">
                           {capitalizeWords(item.title)}
                         </p>
-                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{meta}</p>
-                        <p className="mt-1 text-sm font-semibold text-black dark:text-white">
+                        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">
+                          {meta}
+                        </p>
+                        <p className="mt-0.5 text-sm font-semibold text-black dark:text-white sm:mt-1">
                           ${item.price.toFixed(2)}
                         </p>
                       </div>
@@ -378,7 +412,7 @@ export function SearchInputWithSuggest({
           <div
             className={cn(
               "border-t border-border/60 bg-background",
-              boardsTitleStyle ? "px-0 py-0" : "px-4 py-3",
+              boardsTitleStyle ? "px-0 py-0" : "px-3 py-2.5 sm:px-4 sm:py-3",
               listings.length === 0 && panelTopRounded,
             )}
           >
@@ -406,19 +440,19 @@ export function SearchInputWithSuggest({
                 ))}
               </ul>
             ) : (
-              <div className="flex gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-3 overflow-x-auto overscroll-x-contain pb-1 pl-0.5 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [scroll-padding-inline:8px] sm:gap-4 [&::-webkit-scrollbar]:hidden">
                 {suggestions!.brands!.map((brand) => (
                   <button
                     key={brand}
                     type="button"
-                    className="flex min-w-[4.5rem] max-w-[5.5rem] flex-col items-center gap-1.5 text-center"
+                    className="flex min-w-[4rem] max-w-[4.75rem] flex-col items-center gap-1.5 text-center sm:min-w-[4.5rem] sm:max-w-[5.5rem]"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSelect(brand)}
                   >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted text-base font-bold text-cerulean">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-muted text-sm font-bold text-cerulean sm:h-12 sm:w-12 sm:text-base">
                       {brand.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="line-clamp-2 w-full text-xs font-medium leading-tight text-foreground">
+                    <span className="line-clamp-2 w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
                       {brand}
                     </span>
                   </button>
@@ -429,16 +463,16 @@ export function SearchInputWithSuggest({
         )}
 
         {(suggestions?.categories?.length ?? 0) > 0 && (
-          <div className="border-t border-border/60 px-4 py-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="border-t border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:mb-2">
               Categories
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {suggestions!.categories!.map((cat) => (
                 <button
                   key={cat}
                   type="button"
-                  className="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted hover:border-cerulean/30"
+                  className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted hover:border-cerulean/30 sm:px-3 sm:py-1.5 sm:text-xs"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelect(cat)}
                 >
@@ -459,10 +493,10 @@ export function SearchInputWithSuggest({
                 panelTopRounded,
             )}
           >
-            <p className="border-b border-border/40 bg-muted/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="border-b border-border/40 bg-muted/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-4 sm:py-2">
               Suggestions
             </p>
-            <ul className="max-h-[min(40vh,280px)] overflow-y-auto py-1">
+            <ul className="max-h-[min(36dvh,240px)] overflow-y-auto overscroll-contain py-1 sm:max-h-[min(40vh,280px)]">
               {flatSuggestions.map((item, i) => {
                 const Icon = item.type === "category" ? Tag : item.type === "brand" ? Package : Type
                 return (
