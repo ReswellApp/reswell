@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
 import { searchSuggest } from "@/app/actions/marketplace"
 import { listingDetailHref } from "@/lib/listing-href"
+import { useSearchSuggestPortalContainer } from "@/components/search-suggest-portal-context"
 
 /** Max rows in the combined Suggestions list (titles / categories / brands). */
 const SUGGEST_COMBINED_CAP = 24
@@ -144,7 +145,14 @@ export function SearchInputWithSuggest({
   const [suggestions, setSuggestions] = useState<SuggestResult | null>(null)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
+  const [dropdownRect, setDropdownRect] = useState<{
+    dropTop: number
+    anchorLeft: number
+    anchorWidth: number
+    portalTop: number | null
+    portalLeft: number | null
+  } | null>(null)
+  const suggestPortalContainer = useSearchSuggestPortalContainer()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -250,7 +258,21 @@ export function SearchInputWithSuggest({
     const el = containerRef.current
     const update = () => {
       const rect = el.getBoundingClientRect()
-      setDropdownRect({ top: rect.bottom + 8, left: rect.left, width: rect.width })
+      const dropTop = rect.bottom + 8
+      let portalTop: number | null = null
+      let portalLeft: number | null = null
+      if (suggestPortalContainer) {
+        const pr = suggestPortalContainer.getBoundingClientRect()
+        portalTop = pr.top
+        portalLeft = pr.left
+      }
+      setDropdownRect({
+        dropTop,
+        anchorLeft: rect.left,
+        anchorWidth: rect.width,
+        portalTop,
+        portalLeft,
+      })
     }
     update()
     window.addEventListener("scroll", update, true)
@@ -268,7 +290,7 @@ export function SearchInputWithSuggest({
         vv.removeEventListener("scroll", update)
       }
     }
-  }, [showDropdown])
+  }, [showDropdown, suggestPortalContainer])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -300,7 +322,20 @@ export function SearchInputWithSuggest({
   }
 
   const panelLayout =
-    dropdownRect && typeof window !== "undefined" ? getSuggestPanelLayout(dropdownRect) : null
+    dropdownRect && typeof window !== "undefined"
+      ? getSuggestPanelLayout({
+          top: dropdownRect.dropTop,
+          left: dropdownRect.anchorLeft,
+          width: dropdownRect.anchorWidth,
+        })
+      : null
+
+  const portaledInsideModal =
+    Boolean(
+      suggestPortalContainer &&
+        dropdownRect?.portalTop != null &&
+        dropdownRect?.portalLeft != null,
+    )
 
   const dropdownPanel =
     showDropdown &&
@@ -314,17 +349,27 @@ export function SearchInputWithSuggest({
         role="listbox"
         data-search-suggest-panel=""
         className={cn(
-          "fixed z-[160] overflow-hidden border bg-popover text-popover-foreground touch-pan-y",
+          "overflow-hidden border bg-popover text-popover-foreground touch-pan-y pointer-events-auto",
+          portaledInsideModal ? "absolute z-[80]" : "fixed z-[160]",
           boardsTitleStyle
             ? "rounded-md border-border shadow-md"
             : "max-sm:rounded-xl rounded-2xl border-border/80 shadow-xl shadow-black/10 max-sm:shadow-2xl",
         )}
-        style={{
-          top: dropdownRect.top,
-          left: panelLayout.left,
-          width: panelLayout.width,
-          maxHeight: panelLayout.maxHeight,
-        }}
+        style={
+          portaledInsideModal
+            ? {
+                top: dropdownRect.dropTop - (dropdownRect.portalTop ?? 0),
+                left: panelLayout.left - (dropdownRect.portalLeft ?? 0),
+                width: panelLayout.width,
+                maxHeight: panelLayout.maxHeight,
+              }
+            : {
+                top: dropdownRect.dropTop,
+                left: panelLayout.left,
+                width: panelLayout.width,
+                maxHeight: panelLayout.maxHeight,
+              }
+        }
       >
         {listings.length > 0 && (
           <>
@@ -531,7 +576,7 @@ export function SearchInputWithSuggest({
           </div>
         )}
       </div>,
-      document.body,
+      suggestPortalContainer ?? document.body,
     )
 
   const showClear = showClearButton && value.length > 0

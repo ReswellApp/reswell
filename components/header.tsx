@@ -47,6 +47,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
+import { SearchSuggestPortalContainerContext } from "@/components/search-suggest-portal-context"
 import { HeaderNavSearch } from "@/components/header-nav-search"
 import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
@@ -346,6 +347,7 @@ export function Header() {
   const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [mobileSearchSuggestPortalEl, setMobileSearchSuggestPortalEl] = useState<HTMLDivElement | null>(null)
   // CLS-FIX: track when auth check has resolved so we can reserve the
   // correct amount of space for auth-dependent action buttons before they
   // appear, preventing the search bar from shifting horizontally.
@@ -797,19 +799,20 @@ export function Header() {
                 <SheetContent
                   side="top"
                   className={cn(
-                    "z-[100] w-full max-w-none gap-0 border-border bg-popover p-4 shadow-lg",
+                    "z-[100] w-full max-w-none gap-0 overflow-visible border-border bg-popover p-4 shadow-lg",
                     "rounded-none border-x-0 border-t-0 pt-[max(1rem,env(safe-area-inset-top))]",
                     "[&>button:last-child]:hidden",
                   )}
-                  onInteractOutside={(event) => {
-                    const t = event.target as HTMLElement | null
-                    if (t?.closest?.("[data-search-suggest-panel]")) {
-                      event.preventDefault()
-                    }
-                  }}
                 >
-                  <SheetTitle className="sr-only">Search listings</SheetTitle>
-                  {headerSearchOverlayForm}
+                  <SearchSuggestPortalContainerContext.Provider value={mobileSearchSuggestPortalEl}>
+                    <div
+                      ref={setMobileSearchSuggestPortalEl}
+                      className="relative z-0 w-full min-w-0 overflow-visible"
+                    >
+                      <SheetTitle className="sr-only">Search listings</SheetTitle>
+                      {headerSearchOverlayForm}
+                    </div>
+                  </SearchSuggestPortalContainerContext.Provider>
                 </SheetContent>
               </Sheet>
             ) : (
