@@ -250,6 +250,13 @@ export function SearchInputWithSuggest({
   const hasFallbackList = !disableSuggest && open && flatSuggestions.length > 0
   const showDropdown = hasRichStrip || hasFallbackList
 
+  /** When listings share the panel with brands/categories/suggestions, flex so listings scroll instead of clipping the footer. */
+  const listingsSharePanelWithFooter =
+    listings.length > 0 &&
+    ((suggestions?.brands?.length ?? 0) > 0 ||
+      (suggestions?.categories?.length ?? 0) > 0 ||
+      flatSuggestions.length > 0)
+
   useEffect(() => {
     if (!showDropdown || !containerRef.current || typeof document === "undefined") {
       setDropdownRect(null)
@@ -349,7 +356,7 @@ export function SearchInputWithSuggest({
         role="listbox"
         data-search-suggest-panel=""
         className={cn(
-          "overflow-hidden border bg-popover text-popover-foreground touch-pan-y pointer-events-auto",
+          "flex min-h-0 flex-col overflow-hidden border bg-popover text-popover-foreground touch-pan-y pointer-events-auto",
           portaledInsideModal ? "absolute z-[80]" : "fixed z-[160]",
           boardsTitleStyle
             ? "rounded-md border-border shadow-md"
@@ -372,8 +379,13 @@ export function SearchInputWithSuggest({
         }
       >
         {listings.length > 0 && (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:flex-nowrap sm:gap-3 sm:px-4 sm:py-2.5">
+          <div
+            className={cn(
+              "flex min-h-0 flex-col",
+              listingsSharePanelWithFooter && "min-h-0 flex-1",
+            )}
+          >
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:flex-nowrap sm:gap-3 sm:px-4 sm:py-2.5">
               <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">
                 Top listings
               </span>
@@ -391,7 +403,14 @@ export function SearchInputWithSuggest({
                 View all results
               </Link>
             </div>
-            <ul className="max-h-[min(42dvh,280px)] overflow-y-auto overscroll-contain py-1 sm:max-h-[min(45vh,360px)]">
+            <ul
+              className={cn(
+                "min-h-0 overflow-y-auto overscroll-contain py-1",
+                listingsSharePanelWithFooter
+                  ? "flex-1"
+                  : "max-h-[min(42dvh,280px)] sm:max-h-[min(45vh,360px)]",
+              )}
+            >
               {listings.map((item) => {
                 const meta = [
                   listingSectionLabel(item.section),
@@ -450,14 +469,14 @@ export function SearchInputWithSuggest({
                 )
               })}
             </ul>
-          </>
+          </div>
         )}
 
         {(suggestions?.brands?.length ?? 0) > 0 && (
           <div
             className={cn(
-              "border-t border-border/60 bg-background",
-              boardsTitleStyle ? "px-0 py-0" : "px-3 py-2.5 sm:px-4 sm:py-3",
+              "shrink-0 border-t border-border/60 bg-background",
+              boardsTitleStyle ? "px-0 py-0" : "px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3",
               listings.length === 0 && panelTopRounded,
             )}
           >
@@ -508,7 +527,7 @@ export function SearchInputWithSuggest({
         )}
 
         {(suggestions?.categories?.length ?? 0) > 0 && (
-          <div className="border-t border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="shrink-0 border-t border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:mb-2">
               Categories
             </p>
@@ -531,7 +550,7 @@ export function SearchInputWithSuggest({
         {flatSuggestions.length > 0 && (
           <div
             className={cn(
-              "border-t border-border/60",
+              "shrink-0 border-t border-border/60",
               listings.length === 0 &&
                 (suggestions?.brands?.length ?? 0) === 0 &&
                 (suggestions?.categories?.length ?? 0) === 0 &&
