@@ -323,8 +323,8 @@ export default async function HomePage() {
           <FadeInSection>
           <section className="py-16">
             <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold">Recently added surfboards</h2>
                   <p className="text-muted-foreground">In-person pickup only</p>
                 </div>
@@ -372,8 +372,8 @@ export default async function HomePage() {
           <FadeInSection>
             <section className="py-16">
               <div className="container mx-auto">
-                <div className="flex items-center justify-between mb-8">
-                  <div>
+                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <h2 className="text-2xl font-bold">Recently added shortboards</h2>
                     <p className="text-muted-foreground">In-person pickup only</p>
                   </div>
@@ -425,8 +425,8 @@ export default async function HomePage() {
           <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold">Recently verified users</h2>
                   <p className="text-muted-foreground">
                     Each verified seller&apos;s priciest active surfboard listing right now
@@ -477,8 +477,8 @@ export default async function HomePage() {
         <FadeInSection>
         <section className="py-16 bg-offwhite">
           <div className="container mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold">Browse by Category</h2>
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="min-w-0 text-2xl font-bold">Browse by Category</h2>
               <Button variant="ghost" asChild>
                 <Link href="/categories">
                   View All
@@ -506,8 +506,8 @@ export default async function HomePage() {
           <FadeInSection>
           <section className="py-16">
             <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold">Featured Sellers</h2>
                   <p className="text-muted-foreground">Browse gear from local retail stores</p>
                 </div>
@@ -576,8 +576,8 @@ export default async function HomePage() {
           <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <h2 className="text-2xl font-bold">New Arrivals</h2>
                   <p className="text-muted-foreground">Fresh gear from our store</p>
                 </div>

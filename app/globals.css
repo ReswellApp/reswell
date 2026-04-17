@@ -293,6 +293,8 @@
    it never injects into the document flow by enforcing pointer-events handling. */
 [data-sonner-toaster] {
   position: fixed !important;
+  /* Sit above the home indicator on notched iPhones */
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* Feed page — sold activity ticker (marquee) */

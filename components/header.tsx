@@ -689,7 +689,7 @@ export function Header() {
             className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
             <span
-              className="text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl"
+              className="text-2xl font-black tracking-tight text-foreground sm:text-3xl md:text-5xl"
               style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
             >
               Reswell
@@ -732,7 +732,7 @@ export function Header() {
             className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
             <span
-              className="text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl"
+              className="text-2xl font-black tracking-tight text-foreground sm:text-3xl md:text-5xl"
               style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
             >
               Reswell
@@ -808,7 +808,7 @@ export function Header() {
               asChild
               variant="ghost"
               size="icon"
-              className="md:hidden h-10 w-10 text-foreground hover:bg-muted"
+              className="h-10 w-10 text-foreground hover:bg-muted lg:hidden"
             >
               <Link
                 href={
@@ -834,7 +834,7 @@ export function Header() {
             <Button
               asChild
               size="default"
-              className="hidden shrink-0 px-5 md:inline-flex"
+              className="hidden shrink-0 px-5 lg:inline-flex"
             >
               <Link
                 href={
@@ -873,6 +873,7 @@ export function Header() {
                   ? "/favorites"
                   : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
               }
+              className="hidden lg:inline-flex"
               onClick={
                 user
                   ? undefined
@@ -895,14 +896,14 @@ export function Header() {
             {!authLoaded && (
               <div className="hidden sm:flex items-center gap-1 md:gap-0.5 pointer-events-none select-none" aria-hidden>
                 <div className="h-10 w-10 rounded-lg" />
-                <div className="h-10 w-10 rounded-lg" />
+                <div className="hidden h-10 w-10 rounded-lg lg:flex" />
               </div>
             )}
 
             {authLoaded && user ? (
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
                 <CartHeaderLink />
-                <Link href="/messages" className="relative hidden sm:inline-flex">
+                <Link href="/messages" className="relative inline-flex shrink-0">
                   <Button variant="ghost" size="icon" className="text-foreground">
                     <MessageSquare className="h-6 w-6" />
                     {unreadMessages > 0 && (
@@ -917,7 +918,9 @@ export function Header() {
                   </Button>
                 </Link>
 
-                <div className="ml-2 shrink-0 sm:ml-3 md:ml-4">{accountDropdown}</div>
+                <div className="ml-2 hidden shrink-0 sm:ml-3 md:ml-4 min-[401px]:block">
+                  {accountDropdown}
+                </div>
               </div>
             ) : authLoaded ? (
               <div className="flex items-center gap-0">
@@ -950,7 +953,7 @@ export function Header() {
             <button
               type="button"
               className={cn(
-                "flex h-10 w-10 min-w-[2.5rem] items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "flex h-10 w-10 min-w-[2.5rem] shrink-0 items-center justify-center rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 "ml-2 lg:hidden",
                 mobileLogoHovered && !mobileMenuOpen
                   ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
@@ -984,7 +987,7 @@ export function Header() {
             aria-label="Close menu"
           />
           {/* Panel */}
-          <div className="fixed inset-y-0 right-0 w-[min(400px,100vw)] max-w-full bg-background border-l shadow-xl p-4 sm:p-6 overflow-y-auto overflow-x-hidden animate-in slide-in-from-right duration-300 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] [padding-top:max(1rem,env(safe-area-inset-top))]">
+          <div className="fixed inset-y-0 right-0 w-[min(400px,100vw)] max-w-full bg-background border-l shadow-xl p-4 sm:p-6 overflow-y-auto overflow-x-hidden animate-in slide-in-from-right duration-300 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] [padding-top:max(1rem,env(safe-area-inset-top))] [padding-bottom:max(1.25rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center justify-between mb-6">
               <span className="text-lg font-semibold text-foreground">Menu</span>
               <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
