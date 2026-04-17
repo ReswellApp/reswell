@@ -134,7 +134,7 @@ export async function ShopListingDetailPage({
           </Breadcrumb>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid max-w-5xl mx-auto lg:grid-cols-2 gap-8">
           <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
             {imageUrl ? (
               <Image

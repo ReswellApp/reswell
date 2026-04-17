@@ -31,7 +31,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   const selectedImage = images[selectedIndex]
 
   return (
-    <div className="space-y-4 w-full min-w-0 max-w-[370px] md:max-w-[450px] mx-auto">
+    <div className="space-y-4 w-full min-w-0 mx-auto lg:max-w-[450px]">
       {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
       <div
         className="relative w-full rounded-lg overflow-hidden bg-muted"
