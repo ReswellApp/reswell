@@ -123,12 +123,30 @@ export function ListingDetailPeerPurchaseActions({
           </Button>
         )}
 
-        <Button size="lg" className="min-h-touch flex-1 gap-2 justify-center" asChild>
-          <Link href={checkoutHref} prefetch={false}>
-            <CreditCard className="h-5 w-5 shrink-0" aria-hidden />
-            Buy now
-          </Link>
-        </Button>
+        {isLoggedIn ? (
+          <Button size="lg" className="min-h-touch flex-1 gap-2 justify-center" asChild>
+            <Link href={checkoutHref} prefetch={false}>
+              <CreditCard className="h-5 w-5 shrink-0" aria-hidden />
+              Buy now
+            </Link>
+          </Button>
+        ) : (
+          <Button size="lg" className="min-h-touch flex-1 gap-2 justify-center" asChild>
+            <Link
+              href={`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(checkoutHref))}`}
+              prefetch={false}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                if (!authModal) return
+                e.preventDefault()
+                authModal.openLogin(checkoutHref)
+              }}
+            >
+              <CreditCard className="h-5 w-5 shrink-0" aria-hidden />
+              Buy now
+            </Link>
+          </Button>
+        )}
       </div>
 
       {makeOffer ? (

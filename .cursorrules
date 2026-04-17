@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
 
 - All Stripe SDK calls live in `lib/services/stripe.ts`.
 - Secret key is server-only. Publishable key via `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
-- Webhook handlers live in `app/api/webhooks/stripe/route.ts` and verify signature on every request.
+- Webhook handlers: Stripe (`app/api/webhooks/stripe/route.ts`); ShipEngine track (`app/api/webhooks/shipengine/route.ts`, RSA/JWKS verification).
 - Never log or expose full Stripe objects — extract only the fields you need.
 
 ---

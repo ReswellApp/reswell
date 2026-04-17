@@ -68,7 +68,18 @@ So Stripe can confirm payments and run your logic:
 
 Local dev: see **`docs/STRIPE.md`** (`npm run stripe:listen` + test keys in `.env.local`).
 
-## 6. (Optional) Custom domain
+## 6. ShipEngine / ShipStation API track webhook (shipping)
+
+So carrier tracking updates appear on buyer and seller order pages (without polling):
+
+1. [ShipStation API dashboard](https://dashboard.shipengine.com/) → **Developer** → **Webhooks** (production environment).
+2. **Create webhook** → event **`track`** → URL `https://YOUR_VERCEL_DOMAIN/api/webhooks/shipengine`.
+3. No extra env var is required: the handler verifies requests with ShipEngine’s public JWKS (`RSA-SHA256`).
+4. Ensure **`SUPABASE_SERVICE_ROLE_KEY`** is set in Vercel (the handler updates `orders.tracking_detail`).
+
+Apply the `orders.tracking_detail` migration to your Supabase database when you deploy this feature.
+
+## 7. (Optional) Custom domain
 
 - **Settings** → **Domains** → add your domain and follow DNS instructions.
 
@@ -81,3 +92,4 @@ Local dev: see **`docs/STRIPE.md`** (`npm run stripe:listen` + test keys in `.en
 - [ ] Env vars added in Vercel (at least Supabase URL + anon key)
 - [ ] Redeploy after adding env vars
 - [ ] Stripe webhook URL and `STRIPE_WEBHOOK_SECRET` set if using payments
+- [ ] ShipEngine `track` webhook URL → `/api/webhooks/shipengine` if using integrated tracking updates

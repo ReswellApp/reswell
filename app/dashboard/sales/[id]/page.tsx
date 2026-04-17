@@ -44,6 +44,11 @@ import {
   TrackingInfo,
 } from "@/components/order-actions"
 import { privatePageMetadata } from "@/lib/site-metadata"
+import {
+  fetchOptionalOrderTrackingDetailJson,
+  parseOrderTrackingDetail,
+} from "@/lib/shipping/order-tracking-detail"
+import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -188,6 +193,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   }
 
   const sale = row as unknown as SaleDetail
+  const trackingDetailRaw = await fetchOptionalOrderTrackingDetailJson(supabase, {
+    orderId: id,
+    role: "seller",
+    sellerId: user.id,
+  })
 
   const { data: payoutFromDb } = await supabase
     .from("payouts")
@@ -221,6 +231,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const isRefunding = orderStatusIsRefundInProgress(sale.status)
   const fulfillmentLocked = orderStatusLocksDuringRefund(sale.status)
   const platformFee = Number(sale.amount) - Number(sale.seller_earnings)
+  const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
 
   const convRow = await getConversationForBuyerSeller(supabase, sale.buyer_id, user.id)
   const conversationId = convRow?.id ?? null
@@ -460,6 +471,14 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             <TrackingInfo
               trackingNumber={sale.tracking_number}
               trackingCarrier={sale.tracking_carrier}
+            />
+          )}
+
+          {carrierTracking && (
+            <CarrierTrackingPanel
+              detail={carrierTracking}
+              marketplaceDeliveryStatus={sale.delivery_status}
+              variant="seller"
             />
           )}
 

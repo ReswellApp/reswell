@@ -28,6 +28,11 @@ import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-or
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
 import { privatePageMetadata } from "@/lib/site-metadata"
+import {
+  fetchOptionalOrderTrackingDetailJson,
+  parseOrderTrackingDetail,
+} from "@/lib/shipping/order-tracking-detail"
+import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -99,6 +104,8 @@ function primaryImage(images: Array<{ url: string; is_primary: boolean | null }>
 /** Avoid caching stale threads; order detail is user-specific. */
 export const dynamic = "force-dynamic"
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
   if (!addr) return null
   const parts = [
@@ -111,7 +118,12 @@ function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
 }
 
 export default async function OrderDetailPage(props: { params: Promise<{ id: string }> }) {
-  const { id } = await props.params
+  const raw = (await props.params).id
+  const id = decodeURIComponent(typeof raw === "string" ? raw.trim() : "").trim()
+  if (!id || !UUID_RE.test(id)) {
+    notFound()
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -157,6 +169,11 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   }
 
   const order = row as unknown as OrderDetail
+  const trackingDetailRaw = await fetchOptionalOrderTrackingDetailJson(supabase, {
+    orderId: id,
+    role: "buyer",
+    buyerId: user.id,
+  })
   const listing = Array.isArray(order.listings) ? order.listings[0] : order.listings
   const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
   const img = primaryImage(listing?.listing_images ?? null)
@@ -186,6 +203,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
   const isRefunded = orderStatusIsRefunded(order.status)
   const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
+  const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
 
   const convRow = await getConversationForBuyerSeller(supabase, user.id, order.seller_id)
 
@@ -281,6 +299,10 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           trackingNumber={order.tracking_number}
           trackingCarrier={order.tracking_carrier}
         />
+      )}
+
+      {!fulfillmentLocked && carrierTracking && (
+        <CarrierTrackingPanel detail={carrierTracking} marketplaceDeliveryStatus={order.delivery_status} />
       )}
 
       <Card>

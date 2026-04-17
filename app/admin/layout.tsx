@@ -16,6 +16,7 @@ import {
   Box,
   LifeBuoy,
   ShoppingBag,
+  Wallet,
 } from 'lucide-react'
 
 const adminNavItems = [
@@ -25,6 +26,7 @@ const adminNavItems = [
   { href: '/admin/listings/brand-requests', label: 'Brand requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { href: '/admin/wallet-reconcile', label: 'Wallet sync', icon: Wallet },
   { href: '/admin/order-support', label: 'Order support', icon: LifeBuoy },
   { href: '/admin/contact-messages', label: 'Contact messages', icon: MessageSquare },
   { href: '/admin/shipping', label: 'Shipping', icon: Truck },
@@ -64,6 +66,7 @@ export default async function AdminLayout({
           item.href !== '/admin/settings' &&
           item.href !== '/admin/shipping' &&
           item.href !== '/admin/shippo' &&
+          item.href !== '/admin/wallet-reconcile' &&
           item.href !== '/admin/listings/brand-requests',
       )
 
