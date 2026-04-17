@@ -2,7 +2,15 @@
 
 import React, { Suspense } from "react"
 
-import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react"
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  useId,
+} from "react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -258,6 +266,7 @@ function shippingPriceToFormValue(v: unknown): string {
 }
 
 function SellPageContent() {
+  const listingPhotosInputId = useId()
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
@@ -3488,20 +3497,34 @@ function SellPageContent() {
                       </div>
                     ))}
                     {images.length < 12 && (
-                      <label className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors overflow-hidden">
-                        <Upload className="h-6 w-6 text-muted-foreground/45 pointer-events-none" />
-                        <span className="text-xs text-muted-foreground/45 mt-1 pointer-events-none">Add</span>
+                      <div className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden">
+                        <label
+                          htmlFor={listingPhotosInputId}
+                          className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
+                        >
+                          <span className="sr-only">Add listing photos</span>
+                          <Upload className="h-6 w-6 text-muted-foreground/45 pointer-events-none" aria-hidden />
+                          <span className="text-xs text-muted-foreground/45 mt-1 pointer-events-none" aria-hidden>
+                            Add
+                          </span>
+                        </label>
                         <input
+                          id={listingPhotosInputId}
                           type="file"
                           accept="image/*"
                           multiple
                           onChange={handleImageChange}
-                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                          aria-label="Add photos"
+                          className="sr-only"
                         />
-                      </label>
+                      </div>
                     )}
                   </div>
+                  <p className="lg:hidden text-xs text-muted-foreground/55">
+                    iPhone/iPad: In Photo Library, tap{" "}
+                    <span className="font-medium text-foreground/80">Select</span>, choose several photos, then Add
+                    or Done. Tapping thumbnails without Select first usually uploads only one photo — that is how
+                    Apple’s photo picker works in Safari.
+                  </p>
                   <p className="text-xs text-muted-foreground/45">
                     At least {LISTING_MIN_PHOTOS} photo, max 12. Upload a few angles of your board — top, bottom,
                     rails, fins, whatever helps someone see what they&apos;re buying. The more you add, the less
