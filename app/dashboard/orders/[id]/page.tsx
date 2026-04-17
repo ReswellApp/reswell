@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -26,6 +27,19 @@ import {
 import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
+import { privatePageMetadata } from "@/lib/site-metadata"
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await props.params
+  return privatePageMetadata({
+    title: "Order details — Reswell",
+    description:
+      "Track delivery or pickup, view tracking, and manage resolutions for this surfboard purchase.",
+    path: `/dashboard/orders/${id}`,
+  })
+}
 
 type ShippingAddressJson = {
   name?: string | null

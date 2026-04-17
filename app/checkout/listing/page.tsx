@@ -1,4 +1,11 @@
 import { redirect } from "next/navigation"
+import { privatePageMetadata } from "@/lib/site-metadata"
+
+export const metadata = privatePageMetadata({
+  title: "Checkout — Reswell",
+  description: "Legacy checkout URL — forwarding to the current checkout experience.",
+  path: "/checkout/listing",
+})
 
 /** @deprecated Use `/checkout?listing=…` */
 export default async function LegacyPeerListingCheckoutRedirect(props: {

@@ -31,24 +31,16 @@ const caveat = Caveat({
   preload: true,
 })
 
+/**
+ * Site-wide defaults only. Every route should set its own title + description (via `pageSeoMetadata`
+ * or `generateMetadata`) so search snippets and link previews are not duplicated.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(publicSiteOrigin()),
-  title: 'Reswell — Buy & sell surfboards',
+  title: "Reswell",
   description:
-    'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
-  keywords: ['surfing', 'surfboard', 'marketplace', 'sell surfboard', 'buy surfboard'],
-  openGraph: {
-    title: 'Reswell — Buy & sell surfboards',
-    description:
-      'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Reswell — Buy & sell surfboards',
-    description:
-      'Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.',
-  },
+    "Buy and sell surfboards and surf gear on Reswell — listings from local surfers and shops.",
+  keywords: ["surfing", "surfboard", "marketplace", "sell surfboard", "buy surfboard"],
 }
 
 export const viewport: Viewport = {

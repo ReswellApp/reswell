@@ -25,7 +25,7 @@ export async function generateMetadata(props: {
     return await metadataForBoardsBrowse(flat as BoardsBrowseSearchParams)
   }
 
-  return { title: "Reswell" }
+  notFound()
 }
 
 export default async function MarketplaceSlugPage(props: {

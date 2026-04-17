@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -42,6 +43,19 @@ import {
   PayoutStatusBadge,
   TrackingInfo,
 } from "@/components/order-actions"
+import { privatePageMetadata } from "@/lib/site-metadata"
+
+export async function generateMetadata(props: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await props.params
+  return privatePageMetadata({
+    title: "Sale details — Reswell",
+    description:
+      "Manage shipping, tracking, and buyer communication for this surfboard sale on Reswell.",
+    path: `/dashboard/sales/${id}`,
+  })
+}
 
 type ShippingAddressJson = {
   name?: string | null

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -159,11 +159,26 @@ export default function EarningsPage() {
   const [paypalDisconnectOpen, setPaypalDisconnectOpen] = useState(false)
   const [paypalDisconnecting, setPaypalDisconnecting] = useState(false)
 
+  /**
+   * After a Stripe bank cash-out, `getEarningsWalletData()` can briefly return a stale balance
+   * (same-tab refetch / realtime racing the write). We keep authoritative numbers from the POST
+   * response and merge them into fetches until the server read matches or the window expires.
+   */
+  const stripeCashOutWalletTrustRef = useRef<{
+    balance: string
+    lifetime_cashed_out: string
+    expires: number
+  } | null>(null)
+
+  /** Prevents stale concurrent fetches (e.g. wallet realtime before `wallet_transactions` insert) from overwriting newer data. */
+  const fetchGenerationRef = useRef(0)
+
   const stripePayoutsEnabled =
     typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === "string" &&
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.trim().length > 0
 
   const fetchData = useCallback(async (opts?: { showRefreshIndicator?: boolean }) => {
+    const gen = ++fetchGenerationRef.current
     if (opts?.showRefreshIndicator) setRefreshing(true)
     try {
       const [earningsData, paypalRes, stripeStatusRes, stripePayoutsRes] = await Promise.all([
@@ -173,8 +188,28 @@ export default function EarningsPage() {
         fetch("/api/payouts/stripe", { cache: "no-store" }),
       ])
 
-      if (!earningsData.error) {
-        setWallet(earningsData.wallet)
+      if (gen !== fetchGenerationRef.current) return
+
+      if (!earningsData.error && earningsData.wallet) {
+        let nextWallet = earningsData.wallet as WalletData
+        const trust = stripeCashOutWalletTrustRef.current
+        if (trust && Date.now() < trust.expires) {
+          nextWallet = {
+            ...nextWallet,
+            balance: trust.balance,
+            lifetime_cashed_out: trust.lifetime_cashed_out,
+          }
+          const serverBal = parseFloat(String(earningsData.wallet.balance))
+          const trustBal = parseFloat(trust.balance)
+          if (
+            Number.isFinite(serverBal) &&
+            Number.isFinite(trustBal) &&
+            Math.abs(serverBal - trustBal) < 0.02
+          ) {
+            stripeCashOutWalletTrustRef.current = null
+          }
+        }
+        setWallet(nextWallet)
         setTransactions(earningsData.transactions as Transaction[])
       }
 
@@ -200,8 +235,10 @@ export default function EarningsPage() {
         setStripeTransferHistory([])
       }
     } finally {
-      setLoading(false)
-      setRefreshing(false)
+      if (gen === fetchGenerationRef.current) {
+        setLoading(false)
+        setRefreshing(false)
+      }
     }
   }, [])
 
@@ -220,17 +257,37 @@ export default function EarningsPage() {
     }
   }, [fetchData])
 
-  // Real-time wallet updates
+  // Real-time: wallet balance + ledger rows (cash-out inserts `wallet_transactions` after `wallets` updates)
   useEffect(() => {
+    if (!wallet?.id) return
     const supabase = createClient()
+    const wid = wallet.id
     const channel = supabase
-      .channel("earnings_wallet")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "wallets" }, () => {
-        fetchData()
-      })
+      .channel(`earnings_wallet_${wid}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "wallets", filter: `id=eq.${wid}` },
+        () => {
+          void fetchData()
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "wallet_transactions",
+          filter: `wallet_id=eq.${wid}`,
+        },
+        () => {
+          void fetchData()
+        },
+      )
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [fetchData])
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [wallet?.id, fetchData])
 
   const walletBalance = wallet ? parseFloat(wallet.balance) : 0
   const lifetimeEarned = wallet ? parseFloat(wallet.lifetime_earned) : 0
@@ -257,6 +314,24 @@ export default function EarningsPage() {
   )
 
   const paypalConnected = Boolean(paypalPayerId || paypalEmail)
+
+  const handleStripeBankCashOutSettled = useCallback(
+    (detail: {
+      amountUsd: number
+      availableBalanceAfter: number
+      lifetimeCashedOutAfter: number
+    }) => {
+      const balance = detail.availableBalanceAfter.toFixed(2)
+      const lifetime_cashed_out = detail.lifetimeCashedOutAfter.toFixed(2)
+      stripeCashOutWalletTrustRef.current = {
+        balance,
+        lifetime_cashed_out,
+        expires: Date.now() + 45_000,
+      }
+      setWallet((w) => (w ? { ...w, balance, lifetime_cashed_out } : w))
+    },
+    [],
+  )
 
   const confirmDisconnectPayPal = useCallback(async () => {
     setPaypalDisconnecting(true)
@@ -370,6 +445,7 @@ export default function EarningsPage() {
           connectStatus={stripeConnectStatus}
           transferHistory={stripeTransferHistory}
           onRefresh={fetchData}
+          onCashOutSettled={handleStripeBankCashOutSettled}
         />
       )}
 

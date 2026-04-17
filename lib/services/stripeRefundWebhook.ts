@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import { relistAfterRefund } from "@/lib/services/listingRelist"
+import { splitSellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -166,14 +167,6 @@ export async function syncMarketplaceOrderFromStripePaymentIntent(
     return { ok: false, reason: "order_not_found" }
   }
 
-  // Snapshot payout status before sync mutations change it
-  const { data: payoutRow } = await supabase
-    .from("payouts")
-    .select("status")
-    .eq("order_id", order.id)
-    .maybeSingle()
-  const earningsReleasedToAvailable = payoutRow?.status === "pending"
-
   const fullyRefunded = await syncOrderAndPayoutsFromStripeRefundState(
     supabase,
     { id: order.id, seller_earnings: order.seller_earnings },
@@ -192,7 +185,6 @@ export async function syncMarketplaceOrderFromStripePaymentIntent(
       piAmountCents: pi.amount,
       orderTotalUsd: Number(order.amount),
       succeededRefunds: refundsList.data.filter((r) => r.status === "succeeded"),
-      earningsReleasedToAvailable,
     })
   }
 
@@ -217,7 +209,6 @@ async function reconcileWalletForMissingRefunds(
     piAmountCents: number
     orderTotalUsd: number
     succeededRefunds: Stripe.Refund[]
-    earningsReleasedToAvailable: boolean
   },
 ): Promise<void> {
   if (opts.succeededRefunds.length === 0) return
@@ -270,82 +261,57 @@ async function reconcileWalletForMissingRefunds(
         ? `partial refund $${refundUsd.toFixed(2)} of $${opts.orderTotalUsd.toFixed(2)} card total`
         : `full refund $${refundUsd.toFixed(2)} (card total $${opts.orderTotalUsd.toFixed(2)})`
 
-    if (opts.earningsReleasedToAvailable) {
-      const newBalance = roundMoney(Math.max(0, curBalance - clawbackUsd))
-      const newEarned = roundMoney(Math.max(0, curEarned - clawbackUsd))
+    const split = splitSellerRefundClawback(clawbackUsd, curPending, curBalance)
+    if (split.totalClawed <= 0) continue
 
-      const { error: txErr } = await supabase.from("wallet_transactions").insert({
-        wallet_id: wallet.id,
-        user_id: opts.sellerId,
-        type: "refund",
-        amount: -clawbackUsd,
-        balance_after: newBalance.toFixed(2),
-        description: `Refund — "${title}" (${partialNote}, card; Stripe ${refund.id})`,
-        status: "completed",
-        reference_id: refund.id,
-        reference_type: "stripe_refund",
-      })
+    const bucketNote =
+      split.clawFromPending > 0 && split.clawFromBalance > 0
+        ? `pending $${split.clawFromPending.toFixed(2)}; available $${split.clawFromBalance.toFixed(2)}`
+        : split.clawFromPending > 0
+          ? "pending earnings"
+          : "available balance"
 
-      if (txErr) {
-        if ((txErr as { code?: string }).code === "23505") continue
-        console.error("[sync refund] wallet tx insert", txErr)
-        continue
-      }
-      curBalance = newBalance
-      curEarned = newEarned
-    } else {
-      const clawFromPending = roundMoney(Math.min(clawbackUsd, Math.max(0, curPending)))
-      const newPending = roundMoney(Math.max(0, curPending - clawFromPending))
-      const newEarned = roundMoney(Math.max(0, curEarned - clawFromPending))
+    const newEarned = roundMoney(
+      Math.max(0, curEarned - split.clawFromPending - split.clawFromBalance),
+    )
 
-      const { error: txErr } = await supabase.from("wallet_transactions").insert({
-        wallet_id: wallet.id,
-        user_id: opts.sellerId,
-        type: "refund",
-        amount: -clawFromPending,
-        balance_after: roundMoney(curBalance).toFixed(2),
-        description: `Refund — "${title}" (${partialNote}; pending earnings; Stripe ${refund.id})`,
-        status: "completed",
-        reference_id: refund.id,
-        reference_type: "stripe_refund",
-      })
+    const { error: txErr } = await supabase.from("wallet_transactions").insert({
+      wallet_id: wallet.id,
+      user_id: opts.sellerId,
+      type: "refund",
+      amount: -split.totalClawed,
+      balance_after: split.newBalance.toFixed(2),
+      description: `Refund — "${title}" (${partialNote}; ${bucketNote}; Stripe ${refund.id})`,
+      status: "completed",
+      reference_id: refund.id,
+      reference_type: "stripe_refund",
+    })
 
-      if (txErr) {
-        if ((txErr as { code?: string }).code === "23505") continue
-        console.error("[sync refund] wallet tx insert (pending)", txErr)
-        continue
-      }
-      curPending = newPending
-      curEarned = newEarned
+    if (txErr) {
+      if ((txErr as { code?: string }).code === "23505") continue
+      console.error("[sync refund] wallet tx insert", txErr)
+      continue
     }
+    curPending = split.newPending
+    curBalance = split.newBalance
+    curEarned = newEarned
   }
 
-  if (opts.earningsReleasedToAvailable) {
-    await supabase
-      .from("wallets")
-      .update({
-        balance: curBalance.toFixed(2),
-        lifetime_earned: curEarned.toFixed(2),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-  } else {
-    await supabase
-      .from("wallets")
-      .update({
-        pending_balance: curPending.toFixed(2),
-        lifetime_earned: curEarned.toFixed(2),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-  }
+  await supabase
+    .from("wallets")
+    .update({
+      balance: curBalance.toFixed(2),
+      pending_balance: curPending.toFixed(2),
+      lifetime_earned: curEarned.toFixed(2),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", wallet.id)
 }
 
 /**
- * When Stripe refunds a card payment, reverse the seller's proportional share in the wallet **only if**
- * those earnings were already credited after fulfillment (`payouts.status = pending`). If the payout was
- * still `held`, the seller never received wallet funds — we record the refund for idempotency and update
- * orders/payouts only. Idempotent per Stripe refund id (`re_…`).
+ * When Stripe refunds a card payment, reverse the seller's proportional share from `pending_balance`
+ * first, then spendable `balance` (same allocation as admin-initiated refunds). Idempotent per Stripe
+ * refund id (`re_…`).
  */
 export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promise<void> {
   if (refund.status !== "succeeded") {
@@ -401,15 +367,6 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     }
     return
   }
-
-  const { data: payoutRow } = await supabase
-    .from("payouts")
-    .select("status")
-    .eq("order_id", order.id)
-    .maybeSingle()
-
-  /** After fulfillment, payout is `pending` and seller share sits in spendable `balance`. Before that, it is in `pending_balance`. */
-  const earningsReleasedToSellerWallet = payoutRow?.status === "pending"
 
   const sellerEarnings = Number(order.seller_earnings)
   if (!Number.isFinite(sellerEarnings) || sellerEarnings <= 0) {
@@ -475,91 +432,63 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
       ? `partial refund $${refundUsd.toFixed(2)} of $${orderTotalUsd.toFixed(2)} card total`
       : `full refund $${refundUsd.toFixed(2)} (card total $${orderTotalUsd.toFixed(2)})`
 
-  if (earningsReleasedToSellerWallet) {
-    const newBalance = roundMoney(prevBalance - clawbackUsd)
-    const newLifetimeEarned = roundMoney(prevEarned - clawbackUsd)
+  const split = splitSellerRefundClawback(clawbackUsd, prevPending, prevBalance)
+  if (split.totalClawed <= 0) {
+    if (wasFullRefund) {
+      await relistAfterRefund(supabase, order.listing_id)
+    }
+    return
+  }
 
-    const { error: txErr } = await supabase.from("wallet_transactions").insert({
-      wallet_id: wallet.id,
-      user_id: order.seller_id,
-      type: "refund",
-      amount: -clawbackUsd,
-      balance_after: newBalance.toFixed(2),
-      description: `Refund — "${title}" (${partialNote}, card; Stripe ${refund.id})`,
-      status: "completed",
-      reference_id: refund.id,
-      reference_type: "stripe_refund",
+  const bucketNote =
+    split.clawFromPending > 0 && split.clawFromBalance > 0
+      ? `pending $${split.clawFromPending.toFixed(2)}; available $${split.clawFromBalance.toFixed(2)}`
+      : split.clawFromPending > 0
+        ? "pending earnings"
+        : "available balance"
+
+  const newLifetimeEarned = roundMoney(
+    Math.max(0, prevEarned - split.clawFromPending - split.clawFromBalance),
+  )
+
+  const { error: txErr } = await supabase.from("wallet_transactions").insert({
+    wallet_id: wallet.id,
+    user_id: order.seller_id,
+    type: "refund",
+    amount: -split.totalClawed,
+    balance_after: split.newBalance.toFixed(2),
+    description: `Refund — "${title}" (${partialNote}; ${bucketNote}; Stripe ${refund.id})`,
+    status: "completed",
+    reference_id: refund.id,
+    reference_type: "stripe_refund",
+  })
+
+  if (txErr) {
+    if (isUniqueViolation(txErr)) {
+      return
+    }
+    console.error("[stripe refund webhook] wallet_transactions insert", txErr)
+    return
+  }
+
+  const { error: walletErr } = await supabase
+    .from("wallets")
+    .update({
+      balance: split.newBalance.toFixed(2),
+      pending_balance: split.newPending.toFixed(2),
+      lifetime_earned: newLifetimeEarned.toFixed(2),
+      updated_at: new Date().toISOString(),
     })
+    .eq("id", wallet.id)
 
-    if (txErr) {
-      if (isUniqueViolation(txErr)) {
-        return
-      }
-      console.error("[stripe refund webhook] wallet_transactions insert", txErr)
-      return
-    }
-
-    const { error: walletErr } = await supabase
-      .from("wallets")
-      .update({
-        balance: newBalance.toFixed(2),
-        lifetime_earned: newLifetimeEarned.toFixed(2),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-
-    if (walletErr) {
-      console.error("[stripe refund webhook] wallet update", walletErr)
-      await supabase
-        .from("wallet_transactions")
-        .delete()
-        .eq("reference_type", "stripe_refund")
-        .eq("reference_id", refund.id)
-      return
-    }
-  } else {
-    const clawFromPending = roundMoney(Math.min(clawbackUsd, Math.max(0, prevPending)))
-    const newPending = roundMoney(Math.max(0, prevPending - clawFromPending))
-    const newLifetimeEarned = roundMoney(prevEarned - clawFromPending)
-
-    const { error: txErr } = await supabase.from("wallet_transactions").insert({
-      wallet_id: wallet.id,
-      user_id: order.seller_id,
-      type: "refund",
-      amount: -clawFromPending,
-      balance_after: roundMoney(prevBalance).toFixed(2),
-      description: `Refund — "${title}" (${partialNote}; pending earnings; Stripe ${refund.id})`,
-      status: "completed",
-      reference_id: refund.id,
-      reference_type: "stripe_refund",
-    })
-
-    if (txErr) {
-      if (isUniqueViolation(txErr)) {
-        return
-      }
-      console.error("[stripe refund webhook] wallet_transactions insert (pending bucket)", txErr)
-      return
-    }
-
-    const { error: walletErr } = await supabase
-      .from("wallets")
-      .update({
-        pending_balance: newPending.toFixed(2),
-        lifetime_earned: newLifetimeEarned.toFixed(2),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-
-    if (walletErr) {
-      console.error("[stripe refund webhook] wallet update (pending refund)", walletErr)
-      await supabase
-        .from("wallet_transactions")
-        .delete()
-        .eq("reference_type", "stripe_refund")
-        .eq("reference_id", refund.id)
-      return
-    }
+  if (walletErr) {
+    console.error("[stripe refund webhook] wallet update", walletErr)
+    await supabase
+      .from("wallet_transactions")
+      .delete()
+      .eq("reference_type", "stripe_refund")
+      .eq("reference_id", refund.id)
+    return
   }
 
   if (wasFullRefund) {

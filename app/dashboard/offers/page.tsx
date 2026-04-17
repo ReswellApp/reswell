@@ -1,10 +1,17 @@
 import { redirect } from "next/navigation"
+import { privatePageMetadata } from "@/lib/site-metadata"
 import { DashboardOffersView } from "@/components/features/offers/dashboard-offers-view"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import {
   fetchOffersMadeForDashboard,
   fetchOffersReceivedForDashboard,
 } from "@/lib/db/offers-dashboard"
+
+export const metadata = privatePageMetadata({
+  title: "Offers — Reswell",
+  description: "Review offers you made and offers buyers sent on your surfboard listings.",
+  path: "/dashboard/offers",
+})
 
 export default async function DashboardOffersPage({
   searchParams,

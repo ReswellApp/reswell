@@ -1,4 +1,11 @@
 import { redirect } from "next/navigation"
+import { privatePageMetadata } from "@/lib/site-metadata"
+
+export const metadata = privatePageMetadata({
+  title: "Seller payouts — Reswell",
+  description: "Stripe Connect return — opening payout and bank settings in your dashboard.",
+  path: "/seller/payouts",
+})
 
 /** Stripe Connect return URLs use /seller/payouts; dashboard lives at /dashboard/payouts. */
 export default async function SellerPayoutsRedirect(props: {

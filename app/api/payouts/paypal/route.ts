@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getPayPalHttpClient, paypalSdk } from "@/lib/paypal"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 
@@ -8,6 +9,18 @@ export const dynamic = "force-dynamic"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
+}
+
+function getClientForPrivilegedWalletWrites(sessionClient: SupabaseClient) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return sessionClient
+  }
+  try {
+    return createServiceRoleClient()
+  } catch (e) {
+    console.error("[paypal payout] createServiceRoleClient failed; using session client", e)
+    return sessionClient
+  }
 }
 
 export async function GET() {
@@ -123,7 +136,8 @@ export async function POST(req: Request) {
     const agg = reconcileWalletAggregates(wallet)
     if (agg.needsPersist) {
       const s = walletAggregateStrings(agg)
-      await supabase
+      const writeDb = getClientForPrivilegedWalletWrites(supabase)
+      await writeDb
         .from("wallets")
         .update({
           balance: s.balance,
@@ -132,6 +146,7 @@ export async function POST(req: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", wallet.id)
+        .eq("user_id", user.id)
       wallet = {
         ...wallet,
         balance: s.balance,
@@ -203,24 +218,34 @@ export async function POST(req: Request) {
     }
 
     const newBalance = roundMoney(available - amountUsd)
+    const lifetimeCashedOutAfter = roundMoney(
+      parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd,
+    )
 
-    const { error: walletErr } = await supabase
+    const writeDb = getClientForPrivilegedWalletWrites(supabase)
+    const { error: walletErr } = await writeDb
       .from("wallets")
       .update({
         balance: newBalance,
-        lifetime_cashed_out: roundMoney(
-          parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd,
-        ),
+        lifetime_cashed_out: lifetimeCashedOutAfter,
         updated_at: new Date().toISOString(),
       })
       .eq("id", wallet.id)
+      .eq("user_id", user.id)
 
     if (walletErr) {
       console.error("[paypal payout] Balance update error after PayPal send:", walletErr)
+      return NextResponse.json(
+        {
+          error:
+            "PayPal may have received this payout, but we could not update your Reswell balance. Contact support before trying again.",
+        },
+        { status: 500 },
+      )
     }
 
     if (payoutRow) {
-      await supabase.from("wallet_transactions").insert({
+      await writeDb.from("wallet_transactions").insert({
         wallet_id: wallet.id,
         user_id: user.id,
         type: "cashout",

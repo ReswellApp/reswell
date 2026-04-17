@@ -1,4 +1,5 @@
 import { permanentRedirect } from "next/navigation"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 import { SearchPageView } from "./search-page-view"
 
 interface SearchParams {
@@ -9,6 +10,12 @@ interface SearchParams {
 
 /** Search uses query params + auth; must not be statically prerendered. */
 export const dynamic = "force-dynamic"
+
+export const metadata = pageSeoMetadata({
+  title: "Search — Reswell",
+  description: "Search surfboards and gear — empty searches redirect to recent marketplace results.",
+  path: "/search",
+})
 
 export default async function SearchPage(props: {
   searchParams: Promise<SearchParams>

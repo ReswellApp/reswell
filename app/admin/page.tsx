@@ -1,3 +1,4 @@
+import { privatePageMetadata } from '@/lib/site-metadata'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
@@ -8,6 +9,12 @@ import {
   Coins,
 } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
+
+export const metadata = privatePageMetadata({
+  title: 'Admin overview — Reswell',
+  description: 'Internal dashboard for marketplace health, orders, and operations.',
+  path: '/admin',
+})
 
 export default async function AdminDashboard() {
   const supabase = await createClient()

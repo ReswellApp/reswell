@@ -11,6 +11,7 @@ import {
   updateStripeConnectAccountByStripeId,
 } from "@/lib/db/stripeConnect"
 import { getStripe } from "@/lib/stripe-server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { toUsStateCode } from "@/lib/utils/us-state-code"
@@ -19,6 +20,23 @@ import {
   netUsdAfterInstantBankFee,
   roundMoney,
 } from "@/lib/utils/stripe-connect-cashout"
+
+/**
+ * Wallet debits must bypass RLS: seller session clients often cannot UPDATE `wallets` / INSERT
+ * ledger rows even for `auth.uid() = user_id` (policies vary by project). Service role is
+ * server-only and scoped by `user_id` / `wallet.id` in the query.
+ */
+function getClientForPrivilegedWalletWrites(sessionClient: SupabaseClient): SupabaseClient {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return sessionClient
+  }
+  try {
+    return createServiceRoleClient()
+  } catch (e) {
+    console.error("[stripe connect] createServiceRoleClient failed; using session client", e)
+    return sessionClient
+  }
+}
 
 /** Satisfies Stripe’s business-profile checks for marketplace sellers without a personal website. */
 const MARKETPLACE_PRODUCT_DESCRIPTION =
@@ -438,6 +456,9 @@ export type ConnectCashOutResult =
       speed: "standard" | "instant"
       stripePayoutId: string | null
       message: string
+      /** Spendable wallet balance after this cash-out (authoritative for UI). */
+      availableBalanceAfter: number
+      lifetimeCashedOutAfter: number
     }
   | { ok: false; error: string; errorDetail?: string; status?: number }
 
@@ -489,7 +510,8 @@ export async function cashOutToStripeConnectedAccount(
   const agg = reconcileWalletAggregates(wallet)
   if (agg.needsPersist) {
     const s = walletAggregateStrings(agg)
-    await supabase
+    const writeDb = getClientForPrivilegedWalletWrites(supabase)
+    await writeDb
       .from("wallets")
       .update({
         balance: s.balance,
@@ -498,6 +520,7 @@ export async function cashOutToStripeConnectedAccount(
         updated_at: new Date().toISOString(),
       })
       .eq("id", wallet.id)
+      .eq("user_id", userId)
     wallet = {
       ...wallet,
       balance: s.balance,
@@ -662,17 +685,34 @@ export async function cashOutToStripeConnectedAccount(
   }
 
   const newBalance = roundMoney(available - amountUsd)
-  const { error: walletErr } = await supabase
+  const lifetimeCashedOutAfter = roundMoney(
+    parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd,
+  )
+
+  const writeDb = getClientForPrivilegedWalletWrites(supabase)
+  const { error: walletErr } = await writeDb
     .from("wallets")
     .update({
       balance: newBalance,
-      lifetime_cashed_out: roundMoney(parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd),
+      lifetime_cashed_out: lifetimeCashedOutAfter,
       updated_at: new Date().toISOString(),
     })
     .eq("id", wallet.id)
+    .eq("user_id", userId)
 
   if (walletErr) {
-    console.error("[stripe connect] wallet update after transfer", walletErr)
+    console.error("[stripe connect] wallet update after transfer (privileged client)", walletErr, {
+      userId,
+      walletId: wallet.id,
+      amountUsd,
+      stripeTransferId: transfer.id,
+    })
+    return {
+      ok: false,
+      error:
+        "Your payout may have been sent, but we could not update your Reswell balance. Please contact support before cashing out again.",
+      status: 500,
+    }
   }
 
   const feeLabel = `fee: $${feeUsd.toFixed(2)}`
@@ -681,7 +721,7 @@ export async function cashOutToStripeConnectedAccount(
       ? `instant payout: ${stripePayoutId}`
       : `transfer: ${transfer.id}`
 
-  const { error: txErr } = await supabase.from("wallet_transactions").insert({
+  const { error: txErr } = await writeDb.from("wallet_transactions").insert({
     wallet_id: wallet.id,
     user_id: userId,
     type: "cashout",
@@ -694,7 +734,11 @@ export async function cashOutToStripeConnectedAccount(
   })
 
   if (txErr) {
-    console.error("[stripe connect] wallet_transactions insert", txErr)
+    console.error("[stripe connect] wallet_transactions insert after transfer", txErr, {
+      userId,
+      walletId: wallet.id,
+      transferRowId,
+    })
   }
 
   const netToBankUsd = roundMoney(netTransferUsd)
@@ -708,6 +752,8 @@ export async function cashOutToStripeConnectedAccount(
       netToBankUsd,
       speed,
       stripePayoutId,
+      availableBalanceAfter: newBalance,
+      lifetimeCashedOutAfter,
       message: `Instant payout started — up to $${netToBankUsd.toFixed(2)} is heading to your bank (typically within minutes; timing depends on your bank).`,
     }
   }
@@ -720,6 +766,8 @@ export async function cashOutToStripeConnectedAccount(
     netToBankUsd: amountUsd,
     speed,
     stripePayoutId: null,
+    availableBalanceAfter: newBalance,
+    lifetimeCashedOutAfter,
     message: `Sent $${amountUsd.toFixed(2)} to your Stripe balance — your bank will receive it on Stripe’s payout schedule (typically 2–3 business days).`,
   }
 }

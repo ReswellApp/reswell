@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +17,12 @@ import {
 } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
+
+export const metadata = privatePageMetadata({
+  title: "Sales — Reswell",
+  description: "Orders you are fulfilling as a seller: ship, add tracking, and confirm pickup on Reswell.",
+  path: "/dashboard/sales",
+})
 
 type ShippingAddressJson = {
   name?: string | null

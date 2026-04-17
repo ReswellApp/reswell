@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,13 @@ import {
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
+
+export const metadata = privatePageMetadata({
+  title: "Dashboard — Reswell",
+  description:
+    "Your Reswell home: listings, orders, wallet, offers, and messages — manage your surf marketplace activity.",
+  path: "/dashboard",
+})
 
 export default async function DashboardPage() {
   const { supabase, user } = await getCachedDashboardSession()

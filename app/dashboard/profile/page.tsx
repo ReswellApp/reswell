@@ -3,10 +3,13 @@ import { DashboardProfileSettings } from "@/components/features/dashboard/dashbo
 import { FollowersDashboardPanels } from "@/components/features/dashboard/followers-dashboard-panels"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { privatePageMetadata } from "@/lib/site-metadata"
 
-export const metadata = {
-  title: "Profile — Dashboard",
-}
+export const metadata = privatePageMetadata({
+  title: "Profile — Reswell",
+  description: "Update your display name, bio, location, and follower settings for your Reswell account.",
+  path: "/dashboard/profile",
+})
 
 function FollowersEmbedFallback() {
   return (

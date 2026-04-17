@@ -43,7 +43,11 @@ export function EndListingButton({ listingId }: EndListingButtonProps) {
         return
       }
 
-      toast.success("Listing archived for 30 days")
+      if (result.message) {
+        toast.success(result.message)
+      } else {
+        toast.success("Listing archived for 30 days")
+      }
       router.push("/dashboard/listings/archived")
     } finally {
       setLoading(false)
@@ -74,8 +78,10 @@ export function EndListingButton({ listingId }: EndListingButtonProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>End listing</AlertDialogTitle>
             <AlertDialogDescription>
-              Archive keeps your listing for 30 days in Archived listings; after that, it can’t be
-              recovered. Delete removes it permanently right away. Choose an option:
+              Archive removes your listing from the public site and keeps it under Archived listings
+              for 30 days. Delete removes the database record immediately when allowed; if the
+              listing is linked to an order or payment, we will archive it instead so it stays off
+              the live site. Choose an option:
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2 py-2">

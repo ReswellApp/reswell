@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
@@ -15,6 +16,21 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { privatePageMetadata } from "@/lib/site-metadata"
+
+export async function generateMetadata(props: {
+  searchParams: Promise<{ listing?: string }>
+}): Promise<Metadata> {
+  const { listing } = await props.searchParams
+  const id = listing?.trim()
+  const path = id ? `/checkout?listing=${encodeURIComponent(id)}` : "/checkout"
+  return privatePageMetadata({
+    title: "Checkout — Reswell",
+    description:
+      "Confirm shipping or local pickup, review totals, and complete your surfboard purchase on Reswell.",
+    path,
+  })
+}
 
 function listingCheckoutLoginRedirect(listingParam: string) {
   const params = new URLSearchParams()

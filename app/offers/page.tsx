@@ -1,4 +1,11 @@
 import { redirect } from "next/navigation"
+import { privatePageMetadata } from "@/lib/site-metadata"
+
+export const metadata = privatePageMetadata({
+  title: "Offers — Reswell",
+  description: "Offer management has moved to your dashboard — redirecting you to the new page.",
+  path: "/offers",
+})
 
 /**
  * Canonical offers UI lives at /dashboard/offers.

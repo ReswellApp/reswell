@@ -1,9 +1,11 @@
 "use server"
 
+import { unstable_noStore as noStore } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 
 export async function getEarningsWalletData() {
+  noStore()
   const supabase = await createClient()
   const {
     data: { user },

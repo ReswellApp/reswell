@@ -16,9 +16,50 @@ type ListingEndRow = {
 }
 
 export type EndSellerListingResult =
-  | { ok: true; mode: "archive" }
+  | { ok: true; mode: "archive"; message?: string }
   | { ok: true; mode: "delete" }
   | { ok: false; status: number; error: string }
+
+const ORDER_HISTORY_DELETE_FALLBACK_MESSAGE =
+  "Because this listing is linked to an order or payment, it could not be permanently deleted. We removed it from the public site and moved it to your archived listings."
+
+async function applySellerArchive(
+  supabase: SupabaseClient,
+  row: ListingEndRow,
+  listingId: string,
+  sellerUserId: string,
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  if (row.archived_at) {
+    return { ok: false, status: 400, error: "Listing is already archived" }
+  }
+  if (row.status === "draft") {
+    return {
+      ok: false,
+      status: 400,
+      error: "Discard drafts from the dashboard instead.",
+    }
+  }
+
+  const nextStatus = row.status === "sold" ? "sold" : "removed"
+
+  const { error } = await supabase
+    .from("listings")
+    .update({
+      status: nextStatus,
+      archived_at: new Date().toISOString(),
+      hidden_from_site: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", listingId)
+    .eq("user_id", sellerUserId)
+    .is("archived_at", null)
+
+  if (error) {
+    return { ok: false, status: 500, error: "Failed to archive listing" }
+  }
+
+  return { ok: true }
+}
 
 async function loadListingForEnd(
   supabase: SupabaseClient,
@@ -52,32 +93,9 @@ export async function endSellerListing(
   }
 
   if (mode === "archive") {
-    if (row.archived_at) {
-      return { ok: false, status: 400, error: "Listing is already archived" }
-    }
-    if (row.status === "draft") {
-      return {
-        ok: false,
-        status: 400,
-        error: "Discard drafts from the dashboard instead.",
-      }
-    }
-
-    const nextStatus = row.status === "sold" ? "sold" : "removed"
-
-    const { error } = await supabase
-      .from("listings")
-      .update({
-        status: nextStatus,
-        archived_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", listingId)
-      .eq("user_id", sellerUserId)
-      .is("archived_at", null)
-
-    if (error) {
-      return { ok: false, status: 500, error: "Failed to archive listing" }
+    const applied = await applySellerArchive(supabase, row, listingId, sellerUserId)
+    if (!applied.ok) {
+      return applied
     }
 
     try {
@@ -99,11 +117,19 @@ export async function endSellerListing(
 
   if (error) {
     if (error.code === "23503") {
+      const applied = await applySellerArchive(supabase, row, listingId, sellerUserId)
+      if (!applied.ok) {
+        return applied
+      }
+      try {
+        await syncListingToIndex(supabase, listingId)
+      } catch {
+        // ES optional
+      }
       return {
-        ok: false,
-        status: 409,
-        error:
-          "This listing cannot be deleted because it is linked to an order or payment. Contact support if you need help.",
+        ok: true,
+        mode: "archive",
+        message: ORDER_HISTORY_DELETE_FALLBACK_MESSAGE,
       }
     }
     return { ok: false, status: 500, error: "Failed to delete listing" }

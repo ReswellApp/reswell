@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { relistAfterRefund } from "@/lib/services/listingRelist"
+import { splitSellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -40,16 +41,6 @@ export async function applyWalletOrderRefund(
     return { ok: false, error: "Order is already refunded", status: 409 }
   }
 
-  // Snapshot before mutating payouts: cancel sets status to `cancelled`, which must not be confused
-  // with `pending` (seller earnings already moved to spendable balance after fulfillment).
-  const { data: payoutBefore } = await supabase
-    .from("payouts")
-    .select("status")
-    .eq("order_id", order.id)
-    .maybeSingle()
-
-  const earningsReleasedToAvailable = payoutBefore?.status === "pending"
-
   // --- 1. Mark order refunded ---
   const { error: orderErr } = await supabase
     .from("orders")
@@ -74,13 +65,7 @@ export async function applyWalletOrderRefund(
 
   // --- 3. Claw back seller earnings ---
   if (sellerEarnings > 0) {
-    await clawbackSellerEarnings(
-      supabase,
-      order,
-      sellerEarnings,
-      nowIso,
-      earningsReleasedToAvailable,
-    )
+    await clawbackSellerEarnings(supabase, order, sellerEarnings, nowIso)
   }
 
   // --- 4. Credit buyer ---
@@ -99,7 +84,6 @@ async function clawbackSellerEarnings(
   order: WalletOrderRow,
   clawbackUsd: number,
   nowIso: string,
-  earningsReleasedToAvailable: boolean,
 ): Promise<void> {
   let { data: wallet } = await supabase
     .from("wallets")
@@ -127,73 +111,49 @@ async function clawbackSellerEarnings(
   const title = typeof listing?.title === "string" ? listing.title : "Listing"
   const desc = `Refund — "${title}" (full refund $${clawbackUsd.toFixed(2)}, Reswell Bucks; order ${order.id.slice(0, 8)})`
 
-  if (earningsReleasedToAvailable) {
-    const newBalance = roundMoney(Math.max(0, prevBalance - clawbackUsd))
-    const newEarned = roundMoney(Math.max(0, prevEarned - clawbackUsd))
+  const split = splitSellerRefundClawback(clawbackUsd, prevPending, prevBalance)
+  if (split.totalClawed <= 0) {
+    return
+  }
 
-    const { error: txErr } = await supabase.from("wallet_transactions").insert({
-      wallet_id: wallet.id,
-      user_id: order.seller_id,
-      type: "refund",
-      amount: -clawbackUsd,
-      balance_after: newBalance.toFixed(2),
-      description: desc,
-      status: "completed",
-      reference_id: order.id,
-      reference_type: "wallet_refund",
+  const suffix =
+    split.clawFromPending > 0 && split.clawFromBalance > 0
+      ? ` (pending $${split.clawFromPending.toFixed(2)}; available $${split.clawFromBalance.toFixed(2)})`
+      : split.clawFromPending > 0
+        ? " (pending earnings)"
+        : ""
+
+  const newEarned = roundMoney(Math.max(0, prevEarned - split.clawFromPending - split.clawFromBalance))
+
+  const { error: txErr } = await supabase.from("wallet_transactions").insert({
+    wallet_id: wallet.id,
+    user_id: order.seller_id,
+    type: "refund",
+    amount: -split.totalClawed,
+    balance_after: split.newBalance.toFixed(2),
+    description: `${desc}${suffix}`,
+    status: "completed",
+    reference_id: order.id,
+    reference_type: "wallet_refund",
+  })
+
+  if (txErr) {
+    console.error("[wallet refund] seller tx insert", txErr)
+    return
+  }
+
+  const { error: walletErr } = await supabase
+    .from("wallets")
+    .update({
+      balance: split.newBalance.toFixed(2),
+      pending_balance: split.newPending.toFixed(2),
+      lifetime_earned: newEarned.toFixed(2),
+      updated_at: nowIso,
     })
+    .eq("id", wallet.id)
 
-    if (txErr) {
-      console.error("[wallet refund] seller tx insert", txErr)
-      return
-    }
-
-    const { error: walletErr } = await supabase
-      .from("wallets")
-      .update({
-        balance: newBalance.toFixed(2),
-        lifetime_earned: newEarned.toFixed(2),
-        updated_at: nowIso,
-      })
-      .eq("id", wallet.id)
-
-    if (walletErr) {
-      console.error("[wallet refund] seller wallet update", walletErr)
-    }
-  } else {
-    const clawFromPending = roundMoney(Math.min(clawbackUsd, Math.max(0, prevPending)))
-    const newPending = roundMoney(Math.max(0, prevPending - clawFromPending))
-    const newEarned = roundMoney(Math.max(0, prevEarned - clawFromPending))
-
-    const { error: txErr } = await supabase.from("wallet_transactions").insert({
-      wallet_id: wallet.id,
-      user_id: order.seller_id,
-      type: "refund",
-      amount: -clawFromPending,
-      balance_after: roundMoney(prevBalance).toFixed(2),
-      description: `${desc} (pending earnings)`,
-      status: "completed",
-      reference_id: order.id,
-      reference_type: "wallet_refund",
-    })
-
-    if (txErr) {
-      console.error("[wallet refund] seller pending tx insert", txErr)
-      return
-    }
-
-    const { error: walletErr } = await supabase
-      .from("wallets")
-      .update({
-        pending_balance: newPending.toFixed(2),
-        lifetime_earned: newEarned.toFixed(2),
-        updated_at: nowIso,
-      })
-      .eq("id", wallet.id)
-
-    if (walletErr) {
-      console.error("[wallet refund] seller wallet pending update", walletErr)
-    }
+  if (walletErr) {
+    console.error("[wallet refund] seller wallet update", walletErr)
   }
 }
 

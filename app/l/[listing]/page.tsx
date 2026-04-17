@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
+import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import { findListingByParam } from "@/lib/listing-query"
 import {
@@ -28,12 +29,20 @@ export async function generateMetadata(props: {
     listing = live.listing
   }
   if (!listing) {
-    return { title: "Listing — Reswell" }
+    return privatePageMetadata({
+      title: "Listing — Reswell",
+      description: "This surfboard listing is unavailable or no longer on Reswell.",
+      path: `/l/${listingParam}`,
+    })
   }
   if (listing.hidden_from_site) {
     const supabase = await createClient()
     if (!(await canViewHiddenListing(supabase, listing))) {
-      return { title: "Listing — Reswell", robots: { index: false, follow: false } }
+      return privatePageMetadata({
+        title: "Listing — Reswell",
+        description: "This listing is hidden from the public marketplace.",
+        path: `/l/${listingParam}`,
+      })
     }
   }
   if (listing.section === "new") {

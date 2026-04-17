@@ -3,7 +3,10 @@ export type EndListingMode = "archive" | "delete"
 export async function postEndListing(
   listingId: string,
   mode: EndListingMode,
-): Promise<{ ok: true; mode: EndListingMode } | { ok: false; error: string; status: number }> {
+): Promise<
+  | { ok: true; mode: EndListingMode; message?: string }
+  | { ok: false; error: string; status: number }
+> {
   const res = await fetch(`/api/listings/${listingId}/end`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -13,17 +16,21 @@ export async function postEndListing(
 
   if (res.ok) {
     const json: unknown = await res.json().catch(() => null)
-    const m =
+    const data =
       json &&
       typeof json === "object" &&
       "data" in json &&
       json.data &&
-      typeof json.data === "object" &&
-      "mode" in json.data &&
-      (json.data.mode === "archive" || json.data.mode === "delete")
-        ? json.data.mode
+      typeof json.data === "object"
+        ? (json.data as Record<string, unknown>)
+        : null
+    const m =
+      data && (data.mode === "archive" || data.mode === "delete")
+        ? data.mode
         : mode
-    return { ok: true, mode: m }
+    const message =
+      data && typeof data.message === "string" ? data.message : undefined
+    return { ok: true, mode: m, message }
   }
 
   let error = "Request failed"

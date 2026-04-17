@@ -76,10 +76,13 @@ export async function POST(req: Request) {
   return NextResponse.json({
     success: true,
     transferId: result.transferId,
+    amountUsd: result.amountUsd,
     message: result.message,
     feeUsd: result.feeUsd,
     netToBankUsd: result.netToBankUsd,
     speed: result.speed,
     stripePayoutId: result.stripePayoutId,
+    availableBalanceAfter: result.availableBalanceAfter,
+    lifetimeCashedOutAfter: result.lifetimeCashedOutAfter,
   })
 }

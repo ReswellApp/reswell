@@ -76,11 +76,35 @@ export interface StripeBankPayoutSectionProps {
   connectStatus: StripeConnectStatusPayload | null
   transferHistory: StripeTransferHistoryRow[]
   onRefresh: () => void | Promise<void>
+  /** Called after a successful bank cash-out so the page can update balances immediately. */
+  onCashOutSettled?: (detail: {
+    amountUsd: number
+    availableBalanceAfter: number
+    lifetimeCashedOutAfter: number
+    speed: "standard" | "instant"
+  }) => void
 }
 
-function TransferStatusBadge({ status }: { status: string }) {
+function TransferStatusBadge({
+  status,
+  payoutSpeed,
+}: {
+  status: string
+  payoutSpeed?: string | null
+}) {
   const u = status.toUpperCase()
   if (u === "SUCCEEDED") {
+    const isStandard = payoutSpeed?.toLowerCase() === "standard"
+    if (isStandard) {
+      return (
+        <Badge
+          variant="secondary"
+          className="bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-800"
+        >
+          Processing
+        </Badge>
+      )
+    }
     return (
       <Badge className="bg-emerald-600 hover:bg-emerald-600/90 text-white border-transparent">
         Sent
@@ -103,6 +127,7 @@ export function StripeBankPayoutSection({
   connectStatus,
   transferHistory,
   onRefresh,
+  onCashOutSettled,
 }: StripeBankPayoutSectionProps) {
   const [setupOpen, setSetupOpen] = useState(false)
   const [setupUseManagement, setSetupUseManagement] = useState(false)
@@ -179,6 +204,10 @@ export function StripeBankPayoutSection({
         error?: string
         errorDetail?: string
         message?: string
+        amountUsd?: number
+        availableBalanceAfter?: number
+        lifetimeCashedOutAfter?: number
+        speed?: "standard" | "instant"
       }
       if (!res.ok) {
         const err = data.error ?? "Payout failed"
@@ -190,7 +219,28 @@ export function StripeBankPayoutSection({
         }
         return
       }
-      toast.success(data.message ?? "Funds sent to your Stripe balance")
+      const amountUsd = Number(data.amountUsd)
+      const availableBalanceAfter = Number(data.availableBalanceAfter)
+      const lifetimeCashedOutAfter = Number(data.lifetimeCashedOutAfter)
+      if (
+        Number.isFinite(amountUsd) &&
+        Number.isFinite(availableBalanceAfter) &&
+        Number.isFinite(lifetimeCashedOutAfter)
+      ) {
+        onCashOutSettled?.({
+          amountUsd,
+          availableBalanceAfter,
+          lifetimeCashedOutAfter,
+          speed: data.speed ?? "standard",
+        })
+      }
+      toast.success(data.message ?? "Payout initiated", {
+        description:
+          Number.isFinite(availableBalanceAfter) && Number.isFinite(amountUsd)
+            ? `We moved $${amountUsd.toFixed(2)} from your available balance. You now have $${availableBalanceAfter.toFixed(2)} available.`
+            : undefined,
+        duration: 12_000,
+      })
       setCashOpen(false)
       await onRefresh()
     } catch {
@@ -198,7 +248,7 @@ export function StripeBankPayoutSection({
     } finally {
       setSubmitting(false)
     }
-  }, [amountStr, payoutSpeed, onRefresh])
+  }, [amountStr, payoutSpeed, onRefresh, onCashOutSettled])
 
   const setDefaultBank = useCallback(
     async (externalAccountId: string) => {
@@ -433,6 +483,12 @@ export function StripeBankPayoutSection({
 
           <div className="pt-2 border-t border-border/60">
             <h3 className="text-sm font-semibold mb-3">Bank transfer history</h3>
+            <p className="text-xs text-muted-foreground leading-snug mb-3">
+              New payouts appear here right away. Standard (free) transfers stay{" "}
+              <span className="text-foreground font-medium">Processing</span> while the ACH to your bank is in flight;
+              instant transfers show <span className="text-foreground font-medium">Sent</span> once the payout to your bank
+              has started.
+            </p>
             {transferHistory.length === 0 ? (
               <p className="text-sm text-muted-foreground">No bank transfers yet.</p>
             ) : (
@@ -482,7 +538,7 @@ export function StripeBankPayoutSection({
                         {ref}
                       </span>
                       <span className="ml-auto shrink-0">
-                        <TransferStatusBadge status={row.status} />
+                        <TransferStatusBadge status={row.status} payoutSpeed={row.payout_speed} />
                       </span>
                     </li>
                   )

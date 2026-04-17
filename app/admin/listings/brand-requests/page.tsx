@@ -1,6 +1,13 @@
 import { redirect } from "next/navigation"
+import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import { BrandRequestsAdminClient } from "./brand-requests-client"
+
+export const metadata = privatePageMetadata({
+  title: "Brand requests — Admin — Reswell",
+  description: "Review and approve new surfboard brand labels submitted by sellers.",
+  path: "/admin/listings/brand-requests",
+})
 
 export default async function AdminBrandRequestsPage() {
   const supabase = await createClient()

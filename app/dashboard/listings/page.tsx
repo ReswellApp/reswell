@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { listingDetailHref } from '@/lib/listing-href'
@@ -52,6 +53,7 @@ interface Listing {
 }
 
 export default function MyListingsPage() {
+  const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [endListingId, setEndListingId] = useState<string | null>(null)
@@ -142,6 +144,9 @@ export default function MyListingsPage() {
       setListings((prev) => prev.filter((l) => l.id !== endListingId))
       if (result.mode === 'delete') {
         toast.success('Listing deleted')
+      } else if (result.message) {
+        toast.success(result.message)
+        router.push('/dashboard/listings/archived')
       } else {
         toast.success('Listing archived for 30 days')
       }
@@ -378,8 +383,10 @@ export default function MyListingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>End listing</AlertDialogTitle>
             <AlertDialogDescription>
-              Archive keeps your listing for 30 days in Archived listings; after that, it can’t be
-              recovered. Delete removes it permanently right away. Choose an option:
+              Archive removes your listing from the public site and keeps it under Archived listings
+              for 30 days. Delete removes the database record immediately when allowed; if the
+              listing is linked to an order or payment, we will archive it instead so it stays off
+              the live site. Choose an option:
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2 py-2">

@@ -46,3 +46,11 @@ export function pageSeoMetadata(opts: {
     },
   }
 }
+
+/** Logged-in or flow pages: unique title/description without allowing public indexing. */
+export function privatePageMetadata(opts: { title: string; description: string; path: string }): Metadata {
+  return pageSeoMetadata({
+    ...opts,
+    robots: { index: false, follow: false },
+  })
+}
