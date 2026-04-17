@@ -86,9 +86,9 @@ export async function ShopListingDetailPage({
       .slice(0, 4) ?? []
 
   return (
-    <main className="flex-1 py-8">
-      <div className="container mx-auto">
-        <div className="border-t border-neutral-200 mb-6 pt-4">
+    <main className="flex-1 w-full min-w-0 max-w-full overflow-x-clip py-8">
+      <div className="container mx-auto w-full min-w-0 max-w-full">
+        <div className="mb-6 min-w-0 max-w-full border-t border-neutral-200 pt-4">
           <Breadcrumb>
             <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
               <BreadcrumbItem>
@@ -134,8 +134,8 @@ export async function ShopListingDetailPage({
           </Breadcrumb>
         </div>
 
-        <div className="grid max-w-5xl mx-auto lg:grid-cols-2 gap-8">
-          <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+        <div className="mx-auto grid w-full min-w-0 max-w-5xl gap-8 lg:grid-cols-2">
+          <div className="relative aspect-square w-full min-w-0 overflow-hidden rounded-lg bg-muted">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -151,10 +151,10 @@ export async function ShopListingDetailPage({
             )}
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold">{listing.title}</h1>
-              <p className="text-3xl font-bold text-black dark:text-white mt-3">
+          <div className="min-w-0 space-y-6">
+            <div className="min-w-0">
+              <h1 className="break-words text-2xl font-bold sm:text-3xl">{listing.title}</h1>
+              <p className="mt-3 text-2xl font-bold text-black dark:text-white sm:text-3xl">
                 ${price.toFixed(2)}
               </p>
             </div>
@@ -175,9 +175,9 @@ export async function ShopListingDetailPage({
 
             <Separator />
 
-            <div>
-              <h2 className="font-semibold mb-2">Description</h2>
-              <p className="text-muted-foreground whitespace-pre-wrap">
+            <div className="min-w-0">
+              <h2 className="mb-2 font-semibold">Description</h2>
+              <p className="break-words whitespace-pre-wrap text-muted-foreground">
                 {listing.description || "No description available."}
               </p>
             </div>
@@ -199,39 +199,39 @@ export async function ShopListingDetailPage({
               </Card>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex min-w-0 items-center gap-3 text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Truck className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium">Free Shipping</p>
                   <p className="text-muted-foreground">On orders over $50</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex min-w-0 items-center gap-3 text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Package className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium">Fast Delivery</p>
                   <p className="text-muted-foreground">2-5 business days</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex min-w-0 items-center gap-3 text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <RotateCcw className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium">Easy Returns</p>
                   <p className="text-muted-foreground">30-day return policy</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex min-w-0 items-center gap-3 text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Shield className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium">Secure Payment</p>
                   <p className="text-muted-foreground">SSL encrypted</p>
                 </div>
@@ -241,7 +241,7 @@ export async function ShopListingDetailPage({
         </div>
 
         {relatedItems.length > 0 && (
-          <section className="mt-16">
+          <section className="mt-16 min-w-0 max-w-full">
             <h2 className="text-xl font-bold mb-6">You May Also Like</h2>
             <MarketplaceNewGrid items={relatedItems} />
           </section>

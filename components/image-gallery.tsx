@@ -31,7 +31,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   const selectedImage = images[selectedIndex]
 
   return (
-    <div className="space-y-4 w-full min-w-0 mx-auto lg:max-w-[450px]">
+    <div className="mx-auto w-full min-w-0 max-w-full space-y-4 lg:max-w-[450px]">
       {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
       <div
         className="relative w-full rounded-lg overflow-hidden bg-muted"
@@ -98,7 +98,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
       {/* Thumbnails - explicit 3:4 box (padding-bottom) so fill Image has a defined size */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex max-w-full min-w-0 gap-2 overflow-x-auto overscroll-x-contain pb-2 [-webkit-overflow-scrolling:touch]">
           {images.map((image, index) => (
             <button
               key={image.id}

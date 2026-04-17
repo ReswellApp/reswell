@@ -215,9 +215,9 @@ export async function SurfboardListingDetailPage({
       : board.profiles?.location?.trim() || null
 
   return (
-      <main className="flex-1 py-8">
-        <div className="container mx-auto">
-          <div className="border-t border-neutral-200 mb-6 pt-4">
+      <main className="flex-1 w-full min-w-0 max-w-full overflow-x-clip py-8">
+        <div className="container mx-auto w-full min-w-0 max-w-full">
+          <div className="mb-6 min-w-0 max-w-full border-t border-neutral-200 pt-4">
             <Breadcrumb>
               <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
                 <BreadcrumbItem>
@@ -274,14 +274,14 @@ export async function SurfboardListingDetailPage({
           </div>
 
           {isSold && (
-            <div className="max-w-5xl mx-auto mb-6">
+            <div className="mx-auto mb-6 w-full min-w-0 max-w-5xl">
               <ListingSoldDetailNotice />
             </div>
           )}
 
           {/* Mobile heading + actions above images */}
-          <div className="mb-2 lg:hidden flex items-start justify-between gap-3">
-            <h1 className="text-xl font-bold break-words flex-1">
+          <div className="mb-2 flex min-w-0 max-w-full items-start justify-between gap-3 lg:hidden">
+            <h1 className="min-w-0 flex-1 break-words text-xl font-bold">
               {capitalizeWords(board.title)}
             </h1>
             <div className="flex items-center gap-2 shrink-0">
@@ -295,7 +295,7 @@ export async function SurfboardListingDetailPage({
           </div>
 
           {/* Mobile price + tags above images */}
-          <div className="mb-4 lg:hidden">
+          <div className="mb-4 min-w-0 max-w-full lg:hidden">
             {isSold ? (
               <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 Sold for ${board.price.toFixed(2)}
@@ -305,7 +305,7 @@ export async function SurfboardListingDetailPage({
                 ${board.price.toFixed(2)}
               </p>
             )}
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 break-words text-sm text-muted-foreground">
               {[
                 formatCondition(board.condition),
                 board.board_type ? formatBoardType(board.board_type) : null,
@@ -320,9 +320,9 @@ export async function SurfboardListingDetailPage({
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div className="mx-auto grid w-full min-w-0 max-w-5xl gap-8 lg:grid-cols-2">
             {/* Images */}
-            <div>
+            <div className="min-w-0">
               {!(isSold && isOwnListing) && (
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
@@ -595,7 +595,7 @@ export async function SurfboardListingDetailPage({
 
           {/* Seller's Other Boards */}
           {sellerBoards && sellerBoards.length > 0 && (
-            <section className="mt-16">
+            <section className="mt-16 min-w-0 max-w-full">
               <h2 className="text-xl font-bold mb-6">More Boards from this Seller</h2>
               <div className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {sellerBoards.map((item) => (

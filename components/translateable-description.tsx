@@ -7,8 +7,8 @@ export function TranslateableDescription({ text, className = "" }: Translateable
   const isEmpty = !text || text.trim() === ""
 
   if (isEmpty) {
-    return <p className={`text-muted-foreground ${className}`}>No description provided.</p>
+    return <p className={`break-words text-muted-foreground ${className}`}>No description provided.</p>
   }
 
-  return <p className={`text-muted-foreground whitespace-pre-wrap ${className}`}>{text}</p>
+  return <p className={`break-words whitespace-pre-wrap text-muted-foreground ${className}`}>{text}</p>
 }
