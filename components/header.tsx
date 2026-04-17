@@ -918,7 +918,7 @@ export function Header() {
                   </Button>
                 </Link>
 
-                <div className="ml-2 hidden shrink-0 sm:ml-3 md:ml-4 min-[401px]:block">
+                <div className="ml-2 hidden shrink-0 sm:ml-3 md:ml-4 min-[390px]:block">
                   {accountDropdown}
                 </div>
               </div>
