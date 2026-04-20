@@ -17,13 +17,16 @@ import { useSearchSuggestPortalContainer } from "@/components/search-suggest-por
 /** Max rows in the combined Suggestions list (titles / categories / brands). */
 const SUGGEST_COMBINED_CAP = 24
 
-/** Matches `hooks/use-mobile` — below this, suggestion panel uses full input width (no 400px floor). */
+/** Matches `hooks/use-mobile` — below this, panel spans the sheet/viewport (not only the text field). */
 const SUGGEST_PANEL_COMPACT_VIEWPORT_PX = 768
 
-function getSuggestPanelLayout(dropdownRect: {
+function getSuggestPanelLayout(args: {
   top: number
-  left: number
-  width: number
+  /** Anchor (input wrapper) — used on non-compact layouts. */
+  anchorLeft: number
+  anchorWidth: number
+  /** When suggestions portal into the mobile nav sheet, center within this rect. */
+  portalRect: { left: number; width: number } | null
 }) {
   if (typeof window === "undefined") return null
   const vw = window.innerWidth
@@ -31,11 +34,33 @@ function getSuggestPanelLayout(dropdownRect: {
   const gutter = vw < 640 ? 12 : 16
   const maxAllowableWidth = Math.max(200, vw - 2 * gutter)
   const compactViewport = vw < SUGGEST_PANEL_COMPACT_VIEWPORT_PX
-  const width = compactViewport
-    ? Math.min(dropdownRect.width, maxAllowableWidth)
-    : Math.min(Math.max(dropdownRect.width, 400), 520, maxAllowableWidth)
-  const left = Math.max(gutter, Math.min(dropdownRect.left, vw - width - gutter))
-  const spaceBelow = vh - dropdownRect.top - gutter
+  const narrowPhone = vw < 640
+
+  let width: number
+  let left: number
+
+  if (compactViewport) {
+    if (args.portalRect && args.portalRect.width > 0) {
+      const inner = Math.max(0, args.portalRect.width - 2 * gutter)
+      width = inner > 0 ? Math.min(maxAllowableWidth, inner) : maxAllowableWidth
+      left = args.portalRect.left + (args.portalRect.width - width) / 2
+    } else if (narrowPhone) {
+      width = maxAllowableWidth
+      left = (vw - width) / 2
+    } else {
+      width = Math.min(args.anchorWidth, maxAllowableWidth)
+      left = Math.max(gutter, Math.min(args.anchorLeft, vw - width - gutter))
+    }
+  } else {
+    width = Math.min(
+      Math.max(args.anchorWidth, 400),
+      520,
+      maxAllowableWidth,
+    )
+    left = Math.max(gutter, Math.min(args.anchorLeft, vw - width - gutter))
+  }
+
+  const spaceBelow = vh - args.top - gutter
   const maxHeight = Math.min(520, Math.max(160, spaceBelow), vh * 0.72)
   return { width, left, maxHeight }
 }
@@ -152,6 +177,7 @@ export function SearchInputWithSuggest({
     anchorWidth: number
     portalTop: number | null
     portalLeft: number | null
+    portalWidth: number | null
   } | null>(null)
   const suggestPortalContainer = useSearchSuggestPortalContainer()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -269,10 +295,12 @@ export function SearchInputWithSuggest({
       const dropTop = rect.bottom + 8
       let portalTop: number | null = null
       let portalLeft: number | null = null
+      let portalWidth: number | null = null
       if (suggestPortalContainer) {
         const pr = suggestPortalContainer.getBoundingClientRect()
         portalTop = pr.top
         portalLeft = pr.left
+        portalWidth = pr.width
       }
       setDropdownRect({
         dropTop,
@@ -280,6 +308,7 @@ export function SearchInputWithSuggest({
         anchorWidth: rect.width,
         portalTop,
         portalLeft,
+        portalWidth,
       })
     }
     update()
@@ -333,8 +362,12 @@ export function SearchInputWithSuggest({
     dropdownRect && typeof window !== "undefined"
       ? getSuggestPanelLayout({
           top: dropdownRect.dropTop,
-          left: dropdownRect.anchorLeft,
-          width: dropdownRect.anchorWidth,
+          anchorLeft: dropdownRect.anchorLeft,
+          anchorWidth: dropdownRect.anchorWidth,
+          portalRect:
+            dropdownRect.portalLeft != null && dropdownRect.portalWidth != null
+              ? { left: dropdownRect.portalLeft, width: dropdownRect.portalWidth }
+              : null,
         })
       : null
 
