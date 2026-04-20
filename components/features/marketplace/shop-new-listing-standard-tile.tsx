@@ -14,7 +14,6 @@ import {
   homeUniformScrollTitleSlotClass,
   homeListingScrollHeadingClass,
 } from "@/lib/home-listing-scroll-styles"
-import { portraitShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
 
 const gridImageSizes = "(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
@@ -66,7 +65,6 @@ export function ShopNewListingStandardTile({
       cardClassName={isGrid ? cn(listingProductCardGridClassName, "h-full") : homeUniformScrollCardClass}
       cardContentClassName={homeUniformScrollBodyClass}
       imageSizes={isGrid ? gridImageSizes : homeListingScrollImageSizes}
-      blurDataURL={portraitShimmer}
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
           <h3 className={homeListingScrollHeadingClass}>{capitalizeWords(listing.title)}</h3>

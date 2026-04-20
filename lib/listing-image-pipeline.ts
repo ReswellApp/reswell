@@ -4,9 +4,10 @@
 
 export const LISTING_IMAGE_MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 export const LISTING_FULL_MAX_LONG_EDGE = 2000
-export const LISTING_THUMB_MAX_LONG_EDGE = 400
+/** Browse grids (retina / 2–5 columns) need ~600px+ long edge so thumbs are not upscaled and look soft. */
+export const LISTING_THUMB_MAX_LONG_EDGE = 640
 export const LISTING_WEBP_QUALITY_FULL = 0.82
-export const LISTING_WEBP_QUALITY_THUMB = 0.7
+export const LISTING_WEBP_QUALITY_THUMB = 0.74
 
 export type PreparedListingImagePair = {
   full: Blob
@@ -136,7 +137,7 @@ async function renderResizedToBlob(
 }
 
 /**
- * Single decode; produces full (≤2000px long edge) + thumb (≤400px) in one pipeline step.
+ * Single decode; produces full (≤2000px long edge) + thumb (≤640px) in one pipeline step.
  */
 export async function prepareListingImagePairFromFile(file: File): Promise<PreparedListingImagePair> {
   let bitmap = await createImageBitmap(file)

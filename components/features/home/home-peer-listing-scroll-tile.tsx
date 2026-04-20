@@ -20,7 +20,6 @@ import {
   homeUniformScrollTitleSlotClass,
   homeListingScrollHeadingClass,
 } from "@/lib/home-listing-scroll-styles"
-import { portraitShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
 
 /** Matches {@link ListingTileAddToCartServerIcon} footprint so every tile row aligns. */
@@ -94,7 +93,6 @@ export function HomePeerListingScrollTile({
       cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
       cardContentClassName={homeUniformScrollBodyClass}
       imageSizes={isGrid ? homePeerListingGridImageSizes : homeListingScrollImageSizes}
-      blurDataURL={portraitShimmer}
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
           <h3 className={homeListingScrollHeadingClass}>{capitalizeWords(listing.title)}</h3>

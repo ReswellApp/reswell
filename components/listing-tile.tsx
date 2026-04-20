@@ -140,7 +140,8 @@ export function ListingTile({
   imageFit = "cover",
   imageClassName,
   imageGrayscale,
-  useBlurPlaceholder = true,
+  /** `false` avoids Next.js blurred shimmer over the photo while loading (cards stay crisp once painted). */
+  useBlurPlaceholder = false,
   blurDataURL,
   cardClassName = listingProductCardGridClassName,
   linkLayout = "split",
@@ -194,6 +195,7 @@ export function ListingTile({
           alt={imageAlt}
           fill
           sizes={imageSizes}
+          quality={80}
           className={cn(
             "transition-transform duration-300 group-hover:scale-105",
             imageFit === "cover" && "object-cover",
