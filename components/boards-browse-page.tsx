@@ -69,7 +69,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       *,
       listing_images (url, thumbnail_url, is_primary),
       categories (name),
-      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified)
+      profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
     `,
       { count: "exact" },
     )
@@ -144,9 +144,6 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       withDistance.sort((a, b) => {
         if (sort === "price-low") return (a.price ?? 0) - (b.price ?? 0)
         if (sort === "price-high") return (b.price ?? 0) - (a.price ?? 0)
-        const salesA = a.profiles?.sales_count ?? 0
-        const salesB = b.profiles?.sales_count ?? 0
-        if (salesB !== salesA) return salesB - salesA
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
     }
@@ -166,16 +163,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
 
     const { data: rawBoards, count } = await dbQuery.range(offset, offset + limit - 1)
 
-    const isDefaultSort = sort === "newest"
-    boards =
-      isDefaultSort && rawBoards
-        ? [...rawBoards].sort((a, b) => {
-            const salesA = a.profiles?.sales_count ?? 0
-            const salesB = b.profiles?.sales_count ?? 0
-            if (salesB !== salesA) return salesB - salesA
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          })
-        : rawBoards
+    boards = rawBoards
 
     totalPages = Math.ceil((count || 0) / limit)
   }
