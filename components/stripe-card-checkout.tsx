@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
+import type { SessionlessGuestPaymentRequest } from "@/lib/checkout/sessionless-guest-stripe-payload"
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? ""
 
@@ -148,6 +149,7 @@ export function StripeCardCheckout({
   shippingAddressId,
   purchaseDetailsReady = true,
   needsShipping = false,
+  sessionlessGuestPay = null,
   submitButtonLabel,
   submitButtonClassName,
 }: {
@@ -158,6 +160,7 @@ export function StripeCardCheckout({
   shippingAddressId?: string | null
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
+  sessionlessGuestPay?: SessionlessGuestPaymentRequest | null
   /** When set, replaces the default “Pay with card — $x” label. */
   submitButtonLabel?: string
   submitButtonClassName?: string
@@ -168,6 +171,7 @@ export function StripeCardCheckout({
   const [error, setError] = useState<string | null>(null)
 
   const stripePromise = getStripeBrowser()
+  const sessionlessGuestKey = sessionlessGuestPay ? JSON.stringify(sessionlessGuestPay) : ""
 
   useEffect(() => {
     if (!stripePromise) {
@@ -182,7 +186,7 @@ export function StripeCardCheckout({
       return
     }
 
-    if (needsShipping && !shippingAddressId) {
+    if (!sessionlessGuestPay && needsShipping && !shippingAddressId) {
       setClientSecret(null)
       setError(null)
       setLoading(false)
@@ -196,17 +200,17 @@ export function StripeCardCheckout({
 
     ;(async () => {
       try {
-        const body: Record<string, unknown> = {
-          listing_id: listingId,
-          ...(fulfillment ? { fulfillment } : {}),
-        }
-        if (needsShipping && shippingAddressId) {
-          body.address_id = shippingAddressId
-        }
+        const payload = sessionlessGuestPay
+          ? sessionlessGuestPay
+          : {
+              listing_id: listingId,
+              ...(fulfillment ? { fulfillment } : {}),
+              ...(needsShipping && shippingAddressId ? { address_id: shippingAddressId } : {}),
+            }
         const res = await fetch("/api/stripe/create-payment-intent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify(payload),
         })
         const data = (await res.json()) as { clientSecret?: string; error?: string }
         if (cancelled) return
@@ -242,6 +246,8 @@ export function StripeCardCheckout({
     purchaseDetailsReady,
     needsShipping,
     stripePromise,
+    sessionlessGuestKey,
+    sessionlessGuestPay,
   ])
 
   if (!purchaseDetailsReady) {
@@ -252,7 +258,7 @@ export function StripeCardCheckout({
     )
   }
 
-  if (needsShipping && !shippingAddressId) {
+  if (!sessionlessGuestPay && needsShipping && !shippingAddressId) {
     return (
       <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
         Save a shipping address above to continue to payment.

@@ -17,6 +17,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { privatePageMetadata } from "@/lib/site-metadata"
+import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
+
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata(props: {
   searchParams: Promise<{ listing?: string }>
@@ -32,12 +35,6 @@ export async function generateMetadata(props: {
   })
 }
 
-function listingCheckoutLoginRedirect(listingParam: string) {
-  const params = new URLSearchParams()
-  params.set("listing", listingParam)
-  return `/checkout?${params.toString()}`
-}
-
 export default async function CheckoutPage(props: { searchParams: Promise<{ listing?: string }> }) {
   const { listing: listingParam } = await props.searchParams
   if (!listingParam?.trim()) {
@@ -50,9 +47,6 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(listingCheckoutLoginRedirect(id))}`)
-  }
 
   const { listing, redirectSlug } = await findListingByParam(supabase, id, {
     select:
@@ -74,7 +68,9 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
     redirect(`/checkout?${params.toString()}`)
   }
 
-  if (listing.user_id === user.id) {
+  const checkoutReturnPath = `/checkout?listing=${encodeURIComponent(listing.slug?.trim() ? listing.slug : listing.id)}`
+
+  if (user && listing.user_id === user.id) {
     redirect(listingDetailHref(listing))
   }
 
@@ -89,8 +85,6 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
   }
 
   const copy: CheckoutCopy | undefined = undefined
-
-  const { addresses: initialAddresses, error: addressesError } = await getProfileAddresses()
 
   const { data: sellerRow } = await supabase
     .from("profiles")
@@ -109,6 +103,67 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
     : null
 
   const listingTitle = capitalizeWords(listing.title)
+
+  if (!user) {
+    return (
+      <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
+        <div className="container mx-auto max-w-2xl lg:max-w-6xl">
+          <h1 className="sr-only">Checkout</h1>
+          <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <Breadcrumb>
+                <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/">Home</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href={listingDetailHref(listing)}>{listingTitle}</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/cart">Cart</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="font-normal text-[#5c6b89]">Checkout</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </div>
+
+          <CheckoutClient
+            listing={listing}
+            copy={copy}
+            buyerEmail={null}
+            checkoutVariant="sessionless_guest"
+            checkoutReturnPath={checkoutReturnPath}
+            initialAddresses={[]}
+            seller={seller}
+            contactEmailMode="sessionless"
+          />
+        </div>
+      </main>
+    )
+  }
+
+  const { addresses: initialAddresses, error: addressesError } = await getProfileAddresses()
+
+  const { data: profileRow } = await supabase.from("profiles").select("email").eq("id", user.id).maybeSingle()
+
+  const buyerEmail =
+    user.email?.trim() ||
+    (typeof profileRow?.email === "string" ? profileRow.email.trim() : "") ||
+    null
+
+  const checkoutVariant = isAnonymousSupabaseUser(user) ? "guest" : "member"
 
   return (
     <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
@@ -149,9 +204,12 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
         <CheckoutClient
           listing={listing}
           copy={copy}
-          buyerEmail={user.email ?? null}
+          buyerEmail={buyerEmail}
+          checkoutVariant={checkoutVariant}
+          checkoutReturnPath={checkoutReturnPath}
           initialAddresses={addressesError ? [] : initialAddresses}
           seller={seller}
+          contactEmailMode={checkoutVariant === "guest" ? "guest" : "account"}
         />
       </div>
     </main>

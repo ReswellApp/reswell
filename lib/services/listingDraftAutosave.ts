@@ -1,9 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 import {
   boardDimensionDisplayFields,
   boardDimensionsToDbFields,
-  formatBoardLengthForTitle,
   formatBoardLengthInputFromParts,
 } from "@/lib/board-measurements"
 import type { BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
@@ -47,9 +45,7 @@ function resolveDraftBoardLength(fd: ListingDraftAutosaveInput): string {
 }
 
 function resolvedDraftTitle(fd: ListingDraftAutosaveInput): string {
-  const boardLengthFmt = formatBoardLengthForTitle(resolveDraftBoardLength(fd))
-  const base = (fd.title ?? "").trim()
-  return boardLengthFmt ? listingTitleWithBoardLength(base, boardLengthFmt) : base
+  return (fd.title ?? "").trim()
 }
 
 export function buildSurfboardDraftListingRow(

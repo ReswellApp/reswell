@@ -16,6 +16,7 @@ import type { ProfileAddressRow } from "@/lib/profile-address"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { ImageOff, Truck, MapPin, ShoppingBag } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { GuestCheckoutContinueHeader } from "@/components/features/checkout/guest-checkout-continue-header"
 
 const SURFBOARD_COPY = {
   itemLineLabel: "Board",
@@ -60,8 +61,13 @@ interface CheckoutClientProps {
   /** Optional overrides for checkout headings and helper text (peer surfboard flow). */
   copy?: CheckoutCopy
   buyerEmail?: string | null
+  /** Signed-in member, Supabase anonymous guest, or no-auth sessionless guest. */
+  checkoutVariant?: "member" | "guest" | "sessionless_guest"
+  /** Post-OAuth return and Google CTA target (pathname + query). Shown for `guest` and `sessionless_guest`. */
+  checkoutReturnPath?: string
   initialAddresses: ProfileAddressRow[]
   seller?: CheckoutSeller | null
+  contactEmailMode: "account" | "guest" | "sessionless"
 }
 
 function sellerDisplayName(s: CheckoutSeller) {
@@ -73,8 +79,11 @@ export function CheckoutClient({
   listing,
   copy = SURFBOARD_COPY,
   buyerEmail,
+  checkoutVariant = "member",
+  checkoutReturnPath = "",
   initialAddresses,
   seller,
+  contactEmailMode,
 }: CheckoutClientProps) {
   const canPick = listing.local_pickup !== false
   const canShip = !!listing.shipping_available
@@ -99,6 +108,9 @@ export function CheckoutClient({
   const [purchaseDetails, setPurchaseDetails] = useState<PurchaseDetailsState>({
     readyToPay: false,
     shippingAddressId: null,
+    guestContactReady: checkoutVariant === "guest" || checkoutVariant === "sessionless_guest" ? false : true,
+    sessionlessGuestPay: null,
+    sessionlessShippingForQuote: null,
   })
 
   const [shipQuote, setShipQuote] = useState<{
@@ -110,24 +122,46 @@ export function CheckoutClient({
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!needsShipping || !purchaseDetails.shippingAddressId) {
+    if (!needsShipping) {
       setShipQuote(null)
       setQuoteError(null)
       setQuoteLoading(false)
       return
     }
+
+    const sessionless = checkoutVariant === "sessionless_guest"
+    if (sessionless && !purchaseDetails.sessionlessShippingForQuote) {
+      setShipQuote(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+    if (!sessionless && !purchaseDetails.shippingAddressId) {
+      setShipQuote(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+
     let cancelled = false
     setQuoteLoading(true)
     setQuoteError(null)
     void (async () => {
       try {
+        const body = sessionless
+          ? {
+              listing_id: listing.id,
+              guest_checkout: true as const,
+              shipping_address: purchaseDetails.sessionlessShippingForQuote,
+            }
+          : {
+              listing_id: listing.id,
+              address_id: purchaseDetails.shippingAddressId,
+            }
         const res = await fetch("/api/checkout/shipping-quote", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            listing_id: listing.id,
-            address_id: purchaseDetails.shippingAddressId,
-          }),
+          body: JSON.stringify(body),
         })
         const data = (await res.json()) as {
           error?: string
@@ -156,7 +190,13 @@ export function CheckoutClient({
     return () => {
       cancelled = true
     }
-  }, [needsShipping, listing.id, purchaseDetails.shippingAddressId])
+  }, [
+    needsShipping,
+    listing.id,
+    purchaseDetails.shippingAddressId,
+    purchaseDetails.sessionlessShippingForQuote,
+    checkoutVariant,
+  ])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
@@ -279,8 +319,14 @@ export function CheckoutClient({
               </div>
             )}
 
+            {(checkoutVariant === "guest" || checkoutVariant === "sessionless_guest") && checkoutReturnPath ? (
+              <GuestCheckoutContinueHeader checkoutPath={checkoutReturnPath} />
+            ) : null}
+
             <CheckoutPurchaseDetails
+              listingId={listing.id}
               buyerEmail={buyerEmail ?? null}
+              contactEmailMode={contactEmailMode}
               initialAddresses={initialAddresses}
               needsShipping={needsShipping}
               onStateChange={handlePurchaseDetailsChange}
@@ -324,6 +370,7 @@ export function CheckoutClient({
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
                   needsShipping={needsShipping}
+                  sessionlessGuestPay={purchaseDetails.sessionlessGuestPay}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter

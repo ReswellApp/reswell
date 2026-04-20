@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { capitalizeWords, formatCategory, formatCondition } from "@/lib/listing-labels"
 import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
@@ -28,8 +29,111 @@ function formatAddressLines(addr: NonNullable<ShippingAddressJson>["address"]) {
   if (!addr) return null
   const line1 = [addr.line1, addr.line2].filter(Boolean).join(", ")
   const cityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ")
-  const parts = [line1, cityLine, addr.country].filter((p) => p && String(p).trim())
+  const parts = [line1, cityLine, addr.country].filter((p): p is string => Boolean(p && String(p).trim()))
   return parts.length ? parts : null
+}
+
+type OrderSuccessOrderRow = {
+  id: string
+  order_num: string | null
+  amount: number | string
+  created_at: string
+  fulfillment_method: string | null
+  shipping_address: ShippingAddressJson
+  listings:
+    | {
+        id: string
+        title: string | null
+        slug?: string | null
+        section: string
+        condition?: string | null
+        price: string | number
+        shipping_available: boolean | null
+        local_pickup: boolean | null
+        shipping_price: string | number | null
+        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+      }
+    | Array<{
+        id: string
+        title: string | null
+        slug?: string | null
+        section: string
+        condition?: string | null
+        price: string | number
+        shipping_available: boolean | null
+        local_pickup: boolean | null
+        shipping_price: string | number | null
+        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+      }>
+    | null
+}
+
+function mapOrderRowToCheckoutPayload(
+  order: OrderSuccessOrderRow,
+  buyerEmail: string | null | undefined,
+): CheckoutOrderSuccessPayload {
+  const listing = Array.isArray(order.listings) ? order.listings[0] : order.listings
+  const total = Number(order.amount)
+  const fulfillment = order.fulfillment_method === "shipping" || order.fulfillment_method === "pickup"
+    ? order.fulfillment_method
+    : null
+
+  let itemPrice = total
+  let shippingCost = 0
+  if (listing) {
+    const resolved = resolvePayableAmount(
+      {
+        price: listing.price,
+        section: listing.section,
+        shipping_available: listing.shipping_available,
+        local_pickup: listing.local_pickup,
+        shipping_price: listing.shipping_price,
+      },
+      fulfillment,
+    )
+    if (resolved.ok && Math.abs(resolved.total - total) < 0.02) {
+      itemPrice = resolved.itemPrice
+      shippingCost = resolved.shipping
+    }
+  }
+
+  const displayNumber = formatOrderNumForCustomer(order.order_num, order.id)
+
+  const ship = order.shipping_address
+  const addr = ship?.address
+  const addressLines = addr ? formatAddressLines(addr) : null
+  const shippingOneLine = addressLines
+    ? [ship?.name, addressLines.join(", ")].filter(Boolean).join(", ")
+    : null
+
+  const title = listing?.title ? capitalizeWords(listing.title) : "Item"
+  const conditionLabel = listing?.condition ? formatCondition(listing.condition) : null
+
+  return {
+    orderId: order.id,
+    displayNumber,
+    buyerEmail: buyerEmail?.trim() ?? null,
+    total,
+    itemPrice,
+    shippingCost,
+    fulfillmentMethod: fulfillment,
+    listing: listing
+      ? {
+          title,
+          imageUrl: primaryImage(listing.listing_images),
+          subtitle: conditionLabel,
+          categoryLabel: formatCategory(listing.section)?.trim() || null,
+        }
+      : null,
+    shipping: ship
+      ? {
+          oneLine: shippingOneLine,
+          name: ship.name ?? null,
+          addressLines,
+          email: ship.email ?? null,
+        }
+      : null,
+  }
 }
 
 /**
@@ -77,102 +181,58 @@ export async function fetchBuyerOrderSuccessPayload(
     return null
   }
 
-  const order = row as {
-    id: string
-    order_num: string | null
-    amount: number | string
-    created_at: string
-    fulfillment_method: string | null
-    shipping_address: ShippingAddressJson
-    listings:
-      | {
-          id: string
-          title: string | null
-          slug?: string | null
-          section: string
-          condition?: string | null
-          price: string | number
-          shipping_available: boolean | null
-          local_pickup: boolean | null
-          shipping_price: string | number | null
-          listing_images: Array<{ url: string; is_primary: boolean | null }> | null
-        }
-      | Array<{
-          id: string
-          title: string | null
-          slug?: string | null
-          section: string
-          condition?: string | null
-          price: string | number
-          shipping_available: boolean | null
-          local_pickup: boolean | null
-          shipping_price: string | number | null
-          listing_images: Array<{ url: string; is_primary: boolean | null }> | null
-        }>
-      | null
+  return mapOrderRowToCheckoutPayload(row as OrderSuccessOrderRow, buyerEmail)
+}
+
+/**
+ * Guest card checkout: order has no buyer_id — load by id using service role (same payload shape as buyer receipt).
+ */
+export async function fetchGuestOrderSuccessPayload(orderId: string): Promise<CheckoutOrderSuccessPayload | null> {
+  const trimmed = orderId.trim()
+  if (!trimmed) return null
+
+  let service: ReturnType<typeof createServiceRoleClient>
+  try {
+    service = createServiceRoleClient()
+  } catch {
+    return null
   }
 
-  const listing = Array.isArray(order.listings) ? order.listings[0] : order.listings
-  const total = Number(order.amount)
-  const fulfillment = order.fulfillment_method === "shipping" || order.fulfillment_method === "pickup"
-    ? order.fulfillment_method
-    : null
-
-  let itemPrice = total
-  let shippingCost = 0
-  if (listing) {
-    const resolved = resolvePayableAmount(
-      {
-        price: listing.price,
-        section: listing.section,
-        shipping_available: listing.shipping_available,
-        local_pickup: listing.local_pickup,
-        shipping_price: listing.shipping_price,
-      },
-      fulfillment,
+  const { data: row, error } = await service
+    .from("orders")
+    .select(
+      `
+      id,
+      order_num,
+      amount,
+      guest_buyer_email,
+      created_at,
+      fulfillment_method,
+      shipping_address,
+      listings (
+        id,
+        title,
+        slug,
+        section,
+        condition,
+        price,
+        shipping_available,
+        local_pickup,
+        shipping_price,
+        listing_images ( url, is_primary )
+      )
+    `,
     )
-    if (resolved.ok && Math.abs(resolved.total - total) < 0.02) {
-      itemPrice = resolved.itemPrice
-      shippingCost = resolved.shipping
-    }
+    .eq("id", trimmed)
+    .is("buyer_id", null)
+    .maybeSingle()
+
+  if (error || !row) {
+    return null
   }
 
-  /** Same human reference as dashboard Orders / Sales (`orders.order_num`). */
-  const displayNumber = formatOrderNumForCustomer(order.order_num, order.id)
+  const guestEmailRaw = (row as { guest_buyer_email?: string | null }).guest_buyer_email
+  const guestEmail = typeof guestEmailRaw === "string" ? guestEmailRaw.trim() : ""
 
-  const ship = order.shipping_address
-  const addr = ship?.address
-  const addressLines = addr ? formatAddressLines(addr) : null
-  const shippingOneLine = addressLines
-    ? [ship?.name, addressLines.join(", ")].filter(Boolean).join(", ")
-    : null
-
-  const title = listing?.title ? capitalizeWords(listing.title) : "Item"
-  const conditionLabel = listing?.condition ? formatCondition(listing.condition) : null
-
-  return {
-    orderId: order.id,
-    displayNumber,
-    buyerEmail: buyerEmail?.trim() ?? null,
-    total,
-    itemPrice,
-    shippingCost,
-    fulfillmentMethod: fulfillment,
-    listing: listing
-      ? {
-          title,
-          imageUrl: primaryImage(listing.listing_images),
-          subtitle: conditionLabel,
-          categoryLabel: formatCategory(listing.section)?.trim() || null,
-        }
-      : null,
-    shipping: ship
-      ? {
-          oneLine: shippingOneLine,
-          name: ship.name ?? null,
-          addressLines,
-          email: ship.email ?? null,
-        }
-      : null,
-  }
+  return mapOrderRowToCheckoutPayload(row as OrderSuccessOrderRow, guestEmail || null)
 }

@@ -6,15 +6,6 @@ import {
 } from "@/lib/stripe-complete-order"
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
     return NextResponse.json({ error: "Card payments are not configured" }, { status: 503 })
   }
@@ -31,6 +22,35 @@ export async function POST(request: NextRequest) {
   }
 
   const pi = retrieved.paymentIntent
+  const isGuestPi = pi.metadata?.guest_chk === "1"
+
+  if (isGuestPi) {
+    const result = await completeMarketplaceOrderFromPaymentIntent(pi)
+    if (!result.ok) {
+      console.error("[finalize-order] completeMarketplaceOrder failed:", {
+        error: result.error,
+        status: result.status,
+        piId: pi.id,
+      })
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+
+    return NextResponse.json({
+      success: true,
+      orderId: result.orderId,
+      ...(result.alreadyProcessed ? { alreadyProcessed: true } : {}),
+    })
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const metaBuyer = pi.metadata.buyer_id?.trim()
   if (!metaBuyer || metaBuyer !== user.id) {
     return NextResponse.json({ error: "Invalid payment" }, { status: 403 })

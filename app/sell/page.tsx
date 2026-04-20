@@ -94,7 +94,6 @@ import {
   SurfboardTitleIndexInput,
   titleFromIndexModelPick,
 } from "@/components/surfboard-title-index-input"
-import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 import {
   assertListingOriginalSize,
   browserCanDecodeImage as pipelineCanDecodeImage,
@@ -1727,10 +1726,10 @@ function SellPageContent() {
       const boardLocationCity = fd.locationCity.trim() || null
       const boardLocationState = fd.locationState.trim() || null
 
-      const boardLengthFmt = formatBoardLengthForTitle(fd.boardLength)
-      const resolvedListingTitle = boardLengthFmt
-        ? listingTitleWithBoardLength(fd.title, boardLengthFmt)
-        : fd.title.trim()
+      const resolvedListingTitle = buildResolvedListingTitle({
+        listingType: "board",
+        ...fd,
+      } as SellFormValidationInput)
 
       const flowImpersonation = !!listingImpersonation
       if (!effectiveEditId && !flowImpersonation) {
@@ -2389,7 +2388,7 @@ function SellPageContent() {
                 <SellFormSection
                   sectionId="sell-section-title"
                   title="Listing title & brand / shaper"
-                  description="Title is shown on your listing and in the URL (max length includes board length). Brand is optional — link from the catalog or enter any name."
+                  description="Title is shown on your listing and in the URL. Brand is optional — link from the catalog or enter any name."
                 >
                   <div className="space-y-8">
                     <div className="space-y-2">

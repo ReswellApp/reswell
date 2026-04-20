@@ -55,12 +55,14 @@ export async function createProfileAddress(
     await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
   }
 
+  const phoneValue = input.phone?.trim() || null
+
   const { data, error } = await supabase
     .from("addresses")
     .insert({
       profile_id: user.id,
       full_name: input.full_name,
-      phone: input.phone?.trim() || null,
+      phone: phoneValue,
       line1: input.line1,
       line2: input.line2?.trim() || null,
       city: input.city,

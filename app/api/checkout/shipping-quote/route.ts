@@ -5,6 +5,7 @@ import {
   computePeerCheckoutTotalsUsd,
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
+import { quoteSessionlessGuestShipping } from "@/lib/services/sessionlessGuestShippingQuote"
 
 export const dynamic = "force-dynamic"
 
@@ -35,19 +36,33 @@ const LISTING_SELECT = `
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: "Sign in to get a shipping quote." }, { status: 401 })
-  }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
+
+  const isSessionlessGuest =
+    body &&
+    typeof body === "object" &&
+    (body as { guest_checkout?: unknown }).guest_checkout === true
+
+  if (isSessionlessGuest) {
+    const result = await quoteSessionlessGuestShipping(supabase, body)
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+    return NextResponse.json({ data: result.data })
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: "Sign in to get a shipping quote." }, { status: 401 })
   }
 
   const listingId =

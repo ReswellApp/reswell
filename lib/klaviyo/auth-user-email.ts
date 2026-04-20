@@ -5,8 +5,12 @@ export async function getAuthEmailForUserId(userId: string): Promise<string | nu
   try {
     const admin = createServiceRoleClient()
     const { data, error } = await admin.auth.admin.getUserById(userId)
-    if (error || !data?.user?.email) return null
-    return data.user.email
+    const authEmail = data?.user?.email?.trim()
+    if (!error && authEmail) return authEmail
+
+    const { data: profile } = await admin.from("profiles").select("email").eq("id", userId).maybeSingle()
+    const profileEmail = typeof profile?.email === "string" ? profile.email.trim() : ""
+    return profileEmail || null
   } catch {
     return null
   }

@@ -13,6 +13,10 @@ import {
 } from "@/lib/profile-address"
 import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import {
+  sessionlessGuestShippingToProfileAddressRow,
+  stripeMetadataToSessionlessGuestPayload,
+} from "@/lib/checkout/sessionless-guest-stripe-payload"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -45,10 +49,6 @@ async function recoverMissingOrderPendingLedger(
   orderId: string,
   buyerIdFromPi: string,
 ): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
-  if (!buyerIdFromPi) {
-    return { ok: false, error: "Invalid payment metadata", status: 400 }
-  }
-
   const { data: orderRow, error: orderErr } = await serviceSupabase
     .from("orders")
     .select("id, buyer_id, seller_id, listing_id, seller_earnings, platform_fee")
@@ -58,8 +58,16 @@ async function recoverMissingOrderPendingLedger(
   if (orderErr || !orderRow) {
     return { ok: false, error: "Could not load order for recovery", status: 500 }
   }
-  if (orderRow.buyer_id !== buyerIdFromPi) {
-    return { ok: false, error: "Invalid payment", status: 403 }
+
+  const guestOrder = orderRow.buyer_id === null
+  if (guestOrder) {
+    if (buyerIdFromPi.trim()) {
+      return { ok: false, error: "Invalid payment", status: 403 }
+    }
+  } else {
+    if (!buyerIdFromPi.trim() || orderRow.buyer_id !== buyerIdFromPi) {
+      return { ok: false, error: "Invalid payment", status: 403 }
+    }
   }
 
   const { data: existingLedger } = await serviceSupabase
@@ -130,12 +138,12 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
   const { data: order } = await serviceSupabase
     .from("orders")
     .select(
-      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method",
+      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method, guest_buyer_email",
     )
     .eq("id", orderId)
     .maybeSingle()
 
-  if (!order?.buyer_id || !order.seller_id || !order.listing_id) return
+  if (!order?.seller_id || !order.listing_id) return
 
   const { data: listing } = await serviceSupabase
     .from("listings")
@@ -145,7 +153,12 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
 
   if (!listing) return
 
-  const buyerEmail = await getAuthEmailForUserId(order.buyer_id)
+  const buyerEmail =
+    order.buyer_id != null
+      ? await getAuthEmailForUserId(order.buyer_id)
+      : typeof (order as { guest_buyer_email?: string | null }).guest_buyer_email === "string"
+        ? (order as { guest_buyer_email: string }).guest_buyer_email.trim() || null
+        : null
   const rawAmount = order.amount as unknown
   const amount =
     typeof rawAmount === "number"
@@ -158,7 +171,7 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
     order.payment_method === "reswell_bucks" ? "reswell_bucks" : "stripe"
 
   await trackKlaviyoBuyerOrderConfirmed({
-    buyerUserId: order.buyer_id,
+    buyerUserId: order.buyer_id ?? undefined,
     buyerEmail,
     orderId: order.id,
     orderNum: (order as { order_num?: string | null }).order_num ?? null,
@@ -226,8 +239,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
-  const buyerId = pi.metadata.buyer_id?.trim()
-  if (!buyerId) {
+  const metaRecord = pi.metadata as unknown as Record<string, string>
+  const guestDecoded = stripeMetadataToSessionlessGuestPayload(metaRecord)
+  const isGuestCheckout = guestDecoded.ok
+  const sessionlessGuest = guestDecoded.ok ? guestDecoded.payload : null
+
+  let buyerId: string | null = pi.metadata.buyer_id?.trim() || null
+  if (isGuestCheckout) {
+    buyerId = null
+  } else if (!buyerId) {
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
@@ -236,7 +256,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
-  const buyerEmail = await getAuthEmailForUserId(buyerId)
+  const buyerEmail: string | null =
+    isGuestCheckout && sessionlessGuest
+      ? sessionlessGuest.buyer_email.trim()
+      : buyerId
+        ? await getAuthEmailForUserId(buyerId)
+        : null
 
   const { data: listing, error: listingError } = await serviceSupabase
     .from("listings")
@@ -276,7 +301,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  if (listing.user_id === buyerId) {
+  if (buyerId && listing.user_id === buyerId) {
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
@@ -311,17 +336,37 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         ? "shipping"
         : "pickup"
 
+  if (isGuestCheckout && sessionlessGuest) {
+    const { data: sellerProfile } = await serviceSupabase
+      .from("profiles")
+      .select("email")
+      .eq("id", listing.user_id)
+      .maybeSingle()
+    const sellerEm = typeof sellerProfile?.email === "string" ? sellerProfile.email.trim().toLowerCase() : ""
+    const guestEm = sessionlessGuest.buyer_email.trim().toLowerCase()
+    if (sellerEm && guestEm === sellerEm) {
+      return { ok: false, error: "Invalid purchase", status: 400 }
+    }
+    if (sessionlessGuest.fulfillment !== impliedFulfillment) {
+      return { ok: false, error: "Invalid payment metadata", status: 400 }
+    }
+  }
+
   const addressIdMeta = pi.metadata.address_id?.trim()
   let buyerAddress: ProfileAddressRow | null = null
-  if (impliedFulfillment === "shipping" && addressIdMeta) {
-    const { data: addrRow } = await serviceSupabase
-      .from("addresses")
-      .select("*")
-      .eq("id", addressIdMeta)
-      .eq("profile_id", buyerId)
-      .maybeSingle()
-    if (addrRow) {
-      buyerAddress = addrRow as ProfileAddressRow
+  if (impliedFulfillment === "shipping") {
+    if (isGuestCheckout && sessionlessGuest?.shipping) {
+      buyerAddress = sessionlessGuestShippingToProfileAddressRow(sessionlessGuest.shipping)
+    } else if (addressIdMeta && buyerId) {
+      const { data: addrRow } = await serviceSupabase
+        .from("addresses")
+        .select("*")
+        .eq("id", addressIdMeta)
+        .eq("profile_id", buyerId)
+        .maybeSingle()
+      if (addrRow) {
+        buyerAddress = addrRow as ProfileAddressRow
+      }
     }
   }
 
@@ -384,7 +429,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       buyerAddress,
       buyerEmail,
     ) as Record<string, unknown>
-  } else if (fulfillmentMethod === "shipping" && addressIdMeta) {
+  } else if (fulfillmentMethod === "shipping" && addressIdMeta && buyerId) {
     const { data: addrRow } = await serviceSupabase
       .from("addresses")
       .select("*")
@@ -396,6 +441,18 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         addrRow as ProfileAddressRow,
         buyerEmail,
       ) as Record<string, unknown>
+    }
+  } else if (
+    isGuestCheckout &&
+    fulfillmentMethod === "pickup" &&
+    sessionlessGuest?.pickup &&
+    buyerEmail
+  ) {
+    shippingAddressJson = {
+      name: sessionlessGuest.pickup.full_name,
+      phone: null,
+      email: buyerEmail,
+      address: null,
     }
   }
 
@@ -411,6 +468,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       id: orderId,
       listing_id: listing.id,
       buyer_id: buyerId,
+      guest_buyer_email: isGuestCheckout ? buyerEmail : null,
       seller_id: listing.user_id,
       amount: chargedUsd,
       platform_fee: platformFee,
@@ -553,24 +611,26 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
 
-  void postPurchaseThreadNotification(serviceSupabase, {
-    buyerId,
-    sellerId: listing.user_id,
-    listingId: listing.id,
-    listingTitle: listing.title,
-    orderId: purchase.id,
-    orderNum: formatOrderNumForCustomer(
-      (purchase as { order_num?: string | null }).order_num,
-      purchase.id,
-    ),
-    total: chargedUsd,
-    fulfillment: isPickup ? "pickup" : "shipping",
-    shippingAddress: shippingAddressJson,
-    paymentMethod: "card",
-  })
+  if (buyerId) {
+    void postPurchaseThreadNotification(serviceSupabase, {
+      buyerId,
+      sellerId: listing.user_id,
+      listingId: listing.id,
+      listingTitle: listing.title,
+      orderId: purchase.id,
+      orderNum: formatOrderNumForCustomer(
+        (purchase as { order_num?: string | null }).order_num,
+        purchase.id,
+      ),
+      total: chargedUsd,
+      fulfillment: isPickup ? "pickup" : "shipping",
+      shippingAddress: shippingAddressJson,
+      paymentMethod: "card",
+    })
+  }
 
   await trackKlaviyoBuyerOrderConfirmed({
-    buyerUserId: buyerId,
+    buyerUserId: buyerId ?? undefined,
     buyerEmail,
     orderId: purchase.id,
     orderNum: (purchase as { order_num?: string | null }).order_num ?? null,

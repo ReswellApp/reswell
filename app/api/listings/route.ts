@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { slugify } from '@/lib/slugify'
-import { listingTitleWithBoardLength } from '@/lib/listing-title-board-length'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
-import { formatBoardInchesForTitle, LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
+import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -70,21 +69,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const feetParsed = length_feet != null && length_feet !== '' ? parseInt(String(length_feet), 10) : NaN
-  const inchParsed =
-    length_inches != null && length_inches !== '' ? parseFloat(String(length_inches)) : NaN
-  const boardLenLabel =
-    Number.isFinite(feetParsed) && Number.isFinite(inchParsed)
-      ? `${feetParsed}'${formatBoardInchesForTitle(inchParsed)}"`
-      : Number.isFinite(feetParsed)
-        ? `${feetParsed}'`
-        : null
   const resolvedTitle =
-    section === 'surfboards' && boardLenLabel
-      ? listingTitleWithBoardLength(typeof title === 'string' ? title : '', boardLenLabel)
-      : typeof title === 'string'
-        ? title.trim()
-        : String(title ?? '')
+    typeof title === 'string' ? title.trim() : String(title ?? '')
 
   if (resolvedTitle.length > LISTING_TITLE_MAX_LENGTH) {
     return NextResponse.json(

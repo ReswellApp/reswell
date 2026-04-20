@@ -1,4 +1,3 @@
-import { listingTitleWithBoardLength } from "@/lib/listing-title-board-length"
 import {
   flagsFromBoardFulfillment,
   type BoardFulfillmentChoice,
@@ -9,7 +8,6 @@ export type BoardShippingCostMode = "reswell" | "free" | "flat"
 import { isFinSetupTagSlug } from "@/lib/listing-fin-setup-tags"
 import { isTailShapeTagSlug } from "@/lib/listing-tail-shape-tags"
 import {
-  formatBoardLengthForTitle,
   formatDecimalDimension,
   parseBoardLengthParts,
   parseBoardMeasurement,
@@ -67,14 +65,9 @@ export type SellFormValidationInput = {
 }
 
 /**
- * Same title string the sell flow saves (surfboards append length when set).
- * Used for max-length validation and the live character counter.
+ * Title string used for max-length validation and the live character counter (what we persist as `listings.title`).
  */
 export function buildResolvedListingTitle(form: SellFormValidationInput): string {
-  const boardLengthFmt = formatBoardLengthForTitle(form.boardLength ?? "")
-  if (boardLengthFmt) {
-    return listingTitleWithBoardLength(form.title, boardLengthFmt)
-  }
   return form.title.trim()
 }
 
@@ -296,7 +289,7 @@ export function validateSellListingForm(
 
   const resolvedTitle = buildResolvedListingTitle(form)
   if (resolvedTitle.length > LISTING_TITLE_MAX_LENGTH) {
-    return `Title must be ${LISTING_TITLE_MAX_LENGTH} characters or fewer (including board length in the title). Shorter titles keep your listing URL clean.`
+    return `Title must be ${LISTING_TITLE_MAX_LENGTH} characters or fewer. Shorter titles keep your listing URL clean.`
   }
 
   return null

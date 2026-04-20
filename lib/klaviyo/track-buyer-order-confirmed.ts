@@ -16,7 +16,8 @@ import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 export type KlaviyoBuyerOrderConfirmedPayload = {
-  buyerUserId: string
+  /** Omitted for sessionless guest checkout (email-only Klaviyo profile). */
+  buyerUserId?: string | null
   buyerEmail: string | null
   orderId: string
   /** From `orders.order_num` (optional for legacy callers). */
@@ -44,12 +45,17 @@ export async function trackKlaviyoBuyerOrderConfirmed(
   const listingUrl = `${origin}${listingPath}`
   const orderUrl = `${origin}/dashboard/orders/${payload.orderId}`
 
+  const profile =
+    payload.buyerUserId?.trim()
+      ? { external_id: payload.buyerUserId.trim(), email: payload.buyerEmail }
+      : {
+          email: payload.buyerEmail,
+          anonymous_id: `guest-order-${payload.orderId}`,
+        }
+
   await sendKlaviyoServerEvent({
     metricName: "Purchase Successful",
-    profile: {
-      external_id: payload.buyerUserId,
-      email: payload.buyerEmail,
-    },
+    profile,
     uniqueId: `purchase-successful-${payload.orderId}`,
     value: Number.isFinite(amountNum) ? amountNum : undefined,
     valueCurrency: "USD",
