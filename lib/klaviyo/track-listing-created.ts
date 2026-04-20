@@ -1,5 +1,13 @@
 /**
  * Server-only: Klaviyo Events API (private key). No-op if KLAVIYO_API_KEY is unset.
+ *
+ * **Metric name in Klaviyo:** `Listing` — use as the flow trigger when a seller publishes
+ * on `/sell` (new insert, draft → live, or `POST /api/listings`). Event `properties.Created`
+ * is `true`; optional flow filter: `Created` equals true.
+ *
+ * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Listing** →
+ * add email/content; profile on the event is the seller (`external_id` = Supabase user id).
+ *
  * @see https://developers.klaviyo.com/en/reference/create_event
  */
 

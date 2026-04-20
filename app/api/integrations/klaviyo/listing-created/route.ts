@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 
 /**
- * Called from the sell flow after a client-side listing insert so we can fire Klaviyo server-side.
+ * Called from `/sell` after a listing is live (insert or draft→publish) so Klaviyo runs server-side
+ * with a verified session and row ownership. Flow trigger metric: **Listing** (see `track-listing-created`).
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient()

@@ -185,6 +185,32 @@ function submitErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
+/** Server-side Klaviyo “Listing” metric; safe to fire-and-forget from /sell after the listing is live. */
+function requestKlaviyoListingCreated(listingId: string): void {
+  void fetch("/api/integrations/klaviyo/listing-created", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ listing_id: listingId }),
+  })
+    .then(async (res) => {
+      if (res.ok) return
+      const text = await res.text().catch(() => "")
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "[klaviyo] listing-created API:",
+          res.status,
+          text.slice(0, 300),
+        )
+      }
+    })
+    .catch((err) => {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[klaviyo] listing-created fetch failed:", err)
+      }
+    })
+}
+
 function SellFormSection({
   title,
   children,
@@ -1899,6 +1925,9 @@ function SellPageContent() {
           }
           if (updateError) throw new Error(submitErrorMessage(updateError, "Failed to update listing"))
           listingSlug = updated?.slug ?? null
+          if (publishingFromDraftRow && effectiveEditId) {
+            requestKlaviyoListingCreated(effectiveEditId)
+          }
         } else if (adminImpersonatesListingOwner) {
           usedImpersonationListingApi = true
           goSubmitStep(0)
@@ -2065,28 +2094,7 @@ function SellPageContent() {
           if (imagesInsertError) {
             throw new Error(submitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
-          void fetch("/api/integrations/klaviyo/listing-created", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ listing_id: listingId }),
-          })
-            .then(async (res) => {
-              if (res.ok) return
-              const text = await res.text().catch(() => "")
-              if (process.env.NODE_ENV === "development") {
-                console.warn(
-                  "[klaviyo] listing-created API:",
-                  res.status,
-                  text.slice(0, 300),
-                )
-              }
-            })
-            .catch((err) => {
-              if (process.env.NODE_ENV === "development") {
-                console.warn("[klaviyo] listing-created fetch failed:", err)
-              }
-            })
+          requestKlaviyoListingCreated(listingId)
           goSubmitStep(2)
         }
       }
