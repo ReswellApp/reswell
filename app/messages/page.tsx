@@ -247,7 +247,7 @@ function MessagesContent() {
 
   return (
     <main className="flex-1 bg-gradient-to-b from-muted/40 to-background">
-      <div className="container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10">
+      <div className="container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10 md:max-w-4xl lg:max-w-5xl">
         <header className="mb-8">
           <h1 className="text-[28px] font-semibold tracking-tight text-foreground sm:text-[34px]">
             Messages
@@ -587,7 +587,7 @@ export default function MessagesPage() {
     <Suspense
       fallback={
         <main className="flex-1 bg-gradient-to-b from-muted/40 to-background">
-          <div className="container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10">
+          <div className="container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10 md:max-w-4xl lg:max-w-5xl">
             <div className="mb-8 space-y-2">
               <div className="h-9 w-48 animate-pulse rounded-lg bg-muted sm:h-10" />
               <div className="h-4 w-64 max-w-full animate-pulse rounded-md bg-muted/70" />

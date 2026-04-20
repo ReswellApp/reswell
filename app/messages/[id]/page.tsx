@@ -300,7 +300,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-muted/35 to-background">
-      <div className="container mx-auto flex min-h-0 max-w-2xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-6 sm:pt-3">
+      <div className="container mx-auto flex min-h-0 max-w-2xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
         {/* Header */}
         <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:px-3">
           <div className="flex items-center gap-1 sm:gap-2">
@@ -386,7 +386,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         <div
           className={cn(
             'flex shrink-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
-            'h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,38svh)]',
+            'h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
           )}
         >
           <div
@@ -503,7 +503,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                     >
                       <div
                         className={cn(
-                          'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5',
+                          'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]',
                           isOwn
                             ? 'rounded-br-[6px] bg-foreground text-background shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
                             : 'rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm',
