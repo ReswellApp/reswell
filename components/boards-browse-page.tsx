@@ -24,6 +24,7 @@ import {
   boardsBrowseBoardTypeLabel,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
+import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 
 function haversineMi(
   lat1: number,
@@ -361,7 +362,7 @@ export async function BoardsBrowsePage(props: {
                   <>
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <Link href="/boards">Surfboards</Link>
+                        <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
@@ -371,13 +372,15 @@ export async function BoardsBrowsePage(props: {
                   </>
                 ) : (
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">Surfboards</BreadcrumbPage>
+                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
+                      {surfboardsBrowseRootLabel}
+                    </BreadcrumbPage>
                   </BreadcrumbItem>
                 )}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <h1 className="text-3xl font-bold text-center">{typeCrumb ?? "Surfboards"}</h1>
+          <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
           <p className="text-center text-muted-foreground mt-2">
             Find boards with shipping to your door, or local pickup when sellers offer it
           </p>

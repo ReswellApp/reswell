@@ -23,6 +23,7 @@ import { MapPin, MessageSquare, Clock, Info } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import {
@@ -223,7 +224,7 @@ export async function SurfboardListingDetailPage({
                   <>
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <Link href="/boards">Surfboards</Link>
+                        <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
@@ -251,7 +252,7 @@ export async function SurfboardListingDetailPage({
                   <>
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <Link href="/boards">Surfboards</Link>
+                        <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />

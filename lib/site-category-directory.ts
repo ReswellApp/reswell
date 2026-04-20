@@ -5,8 +5,11 @@
 
 export type CategoryLink = { label: string; href: string }
 
+/** `/boards` root label — matches header nav and browse breadcrumbs. */
+export const surfboardsBrowseRootLabel = "All Surfboards"
+
 export const surfboardBrowseLinks: CategoryLink[] = [
-  { label: "All Surfboards", href: "/boards" },
+  { label: surfboardsBrowseRootLabel, href: "/boards" },
   { label: "Shortboard", href: "/boards?type=shortboard" },
   { label: "Groveler", href: "/boards?type=groveler" },
   { label: "Hybrid", href: "/boards?type=hybrid" },
