@@ -76,8 +76,6 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
     )
   }
 
-  const selectedImage = images[selectedIndex]
-
   function goPrev() {
     setSelectedIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
   }
@@ -116,21 +114,29 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
         }}
       >
         <div className="absolute inset-0">
-          <Image
-            src={proxiedListingImageSrc(selectedImage.url) || "/placeholder.svg"}
-            alt={`${title} - Image ${selectedIndex + 1}`}
-            fill
-            unoptimized
-            className={cn(
-              "object-cover object-center transition-opacity duration-300",
-              sold && "[filter:grayscale(30%)]",
-            )}
-            priority={selectedIndex === 0}
-            fetchPriority={selectedIndex === 0 ? "high" : "auto"}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            placeholder="blur"
-            blurDataURL={portraitShimmer}
-          />
+          {images.map((image, i) => {
+            const isSelected = i === selectedIndex
+            return (
+              <Image
+                key={image.id}
+                src={proxiedListingImageSrc(image.url) || "/placeholder.svg"}
+                alt={`${title} - Image ${i + 1}`}
+                fill
+                unoptimized
+                className={cn(
+                  "object-cover object-center absolute inset-0 transition-opacity duration-[420ms] ease-in-out",
+                  isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
+                  sold && "[filter:grayscale(30%)]",
+                )}
+                priority={i === 0}
+                fetchPriority={i === 0 ? "high" : "auto"}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                placeholder="blur"
+                blurDataURL={portraitShimmer}
+                aria-hidden={!isSelected}
+              />
+            )
+          })}
         </div>
         {sold && (
           <>
