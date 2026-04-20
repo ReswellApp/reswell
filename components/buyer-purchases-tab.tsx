@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,7 +39,8 @@ type Row = {
 function primaryImage(images: Array<{ url: string; is_primary: boolean | null }> | null | undefined) {
   if (!images?.length) return null
   const primary = images.find((i) => i.is_primary)
-  return (primary ?? images[0]).url
+  const raw = (primary ?? images[0]).url
+  return proxiedListingImageSrc(raw) || null
 }
 
 export function BuyerOrdersTab() {

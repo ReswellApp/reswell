@@ -3,6 +3,8 @@
  * Detail / lightbox views should use `url` only.
  */
 
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+
 export type ListingImageForCard = {
   url?: string | null
   thumbnail_url?: string | null
@@ -16,6 +18,6 @@ export function listingCardImageSrc(
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary?.url) return ""
   const thumb = primary.thumbnail_url?.trim()
-  if (thumb) return thumb
-  return primary.url.trim()
+  const raw = thumb || primary.url.trim()
+  return proxiedListingImageSrc(raw)
 }

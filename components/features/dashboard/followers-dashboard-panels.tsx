@@ -10,6 +10,7 @@ import { FollowersTabs } from "@/app/dashboard/followers/followers-tabs"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "Never"
@@ -201,7 +202,7 @@ export async function FollowersDashboardPanels({ variant = "page" }: FollowersDa
                             {img?.url && (
                               <div className="relative h-10 w-10 rounded overflow-hidden bg-background shrink-0">
                                 <Image
-                                  src={img.url}
+                                  src={proxiedListingImageSrc(img.url)}
                                   alt={sample.title}
                                   fill
                                   className="object-cover"

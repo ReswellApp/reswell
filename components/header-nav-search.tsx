@@ -13,6 +13,7 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 const RECENT_SEARCHES_KEY = "reswell_recent_searches"
 
@@ -285,7 +286,7 @@ export function HeaderNavSearch() {
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                       {listing.imageUrl ? (
                         <Image
-                          src={listing.imageUrl}
+                          src={proxiedListingImageSrc(listing.imageUrl)}
                           alt=""
                           fill
                           className="object-cover"

@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 export const metadata = privatePageMetadata({
   title: "Dashboard — Reswell",
@@ -277,7 +278,7 @@ export default async function DashboardPage() {
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
                       {primaryImage?.url ? (
                         <Image
-                          src={primaryImage.url || "/placeholder.svg"}
+                          src={proxiedListingImageSrc(primaryImage.url) || "/placeholder.svg"}
                           alt={capitalizeWords(listing.title)}
                           fill
                           className="object-cover object-center group-hover:scale-105 transition-transform"
@@ -342,7 +343,7 @@ export default async function DashboardPage() {
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
                       {primaryImage?.url ? (
                         <Image
-                          src={primaryImage.url || "/placeholder.svg"}
+                          src={proxiedListingImageSrc(primaryImage.url) || "/placeholder.svg"}
                           alt={capitalizeWords(listing.title)}
                           fill
                           className="object-cover object-center group-hover:scale-105 transition-transform"

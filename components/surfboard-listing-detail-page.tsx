@@ -20,8 +20,9 @@ import {
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { MapPin, MessageSquare, Clock, Info } from "lucide-react"
-import dynamic from "next/dynamic"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
+import { ImageGallery } from "@/components/image-gallery"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import {
@@ -29,15 +30,6 @@ import {
   ListingSoldOwnerNotice,
 } from "@/components/listing-sold-detail-notice"
 
-// Gallery JS is deferred; the server renders the static first image wrapper
-const ImageGallery = dynamic(
-  () => import("@/components/image-gallery").then((m) => ({ default: m.ImageGallery })),
-  {
-    loading: () => (
-      <div className="relative w-full rounded-lg overflow-hidden bg-muted" style={{ paddingBottom: "133.33%" }} />
-    ),
-  },
-)
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
@@ -189,11 +181,12 @@ export async function SurfboardListingDetailPage({
   const acceptOffers =
     buyerOffersOn && (!offerSettingsRow || offerSettingsRow.offers_enabled !== false)
 
-  const primaryImageUrl =
+  const primaryImageRaw =
     (images[0] as { thumbnail_url?: string | null; url?: string | null } | undefined)
       ?.thumbnail_url ||
     (images[0] as { url?: string | null } | undefined)?.url ||
     null
+  const primaryImageUrl = primaryImageRaw ? proxiedListingImageSrc(primaryImageRaw) : null
 
   const makeOfferConfig =
     canPeerPurchase && acceptOffers && listPriceNum > 0

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { listingDetailHref } from '@/lib/listing-href'
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { setImpersonation } from '@/lib/impersonation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -497,7 +498,7 @@ export default function AdminListingsPage() {
                         <div className="relative w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
                           {listing.listing_images?.[0]?.url ? (
                             <Image
-                              src={listing.listing_images[0].url || "/placeholder.svg"}
+                              src={proxiedListingImageSrc(listing.listing_images[0].url) || "/placeholder.svg"}
                               alt=""
                               fill
                               className="object-cover object-center"

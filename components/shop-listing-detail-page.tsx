@@ -23,6 +23,7 @@ import { QuantitySelector } from "@/components/quantity-selector"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
 import { formatCategory } from "@/lib/listing-labels"
 import { findListingByParam } from "@/lib/listing-query"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 export async function ShopListingDetailPage({
   listingParam,
@@ -49,7 +50,7 @@ export async function ShopListingDetailPage({
   const stockQuantity = inv ? Number((inv as { quantity: number }).quantity) : 0
   const images = (listing.listing_images as { url: string; is_primary: boolean }[]) || []
   const primaryImage = images.find((i) => i.is_primary) || images[0]
-  const imageUrl = primaryImage?.url ?? null
+  const imageUrl = primaryImage?.url ? proxiedListingImageSrc(primaryImage.url) : null
   const price = Number(listing.price)
 
   const relatedListings = await getCachedShopRelatedListings(listing.id)

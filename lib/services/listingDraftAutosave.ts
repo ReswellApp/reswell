@@ -135,6 +135,80 @@ export function buildSurfboardDraftListingRow(
   }
 }
 
+export interface SellDraftSummary {
+  id: string
+  title: string | null
+  price: number | null
+  updatedAt: string
+  primaryImageUrl: string | null
+}
+
+/**
+ * Returns the seller's recent surfboard drafts (most recent first) with the metadata
+ * the /sell "Drafts" picker needs to render thumbnails, titles, prices, and timestamps.
+ */
+export async function listSurfboardListingDrafts(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 20,
+): Promise<SellDraftSummary[]> {
+  const selectCols = "id, title, price, updated_at, listing_images(url, is_primary, sort_order)"
+
+  let query = supabase
+    .from("listings")
+    .select(selectCols)
+    .eq("user_id", userId)
+    .eq("section", "surfboards")
+    .eq("status", "draft")
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+
+  let { data, error } = await query
+  if (
+    error &&
+    (error.code === "42703" ||
+      (typeof error.message === "string" && error.message.includes("archived_at")))
+  ) {
+    const fallback = await supabase
+      .from("listings")
+      .select(selectCols)
+      .eq("user_id", userId)
+      .eq("section", "surfboards")
+      .eq("status", "draft")
+      .order("updated_at", { ascending: false })
+      .limit(limit)
+    data = fallback.data
+    error = fallback.error
+  }
+  if (error) throw error
+
+  type Row = {
+    id: string
+    title: string | null
+    price: number | null
+    updated_at: string
+    listing_images:
+      | { url: string | null; is_primary: boolean | null; sort_order: number | null }[]
+      | null
+  }
+  const rows = (data ?? []) as Row[]
+  return rows.map((r) => {
+    const imgs = Array.isArray(r.listing_images) ? r.listing_images : []
+    const primary =
+      imgs.find((i) => i.is_primary) ??
+      imgs.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]
+    const rawTitle = typeof r.title === "string" ? r.title.trim() : ""
+    return {
+      id: r.id,
+      title: rawTitle && rawTitle !== "Untitled draft" ? rawTitle : null,
+      price: typeof r.price === "number" ? r.price : null,
+      updatedAt: r.updated_at,
+      primaryImageUrl: primary?.url ?? null,
+    }
+  })
+}
+
 async function fetchDefaultBoardCategoryId(supabase: SupabaseClient): Promise<string | null> {
   const preferred = boardCategoryMap.shortboard
   const { data, error } = await supabase
@@ -195,54 +269,6 @@ export async function upsertSurfboardListingDraft(
     }
     if (upErr) throw upErr
     return { id: listingId }
-  }
-
-  let priorQ = await supabase
-    .from("listings")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("section", "surfboards")
-    .eq("status", "draft")
-    .is("archived_at", null)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (
-    priorQ.error &&
-    (priorQ.error.code === "42703" ||
-      (typeof priorQ.error.message === "string" && priorQ.error.message.includes("archived_at")))
-  ) {
-    priorQ = await supabase
-      .from("listings")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("section", "surfboards")
-      .eq("status", "draft")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-  }
-
-  if (priorQ.error && !priorQ.data) {
-    throw priorQ.error
-  }
-
-  const priorId =
-    priorQ.data && typeof (priorQ.data as { id?: string }).id === "string"
-      ? (priorQ.data as { id: string }).id
-      : undefined
-  if (priorId) {
-    let { error: upErr } = await supabase.from("listings").update(row).eq("id", priorId)
-    if (upErr && isListingDimensionDisplaySchemaCacheError(upErr)) {
-      const retry = await supabase
-        .from("listings")
-        .update(withoutListingDimensionDisplayDbFields(row))
-        .eq("id", priorId)
-      upErr = retry.error
-    }
-    if (upErr) throw upErr
-    return { id: priorId }
   }
 
   const insertRow = {

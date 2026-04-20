@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
 import { searchSuggest } from "@/app/actions/marketplace"
 import { listingDetailHref } from "@/lib/listing-href"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { useSearchSuggestPortalContainer } from "@/components/search-suggest-portal-context"
 
 /** Max rows in the combined Suggestions list (titles / categories / brands). */
@@ -437,7 +438,7 @@ export function SearchInputWithSuggest({
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14 sm:rounded-lg">
                         {item.imageUrl ? (
                           <Image
-                            src={item.imageUrl}
+                            src={proxiedListingImageSrc(item.imageUrl)}
                             alt=""
                             fill
                             className="object-cover"

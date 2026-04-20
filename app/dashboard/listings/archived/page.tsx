@@ -11,6 +11,7 @@ import { Package, Archive, ArrowLeft } from 'lucide-react'
 import { formatDistanceToNow, format, addDays } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingProductCardClassName } from '@/lib/listing-card-styles'
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { listingDetailHref } from '@/lib/listing-href'
 
 const ARCHIVE_DAYS = 30
@@ -137,7 +138,7 @@ export default function ArchivedListingsPage() {
                     >
                       {primaryImage?.url ? (
                         <Image
-                          src={primaryImage.url}
+                          src={proxiedListingImageSrc(primaryImage.url)}
                           alt={capitalizeWords(listing.title)}
                           fill
                           className="object-cover object-center"

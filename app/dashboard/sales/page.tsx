@@ -17,6 +17,7 @@ import {
 } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
@@ -71,7 +72,8 @@ type SaleRow = {
 function primaryImage(images: Array<{ url: string; is_primary: boolean | null }> | null | undefined) {
   if (!images?.length) return null
   const primary = images.find((i) => i.is_primary)
-  return (primary ?? images[0]).url
+  const raw = (primary ?? images[0]).url
+  return proxiedListingImageSrc(raw) || null
 }
 
 function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {

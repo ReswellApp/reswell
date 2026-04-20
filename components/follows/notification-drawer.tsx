@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import type { FollowNotification } from "@/lib/follows/types"
 import { getFollowNotifications, markFollowNotificationsRead } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -192,7 +193,7 @@ export function NotificationDrawer() {
                         }}
                       >
                         <Image
-                          src={primaryImg.url}
+                          src={proxiedListingImageSrc(primaryImg.url)}
                           alt={listing?.title || ""}
                           fill
                           className="object-cover"

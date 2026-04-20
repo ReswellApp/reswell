@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { listingDraftAutosaveSchema } from "@/lib/validations/listing-draft-autosave"
-import { upsertSurfboardListingDraft } from "@/lib/services/listingDraftAutosave"
+import {
+  listSurfboardListingDrafts,
+  upsertSurfboardListingDraft,
+} from "@/lib/services/listingDraftAutosave"
 import { deleteListingDocument } from "@/lib/elasticsearch/listings-index"
 import {
   fetchListingImageUrlsForListingIds,
@@ -18,43 +21,20 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    let q = supabase
-      .from("listings")
-      .select("id, updated_at")
-      .eq("user_id", user.id)
-      .eq("section", "surfboards")
-      .eq("status", "draft")
-      .is("archived_at", null)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const drafts = await listSurfboardListingDrafts(supabase, user.id)
+    const latest = drafts[0] ?? null
 
-    let { data, error } = await q
-    if (
-      error &&
-      (error.code === "42703" ||
-        (typeof error.message === "string" && error.message.includes("archived_at")))
-    ) {
-      const fallback = await supabase
-        .from("listings")
-        .select("id, updated_at")
-        .eq("user_id", user.id)
-        .eq("section", "surfboards")
-        .eq("status", "draft")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      data = fallback.data
-      error = fallback.error
-    }
-
-    if (error) {
-      return NextResponse.json({ error: "Failed to load draft" }, { status: 500 })
-    }
-
-    return NextResponse.json({ data: { draft: data ?? null } }, { status: 200 })
+    return NextResponse.json(
+      {
+        data: {
+          drafts,
+          draft: latest ? { id: latest.id, updated_at: latest.updatedAt } : null,
+        },
+      },
+      { status: 200 },
+    )
   } catch {
-    return NextResponse.json({ error: "Failed to load draft" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to load drafts" }, { status: 500 })
   }
 }
 

@@ -12,6 +12,7 @@ import { VerifiedBadge } from '@/components/verified-badge'
 import { format, isToday, isYesterday } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { sendConversationReply } from '@/app/actions/messages'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
 import {
@@ -362,7 +363,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-muted">
                 {conversation.listing.listing_images?.[0]?.url ? (
                   <Image
-                    src={conversation.listing.listing_images[0].url || '/placeholder.svg'}
+                    src={proxiedListingImageSrc(conversation.listing.listing_images[0].url) || '/placeholder.svg'}
                     alt={capitalizeWords(conversation.listing?.title)}
                     fill
                     className="object-cover object-center"

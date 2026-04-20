@@ -14,6 +14,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowingFeedPage } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 type Listing = {
   id: string
@@ -281,7 +282,7 @@ export function FollowingFeedClient({
                           <div className="aspect-[3/4] relative bg-muted overflow-hidden">
                             {img?.url ? (
                               <Image
-                                src={img.url}
+                                src={proxiedListingImageSrc(img.url)}
                                 alt={listing.title}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-300"

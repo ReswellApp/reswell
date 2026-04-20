@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { resolvePayableAmount, type PayableListing } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -50,7 +51,8 @@ export type CheckoutSeller = {
 function primaryListingImageUrl(images: CheckoutListing["listing_images"]): string | null {
   if (!images?.length) return null
   const primary = images.find((i) => i.is_primary)
-  return (primary ?? images[0]).url
+  const raw = (primary ?? images[0]).url
+  return proxiedListingImageSrc(raw) || null
 }
 
 interface CheckoutClientProps {

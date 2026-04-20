@@ -38,6 +38,7 @@ import {
   getSellServerDraftListingId,
 } from "@/lib/sell-draft-local-meta"
 import { postEndListing } from "@/lib/listing-end-request"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 interface Listing {
   id: string
@@ -200,7 +201,7 @@ export default function MyListingsPage() {
             <Link href={cardHref} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
               {primaryImage?.url ? (
                 <Image
-                  src={primaryImage.url || "/placeholder.svg"}
+                  src={proxiedListingImageSrc(primaryImage.url) || "/placeholder.svg"}
                   alt={capitalizeWords(listing.title)}
                   fill
                   className="object-cover object-center"

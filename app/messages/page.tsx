@@ -11,6 +11,7 @@ import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailHref } from '@/lib/listing-href'
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { cn } from '@/lib/utils'
 import { getConversationForBuyerSeller } from '@/lib/db/conversations'
 
@@ -527,7 +528,7 @@ function MessagesContent() {
                             {thumb ? (
                               <>
                                 <Image
-                                  src={thumb}
+                                  src={proxiedListingImageSrc(thumb)}
                                   alt={listing?.title ? capitalizeWords(listing.title) : 'Listing'}
                                   fill
                                   className="object-cover"
