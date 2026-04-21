@@ -24,6 +24,7 @@ import {
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { FollowButton } from "@/components/follows/follow-button"
+import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import { absoluteUrl } from "@/lib/site-metadata"
@@ -210,10 +211,12 @@ export default async function SellerProfilePage({
   }
   const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
 
-  // Fetch reviews (for stats + list)
+  // Fetch reviews (for stats + list); reviewer display name when available
   const { data: reviews } = await supabase
     .from("reviews")
-    .select("id, rating, comment, created_at")
+    .select(
+      "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name )",
+    )
     .eq("reviewed_id", id)
     .order("created_at", { ascending: false })
 
@@ -335,10 +338,18 @@ export default async function SellerProfilePage({
                     </span>
                   )}
                   {reviewCount > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Star className="h-3.5 w-3.5 fill-accent text-accent" />
-                      {avgRating.toFixed(1)} ({reviewCount} review
-                      {reviewCount !== 1 ? "s" : ""})
+                    <span
+                      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-foreground"
+                      role="img"
+                      aria-label={`Average ${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} review${reviewCount !== 1 ? "s" : ""}`}
+                    >
+                      <SellerRatingStarRow value={avgRating} size="sm" />
+                      <span className="tabular-nums font-medium text-foreground">
+                        {avgRating.toFixed(1)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        ({reviewCount} review{reviewCount !== 1 ? "s" : ""})
+                      </span>
                     </span>
                   )}
                   <span className="flex items-center gap-1">
@@ -366,7 +377,7 @@ export default async function SellerProfilePage({
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <FollowButton
                     sellerId={shop.id}
-                    sellerName={displayName}
+                    sellerName={displayName ?? undefined}
                     sellerSlug={shop.seller_slug || undefined}
                     sellerCity={shop.city || undefined}
                     initialFollowing={isFollowing}
@@ -410,18 +421,32 @@ export default async function SellerProfilePage({
           {/* Buyer reviews (directly under contact) */}
           <div className="py-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Star className="h-4 w-4 text-accent" />
+              <Star className="h-4 w-4 fill-amber-500 text-amber-500" aria-hidden />
               Buyer reviews
             </h2>
             {reviews && reviews.length > 0 ? (
               <div className="space-y-4">
-                {reviews.map((review) => (
+                {reviews.map((review) => {
+                  const rel = review.reviewer as
+                    | { display_name: string | null }
+                    | { display_name: string | null }[]
+                    | null
+                    | undefined
+                  const reviewer = Array.isArray(rel) ? rel[0] : rel
+                  const reviewerLabel =
+                    reviewer?.display_name?.trim() || "Verified buyer"
+                  return (
                   <Card key={review.id}>
                     <CardContent className="py-3 px-4">
-                      <div className="flex items-center gap-2 text-sm mb-1">
-                        <span className="font-medium">Rating:</span>
-                        <span className="text-accent font-semibold">
-                          {review.rating}/5
+                      <div className="flex items-center gap-2 text-sm mb-1 flex-wrap">
+                        <span className="font-medium text-foreground">{reviewerLabel}</span>
+                        <span className="text-muted-foreground">·</span>
+                        <span
+                          className="inline-flex items-center"
+                          role="img"
+                          aria-label={`${review.rating} out of 5 stars`}
+                        >
+                          <SellerRatingStarRow value={review.rating} size="md" />
                         </span>
                         <span className="text-xs text-muted-foreground ml-auto">
                           {review.created_at
@@ -444,7 +469,8 @@ export default async function SellerProfilePage({
                       )}
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">

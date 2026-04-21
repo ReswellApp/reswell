@@ -43,6 +43,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  ReviewSellerControls,
+  type ExistingSellerReview,
+} from "@/components/review-seller-controls"
 
 export type BuyerOrderExperienceProps = {
   orderId: string
@@ -62,6 +66,11 @@ export type BuyerOrderExperienceProps = {
   messagesHref: string
   canRequestCancel: boolean
   canRequestRefundHelp: boolean
+  /** Set when buyer may rate the seller, or when they already left a review for this order. */
+  sellerReview: {
+    canSubmit: boolean
+    existing: ExistingSellerReview | null
+  }
 }
 
 type JourneyStep = {
@@ -331,6 +340,15 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
       </Card>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        {(props.sellerReview.canSubmit || props.sellerReview.existing) && (
+          <ReviewSellerControls
+            orderId={props.orderId}
+            sellerName={props.sellerName}
+            canReview={props.sellerReview.canSubmit}
+            existingReview={props.sellerReview.existing}
+          />
+        )}
+
         {!isRefunded && !isRefunding && trackUrl ? (
           <Button className="gap-2" asChild>
             <a href={trackUrl} target="_blank" rel="noopener noreferrer">

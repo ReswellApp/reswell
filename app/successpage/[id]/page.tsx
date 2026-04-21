@@ -4,6 +4,7 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import { fetchBuyerOrderSuccessPayload } from "@/lib/order-success-payload"
 import { CheckoutOrderSuccess } from "@/components/checkout-order-success"
+import { CheckoutOrderSuccessPickup } from "@/components/checkout-order-success-pickup"
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -38,6 +39,10 @@ export default async function PurchaseSuccessPage(props: PageProps) {
   const payload = await fetchBuyerOrderSuccessPayload(supabase, user.id, user.email, id)
   if (!payload) {
     notFound()
+  }
+
+  if (payload.fulfillmentMethod === "pickup") {
+    return <CheckoutOrderSuccessPickup data={payload} />
   }
 
   return <CheckoutOrderSuccess data={payload} />

@@ -38,6 +38,8 @@ type OrderSuccessOrderRow = {
   amount: number | string
   created_at: string
   fulfillment_method: string | null
+  pickup_code: string | null
+  seller_id: string | null
   shipping_address: ShippingAddressJson
   listings:
     | {
@@ -108,6 +110,11 @@ function mapOrderRowToCheckoutPayload(
   const title = listing?.title ? capitalizeWords(listing.title) : "Item"
   const conditionLabel = listing?.condition ? formatCondition(listing.condition) : null
 
+  const pickupCode =
+    fulfillment === "pickup" && typeof order.pickup_code === "string" && order.pickup_code.trim()
+      ? order.pickup_code.trim()
+      : null
+
   return {
     orderId: order.id,
     displayNumber,
@@ -116,6 +123,9 @@ function mapOrderRowToCheckoutPayload(
     itemPrice,
     shippingCost,
     fulfillmentMethod: fulfillment,
+    pickupCode,
+    sellerId: order.seller_id?.trim() ? order.seller_id : null,
+    listingId: listing?.id ?? null,
     listing: listing
       ? {
           title,
@@ -157,6 +167,8 @@ export async function fetchBuyerOrderSuccessPayload(
       amount,
       created_at,
       fulfillment_method,
+      pickup_code,
+      seller_id,
       shipping_address,
       listings (
         id,

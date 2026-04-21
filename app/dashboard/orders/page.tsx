@@ -17,6 +17,8 @@ import {
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
+import { ReviewSellerControls } from "@/components/review-seller-controls"
 
 export const metadata = privatePageMetadata({
   title: "Orders — Reswell",
@@ -43,6 +45,7 @@ type MarketplaceOrderRow = {
   order_num: string | null
   amount: number | string
   status: string
+  delivery_status: string
   created_at: string
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
@@ -111,6 +114,7 @@ export default async function OrdersPage() {
       order_num,
       amount,
       status,
+      delivery_status,
       created_at,
       shipping_address,
       fulfillment_method,
@@ -140,6 +144,17 @@ export default async function OrdersPage() {
   const sellerNameById = new Map(
     (sellerProfiles ?? []).map((p) => [p.id, p.display_name?.trim() || ""]),
   )
+
+  const orderIds = list.map((o) => o.id)
+  const { data: reviewRows } =
+    orderIds.length > 0
+      ? await supabase
+          .from("reviews")
+          .select("order_id, id, rating, comment, created_at")
+          .in("order_id", orderIds)
+      : { data: [] as { order_id: string; id: string; rating: number; comment: string | null; created_at: string }[] }
+
+  const reviewsByOrderId = new Map((reviewRows ?? []).map((r) => [r.order_id, r]))
 
   return (
     <div className="space-y-6">
@@ -194,20 +209,32 @@ export default async function OrdersPage() {
           const fulfill = fulfillmentLabel(row.fulfillment_method, !!addrBlock)
           const paidWith = paymentLabel(row.stripe_checkout_session_id)
 
+          const review = reviewsByOrderId.get(row.id)
+          const existingSellerReview = review
+            ? {
+                id: review.id,
+                rating: review.rating,
+                comment: review.comment,
+                created_at: review.created_at,
+              }
+            : null
+          const canReviewSeller = !existingSellerReview && canSubmitSellerReview(row)
+          const showSellerReview = canReviewSeller || !!existingSellerReview
+
           return (
-            <Link
+            <Card
               key={row.id}
-              href={`/dashboard/orders/${row.id}`}
-              className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className={`h-full overflow-hidden rounded-xl transition-colors ${
+                orderStatusIsRefunded(row.status)
+                  ? "border-destructive/20 bg-destructive/[0.02]"
+                  : orderStatusIsRefundInProgress(row.status)
+                    ? "border-amber-500/25 bg-amber-500/[0.03]"
+                    : "hover:bg-muted/40 hover:border-primary/25"
+              }`}
             >
-              <Card
-                className={`h-full transition-colors ${
-                  orderStatusIsRefunded(row.status)
-                    ? "border-destructive/20 bg-destructive/[0.02]"
-                    : orderStatusIsRefundInProgress(row.status)
-                      ? "border-amber-500/25 bg-amber-500/[0.03]"
-                      : "hover:bg-muted/40 hover:border-primary/25"
-                }`}
+              <Link
+                href={`/dashboard/orders/${row.id}`}
+                className="block rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <CardHeader className="pb-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -315,8 +342,20 @@ export default async function OrdersPage() {
                     </p>
                   )}
                 </CardContent>
-              </Card>
-            </Link>
+              </Link>
+
+              {showSellerReview && (
+                <CardContent className="border-t bg-muted/20 pt-4 pb-4">
+                  <ReviewSellerControls
+                    orderId={row.id}
+                    sellerName={sellerName}
+                    canReview={canReviewSeller}
+                    existingReview={existingSellerReview}
+                    compact
+                  />
+                </CardContent>
+              )}
+            </Card>
           )
         })}
       </div>

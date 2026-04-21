@@ -5,51 +5,20 @@ import Image from "next/image"
 import Link from "next/link"
 import confetti from "canvas-confetti"
 import { motion } from "motion/react"
-import { ArrowRight, Check, Package, Truck } from "lucide-react"
+import { ArrowRight, Check, MessageSquare, Package, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-export type CheckoutOrderSuccessPayload = {
-  orderId: string
-  /** `orders.order_num` (shown as `Order #…`, same as dashboard Orders). */
-  displayNumber: string
-  buyerEmail: string | null
-  total: number
-  itemPrice: number
-  shippingCost: number
-  fulfillmentMethod: "shipping" | "pickup" | null
-  /** Pickup handoff code — only set on `fulfillment_method = 'pickup'` orders. */
-  pickupCode: string | null
-  /** Seller user id — used to deep-link to Messages for pickup coordination. */
-  sellerId: string | null
-  /** Listing id — pairs with `sellerId` for Messages deep-links. */
-  listingId: string | null
-  listing: {
-    title: string
-    imageUrl: string | null
-    subtitle: string | null
-    categoryLabel?: string | null
-  } | null
-  shipping: {
-    oneLine: string | null
-    name: string | null
-    addressLines: string[] | null
-    email: string | null
-  } | null
-}
+import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
 
 function money(n: number) {
   return `$${n.toFixed(2)}`
 }
 
-function subcopy(fulfillment: CheckoutOrderSuccessPayload["fulfillmentMethod"]) {
-  if (fulfillment === "pickup") {
-    return "Stoke is high. Coordinate pickup with your seller."
-  }
-  return "Stoke is on the way. Your board ships out soon."
-}
-
-/** Order confirmation — same layout as before (motion, confetti, two-column card), styled with site tokens. */
-export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPayload }) {
+/**
+ * Order confirmation for local-pickup orders.
+ * Mirrors `CheckoutOrderSuccess` styling but surfaces the buyer's pickup code
+ * (shown to the seller at handoff) and a direct Messages link.
+ */
+export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSuccessPayload }) {
   useEffect(() => {
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return
@@ -58,7 +27,6 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
     const duration = 3000
     const animationEnd = Date.now() + duration
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
-    /** Slate / neutral + subtle emerald — matches Reswell globals, not legacy cyan mock */
     const colors = ["#0f172a", "#475569", "#94a3b8", "#cbd5e1", "#059669"]
 
     function randomInRange(min: number, max: number) {
@@ -89,23 +57,12 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
     return () => clearInterval(interval)
   }, [])
 
-  const fulfill = data.fulfillmentMethod
-  const shippingTitle =
-    fulfill === "shipping" ? "Standard shipping" : fulfill === "pickup" ? "Local pickup" : "Delivery"
-  const shippingBody =
-    fulfill === "shipping" && data.shipping?.oneLine
-      ? data.shipping.oneLine
-      : fulfill === "pickup"
-        ? "Coordinate time and place with the seller via Messages."
-        : "Details are available on your order page."
-  const shippingHint =
-    fulfill === "shipping"
-      ? "Seller will add tracking from your orders page when it ships."
-      : fulfill === "pickup"
-        ? "Bring your pickup code when you meet the seller."
-        : null
-
   const category = data.listing?.categoryLabel?.trim() || "Order"
+
+  const messagesHref =
+    data.sellerId && data.listingId
+      ? `/messages?user=${encodeURIComponent(data.sellerId)}&listing=${encodeURIComponent(data.listingId)}`
+      : null
 
   return (
     <main className="relative flex-1 overflow-hidden bg-gradient-to-b from-muted/50 to-background">
@@ -139,8 +96,32 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
           <h1 className="mb-4 text-4xl font-semibold tracking-tight text-foreground md:text-6xl">
             Order confirmed
           </h1>
-          <p className="mx-auto max-w-xl text-lg text-muted-foreground md:text-xl">{subcopy(fulfill)}</p>
+          <p className="mx-auto max-w-xl text-lg text-muted-foreground md:text-xl">
+            Stoke is high. Coordinate pickup with your seller.
+          </p>
         </motion.div>
+
+        {data.pickupCode ? (
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="mb-8 overflow-hidden rounded-xl border border-amber-500/30 bg-amber-50/60 text-card-foreground shadow-sm dark:bg-amber-950/20"
+          >
+            <div className="p-6 text-center md:p-8">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                Your pickup code
+              </div>
+              <p className="py-2 text-4xl font-mono font-bold tracking-[0.3em] text-foreground md:text-5xl">
+                {data.pickupCode}
+              </p>
+              <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+                Share this code with the seller when you meet. They enter it to confirm the handoff
+                and release their payout.
+              </p>
+            </div>
+          </motion.div>
+        ) : null}
 
         <motion.div
           initial={{ y: 40, opacity: 0 }}
@@ -194,11 +175,13 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
                 <div className="flex items-start gap-3">
                   <Truck className="mt-0.5 h-5 w-5 shrink-0 text-foreground/70" aria-hidden />
                   <div>
-                    <div className="mb-1 text-sm">{shippingTitle}</div>
-                    <div className="text-sm text-muted-foreground">{shippingBody}</div>
-                    {shippingHint ? (
-                      <div className="mt-1 text-xs text-muted-foreground">{shippingHint}</div>
-                    ) : null}
+                    <div className="mb-1 text-sm">Local pickup</div>
+                    <div className="text-sm text-muted-foreground">
+                      Coordinate time and place with the seller via Messages.
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Bring your pickup code when you meet the seller.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -212,12 +195,21 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
           transition={{ delay: 0.7 }}
           className="flex flex-col justify-center gap-3 sm:flex-row sm:justify-center"
         >
-          <Button size="lg" asChild>
-            <Link href="/dashboard/orders" className="gap-2">
-              Track order
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          {messagesHref ? (
+            <Button size="lg" asChild>
+              <Link href={messagesHref} className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Message seller
+              </Link>
+            </Button>
+          ) : (
+            <Button size="lg" asChild>
+              <Link href={`/dashboard/orders/${data.orderId}`} className="gap-2">
+                View pickup details
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          )}
           <Button size="lg" variant="outline" asChild>
             <Link href="/boards">Continue shopping</Link>
           </Button>

@@ -28,6 +28,8 @@ import {
 import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
+import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
+import { getSellerReviewByOrderId } from "@/lib/db/order-reviews"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import {
   fetchOptionalOrderTrackingDetailJson,
@@ -207,6 +209,20 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
 
+  const { data: orderReviewRow } = await getSellerReviewByOrderId(supabase, id)
+
+  const existingSellerReview = orderReviewRow
+    ? {
+        id: orderReviewRow.id,
+        rating: orderReviewRow.rating,
+        comment: orderReviewRow.comment,
+        created_at: orderReviewRow.created_at,
+      }
+    : null
+
+  const canSubmitSellerReviewForOrder =
+    !existingSellerReview && canSubmitSellerReview(order)
+
   const convRow = await getConversationForBuyerSeller(supabase, user.id, order.seller_id)
 
   const conversationId = convRow?.id ?? null
@@ -283,6 +299,10 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         messagesHref={`/messages?user=${encodeURIComponent(order.seller_id)}&listing=${encodeURIComponent(order.listing_id)}`}
         canRequestCancel={order.status === "confirmed" && canSubmitCancelRequest(order)}
         canRequestRefundHelp={order.status === "confirmed" && canSubmitRefundHelpRequest(order)}
+        sellerReview={{
+          canSubmit: canSubmitSellerReviewForOrder,
+          existing: existingSellerReview,
+        }}
       />
 
       {/* Buyer action: confirm delivery for shipped orders (hidden when refunded) */}

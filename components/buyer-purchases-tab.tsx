@@ -19,12 +19,18 @@ import {
 } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
+import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
+import {
+  ReviewSellerControls,
+  type ExistingSellerReview,
+} from "@/components/review-seller-controls"
 
 type Row = {
   id: string
   order_num: string | null
   amount: number | string
   status: string
+  delivery_status: string
   created_at: string
   fulfillment_method: string | null
   stripe_checkout_session_id: string | null
@@ -34,6 +40,8 @@ type Row = {
     title: string
     listing_images: Array<{ url: string; is_primary: boolean | null }> | null
   } | null
+  sellerReview: { canSubmit: boolean; existing: ExistingSellerReview | null } | null
+  sellerDisplayName: string
 }
 
 function primaryImage(images: Array<{ url: string; is_primary: boolean | null }> | null | undefined) {
@@ -65,6 +73,7 @@ export function BuyerOrdersTab() {
         order_num,
         amount,
         status,
+        delivery_status,
         created_at,
         fulfillment_method,
         stripe_checkout_session_id,
@@ -80,7 +89,7 @@ export function BuyerOrdersTab() {
       setError(true)
       setRows([])
     } else {
-      const normalized = (data ?? []).map((r) => {
+      const base = (data ?? []).map((r) => {
         const raw = r as {
           listings:
             | Row["listings"]
@@ -88,8 +97,47 @@ export function BuyerOrdersTab() {
             | null
         }
         const listing = Array.isArray(raw.listings) ? raw.listings[0] : raw.listings
-        return { ...(r as Omit<Row, "listings">), listings: listing ?? null }
+        return { ...(r as Omit<Row, "listings" | "sellerReview" | "sellerDisplayName">), listings: listing ?? null }
       })
+
+      const sellerIds = [...new Set(base.map((o) => o.seller_id))]
+      const { data: sellerProfiles } =
+        sellerIds.length > 0
+          ? await supabase.from("profiles").select("id, display_name").in("id", sellerIds)
+          : { data: [] as { id: string; display_name: string | null }[] }
+      const sellerNameById = new Map(
+        (sellerProfiles ?? []).map((p) => [p.id, p.display_name?.trim() || ""]),
+      )
+
+      const ids = base.map((o) => o.id)
+      const { data: revs } =
+        ids.length > 0
+          ? await supabase
+              .from("reviews")
+              .select("order_id, id, rating, comment, created_at")
+              .in("order_id", ids)
+          : { data: [] as { order_id: string; id: string; rating: number; comment: string | null; created_at: string }[] }
+
+      const revByOrder = new Map((revs ?? []).map((x) => [x.order_id, x]))
+
+      const normalized: Row[] = base.map((o) => {
+        const rev = revByOrder.get(o.id)
+        const existing: ExistingSellerReview | null = rev
+          ? {
+              id: rev.id,
+              rating: rev.rating,
+              comment: rev.comment,
+              created_at: rev.created_at,
+            }
+          : null
+        const canSubmit = !existing && canSubmitSellerReview(o)
+        const sellerReview = canSubmit || existing ? { canSubmit, existing } : null
+        const rawName = sellerNameById.get(o.seller_id)?.trim()
+        const sellerDisplayName =
+          rawName && rawName.length > 0 ? rawName : `Seller ${o.seller_id.slice(0, 8)}…`
+        return { ...o, sellerReview, sellerDisplayName }
+      })
+
       setRows(normalized)
     }
     setLoading(false)
@@ -174,11 +222,16 @@ export function BuyerOrdersTab() {
                 ? "Pickup"
                 : "—"
 
+          const sellerRaw = row.sellerReview
+
           return (
-            <li key={row.id}>
+            <li
+              key={row.id}
+              className="flex flex-col gap-2 rounded-lg border bg-card overflow-hidden sm:flex-row sm:items-stretch"
+            >
               <Link
                 href={`/dashboard/orders/${row.id}`}
-                className="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/40"
+                className="flex flex-1 items-center gap-3 p-3 min-w-0 transition-colors hover:bg-muted/40"
               >
                 <div className="relative h-12 w-12 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
                   {img ? (
@@ -216,8 +269,20 @@ export function BuyerOrdersTab() {
                     </p>
                   )}
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 hidden sm:block" />
               </Link>
+              {sellerRaw && (
+                <div className="flex items-center border-t sm:border-t-0 sm:border-l sm:max-w-[220px] px-3 py-3 bg-muted/25">
+                  <ReviewSellerControls
+                    orderId={row.id}
+                    sellerName={row.sellerDisplayName}
+                    canReview={sellerRaw.canSubmit}
+                    existingReview={sellerRaw.existing}
+                    compact
+                    onSuccess={load}
+                  />
+                </div>
+              )}
             </li>
           )
         })}

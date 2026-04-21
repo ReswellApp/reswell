@@ -479,6 +479,30 @@ export function Header() {
     }
   }, [supabase, user?.id])
 
+  /** Avatar, display name, shop logo: stay in sync when `profiles` row updates (any client or API path). */
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase
+      .channel(`header_profile_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        () => {
+          window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [supabase, user?.id])
+
   /** Lightweight wallet-only resync on route changes — catches staleness when Realtime misses an update. */
   useEffect(() => {
     if (!user?.id) return

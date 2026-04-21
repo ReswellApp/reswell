@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getPayPalHttpClient, paypalSdk } from "@/lib/paypal"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
+import { trackKlaviyoPayout } from "@/lib/klaviyo/track-payout"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -257,6 +258,23 @@ export async function POST(req: Request) {
         reference_type: "paypal_payout",
       })
     }
+
+    void trackKlaviyoPayout({
+      userId: user.id,
+      userEmail: user.email ?? null,
+      method: "paypal",
+      speed: "paypal",
+      amountUsd,
+      feeUsd: 0,
+      netUsd: amountUsd,
+      destination: payoutEmailForRow,
+      stripeTransferId: null,
+      payoutId: payoutBatchId,
+      availableBalanceAfterUsd: newBalance,
+      uniqueId: payoutRow?.id
+        ? `payout-paypal-${payoutRow.id}`
+        : `payout-paypal-batch-${payoutBatchId ?? senderBatchId}`,
+    })
 
     return NextResponse.json({
       success: true,

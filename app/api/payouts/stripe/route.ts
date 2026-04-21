@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { cashOutToStripeConnectedAccount } from "@/lib/services/stripeConnect"
 import { stripeConnectCashOutBodySchema } from "@/lib/validations/stripe-connect"
+import { trackKlaviyoPayout } from "@/lib/klaviyo/track-payout"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -72,6 +73,21 @@ export async function POST(req: Request) {
       { status: result.status ?? 400 },
     )
   }
+
+  void trackKlaviyoPayout({
+    userId: user.id,
+    userEmail: user.email ?? null,
+    method: "stripe_bank",
+    speed: result.speed,
+    amountUsd: result.amountUsd,
+    feeUsd: result.feeUsd,
+    netUsd: result.netToBankUsd,
+    destination: null,
+    stripeTransferId: result.transferId,
+    payoutId: result.stripePayoutId,
+    availableBalanceAfterUsd: result.availableBalanceAfter,
+    uniqueId: `payout-stripe-${result.transferId}`,
+  })
 
   return NextResponse.json({
     success: true,

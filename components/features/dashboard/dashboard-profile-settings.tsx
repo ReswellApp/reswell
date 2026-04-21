@@ -19,6 +19,7 @@ import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
 import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
+import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 
 interface Profile {
   id: string
@@ -113,6 +114,8 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
     if (!error) {
       toast.success("Profile updated successfully")
       void revalidateListingDetailAfterProfileUpdate()
+      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      router.refresh()
     } else {
       toast.error("Failed to update profile")
     }
@@ -153,6 +156,8 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
       setProfile({ ...profile, avatar_url: avatarUrl })
       toast.success("Profile photo updated")
       void revalidateListingDetailAfterProfileUpdate()
+      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      router.refresh()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error"
       console.error("Avatar upload error:", message)
