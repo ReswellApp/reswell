@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { createProfileAddress } from "@/app/actions/addresses"
-import { saveGuestCheckoutContactEmail } from "@/app/actions/guestCheckoutContact"
-import { saveGuestPickupContact } from "@/app/actions/guestCheckoutPickup"
 import {
   CheckoutAddressLine1Field,
   type ResolvedCheckoutAddress,
@@ -22,27 +20,6 @@ import {
 } from "@/components/ui/select"
 import type { ProfileAddressInput } from "@/lib/address-input"
 import type { ProfileAddressRow } from "@/lib/profile-address"
-import type {
-  SessionlessGuestPaymentRequest,
-} from "@/lib/checkout/sessionless-guest-stripe-payload"
-import { z } from "zod"
-
-type GuestShippingInput = ProfileAddressInput
-
-function profileRowToGuestShipping(a: ProfileAddressRow): GuestShippingInput {
-  return {
-    full_name: a.full_name,
-    phone: a.phone?.trim() ? a.phone.trim() : null,
-    line1: a.line1,
-    line2: a.line2,
-    city: a.city,
-    state: a.state,
-    postal_code: a.postal_code,
-    country: a.country,
-    label: a.label,
-    is_default: a.is_default,
-  }
-}
 
 function formatAddressLine(a: ProfileAddressRow) {
   const parts = [a.line1, a.city, a.state, a.postal_code].filter(Boolean)
@@ -53,43 +30,19 @@ export type PurchaseDetailsState = {
   readyToPay: boolean
   /** Required for Stripe when shipping; null for pickup-only checkout. */
   shippingAddressId: string | null
-  /** Guest checkout: saved contact email on profile before payment. Always true for signed-in buyers. */
-  guestContactReady: boolean
-  /** True sessionless guest checkout only — full PaymentIntent body when the form is valid. */
-  sessionlessGuestPay: SessionlessGuestPaymentRequest | null
-  /** Sessionless shipping quote — set when a ship-to address is selected. */
-  sessionlessShippingForQuote: GuestShippingInput | null
-}
-
-const guestEmailSchema = z.string().trim().email()
-
-function RequiredFieldMark() {
-  return (
-    <span className="ml-0.5 cursor-help font-semibold text-destructive" title="Required" aria-hidden="true">
-      *
-    </span>
-  )
 }
 
 export function CheckoutPurchaseDetails({
-  listingId,
   buyerEmail,
-  contactEmailMode,
   initialAddresses,
   needsShipping,
   onStateChange,
 }: {
-  listingId: string
   buyerEmail: string | null
-  /** `guest` — Supabase anonymous; `sessionless` — no auth; `account` — signed-in. */
-  contactEmailMode: "account" | "guest" | "sessionless"
   initialAddresses: ProfileAddressRow[]
   needsShipping: boolean
   onStateChange: (state: PurchaseDetailsState) => void
 }) {
-  const guestStyleLabels = contactEmailMode === "guest" || contactEmailMode === "sessionless"
-  const isSupabaseGuest = contactEmailMode === "guest"
-  const isSessionless = contactEmailMode === "sessionless"
   const [addresses, setAddresses] = useState<ProfileAddressRow[]>(initialAddresses)
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const d = initialAddresses.find((a) => a.is_default)
@@ -99,26 +52,8 @@ export function CheckoutPurchaseDetails({
   const prevSelectedRef = useRef<string | null>(selectedId)
 
   const [pickupName, setPickupName] = useState("")
-  const [guestPickupSaveState, setGuestPickupSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
-  const [guestPickupNameError, setGuestPickupNameError] = useState<string | null>(null)
 
-  const [guestEmailInput, setGuestEmailInput] = useState(() => buyerEmail?.trim() ?? "")
-  const [guestEmailSaveState, setGuestEmailSaveState] = useState<"idle" | "saving" | "saved" | "error">(() => {
-    if (contactEmailMode !== "guest" && contactEmailMode !== "sessionless") return "idle"
-    const t = buyerEmail?.trim() ?? ""
-    return t && guestEmailSchema.safeParse(t).success ? "saved" : "idle"
-  })
-  const [guestEmailError, setGuestEmailError] = useState<string | null>(null)
-
-  const guestEmailValid = guestEmailSchema.safeParse(guestEmailInput).success
-  const guestEmailCommitted =
-    contactEmailMode === "guest"
-      ? guestEmailSaveState === "saved" && guestEmailValid
-      : contactEmailMode === "sessionless"
-        ? guestEmailValid
-        : true
-
-  const [draft, setDraft] = useState({
+  const [draft, setDraft] = useState<ProfileAddressInput>({
     full_name: "",
     line1: "",
     line2: "",
@@ -166,89 +101,13 @@ export function CheckoutPurchaseDetails({
     return base
   }, [draft])
 
-  const tryPersistGuestPickup = useCallback(async () => {
-    if (needsShipping) return
-    if (contactEmailMode === "sessionless") {
-      const name = pickupName.trim()
-      if (!name) {
-        setGuestPickupNameError("Full name is required.")
-        return
-      }
-      setGuestPickupNameError(null)
-      setGuestPickupSaveState("saved")
-      return
-    }
-    if (contactEmailMode !== "guest") return
-    const name = pickupName.trim()
-    if (!name) {
-      setGuestPickupNameError("Full name is required.")
-      return
-    }
-    setGuestPickupNameError(null)
-    setGuestPickupSaveState("saving")
-    const r = await saveGuestPickupContact({ full_name: name })
-    if (!r.ok) {
-      setGuestPickupSaveState("error")
-      toast.error(r.error)
-      return
-    }
-    setGuestPickupSaveState("saved")
-  }, [contactEmailMode, needsShipping, pickupName])
-
   const computeAndNotify = useCallback(() => {
-    const guestContactReady =
-      contactEmailMode === "guest" || contactEmailMode === "sessionless" ? guestEmailCommitted : true
-
     const pickupNameOk = pickupName.trim().length > 0
-
-    const guestPickupOk =
-      contactEmailMode === "account" ||
-      (isSessionless ? pickupNameOk : guestPickupSaveState === "saved" && pickupNameOk)
-
-    const buildSessionlessPay = (): SessionlessGuestPaymentRequest | null => {
-      if (!isSessionless || !guestContactReady) return null
-      const email = guestEmailInput.trim()
-      if (!guestEmailSchema.safeParse(email).success) return null
-      if (!needsShipping) {
-        if (!pickupNameOk) return null
-        return {
-          listing_id: listingId,
-          guest_checkout: true,
-          buyer_email: email,
-          fulfillment: "pickup",
-          pickup: {
-            full_name: pickupName.trim(),
-          },
-        }
-      }
-      const selected = addresses.find((a) => a.id === selectedId)
-      if (!selected) return null
-      return {
-        listing_id: listingId,
-        guest_checkout: true,
-        buyer_email: email,
-        fulfillment: "shipping",
-        shipping: profileRowToGuestShipping(selected),
-      }
-    }
-
-    const sessionlessGuestPay = buildSessionlessPay()
-
-    let sessionlessShippingForQuote: GuestShippingInput | null = null
-    if (isSessionless && needsShipping && selectedId) {
-      const selected = addresses.find((a) => a.id === selectedId)
-      if (selected) {
-        sessionlessShippingForQuote = profileRowToGuestShipping(selected)
-      }
-    }
 
     if (!needsShipping) {
       onStateChange({
-        readyToPay: pickupNameOk && guestContactReady && guestPickupOk,
+        readyToPay: pickupNameOk,
         shippingAddressId: null,
-        guestContactReady,
-        sessionlessGuestPay,
-        sessionlessShippingForQuote: null,
       })
       return
     }
@@ -257,9 +116,6 @@ export function CheckoutPurchaseDetails({
       onStateChange({
         readyToPay: false,
         shippingAddressId: null,
-        guestContactReady,
-        sessionlessGuestPay: null,
-        sessionlessShippingForQuote: null,
       })
       return
     }
@@ -267,11 +123,8 @@ export function CheckoutPurchaseDetails({
     if (selectedId) {
       const selected = addresses.find((a) => a.id === selectedId)
       onStateChange({
-        readyToPay: guestContactReady && !!selected,
+        readyToPay: !!selected,
         shippingAddressId: selectedId,
-        guestContactReady,
-        sessionlessGuestPay,
-        sessionlessShippingForQuote,
       })
       return
     }
@@ -279,24 +132,8 @@ export function CheckoutPurchaseDetails({
     onStateChange({
       readyToPay: false,
       shippingAddressId: null,
-      guestContactReady,
-      sessionlessGuestPay: null,
-      sessionlessShippingForQuote: null,
     })
-  }, [
-    needsShipping,
-    pickupName,
-    guestPickupSaveState,
-    addresses,
-    showNewForm,
-    selectedId,
-    onStateChange,
-    contactEmailMode,
-    guestEmailCommitted,
-    guestEmailInput,
-    isSessionless,
-    listingId,
-  ])
+  }, [needsShipping, pickupName, showNewForm, selectedId, addresses, onStateChange])
 
   useEffect(() => {
     computeAndNotify()
@@ -324,50 +161,11 @@ export function CheckoutPurchaseDetails({
 
   const saveNewAddress = async () => {
     if (!draftValid) {
-      toast.error(
-        guestStyleLabels
-          ? "Fill in name, street, city, postal code, and country."
-          : "Fill in name, street, city, postal code, and country.",
-      )
+      toast.error("Fill in name, street, city, postal code, and country.")
       return
     }
     setSaving(true)
     try {
-      if (isSessionless) {
-        const now = new Date().toISOString()
-        const localAddr: ProfileAddressRow = {
-          id: crypto.randomUUID(),
-          profile_id: "00000000-0000-0000-0000-000000000000",
-          full_name: draft.full_name,
-          phone: null,
-          line1: draft.line1,
-          line2: draft.line2?.trim() || null,
-          city: draft.city,
-          state: draft.state?.trim() || null,
-          postal_code: draft.postal_code,
-          country: draft.country,
-          label: null,
-          is_default: addresses.length === 0,
-          created_at: now,
-          updated_at: now,
-        }
-        setAddresses((prev) => [localAddr, ...prev.filter((a) => a.id !== localAddr.id)])
-        setSelectedId(localAddr.id)
-        prevSelectedRef.current = localAddr.id
-        setShowNewForm(false)
-        setDraft({
-          full_name: "",
-          line1: "",
-          line2: "",
-          city: "",
-          state: "",
-          postal_code: "",
-          country: "US",
-        })
-        toast.success("Address added")
-        return
-      }
-
       const { address, error } = await createProfileAddress({
         full_name: draft.full_name,
         phone: null,
@@ -412,81 +210,18 @@ export function CheckoutPurchaseDetails({
         <h3 className="text-[15px] font-semibold tracking-tight text-foreground">Contact</h3>
         <div className="space-y-1.5">
           <Label htmlFor="checkout-email" className="text-[13px] font-normal text-neutral-600">
-            Email{guestStyleLabels ? <RequiredFieldMark /> : null}
+            Email
           </Label>
-          {contactEmailMode === "account" ? (
-            <>
-              <Input
-                id="checkout-email"
-                type="email"
-                autoComplete="email"
-                value={buyerEmail ?? ""}
-                readOnly
-                disabled
-                className={`${fieldClass} bg-neutral-50 text-neutral-700`}
-              />
-              <p className="text-xs text-neutral-500">Receipts and order updates are sent here.</p>
-            </>
-          ) : (
-            <>
-              <Input
-                id="checkout-email"
-                type="email"
-                autoComplete="email"
-                value={guestEmailInput}
-                onChange={(e) => {
-                  setGuestEmailInput(e.target.value)
-                  setGuestEmailSaveState("idle")
-                  setGuestEmailError(null)
-                }}
-                onBlur={async () => {
-                  const trimmed = guestEmailInput.trim()
-                  if (!trimmed) {
-                    setGuestEmailError("Email is required.")
-                    return
-                  }
-                  if (!guestEmailSchema.safeParse(trimmed).success) {
-                    setGuestEmailError("Enter a valid email address.")
-                    return
-                  }
-                  if (isSessionless) {
-                    setGuestEmailError(null)
-                    setGuestEmailSaveState("saved")
-                    return
-                  }
-                  setGuestEmailSaveState("saving")
-                  setGuestEmailError(null)
-                  const r = await saveGuestCheckoutContactEmail({ email: trimmed })
-                  if (!r.ok) {
-                    setGuestEmailSaveState("error")
-                    setGuestEmailError(r.error)
-                    return
-                  }
-                  setGuestEmailSaveState("saved")
-                }}
-                placeholder="you@example.com"
-                className={fieldClass}
-                required={guestStyleLabels}
-                aria-required={guestStyleLabels}
-              />
-              {guestEmailError ? <p className="text-xs text-destructive">{guestEmailError}</p> : null}
-              {guestEmailSaveState === "saving" ? (
-                <p className="text-xs text-neutral-500">Saving…</p>
-              ) : guestEmailSaveState === "saved" && guestEmailValid ? (
-                <p className="text-xs text-neutral-500">
-                  {isSessionless
-                    ? "Receipts and order updates go here."
-                    : "Saved — receipts and order updates go here."}
-                </p>
-              ) : (
-                <p className="text-xs text-neutral-500">
-                  {isSessionless
-                    ? "Enter a valid email before payment."
-                    : "Tab out of the field to save. Required before payment."}
-                </p>
-              )}
-            </>
-          )}
+          <Input
+            id="checkout-email"
+            type="email"
+            autoComplete="email"
+            value={buyerEmail ?? ""}
+            readOnly
+            disabled
+            className={`${fieldClass} bg-neutral-50 text-neutral-700`}
+          />
+          <p className="text-xs text-neutral-500">Receipts and order updates are sent here.</p>
         </div>
       </section>
 
@@ -495,35 +230,18 @@ export function CheckoutPurchaseDetails({
           <h3 className="text-[15px] font-semibold tracking-tight text-foreground">Pickup details</h3>
           <div className="space-y-1.5">
             <Label htmlFor="checkout-pickup-name" className="text-[13px] font-normal text-neutral-600">
-              Full name{guestStyleLabels ? <RequiredFieldMark /> : null}
+              Full name
             </Label>
             <Input
               id="checkout-pickup-name"
               autoComplete="name"
               value={pickupName}
-              required={guestStyleLabels}
-              aria-required={guestStyleLabels}
-              onChange={(e) => {
-                setPickupName(e.target.value)
-                setGuestPickupNameError(null)
-                if (guestStyleLabels) setGuestPickupSaveState("idle")
-              }}
-              onBlur={() => void tryPersistGuestPickup()}
+              required
+              aria-required
+              onChange={(e) => setPickupName(e.target.value)}
               placeholder="Name for your order"
               className={fieldClass}
             />
-            {guestStyleLabels && guestPickupNameError ? (
-              <p className="text-xs text-destructive">{guestPickupNameError}</p>
-            ) : null}
-            {guestStyleLabels ? (
-              <>
-                {guestPickupSaveState === "saving" ? (
-                  <p className="text-xs text-neutral-500">Saving…</p>
-                ) : guestPickupSaveState === "saved" ? (
-                  <p className="text-xs text-neutral-500">Saved.</p>
-                ) : null}
-              </>
-            ) : null}
           </div>
         </section>
       )}
@@ -575,7 +293,7 @@ export function CheckoutPurchaseDetails({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label htmlFor="addr-name" className="text-[13px] font-normal text-neutral-600">
-                    Full name{guestStyleLabels ? <RequiredFieldMark /> : null}
+                    Full name
                   </Label>
                   <Input
                     id="addr-name"
@@ -583,8 +301,8 @@ export function CheckoutPurchaseDetails({
                     value={draft.full_name}
                     onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))}
                     className={fieldClass}
-                    required={guestStyleLabels}
-                    aria-required={guestStyleLabels}
+                    required
+                    aria-required
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
@@ -615,7 +333,7 @@ export function CheckoutPurchaseDetails({
                   <Input
                     id="addr-line2"
                     autoComplete="address-line2"
-                    value={draft.line2}
+                    value={draft.line2 ?? ""}
                     onChange={(e) => setDraft((d) => ({ ...d, line2: e.target.value }))}
                     className={fieldClass}
                   />
@@ -639,7 +357,7 @@ export function CheckoutPurchaseDetails({
                   <Input
                     id="addr-state"
                     autoComplete="address-level1"
-                    value={draft.state}
+                    value={draft.state ?? ""}
                     onChange={(e) => setDraft((d) => ({ ...d, state: e.target.value }))}
                     className={fieldClass}
                   />

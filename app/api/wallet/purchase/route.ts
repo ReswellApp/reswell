@@ -7,6 +7,7 @@ import { generatePickupCode } from "@/lib/order-status"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -16,6 +17,13 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (isAnonymousSupabaseUser(user)) {
+    return NextResponse.json(
+      { error: "Create a Reswell account or sign in to purchase with Reswell Bucks." },
+      { status: 403 },
+    )
   }
 
   const { listing_id, fulfillment } = await request.json()

@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { StripeCardCheckout, stripeCardCheckoutEnabled } from "@/components/stripe-card-checkout"
-import type { SessionlessGuestPaymentRequest } from "@/lib/checkout/sessionless-guest-stripe-payload"
 
 interface PurchaseOptionsProps {
   listingId: string
@@ -17,8 +16,6 @@ interface PurchaseOptionsProps {
   purchaseDetailsReady?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
   needsShipping?: boolean
-  /** No Supabase session — full guest payload for create-payment-intent. */
-  sessionlessGuestPay?: SessionlessGuestPaymentRequest | null
   submitButtonLabel?: string
   submitButtonClassName?: string
   /** Hide the default one-line Stripe footer (when the parent already shows secure copy). */
@@ -33,7 +30,6 @@ export function PurchaseOptions({
   shippingAddressId,
   purchaseDetailsReady = true,
   needsShipping = false,
-  sessionlessGuestPay = null,
   submitButtonLabel,
   submitButtonClassName,
   hideStripeFooter = false,
@@ -62,7 +58,6 @@ export function PurchaseOptions({
         shippingAddressId={shippingAddressId ?? null}
         purchaseDetailsReady={purchaseDetailsReady}
         needsShipping={needsShipping}
-        sessionlessGuestPay={sessionlessGuestPay}
         submitButtonLabel={submitButtonLabel}
         submitButtonClassName={submitButtonClassName}
       />

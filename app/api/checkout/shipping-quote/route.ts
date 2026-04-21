@@ -5,7 +5,6 @@ import {
   computePeerCheckoutTotalsUsd,
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
-import { quoteSessionlessGuestShipping } from "@/lib/services/sessionlessGuestShippingQuote"
 
 export const dynamic = "force-dynamic"
 
@@ -42,19 +41,6 @@ export async function POST(request: Request) {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
-  }
-
-  const isSessionlessGuest =
-    body &&
-    typeof body === "object" &&
-    (body as { guest_checkout?: unknown }).guest_checkout === true
-
-  if (isSessionlessGuest) {
-    const result = await quoteSessionlessGuestShipping(supabase, body)
-    if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: result.status })
-    }
-    return NextResponse.json({ data: result.data })
   }
 
   const {

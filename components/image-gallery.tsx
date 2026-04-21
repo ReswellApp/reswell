@@ -124,7 +124,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
                 fill
                 unoptimized
                 className={cn(
-                  "object-cover object-center absolute inset-0 transition-opacity duration-[420ms] ease-in-out",
+                  "object-cover object-center absolute inset-0 transition-opacity transition-duration-[420ms] ease-in-out",
                   isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
                   sold && "[filter:grayscale(30%)]",
                 )}

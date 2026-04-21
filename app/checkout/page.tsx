@@ -2,12 +2,14 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { CheckoutClient, type CheckoutCopy } from "@/components/checkout-client"
+import { CheckoutAccountRequired } from "@/components/checkout-account-required"
+import { CheckoutClient } from "@/components/checkout-client"
+import type { CheckoutCopy, CheckoutSeller } from "@/components/checkout-types"
 import { findListingByParam } from "@/lib/listing-query"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getProfileAddresses } from "@/app/actions/addresses"
-import type { CheckoutSeller } from "@/components/checkout-client"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -104,7 +106,35 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
 
   const listingTitle = capitalizeWords(listing.title)
 
-  if (!user) {
+  const previewImpliedFulfillment: "pickup" | "shipping" = lp && sa ? "pickup" : !lp && sa ? "shipping" : "pickup"
+  const previewNeedsShipping = previewImpliedFulfillment === "shipping"
+  const previewResolved = resolvePayableAmount(listing, previewImpliedFulfillment)
+
+  const previewTotals =
+    previewResolved.ok
+      ? {
+          itemPrice: previewResolved.itemPrice,
+          shipping: previewResolved.shipping,
+          total: previewResolved.total,
+        }
+      : { itemPrice: 0, shipping: 0, total: 0 }
+
+  const previewShippingSummaryRight = (() => {
+    if (!previewNeedsShipping) {
+      return <span className="text-neutral-500">Local pickup</span>
+    }
+    if (previewResolved.ok && previewResolved.shipping === 0) {
+      return <span className="text-neutral-700">Free</span>
+    }
+    if (previewResolved.ok) {
+      return <span className="tabular-nums text-neutral-900">${previewResolved.shipping.toFixed(2)}</span>
+    }
+    return <span className="text-neutral-400">—</span>
+  })()
+
+  const accountGate = !user || (user && isAnonymousSupabaseUser(user))
+
+  if (accountGate) {
     return (
       <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
         <div className="container mx-auto max-w-2xl lg:max-w-6xl">
@@ -139,15 +169,13 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
             </div>
           </div>
 
-          <CheckoutClient
+          <CheckoutAccountRequired
             listing={listing}
-            copy={copy}
-            buyerEmail={null}
-            checkoutVariant="sessionless_guest"
-            checkoutReturnPath={checkoutReturnPath}
-            initialAddresses={[]}
             seller={seller}
-            contactEmailMode="sessionless"
+            checkoutReturnPath={checkoutReturnPath}
+            previewTotals={previewTotals}
+            shippingSummaryRight={previewShippingSummaryRight}
+            needsShipping={previewNeedsShipping}
           />
         </div>
       </main>
@@ -162,8 +190,6 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
     user.email?.trim() ||
     (typeof profileRow?.email === "string" ? profileRow.email.trim() : "") ||
     null
-
-  const checkoutVariant = isAnonymousSupabaseUser(user) ? "guest" : "member"
 
   return (
     <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
@@ -205,11 +231,8 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
           listing={listing}
           copy={copy}
           buyerEmail={buyerEmail}
-          checkoutVariant={checkoutVariant}
-          checkoutReturnPath={checkoutReturnPath}
           initialAddresses={addressesError ? [] : initialAddresses}
           seller={seller}
-          contactEmailMode={checkoutVariant === "guest" ? "guest" : "account"}
         />
       </div>
     </main>

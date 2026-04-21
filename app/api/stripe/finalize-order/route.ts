@@ -22,25 +22,6 @@ export async function POST(request: NextRequest) {
   }
 
   const pi = retrieved.paymentIntent
-  const isGuestPi = pi.metadata?.guest_chk === "1"
-
-  if (isGuestPi) {
-    const result = await completeMarketplaceOrderFromPaymentIntent(pi)
-    if (!result.ok) {
-      console.error("[finalize-order] completeMarketplaceOrder failed:", {
-        error: result.error,
-        status: result.status,
-        piId: pi.id,
-      })
-      return NextResponse.json({ error: result.error }, { status: result.status })
-    }
-
-    return NextResponse.json({
-      success: true,
-      orderId: result.orderId,
-      ...(result.alreadyProcessed ? { alreadyProcessed: true } : {}),
-    })
-  }
 
   const supabase = await createClient()
   const {

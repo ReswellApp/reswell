@@ -1,11 +1,9 @@
-import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { computePeerCheckoutTotalsUsd } from "@/lib/services/peerListingShippingQuote"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
-import { createSessionlessGuestPaymentIntent } from "@/lib/services/createSessionlessGuestPaymentIntent"
 
 const LISTING_SELECT = `
   id,
@@ -54,19 +52,6 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createClient()
 
-  const isSessionlessGuest =
-    rawBody &&
-    typeof rawBody === "object" &&
-    (rawBody as { guest_checkout?: unknown }).guest_checkout === true
-
-  if (isSessionlessGuest) {
-    const result = await createSessionlessGuestPaymentIntent(supabase, rawBody)
-    if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: result.status })
-    }
-    return NextResponse.json({ clientSecret: result.clientSecret })
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -76,14 +61,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (isAnonymousSupabaseUser(user)) {
-    const { data: profile } = await supabase.from("profiles").select("email").eq("id", user.id).maybeSingle()
-    const em = typeof profile?.email === "string" ? profile.email.trim() : ""
-    if (!em || !z.string().email().safeParse(em).success) {
-      return NextResponse.json(
-        { error: "Enter and save a valid email on the checkout form before paying." },
-        { status: 400 },
-      )
-    }
+    return NextResponse.json(
+      { error: "Create a Reswell account or sign in with email or Google to complete payment." },
+      { status: 403 },
+    )
   }
 
   const body = rawBody as {
@@ -154,20 +135,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid shipping address" }, { status: 400 })
     }
     buyerAddress = addr as ProfileAddressRow
-  }
-
-  if (isAnonymousSupabaseUser(user) && impliedFulfillment === "pickup") {
-    const meta = user.user_metadata as Record<string, unknown> | null | undefined
-    const pickupName = typeof meta?.guest_pickup_full_name === "string" ? meta.guest_pickup_full_name.trim() : ""
-    if (pickupName.length < 1) {
-      return NextResponse.json(
-        {
-          error:
-            "Enter your full name for pickup, then leave the field so your details save before paying.",
-        },
-        { status: 400 },
-      )
-    }
   }
 
   const totals = await computePeerCheckoutTotalsUsd({

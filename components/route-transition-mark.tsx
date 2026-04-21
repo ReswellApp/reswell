@@ -5,9 +5,9 @@ import { useLayoutEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 const overlayEase =
-  "transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
+  "transition-opacity duration-300 transition-timing-function-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
 const logoEase =
-  "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
+  "transition-[transform,opacity] duration-300 transition-timing-function-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
 
 function ReswellMarkImage({ className, visible }: { className?: string; visible: boolean }) {
   return (

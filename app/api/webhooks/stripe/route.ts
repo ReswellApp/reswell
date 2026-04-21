@@ -73,8 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, skipped: "not_succeeded" })
   }
 
-  const guestCheckout = pi.metadata?.guest_chk === "1"
-  if (!pi.metadata?.listing_id?.trim() || (!guestCheckout && !pi.metadata?.buyer_id?.trim())) {
+  if (!pi.metadata?.listing_id?.trim() || !pi.metadata?.buyer_id?.trim()) {
     console.warn("[stripe webhook] payment_intent.succeeded missing marketplace metadata", pi.id)
     return NextResponse.json({ received: true, skipped: "not_marketplace" })
   }

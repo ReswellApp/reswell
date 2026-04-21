@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { createServiceRoleClient } from "@/lib/supabase/server"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { capitalizeWords, formatCategory, formatCondition } from "@/lib/listing-labels"
 import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
@@ -184,55 +183,3 @@ export async function fetchBuyerOrderSuccessPayload(
   return mapOrderRowToCheckoutPayload(row as OrderSuccessOrderRow, buyerEmail)
 }
 
-/**
- * Guest card checkout: order has no buyer_id — load by id using service role (same payload shape as buyer receipt).
- */
-export async function fetchGuestOrderSuccessPayload(orderId: string): Promise<CheckoutOrderSuccessPayload | null> {
-  const trimmed = orderId.trim()
-  if (!trimmed) return null
-
-  let service: ReturnType<typeof createServiceRoleClient>
-  try {
-    service = createServiceRoleClient()
-  } catch {
-    return null
-  }
-
-  const { data: row, error } = await service
-    .from("orders")
-    .select(
-      `
-      id,
-      order_num,
-      amount,
-      guest_buyer_email,
-      created_at,
-      fulfillment_method,
-      shipping_address,
-      listings (
-        id,
-        title,
-        slug,
-        section,
-        condition,
-        price,
-        shipping_available,
-        local_pickup,
-        shipping_price,
-        listing_images ( url, is_primary )
-      )
-    `,
-    )
-    .eq("id", trimmed)
-    .is("buyer_id", null)
-    .maybeSingle()
-
-  if (error || !row) {
-    return null
-  }
-
-  const guestEmailRaw = (row as { guest_buyer_email?: string | null }).guest_buyer_email
-  const guestEmail = typeof guestEmailRaw === "string" ? guestEmailRaw.trim() : ""
-
-  return mapOrderRowToCheckoutPayload(row as OrderSuccessOrderRow, guestEmail || null)
-}
