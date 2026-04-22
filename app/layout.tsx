@@ -10,6 +10,7 @@ import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { LOCALE_COOKIE_NAME } from '@/lib/translations'
 import type { Locale } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
+import { GoogleAdsGtag } from '@/components/google-ads-gtag'
 
 import './globals.css'
 
@@ -63,6 +64,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} className="overflow-x-hidden">
       <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
+        <GoogleAdsGtag />
         <LocaleProvider initialLocale={locale}>
           <PresenceHeartbeatLoader />
           <SiteChrome>{children}</SiteChrome>
