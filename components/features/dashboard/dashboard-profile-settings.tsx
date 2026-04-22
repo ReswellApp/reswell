@@ -20,6 +20,7 @@ import { validateDisplayName } from "@/lib/display-name-validation"
 import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 
 interface Profile {
   id: string
@@ -126,32 +127,32 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
     const file = e.target.files?.[0]
     if (!file || !profile) return
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be under 2MB")
+    if (file.size > PROFILE_AVATAR_MAX_INPUT_BYTES) {
+      toast.error(
+        `Image must be under ${Math.round(PROFILE_AVATAR_MAX_INPUT_BYTES / (1024 * 1024))}MB`,
+      )
       return
     }
 
     setUploadingAvatar(true)
     try {
-      const fileExt = file.name.split(".").pop()
-      const filePath = `${profile.id}/avatar.${fileExt}`
+      const formData = new FormData()
+      formData.append("file", file)
 
-      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true })
+      const res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
 
-      if (uploadError) throw uploadError
+      const json = (await res.json()) as { data?: { avatarUrl: string }; error?: string }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath)
+      if (!res.ok) {
+        throw new Error(json.error || "Upload failed")
+      }
 
-      const avatarUrl = `${publicUrl}?t=${Date.now()}`
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
-        .eq("id", profile.id)
-
-      if (updateError) throw updateError
+      const avatarUrl = json.data?.avatarUrl
+      if (!avatarUrl) throw new Error("Missing avatar URL")
 
       setProfile({ ...profile, avatar_url: avatarUrl })
       toast.success("Profile photo updated")
@@ -159,11 +160,13 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error"
+      const message =
+        err instanceof Error ? err.message : "Failed to upload photo"
       console.error("Avatar upload error:", message)
-      toast.error("Failed to upload photo")
+      toast.error(message)
     } finally {
       setUploadingAvatar(false)
+      e.target.value = ""
     }
   }
 
@@ -238,7 +241,7 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
                   <input
                     id="avatar-upload"
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
                     className="hidden"
                     onChange={handleAvatarUpload}
                     disabled={uploadingAvatar}
