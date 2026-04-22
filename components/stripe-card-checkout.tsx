@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { loadStripe } from "@stripe/stripe-js"
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import {
+  Elements,
+  PaymentElement,
+  PaymentRequestButtonElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js"
+import type { PaymentRequest, PaymentRequestPaymentMethodEvent } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
@@ -33,15 +40,164 @@ function getStripeBrowser() {
   return stripePromise
 }
 
+/**
+ * Apple Pay only (Payment Request API). `disableWallets` hides Google Pay, Link, and browser cards in this row.
+ * Still needs HTTPS and a [registered payment-method domain](https://dashboard.stripe.com/settings/payment_method_domains) for production.
+ */
+function WalletPaymentRequestButton({
+  clientSecret,
+  totalCents,
+  listingTitle,
+  disabled,
+  onBusy,
+  onComplete,
+}: {
+  clientSecret: string
+  totalCents: number
+  listingTitle: string
+  disabled: boolean
+  onBusy: (busy: boolean) => void
+  onComplete: (paymentIntentId: string) => Promise<void>
+}) {
+  const stripe = useStripe()
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null)
+  const [canUseWallet, setCanUseWallet] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!stripe) return
+    setPaymentRequest(null)
+    setCanUseWallet(null)
+
+    const pr = stripe.paymentRequest({
+      country: "US",
+      currency: "usd",
+      total: {
+        label: listingTitle.slice(0, 100) || "Reswell order",
+        amount: totalCents,
+      },
+      requestPayerName: true,
+      requestPayerEmail: true,
+      disableWallets: ["googlePay", "link", "browserCard"],
+    })
+
+    const onPayment = async (ev: PaymentRequestPaymentMethodEvent) => {
+      onBusy(true)
+      try {
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          clientSecret,
+          { payment_method: ev.paymentMethod.id },
+          { handleActions: false },
+        )
+
+        if (confirmError) {
+          ev.complete("fail")
+          toast.error(confirmError.message ?? "Could not complete wallet payment")
+          return
+        }
+
+        ev.complete("success")
+
+        if (paymentIntent?.status === "requires_action") {
+          const { error: actErr, paymentIntent: after } = await stripe.confirmCardPayment(clientSecret)
+          if (actErr) {
+            toast.error(actErr.message ?? "Could not complete authentication")
+            return
+          }
+          if (after?.status === "succeeded" && after.id) {
+            await onComplete(after.id)
+          }
+        } else if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
+          await onComplete(paymentIntent.id)
+        }
+      } catch (err) {
+        console.error("Wallet payment error", err)
+        try {
+          ev.complete("fail")
+        } catch {
+          // ignore
+        }
+        toast.error("Wallet payment could not be completed. Try a card below.")
+      } finally {
+        onBusy(false)
+      }
+    }
+
+    pr.on("paymentmethod", onPayment)
+
+    void pr.canMakePayment().then((result) => {
+      if (typeof window !== "undefined") {
+        console.info("[ApplePay] canMakePayment =", result)
+      }
+      if (result && (result as Record<string, boolean>).applePay) {
+        setPaymentRequest(pr)
+        setCanUseWallet(true)
+      } else {
+        setCanUseWallet(false)
+      }
+    })
+
+    return () => {
+      pr.off("paymentmethod", onPayment)
+    }
+  }, [stripe, clientSecret, totalCents, listingTitle, onBusy, onComplete])
+
+  if (disabled) {
+    return null
+  }
+
+  if (canUseWallet === false || canUseWallet === null) {
+    return null
+  }
+
+  if (!paymentRequest) {
+    return null
+  }
+
+  return (
+    <>
+      <div className="space-y-2">
+        <p className="text-[12px] font-medium uppercase tracking-wide text-neutral-500">Apple Pay</p>
+        <div className="w-full min-h-12">
+          <PaymentRequestButtonElement
+            options={{
+              paymentRequest,
+              style: {
+                paymentRequestButton: {
+                  type: "buy",
+                  theme: "light",
+                  height: "48px",
+                },
+              },
+            }}
+          />
+        </div>
+        <p className="text-[11px] text-neutral-400">
+          Same order total as below. Works in Safari and on iPhone; add a card in Apple Wallet, use HTTPS, and add your
+          domain under Stripe (Payment method domains).
+        </p>
+      </div>
+      <div className="flex items-center gap-2 py-1">
+        <div className="h-px flex-1 bg-neutral-200" />
+        <span className="text-[12px] text-neutral-500">or pay another way</span>
+        <div className="h-px flex-1 bg-neutral-200" />
+      </div>
+    </>
+  )
+}
+
 function StripePayButton({
+  clientSecret,
   listingTitle,
   amountLabel,
+  totalCents,
   disabled,
   submitButtonLabel,
   submitButtonClassName,
 }: {
+  clientSecret: string
   listingTitle: string
   amountLabel: string
+  totalCents: number
   disabled: boolean
   submitButtonLabel?: string
   submitButtonClassName?: string
@@ -51,6 +207,29 @@ function StripePayButton({
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [elementLoadError, setElementLoadError] = useState<string | null>(null)
+
+  const completeAfterSuccess = useCallback(
+    async (paymentIntentId: string) => {
+      const res = await fetch("/api/stripe/finalize-order", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payment_intent_id: paymentIntentId }),
+      })
+      const data = (await res.json()) as { error?: string; orderId?: string }
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not complete order")
+        return
+      }
+      toast.success(`You bought “${listingTitle}”`)
+      if (data.orderId) {
+        router.replace(`/successpage/${data.orderId}`)
+      } else {
+        router.replace("/checkout/success")
+      }
+    },
+    [router, listingTitle],
+  )
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -85,23 +264,7 @@ function StripePayButton({
         }
 
         if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
-          const res = await fetch("/api/stripe/finalize-order", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ payment_intent_id: paymentIntent.id }),
-          })
-          const data = (await res.json()) as { error?: string; orderId?: string }
-          if (!res.ok) {
-            toast.error(data.error ?? "Could not complete order")
-            return
-          }
-          toast.success(`You bought “${listingTitle}”`)
-          if (data.orderId) {
-            router.replace(`/successpage/${data.orderId}`)
-          } else {
-            router.replace("/checkout/success")
-          }
+          await completeAfterSuccess(paymentIntent.id)
         }
       } catch (err) {
         console.error("Stripe checkout error", err)
@@ -110,45 +273,61 @@ function StripePayButton({
         setBusy(false)
       }
     },
-    [stripe, elements, router, listingTitle],
+    [stripe, elements, completeAfterSuccess],
   )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       {elementLoadError ? (
         <p className="text-sm text-destructive">{elementLoadError}</p>
       ) : null}
-      <PaymentElement
-        onLoadError={(event) => {
-          const stripeErr = event.error
-          const msg =
-            stripeErr?.message?.trim() ||
-            "Payment form failed to load. Use Stripe keys from the same account and the same mode (test vs live) for the publishable key and server secret."
-          setElementLoadError(msg)
-          console.error("Stripe PaymentElement load error", {
-            code: stripeErr?.code,
-            message: stripeErr?.message,
-            type: stripeErr?.type,
-          })
-          toast.error(msg)
-        }}
-      />
-      <Button
-        type="submit"
-        size="lg"
-        className={submitButtonClassName ?? "w-full gap-2"}
+
+      <WalletPaymentRequestButton
+        clientSecret={clientSecret}
+        totalCents={totalCents}
+        listingTitle={listingTitle}
         disabled={disabled || busy || !stripe || !!elementLoadError}
-      >
-        {busy ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Processing…
-          </>
-        ) : (
-          <>{submitButtonLabel ?? `Pay with card — ${amountLabel}`}</>
-        )}
-      </Button>
-    </form>
+        onBusy={setBusy}
+        onComplete={completeAfterSuccess}
+      />
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <PaymentElement
+          options={{
+            paymentMethodOrder: ["card", "klarna", "link"],
+            wallets: { applePay: "auto", googlePay: "never" },
+          }}
+          onLoadError={(event) => {
+            const stripeErr = event.error
+            const msg =
+              stripeErr?.message?.trim() ||
+              "Payment form failed to load. Use Stripe keys from the same account and the same mode (test vs live) for the publishable key and server secret."
+            setElementLoadError(msg)
+            console.error("Stripe PaymentElement load error", {
+              code: stripeErr?.code,
+              message: stripeErr?.message,
+              type: stripeErr?.type,
+            })
+            toast.error(msg)
+          }}
+        />
+        <Button
+          type="submit"
+          size="lg"
+          className={submitButtonClassName ?? "w-full gap-2"}
+          disabled={disabled || busy || !stripe || !!elementLoadError}
+        >
+          {busy ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Processing…
+            </>
+          ) : (
+            <>{submitButtonLabel ?? `Pay — ${amountLabel}`}</>
+          )}
+        </Button>
+      </form>
+    </div>
   )
 }
 
@@ -170,7 +349,7 @@ export function StripeCardCheckout({
   shippingAddressId?: string | null
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
-  /** When set, replaces the default “Pay with card — $x” label. */
+  /** When set, replaces the default “Pay — $x” label. */
   submitButtonLabel?: string
   submitButtonClassName?: string
 }) {
@@ -312,8 +491,10 @@ export function StripeCardCheckout({
       }}
     >
       <StripePayButton
+        clientSecret={clientSecret}
         listingTitle={listingTitle}
         amountLabel={`$${price.toFixed(2)}`}
+        totalCents={Math.round(price * 100)}
         disabled={false}
         submitButtonLabel={submitButtonLabel}
         submitButtonClassName={submitButtonClassName}
