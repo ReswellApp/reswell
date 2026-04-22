@@ -461,21 +461,41 @@ export function LocationInputSuggest({
   const showListbox = panelOpen && hasResults && !loading
 
   useEffect(() => {
-    if (!panelOpen || !containerRef.current) {
+    if (!panelOpen) {
       setDropdownRect(null)
       return
     }
-    const el = containerRef.current
+    const anchorEl = () => inputRef.current ?? containerRef.current
     const update = () => {
+      const el = anchorEl()
+      if (!el) return
       const rect = el.getBoundingClientRect()
-      setDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+      const gap = 6
+      setDropdownRect({ top: rect.bottom + gap, left: rect.left, width: rect.width })
     }
     update()
-    window.addEventListener("scroll", update, true)
-    window.addEventListener("resize", update)
+    window.addEventListener("scroll", update, { capture: true, passive: true })
+    window.addEventListener("resize", update, { passive: true })
+    const vv = typeof window !== "undefined" ? window.visualViewport : null
+    if (vv) {
+      vv.addEventListener("scroll", update, { passive: true })
+      vv.addEventListener("resize", update, { passive: true })
+    }
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => update()) : null
+    const watch = anchorEl()
+    if (ro && watch) ro.observe(watch)
+    const t0 = window.setTimeout(update, 0)
+    const t1 = window.setTimeout(update, 120)
     return () => {
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
+      if (vv) {
+        vv.removeEventListener("scroll", update)
+        vv.removeEventListener("resize", update)
+      }
+      ro?.disconnect()
+      window.clearTimeout(t0)
+      window.clearTimeout(t1)
     }
   }, [panelOpen])
 
@@ -647,8 +667,8 @@ export function LocationInputSuggest({
         className={cn(
           "fixed z-[100] overflow-hidden",
           isAddress
-            ? "rounded-[6px] border border-neutral-200 bg-white text-neutral-900 shadow-[0_10px_40px_-4px_rgba(0,0,0,0.12)]"
-            : "rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-xl shadow-black/10 animate-in fade-in-0 zoom-in-95 duration-150",
+            ? "origin-top rounded-[6px] border border-neutral-200 bg-white text-neutral-900 shadow-[0_10px_40px_-4px_rgba(0,0,0,0.12)]"
+            : "origin-top rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-xl shadow-black/10 animate-in fade-in-0 slide-in-from-top-2 duration-200",
         )}
         style={{
           top: dropdownRect.top,

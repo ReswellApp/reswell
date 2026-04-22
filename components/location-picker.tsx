@@ -174,7 +174,7 @@ export function LocationPicker({
       <Label className="text-base font-medium">Where are you listing from?</Label>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-        <div className="relative flex-1">
+        <div className="relative w-full min-w-0 sm:flex-1">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-muted-foreground/45"
             aria-hidden
