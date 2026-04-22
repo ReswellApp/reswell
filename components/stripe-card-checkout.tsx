@@ -4,12 +4,15 @@ import { useCallback, useEffect, useState } from "react"
 import { loadStripe } from "@stripe/stripe-js"
 import {
   Elements,
+  ExpressCheckoutElement,
   PaymentElement,
-  PaymentRequestButtonElement,
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js"
-import type { PaymentRequest, PaymentRequestPaymentMethodEvent } from "@stripe/stripe-js"
+import type {
+  StripeExpressCheckoutElementConfirmEvent,
+  StripeExpressCheckoutElementReadyEvent,
+} from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
@@ -41,115 +44,74 @@ function getStripeBrowser() {
 }
 
 /**
- * Apple Pay only (Payment Request API). `disableWallets` hides Google Pay, Link, and browser cards in this row.
- * Still needs HTTPS and a [registered payment-method domain](https://dashboard.stripe.com/settings/payment_method_domains) for production.
+ * Apple Pay only. Uses `ExpressCheckoutElement` with `applePay: "always"` so the button shows on every Stripe-supported
+ * platform (including desktop Chrome on macOS), not just Safari. Still requires HTTPS and a
+ * [registered payment-method domain](https://dashboard.stripe.com/settings/payment_method_domains) in production.
  */
 function WalletPaymentRequestButton({
-  clientSecret,
-  totalCents,
-  listingTitle,
   disabled,
   onBusy,
   onComplete,
 }: {
-  clientSecret: string
-  totalCents: number
-  listingTitle: string
   disabled: boolean
   onBusy: (busy: boolean) => void
   onComplete: (paymentIntentId: string) => Promise<void>
 }) {
   const stripe = useStripe()
-  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null)
-  const [canUseWallet, setCanUseWallet] = useState<boolean | null>(null)
+  const elements = useElements()
+  const [applePayVisible, setApplePayVisible] = useState<boolean | null>(null)
 
-  useEffect(() => {
-    if (!stripe) return
-    setPaymentRequest(null)
-    setCanUseWallet(null)
+  const handleReady = useCallback((event: StripeExpressCheckoutElementReadyEvent) => {
+    const available = event.availablePaymentMethods
+    const hasApplePay = Boolean(available?.applePay)
+    if (typeof window !== "undefined") {
+      console.info("[ApplePay] ExpressCheckout availablePaymentMethods =", available)
+    }
+    setApplePayVisible(hasApplePay)
+  }, [])
 
-    const pr = stripe.paymentRequest({
-      country: "US",
-      currency: "usd",
-      total: {
-        label: listingTitle.slice(0, 100) || "Reswell order",
-        amount: totalCents,
-      },
-      requestPayerName: true,
-      requestPayerEmail: true,
-      disableWallets: ["googlePay", "link", "browserCard"],
-    })
-
-    const onPayment = async (ev: PaymentRequestPaymentMethodEvent) => {
+  const handleConfirm = useCallback(
+    async (event: StripeExpressCheckoutElementConfirmEvent) => {
+      if (!stripe || !elements) return
       onBusy(true)
       try {
-        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-          clientSecret,
-          { payment_method: ev.paymentMethod.id },
-          { handleActions: false },
-        )
-
-        if (confirmError) {
-          ev.complete("fail")
-          toast.error(confirmError.message ?? "Could not complete wallet payment")
+        const { error: submitError } = await elements.submit()
+        if (submitError) {
+          toast.error(submitError.message ?? "Apple Pay could not be started.")
           return
         }
 
-        ev.complete("success")
+        const origin = window.location.origin
+        const { error, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          confirmParams: { return_url: `${origin}/checkout/success` },
+          redirect: "if_required",
+        })
 
-        if (paymentIntent?.status === "requires_action") {
-          const { error: actErr, paymentIntent: after } = await stripe.confirmCardPayment(clientSecret)
-          if (actErr) {
-            toast.error(actErr.message ?? "Could not complete authentication")
-            return
-          }
-          if (after?.status === "succeeded" && after.id) {
-            await onComplete(after.id)
-          }
-        } else if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
+        if (error) {
+          const detail = formatStripeConfirmError(error)
+          console.error("Apple Pay confirmPayment error", detail, error)
+          toast.error(error.message ?? "Apple Pay could not be completed.")
+          return
+        }
+
+        if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
           await onComplete(paymentIntent.id)
         }
       } catch (err) {
-        console.error("Wallet payment error", err)
-        try {
-          ev.complete("fail")
-        } catch {
-          // ignore
-        }
-        toast.error("Wallet payment could not be completed. Try a card below.")
+        console.error("Apple Pay error", err)
+        toast.error("Apple Pay could not be completed. Try a card below.")
       } finally {
         onBusy(false)
       }
-    }
 
-    pr.on("paymentmethod", onPayment)
-
-    void pr.canMakePayment().then((result) => {
-      if (typeof window !== "undefined") {
-        console.info("[ApplePay] canMakePayment =", result)
-      }
-      if (result && (result as Record<string, boolean>).applePay) {
-        setPaymentRequest(pr)
-        setCanUseWallet(true)
-      } else {
-        setCanUseWallet(false)
-      }
-    })
-
-    return () => {
-      pr.off("paymentmethod", onPayment)
-    }
-  }, [stripe, clientSecret, totalCents, listingTitle, onBusy, onComplete])
+      // satisfy unused-parameter lint – `event` is required by Stripe's signature
+      void event
+    },
+    [stripe, elements, onBusy, onComplete],
+  )
 
   if (disabled) {
-    return null
-  }
-
-  if (canUseWallet === false || canUseWallet === null) {
-    return null
-  }
-
-  if (!paymentRequest) {
     return null
   }
 
@@ -158,23 +120,35 @@ function WalletPaymentRequestButton({
       <div className="space-y-2">
         <p className="text-[12px] font-medium uppercase tracking-wide text-neutral-500">Apple Pay</p>
         <div className="w-full min-h-12">
-          <PaymentRequestButtonElement
+          <ExpressCheckoutElement
             options={{
-              paymentRequest,
-              style: {
-                paymentRequestButton: {
-                  type: "buy",
-                  theme: "light",
-                  height: "48px",
-                },
+              paymentMethods: {
+                applePay: "always",
+                googlePay: "never",
+                link: "never",
+                paypal: "never",
+                amazonPay: "never",
+                klarna: "never",
               },
+              buttonType: { applePay: "buy" },
+              buttonTheme: { applePay: "black" },
+              buttonHeight: 48,
             }}
+            onReady={handleReady}
+            onConfirm={handleConfirm}
           />
         </div>
-        <p className="text-[11px] text-neutral-400">
-          Same order total as below. Works in Safari and on iPhone; add a card in Apple Wallet, use HTTPS, and add your
-          domain under Stripe (Payment method domains).
-        </p>
+        {applePayVisible === false ? (
+          <p className="text-[11px] text-neutral-500">
+            Apple Pay isn’t available in this browser. Open <span className="font-medium">Safari</span> on a Mac or
+            iPhone with a card in Apple Wallet to see the button, or pay with card below.
+          </p>
+        ) : (
+          <p className="text-[11px] text-neutral-400">
+            Same order total as below. Requires HTTPS, an Apple Wallet card, and your domain registered under Stripe →
+            Payment method domains.
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-2 py-1">
         <div className="h-px flex-1 bg-neutral-200" />
@@ -189,7 +163,6 @@ function StripePayButton({
   clientSecret,
   listingTitle,
   amountLabel,
-  totalCents,
   disabled,
   submitButtonLabel,
   submitButtonClassName,
@@ -197,7 +170,6 @@ function StripePayButton({
   clientSecret: string
   listingTitle: string
   amountLabel: string
-  totalCents: number
   disabled: boolean
   submitButtonLabel?: string
   submitButtonClassName?: string
@@ -283,9 +255,6 @@ function StripePayButton({
       ) : null}
 
       <WalletPaymentRequestButton
-        clientSecret={clientSecret}
-        totalCents={totalCents}
-        listingTitle={listingTitle}
         disabled={disabled || busy || !stripe || !!elementLoadError}
         onBusy={setBusy}
         onComplete={completeAfterSuccess}
@@ -494,7 +463,6 @@ export function StripeCardCheckout({
         clientSecret={clientSecret}
         listingTitle={listingTitle}
         amountLabel={`$${price.toFixed(2)}`}
-        totalCents={Math.round(price * 100)}
         disabled={false}
         submitButtonLabel={submitButtonLabel}
         submitButtonClassName={submitButtonClassName}

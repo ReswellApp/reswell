@@ -302,24 +302,24 @@ export default async function HomePage() {
   return (
       <main className="flex-1">
         {/* CLS-FIX: min-height + svh keeps the hero band stable while the slideshow loads. */}
-        <section className="relative flex min-h-[max(22rem,58svh)] items-center overflow-hidden sm:min-h-[max(24rem,56svh)] md:min-h-[max(34rem,min(72svh,42rem))]">
+        <section className="relative flex min-h-[max(19.5rem,51svh)] items-center overflow-hidden sm:min-h-[max(21.5rem,51svh)] md:min-h-[max(34rem,min(72svh,42rem))]">
           <HeroSlideshow
             key={heroSlideUrls.map((u) => u.trim()).join("|")}
             slides={heroSlideUrls}
           />
           <div className="absolute inset-0 z-[1] bg-white/55" aria-hidden />
-          <div className="container mx-auto relative z-10 py-14 sm:py-16 md:py-32">
+          <div className="container mx-auto relative z-10 py-12 sm:py-14 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
-              <Badge variant="secondary" className="mb-4 text-black">
+              <Badge variant="secondary" className="mb-3.5 text-black md:mb-4">
                 Used surfboard marketplace
               </Badge>
-              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl text-balance">
+              <h1 className="text-[2.0625rem] font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl sm:leading-none text-balance">
                 Buy and Sell Surfboards with the Community
               </h1>
-              <p className="mt-6 text-lg text-muted-foreground text-pretty">
+              <p className="mt-5 text-base text-muted-foreground text-pretty sm:text-lg">
                 Find local surfboards, meet sellers in person, and list your own boards with photos and dimensions.
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5 md:mt-8 md:gap-4">
                 <Button size="lg" asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                     Browse surfboards
