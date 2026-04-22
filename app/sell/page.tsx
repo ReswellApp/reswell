@@ -2115,9 +2115,9 @@ function SellPageContent() {
           )
           const tid = uploadToastIdRef.current
           if (tid != null) {
-            toast.success("Your listing is live! 🎉", { id: tid })
+            toast.success("Your listing is live! 🎉", { id: tid, duration: 4000 })
           } else {
-            toast.success("Your listing is live! 🎉")
+            toast.success("Your listing is live! 🎉", { duration: 4000 })
           }
           void clearSellListingDraft(user.id)
           clearSellServerDraftListingId()
@@ -2144,12 +2144,15 @@ function SellPageContent() {
         const msg = effectiveEditId
           ? `Listing updated for ${impersonationSellerLabel}`
           : `Listing created for ${impersonationSellerLabel}`
-        if (tidDone != null) toast.success(`${msg} 🎉`, { id: tidDone })
-        else toast.success(msg)
+        if (tidDone != null) toast.success(`${msg} 🎉`, { id: tidDone, duration: 4000 })
+        else toast.success(msg, { duration: 4000 })
       } else {
         const msg = effectiveEditId ? "Listing updated!" : "Your listing is live! 🎉"
-        if (tidDone != null) toast.success(msg, { id: tidDone })
-        else toast.success(effectiveEditId ? "Listing updated!" : "Your listing is live! 🎉")
+        if (tidDone != null) toast.success(msg, { id: tidDone, duration: 4000 })
+        else
+          toast.success(effectiveEditId ? "Listing updated!" : "Your listing is live! 🎉", {
+            duration: 4000,
+          })
       }
       void clearSellListingDraft(user.id)
       clearSellServerDraftListingId()
@@ -2177,6 +2180,7 @@ function SellPageContent() {
       if (tid != null) {
         toast.error("Something went wrong. Please try again.", {
           id: tid,
+          duration: 8000,
           description: msg,
           action: {
             label: "Retry",
@@ -2185,6 +2189,7 @@ function SellPageContent() {
         })
       } else {
         toast.error(msg, {
+          duration: 8000,
           action: {
             label: "Retry",
             onClick: () => formRef.current?.requestSubmit(),

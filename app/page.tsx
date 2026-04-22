@@ -2,9 +2,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { FALLBACK_HOME_HERO_SLIDE_PATHS, HeroSlideshow } from "@/components/hero-slideshow"
-import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
-import { buildHomeHeroSlideUrls } from "@/lib/home-hero-slide-urls"
-import { getHomeHeroImageUrls } from "@/lib/home-hero-slideshow-cache"
+import { normalizeHeroSlideUrl } from "@/lib/home-hero-slide-urls"
+import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -79,8 +78,29 @@ export const dynamic = "force-dynamic"
 export default async function HomePage() {
   const supabase = await createClient()
 
-  const homeHeroExtraUrls = await getHomeHeroImageUrls()
-  const heroSlideUrls = buildHomeHeroSlideUrls(homeHeroExtraUrls, FALLBACK_HOME_HERO_SLIDE_PATHS)
+  const { data: heroListingCandidates } = await supabase
+    .from("listings")
+    .select("listing_images (url, is_primary)")
+    .eq("status", "active")
+    .eq("section", "surfboards")
+    .eq("hidden_from_site", false)
+    .order("created_at", { ascending: false })
+    .limit(24)
+
+  const heroSlideUrls: string[] = []
+  const heroSeen = new Set<string>()
+  for (const row of heroListingCandidates ?? []) {
+    const src = listingHeroSlideSrc(row.listing_images as ListingImageForCard[] | null)
+    if (!src) continue
+    const key = normalizeHeroSlideUrl(src)
+    if (!key || heroSeen.has(key)) continue
+    heroSeen.add(key)
+    heroSlideUrls.push(src)
+    if (heroSlideUrls.length >= 5) break
+  }
+  if (heroSlideUrls.length === 0) {
+    heroSlideUrls.push(...FALLBACK_HOME_HERO_SLIDE_PATHS)
+  }
 
   // Fetch featured shops - public profile fields only; never expose email or role flags
   const profilePublicFields =
@@ -281,18 +301,14 @@ export default async function HomePage() {
 
   return (
       <main className="flex-1">
-        {/* CLS-FIX: hero has explicit min-height so the section never reflows
-            while the slideshow images decode or fonts swap in. */}
-        <section className="relative min-h-[420px] sm:min-h-[480px] md:min-h-[540px] flex items-center overflow-hidden">
+        {/* CLS-FIX: min-height + svh keeps the hero band stable while the slideshow loads. */}
+        <section className="relative flex min-h-[max(22rem,58svh)] items-center overflow-hidden sm:min-h-[max(24rem,56svh)] md:min-h-[max(34rem,min(72svh,42rem))]">
           <HeroSlideshow
             key={heroSlideUrls.map((u) => u.trim()).join("|")}
             slides={heroSlideUrls}
           />
           <div className="absolute inset-0 z-[1] bg-white/55" aria-hidden />
-          <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
-            <HomeHeroSlideshowAdminBar />
-          </div>
-          <div className="container mx-auto relative z-10 py-20 md:py-32">
+          <div className="container mx-auto relative z-10 py-14 sm:py-16 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="secondary" className="mb-4 text-black">
                 Used surfboard marketplace

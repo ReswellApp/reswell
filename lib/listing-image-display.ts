@@ -21,3 +21,15 @@ export function listingCardImageSrc(
   const raw = thumb || primary.url.trim()
   return proxiedListingImageSrc(raw)
 }
+
+/** Full-size primary image for large backdrops (e.g. homepage hero); skips thumbnails. */
+export function listingHeroSlideSrc(
+  images: ListingImageForCard[] | null | undefined,
+): string | null {
+  const list = images ?? []
+  const primary = list.find((i) => i.is_primary) || list[0]
+  const raw = primary?.url?.trim()
+  if (!raw) return null
+  const proxied = proxiedListingImageSrc(raw)
+  return proxied || null
+}
