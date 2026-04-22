@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, Fragment } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Banknote,
   TrendingUp,
@@ -18,6 +18,7 @@ import {
   DollarSign,
   RefreshCw,
   HelpCircle,
+  RotateCcw,
 } from "lucide-react"
 import {
   Tooltip,
@@ -42,6 +43,7 @@ import {
 } from "@/components/features/earnings/stripe-bank-payout-section"
 import { toast } from "sonner"
 import { getEarningsWalletData } from "@/app/actions/wallet"
+import { cn } from "@/lib/utils"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -158,6 +160,9 @@ export default function EarningsPage() {
   const [stripeTransferHistory, setStripeTransferHistory] = useState<StripeTransferHistoryItem[]>([])
   const [paypalDisconnectOpen, setPaypalDisconnectOpen] = useState(false)
   const [paypalDisconnecting, setPaypalDisconnecting] = useState(false)
+  const [activityStatusFilter, setActivityStatusFilter] = useState<
+    "all" | "available" | "pending" | "refund" | "cashout"
+  >("all")
 
   /**
    * After a Stripe bank cash-out, `getEarningsWalletData()` can briefly return a stale balance
@@ -600,23 +605,52 @@ export default function EarningsPage() {
 
       {/* ── Transaction history ─────────────────────────────────────────────── */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Transaction history</h2>
-        <Tabs defaultValue="all">
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="sales">Sales</TabsTrigger>
-            <TabsTrigger value="cashouts">Cashouts</TabsTrigger>
-          </TabsList>
-          <TabsContent value="all">
-            <TransactionList transactions={transactions} />
-          </TabsContent>
-          <TabsContent value="sales">
-            <TransactionList transactions={transactions.filter((t) => ["sale", "deposit", "refund"].includes(t.type))} />
-          </TabsContent>
-          <TabsContent value="cashouts">
-            <TransactionList transactions={transactions.filter((t) => t.type === "cashout")} />
-          </TabsContent>
-        </Tabs>
+        <h2 className="text-lg font-semibold tracking-tight">Activity</h2>
+        <p className="text-sm text-muted-foreground mt-1 mb-3 max-w-2xl">
+          Completed sale credits show as one row per listing. Filter by status — including cash-outs — or view
+          everything at once. Hover an amount for your available balance after that event.
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <span id="activity-status-filter-label" className="text-sm font-medium text-foreground">
+            Status
+          </span>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={activityStatusFilter}
+            onValueChange={(v) => {
+              if (
+                v === "all" ||
+                v === "available" ||
+                v === "pending" ||
+                v === "refund" ||
+                v === "cashout"
+              ) {
+                setActivityStatusFilter(v)
+              }
+            }}
+            aria-labelledby="activity-status-filter-label"
+            className="flex flex-wrap justify-start gap-1"
+          >
+            <ToggleGroupItem value="all" className="px-3 text-xs sm:text-sm">
+              All statuses
+            </ToggleGroupItem>
+            <ToggleGroupItem value="available" className="px-3 text-xs sm:text-sm">
+              Available
+            </ToggleGroupItem>
+            <ToggleGroupItem value="pending" className="px-3 text-xs sm:text-sm">
+              Pending
+            </ToggleGroupItem>
+            <ToggleGroupItem value="refund" className="px-3 text-xs sm:text-sm">
+              Refund
+            </ToggleGroupItem>
+            <ToggleGroupItem value="cashout" className="px-3 text-xs sm:text-sm">
+              Cash-outs
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <TransactionList transactions={transactions} statusFilter={activityStatusFilter} />
       </div>
 
       {/* ── How it works ────────────────────────────────────────────────────── */}
@@ -661,6 +695,133 @@ export default function EarningsPage() {
     </div>
   )
 }
+
+// ─── Activity list helpers ────────────────────────────────────────────────────
+
+function extractSoldItemName(raw: string): string | null {
+  const p = raw.match(/^Pending — Sold "(.+?)"/)
+  if (p) return p[1]
+  const a = raw.match(/^Available — Sold "(.+?)"/)
+  if (a) return a[1]
+  const s = raw.match(/^Sold "(.+?)"/)
+  return s ? s[1] : null
+}
+
+function txTime(iso: string): number {
+  return new Date(iso).getTime()
+}
+
+function dayKeyLocal(iso: string): string {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+function formatActivityDayLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+/**
+ * Pairs “pending sale credit” + “available (zero-amount release)” so the UI shows one line per sale.
+ */
+function buildSalePendingReleasePairs(transactions: Transaction[]) {
+  const isAvailableRelease = (t: Transaction) =>
+    t.description.startsWith('Available — Sold "') && Math.abs(parseFloat(t.amount)) < 1e-6
+
+  const isPendingSale = (t: Transaction) =>
+    t.description.startsWith('Pending — Sold "') && parseFloat(t.amount) > 1e-6
+
+  const releases = transactions.filter(isAvailableRelease)
+  const pendings = transactions.filter(isPendingSale)
+  const usedPending = new Set<string>()
+  const mergeByReleaseId = new Map<string, { pending: Transaction; release: Transaction }>()
+
+  const sortedReleases = [...releases].sort((a, b) => txTime(b.created_at) - txTime(a.created_at))
+
+  for (const r of sortedReleases) {
+    const title = extractSoldItemName(r.description)
+    if (!title) continue
+    const candidates = pendings.filter((p) => {
+      if (usedPending.has(p.id)) return false
+      if (extractSoldItemName(p.description) !== title) return false
+      return txTime(p.created_at) <= txTime(r.created_at)
+    })
+    if (candidates.length === 0) continue
+    const pending = candidates.reduce((a, b) =>
+      txTime(b.created_at) > txTime(a.created_at) ? b : a,
+    )
+    usedPending.add(pending.id)
+    mergeByReleaseId.set(r.id, { pending, release: r })
+  }
+
+  return { pendingSkip: usedPending, mergeByReleaseId }
+}
+
+const activityStatusBadgeClass =
+  "border border-border/80 bg-background text-foreground shadow-sm tabular-nums"
+
+function activityMetaFromTitle(title: string): {
+  badge: string | null
+  headline: string
+  badgeClass: string
+} {
+  if (title.startsWith("Pending — ")) {
+    return {
+      badge: "Pending",
+      headline: title.slice("Pending — ".length),
+      badgeClass: activityStatusBadgeClass,
+    }
+  }
+  if (title.startsWith("Available — ")) {
+    return {
+      badge: "Available",
+      headline: title.slice("Available — ".length),
+      badgeClass: activityStatusBadgeClass,
+    }
+  }
+  if (title.startsWith("Refund — ")) {
+    return {
+      badge: "Refund",
+      headline: title.slice("Refund — ".length),
+      badgeClass: activityStatusBadgeClass,
+    }
+  }
+  if (title.startsWith("Sold — ")) {
+    return {
+      badge: "Sale",
+      headline: title.slice("Sold — ".length),
+      badgeClass: activityStatusBadgeClass,
+    }
+  }
+  if (title.startsWith("Purchased — ")) {
+    return {
+      badge: "Purchase",
+      headline: title.slice("Purchased — ".length),
+      badgeClass: activityStatusBadgeClass,
+    }
+  }
+  return { badge: null, headline: title, badgeClass: activityStatusBadgeClass }
+}
+
+type ActivityVisualKind = "available" | "pending" | "refund" | "neutral"
+
+function singleRowVisualKind(t: Transaction, parsedTitle: string): ActivityVisualKind {
+  if (t.type === "refund" || parsedTitle.startsWith("Refund — ")) return "refund"
+  const amt = parseFloat(t.amount)
+  const isRelease =
+    t.description.startsWith("Available — ") && Math.abs(amt) < 0.0001
+  if (isRelease || parsedTitle.startsWith("Available — ")) return "available"
+  if (parsedTitle.startsWith("Pending — ") || t.description.startsWith("Pending — Sold")) {
+    return "pending"
+  }
+  return "neutral"
+}
+
+const activityRowSurfaceNeutral = "hover:bg-muted/35 border-l-2 border-l-transparent hover:border-l-border/80"
 
 // ─── Description parser ───────────────────────────────────────────────────────
 
@@ -742,76 +903,277 @@ function parseDescription(raw: string, type: string): { title: string; subtitle:
 
 // ─── Transaction list ─────────────────────────────────────────────────────────
 
-function TransactionList({ transactions }: { transactions: Transaction[] }) {
+type ActivityTxRow =
+  | { kind: "merged"; key: string; pending: Transaction; release: Transaction }
+  | { kind: "single"; key: string; t: Transaction }
+
+type ActivityStatusFilter = "all" | "available" | "pending" | "refund" | "cashout"
+
+function txRowVisualKind(row: ActivityTxRow): ActivityVisualKind {
+  if (row.kind === "merged") return "available"
+  const { title } = parseDescription(row.t.description, row.t.type)
+  return singleRowVisualKind(row.t, title)
+}
+
+function txRowMatchesStatusFilter(row: ActivityTxRow, filter: ActivityStatusFilter): boolean {
+  if (filter === "all") return true
+  if (filter === "cashout") {
+    if (row.kind === "merged") return false
+    return row.t.type === "cashout"
+  }
+  return txRowVisualKind(row) === filter
+}
+
+const activityIconCircleClass =
+  "h-9 w-9 rounded-full flex items-center justify-center shrink-0 bg-muted text-muted-foreground ring-1 ring-border/70"
+
+function TransactionList({
+  transactions,
+  statusFilter,
+}: {
+  transactions: Transaction[]
+  statusFilter: ActivityStatusFilter
+}) {
   if (transactions.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
           <DollarSign className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="font-medium">No transactions yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Your transaction history will appear here.</p>
+          <p className="font-medium">No activity yet</p>
+          <p className="text-sm text-muted-foreground mt-1">When you sell, buy, or cash out, it will show up here.</p>
         </CardContent>
       </Card>
     )
   }
 
+  const { pendingSkip, mergeByReleaseId } = buildSalePendingReleasePairs(transactions)
+
+  const txRows: ActivityTxRow[] = []
+  for (const t of transactions) {
+    if (pendingSkip.has(t.id)) continue
+    const merged = mergeByReleaseId.get(t.id)
+    if (merged) {
+      txRows.push({
+        kind: "merged",
+        key: merged.release.id,
+        pending: merged.pending,
+        release: merged.release,
+      })
+    } else {
+      txRows.push({ kind: "single", key: t.id, t })
+    }
+  }
+
+  const filteredTxRows = txRows.filter((r) => txRowMatchesStatusFilter(r, statusFilter))
+
+  if (filteredTxRows.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <p className="font-medium">Nothing matches this status</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Choose <span className="text-foreground font-medium">All statuses</span> or another filter to see more.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  type ActivityRow =
+    | { kind: "date"; key: string; label: string }
+    | { kind: "merged"; key: string; pending: Transaction; release: Transaction }
+    | { kind: "single"; key: string; t: Transaction }
+
+  const rows: ActivityRow[] = []
+  let lastDayKey: string | null = null
+  for (const tr of filteredTxRows) {
+    const createdAt = tr.kind === "merged" ? tr.release.created_at : tr.t.created_at
+    const dk = dayKeyLocal(createdAt)
+    if (dk !== lastDayKey) {
+      lastDayKey = dk
+      rows.push({ kind: "date", key: `date-${dk}`, label: formatActivityDayLabel(createdAt) })
+    }
+    rows.push(tr)
+  }
+
   return (
-    <Card>
-      <CardContent className="p-0">
-        <div className="divide-y">
-          {transactions.map((t) => {
-            const amt = parseFloat(t.amount)
-            const isRelease =
-              t.description.startsWith("Available — ") && Math.abs(amt) < 0.0001
-            const incoming = amt > 0.0001
-            const balAfter = Number.isFinite(parseFloat(t.balance_after))
-              ? parseFloat(t.balance_after)
-              : 0
-            const { title, subtitle } = parseDescription(t.description, t.type)
-            return (
-              <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+    <TooltipProvider delayDuration={250}>
+      <Card className="overflow-hidden border-border/80 shadow-sm">
+        <CardContent className="p-0">
+          <div className="divide-y divide-border/60">
+            {rows.map((row) => {
+              if (row.kind === "date") {
+                return (
+                  <div
+                    key={row.key}
+                    className="bg-muted/35 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {row.label}
+                  </div>
+                )
+              }
+
+              if (row.kind === "merged") {
+                const { pending, release } = row
+                const amt = parseFloat(pending.amount)
+                const parsedPending = parseDescription(pending.description, pending.type)
+                const item =
+                  extractSoldItemName(pending.description) ??
+                  parsedPending.title.replace(/^Pending — /, "").replace(/^Available — /, "")
+                const { subtitle } = parsedPending
+                const balAfter = Number.isFinite(parseFloat(release.balance_after))
+                  ? parseFloat(release.balance_after)
+                  : 0
+                return (
+                  <div
+                    key={row.key}
+                    className={cn(
+                      "flex items-start gap-3 py-3.5 pr-4 pl-3 transition-colors",
+                      activityRowSurfaceNeutral,
+                    )}
+                  >
+                    <div className={activityIconCircleClass} aria-hidden>
+                      <CheckCircle2 className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold tracking-wide",
+                            activityStatusBadgeClass,
+                          )}
+                        >
+                          Available
+                        </span>
+                        <p className="text-sm font-medium text-foreground leading-snug">{item}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        <span className="font-medium text-foreground/80">Sale — unlocked</span>
+                        {subtitle && (
+                          <>
+                            <span className="mx-1.5 text-border">·</span>
+                            {subtitle}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 pt-0.5 min-w-[5.5rem]">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="block w-full text-sm font-semibold tabular-nums text-foreground rounded-md px-1.5 -mx-1.5 py-0.5 hover:bg-muted/80 transition-colors cursor-help text-right"
+                          >
+                            +${Math.abs(amt).toFixed(2)}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="text-xs max-w-[16rem]">
+                          Available balance after this credit: ${balAfter.toFixed(2)}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                )
+              }
+
+              const t = row.t
+              const amt = parseFloat(t.amount)
+              const isRelease =
+                t.description.startsWith("Available — ") && Math.abs(amt) < 0.0001
+              const incoming = amt > 0.0001
+              const balAfter = Number.isFinite(parseFloat(t.balance_after))
+                ? parseFloat(t.balance_after)
+                : 0
+              const { title, subtitle } = parseDescription(t.description, t.type)
+              const meta = activityMetaFromTitle(title)
+              const visualKind = singleRowVisualKind(t, title)
+              const statusNote = t.status && t.status !== "completed" ? t.status : ""
+              const dateStr = new Date(t.created_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+              const detailParts: { text: string; capitalize?: boolean }[] = []
+              if (subtitle) detailParts.push({ text: subtitle })
+              if (statusNote) detailParts.push({ text: statusNote, capitalize: true })
+              detailParts.push({ text: dateStr })
+              return (
                 <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                    isRelease ? "bg-emerald-50 dark:bg-emerald-950/40" : incoming ? "bg-neutral-100" : "bg-muted"
-                  }`}
-                >
-                  {isRelease ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
-                  ) : incoming ? (
-                    <ArrowDownLeft className="h-4 w-4 text-neutral-700" />
-                  ) : (
-                    <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                  key={row.key}
+                  className={cn(
+                    "flex items-start gap-3 py-3.5 pr-4 pl-3 transition-colors",
+                    activityRowSurfaceNeutral,
                   )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    {subtitle && <span className="ml-1.5 before:content-['·'] before:mr-1.5">{subtitle}</span>}
-                    {t.status && t.status !== "completed" && (
-                      <span className="ml-1.5 before:content-['·'] before:mr-1.5 capitalize">{t.status}</span>
-                    )}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-semibold ${incoming || isRelease ? "text-neutral-900" : "text-muted-foreground"}`}>
-                    {isRelease ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-medium">Released to available</span>
+                >
+                  <div className={activityIconCircleClass} aria-hidden>
+                    {visualKind === "available" ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : visualKind === "pending" ? (
+                      <Clock className="h-4 w-4" />
+                    ) : visualKind === "refund" ? (
+                      <RotateCcw className="h-4 w-4" />
+                    ) : incoming ? (
+                      <ArrowDownLeft className="h-4 w-4" />
                     ) : (
-                      <>
-                        {incoming ? "+" : ""}${Math.abs(amt).toFixed(2)}
-                      </>
+                      <ArrowUpRight className="h-4 w-4" />
                     )}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Available: ${balAfter.toFixed(2)}
-                  </p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                      {meta.badge && (
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold tracking-wide",
+                            meta.badgeClass,
+                          )}
+                        >
+                          {meta.badge}
+                        </span>
+                      )}
+                      <p className="text-sm font-medium text-foreground leading-snug break-words">{meta.headline}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {detailParts.map((part, i) => (
+                        <Fragment key={`${i}-${part.text}`}>
+                          {i > 0 && <span className="mx-1.5 text-border">·</span>}
+                          <span className={part.capitalize ? "capitalize" : undefined}>{part.text}</span>
+                        </Fragment>
+                      ))}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0 pt-0.5 min-w-[5.5rem]">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className={cn(
+                            "block w-full text-sm font-semibold tabular-nums rounded-md px-1.5 -mx-1.5 py-0.5 hover:bg-muted/80 transition-colors cursor-help text-right",
+                            visualKind === "neutral" && !incoming && !isRelease
+                              ? "text-muted-foreground"
+                              : "text-foreground",
+                          )}
+                        >
+                          {isRelease ? (
+                            <span className="font-medium text-foreground">Released</span>
+                          ) : (
+                            <>
+                              {incoming ? "+" : "−"}
+                              ${Math.abs(amt).toFixed(2)}
+                            </>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="text-xs max-w-[16rem]">
+                        Available balance after this event: ${balAfter.toFixed(2)}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   )
 }

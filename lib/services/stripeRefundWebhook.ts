@@ -160,7 +160,6 @@ export async function syncMarketplaceOrderFromStripePaymentIntent(
     .from("orders")
     .select("id, seller_id, seller_earnings, listing_id, amount")
     .eq("stripe_checkout_session_id", paymentIntentId)
-    .eq("payment_method", "stripe")
     .maybeSingle()
 
   if (!order) {
@@ -346,7 +345,6 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     .from("orders")
     .select("id, seller_id, amount, seller_earnings, status, listing_id")
     .eq("stripe_checkout_session_id", piId)
-    .eq("payment_method", "stripe")
     .maybeSingle()
 
   if (!order) {
@@ -526,7 +524,6 @@ export async function markMarketplaceOrderRefundingFromStripeRefund(refund: Stri
     .from("orders")
     .select("id, status")
     .eq("stripe_checkout_session_id", piId)
-    .eq("payment_method", "stripe")
     .maybeSingle()
 
   if (!order || order.status === "refunded") {
@@ -574,6 +571,49 @@ export async function tryHandleStripeRefundEvent(event: Stripe.Event): Promise<b
       console.error("[stripe refund webhook] markMarketplaceOrderRefundingFromStripeRefund", e)
     }
     return true
+  }
+
+  return true
+}
+
+/**
+ * Stripe also emits `charge.refunded` when a charge is refunded. Handles Dashboard refunds if
+ * `refund.created` / `refund.updated` were not subscribed on the webhook endpoint.
+ */
+export async function tryHandleStripeChargeRefundedEvent(event: Stripe.Event): Promise<boolean> {
+  if (event.type !== "charge.refunded") {
+    return false
+  }
+
+  let supabase: SupabaseClient
+  try {
+    supabase = createServiceRoleClient()
+  } catch (e) {
+    console.error("[stripe charge.refunded] service client", e)
+    return true
+  }
+
+  const charge = event.data.object as Stripe.Charge
+  const piRaw = charge.payment_intent
+  const piId =
+    typeof piRaw === "string"
+      ? piRaw
+      : piRaw && typeof piRaw === "object" && piRaw !== null && "id" in piRaw
+        ? String((piRaw as { id: string }).id)
+        : null
+
+  if (!piId?.startsWith("pi_")) {
+    console.warn("[stripe charge.refunded] could not resolve payment_intent", { charge: charge.id })
+    return true
+  }
+
+  try {
+    const sync = await syncMarketplaceOrderFromStripePaymentIntent(supabase, piId)
+    if (!sync.ok && sync.reason !== "order_not_found") {
+      console.error("[stripe charge.refunded] sync failed", sync)
+    }
+  } catch (e) {
+    console.error("[stripe charge.refunded] sync threw", e)
   }
 
   return true

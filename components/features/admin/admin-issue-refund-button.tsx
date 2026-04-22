@@ -22,6 +22,7 @@ type RefundApiResponse =
       success: true
       refund_type: "stripe" | "wallet"
       message: string
+      fullyRefundedInApp: boolean
       alreadyProcessedInStripe?: boolean
     }
   | { error: string }
@@ -46,8 +47,17 @@ export function AdminIssueRefundButton({
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
+  const [fullyRefundedUi, setFullyRefundedUi] = useState(false)
 
   if (orderStatus !== "confirmed" && orderStatus !== "refunding") return null
+
+  if (fullyRefundedUi) {
+    return (
+      <Button type="button" variant="outline" disabled className="gap-2 border-muted text-muted-foreground">
+        Already refunded
+      </Button>
+    )
+  }
 
   const isSyncOnly = orderStatus === "refunding"
   const isCard = paymentMethod === "stripe"
@@ -63,6 +73,9 @@ export function AdminIssueRefundButton({
       if (!res.ok || !("success" in data) || !data.success) {
         toast.error("error" in data ? data.error : "Could not issue refund")
         return
+      }
+      if (data.fullyRefundedInApp) {
+        setFullyRefundedUi(true)
       }
       toast.success(data.message)
       setOpen(false)
@@ -81,6 +94,7 @@ export function AdminIssueRefundButton({
       <AlertDialogTrigger asChild>
         <Button
           variant="outline"
+          disabled={busy}
           className={
             isSyncOnly
               ? "gap-2 border-amber-500/30 text-amber-950 dark:text-amber-100 hover:bg-amber-500/10"

@@ -18,6 +18,7 @@ import {
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
@@ -143,6 +144,7 @@ export default async function SalesPage() {
 
   return (
     <div className="space-y-6">
+      <OrdersListRealtimeRefresh role="seller" />
       <div>
         <h1 className="text-3xl font-bold text-foreground">Sales</h1>
         <p className="text-muted-foreground mt-1">

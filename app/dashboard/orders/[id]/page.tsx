@@ -36,6 +36,7 @@ import {
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
 import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
+import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -247,6 +248,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
   return (
     <div className="space-y-6">
+      <OrderDetailRealtimeRefresh orderId={id} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
           <Link href="/dashboard/orders" className="gap-2">

@@ -43,6 +43,7 @@ export async function POST(
     success: true,
     refund_type: result.refund_type,
     message: result.message,
+    fullyRefundedInApp: result.fullyRefundedInApp,
     ...(result.alreadyProcessedInStripe != null
       ? { alreadyProcessedInStripe: result.alreadyProcessedInStripe }
       : {}),

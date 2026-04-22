@@ -295,7 +295,7 @@ export default async function HomePage() {
           <div className="container mx-auto relative z-10 py-20 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="secondary" className="mb-4 text-black">
-                The Surf Community Marketplace
+                Used surfboard marketplace
               </Badge>
               <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl text-balance">
                 Buy and Sell Surfboards with the Community

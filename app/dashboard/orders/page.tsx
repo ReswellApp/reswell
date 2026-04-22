@@ -19,6 +19,7 @@ import { LocalDateTime } from "@/components/ui/local-datetime"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
+import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 export const metadata = privatePageMetadata({
   title: "Orders — Reswell",
@@ -158,6 +159,7 @@ export default async function OrdersPage() {
 
   return (
     <div className="space-y-6">
+      <OrdersListRealtimeRefresh role="buyer" />
       <div>
         <h1 className="text-3xl font-bold text-foreground">Orders</h1>
         <p className="text-muted-foreground mt-1">

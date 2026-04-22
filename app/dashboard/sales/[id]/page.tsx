@@ -50,6 +50,7 @@ import {
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
 import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
+import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -260,6 +261,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6 pb-12">
+      <OrderDetailRealtimeRefresh orderId={id} />
       {/* ── Back link ── */}
       <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
         <Link href="/dashboard/sales" className="gap-1.5">

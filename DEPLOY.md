@@ -59,14 +59,18 @@ After saving env vars:
 
 ## 5. Stripe webhook (for payments)
 
-So Stripe can confirm payments and run your logic:
+So Stripe can confirm card checkouts, complete orders when the browser never calls finalize, process refunds made in the Stripe Dashboard, and sync Connect account events:
 
 1. [Stripe Dashboard](https://dashboard.stripe.com/webhooks) → **Add endpoint**.
-2. **Endpoint URL**: `https://YOUR_VERCEL_DOMAIN/api/webhooks/stripe`.
-3. **Events**: `checkout.session.completed`.
+2. **Endpoint URL**: `https://YOUR_VERCEL_DOMAIN/api/webhooks/stripe` (use the canonical host Stripe can POST to without redirects).
+3. **Events** (listen to all of these on the same endpoint):
+   - `payment_intent.succeeded` — create/update the marketplace order when the client or webhook completes checkout.
+   - `refund.created`, `refund.updated` — buyer/seller/admin order status and seller wallet clawback when a card payment is refunded.
+   - `charge.refunded` — fallback reconciliation if refund events were not added.
+   - `account.updated`, `transfer.reversed` — Stripe Connect cashout flows (see `lib/services/stripeConnectWebhook.ts`).
 4. Copy the **Signing secret** and set it as `STRIPE_WEBHOOK_SECRET` in Vercel, then redeploy.
 
-Local dev: see **`docs/STRIPE.md`** (`npm run stripe:listen` + test keys in `.env.local`).
+Local dev: use the Stripe CLI (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`) with test keys in `.env.local`.
 
 ## 6. ShipEngine / ShipStation API track webhook (shipping)
 

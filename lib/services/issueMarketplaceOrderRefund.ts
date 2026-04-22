@@ -28,6 +28,8 @@ export type IssueMarketplaceOrderRefundResult =
       refund_type: "stripe" | "wallet"
       message: string
       alreadyProcessedInStripe?: boolean
+      /** True when this order is now `refunded` in the database (not mid-Stripe processing). */
+      fullyRefundedInApp: boolean
     }
   | { ok: false; error: string; status: number }
 
@@ -90,6 +92,7 @@ export async function issueMarketplaceOrderRefund(
     return {
       ok: true,
       refund_type: "stripe",
+      fullyRefundedInApp: sync.fullyRefunded,
       message: sync.fullyRefunded
         ? "Refund completed in Stripe — order updated."
         : "Refund status synced from Stripe. If the refund is still processing, check again shortly.",
@@ -137,6 +140,7 @@ export async function issueMarketplaceOrderRefund(
           ok: true,
           refund_type: "stripe",
           alreadyProcessedInStripe: true,
+          fullyRefundedInApp: sync.fullyRefunded,
           message: sync.fullyRefunded
             ? "This payment was already refunded in Stripe. Order status has been updated."
             : "Refund status synced from Stripe.",
@@ -164,6 +168,7 @@ export async function issueMarketplaceOrderRefund(
       return {
         ok: true,
         refund_type: "stripe",
+        fullyRefundedInApp: false,
         message:
           "Refund started — Stripe is processing it. This order will move to Refunded when Stripe completes the refund. Card refunds can take several business days to appear on the buyer’s statement.",
       }
@@ -204,6 +209,7 @@ export async function issueMarketplaceOrderRefund(
     return {
       ok: true,
       refund_type: "stripe",
+      fullyRefundedInApp: true,
       message: "Refund issued — the buyer's card will be refunded by Stripe shortly",
     }
   }
@@ -229,6 +235,7 @@ export async function issueMarketplaceOrderRefund(
     return {
       ok: true,
       refund_type: "wallet",
+      fullyRefundedInApp: true,
       message: "Refund complete — buyer has been credited and the listing is back on the market",
     }
   }

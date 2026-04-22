@@ -13,6 +13,7 @@ import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-
 import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import { createClient } from "@/lib/supabase/client"
+import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 type OrderApiResponse =
   | {
@@ -55,6 +56,10 @@ export default function AdminOrderDetailPage() {
   const [payload, setPayload] = useState<OrderApiResponse | null>(null)
   const [refetchKey, setRefetchKey] = useState(0)
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([])
+
+  const bumpRefetch = useCallback(() => {
+    setRefetchKey((k) => k + 1)
+  }, [])
 
   const fetchOrder = useCallback(async () => {
     if (!id) return
@@ -135,6 +140,7 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="space-y-6">
+      <OrderDetailRealtimeRefresh orderId={id} onUpdate={bumpRefetch} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="gap-2">
           <Link href="/admin/orders">
@@ -215,7 +221,7 @@ export default function AdminOrderDetailPage() {
                   orderStatus={o.status}
                   amount={o.amount}
                   paymentMethod={o.payment_method}
-                  onComplete={() => setRefetchKey((k) => k + 1)}
+                  onComplete={bumpRefetch}
                 />
               </div>
             </div>
