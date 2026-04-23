@@ -3089,11 +3089,29 @@ function SellPageContent() {
 
                 <SellFormSection
                   sectionId="sell-section-delivery"
-                  title="Pickup & shipping · where you're listing from"
-                  description="Choose delivery options, then pin where the board is (pickup area or ship-from location) on the map."
+                  title="Pickup & shipping"
+                  description="Pin where the board is, choose delivery options, then optional price-drop and offer settings."
                 >
                   <div className="space-y-8">
                     <div className="space-y-6">
+                      <LocationPicker
+                        onLocationSelect={(loc) => {
+                          setFormData({
+                            ...formData,
+                            locationLat: loc.lat,
+                            locationLng: loc.lng,
+                            locationCity: loc.city,
+                            locationState: loc.state,
+                            locationDisplay: loc.displayName,
+                          })
+                        }}
+                        initialLat={formData.locationLat || undefined}
+                        initialLng={formData.locationLng || undefined}
+                        initialCity={formData.locationCity || undefined}
+                        initialState={formData.locationState || undefined}
+                        initialDisplay={formData.locationDisplay || undefined}
+                      />
+
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4 shadow-sm">
                         <div>
                           <h3 className="text-sm font-semibold text-foreground">
@@ -3434,23 +3452,6 @@ function SellPageContent() {
                         </div>
                       </div>
                     </div>
-                    <LocationPicker
-                      onLocationSelect={(loc) => {
-                        setFormData({
-                          ...formData,
-                          locationLat: loc.lat,
-                          locationLng: loc.lng,
-                          locationCity: loc.city,
-                          locationState: loc.state,
-                          locationDisplay: loc.displayName,
-                        })
-                      }}
-                      initialLat={formData.locationLat || undefined}
-                      initialLng={formData.locationLng || undefined}
-                      initialCity={formData.locationCity || undefined}
-                      initialState={formData.locationState || undefined}
-                      initialDisplay={formData.locationDisplay || undefined}
-                    />
                   </div>
                 </SellFormSection>
 
