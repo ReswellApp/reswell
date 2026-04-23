@@ -2,7 +2,6 @@
 
 import Image from "next/image"
 import * as React from "react"
-import ReactDOM from "react-dom"
 import { cn } from "@/lib/utils"
 
 /** Default hero art when there are no recent listing images to show. */
@@ -30,17 +29,6 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
   const [skeletonPhase, setSkeletonPhase] = React.useState<HeroSkeletonPhase>("show")
 
   if (slides.length === 0) return null
-
-  // Preload every slide as soon as the page streams in so the carousel never
-  // shows a partially-loaded image on refresh. First slide gets high priority
-  // (it's visible immediately / LCP); the rest get low to avoid contending
-  // with higher-value resources.
-  for (let i = 0; i < slides.length; i++) {
-    ReactDOM.preload(slides[i], {
-      as: "image",
-      fetchPriority: i === 0 ? "high" : "low",
-    })
-  }
 
   const slideCount = slides.length
   const slidesLoop = [...slides, slides[0]]
@@ -108,8 +96,8 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
         }}
       >
         {slidesLoop.map((src, i) => {
-          const isRemote = src.startsWith("http://") || src.startsWith("https://")
           const isFirstFrame = i === 0
+          const nextUpInCarousel = i === 1
           return (
             <div
               key={`${src}-${i}`}
@@ -124,13 +112,13 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
                 src={src}
                 alt=""
                 fill
-                quality={100}
+                /* LCP: ~80% quality is visually identical at full-bleed; quality 100 was forcing huge payloads. */
+                quality={i === 0 ? 86 : 78}
                 sizes="100vw"
                 className="object-cover object-center"
-                loading="eager"
+                loading={isFirstFrame || nextUpInCarousel ? "eager" : "lazy"}
                 priority={i === 0}
-                fetchPriority={i === 0 ? "high" : "auto"}
-                unoptimized={!isRemote}
+                fetchPriority={i === 0 ? "high" : i === 1 ? "low" : "auto"}
                 onLoadingComplete={() => {
                   if (isFirstFrame) revealAfterFirstSlideLoad()
                 }}
