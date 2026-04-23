@@ -12,7 +12,7 @@ const BOARD_TYPE_FILTERS = [
   "step-up-gun",
 ]
 
-const BOARD_CONDITION_FILTERS = ["new", "like_new", "good", "fair"]
+const BOARD_CONDITION_FILTERS = ["brand_new", "excellent", "very_good", "good", "fair", "poor"]
 
 const TOP_LOCATIONS = [
   "san-diego",
@@ -62,7 +62,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // ── /boards?type=X&condition=used — high-value combos ───────────────────────
   const boardTypePlusCondition: MetadataRoute.Sitemap = BOARD_TYPE_FILTERS.flatMap((type) =>
-    ["good", "like_new"].map((cond) => ({
+    ["excellent", "very_good", "good"].map((cond) => ({
       url: `${BASE}/boards?type=${type}&condition=${cond}`,
       lastModified: now,
       changeFrequency: "daily" as const,

@@ -129,7 +129,7 @@ import {
   type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
-import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import {
   boardDimensionDisplayFields,
   boardDimensionsToDbFields,
@@ -445,7 +445,6 @@ function SellPageContent() {
     draftHydrated: false,
   })
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const serverDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
@@ -824,6 +823,15 @@ function SellPageContent() {
     ((Boolean(editId) && listingIsDraft) ||
       (Boolean(localServerDraftId) && !editId))
 
+  const handleSaveDraft = useCallback(async () => {
+    const result = await persistServerDraft()
+    if (result.ok) {
+      toast.success("Draft saved")
+    } else {
+      toast.error("Failed to save draft — please try again")
+    }
+  }, [persistServerDraft])
+
   const handleStartNewListing = useCallback(async () => {
     setStartNewListingBusy(true)
     try {
@@ -891,7 +899,6 @@ function SellPageContent() {
         return
       }
       setAvailableDrafts((prev) => prev.filter((d) => d.id !== draftId))
-      toast.success("Draft discarded")
       if (draftId === currentDraftId) {
         if (!editId) {
           setLocalServerDraftId(null)
@@ -988,35 +995,7 @@ function SellPageContent() {
     }
   }, [editId, draftHydrated, formData, images, localServerDraftId])
 
-  useEffect(() => {
-    if (!draftHydrated) return
-    if (editLoading) return
-    if (getImpersonation()) return
-    if (editId && !listingIsDraft) return
-    if (!editId && !localServerDraftId) {
-      const hasLocal =
-        sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot) ||
-        images.length > 0
-      if (!hasLocal) return
-    }
-    if (serverDraftPersistTimerRef.current) clearTimeout(serverDraftPersistTimerRef.current)
-    serverDraftPersistTimerRef.current = setTimeout(() => {
-      serverDraftPersistTimerRef.current = null
-      void persistServerDraft()
-    }, 900)
-    return () => {
-      if (serverDraftPersistTimerRef.current) clearTimeout(serverDraftPersistTimerRef.current)
-    }
-  }, [
-    draftHydrated,
-    editLoading,
-    editId,
-    localServerDraftId,
-    listingIsDraft,
-    formData,
-    images.length,
-    persistServerDraft,
-  ])
+  // Server draft is saved explicitly (Save draft button) or on page exit — not on every keystroke.
 
   const persistServerDraftRef = useRef(persistServerDraft)
   persistServerDraftRef.current = persistServerDraft
@@ -1161,7 +1140,7 @@ function SellPageContent() {
           return String(v)
         })(),
         category: listing.category_id ?? "",
-        condition: listing.condition ?? "",
+        condition: sellFormConditionValue(listing.condition),
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
@@ -2215,7 +2194,7 @@ function SellPageContent() {
                 {draftHydrated &&
                   !editLoading &&
                   (!editId || listingIsDraft) &&
-                  (availableDrafts.length > 0 || currentDraftId != null) && (
+                  !getImpersonation() && (
                     <div className="flex items-center gap-3">
                       {showDraftActionButtons && (
                         <DraftSavedStatus
@@ -2228,6 +2207,8 @@ function SellPageContent() {
                         currentDraftId={currentDraftId}
                         onSelect={(id) => void handleOpenDraft(id)}
                         onDiscard={handleDiscardDraftFromPicker}
+                        onSaveDraft={() => void handleSaveDraft()}
+                        saveDraftBusy={draftSaveStatus === "saving"}
                         onStartNew={
                           showDraftActionButtons
                             ? () => void handleStartNewListing()
@@ -2241,6 +2222,17 @@ function SellPageContent() {
                           optimizingAny
                         }
                       />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Exit listing form"
+                        asChild
+                      >
+                        <Link href="/listings">
+                          <X className="h-4 w-4" aria-hidden />
+                        </Link>
+                      </Button>
                     </div>
                   )}
               </div>
@@ -2917,7 +2909,7 @@ function SellPageContent() {
                   )}>
                     <Textarea
                       id="description"
-                      placeholder="Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
+                      placeholder="Describe your board…"
                       className="min-h-[120px] resize-none placeholder:text-muted-foreground/45"
                       value={formData.description}
                       onChange={(e) => {
@@ -2958,8 +2950,11 @@ function SellPageContent() {
                             let buffer = ""
                             try {
                               const listingData = {
+                                title: formData.title.trim(),
                                 brand: formData.brand || formData.boardIndexLabel?.split(" ")[0] || "",
                                 model: formData.boardIndexLabel || "",
+                                category: boardCategoryOptions.find((c) => c.value === formData.category)?.label || "",
+                                boardType: formData.boardType,
                                 condition: formData.condition,
                                 length: boardLengthFormatted,
                                 width: formData.boardWidthInches,
@@ -3043,15 +3038,13 @@ function SellPageContent() {
                         <p className="text-xs text-muted-foreground/45">Quick add:</p>
                         <div className="flex flex-wrap gap-1.5">
                           {[
-                            "Has been reglassed",
-                            "No pressure dings",
-                            "Fresh wax",
-                            "Comes with board bag",
-                            "Fin boxes in great shape",
-                            "Minor heel dents",
-                            "Good for beginners",
-                            "Great for small waves",
-                            "Rides bigger than it looks",
+                            "Board is in great shape",
+                            "Only surfed a few times",
+                            "Board surfs great, just looking to try something new",
+                            "Board was a little small for me",
+                            "Board was a little too big for me",
+                            "No dings",
+                            "Dings professionally repaired",
                           ].map((chip) => (
                             <button
                               key={chip}

@@ -9,6 +9,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  Save,
   Trash2,
 } from "lucide-react"
 
@@ -46,6 +47,10 @@ interface DraftsPickerProps {
   onDiscard: (draftId: string) => Promise<void> | void
   /** Optional — renders a pinned "Start a new listing" action at the top of the menu. */
   onStartNew?: () => void
+  /** Optional — renders a pinned "Save draft" action at the top of the menu. */
+  onSaveDraft?: () => Promise<void> | void
+  /** True while a manual save is in flight. */
+  saveDraftBusy?: boolean
   disabled?: boolean
   className?: string
 }
@@ -78,6 +83,8 @@ export function DraftsPicker({
   onSelect,
   onDiscard,
   onStartNew,
+  onSaveDraft,
+  saveDraftBusy,
   disabled,
   className,
 }: DraftsPickerProps) {
@@ -93,7 +100,7 @@ export function DraftsPicker({
     return [mine, ...drafts.filter((d) => d.id !== currentDraftId)]
   }, [drafts, currentDraftId])
 
-  if (count === 0 && !onStartNew) return null
+  if (count === 0 && !onStartNew && !onSaveDraft) return null
 
   async function handleDiscard(id: string) {
     if (discardingId) return
@@ -133,6 +140,39 @@ export function DraftsPicker({
         sideOffset={8}
         className="w-[min(22rem,calc(100vw-2rem))] p-0 overflow-hidden"
       >
+        {onSaveDraft && (
+          <button
+            type="button"
+            disabled={saveDraftBusy}
+            onClick={() => {
+              setOpen(false)
+              void onSaveDraft()
+            }}
+            className={cn(
+              "flex w-full items-center gap-3 px-4 py-3 text-left",
+              "border-b border-border",
+              "transition-colors hover:bg-muted/70 focus-visible:bg-muted/70",
+              "outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              saveDraftBusy && "opacity-60 cursor-not-allowed",
+            )}
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-background">
+              {saveDraftBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Save className="h-4 w-4" aria-hidden />
+              )}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold text-foreground">
+                Save draft
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Save your progress now
+              </span>
+            </span>
+          </button>
+        )}
         {onStartNew && (
           <button
             type="button"
@@ -279,7 +319,7 @@ export function DraftsPicker({
           </>
         ) : (
           <p className="px-4 py-3 text-xs text-muted-foreground">
-            No saved drafts yet — your work here autosaves as you type.
+            No saved drafts yet — use Save draft to keep your progress.
           </p>
         )}
       </PopoverContent>

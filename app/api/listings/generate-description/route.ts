@@ -1,7 +1,6 @@
 import Anthropic, { APIError, AuthenticationError } from "@anthropic-ai/sdk"
 import { NextResponse } from "next/server"
-import { FIN_SETUP_LABELS, parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
-import { parseTailShapeFromStorage, TAIL_SHAPE_LABELS } from "@/lib/listing-tail-shape-tags"
+import { formatCondition } from "@/lib/listing-labels"
 
 /** Strips surrounding quotes and whitespace — common .env mistakes cause invalid x-api-key. */
 function normalizeAnthropicApiKey(raw: string): string {
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "AI descriptions are not configured. Add ANTHROPIC_API_KEY to .env.local (local) or your host’s environment variables, then restart the dev server. Create a key at https://console.anthropic.com/settings/keys",
+          "AI descriptions are not configured. Add ANTHROPIC_API_KEY to .env.local (local) or your host's environment variables, then restart the dev server. Create a key at https://console.anthropic.com/settings/keys",
       },
       { status: 503 },
     )
@@ -50,67 +49,59 @@ export async function POST(req: Request) {
   const { listingData } = await req.json()
 
   const {
+    title,
     brand,
     model,
+    category,
+    boardType,
     condition,
     length,
     width,
     thickness,
     volume,
-    fins,
-    tail,
     price,
     location,
   } = listingData
 
-  const conditionLabels: Record<string, string> = {
-    new: "New (never used)",
-    like_new: "Excellent",
-    good: "Good",
-    fair: "Fair",
-  }
+  const boardName = [brand, model].filter(Boolean).join(" ") || title || "Surfboard"
+  const boardShape = [category, boardType].filter(Boolean).join(" / ") || null
 
-  const dimsLine = [length, width, thickness].filter(Boolean).join(" x ")
-  const volLine = volume ? `${volume}L` : null
-  const dimsDisplay = [dimsLine, volLine].filter(Boolean).join(" — ")
+  const dimParts = [
+    length ? `${length}` : null,
+    width ? `${width}"` : null,
+    thickness ? `${thickness}"` : null,
+    volume ? `${volume}L` : null,
+  ].filter(Boolean)
+  const dimsDisplay = dimParts.length ? dimParts.join(" x ") : null
 
-  let finsDisplay = "Not specified"
-  if (Array.isArray(fins) && fins.length > 0) {
-    const flat = fins.flatMap((f) => (typeof f === "string" ? parseFinsSetupFromStorage(f) : []))
-    const uniq = [...new Set(flat)]
-    if (uniq.length) finsDisplay = uniq.map((slug) => FIN_SETUP_LABELS[slug]).join(", ")
-  } else if (typeof fins === "string" && fins.trim()) {
-    const slugs = parseFinsSetupFromStorage(fins)
-    if (slugs.length) finsDisplay = slugs.map((s) => FIN_SETUP_LABELS[s]).join(", ")
-  }
+  const lines: string[] = [
+    `Board: ${boardName}`,
+    boardShape ? `Shape/category: ${boardShape}` : null,
+    dimsDisplay ? `Dimensions: ${dimsDisplay}` : null,
+    `Condition: ${formatCondition(condition) || "Not specified"}`,
+    price ? `Asking price: $${price}` : null,
+    location ? `Location: ${location}` : null,
+  ].filter((l): l is string => Boolean(l))
 
-  let tailDisplay = "Not specified"
-  if (Array.isArray(tail) && tail.length > 0) {
-    const flat = tail.flatMap((t) => (typeof t === "string" ? parseTailShapeFromStorage(t) : []))
-    const uniq = [...new Set(flat)]
-    if (uniq.length) tailDisplay = uniq.map((slug) => TAIL_SHAPE_LABELS[slug]).join(", ")
-  } else if (typeof tail === "string" && tail.trim()) {
-    const slugs = parseTailShapeFromStorage(tail)
-    if (slugs.length) tailDisplay = slugs.map((s) => TAIL_SHAPE_LABELS[s]).join(", ")
-  }
+  const prompt = `You are helping a surfer write a listing description for their surfboard on Reswell, a peer-to-peer surf gear marketplace.
 
-  const prompt = `You are helping a surfer write a listing description for their surfboard on Reswell, a peer-to-peer surf gear marketplace. Write a natural, honest, and appealing listing description based on these details:
+Here are the details for the listing:
 
-Board: ${[brand, model].filter(Boolean).join(" ") || "Surfboard"}
-Dimensions: ${dimsDisplay || "Not specified"}
-Condition: ${conditionLabels[condition] || condition || "Not specified"}
-Fins: ${finsDisplay}
-Tail: ${tailDisplay}
-Price: ${price ? `$${price}` : "Not specified"}
-Location: ${location || "Not specified"}
+${lines.join("\n")}
 
-Write 3-4 sentences. Sound like a real surfer, not a salesperson. Mention the dims, condition honestly, what type of surfer or waves it suits, and anything a buyer would want to know. Do not use exclamation marks or hype language. Keep it natural and conversational. Do not include a title — just the description body.`
+Write a short, honest, and natural listing description — 3 to 4 sentences maximum. Guidelines:
+- Write in first person, as if the seller is speaking directly to a buyer.
+- Use the listing details above to inform what you write. Mention the dimensions, condition, and anything relevant about who the board suits or what waves it works for.
+- Do NOT use dashes (hyphens used as punctuation, like " — " or " - "). Use plain sentences instead.
+- Do NOT use exclamation marks or hype language.
+- Do NOT include a title or heading — just the description body.
+- Sound like a real surfer, not a salesperson. Keep it conversational and genuine.`
 
   let stream: Awaited<ReturnType<Anthropic["messages"]["stream"]>>
   try {
     stream = await client.messages.stream({
       model: "claude-sonnet-4-5-20250929",
-      max_tokens: 300,
+      max_tokens: 350,
       messages: [{ role: "user", content: prompt }],
     })
   } catch (err) {

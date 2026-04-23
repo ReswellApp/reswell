@@ -116,13 +116,19 @@ export function BoardsListingsFilters({
 
   // Sync filter UI when server re-renders with new searchParams (back/forward, external links).
   // Skip resetting free-text fields when the payload matches what we just pushed from this form.
+  // Only arm the skip refs when a value actually changes — arming them unconditionally would cause
+  // the next user interaction to be silently dropped after any server echo of the same values.
   useEffect(() => {
-    skipTextDebounceRef.current = true
-    skipSelectApplyRef.current = true
+    const typeChanged = initialType !== filtersRef.current.type
+    const conditionChanged = initialCondition !== filtersRef.current.condition
+    const sortChanged = initialSort !== filtersRef.current.sort
 
-    setType(initialType)
-    setCondition(initialCondition)
-    setSort(initialSort)
+    if (typeChanged || conditionChanged || sortChanged) {
+      skipSelectApplyRef.current = true
+      setType(initialType)
+      setCondition(initialCondition)
+      setSort(initialSort)
+    }
 
     const incomingQ = (initialQ ?? "").trim()
     const incomingLoc = (initialLocation ?? "").trim()
@@ -133,6 +139,7 @@ export function BoardsListingsFilters({
     }
 
     expectedAfterReplaceRef.current = null
+    skipTextDebounceRef.current = true
     setQ(initialQ)
     setLocation(initialLocation)
     setUserLat(null)

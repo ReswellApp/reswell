@@ -1,6 +1,6 @@
 /**
  * Human-readable labels for listing condition, category, and board type.
- * Stored `listings.condition` values stay `new` | `like_new` | `good` | `fair`; UI shows New / Excellent / Good / Fair.
+ * The sell form uses `like_new` | `good` | `fair`. Legacy rows may still have `new` (show as “New” until updated).
  */
 
 /**
@@ -21,10 +21,43 @@ export function capitalizeWords(text: string | null | undefined): string {
 
 /** Short labels for tiles, filters, chips, and `formatCondition`. */
 export const LISTING_CONDITION_LABELS: Record<string, string> = {
+  // Legacy values (display only — no longer selectable when listing)
   new: "New",
-  like_new: "Excellent",
+  like_new: "Like New",
+  // Current values
+  brand_new: "Brand New",
+  excellent: "Excellent",
+  very_good: "Very Good",
   good: "Good",
   fair: "Fair",
+  poor: "Poor",
+}
+
+const LISTING_CONDITION_ORDER = ["brand_new", "excellent", "very_good", "good", "fair", "poor"] as const
+
+export function isListingSellableCondition(
+  c: string | null | undefined,
+): c is (typeof LISTING_CONDITION_ORDER)[number] {
+  return (
+    c === "brand_new" ||
+    c === "excellent" ||
+    c === "very_good" ||
+    c === "good" ||
+    c === "fair" ||
+    c === "poor"
+  )
+}
+
+/**
+ * Load listing/draft into sell form: maps legacy condition values to the nearest
+ * current equivalent so the Select always has a matching option.
+ */
+export function sellFormConditionValue(raw: string | null | undefined): string {
+  const v = (raw ?? "").trim()
+  if (v === "new") return "brand_new"
+  if (v === "like_new") return "excellent"
+  if (isListingSellableCondition(v)) return v
+  return ""
 }
 
 export function formatCondition(condition: string | null | undefined): string {
@@ -34,15 +67,10 @@ export function formatCondition(condition: string | null | undefined): string {
   )
 }
 
-/** Sell-form dropdown rows (value is persisted to `listings.condition`). */
-export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] = [
-  { value: "new", label: "New — never used" },
-  { value: "like_new", label: "Excellent — minimal wear" },
-  { value: "good", label: "Good — normal wear" },
-  { value: "fair", label: "Fair — visible wear, still functional" },
-]
-
-const LISTING_CONDITION_ORDER = ["new", "like_new", "good", "fair"] as const
+/** Sell-form and browse filter condition values (excludes legacy `new`). */
+export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] = LISTING_CONDITION_ORDER.map(
+  (v) => ({ value: v, label: LISTING_CONDITION_LABELS[v] ?? v }),
+)
 
 /** Rows for browse filters (values only; pair with `{ value: \"all\", label: \"Any Condition\" }`). */
 export function listingConditionFilterRows(): { value: string; label: string }[] {

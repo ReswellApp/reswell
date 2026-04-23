@@ -12,6 +12,7 @@ import {
   reswellPackageFieldsToDb,
   resolveListingFulfillmentFlagsForSellSubmit,
 } from "@/lib/sell-listing-fulfillment-flags"
+import { isListingSellableCondition } from "@/lib/listing-labels"
 import type { ListingDraftAutosaveInput } from "@/lib/validations/listing-draft-autosave"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
@@ -75,13 +76,13 @@ export function buildSurfboardDraftListingRow(
   const desc = (fd.description ?? "").trim() || " "
   const categoryId = fd.category && fd.category.length > 0 ? fd.category : defaultCategoryId
   const conditionRaw = (fd.condition ?? "").trim()
-  const condition =
-    conditionRaw === "new" ||
-    conditionRaw === "like_new" ||
-    conditionRaw === "good" ||
-    conditionRaw === "fair"
-      ? conditionRaw
-      : "good"
+  const condition = isListingSellableCondition(conditionRaw)
+    ? conditionRaw
+    : conditionRaw === "new"
+      ? "brand_new"
+      : conditionRaw === "like_new"
+        ? "excellent"
+        : "good"
 
   return {
     title: safeTitle.slice(0, LISTING_TITLE_MAX_LENGTH),

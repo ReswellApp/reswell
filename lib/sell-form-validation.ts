@@ -12,6 +12,7 @@ import {
   parseLengthFeet,
   parseVolumeLiters,
 } from "@/lib/board-measurements"
+import { isListingSellableCondition } from "@/lib/listing-labels"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -82,6 +83,10 @@ export function validateSellListingForm(
 
   if (!form.title?.trim() || !form.price?.trim() || !form.condition) {
     return "Please fill in all required fields."
+  }
+
+  if (!isListingSellableCondition(form.condition)) {
+    return "Please select a condition."
   }
 
   const price = parseFloat(form.price.trim())
