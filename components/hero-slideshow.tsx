@@ -3,6 +3,7 @@
 import Image from "next/image"
 import * as React from "react"
 import ReactDOM from "react-dom"
+import { cn } from "@/lib/utils"
 
 /** Default hero art when there are no recent listing images to show. */
 export const FALLBACK_HOME_HERO_SLIDE_PATHS = [
@@ -23,7 +24,11 @@ const SECONDS_PER_SLIDE = 14
  * per-image aspect updates — those were restarting the animation and resizing the track
  * during load (visible glitch on hard refresh).
  */
+type HeroSkeletonPhase = "show" | "fade" | "gone"
+
 export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
+  const [skeletonPhase, setSkeletonPhase] = React.useState<HeroSkeletonPhase>("show")
+
   if (slides.length === 0) return null
 
   // Preload every slide as soon as the page streams in so the carousel never
@@ -49,6 +54,17 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
     }
   `
 
+  const revealAfterFirstSlideLoad = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setSkeletonPhase("gone")
+    } else {
+      setSkeletonPhase("fade")
+    }
+  }
+
   const trackMotion: Pick<
     React.CSSProperties,
     | "animationName"
@@ -68,9 +84,23 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
 
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      {skeletonPhase !== "gone" && (
+        <div
+          className={cn(
+            "skeleton pointer-events-none absolute inset-0 z-0 !rounded-none transition-opacity duration-500 ease-out motion-reduce:transition-none",
+            skeletonPhase === "fade" && "opacity-0",
+            skeletonPhase === "show" && "opacity-100",
+          )}
+          onTransitionEnd={(e) => {
+            if (e.target !== e.currentTarget) return
+            if (e.propertyName !== "opacity") return
+            setSkeletonPhase((p) => (p === "fade" ? "gone" : p))
+          }}
+        />
+      )}
       <style dangerouslySetInnerHTML={{ __html: keyframes }} />
       <div
-        className="flex h-full flex-nowrap gap-0"
+        className="relative z-[1] flex h-full flex-nowrap gap-0"
         style={{
           width: `${slidesLoop.length * 100}vw`,
           minWidth: `${slidesLoop.length * 100}vw`,
@@ -79,6 +109,7 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
       >
         {slidesLoop.map((src, i) => {
           const isRemote = src.startsWith("http://") || src.startsWith("https://")
+          const isFirstFrame = i === 0
           return (
             <div
               key={`${src}-${i}`}
@@ -100,6 +131,12 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
                 priority={i === 0}
                 fetchPriority={i === 0 ? "high" : "auto"}
                 unoptimized={!isRemote}
+                onLoadingComplete={() => {
+                  if (isFirstFrame) revealAfterFirstSlideLoad()
+                }}
+                onError={() => {
+                  if (isFirstFrame) revealAfterFirstSlideLoad()
+                }}
               />
             </div>
           )
