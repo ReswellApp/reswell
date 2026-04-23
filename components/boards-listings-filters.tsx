@@ -363,7 +363,7 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="col-span-2 w-full min-w-0 md:col-auto md:w-[360px] md:min-w-[min(360px,100%)] md:max-w-full md:shrink-0">
+      <div className="col-span-2 w-full min-w-0 md:col-auto md:min-w-[12rem] md:flex-1">
         <SiteSearchShell
           actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
         >
