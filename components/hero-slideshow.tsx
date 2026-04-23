@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import * as React from "react"
+import { wideShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
 
 /** Default hero art when there are no recent listing images to show. */
@@ -22,11 +23,21 @@ const SECONDS_PER_SLIDE = 14
  * Full-viewport slides + one CSS keyframe animation. Avoids packed pixel widths and
  * per-image aspect updates — those were restarting the animation and resizing the track
  * during load (visible glitch on hard refresh).
+ *
+ * The track stays paused until the first slide has decoded so we never animate through
+ * empty/black frames (the main cause of a "gross" hard refresh).
  */
 type HeroSkeletonPhase = "show" | "fade" | "gone"
 
 export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
+  const firstSlideDoneRef = React.useRef(false)
   const [skeletonPhase, setSkeletonPhase] = React.useState<HeroSkeletonPhase>("show")
+  const [firstSlideReady, setFirstSlideReady] = React.useState(false)
+  const [reduceMotion, setReduceMotion] = React.useState(false)
+
+  React.useLayoutEffect(() => {
+    setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+  }, [])
 
   if (slides.length === 0) return null
 
@@ -42,7 +53,10 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
     }
   `
 
-  const revealAfterFirstSlideLoad = () => {
+  const onFirstSlideResolved = () => {
+    if (firstSlideDoneRef.current) return
+    firstSlideDoneRef.current = true
+    setFirstSlideReady(true)
     if (
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -53,29 +67,30 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
     }
   }
 
-  const trackMotion: Pick<
-    React.CSSProperties,
-    | "animationName"
-    | "animationDuration"
-    | "animationTimingFunction"
-    | "animationIterationCount"
-    | "animationFillMode"
-    | "willChange"
-  > = {
-    animationName: keyframeName,
-    animationDuration: `${totalDurationS}s`,
-    animationTimingFunction: "linear",
-    animationIterationCount: "infinite",
-    animationFillMode: "none",
-    willChange: "transform",
+  const baseTrackLayout: React.CSSProperties = {
+    width: `${slidesLoop.length * 100}vw`,
+    minWidth: `${slidesLoop.length * 100}vw`,
   }
+
+  const trackMotion: React.CSSProperties = reduceMotion
+    ? baseTrackLayout
+    : {
+        ...baseTrackLayout,
+        animationName: keyframeName,
+        animationDuration: `${totalDurationS}s`,
+        animationTimingFunction: "linear",
+        animationIterationCount: "infinite",
+        animationFillMode: "none",
+        animationPlayState: firstSlideReady ? "running" : "paused",
+        willChange: firstSlideReady ? "transform" : "auto",
+      }
 
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden>
       {skeletonPhase !== "gone" && (
         <div
           className={cn(
-            "skeleton pointer-events-none absolute inset-0 z-0 !rounded-none transition-opacity duration-500 ease-out motion-reduce:transition-none",
+            "skeleton pointer-events-none absolute inset-0 z-[2] !rounded-none transition-opacity duration-500 ease-out motion-reduce:transition-none",
             skeletonPhase === "fade" && "opacity-0",
             skeletonPhase === "show" && "opacity-100",
           )}
@@ -87,21 +102,14 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
         />
       )}
       <style dangerouslySetInnerHTML={{ __html: keyframes }} />
-      <div
-        className="relative z-[1] flex h-full flex-nowrap gap-0"
-        style={{
-          width: `${slidesLoop.length * 100}vw`,
-          minWidth: `${slidesLoop.length * 100}vw`,
-          ...trackMotion,
-        }}
-      >
+      <div className="relative z-[1] flex h-full flex-nowrap gap-0" style={trackMotion}>
         {slidesLoop.map((src, i) => {
           const isFirstFrame = i === 0
           const nextUpInCarousel = i === 1
           return (
             <div
               key={`${src}-${i}`}
-              className="relative h-full shrink-0 overflow-hidden bg-zinc-950"
+              className="relative h-full shrink-0 overflow-hidden bg-zinc-100"
               style={{
                 width: "100vw",
                 minWidth: "100vw",
@@ -112,18 +120,20 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
                 src={src}
                 alt=""
                 fill
-                /* LCP: ~80% quality is visually identical at full-bleed; quality 100 was forcing huge payloads. */
-                quality={i === 0 ? 86 : 78}
+                quality={isFirstFrame ? 80 : 72}
                 sizes="100vw"
                 className="object-cover object-center"
+                placeholder="blur"
+                blurDataURL={wideShimmer}
                 loading={isFirstFrame || nextUpInCarousel ? "eager" : "lazy"}
-                priority={i === 0}
-                fetchPriority={i === 0 ? "high" : i === 1 ? "low" : "auto"}
-                onLoadingComplete={() => {
-                  if (isFirstFrame) revealAfterFirstSlideLoad()
+                priority={isFirstFrame}
+                fetchPriority={isFirstFrame ? "high" : nextUpInCarousel ? "high" : "low"}
+                decoding={isFirstFrame ? "sync" : "async"}
+                onLoad={() => {
+                  if (isFirstFrame) onFirstSlideResolved()
                 }}
                 onError={() => {
-                  if (isFirstFrame) revealAfterFirstSlideLoad()
+                  if (isFirstFrame) onFirstSlideResolved()
                 }}
               />
             </div>
