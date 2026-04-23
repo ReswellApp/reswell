@@ -479,6 +479,30 @@ export function Header() {
     }
   }, [supabase, user?.id])
 
+  /** Ledger rows (refunds, sales, cash-out) — header should resync even if a `wallets` UPDATE is batched oddly. */
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase
+      .channel(`header_wallet_tx_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "wallet_transactions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [supabase, user?.id])
+
   /** Avatar, display name, shop logo: stay in sync when `profiles` row updates (any client or API path). */
   useEffect(() => {
     if (!user?.id) return

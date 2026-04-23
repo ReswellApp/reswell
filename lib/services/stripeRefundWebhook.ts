@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import { relistAfterRefund } from "@/lib/services/listingRelist"
-import { splitSellerRefundClawback } from "@/lib/split-seller-refund-clawback"
+import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -260,19 +260,18 @@ async function reconcileWalletForMissingRefunds(
         ? `partial refund $${refundUsd.toFixed(2)} of $${opts.orderTotalUsd.toFixed(2)} card total`
         : `full refund $${refundUsd.toFixed(2)} (card total $${opts.orderTotalUsd.toFixed(2)})`
 
-    const split = splitSellerRefundClawback(clawbackUsd, curPending, curBalance)
-    if (split.totalClawed <= 0) continue
-
-    const bucketNote =
-      split.clawFromPending > 0 && split.clawFromBalance > 0
-        ? `pending $${split.clawFromPending.toFixed(2)}; available $${split.clawFromBalance.toFixed(2)}`
-        : split.clawFromPending > 0
-          ? "pending earnings"
-          : "available balance"
-
-    const newEarned = roundMoney(
-      Math.max(0, curEarned - split.clawFromPending - split.clawFromBalance),
+    const rev = applySellerRefundClawback(
+      { balance: curBalance, pending: curPending, lifetimeEarned: curEarned },
+      clawbackUsd,
     )
+    const { split } = rev
+    const debtNote = split.newBalance < 0 ? `; in-wallet now ${split.newBalance.toFixed(2)}` : ""
+    const bucketNote =
+      split.clawFromPending > 0 && split.remainderFromAvailable > 0
+        ? `took from pending and available (pending $${split.clawFromPending.toFixed(2)})`
+        : split.clawFromPending > 0
+          ? "took from pending"
+          : "took from available"
 
     const { error: txErr } = await supabase.from("wallet_transactions").insert({
       wallet_id: wallet.id,
@@ -280,7 +279,7 @@ async function reconcileWalletForMissingRefunds(
       type: "refund",
       amount: -split.totalClawed,
       balance_after: split.newBalance.toFixed(2),
-      description: `Refund — "${title}" (${partialNote}; ${bucketNote}; Stripe ${refund.id})`,
+      description: `Refund — "${title}" (${partialNote}; ${bucketNote}${debtNote}; Stripe ${refund.id})`,
       status: "completed",
       reference_id: refund.id,
       reference_type: "stripe_refund",
@@ -291,9 +290,9 @@ async function reconcileWalletForMissingRefunds(
       console.error("[sync refund] wallet tx insert", txErr)
       continue
     }
-    curPending = split.newPending
-    curBalance = split.newBalance
-    curEarned = newEarned
+    curPending = rev.split.newPending
+    curBalance = rev.split.newBalance
+    curEarned = rev.newLifetimeEarned
   }
 
   await supabase
@@ -430,24 +429,18 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
       ? `partial refund $${refundUsd.toFixed(2)} of $${orderTotalUsd.toFixed(2)} card total`
       : `full refund $${refundUsd.toFixed(2)} (card total $${orderTotalUsd.toFixed(2)})`
 
-  const split = splitSellerRefundClawback(clawbackUsd, prevPending, prevBalance)
-  if (split.totalClawed <= 0) {
-    if (wasFullRefund) {
-      await relistAfterRefund(supabase, order.listing_id)
-    }
-    return
-  }
-
-  const bucketNote =
-    split.clawFromPending > 0 && split.clawFromBalance > 0
-      ? `pending $${split.clawFromPending.toFixed(2)}; available $${split.clawFromBalance.toFixed(2)}`
-      : split.clawFromPending > 0
-        ? "pending earnings"
-        : "available balance"
-
-  const newLifetimeEarned = roundMoney(
-    Math.max(0, prevEarned - split.clawFromPending - split.clawFromBalance),
+  const rev = applySellerRefundClawback(
+    { balance: prevBalance, pending: prevPending, lifetimeEarned: prevEarned },
+    clawbackUsd,
   )
+  const { split } = rev
+  const debtNote = split.newBalance < 0 ? `; in-wallet now ${split.newBalance.toFixed(2)}` : ""
+  const bucketNote =
+    split.clawFromPending > 0 && split.remainderFromAvailable > 0
+      ? `took from pending and available (pending $${split.clawFromPending.toFixed(2)})`
+      : split.clawFromPending > 0
+        ? "took from pending"
+        : "took from available"
 
   const { error: txErr } = await supabase.from("wallet_transactions").insert({
     wallet_id: wallet.id,
@@ -455,7 +448,7 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     type: "refund",
     amount: -split.totalClawed,
     balance_after: split.newBalance.toFixed(2),
-    description: `Refund — "${title}" (${partialNote}; ${bucketNote}; Stripe ${refund.id})`,
+    description: `Refund — "${title}" (${partialNote}; ${bucketNote}${debtNote}; Stripe ${refund.id})`,
     status: "completed",
     reference_id: refund.id,
     reference_type: "stripe_refund",
@@ -474,7 +467,7 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     .update({
       balance: split.newBalance.toFixed(2),
       pending_balance: split.newPending.toFixed(2),
-      lifetime_earned: newLifetimeEarned.toFixed(2),
+      lifetime_earned: rev.newLifetimeEarned.toFixed(2),
       updated_at: new Date().toISOString(),
     })
     .eq("id", wallet.id)

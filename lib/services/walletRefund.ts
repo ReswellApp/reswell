@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { relistAfterRefund } from "@/lib/services/listingRelist"
-import { splitSellerRefundClawback } from "@/lib/split-seller-refund-clawback"
+import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -111,19 +111,24 @@ async function clawbackSellerEarnings(
   const title = typeof listing?.title === "string" ? listing.title : "Listing"
   const desc = `Refund — "${title}" (full refund $${clawbackUsd.toFixed(2)}, Reswell Bucks; order ${order.id.slice(0, 8)})`
 
-  const split = splitSellerRefundClawback(clawbackUsd, prevPending, prevBalance)
-  if (split.totalClawed <= 0) {
+  const rev = applySellerRefundClawback(
+    { balance: prevBalance, pending: prevPending, lifetimeEarned: prevEarned },
+    clawbackUsd,
+  )
+  if (clawbackUsd <= 0) {
     return
   }
 
-  const suffix =
-    split.clawFromPending > 0 && split.clawFromBalance > 0
-      ? ` (pending $${split.clawFromPending.toFixed(2)}; available $${split.clawFromBalance.toFixed(2)})`
+  const { split } = rev
+  const debtNote = split.newBalance < 0 ? `; in-wallet ${split.newBalance.toFixed(2)} (cleared by new sales)` : ""
+  const bucketNote =
+    split.clawFromPending > 0 && split.remainderFromAvailable > 0
+      ? ` (took $${split.clawFromPending.toFixed(2)} from pending, $${split.remainderFromAvailable.toFixed(2)} from available)`
       : split.clawFromPending > 0
-        ? " (pending earnings)"
-        : ""
-
-  const newEarned = roundMoney(Math.max(0, prevEarned - split.clawFromPending - split.clawFromBalance))
+        ? " (took from pending earnings)"
+        : split.remainderFromAvailable > 0
+          ? " (took from available / balance may go below zero if funds were already paid out)"
+          : ""
 
   const { error: txErr } = await supabase.from("wallet_transactions").insert({
     wallet_id: wallet.id,
@@ -131,7 +136,7 @@ async function clawbackSellerEarnings(
     type: "refund",
     amount: -split.totalClawed,
     balance_after: split.newBalance.toFixed(2),
-    description: `${desc}${suffix}`,
+    description: `${desc}${bucketNote}${debtNote}`,
     status: "completed",
     reference_id: order.id,
     reference_type: "wallet_refund",
@@ -147,7 +152,7 @@ async function clawbackSellerEarnings(
     .update({
       balance: split.newBalance.toFixed(2),
       pending_balance: split.newPending.toFixed(2),
-      lifetime_earned: newEarned.toFixed(2),
+      lifetime_earned: rev.newLifetimeEarned.toFixed(2),
       updated_at: nowIso,
     })
     .eq("id", wallet.id)

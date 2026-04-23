@@ -529,11 +529,16 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
-  const available = roundMoney(parseFloat(String(wallet.balance)))
-  if (available < amountUsd) {
+  const spendable = roundMoney(agg.availableBalance)
+  const rawBalance = roundMoney(parseFloat(String(wallet.balance)))
+  if (amountUsd > spendable) {
     return {
       ok: false,
-      error: `Insufficient balance. Available: $${available.toFixed(2)}`,
+      error:
+        spendable < 0.01 && rawBalance < 0
+          ? "Your in-wallet Reswell balance is below zero (for example after a refund to the buyer). " +
+            "You cannot cash out until new in-app sales bring it back to zero or above."
+          : `Insufficient balance. Available: $${spendable.toFixed(2)}`,
       status: 400,
     }
   }
@@ -684,7 +689,7 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
-  const newBalance = roundMoney(available - amountUsd)
+  const newBalance = roundMoney(rawBalance - amountUsd)
   const lifetimeCashedOutAfter = roundMoney(
     parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd,
   )
@@ -743,6 +748,7 @@ export async function cashOutToStripeConnectedAccount(
 
   const netToBankUsd = roundMoney(netTransferUsd)
 
+  const spendableAfter = roundMoney(Math.max(0, newBalance))
   if (speed === "instant") {
     return {
       ok: true,
@@ -752,7 +758,7 @@ export async function cashOutToStripeConnectedAccount(
       netToBankUsd,
       speed,
       stripePayoutId,
-      availableBalanceAfter: newBalance,
+      availableBalanceAfter: spendableAfter,
       lifetimeCashedOutAfter,
       message: `Instant payout started — up to $${netToBankUsd.toFixed(2)} is heading to your bank (typically within minutes; timing depends on your bank).`,
     }
@@ -766,7 +772,7 @@ export async function cashOutToStripeConnectedAccount(
     netToBankUsd: amountUsd,
     speed,
     stripePayoutId: null,
-    availableBalanceAfter: newBalance,
+    availableBalanceAfter: spendableAfter,
     lifetimeCashedOutAfter,
     message: `Sent $${amountUsd.toFixed(2)} to your Stripe balance — your bank will receive it on Stripe’s payout schedule (typically 2–3 business days).`,
   }

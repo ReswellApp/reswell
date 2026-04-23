@@ -1,8 +1,8 @@
 /**
  * Wallet row aggregates should satisfy:
  *   balance + pending_balance ≈ lifetime_earned - lifetime_spent - max(0, lifetime_cashed_out)
- * where `balance` is spendable / cash-outable Reswell Bucks and `pending_balance` is seller earnings
- * held until fulfillment.
+ * `balance` may be negative when refunds reverse more than is still in-wallet (e.g. after a cash-out).
+ * `pending_balance` is non-negative (seller hold until fulfillment).
  */
 
 const DRIFT_EPS = 0.02
@@ -28,35 +28,52 @@ export function reconcileWalletAggregates(w: WalletAggregateRow) {
   const cashed = Math.max(0, cashedRaw)
   const fromLedger = Math.round((earned - spent - cashed) * 100) / 100
 
-  let pending = Math.max(0, parseNum(w.pending_balance))
-  let balance = Math.max(0, parseNum(w.balance))
-  const totalHeld = balance + pending
+  const pending0 = Math.max(0, parseNum(w.pending_balance))
+  const balance0 = parseNum(w.balance)
+  const totalHeld = balance0 + pending0
   const corruptCashed = cashedRaw < 0
   const drift = Math.abs(totalHeld - fromLedger) > DRIFT_EPS
   let needsPersist = corruptCashed || drift
 
+  let balance = balance0
+  let pending = pending0
+
   if (drift && !corruptCashed) {
-    const target = Math.max(0, fromLedger)
-    if (pending <= target) {
-      balance = Math.round((target - pending) * 100) / 100
+    const t = fromLedger
+    if (t < 0) {
+      balance = round2(t - pending0)
+      pending = pending0
     } else {
-      pending = target
-      balance = 0
+      if (pending0 <= t) {
+        balance = round2(t - pending0)
+        pending = pending0
+      } else {
+        pending = t
+        balance = 0
+      }
     }
   }
 
-  const lifetime_cashed_out = needsPersist ? cashed : cashedRaw
+  const cashedForRow = needsPersist ? cashed : cashedRaw
 
   return {
+    /**
+     * Signed in-wallet (may be negative when refunds/reversals take back more than was left
+     * on-platform after a cash-out or mix of buyer+seller activity).
+     */
     balance,
     pending_balance: pending,
-    /** Spendable + cash-outable only (excludes pending seller holds). */
-    availableBalance: balance,
-    /** Total Reswell Bucks including pending seller earnings (for display). */
-    totalBalance: Math.round((balance + pending) * 100) / 100,
-    lifetime_cashed_out,
+    /** In-wallet spendable: zero when the row is in refund debt. */
+    availableBalance: Math.max(0, balance),
+    /** Total Reswell Bucks in-wallet (pending + available; can be < pending if balance is negative). */
+    totalBalance: round2(pending + balance),
+    lifetime_cashed_out: cashedForRow,
     needsPersist,
   }
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100
 }
 
 export function walletAggregateStrings(r: {
@@ -69,4 +86,9 @@ export function walletAggregateStrings(r: {
     pending_balance: r.pending_balance.toFixed(2),
     lifetime_cashed_out: r.lifetime_cashed_out.toFixed(2),
   }
+}
+
+/** Max amount safe to move to an external cash-out; same as `availableBalance` from reconcile. */
+export function spendableReswellBucks(availableAfterReconcile: number): number {
+  return round2(Math.max(0, availableAfterReconcile))
 }

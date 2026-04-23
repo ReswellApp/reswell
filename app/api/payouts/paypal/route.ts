@@ -156,12 +156,17 @@ export async function POST(req: Request) {
       }
     }
 
-    const available = roundMoney(parseFloat(String(wallet.balance)))
+    const spendable = roundMoney(agg.availableBalance)
+    const rawBalance = roundMoney(parseFloat(String(wallet.balance)))
 
-    if (available < amountUsd) {
+    if (amountUsd > spendable) {
       return NextResponse.json(
         {
-          error: `Insufficient balance. Available: $${available.toFixed(2)}`,
+          error:
+            spendable < 0.01 && rawBalance < 0
+              ? "Your in-wallet Reswell balance is below zero (for example after a refund to the buyer). " +
+                "You cannot cash out until new in-app sales bring it back to zero or above."
+              : `Insufficient balance. Available: $${spendable.toFixed(2)}`,
         },
         { status: 400 },
       )
@@ -218,7 +223,7 @@ export async function POST(req: Request) {
       console.error("[paypal payout] paypal_payouts insert:", payoutInsertErr)
     }
 
-    const newBalance = roundMoney(available - amountUsd)
+    const newBalance = roundMoney(rawBalance - amountUsd)
     const lifetimeCashedOutAfter = roundMoney(
       parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd,
     )

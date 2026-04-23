@@ -177,6 +177,7 @@ export default function EarningsPage() {
 
   /** Prevents stale concurrent fetches (e.g. wallet realtime before `wallet_transactions` insert) from overwriting newer data. */
   const fetchGenerationRef = useRef(0)
+  const earningsResyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const stripePayoutsEnabled =
     typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === "string" &&
@@ -247,6 +248,21 @@ export default function EarningsPage() {
     }
   }, [])
 
+  /**
+   * Refund / clawback often writes `wallet_transactions` and `wallets` back-to-back. Two realtime
+   * events in the same few ms can cause an immediate `fetchData()` to read an inconsistent
+   * snapshot. Debounce so a single request runs after both writes are visible.
+   */
+  const scheduleEarningsResync = useCallback(() => {
+    if (earningsResyncDebounceRef.current) {
+      clearTimeout(earningsResyncDebounceRef.current)
+    }
+    earningsResyncDebounceRef.current = setTimeout(() => {
+      earningsResyncDebounceRef.current = null
+      void fetchData()
+    }, 150)
+  }, [fetchData])
+
   useEffect(() => { fetchData() }, [fetchData])
 
   useEffect(() => {
@@ -262,7 +278,7 @@ export default function EarningsPage() {
     }
   }, [fetchData])
 
-  // Real-time: wallet balance + ledger rows (cash-out inserts `wallet_transactions` after `wallets` updates)
+  // Real-time: wallet balance + ledger rows (refunds/cash-out touch both in quick succession)
   useEffect(() => {
     if (!wallet?.id) return
     const supabase = createClient()
@@ -273,7 +289,7 @@ export default function EarningsPage() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "wallets", filter: `id=eq.${wid}` },
         () => {
-          void fetchData()
+          scheduleEarningsResync()
         },
       )
       .on(
@@ -285,14 +301,18 @@ export default function EarningsPage() {
           filter: `wallet_id=eq.${wid}`,
         },
         () => {
-          void fetchData()
+          scheduleEarningsResync()
         },
       )
       .subscribe()
     return () => {
+      if (earningsResyncDebounceRef.current) {
+        clearTimeout(earningsResyncDebounceRef.current)
+        earningsResyncDebounceRef.current = null
+      }
       supabase.removeChannel(channel)
     }
-  }, [wallet?.id, fetchData])
+  }, [wallet?.id, scheduleEarningsResync])
 
   const walletBalance = wallet ? parseFloat(wallet.balance) : 0
   const lifetimeEarned = wallet ? parseFloat(wallet.lifetime_earned) : 0

@@ -4,7 +4,7 @@ import { getStripe } from "@/lib/stripe-server"
 import { applyWalletOrderRefund } from "@/lib/services/walletRefund"
 import { relistAfterRefund } from "@/lib/services/listingRelist"
 import { syncMarketplaceOrderFromStripePaymentIntent } from "@/lib/services/stripeRefundWebhook"
-import { splitSellerRefundClawback } from "@/lib/split-seller-refund-clawback"
+import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -324,21 +324,18 @@ async function immediateSellerWalletClawback(
       ? `partial refund $${refundUsd.toFixed(2)} of $${orderTotalUsd.toFixed(2)} card total`
       : `full refund $${refundUsd.toFixed(2)} (card total $${orderTotalUsd.toFixed(2)})`
 
-  const split = splitSellerRefundClawback(clawbackUsd, prevPending, prevBalance)
-  if (split.totalClawed <= 0) {
-    return
-  }
-
-  const bucketNote =
-    split.clawFromPending > 0 && split.clawFromBalance > 0
-      ? `pending $${split.clawFromPending.toFixed(2)}; available $${split.clawFromBalance.toFixed(2)}`
-      : split.clawFromPending > 0
-        ? "pending earnings"
-        : "available balance"
-
-  const newLifetimeEarned = roundMoney(
-    Math.max(0, prevEarned - split.clawFromPending - split.clawFromBalance),
+  const rev = applySellerRefundClawback(
+    { balance: prevBalance, pending: prevPending, lifetimeEarned: prevEarned },
+    clawbackUsd,
   )
+  const { split } = rev
+  const debtNote = split.newBalance < 0 ? `; in-wallet now ${split.newBalance.toFixed(2)}` : ""
+  const bucketBase =
+    split.clawFromPending > 0 && split.remainderFromAvailable > 0
+      ? `took from pending $${split.clawFromPending.toFixed(2)} and available $${split.remainderFromAvailable.toFixed(2)}`
+      : split.clawFromPending > 0
+        ? "took from pending earnings"
+        : "took from available"
 
   const { error: txErr } = await supabase.from("wallet_transactions").insert({
     wallet_id: wallet.id,
@@ -346,7 +343,7 @@ async function immediateSellerWalletClawback(
     type: "refund",
     amount: -split.totalClawed,
     balance_after: split.newBalance.toFixed(2),
-    description: `Refund — "${title}" (${partialNote}; ${bucketNote}; Stripe ${stripeRefundId})`,
+    description: `Refund — "${title}" (${partialNote}; ${bucketBase}${debtNote}; Stripe ${stripeRefundId})`,
     status: "completed",
     reference_id: stripeRefundId,
     reference_type: "stripe_refund",
@@ -364,7 +361,7 @@ async function immediateSellerWalletClawback(
     .update({
       balance: split.newBalance.toFixed(2),
       pending_balance: split.newPending.toFixed(2),
-      lifetime_earned: newLifetimeEarned.toFixed(2),
+      lifetime_earned: rev.newLifetimeEarned.toFixed(2),
       updated_at: nowIso,
     })
     .eq("id", wallet.id)
