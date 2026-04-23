@@ -130,7 +130,6 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
-import { FIN_SETUP_TAG_OPTIONS } from "@/lib/listing-fin-setup-tags"
 import {
   boardDimensionDisplayFields,
   boardDimensionsToDbFields,
@@ -2273,11 +2272,13 @@ function SellPageContent() {
               aria-busy={loading}
             >
                 <SellFormSection
-                  sectionId="sell-section-title"
-                  title="Listing title"
-                  description="Title is shown on your listing and in the URL. Pick a brand from the directory in the title field to link your listing, or type any title you like."
+                  sectionId="sell-section-photos-title"
+                  title="Listing title & photos"
+                  description="Your title appears on the listing and in the URL — pick a brand from the directory in the field below, or type any name you like. Then add clear photos of your board."
                 >
+                <div className="space-y-8">
                   <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-foreground">Listing title</h3>
                       <div className="flex items-end justify-between gap-2">
                         <Label htmlFor="title">Title *</Label>
                         <span
@@ -2371,11 +2372,163 @@ function SellPageContent() {
                         </div>
                       ) : null}
                   </div>
+
+                  <Separator className="bg-border" />
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-foreground">Photos</h3>
+                  <Label className="sr-only">Listing photos</Label>
+                  {optimizingAny ? (
+                    <p className="text-xs text-muted-foreground/45 flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                      Optimizing images…
+                    </p>
+                  ) : null}
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                    {images.map((image, index) => (
+                      <div
+                        key={image.clientId}
+                        className="relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col"
+                      >
+                        <div className="relative flex-1 min-h-0">
+                          <Image
+                            src={
+                              image.thumbnailUrl || image.url
+                                ? proxiedListingImageSrc(image.thumbnailUrl || image.url)
+                                : image.previewUrl || "/placeholder.svg"
+                            }
+                            alt={`Photo ${index + 1}`}
+                            fill
+                            className="object-cover object-center"
+                            unoptimized
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-background/80 hover:bg-background z-10"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          <div className="absolute bottom-6 left-1 flex items-center gap-1 z-10">
+                            {index === 0 && (
+                              <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
+                                Main
+                              </span>
+                            )}
+                          </div>
+                          <div className="absolute bottom-6 right-1 flex gap-1 z-10">
+                            {index > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, -1)}
+                                className="p-1 rounded-full bg-background/80 hover:bg-background"
+                                aria-label="Move left"
+                              >
+                                <ChevronLeft className="h-3 w-3" />
+                              </button>
+                            )}
+                            {index < images.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, 1)}
+                                className="p-1 rounded-full bg-background/80 hover:bg-background"
+                                aria-label="Move right"
+                              >
+                                <ChevronRight className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {image.optimizePhase === "running" && image.uploadPhase === "idle" ? (
+                          <div className="shrink-0 px-1 py-1 bg-background/90 border-t border-border/60">
+                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
+                              Optimizing…
+                            </p>
+                          </div>
+                        ) : image.uploadPhase === "uploading" ? (
+                          <div className="shrink-0 px-1 pb-1 pt-0.5 space-y-0.5 bg-background/90 border-t border-border/60">
+                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
+                              Uploading
+                            </p>
+                            <Progress value={image.progressFull} className="h-1" title="Full size" />
+                            <Progress value={image.progressThumb} className="h-1" title="Thumbnail" />
+                          </div>
+                        ) : null}
+                        {image.uploadPhase === "error" || image.optimizePhase === "error" ? (
+                          <div className="shrink-0 p-1 bg-destructive/10 border-t border-destructive/20 space-y-1">
+                            <p className="text-[9px] text-destructive line-clamp-2">
+                              {image.errorMessage || "Failed"}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 w-full text-[10px] px-1"
+                              onClick={() => retryListingPhotoUpload(image.clientId)}
+                            >
+                              <RefreshCw className="h-3 w-3 mr-0.5" />
+                              Retry
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                    {images.length < 12 && (
+                      <div className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden">
+                        <label
+                          htmlFor={listingPhotosInputId}
+                          className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
+                        >
+                          <span className="sr-only">Add listing photos</span>
+                          <Upload className="h-6 w-6 text-muted-foreground/45 pointer-events-none" aria-hidden />
+                          <span className="text-xs text-muted-foreground/45 mt-1 pointer-events-none" aria-hidden>
+                            Add
+                          </span>
+                        </label>
+                        <input
+                          id={listingPhotosInputId}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          className="sr-only"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <p className="lg:hidden text-xs text-muted-foreground/55">
+                    iPhone/iPad: In Photo Library, tap{" "}
+                    <span className="font-medium text-foreground/80">Select</span>, choose several photos, then Add
+                    or Done. Tapping thumbnails without Select first usually uploads only one photo — that is how
+                    Apple’s photo picker works in Safari.
+                  </p>
+                  <p className="text-xs text-muted-foreground/45">
+                    At least {LISTING_MIN_PHOTOS} photo, max 12. Upload a few angles of your board — top, bottom,
+                    rails, fins, whatever helps someone see what they&apos;re buying. The more you add, the less
+                    back-and-forth in messages. If a shot is horizontal we will rotate it into vertical; the first pic is your
+                    cover. Any normal phone pic works; we&apos;ll swap odd formats to JPEG. Thank you for listing on
+                    Reswell.{" "}
+                    <span className="inline-flex flex-wrap items-center gap-1">
+                      <span>Made with</span>
+                      <Heart
+                        className="h-4 w-4 shrink-0 fill-red-500 text-red-500"
+                        aria-hidden
+                      />
+                      <span>in Santa Barbara.</span>
+                    </span>
+                  </p>
+                  {images.length >= LISTING_MIN_PHOTOS && images.length < 12 && (
+                    <p className="text-xs text-muted-foreground/45">
+                      Room for {12 - images.length} more — a fuller gallery usually gets more interest.
+                    </p>
+                  )}
+                  </div>
+                </div>
                 </SellFormSection>
 
                 <SellFormSection
                   sectionId="sell-section-board"
-                  title="Board shape / category · fin setup, tail & dimensions"
+                  title="Board shape / category & dimensions"
                   description="Use any format you like (decimals or fractions). Volume is optional and independent of the other measurements."
                 >
                     <div className="space-y-8">
@@ -2443,53 +2596,6 @@ function SellPageContent() {
                               style={{ width: `${(boardFieldsCompleted / 9) * 100}%` }}
                             />
                           </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Fin setup</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {FIN_SETUP_TAG_OPTIONS.map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, boardFins: formData.boardFins === opt.value ? "" : opt.value })}
-                              className={cn(
-                                "rounded-full border px-3 py-1 text-sm transition-colors",
-                                formData.boardFins === opt.value
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border hover:border-primary/50",
-                              )}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Tail shape</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { value: "round", label: "Round" },
-                            { value: "squash", label: "Squash" },
-                            { value: "square", label: "Square" },
-                            { value: "pin", label: "Pin" },
-                            { value: "swallow", label: "Swallow" },
-                            { value: "groveler", label: "Groveler" },
-                          ].map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, boardTail: formData.boardTail === opt.value ? "" : opt.value })}
-                              className={cn(
-                                "rounded-full border px-3 py-1 text-sm transition-colors",
-                                formData.boardTail === opt.value
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border hover:border-primary/50",
-                              )}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
                         </div>
                       </div>
                     <div className="space-y-3">
@@ -3276,8 +3382,6 @@ function SellPageContent() {
                                 width: formData.boardWidthInches,
                                 thickness: formData.boardThicknessInches,
                                 volume: formData.boardVolumeL,
-                                fins: formData.boardFins,
-                                tail: formData.boardTail,
                                 price: formData.price,
                                 location: formData.locationDisplay || formData.locationCity || "",
                               }
@@ -3389,156 +3493,6 @@ function SellPageContent() {
                       </div>
                     </div>
                 </div>
-                </div>
-                </SellFormSection>
-
-                <SellFormSection sectionId="sell-section-photos" title="Photos">
-                <div className="space-y-2">
-                  <Label className="sr-only">Listing photos</Label>
-                  {optimizingAny ? (
-                    <p className="text-xs text-muted-foreground/45 flex items-center gap-2">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                      Optimizing images…
-                    </p>
-                  ) : null}
-                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                    {images.map((image, index) => (
-                      <div
-                        key={image.clientId}
-                        className="relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col"
-                      >
-                        <div className="relative flex-1 min-h-0">
-                          <Image
-                            src={
-                              image.thumbnailUrl || image.url
-                                ? proxiedListingImageSrc(image.thumbnailUrl || image.url)
-                                : image.previewUrl || "/placeholder.svg"
-                            }
-                            alt={`Photo ${index + 1}`}
-                            fill
-                            className="object-cover object-center"
-                            unoptimized
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-1 right-1 p-1 rounded-full bg-background/80 hover:bg-background z-10"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                          <div className="absolute bottom-6 left-1 flex items-center gap-1 z-10">
-                            {index === 0 && (
-                              <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
-                                Main
-                              </span>
-                            )}
-                          </div>
-                          <div className="absolute bottom-6 right-1 flex gap-1 z-10">
-                            {index > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => moveImage(index, -1)}
-                                className="p-1 rounded-full bg-background/80 hover:bg-background"
-                                aria-label="Move left"
-                              >
-                                <ChevronLeft className="h-3 w-3" />
-                              </button>
-                            )}
-                            {index < images.length - 1 && (
-                              <button
-                                type="button"
-                                onClick={() => moveImage(index, 1)}
-                                className="p-1 rounded-full bg-background/80 hover:bg-background"
-                                aria-label="Move right"
-                              >
-                                <ChevronRight className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {image.optimizePhase === "running" && image.uploadPhase === "idle" ? (
-                          <div className="shrink-0 px-1 py-1 bg-background/90 border-t border-border/60">
-                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
-                              Optimizing…
-                            </p>
-                          </div>
-                        ) : image.uploadPhase === "uploading" ? (
-                          <div className="shrink-0 px-1 pb-1 pt-0.5 space-y-0.5 bg-background/90 border-t border-border/60">
-                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
-                              Uploading
-                            </p>
-                            <Progress value={image.progressFull} className="h-1" title="Full size" />
-                            <Progress value={image.progressThumb} className="h-1" title="Thumbnail" />
-                          </div>
-                        ) : null}
-                        {image.uploadPhase === "error" || image.optimizePhase === "error" ? (
-                          <div className="shrink-0 p-1 bg-destructive/10 border-t border-destructive/20 space-y-1">
-                            <p className="text-[9px] text-destructive line-clamp-2">
-                              {image.errorMessage || "Failed"}
-                            </p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-6 w-full text-[10px] px-1"
-                              onClick={() => retryListingPhotoUpload(image.clientId)}
-                            >
-                              <RefreshCw className="h-3 w-3 mr-0.5" />
-                              Retry
-                            </Button>
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                    {images.length < 12 && (
-                      <div className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden">
-                        <label
-                          htmlFor={listingPhotosInputId}
-                          className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
-                        >
-                          <span className="sr-only">Add listing photos</span>
-                          <Upload className="h-6 w-6 text-muted-foreground/45 pointer-events-none" aria-hidden />
-                          <span className="text-xs text-muted-foreground/45 mt-1 pointer-events-none" aria-hidden>
-                            Add
-                          </span>
-                        </label>
-                        <input
-                          id={listingPhotosInputId}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageChange}
-                          className="sr-only"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <p className="lg:hidden text-xs text-muted-foreground/55">
-                    iPhone/iPad: In Photo Library, tap{" "}
-                    <span className="font-medium text-foreground/80">Select</span>, choose several photos, then Add
-                    or Done. Tapping thumbnails without Select first usually uploads only one photo — that is how
-                    Apple’s photo picker works in Safari.
-                  </p>
-                  <p className="text-xs text-muted-foreground/45">
-                    At least {LISTING_MIN_PHOTOS} photo, max 12. Upload a few angles of your board — top, bottom,
-                    rails, fins, whatever helps someone see what they&apos;re buying. The more you add, the less
-                    back-and-forth in messages. If a shot is horizontal we will rotate it into vertical; the first pic is your
-                    cover. Any normal phone pic works; we&apos;ll swap odd formats to JPEG. Thank you for listing on
-                    Reswell.{" "}
-                    <span className="inline-flex flex-wrap items-center gap-1">
-                      <span>Made with</span>
-                      <Heart
-                        className="h-4 w-4 shrink-0 fill-red-500 text-red-500"
-                        aria-hidden
-                      />
-                      <span>in Santa Barbara.</span>
-                    </span>
-                  </p>
-                  {images.length >= LISTING_MIN_PHOTOS && images.length < 12 && (
-                    <p className="text-xs text-muted-foreground/45">
-                      Room for {12 - images.length} more — a fuller gallery usually gets more interest.
-                    </p>
-                  )}
                 </div>
                 </SellFormSection>
 

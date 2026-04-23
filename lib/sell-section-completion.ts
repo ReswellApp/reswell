@@ -147,14 +147,15 @@ export function computeSellSectionCompletion(
     }) === null
 
   return {
-    "sell-section-title": titleSectionComplete(form),
+    "sell-section-photos-title":
+      titleSectionComplete(form) &&
+      opts.imageCount >= LISTING_MIN_PHOTOS &&
+      opts.imagesUploadReady,
     "sell-section-board":
       shapeSectionComplete(form) && dimensionsSectionComplete(form),
     "sell-section-price": priceSectionComplete(form),
     "sell-section-delivery": deliverySectionComplete(form),
     "sell-section-description": descriptionSectionComplete(form),
-    "sell-section-photos":
-      opts.imageCount >= LISTING_MIN_PHOTOS && opts.imagesUploadReady,
     "sell-section-publish": publishComplete,
   }
 }

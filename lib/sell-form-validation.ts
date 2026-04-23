@@ -5,8 +5,6 @@ import {
 
 /** How shipping cost is set when shipping is enabled (surfboard sell flow). */
 export type BoardShippingCostMode = "reswell" | "free" | "flat"
-import { isFinSetupTagSlug } from "@/lib/listing-fin-setup-tags"
-import { isTailShapeTagSlug } from "@/lib/listing-tail-shape-tags"
 import {
   formatDecimalDimension,
   parseBoardLengthParts,
@@ -201,15 +199,6 @@ export function validateSellListingForm(
     if (vol == null || vol > 200) {
       return "Volume: enter liters as a number (or leave blank)."
     }
-  }
-
-  const finSlug = form.boardFins?.trim().toLowerCase() ?? ""
-  if (finSlug && !isFinSetupTagSlug(finSlug)) {
-    return "Pick a valid fin setup or leave it unset."
-  }
-  const tailSlug = form.boardTail?.trim().toLowerCase() ?? ""
-  if (tailSlug && !isTailShapeTagSlug(tailSlug)) {
-    return "Pick a valid tail shape or leave it unset."
   }
 
   if (!relaxed) {

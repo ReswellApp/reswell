@@ -18,12 +18,15 @@ function scrollToSection(id: string) {
 }
 
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
-  { id: "sell-section-title", label: "Listing title", shortLabel: "Title" },
+  {
+    id: "sell-section-photos-title",
+    label: "Title & photos",
+    shortLabel: "Start",
+  },
   { id: "sell-section-board", label: "Category & dimensions", shortLabel: "Board" },
   { id: "sell-section-price", label: "Price", shortLabel: "Price" },
   { id: "sell-section-delivery", label: "Pickup & shipping", shortLabel: "Delivery" },
   { id: "sell-section-description", label: "Description", shortLabel: "Desc" },
-  { id: "sell-section-photos", label: "Photos", shortLabel: "Photos" },
   { id: "sell-section-publish", label: "Publish", shortLabel: "Publish" },
 ]
 
