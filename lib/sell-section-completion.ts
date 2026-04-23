@@ -152,10 +152,11 @@ export function computeSellSectionCompletion(
       opts.imageCount >= LISTING_MIN_PHOTOS &&
       opts.imagesUploadReady,
     "sell-section-board":
-      shapeSectionComplete(form) && dimensionsSectionComplete(form),
+      shapeSectionComplete(form) &&
+      dimensionsSectionComplete(form) &&
+      descriptionSectionComplete(form),
     "sell-section-price": priceSectionComplete(form),
     "sell-section-delivery": deliverySectionComplete(form),
-    "sell-section-description": descriptionSectionComplete(form),
     "sell-section-publish": publishComplete,
   }
 }

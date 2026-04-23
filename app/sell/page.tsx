@@ -2528,8 +2528,8 @@ function SellPageContent() {
 
                 <SellFormSection
                   sectionId="sell-section-board"
-                  title="Board shape / category & dimensions"
-                  description="Use any format you like (decimals or fractions). Volume is optional and independent of the other measurements."
+                  title="Board shape, dimensions & description"
+                  description="Use any format for dimensions (decimals or fractions). Volume is optional. Then set condition and describe the board for buyers."
                 >
                     <div className="space-y-8">
                       <div className="space-y-2">
@@ -2884,6 +2884,200 @@ function SellPageContent() {
                         </DropdownMenu>
                       </div>
                     </div>
+
+                    <Separator className="bg-border" />
+
+                    <div className="space-y-6">
+                      <h3 className="text-sm font-semibold text-foreground">Condition & description</h3>
+                  <div className="max-w-md space-y-2">
+                    <Label htmlFor="sell-condition">Condition *</Label>
+                    <Select
+                      value={formData.condition}
+                      onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                    >
+                      <SelectTrigger id="sell-condition">
+                        <SelectValue placeholder="Select condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LISTING_CONDITION_SELL_OPTIONS.map((cond) => (
+                          <SelectItem key={cond.value} value={cond.value}>
+                            {cond.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">
+                    Description *
+                  </Label>
+                  <div className={cn(
+                    "relative rounded-md transition-all",
+                    isGeneratingDescription && "ring-2 ring-primary/40 ring-offset-1 animate-pulse",
+                  )}>
+                    <Textarea
+                      id="description"
+                      placeholder="Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
+                      className="min-h-[120px] resize-none placeholder:text-muted-foreground/45"
+                      value={formData.description}
+                      onChange={(e) => {
+                        setFormData({ ...formData, description: e.target.value })
+                        setDescriptionGenerated(false)
+                      }}
+                      required
+                      disabled={isGeneratingDescription}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground/45">
+                      {formData.description.length} / 1000
+                    </span>
+                    {descriptionGenerated && (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Description written — feel free to edit
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isGeneratingDescription}
+                          onClick={async () => {
+                            if (formData.description.trim()) {
+                              if (!window.confirm("This will replace your current description. Continue?")) return
+                            }
+                            setIsGeneratingDescription(true)
+                            setDescriptionGenerated(false)
+                            setFormData((f) => ({ ...f, description: "" }))
+                            let fullText = ""
+                            let buffer = ""
+                            try {
+                              const listingData = {
+                                brand: formData.brand || formData.boardIndexLabel?.split(" ")[0] || "",
+                                model: formData.boardIndexLabel || "",
+                                condition: formData.condition,
+                                length: boardLengthFormatted,
+                                width: formData.boardWidthInches,
+                                thickness: formData.boardThicknessInches,
+                                volume: formData.boardVolumeL,
+                                price: formData.price,
+                                location: formData.locationDisplay || formData.locationCity || "",
+                              }
+                              const response = await fetch("/api/listings/generate-description", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ listingData }),
+                              })
+                              if (!response.ok) {
+                                const errBody = await response.json().catch(() => null) as {
+                                  error?: string
+                                } | null
+                                throw new Error(
+                                  errBody?.error ||
+                                    "Failed to generate description. Check that ANTHROPIC_API_KEY is set on the server.",
+                                )
+                              }
+                              const reader = response.body!.getReader()
+                              const decoder = new TextDecoder()
+                              while (true) {
+                                const { done, value } = await reader.read()
+                                if (done) break
+                                // Accumulate into buffer so lines split across chunks are reassembled
+                                buffer += decoder.decode(value, { stream: true })
+                                const lines = buffer.split("\n")
+                                // Keep the incomplete trailing line in the buffer
+                                buffer = lines.pop() ?? ""
+                                for (const line of lines) {
+                                  if (!line.startsWith("data: ")) continue
+                                  const raw = line.slice(6).trim()
+                                  if (raw === "[DONE]") continue
+                                  // Parse JSON separately so malformed lines are skipped but real errors propagate
+                                  let parsed: { text?: string; error?: string }
+                                  try {
+                                    parsed = JSON.parse(raw)
+                                  } catch {
+                                    continue
+                                  }
+                                  if (parsed.error) throw new Error(parsed.error)
+                                  if (parsed.text) {
+                                    fullText += parsed.text
+                                    setFormData((f) => ({ ...f, description: fullText }))
+                                  }
+                                }
+                              }
+                              if (fullText.length > 0) setDescriptionGenerated(true)
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : "Failed to generate description")
+                            } finally {
+                              setIsGeneratingDescription(false)
+                            }
+                          }}
+                          className="gap-1.5"
+                        >
+                          {isGeneratingDescription ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Writing...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              {formData.description.trim() ? "Rewrite description" : "Write description for me"}
+                            </>
+                          )}
+                        </Button>
+                        {formData.description.trim() && !isGeneratingDescription && (
+                          <span className="text-xs text-muted-foreground/45">
+                            Will replace your current description
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Quick add chips */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground/45">Quick add:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            "Has been reglassed",
+                            "No pressure dings",
+                            "Fresh wax",
+                            "Comes with board bag",
+                            "Fin boxes in great shape",
+                            "Minor heel dents",
+                            "Good for beginners",
+                            "Great for small waves",
+                            "Rides bigger than it looks",
+                          ].map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => {
+                                setFormData((f) => {
+                                  const desc = f.description.trimEnd()
+                                  const append = desc.endsWith(".")
+                                    ? ` ${chip}.`
+                                    : desc
+                                      ? `, ${chip.toLowerCase()}`
+                                      : chip
+                                  return { ...f, description: desc + append }
+                                })
+                              }}
+                              className="rounded-full border border-border px-2.5 py-0.5 text-xs hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                            >
+                              + {chip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                </div>
+                    </div>
+
                     </div>
                 </SellFormSection>
 
@@ -3299,202 +3493,6 @@ function SellPageContent() {
                     />
                   </SellFormSection>
                 ) : null}
-
-                <SellFormSection
-                  sectionId="sell-section-description"
-                  title="Description"
-                  description="Set condition, then describe the board for buyers."
-                >
-                <div className="space-y-6">
-                  <div className="max-w-md space-y-2">
-                    <Label htmlFor="sell-condition">Condition *</Label>
-                    <Select
-                      value={formData.condition}
-                      onValueChange={(value) => setFormData({ ...formData, condition: value })}
-                    >
-                      <SelectTrigger id="sell-condition">
-                        <SelectValue placeholder="Select condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LISTING_CONDITION_SELL_OPTIONS.map((cond) => (
-                          <SelectItem key={cond.value} value={cond.value}>
-                            {cond.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">
-                    Description *
-                  </Label>
-                  <div className={cn(
-                    "relative rounded-md transition-all",
-                    isGeneratingDescription && "ring-2 ring-primary/40 ring-offset-1 animate-pulse",
-                  )}>
-                    <Textarea
-                      id="description"
-                      placeholder="Describe your board — condition, how it surfs, who it's good for, any dings or repairs..."
-                      className="min-h-[120px] resize-none placeholder:text-muted-foreground/45"
-                      value={formData.description}
-                      onChange={(e) => {
-                        setFormData({ ...formData, description: e.target.value })
-                        setDescriptionGenerated(false)
-                      }}
-                      required
-                      disabled={isGeneratingDescription}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground/45">
-                      {formData.description.length} / 1000
-                    </span>
-                    {descriptionGenerated && (
-                      <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Description written — feel free to edit
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={isGeneratingDescription}
-                          onClick={async () => {
-                            if (formData.description.trim()) {
-                              if (!window.confirm("This will replace your current description. Continue?")) return
-                            }
-                            setIsGeneratingDescription(true)
-                            setDescriptionGenerated(false)
-                            setFormData((f) => ({ ...f, description: "" }))
-                            let fullText = ""
-                            let buffer = ""
-                            try {
-                              const listingData = {
-                                brand: formData.brand || formData.boardIndexLabel?.split(" ")[0] || "",
-                                model: formData.boardIndexLabel || "",
-                                condition: formData.condition,
-                                length: boardLengthFormatted,
-                                width: formData.boardWidthInches,
-                                thickness: formData.boardThicknessInches,
-                                volume: formData.boardVolumeL,
-                                price: formData.price,
-                                location: formData.locationDisplay || formData.locationCity || "",
-                              }
-                              const response = await fetch("/api/listings/generate-description", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ listingData }),
-                              })
-                              if (!response.ok) {
-                                const errBody = await response.json().catch(() => null) as {
-                                  error?: string
-                                } | null
-                                throw new Error(
-                                  errBody?.error ||
-                                    "Failed to generate description. Check that ANTHROPIC_API_KEY is set on the server.",
-                                )
-                              }
-                              const reader = response.body!.getReader()
-                              const decoder = new TextDecoder()
-                              while (true) {
-                                const { done, value } = await reader.read()
-                                if (done) break
-                                // Accumulate into buffer so lines split across chunks are reassembled
-                                buffer += decoder.decode(value, { stream: true })
-                                const lines = buffer.split("\n")
-                                // Keep the incomplete trailing line in the buffer
-                                buffer = lines.pop() ?? ""
-                                for (const line of lines) {
-                                  if (!line.startsWith("data: ")) continue
-                                  const raw = line.slice(6).trim()
-                                  if (raw === "[DONE]") continue
-                                  // Parse JSON separately so malformed lines are skipped but real errors propagate
-                                  let parsed: { text?: string; error?: string }
-                                  try {
-                                    parsed = JSON.parse(raw)
-                                  } catch {
-                                    continue
-                                  }
-                                  if (parsed.error) throw new Error(parsed.error)
-                                  if (parsed.text) {
-                                    fullText += parsed.text
-                                    setFormData((f) => ({ ...f, description: fullText }))
-                                  }
-                                }
-                              }
-                              if (fullText.length > 0) setDescriptionGenerated(true)
-                            } catch (err) {
-                              toast.error(err instanceof Error ? err.message : "Failed to generate description")
-                            } finally {
-                              setIsGeneratingDescription(false)
-                            }
-                          }}
-                          className="gap-1.5"
-                        >
-                          {isGeneratingDescription ? (
-                            <>
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Writing...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-3.5 w-3.5" />
-                              {formData.description.trim() ? "Rewrite description" : "Write description for me"}
-                            </>
-                          )}
-                        </Button>
-                        {formData.description.trim() && !isGeneratingDescription && (
-                          <span className="text-xs text-muted-foreground/45">
-                            Will replace your current description
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Quick add chips */}
-                      <div className="space-y-1.5">
-                        <p className="text-xs text-muted-foreground/45">Quick add:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {[
-                            "Has been reglassed",
-                            "No pressure dings",
-                            "Fresh wax",
-                            "Comes with board bag",
-                            "Fin boxes in great shape",
-                            "Minor heel dents",
-                            "Good for beginners",
-                            "Great for small waves",
-                            "Rides bigger than it looks",
-                          ].map((chip) => (
-                            <button
-                              key={chip}
-                              type="button"
-                              onClick={() => {
-                                setFormData((f) => {
-                                  const desc = f.description.trimEnd()
-                                  const append = desc.endsWith(".")
-                                    ? ` ${chip}.`
-                                    : desc
-                                      ? `, ${chip.toLowerCase()}`
-                                      : chip
-                                  return { ...f, description: desc + append }
-                                })
-                              }}
-                              className="rounded-full border border-border px-2.5 py-0.5 text-xs hover:border-primary/50 hover:bg-muted/50 transition-colors"
-                            >
-                              + {chip}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                </div>
-                </div>
-                </SellFormSection>
 
                 <SellFormSection
                   sectionId="sell-section-publish"
