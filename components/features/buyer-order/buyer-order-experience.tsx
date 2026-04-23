@@ -238,7 +238,6 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         toast.error(data.error ?? "Could not send request")
         return
       }
-      toast.success("Request sent — our team will email you if we need more detail.")
       setHelpOpen(false)
       setCancelOpen(false)
       setRefundOpen(false)

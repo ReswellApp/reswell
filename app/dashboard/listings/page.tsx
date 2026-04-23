@@ -116,7 +116,6 @@ export default function MyListingsPage() {
       clearRemoteResumeDraftIdStorage()
     }
     setListings((prev) => prev.filter((l) => l.id !== id))
-    toast.success('Draft removed')
   }
 
   async function handleStatusChange(id: string, newStatus: string) {
@@ -127,7 +126,6 @@ export default function MyListingsPage() {
 
     if (!error) {
       setListings(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l))
-      toast.success(`Listing marked as ${newStatus}`)
     } else {
       toast.error('Failed to update listing')
     }
@@ -143,13 +141,8 @@ export default function MyListingsPage() {
         return
       }
       setListings((prev) => prev.filter((l) => l.id !== endListingId))
-      if (result.mode === 'delete') {
-        toast.success('Listing deleted')
-      } else if (result.message) {
-        toast.success(result.message)
+      if (result.mode === 'archive' && result.message) {
         router.push('/dashboard/listings/archived')
-      } else {
-        toast.success('Listing archived for 30 days')
       }
     } finally {
       setEndListingLoading(false)

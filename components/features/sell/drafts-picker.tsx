@@ -21,6 +21,13 @@ import {
 import { cn } from "@/lib/utils"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
+/** Fast autosaves stay visually quiet; slow ones surface a spinner after this delay. */
+const DRAFT_SAVE_BUSY_REVEAL_MS = 450
+/** Plain "Saved" copy — no ticking "5s ago" — keeps the bar calm while editing. */
+const DRAFT_SAVED_RECENT_MS = 120_000
+/** How often the relative "Saved · …" line refreshes once the draft is older. */
+const DRAFT_SAVED_RELATIVE_TICK_MS = 60_000
+
 export interface SellDraftItem {
   id: string
   title: string | null
@@ -287,57 +294,108 @@ interface DraftSavedStatusProps {
 }
 
 /**
- * Small inline indicator communicating autosave state next to the Drafts picker.
- * Ticks the relative label every ~15s while idle so "Saved · 2m ago" stays fresh.
+ * Inline autosave indicator next to the Drafts picker.
+ * Fast saves avoid a spinner flash; recent saves use stable "Saved" copy instead of ticking seconds.
  */
 export function DraftSavedStatus({
   status,
   savedAt,
   className,
 }: DraftSavedStatusProps) {
-  const [, setTick] = useState(0)
+  const [coarseTick, setCoarseTick] = useState(0)
+  const [showSavingUi, setShowSavingUi] = useState(false)
+
+  useEffect(() => {
+    if (status !== "saving") {
+      setShowSavingUi(false)
+      return
+    }
+    const id = window.setTimeout(() => setShowSavingUi(true), DRAFT_SAVE_BUSY_REVEAL_MS)
+    return () => {
+      window.clearTimeout(id)
+      setShowSavingUi(false)
+    }
+  }, [status])
+
   useEffect(() => {
     if (status !== "saved" || savedAt == null) return
-    const id = window.setInterval(() => setTick((t) => t + 1), 15_000)
-    return () => window.clearInterval(id)
+    const age = Date.now() - savedAt
+    let quietBoundary: ReturnType<typeof setTimeout> | undefined
+    if (age < DRAFT_SAVED_RECENT_MS) {
+      quietBoundary = window.setTimeout(() => {
+        setCoarseTick((t) => t + 1)
+      }, DRAFT_SAVED_RECENT_MS - age + 25)
+    }
+    const id = window.setInterval(() => {
+      setCoarseTick((t) => t + 1)
+    }, DRAFT_SAVED_RELATIVE_TICK_MS)
+    return () => {
+      if (quietBoundary != null) window.clearTimeout(quietBoundary)
+      window.clearInterval(id)
+    }
   }, [status, savedAt])
 
-  let label: string | null = null
-  let tone: "muted" | "accent" | "danger" = "muted"
-  if (status === "saving") {
-    label = "Saving…"
-    tone = "accent"
-  } else if (status === "error") {
-    label = "Save failed"
-    tone = "danger"
-  } else if (status === "saved" && savedAt != null) {
-    const secondsAgo = Math.max(0, Math.floor((Date.now() - savedAt) / 1000))
-    if (secondsAgo < 5) label = "Saved just now"
-    else if (secondsAgo < 60) label = `Saved ${secondsAgo}s ago`
-    else label = `Saved ${formatDistanceToNow(savedAt)} ago`
-    tone = "muted"
-  }
+  const display = useMemo(() => {
+    if (status === "error") {
+      return { tone: "danger" as const, label: "Save failed", showSpinner: false, showCheck: false }
+    }
 
-  if (!label) return null
+    const savingVisible = status === "saving" && showSavingUi
+    if (savingVisible) {
+      return {
+        tone: "accent" as const,
+        label: "Saving…",
+        showSpinner: true,
+        showCheck: false,
+      }
+    }
+
+    if (savedAt == null) return null
+
+    const ageMs = Math.max(0, Date.now() - savedAt)
+    const quietRecent = ageMs < DRAFT_SAVED_RECENT_MS
+
+    if (status === "saved" || (status === "saving" && !showSavingUi)) {
+      if (quietRecent) {
+        return {
+          tone: "muted" as const,
+          label: "Saved",
+          showSpinner: false,
+          showCheck: true,
+        }
+      }
+      return {
+        tone: "muted" as const,
+        label: `Saved · ${formatDistanceToNow(savedAt, { addSuffix: true })}`,
+        showSpinner: false,
+        showCheck: true,
+      }
+    }
+
+    return null
+  }, [status, savedAt, showSavingUi, coarseTick])
+
+  if (!display) return null
 
   return (
     <span
-      aria-live="polite"
+      role="status"
+      aria-live={display.tone === "danger" ? "polite" : "off"}
       className={cn(
-        "hidden sm:inline-flex items-center gap-1.5 text-xs font-medium",
-        tone === "accent" && "text-foreground",
-        tone === "muted" && "text-muted-foreground",
-        tone === "danger" && "text-destructive",
+        "hidden sm:inline-flex items-center gap-1.5 text-xs font-normal tabular-nums",
+        "text-muted-foreground transition-colors duration-300",
+        display.tone === "accent" && "text-foreground",
+        display.tone === "danger" && "text-destructive font-medium",
         className,
       )}
     >
-      {status === "saving" && (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+      {display.showSpinner && (
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
       )}
-      {status === "saved" && (
-        <Check className="h-3.5 w-3.5" aria-hidden />
+      {display.showCheck && (
+        <Check className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={2.25} aria-hidden />
       )}
-      {label}
+      {display.label}
     </span>
   )
 }

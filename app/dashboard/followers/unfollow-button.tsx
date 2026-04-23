@@ -24,7 +24,6 @@ export function UnfollowButton({ sellerId, sellerName, followId: _followId }: Un
       const res = await unfollowSeller(sellerId)
       if ("error" in res) throw new Error()
       setUnfollowed(true)
-      toast.success(`Unfollowed ${sellerName}`)
       router.refresh()
     } catch {
       toast.error("Failed to unfollow")

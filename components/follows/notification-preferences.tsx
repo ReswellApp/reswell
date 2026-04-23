@@ -17,13 +17,15 @@ interface NotificationPreferencesFormProps {
 export function NotificationPreferencesForm({ initial }: NotificationPreferencesFormProps) {
   const [prefs, setPrefs] = useState<NotificationPreferences>(initial)
   const [saving, setSaving] = useState(false)
+  const [savedFlash, setSavedFlash] = useState(false)
 
   async function handleSave() {
     setSaving(true)
     try {
       const res = await saveNotificationPreferences(prefs)
       if ("error" in res && res.error) throw new Error()
-      toast.success("Preferences saved")
+      setSavedFlash(true)
+      window.setTimeout(() => setSavedFlash(false), 2000)
     } catch {
       toast.error("Failed to save preferences")
     } finally {
@@ -100,12 +102,14 @@ export function NotificationPreferencesForm({ initial }: NotificationPreferences
         )}
       </div>
 
-      <Button onClick={handleSave} disabled={saving} size="sm">
+      <Button onClick={handleSave} disabled={saving || savedFlash} size="sm">
         {saving ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Saving…
           </>
+        ) : savedFlash ? (
+          "Saved"
         ) : (
           "Save preferences"
         )}

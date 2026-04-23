@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { brandRowToSearchDoc, ensureBrandsIndex, indexBrandDocument } from "@/lib/elasticsearch/brands-index"
 import {
   ensureListingsIndex,
   indexListingDocument,
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
 
   try {
     await ensureListingsIndex()
+    await ensureBrandsIndex()
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json(
@@ -83,6 +85,9 @@ export async function POST(request: NextRequest) {
   let from = 0
   let indexed = 0
   let errors = 0
+  let brandsIndexed = 0
+  let brandErrors = 0
+  let brandFrom = 0
 
   for (;;) {
     const { data: rows, error } = await supabase
@@ -127,5 +132,32 @@ export async function POST(request: NextRequest) {
     from += pageSize
   }
 
-  return NextResponse.json({ ok: true, indexed, errors })
+  for (;;) {
+    const { data: brandRows, error: brandListError } = await supabase
+      .from("brands")
+      .select("id, name, slug, short_description, lead_shaper_name, location_label, founder_name")
+      .order("name", { ascending: true })
+      .range(brandFrom, brandFrom + pageSize - 1)
+
+    if (brandListError) {
+      return NextResponse.json({ error: brandListError.message }, { status: 500 })
+    }
+
+    if (!brandRows?.length) break
+
+    for (const row of brandRows) {
+      try {
+        const doc = brandRowToSearchDoc(row as Parameters<typeof brandRowToSearchDoc>[0])
+        await indexBrandDocument(doc)
+        brandsIndexed++
+      } catch {
+        brandErrors++
+      }
+    }
+
+    if (brandRows.length < pageSize) break
+    brandFrom += pageSize
+  }
+
+  return NextResponse.json({ ok: true, indexed, errors, brandsIndexed, brandErrors })
 }

@@ -57,11 +57,6 @@ export function BuyerCounterOfferDialog({
         toast.error(result.error)
         return
       }
-      toast.success(
-        action === "accept"
-          ? "Counteroffer accepted. You can check out at this price from messages when you’re ready—you’re not required to buy."
-          : "Counteroffer declined.",
-      )
       onOpenChange(false)
       await onCompleted()
     } finally {

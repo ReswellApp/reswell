@@ -1,6 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
+import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-index"
 import { listBrands } from "@/lib/brands/server"
 
 export async function getDistinctBrandsFromListings(section: string): Promise<string[]> {
@@ -214,4 +216,73 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
     .slice(0, MAX_BRANDS)
 
   return { titles, categories, brands, listings }
+}
+
+/** `public.brands` row shape for the `/sell` brand typeahead (nav-style dropdown). */
+export type BrandCatalogSuggestRow = {
+  id: string
+  name: string
+  slug: string
+  short_description: string | null
+  logo_url: string | null
+  location_label: string | null
+  lead_shaper_name: string | null
+}
+
+const MAX_BRAND_CATALOG_SUGGEST = 20
+
+/**
+ * Search the official brand directory (not listing-derived brand text).
+ * Used by the sell form brand field (`BrandInputWithSuggestions`) and nav-style brand typeahead.
+ * When Elasticsearch is configured and the brands index is populated, results are ranked in ES
+ * and hydrated from `public.brands`; otherwise uses Supabase `ilike` (same as before).
+ */
+export async function searchBrandsCatalogSuggest(
+  qRaw: string,
+): Promise<BrandCatalogSuggestRow[]> {
+  const q = (qRaw || "").trim().replace(/%/g, "")
+  if (q.length < 1) {
+    return []
+  }
+
+  const supabase = await createClient()
+  const select =
+    "id, name, slug, short_description, logo_url, location_label, lead_shaper_name" as const
+
+  if (isElasticsearchConfigured()) {
+    try {
+      const ids = await searchBrandIdsFromElasticsearch(q, MAX_BRAND_CATALOG_SUGGEST)
+      if (ids.length > 0) {
+        const { data, error } = await supabase.from("brands").select(select).in("id", ids)
+
+        if (!error && data?.length) {
+          const byId = new Map(data.map((row) => [row.id, row as BrandCatalogSuggestRow]))
+          return ids
+            .map((id) => byId.get(id))
+            .filter((row): row is BrandCatalogSuggestRow => row != null)
+        }
+      }
+    } catch (err) {
+      console.error("[searchBrandsCatalogSuggest] Elasticsearch error, falling back to Supabase:", err)
+    }
+  }
+
+  const safe = escapeIlikeToken(q)
+  const pattern = `"%${safe}%"`
+
+  const { data, error } = await supabase
+    .from("brands")
+    .select(select)
+    .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    .order("name", { ascending: true })
+    .limit(MAX_BRAND_CATALOG_SUGGEST)
+
+  if (error || !data) {
+    if (error && process.env.NODE_ENV === "development") {
+      console.error("[searchBrandsCatalogSuggest]", error)
+    }
+    return []
+  }
+
+  return data as BrandCatalogSuggestRow[]
 }

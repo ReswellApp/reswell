@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { isValidBrandSlug, slugifyBrandName } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -68,20 +69,24 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       : []
 
   const now = new Date().toISOString()
-  const { error: insertErr } = await supabase.from("brands").insert({
-    slug,
-    name,
-    short_description: row.short_description ?? null,
-    website_url: row.website_url ?? null,
-    logo_url: row.logo_url ?? null,
-    founder_name: row.founder_name ?? null,
-    lead_shaper_name: row.lead_shaper_name ?? null,
-    location_label: row.location_label ?? null,
-    model_count: 0,
-    about_paragraphs: about,
-    brand_request_id: row.id,
-    updated_at: now,
-  })
+  const { data: inserted, error: insertErr } = await supabase
+    .from("brands")
+    .insert({
+      slug,
+      name,
+      short_description: row.short_description ?? null,
+      website_url: row.website_url ?? null,
+      logo_url: row.logo_url ?? null,
+      founder_name: row.founder_name ?? null,
+      lead_shaper_name: row.lead_shaper_name ?? null,
+      location_label: row.location_label ?? null,
+      model_count: 0,
+      about_paragraphs: about,
+      brand_request_id: row.id,
+      updated_at: now,
+    })
+    .select("id")
+    .single()
 
   if (insertErr) {
     if (insertErr.code === "23505") {
@@ -116,5 +121,8 @@ export async function POST(request: NextRequest, ctx: Ctx) {
 
   revalidatePath(BRANDS_BASE)
   revalidatePath(`${BRANDS_BASE}/${slug}`)
+  if (inserted?.id) {
+    void syncBrandToIndex(supabase, inserted.id)
+  }
   return NextResponse.json({ slug, ok: true })
 }

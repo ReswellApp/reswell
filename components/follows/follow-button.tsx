@@ -25,6 +25,8 @@ interface FollowButtonProps {
   showCount?: boolean
   size?: "sm" | "default"
   className?: string
+  /** Stretch to match sibling outline buttons in a shared flex row (e.g. listing seller actions). */
+  fillRow?: boolean
 }
 
 export function FollowButton({
@@ -39,6 +41,7 @@ export function FollowButton({
   showCount = false,
   size = "default",
   className,
+  fillRow = false,
 }: FollowButtonProps) {
   const [following, setFollowing] = useState(initialFollowing)
   const [followerCount, setFollowerCount] = useState(initialFollowerCount)
@@ -92,16 +95,6 @@ export function FollowButton({
       }
 
       setFollowerCount(data.followerCount)
-
-      if (wasFollowing) {
-        toast.success(`Unfollowed ${sellerName || "seller"}`)
-      } else {
-        toast.success(
-          sellerName
-            ? `Following ${sellerName}! You'll be notified of new listings.`
-            : "Following! You'll be notified of new listings."
-        )
-      }
     } catch (err: unknown) {
       // Revert optimistic update
       setFollowing(wasFollowing)
@@ -116,7 +109,7 @@ export function FollowButton({
   const baseLabel = sellerCity ? `Follow — ${sellerCity}` : "Follow"
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2", fillRow && "w-full min-w-0", className)}>
       <Button
         variant={following ? "default" : "outline"}
         size={size}
@@ -125,7 +118,8 @@ export function FollowButton({
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
         className={cn(
-          "min-w-[120px] transition-all duration-150",
+          fillRow ? "min-h-touch w-full min-w-0 justify-center" : "min-w-[120px]",
+          "transition-all duration-150",
           following && !hovering && "bg-foreground text-background hover:bg-foreground/90",
           following && hovering && "bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground"
         )}

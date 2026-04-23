@@ -74,7 +74,6 @@ export function ContactSellerForm({
         throw new Error(result.error)
       }
 
-      toast.success("Message sent!")
       setMessage("")
       router.push(`/messages/${result.conversation_id}`)
     } catch {

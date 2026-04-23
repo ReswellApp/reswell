@@ -73,7 +73,6 @@ export function BrandsListAdminBar({ brandRequestImportId }: { brandRequestImpor
 
       if (r.status !== "pending") {
         handledImportIds.current.delete(brandRequestImportId)
-        toast.message("This request was already processed")
         router.replace("/brands", { scroll: false })
         return
       }

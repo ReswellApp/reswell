@@ -82,6 +82,9 @@ export function ThreadCommentsPanel({
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
   const [replyBody, setReplyBody] = useState("")
   const [replySubmitting, setReplySubmitting] = useState(false)
+  /** Short inline confirmation under the fixed composer (reply UI closes on success, so replies flash here too). */
+  const [postedHint, setPostedHint] = useState<string | null>(null)
+  const postedHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [composerBarHeight, setComposerBarHeight] = useState(104)
   /** While true, bar is fixed to the viewport; when the thread card ends on screen, pin to article bottom instead (no overlap with site footer). */
   const [composerFixedToViewport, setComposerFixedToViewport] = useState(true)
@@ -151,6 +154,21 @@ export function ThreadCommentsPanel({
     return () => window.clearTimeout(t)
   }, [replyingToId])
 
+  useEffect(() => {
+    return () => {
+      if (postedHintTimerRef.current) window.clearTimeout(postedHintTimerRef.current)
+    }
+  }, [])
+
+  function flashPosted(text: string) {
+    if (postedHintTimerRef.current) window.clearTimeout(postedHintTimerRef.current)
+    setPostedHint(text)
+    postedHintTimerRef.current = window.setTimeout(() => {
+      setPostedHint(null)
+      postedHintTimerRef.current = null
+    }, 2600)
+  }
+
   function openReplyTo(commentId: string) {
     setReplyingToId((prev) => (prev === commentId ? null : commentId))
     setReplyBody("")
@@ -199,7 +217,7 @@ export function ThreadCommentsPanel({
         ])
         setBody("")
         setSubmitting(false)
-        toast.success(`Comment posted as ${impersonation.displayName}`)
+        flashPosted(`Posted as ${impersonation.displayName}`)
         scrollPostedCommentIntoView(newId, composerBarRef.current)
         return
       }
@@ -244,7 +262,7 @@ export function ThreadCommentsPanel({
     ])
     setBody("")
     setSubmitting(false)
-    toast.success("Comment posted")
+    flashPosted("Posted")
     scrollPostedCommentIntoView(newId, composerBarRef.current)
   }
 
@@ -296,7 +314,7 @@ export function ThreadCommentsPanel({
         setReplyBody("")
         setReplyingToId(null)
         setReplySubmitting(false)
-        toast.success(`Reply posted as ${impersonation.displayName}`)
+        flashPosted(`Reply posted as ${impersonation.displayName}`)
         scrollPostedCommentIntoView(newId, composerBarRef.current)
         return
       }
@@ -342,7 +360,7 @@ export function ThreadCommentsPanel({
     setReplyBody("")
     setReplyingToId(null)
     setReplySubmitting(false)
-    toast.success("Reply posted")
+    flashPosted("Reply posted")
     scrollPostedCommentIntoView(newId, composerBarRef.current)
   }
 
@@ -382,7 +400,6 @@ export function ThreadCommentsPanel({
         setReplyingToId(null)
         setReplyBody("")
       }
-      toast.success("Removed")
     } else {
       toast.error("Couldn’t delete that comment.")
     }
@@ -618,12 +635,24 @@ export function ThreadCommentsPanel({
         >
           <div className="px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
             {isLoggedIn ? (
-              <form onSubmit={(e) => void submitTopLevel(e)} className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
-                <div className="min-w-0 flex-1 space-y-1">
+              <form
+                onSubmit={(e) => void submitTopLevel(e)}
+                className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:gap-3"
+              >
+                <div className="min-w-0 flex-1 space-y-1 sm:min-w-[12rem]">
                   <Textarea
                     ref={textareaRef}
                     value={body}
-                    onChange={(e) => setBody(e.target.value.slice(0, MAX_LEN))}
+                    onChange={(e) => {
+                      setBody(e.target.value.slice(0, MAX_LEN))
+                      if (postedHint) {
+                        setPostedHint(null)
+                        if (postedHintTimerRef.current) {
+                          window.clearTimeout(postedHintTimerRef.current)
+                          postedHintTimerRef.current = null
+                        }
+                      }
+                    }}
                     onKeyDown={onMainTextareaKeyDown}
                     placeholder="Write a comment…"
                     rows={2}
@@ -649,6 +678,15 @@ export function ThreadCommentsPanel({
                 >
                   {submitting ? "Posting…" : "Post comment"}
                 </Button>
+                {postedHint ? (
+                  <p
+                    className="w-full basis-full text-xs font-medium text-emerald-600 dark:text-emerald-400"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {postedHint}
+                  </p>
+                ) : null}
               </form>
             ) : (
               <p className="py-1 text-center text-sm text-muted-foreground sm:text-left">

@@ -252,13 +252,6 @@ export function StripeBankPayoutSection({
           speed: data.speed ?? "standard",
         })
       }
-      toast.success(data.message ?? "Payout initiated", {
-        description:
-          Number.isFinite(availableBalanceAfter) && Number.isFinite(amountUsd)
-            ? `We moved $${amountUsd.toFixed(2)} from your available balance. You now have $${availableBalanceAfter.toFixed(2)} available.`
-            : undefined,
-        duration: 12_000,
-      })
       setCashOpen(false)
       await onRefresh()
     } catch {
@@ -282,7 +275,6 @@ export function StripeBankPayoutSection({
           toast.error(data.error ?? "Could not update default bank")
           return
         }
-        toast.success("Default payout bank updated")
         await onRefresh()
       } catch {
         toast.error("Something went wrong. Try again.")
@@ -304,9 +296,6 @@ export function StripeBankPayoutSection({
     setRemoveBusy(true)
     try {
       if (!target.id?.trim()) {
-        toast.info("Opening Stripe’s payout settings", {
-          description: "Remove or update the bank in the secure window.",
-        })
         setRemoveTarget(null)
         openPayoutManagement()
         return
@@ -314,9 +303,6 @@ export function StripeBankPayoutSection({
 
       // Express / Standard-style Connect: Stripe does not allow platform DELETE — open embedded management instead.
       if (connectStatus?.bankAccountsDeletableViaPlatformApi !== true) {
-        toast.info("Opening Stripe’s payout settings", {
-          description: "Remove or change banks in the secure window below. If this is your only default, add another bank first.",
-        })
         setRemoveTarget(null)
         openPayoutManagement()
         return
@@ -330,18 +316,12 @@ export function StripeBankPayoutSection({
       const data = (await res.json()) as { error?: string }
 
       if (res.ok) {
-        toast.success("Bank removed")
         setRemoveTarget(null)
         await onRefresh()
         return
       }
 
       if (res.status === 400 || res.status === 403 || res.status === 502) {
-        toast.info("Opening Stripe’s payout settings", {
-          description:
-            data.error ??
-            "Finish removing the bank in the secure window. If this is your only default, add another bank first.",
-        })
         setRemoveTarget(null)
         openPayoutManagement()
         return

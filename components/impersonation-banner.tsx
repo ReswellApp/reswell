@@ -11,7 +11,6 @@ import {
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
-import { toast } from "sonner"
 
 /**
  * Full-width strip above the main header when an admin is impersonating another user.
@@ -87,7 +86,6 @@ export function ImpersonationBanner() {
       setTarget(null)
       setExiting(false)
       router.refresh()
-      toast.success("Stopped acting as user")
       void sync()
     }
   }

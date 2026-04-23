@@ -66,9 +66,6 @@ export function ListingTileAddToCartIcon({ item, className }: ListingTileAddToCa
         return
       }
       setAdded(true)
-      toast.success("Added to cart", {
-        description: item.name,
-      })
       window.setTimeout(() => setAdded(false), 1600)
     } catch {
       toast.error("Could not add to cart")

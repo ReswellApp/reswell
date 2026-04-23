@@ -85,13 +85,6 @@ export function SellerOfferResponseDialog({
         toast.error(result.error)
         return
       }
-      toast.success(
-        action === "accept"
-          ? "Offer accepted."
-          : action === "decline"
-            ? "Offer declined."
-            : "Counter sent to the buyer.",
-      )
       resetForm()
       onOpenChange(false)
       await onCompleted()

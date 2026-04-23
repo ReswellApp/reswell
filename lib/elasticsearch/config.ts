@@ -8,6 +8,9 @@
 export const ELASTICSEARCH_LISTINGS_INDEX =
   process.env.ELASTICSEARCH_LISTINGS_INDEX || "reswell_listings"
 
+export const ELASTICSEARCH_BRANDS_INDEX =
+  process.env.ELASTICSEARCH_BRANDS_INDEX || "reswell_brands"
+
 function hasElasticsearchAuth(): boolean {
   const apiKey = process.env.ELASTICSEARCH_API_KEY?.trim()
   if (apiKey) return true

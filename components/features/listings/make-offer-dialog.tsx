@@ -170,7 +170,6 @@ export function MakeOfferDialog({
         toast.error(err)
         return
       }
-      toast.success("Offer sent. The seller has been notified and can reply from their messages.")
       onOpenChange(false)
     } finally {
       setSubmitting(false)

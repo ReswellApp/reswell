@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { Loader2, MessageCircle, Send } from "lucide-react"
+import { Check, Loader2, MessageCircle, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { sendConversationReply, sendListingMessage } from "@/app/actions/messages"
 
@@ -38,6 +38,7 @@ export function OrderMessageThread({
   const [messages, setMessages] = useState(initialMessages)
   const [body, setBody] = useState("")
   const [sending, setSending] = useState(false)
+  const [sentFlash, setSentFlash] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
@@ -66,7 +67,8 @@ export function OrderMessageThread({
         })
         if ("error" in result) throw new Error(result.error)
         setBody("")
-        toast.success("Message sent")
+        setSentFlash(true)
+        window.setTimeout(() => setSentFlash(false), 2000)
         router.refresh()
       } catch {
         toast.error("Could not send message")
@@ -95,7 +97,8 @@ export function OrderMessageThread({
       const inserted = result.message as OrderThreadMessage
       setMessages((prev) => [...prev, inserted])
       setBody("")
-      toast.success("Message sent")
+      setSentFlash(true)
+      window.setTimeout(() => setSentFlash(false), 2000)
     } catch {
       toast.error("Could not send message")
     } finally {
@@ -194,9 +197,14 @@ export function OrderMessageThread({
               disabled={sending}
             />
             <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={send} disabled={sending || !body.trim()}>
+              <Button type="button" onClick={send} disabled={sending || sentFlash || !body.trim()}>
                 {sending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : sentFlash ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" aria-hidden />
+                    Sent
+                  </>
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />

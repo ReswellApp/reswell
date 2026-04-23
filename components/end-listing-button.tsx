@@ -38,16 +38,10 @@ export function EndListingButton({ listingId }: EndListingButtonProps) {
       }
 
       if (result.mode === "delete") {
-        toast.success("Listing deleted")
         router.push("/dashboard/listings")
         return
       }
 
-      if (result.message) {
-        toast.success(result.message)
-      } else {
-        toast.success("Listing archived for 30 days")
-      }
       router.push("/dashboard/listings/archived")
     } finally {
       setLoading(false)

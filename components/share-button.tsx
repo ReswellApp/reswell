@@ -30,7 +30,6 @@ export function ShareButton({ title }: ShareButtonProps) {
         setCopying(true)
         await navigator.clipboard.writeText(url)
         setJustCopied(true)
-        toast.success("Link copied to clipboard")
         setTimeout(() => setJustCopied(false), 1500)
       } catch {
         toast.error("Could not copy link. You can copy it from the address bar.")
@@ -40,9 +39,7 @@ export function ShareButton({ title }: ShareButtonProps) {
       return
     }
 
-    toast.message("Share this listing", {
-      description: url,
-    })
+    toast("Copy this link from the address bar.", { duration: 4000 })
   }
 
   return (
@@ -50,7 +47,7 @@ export function ShareButton({ title }: ShareButtonProps) {
       variant="outline"
       size="icon"
       onClick={handleShare}
-      aria-label="Share listing"
+      aria-label={justCopied ? "Link copied" : copying ? "Copying link" : "Share listing"}
     >
       {copying ? (
         <Loader2 className="h-4 w-4 animate-spin" />

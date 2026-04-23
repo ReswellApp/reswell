@@ -1,16 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { formatDistanceToNowStrict } from "date-fns"
-import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
-import { RecentFeedClient, type RecentListing } from "@/components/recent-feed-client"
 import { Package } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { listingDetailHref } from "@/lib/listing-href"
 
 export type SoldTickerItem = {
@@ -46,12 +42,8 @@ export type SoldFeedListing = {
   categories?: { name?: string | null; slug?: string | null } | null
 }
 
-export interface FeedPageClientProps {
-  listings: RecentListing[]
+export interface RecentlySoldPageClientProps {
   soldListings: SoldFeedListing[]
-  favoritedListingIds: string[]
-  isLoggedIn: boolean
-  viewerUserId: string | null
   soldStats: { count: number; gmvFormatted: string }
   initialTickerItems: SoldTickerItem[]
 }
@@ -138,7 +130,7 @@ function SoldFeedGrid({ listings }: { listings: SoldFeedListing[] }) {
   )
 }
 
-function FeedTicker({
+function SoldTicker({
   items,
   show,
 }: {
@@ -170,34 +162,13 @@ function FeedTicker({
   )
 }
 
-export function FeedPageClient({
-  listings,
+export function RecentlySoldPageClient({
   soldListings,
-  favoritedListingIds,
-  isLoggedIn,
-  viewerUserId,
   soldStats,
   initialTickerItems,
-}: FeedPageClientProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [])
-
-  const tab = searchParams.get("tab") === "sold" ? "sold" : "new"
-  const [newListingCount, setNewListingCount] = useState(0)
+}: RecentlySoldPageClientProps) {
   const [tickerItems, setTickerItems] = useState<SoldTickerItem[]>(initialTickerItems)
-
-  const setTab = useCallback(
-    (next: "new" | "sold") => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (next === "sold") params.set("tab", "sold")
-      else params.delete("tab")
-      const q = params.toString()
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false })
-    },
-    [pathname, router, searchParams],
-  )
+  const showTicker = soldStats.count >= 5
 
   useEffect(() => {
     const id = window.setInterval(async () => {
@@ -213,113 +184,34 @@ export function FeedPageClient({
     return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
-    if (tab !== "new") return
-
-    const channel = supabase
-      .channel("new_listings_feed")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "listings", filter: "status=eq.active" },
-        (payload) => {
-          const row = payload.new as { section?: string }
-          if (row.section !== "surfboards" && row.section !== "new") return
-          setNewListingCount((prev) => prev + 1)
-        },
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [supabase, tab])
-
-  const showTicker = soldStats.count >= 5
-
-  const onRefreshNewListings = useCallback(() => {
-    setNewListingCount(0)
-    window.scrollTo({ top: 0, behavior: "smooth" })
-    router.refresh()
-  }, [router])
-
   return (
     <>
-      <FeedTicker items={tickerItems} show={showTicker} />
+      <SoldTicker items={tickerItems} show={showTicker} />
 
       <section className="border-b border-border bg-background">
         <div className="container mx-auto py-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            New listings feed
+            Recently sold
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Latest surfboard listings on the marketplace
+            Surfboards that found new homes on Reswell
           </p>
-
-          <div className="mt-6 flex gap-6 border-b border-border">
-            <button
-              type="button"
-              onClick={() => setTab("new")}
-              className={cn(
-                "-mb-px border-b-2 pb-3 text-[15px] transition-colors",
-                tab === "new"
-                  ? "border-foreground font-semibold text-foreground"
-                  : "border-transparent font-normal text-muted-foreground hover:text-foreground",
-              )}
-            >
-              New Listings
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("sold")}
-              className={cn(
-                "-mb-px border-b-2 pb-3 text-[15px] transition-colors",
-                tab === "sold"
-                  ? "border-foreground font-semibold text-foreground"
-                  : "border-transparent font-normal text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Recently Sold
-            </button>
-          </div>
         </div>
       </section>
 
       <section className="container mx-auto py-6">
-        {tab === "new" && newListingCount > 0 && (
-          <div className="mb-4 flex justify-center">
-            <button
-              type="button"
-              onClick={onRefreshNewListings}
-              className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
-            >
-              ↑ {newListingCount} new listing{newListingCount === 1 ? "" : "s"} — click to refresh
-            </button>
-          </div>
-        )}
-
-        {tab === "new" ? (
-          <RecentFeedClient
-            listings={listings}
-            favoritedListingIds={favoritedListingIds}
-            isLoggedIn={isLoggedIn}
-            viewerUserId={viewerUserId}
-          />
-        ) : (
-          <>
-            <div className="mb-6 rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
-              <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
-                <span aria-hidden>🤝</span>
-                <span className="font-medium tabular-nums">{soldStats.count}</span>
-                <span>items sold on Reswell ·</span>
-                <span className="font-medium tabular-nums text-emerald-700 dark:text-emerald-400">
-                  {soldStats.gmvFormatted}
-                </span>
-                <span>in sales</span>
-              </span>
-            </div>
-            <SoldFeedGrid listings={soldListings} />
-          </>
-        )}
+        <div className="mb-6 rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+          <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
+            <span aria-hidden>🤝</span>
+            <span className="font-medium tabular-nums">{soldStats.count}</span>
+            <span>items sold on Reswell ·</span>
+            <span className="font-medium tabular-nums text-emerald-700 dark:text-emerald-400">
+              {soldStats.gmvFormatted}
+            </span>
+            <span>in sales</span>
+          </span>
+        </div>
+        <SoldFeedGrid listings={soldListings} />
       </section>
     </>
   )

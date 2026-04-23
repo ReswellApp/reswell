@@ -8,7 +8,7 @@ import { footerCategoryLinks } from "@/lib/site-category-directory"
 const footerLinks = {
   marketplace: [
     { name: "Surfboards", href: "/boards" },
-    { name: "Feed", href: "/feed" },
+    { name: "Recently sold", href: "/sold" },
     { name: "Sell your board", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
     { name: "Purchase Protection", href: "/protection-policy" },

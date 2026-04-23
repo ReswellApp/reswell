@@ -238,7 +238,7 @@ export function NotificationDrawer() {
             onClick={() => setOpen(false)}
             asChild
           >
-            <Link href="/dashboard/profile#followers">Manage following</Link>
+            <Link href="/dashboard/followers#shops-you-follow">Manage following</Link>
           </Button>
           <Button
             variant="ghost"

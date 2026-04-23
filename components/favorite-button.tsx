@@ -52,9 +52,6 @@ export function FavoriteButton({
       }
       setFavorited(result.favorited)
       onFavoritedChange?.(result.favorited)
-      toast.success(
-        result.favorited ? "Added to favorites" : "Removed from favorites",
-      )
     } catch {
       toast.error("Failed to update favorites")
     } finally {

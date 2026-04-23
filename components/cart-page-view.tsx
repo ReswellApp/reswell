@@ -61,7 +61,6 @@ function CartLineFavoriteButton({
         return
       }
       setFavorited(result.favorited)
-      toast.success(result.favorited ? "Saved to favorites" : "Removed from favorites")
     } catch {
       toast.error("Could not update favorites")
     } finally {
@@ -161,7 +160,6 @@ export function CartPageView({
         toast.error(r.error ?? "Could not remove")
         return
       }
-      toast.success("Removed from cart")
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       router.refresh()
     })
@@ -176,7 +174,6 @@ export function CartPageView({
         toast.error(r.error ?? "Could not clear cart")
         return
       }
-      toast.success("Cart cleared")
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       router.refresh()
     })

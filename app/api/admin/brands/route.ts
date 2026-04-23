@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
       brand_request_id: parsed.brand_request_id,
       updated_at: now,
     })
-    .select("slug")
+    .select("id, slug")
     .single()
 
   if (error) {
@@ -159,5 +160,6 @@ export async function POST(request: Request) {
 
   revalidatePath(BRANDS_BASE)
   revalidatePath(`${BRANDS_BASE}/${data.slug}`)
+  void syncBrandToIndex(supabase, data.id)
   return NextResponse.json({ slug: data.slug })
 }

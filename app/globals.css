@@ -289,12 +289,68 @@
   min-height: 0;
 }
 
-/* CLS-FIX: Sonner toast renders in a portal with fixed positioning — verify
-   it never injects into the document flow by enforcing pointer-events handling. */
+/* CLS-FIX + motion: Sonner portals fixed toasts — keep above home indicator / respect offsets */
 [data-sonner-toaster] {
   position: fixed !important;
-  /* Sit above the home indicator on notched iPhones */
-  bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
+}
+
+[data-sonner-toaster][data-y-position='bottom'] {
+  bottom: max(var(--offset-bottom, 32px), env(safe-area-inset-bottom, 0px)) !important;
+}
+
+[data-sonner-toaster][data-y-position='top'] {
+  top: max(var(--offset-top, 32px), env(safe-area-inset-top, 0px)) !important;
+}
+
+[data-sonner-toaster][data-x-position='right'] {
+  right: max(var(--offset-right, 32px), env(safe-area-inset-right, 0px)) !important;
+}
+
+[data-sonner-toaster][data-x-position='left'] {
+  left: max(var(--offset-left, 32px), env(safe-area-inset-left, 0px)) !important;
+}
+
+/* Flow: springy ease-out (higher specificity than sonner’s :where rules) */
+[data-sonner-toaster][data-lifted='true'][data-x-position='center'] {
+  transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translateX(-50%) translateY(-6px);
+}
+
+[data-sonner-toaster][data-lifted='true'][data-x-position='left'],
+[data-sonner-toaster][data-lifted='true'][data-x-position='right'] {
+  transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translateY(-6px);
+}
+
+[data-sonner-toast] {
+  transition:
+    transform 320ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    opacity 240ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    height 320ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+[data-sonner-toast] > * {
+  transition: opacity 280ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+[data-sonner-toast][data-removed='true'][data-front='false'][data-swipe-out='false'][data-expanded='false'] {
+  transition:
+    transform 300ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    opacity 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toaster][data-lifted='true'][data-x-position='center'] {
+    transform: translateX(-50%);
+    transition: none;
+  }
+
+  [data-sonner-toaster][data-lifted='true'][data-x-position='left'],
+  [data-sonner-toaster][data-lifted='true'][data-x-position='right'] {
+    transform: none;
+    transition: none;
+  }
 }
 
 /* Feed page — sold activity ticker (marquee) */

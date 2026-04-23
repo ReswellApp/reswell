@@ -63,7 +63,6 @@ export function SellerTrackingForm({
         toast.error(data.error ?? "Could not add tracking")
         return
       }
-      toast.success("Tracking added — buyer notified")
       router.refresh()
     } catch {
       toast.error("Something went wrong")
@@ -139,7 +138,6 @@ export function SellerPickupVerify({
         setError(data.error ?? "Verification failed")
         return
       }
-      toast.success("Pickup confirmed — payout released")
       router.refresh()
     } catch {
       toast.error("Something went wrong")
@@ -210,7 +208,6 @@ export function BuyerConfirmDelivery({
         toast.error(data.error ?? "Could not confirm delivery")
         return
       }
-      toast.success("Delivery confirmed — seller payout released")
       router.refresh()
     } catch {
       toast.error("Something went wrong")
@@ -330,7 +327,6 @@ export function SellerRequestSupportButton({
         toast.error(data.error ?? "Could not send request")
         return
       }
-      toast.success("Request sent — our team will review it and follow up.")
       setOpen(false)
       setBody("")
     } catch {

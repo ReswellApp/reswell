@@ -14,10 +14,18 @@ import {
   Users,
   Lightbulb,
   Handshake,
+  ShoppingBag,
+  PackageCheck,
+  UserCircle,
+  List,
+  Plus,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { ORDER_STATUS_LIST } from "@/lib/order-status"
+import { sellerProfileHref } from "@/lib/seller-slug"
+import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
 
 export const metadata = privatePageMetadata({
   title: "Dashboard — Reswell",
@@ -31,6 +39,7 @@ export default async function DashboardPage() {
 
   if (!user) return null
 
+  const orderStatuses = [...ORDER_STATUS_LIST]
   const [
     listingsAgg,
     favoritesAgg,
@@ -43,6 +52,9 @@ export default async function DashboardPage() {
     profileRes,
     followersRes,
     newFollowersRes,
+    buyerOrdersRes,
+    sellerOrdersRes,
+    followingRes,
   ] = await Promise.all([
     supabase
       .from("listings")
@@ -89,6 +101,20 @@ export default async function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .eq("seller_id", user.id)
       .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("buyer_id", user.id)
+      .in("status", orderStatuses),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("seller_id", user.id)
+      .in("status", orderStatuses),
+    supabase
+      .from("seller_follows")
+      .select("id", { count: "exact", head: true })
+      .eq("follower_id", user.id),
   ])
 
   const listings = listingsAgg.data
@@ -105,6 +131,21 @@ export default async function DashboardPage() {
   const profile = profileRes.data
   const followerCount = followersRes.data?.follower_count ?? 0
   const newFollowersThisMonth = newFollowersRes.count ?? 0
+  const buyerOrderCount = buyerOrdersRes.count ?? 0
+  const sellerOrderCount = sellerOrdersRes.count ?? 0
+  const followingCount = followingRes.count ?? 0
+
+  const welcomeName =
+    (profile?.is_shop && profile?.shop_name?.trim()) ||
+    profile?.display_name?.trim() ||
+    (user.user_metadata?.full_name as string | undefined)?.trim() ||
+    "User"
+
+  const profileTitle =
+    (profile?.is_shop && profile?.shop_name?.trim()) || profile?.display_name?.trim() || welcomeName
+  const profileImageUrl = profile?.is_shop
+    ? profile?.shop_logo_url || profile?.avatar_url
+    : profile?.avatar_url
 
   let walletBalance = 0
   if (walletRow) {
@@ -124,7 +165,14 @@ export default async function DashboardPage() {
     }
   }
 
-  const stats = [
+  const coreStats: Array<{
+    name: string
+    value: string | number
+    total?: number
+    icon: typeof Wallet
+    href: string
+    highlight?: boolean
+  }> = [
     {
       name: "Earnings",
       value: `$${walletBalance.toFixed(2)}`,
@@ -133,12 +181,32 @@ export default async function DashboardPage() {
       highlight: true,
     },
     {
-      name: "Active Listings",
+      name: "Sales",
+      value: sellerOrderCount,
+      icon: PackageCheck,
+      href: "/dashboard/sales",
+    },
+    {
+      name: "Orders",
+      value: buyerOrderCount,
+      icon: ShoppingBag,
+      href: "/dashboard/orders",
+    },
+    {
+      name: "My listings",
       value: activeListings,
       total: listingCount || 0,
       icon: Package,
       href: "/dashboard/listings",
     },
+  ]
+
+  const activityStats: Array<{
+    name: string
+    value: number
+    icon: typeof Heart
+    href: string
+  }> = [
     {
       name: "Pending offers",
       value: pendingOffersReceived,
@@ -152,7 +220,7 @@ export default async function DashboardPage() {
       href: "/favorites",
     },
     {
-      name: "Unread Messages",
+      name: "Unread",
       value: unreadCount || 0,
       icon: MessageSquare,
       href: "/messages",
@@ -161,44 +229,90 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 md:space-y-8">
+      <DashboardOverviewRealtimeRefresh />
+
       {/* Welcome */}
       <div className="max-w-3xl">
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-          Welcome back, {profile?.display_name || user.user_metadata?.full_name || "User"}
-        </h1>
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Welcome back, {welcomeName}</h1>
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-          Here is what is happening with your listings
+          Here is what is happening with your account — updates in real time.
         </p>
       </div>
 
-      {/* Stats — 2×2 on sm; five cards on xl */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-5 xl:gap-4">
-        {stats.map((stat) => (
+      {/* Profile */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
+                {profileImageUrl ? (
+                  <Image
+                    src={profileImageUrl}
+                    alt=""
+                    width={64}
+                    height={64}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-muted-foreground" aria-hidden>
+                    <UserCircle className="h-9 w-9" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Profile</p>
+                <h2 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{profileTitle}</h2>
+                {(profile?.city || profile?.location) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[profile?.city, profile?.location].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                {profile?.is_shop && profile?.seller_slug && (
+                  <p className="mt-1">
+                    <Link
+                      href={sellerProfileHref(profile)}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      View public shop
+                    </Link>
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button asChild>
+                <Link href="/dashboard/profile">Manage profile</Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Core metrics — earnings, sales, orders, listings */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4 xl:gap-4">
+        {coreStats.map((stat) => (
           <Link key={stat.name} href={stat.href} className="min-w-0">
             <Card
               className={`h-full overflow-hidden hover:shadow-md transition-shadow ${
-                (stat as { highlight?: boolean }).highlight ? "border-primary/20 bg-primary/5" : ""
+                stat.highlight ? "border-primary/20 bg-primary/5" : ""
               }`}
             >
               <CardContent className="p-5 sm:p-6">
-                {/* Label + icon on one row so the value row stays full-width (avoids overlap in narrow 5-up layouts). */}
                 <div className="flex items-start justify-between gap-3">
-                  <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">
-                    {stat.name}
-                  </p>
+                  <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">{stat.name}</p>
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-10 sm:w-10">
                     <stat.icon className="h-[1.125rem] w-[1.125rem] sm:h-5 sm:w-5" aria-hidden />
                   </div>
                 </div>
                 <p
                   className={`mt-3 min-w-0 break-words text-2xl font-bold tabular-nums tracking-tight sm:text-3xl ${
-                    (stat as { highlight?: boolean }).highlight ? "text-primary" : ""
+                    stat.highlight ? "text-primary" : ""
                   }`}
                 >
-                  {stat.value}
+                  {typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}
                   {stat.total !== undefined && stat.total > 0 && (
                     <span className="text-base font-normal text-muted-foreground sm:text-lg">
-                      /{stat.total}
+                      /{stat.total.toLocaleString()}
                     </span>
                   )}
                 </p>
@@ -208,48 +322,75 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Follower stats (shown when user has followers OR is a seller) */}
-      {(followerCount > 0 || newFollowersThisMonth > 0) && (
-        <Card className="border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Your followers
-            </CardTitle>
-            <Link
-              href="/dashboard/profile#followers"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              View stats
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-end gap-6">
-              <div>
-                <p className="text-3xl font-bold text-foreground">
-                  {followerCount.toLocaleString()}
-                </p>
-                <p className="text-sm text-muted-foreground mt-0.5">followers total</p>
-              </div>
-              {newFollowersThisMonth > 0 && (
-                <div>
-                  <p className="text-xl font-semibold text-green-600">
-                    +{newFollowersThisMonth.toLocaleString()}
+      <div>
+        <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+          {activityStats.map((stat) => (
+            <Link key={stat.name} href={stat.href} className="min-w-0">
+              <Card className="h-full overflow-hidden hover:shadow-md transition-shadow">
+                <CardContent className="p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">{stat.name}</p>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground sm:h-10 sm:w-10">
+                      <stat.icon className="h-[1.125rem] w-[1.125rem] sm:h-5 sm:w-5" aria-hidden />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
+                    {stat.value.toLocaleString()}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-0.5">this month</p>
-                </div>
-              )}
-            </div>
-            <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2.5">
-              <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-xs text-muted-foreground">
-                Post new listings regularly to keep your followers engaged and coming back.
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Followers & following */}
+      <Card className="border-border">
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Followers &amp; following
+          </CardTitle>
+          <Link
+            href="/dashboard/followers"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          >
+            View all
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-8 sm:gap-10">
+            <div>
+              <p className="text-3xl font-bold text-foreground tabular-nums">
+                {followerCount.toLocaleString()}
               </p>
+              <p className="text-sm text-muted-foreground mt-0.5">Followers</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div>
+              <p className="text-3xl font-bold text-foreground tabular-nums">
+                {followingCount.toLocaleString()}
+              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">Following</p>
+            </div>
+            {newFollowersThisMonth > 0 && (
+              <div>
+                <p className="text-xl font-semibold text-green-600 tabular-nums">
+                  +{newFollowersThisMonth.toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">new followers this month</p>
+              </div>
+            )}
+          </div>
+          <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2.5">
+            <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground">
+              Post new listings regularly to keep your followers engaged and coming back.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Published listings (active, sold, etc. — not drafts) */}
       <Card>
@@ -374,20 +515,44 @@ export default async function DashboardPage() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
+          <CardTitle className="text-lg">Quick actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
               <Link href="/sell?new=1">
-                <Package className="h-6 w-6 mb-2" />
-                Create Listing
+                <Plus className="h-6 w-6 mb-2" />
+                Create listing
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
+              <Link href="/dashboard/profile">
+                <UserCircle className="h-6 w-6 mb-2" />
+                Profile
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
+              <Link href="/dashboard/listings">
+                <List className="h-6 w-6 mb-2" />
+                My listings
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
+              <Link href="/dashboard/orders">
+                <ShoppingBag className="h-6 w-6 mb-2" />
+                Orders
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
+              <Link href="/dashboard/sales">
+                <PackageCheck className="h-6 w-6 mb-2" />
+                Sales
               </Link>
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
               <Link href="/messages">
                 <MessageSquare className="h-6 w-6 mb-2" />
-                View Messages
+                Messages
               </Link>
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>

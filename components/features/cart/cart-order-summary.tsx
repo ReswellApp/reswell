@@ -3,7 +3,6 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ChevronRight, Truck } from "lucide-react"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -60,15 +59,18 @@ export function CartOrderSummary({
   deliveryNote: string
 }) {
   const [promo, setPromo] = useState("")
+  const [promoHint, setPromoHint] = useState<string | null>(null)
   const hasCheckout = Boolean(firstCheckoutHref) && itemCount > 0 && !checkoutPending
 
   function applyPromo() {
     const t = promo.trim()
     if (!t) {
-      toast.message("Enter a code to apply")
+      setPromoHint("Enter a code first")
+      window.setTimeout(() => setPromoHint(null), 2500)
       return
     }
-    toast.info("Promo codes are not available yet.")
+    setPromoHint("Promo codes aren’t available yet")
+    window.setTimeout(() => setPromoHint(null), 3500)
   }
 
   return (
@@ -83,13 +85,21 @@ export function CartOrderSummary({
           type="text"
           placeholder="Promocode"
           value={promo}
-          onChange={(e) => setPromo(e.target.value)}
+          onChange={(e) => {
+            setPromo(e.target.value)
+            setPromoHint(null)
+          }}
           className="h-11 flex-1 rounded-lg border-neutral-200 bg-white text-[15px] dark:border-white/15 dark:bg-background"
         />
         <button type="button" onClick={applyPromo} className={cn("shrink-0 px-1 py-2", applyBtn)}>
           Apply
         </button>
       </div>
+      {promoHint ? (
+        <p className="mt-2 text-[13px] text-muted-foreground" role="status">
+          {promoHint}
+        </p>
+      ) : null}
 
       <div className="mt-6 space-y-3">
         <SummaryRow

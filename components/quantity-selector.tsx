@@ -83,7 +83,6 @@ export function QuantitySelector({ productId, maxQuantity, item: itemProp }: Qua
       }
 
       setAdded(true)
-      toast.success(`Added ${quantity} item${quantity > 1 ? "s" : ""} to cart`)
 
       setTimeout(() => {
         setAdded(false)

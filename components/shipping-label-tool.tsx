@@ -179,7 +179,6 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
         })
         return
       }
-      toast.success(`Label created — Order #${data.data.orderDisplayNum}`)
       if (data.data.labelUrl) {
         window.open(data.data.labelUrl, "_blank", "noopener,noreferrer")
       }

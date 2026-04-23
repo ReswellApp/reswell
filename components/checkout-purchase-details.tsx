@@ -195,7 +195,6 @@ export function CheckoutPurchaseDetails({
         postal_code: "",
         country: "US",
       })
-      toast.success("Address saved")
     } finally {
       setSaving(false)
     }

@@ -148,8 +148,8 @@ export function computeSellSectionCompletion(
 
   return {
     "sell-section-title": titleSectionComplete(form),
-    "sell-section-shape": shapeSectionComplete(form),
-    "sell-section-dimensions": dimensionsSectionComplete(form),
+    "sell-section-board":
+      shapeSectionComplete(form) && dimensionsSectionComplete(form),
     "sell-section-price": priceSectionComplete(form),
     "sell-section-delivery": deliverySectionComplete(form),
     "sell-section-description": descriptionSectionComplete(form),

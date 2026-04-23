@@ -76,7 +76,6 @@ export function ListingTileShopInventoryCartIcon({
         return
       }
       setAdded(true)
-      toast.success("Added to cart")
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       window.setTimeout(() => setAdded(false), 1600)
     } catch {

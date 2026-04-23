@@ -51,7 +51,6 @@ export function AddToCartButton({
       }
 
       setAdded(true)
-      toast.success("Added to cart")
 
       // Reset added state after 2 seconds
       setTimeout(() => setAdded(false), 2000)

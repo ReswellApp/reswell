@@ -188,14 +188,13 @@ function StripePayButton({
         toast.error(data.error ?? "Could not complete order")
         return
       }
-      toast.success(`You bought “${listingTitle}”`)
       if (data.orderId) {
         router.replace(`/successpage/${data.orderId}`)
       } else {
         router.replace("/checkout/success")
       }
     },
-    [router, listingTitle],
+    [router],
   )
 
   const handleSubmit = useCallback(

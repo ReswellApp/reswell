@@ -153,7 +153,6 @@ export function ProfileAddressesManager({ copy }: { copy: ProfileAddressesCopy }
           return
         }
         await load()
-        toast.success("Address updated")
       } else {
         const { error } = await createProfileAddress(payload)
         if (error) {
@@ -161,7 +160,6 @@ export function ProfileAddressesManager({ copy }: { copy: ProfileAddressesCopy }
           return
         }
         await load()
-        toast.success("Address saved")
       }
       setDialogOpen(false)
     } finally {
@@ -176,7 +174,6 @@ export function ProfileAddressesManager({ copy }: { copy: ProfileAddressesCopy }
       return
     }
     await load()
-    toast.success("Default address updated")
   }
 
   async function confirmDelete() {
@@ -189,7 +186,6 @@ export function ProfileAddressesManager({ copy }: { copy: ProfileAddressesCopy }
         return
       }
       setAddresses((prev) => prev.filter((a) => a.id !== deleteId))
-      toast.success("Address removed")
       setDeleteId(null)
     } finally {
       setDeleting(false)

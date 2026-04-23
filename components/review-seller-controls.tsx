@@ -121,7 +121,6 @@ export function ReviewSellerControls({
         toast.error(data.error ?? "Could not save your review")
         return
       }
-      toast.success("Thanks — your review was posted.")
       setOpen(false)
       setComment("")
       onSuccess?.()

@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ProfileAddressesManager } from "@/components/profile-addresses-manager"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Save, LogOut, Camera, User, Users } from "lucide-react"
+import { Check, Loader2, Save, LogOut, Camera, User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
@@ -32,19 +32,16 @@ interface Profile {
   bio: string | null
 }
 
-type ProfileSettingsTab = "profile" | "addresses" | "followers"
+type ProfileSettingsTab = "profile" | "addresses"
 
-export interface DashboardProfileSettingsProps {
-  /** Followers & following (server-rendered); shown in the Followers tab */
-  followersTabContent?: React.ReactNode
-}
-
-export function DashboardProfileSettings({ followersTabContent }: DashboardProfileSettingsProps) {
+export function DashboardProfileSettings() {
   const { t } = useLocale()
   const [activeTab, setActiveTab] = useState<ProfileSettingsTab>("profile")
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [profileSavedFlash, setProfileSavedFlash] = useState(false)
+  const [avatarSavedFlash, setAvatarSavedFlash] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -70,8 +67,7 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
   useEffect(() => {
     const applyHash = () => {
       const raw = window.location.hash.replace(/^#/, "")
-      if (raw === "followers") setActiveTab("followers")
-      else if (raw === "addresses") setActiveTab("addresses")
+      if (raw === "addresses") setActiveTab("addresses")
       else setActiveTab("profile")
     }
     applyHash()
@@ -113,7 +109,8 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
       .eq("id", profile.id)
 
     if (!error) {
-      toast.success("Profile updated successfully")
+      setProfileSavedFlash(true)
+      window.setTimeout(() => setProfileSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
@@ -155,7 +152,8 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
       if (!avatarUrl) throw new Error("Missing avatar URL")
 
       setProfile({ ...profile, avatar_url: avatarUrl })
-      toast.success("Profile photo updated")
+      setAvatarSavedFlash(true)
+      window.setTimeout(() => setAvatarSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
@@ -204,13 +202,9 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full max-w-2xl grid-cols-3">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="profile">{s.profileTab}</TabsTrigger>
           <TabsTrigger value="addresses">{addr.tab}</TabsTrigger>
-          <TabsTrigger value="followers" className="gap-1.5">
-            <Users className="h-4 w-4 shrink-0" aria-hidden />
-            {s.followersTab}
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6 mt-6">
@@ -250,6 +244,11 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-foreground">{p.photo}</p>
                   <p className="text-xs text-muted-foreground">{p.photoHint}</p>
+                  {avatarSavedFlash ? (
+                    <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400" role="status">
+                      Updated
+                    </p>
+                  ) : null}
                   <label
                     htmlFor="avatar-upload"
                     className="inline-flex cursor-pointer items-center text-xs font-medium text-primary hover:underline"
@@ -313,11 +312,16 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
                 />
               </div>
 
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving || profileSavedFlash}>
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {p.saving}
+                  </>
+                ) : profileSavedFlash ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" aria-hidden />
+                    Saved
                   </>
                 ) : (
                   <>
@@ -332,10 +336,6 @@ export function DashboardProfileSettings({ followersTabContent }: DashboardProfi
 
         <TabsContent value="addresses" className="mt-6">
           <ProfileAddressesManager copy={addr} />
-        </TabsContent>
-
-        <TabsContent value="followers" className="mt-6 space-y-6">
-          {followersTabContent}
         </TabsContent>
       </Tabs>
 

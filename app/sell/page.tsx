@@ -1,4 +1,5 @@
 "use client"
+/** Sell flow: no separate Brand / shaper field — catalog + request CTA live under the title. */
 
 import React, { Suspense } from "react"
 
@@ -117,7 +118,7 @@ import {
 } from "@/lib/sell-draft-local-meta"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { cn } from "@/lib/utils"
-import { BrandInputWithSuggestions } from "@/components/brand-input-with-suggestions"
+import { RequestBrandDialog } from "@/components/request-brand-dialog"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import {
@@ -412,6 +413,8 @@ function SellPageContent() {
   }, [images])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
   const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
+  const [titleRequestBrandOpen, setTitleRequestBrandOpen] = useState(false)
+  const [titleRequestBrandSeed, setTitleRequestBrandSeed] = useState("")
   const [formData, setFormData] = useState(createInitialSellFormData)
 
   const boardDimLengthRef = useRef<HTMLInputElement>(null)
@@ -634,7 +637,7 @@ function SellPageContent() {
     formData.reswellPackageWeightOz,
   ])
 
-  // Count completed board fields for progress indicator
+  // Count completed “board” fields for progress (same 9 as pre–freeform: photos, title, category, length, width, thick, condition, price, description).
   const boardFieldsCompleted = useMemo(() => {
     const widthOk =
       formData.boardSkipOptionalDimensions || formData.boardWidthInches.trim()
@@ -647,8 +650,6 @@ function SellPageContent() {
       formData.boardLength.trim(),
       widthOk,
       thickOk,
-      formData.boardFins,
-      formData.boardTail,
       formData.condition,
       formData.price.trim(),
       formData.description.trim(),
@@ -661,20 +662,10 @@ function SellPageContent() {
     formData.boardWidthInches,
     formData.boardThicknessInches,
     formData.boardSkipOptionalDimensions,
-    formData.boardFins,
-    formData.boardTail,
     formData.condition,
     formData.price,
     formData.description,
   ])
-
-  // When a directory model is linked from the title field, offer to snap brand back to the catalog name
-  const suggestedBrand = useMemo(() => {
-    const s = formData.boardLinkedBrandName.trim()
-    if (!s) return null
-    if (formData.brand.trim().toLowerCase() === s.toLowerCase()) return null
-    return s
-  }, [formData.boardLinkedBrandName, formData.brand])
 
   const reloadDeferredDraftHints = useCallback(async () => {
     const {
@@ -2283,11 +2274,10 @@ function SellPageContent() {
             >
                 <SellFormSection
                   sectionId="sell-section-title"
-                  title="Listing title & brand / shaper"
-                  description="Title is shown on your listing and in the URL. Brand is optional — link from the catalog or enter any name."
+                  title="Listing title"
+                  description="Title is shown on your listing and in the URL. Pick a brand from the directory in the title field to link your listing, or type any title you like."
                 >
-                  <div className="space-y-8">
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <div className="flex items-end justify-between gap-2">
                         <Label htmlFor="title">Title *</Label>
                         <span
@@ -2327,75 +2317,66 @@ function SellPageContent() {
                         }}
                         required
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="surf-brand">Brand / shaper (optional)</Label>
-                      {formData.boardBrandId ? (
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <div className="min-w-0 flex-1">
-                              <BrandInputWithSuggestions
-                                id="surf-brand"
-                                showHint={false}
-                                className="placeholder:text-muted-foreground/45"
-                                value={formData.brand}
-                                onChange={(v) => setFormData({ ...formData, brand: v })}
-                              />
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 shrink-0 self-start text-xs text-muted-foreground/45"
-                              onClick={() =>
-                                setFormData((f) => ({
-                                  ...f,
-                                  boardBrandId: "",
-                                  boardIndexBrandSlug: "",
-                                  boardIndexModelSlug: "",
-                                  boardIndexLabel: "",
-                                  boardLinkedBrandName: "",
-                                }))
-                              }
-                            >
-                              Clear link
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground/45">
-                            Suggestions from our brand list — you can enter any brand.
-                          </p>
-                        </div>
-                      ) : (
-                        <BrandInputWithSuggestions
-                          id="surf-brand"
-                          placeholder="e.g., Channel Islands"
-                          className="placeholder:text-muted-foreground/45"
-                          value={formData.brand}
-                          onChange={(v) => setFormData({ ...formData, brand: v })}
-                        />
-                      )}
-                      {suggestedBrand ? (
-                        <p className="text-xs text-muted-foreground/45">
-                          Suggested:{" "}
-                          <span className="font-medium text-foreground">{suggestedBrand}</span>
-                          {" — "}
-                          <button
-                            type="button"
-                            className="text-primary underline-offset-2 hover:underline"
-                            onClick={() => setFormData((f) => ({ ...f, brand: suggestedBrand }))}
-                          >
-                            Use this
-                          </button>
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-muted-foreground">
+                          Suggestions from our brand list — you can enter any brand; nothing has to
+                          match exactly.
                         </p>
+                        <button
+                          type="button"
+                          className="text-left text-xs text-primary underline-offset-4 hover:underline"
+                          onClick={() => {
+                            setTitleRequestBrandSeed(
+                              formData.brand.trim() || formData.title.trim(),
+                            )
+                            setTitleRequestBrandOpen(true)
+                          }}
+                        >
+                          Brand not listed? Request we add it
+                        </button>
+                        <RequestBrandDialog
+                          open={titleRequestBrandOpen}
+                          onOpenChange={setTitleRequestBrandOpen}
+                          defaultName={titleRequestBrandSeed}
+                        />
+                      </div>
+                      {formData.boardBrandId ? (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/45">
+                          <span>
+                            Linked to brand catalog:{" "}
+                            <span className="font-medium text-foreground">
+                              {formData.boardLinkedBrandName.trim() ||
+                                formData.brand.trim() ||
+                                formData.boardIndexLabel.trim()}
+                            </span>
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-muted-foreground/45"
+                            onClick={() =>
+                              setFormData((f) => ({
+                                ...f,
+                                boardBrandId: "",
+                                boardIndexBrandSlug: "",
+                                boardIndexModelSlug: "",
+                                boardIndexLabel: "",
+                                boardLinkedBrandName: "",
+                              }))
+                            }
+                          >
+                            Clear link
+                          </Button>
+                        </div>
                       ) : null}
-                    </div>
                   </div>
                 </SellFormSection>
 
                 <SellFormSection
-                  sectionId="sell-section-shape"
-                  title="Board shape / category · fin setup & tail"
+                  sectionId="sell-section-board"
+                  title="Board shape / category · fin setup, tail & dimensions"
+                  description="Use any format you like (decimals or fractions). Volume is optional and independent of the other measurements."
                 >
                     <div className="space-y-8">
                       <div className="space-y-2">
@@ -2455,11 +2436,11 @@ function SellPageContent() {
                           </p>
                         )}
                         <div className="flex items-center justify-between text-sm text-muted-foreground/45 pb-1 pt-1">
-                          <span>{boardFieldsCompleted} of 11 fields complete</span>
+                          <span>{boardFieldsCompleted} of 9 fields complete</span>
                           <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
                             <div
                               className="h-full rounded-full bg-primary transition-all duration-300"
-                              style={{ width: `${(boardFieldsCompleted / 11) * 100}%` }}
+                              style={{ width: `${(boardFieldsCompleted / 9) * 100}%` }}
                             />
                           </div>
                         </div>
@@ -2511,14 +2492,6 @@ function SellPageContent() {
                           ))}
                         </div>
                       </div>
-                    </div>
-                </SellFormSection>
-
-                <SellFormSection
-                  sectionId="sell-section-dimensions"
-                  title="Board dimensions"
-                  description="Use any format you like (decimals or fractions). Volume is optional and independent of the other measurements."
-                >
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
@@ -2804,6 +2777,7 @@ function SellPageContent() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
+                    </div>
                     </div>
                 </SellFormSection>
 

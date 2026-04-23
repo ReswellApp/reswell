@@ -84,7 +84,7 @@ export async function PATCH(
   }
 
   revalidatePath("/boards")
-  revalidatePath("/feed")
+  revalidatePath("/sold")
   revalidatePath("/search")
   revalidatePath("/shop")
   revalidatePath("/")

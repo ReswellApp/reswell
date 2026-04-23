@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   PackageCheck,
   UserCircle,
+  Users,
 } from "lucide-react"
 
 export interface DashboardNavLink {
@@ -22,5 +23,6 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Offers", href: "/dashboard/offers", icon: Handshake },
+  { name: "Followers", href: "/dashboard/followers", icon: Users },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]

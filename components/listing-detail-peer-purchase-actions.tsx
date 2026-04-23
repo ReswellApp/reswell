@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { CreditCard, Loader2, ShoppingCart } from "lucide-react"
+import { Check, CreditCard, Loader2, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { addCartItem } from "@/app/actions/cart"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
@@ -41,6 +41,7 @@ export function ListingDetailPeerPurchaseActions({
   makeOffer?: ListingMakeOfferConfig
 }) {
   const [loading, setLoading] = useState(false)
+  const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const authModal = useOptionalAuthModal()
   const router = useRouter()
@@ -66,8 +67,9 @@ export function ListingDetailPeerPurchaseActions({
         toast.error(r.error ?? "Could not add to cart")
         return
       }
-      toast.success("Saved to cart")
+      setCartAdded(true)
       window.dispatchEvent(new CustomEvent("cartUpdated"))
+      window.setTimeout(() => setCartAdded(false), 2000)
     } finally {
       setLoading(false)
     }
@@ -100,10 +102,12 @@ export function ListingDetailPeerPurchaseActions({
           >
             {loading ? (
               <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
+            ) : cartAdded ? (
+              <Check className="h-5 w-5 shrink-0" aria-hidden />
             ) : (
               <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
             )}
-            Add to cart
+            {cartAdded ? "Added" : "Add to cart"}
           </Button>
         ) : (
           <Button variant="outline" size="lg" className="min-h-touch flex-1 gap-2 justify-center" asChild>

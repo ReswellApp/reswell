@@ -6,10 +6,14 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
-import { Tag, Package, Type, X } from "lucide-react"
+import { SlidersHorizontal, Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
-import { searchSuggest } from "@/app/actions/marketplace"
+import {
+  searchBrandsCatalogSuggest,
+  searchSuggest,
+  type BrandCatalogSuggestRow,
+} from "@/app/actions/marketplace"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { useSearchSuggestPortalContainer } from "@/components/search-suggest-portal-context"
@@ -118,6 +122,18 @@ interface SearchInputWithSuggestProps {
    * Surfboards filter bar: match `/sell` title field dropdown — `rounded-md` panel, vertical brand rows.
    */
   variant?: "default" | "boards"
+  /**
+   * `brands` — `public.brands` directory (Elasticsearch when configured, else Supabase).
+   * `marketplace` — default marketplace listing suggestions.
+   */
+  suggestSource?: "marketplace" | "brands"
+  /** When the user picks a row from `suggestSource="brands"`. */
+  onCatalogBrandPicked?: (b: { id: string; name: string; slug: string }) => void
+  /** Fires when a `brands` search finishes (e.g. show “request brand” when count is 0). */
+  onBrandsSearchSettled?: (query: string, resultCount: number) => void
+  inputType?: "search" | "text"
+  id?: string
+  disabled?: boolean
 }
 
 function listingHref(listing: SuggestListing) {
@@ -165,10 +181,18 @@ export function SearchInputWithSuggest({
   onNavigate,
   onFocus: onFocusProp,
   variant = "default",
+  suggestSource = "marketplace",
+  onCatalogBrandPicked,
+  onBrandsSearchSettled,
+  inputType = "search",
+  id: inputId,
+  disabled = false,
 }: SearchInputWithSuggestProps) {
-  const boardsTitleStyle = variant === "boards"
+  const isBrands = suggestSource === "brands"
+  const boardsTitleStyle = variant === "boards" && !isBrands
   const panelTopRounded = boardsTitleStyle ? "rounded-t-md" : "rounded-t-2xl"
   const [suggestions, setSuggestions] = useState<SuggestResult | null>(null)
+  const [brandRows, setBrandRows] = useState<BrandCatalogSuggestRow[] | null>(null)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [dropdownRect, setDropdownRect] = useState<{
@@ -184,6 +208,8 @@ export function SearchInputWithSuggest({
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const onBrandsSearchSettledRef = useRef(onBrandsSearchSettled)
+  onBrandsSearchSettledRef.current = onBrandsSearchSettled
   const router = useRouter()
   /** Bumps when user dismisses or starts a new fetch; stale async results must not reopen the dropdown. */
   const suggestGenerationRef = useRef(0)
@@ -224,7 +250,7 @@ export function SearchInputWithSuggest({
   }
 
   useEffect(() => {
-    if (disableSuggest) return
+    if (suggestSource === "brands" || disableSuggest) return
     const q = value.trim()
     if (q.length < minLength) {
       invalidatePendingSuggest()
@@ -252,7 +278,58 @@ export function SearchInputWithSuggest({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [value, section, minLength, debounceMs, disableSuggest, autoOpenDropdownOnFetch])
+  }, [value, section, minLength, debounceMs, disableSuggest, autoOpenDropdownOnFetch, suggestSource])
+
+  useEffect(() => {
+    if (suggestSource !== "brands" || disableSuggest) return
+    const q = value.trim()
+    if (q.length < minLength) {
+      invalidatePendingSuggest()
+      setBrandRows(null)
+      setOpen(false)
+      setLoading(false)
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const generation = ++suggestGenerationRef.current
+      void (async () => {
+        if (generation !== suggestGenerationRef.current) return
+        if (q.length < minLength) return
+        setLoading(true)
+        try {
+          const rows = await searchBrandsCatalogSuggest(q)
+          if (generation !== suggestGenerationRef.current) return
+          setBrandRows(rows)
+          onBrandsSearchSettledRef.current?.(q, rows.length)
+          if (rows.length === 0) {
+            setOpen(false)
+            return
+          }
+          if (!autoOpenDropdownOnFetch) {
+            setOpen(false)
+            return
+          }
+          setOpen(isSearchInputFocused())
+        } finally {
+          if (generation === suggestGenerationRef.current) setLoading(false)
+        }
+      })()
+    }, debounceMs)
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+    }
+  }, [
+    value,
+    minLength,
+    debounceMs,
+    suggestSource,
+    disableSuggest,
+    autoOpenDropdownOnFetch,
+  ])
 
   const listings = suggestions?.listings ?? []
   const listingTitlesLower = new Set(listings.map((l) => l.title.toLowerCase()))
@@ -275,7 +352,13 @@ export function SearchInputWithSuggest({
     (listings.length > 0 || (suggestions.brands?.length ?? 0) > 0 || (suggestions.categories?.length ?? 0) > 0)
 
   const hasFallbackList = !disableSuggest && open && flatSuggestions.length > 0
-  const showDropdown = hasRichStrip || hasFallbackList
+  const showMarketplacePanel = suggestSource === "marketplace" && (hasRichStrip || hasFallbackList)
+  const showBrandsPanel =
+    suggestSource === "brands" &&
+    !disableSuggest &&
+    open &&
+    (brandRows?.length ?? 0) > 0
+  const showPanelForRect = showMarketplacePanel || showBrandsPanel
 
   /** When listings share the panel with brands/categories/suggestions, flex so listings scroll instead of clipping the footer. */
   const listingsSharePanelWithFooter =
@@ -285,7 +368,7 @@ export function SearchInputWithSuggest({
       flatSuggestions.length > 0)
 
   useEffect(() => {
-    if (!showDropdown || !containerRef.current || typeof document === "undefined") {
+    if (!showPanelForRect || !containerRef.current || typeof document === "undefined") {
       setDropdownRect(null)
       return
     }
@@ -327,7 +410,7 @@ export function SearchInputWithSuggest({
         vv.removeEventListener("scroll", update)
       }
     }
-  }, [showDropdown, suggestPortalContainer])
+  }, [showPanelForRect, suggestPortalContainer])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -358,6 +441,19 @@ export function SearchInputWithSuggest({
     setSuggestions(null)
   }
 
+  const handleBrandCatalogPick = (b: BrandCatalogSuggestRow) => {
+    invalidatePendingSuggest()
+    onChange(b.name)
+    onSelect?.(b.name)
+    onCatalogBrandPicked?.({ id: b.id, name: b.name, slug: b.slug })
+    setOpen(false)
+    setBrandRows(null)
+    setLoading(false)
+    if (inputRef.current && document.activeElement === inputRef.current) {
+      inputRef.current.blur()
+    }
+  }
+
   const panelLayout =
     dropdownRect && typeof window !== "undefined"
       ? getSuggestPanelLayout({
@@ -379,7 +475,7 @@ export function SearchInputWithSuggest({
     )
 
   const dropdownPanel =
-    showDropdown &&
+    showPanelForRect &&
     dropdownRect &&
     panelLayout &&
     typeof document !== "undefined" &&
@@ -412,7 +508,74 @@ export function SearchInputWithSuggest({
               }
         }
       >
-        {listings.length > 0 && (
+        {isBrands && showBrandsPanel && brandRows ? (
+          <>
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:px-4 sm:py-2.5">
+              <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">
+                Brands
+              </span>
+            </div>
+            <ul className="min-h-0 max-h-[min(42dvh,280px)] overflow-y-auto overscroll-contain py-1 sm:max-h-[min(45dvh,360px)]">
+              {brandRows.map((item) => {
+                const lineMeta = [
+                  item.location_label,
+                  item.lead_shaper_name,
+                ]
+                  .map((s) => (typeof s === "string" ? s.trim() : ""))
+                  .filter(Boolean)
+                  .join(" · ")
+                const desc = item.short_description?.trim()
+                const meta =
+                  lineMeta ||
+                  (desc
+                    ? desc.length > 120
+                      ? `${desc.slice(0, 117)}…`
+                      : desc
+                    : "Brand profile")
+                return (
+                  <li key={item.id} role="option">
+                    <button
+                      type="button"
+                      className="mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-left text-sm outline-none min-h-touch transition-colors hover:bg-muted/80 focus-visible:bg-muted/80 sm:gap-3 sm:rounded-xl sm:py-2.5"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleBrandCatalogPick(item)}
+                    >
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14 sm:rounded-lg">
+                        {item.logo_url ? (
+                          <Image
+                            src={item.logo_url}
+                            alt=""
+                            fill
+                            className="object-contain p-1.5"
+                            sizes="(max-width:640px) 48px, 56px"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-sm font-bold text-cerulean sm:text-base">
+                            {item.name.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:text-base">
+                          {item.name}
+                        </p>
+                        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
+                          {meta}
+                        </p>
+                      </div>
+                      <SlidersHorizontal
+                        className="h-4 w-4 shrink-0 self-center text-muted-foreground/80 sm:h-4 sm:w-4"
+                        aria-hidden
+                      />
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        ) : null}
+        {!isBrands && showMarketplacePanel && listings.length > 0 && (
           <div
             className={cn(
               "flex min-h-0 flex-col",
@@ -642,7 +805,7 @@ export function SearchInputWithSuggest({
         </div>
       )}
       <Input
-        type="search"
+        type={inputType}
         name={name}
         placeholder={placeholder}
         value={value}
@@ -652,6 +815,35 @@ export function SearchInputWithSuggest({
           if (disableSuggest) return
           const q = value.trim()
           if (q.length < minLength) return
+          if (suggestSource === "brands") {
+            if ((brandRows?.length ?? 0) > 0) {
+              setOpen(true)
+              return
+            }
+            if (debounceRef.current) clearTimeout(debounceRef.current)
+            debounceRef.current = setTimeout(() => {
+              const gen = ++suggestGenerationRef.current
+              void (async () => {
+                if (gen !== suggestGenerationRef.current) return
+                if (q.length < minLength) return
+                setLoading(true)
+                try {
+                  const rows = await searchBrandsCatalogSuggest(q)
+                  if (gen !== suggestGenerationRef.current) return
+                  setBrandRows(rows)
+                  onBrandsSearchSettledRef.current?.(q, rows.length)
+                  if (rows.length > 0) {
+                    setOpen(isSearchInputFocused())
+                  } else {
+                    setOpen(false)
+                  }
+                } finally {
+                  if (gen === suggestGenerationRef.current) setLoading(false)
+                }
+              })()
+            }, debounceMs)
+            return
+          }
           const s = suggestions
           const has =
             (s?.listings?.length ?? 0) > 0 ||
@@ -680,6 +872,8 @@ export function SearchInputWithSuggest({
           }, debounceMs)
         }}
         ref={inputRef}
+        id={inputId}
+        disabled={disabled}
         className={cn(
           leftIcon && "pl-10",
           showClear && (loading ? "pr-16" : "pr-10"),
@@ -688,7 +882,7 @@ export function SearchInputWithSuggest({
           inputClassName,
         )}
         autoComplete="off"
-        aria-expanded={showDropdown}
+        aria-expanded={showPanelForRect}
         aria-controls={listboxId}
         aria-autocomplete="list"
         autoFocus={autoFocus}
@@ -704,6 +898,7 @@ export function SearchInputWithSuggest({
             onChange("")
             setOpen(false)
             setSuggestions(null)
+            setBrandRows(null)
             setLoading(false)
           }}
         >

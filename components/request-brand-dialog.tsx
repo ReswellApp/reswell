@@ -79,7 +79,6 @@ export function RequestBrandDialog({
         toast.error(data.error || "Request failed.")
         return
       }
-      toast.success("Request received. Our team will review it. You can finish and publish your listing now.")
       onOpenChange(false)
       onSubmitted?.()
     } finally {

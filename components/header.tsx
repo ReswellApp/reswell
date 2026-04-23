@@ -37,7 +37,6 @@ import {
   UserCircle,
   LayoutDashboard,
   Banknote,
-  Clock,
   ChevronDown,
   ShoppingCart,
   Handshake,
@@ -1054,17 +1053,6 @@ export function Header() {
               </Link>
             </Button>
 
-            <Link href="/feed">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden sm:flex h-10 w-10 text-foreground hover:bg-muted"
-                aria-label="Feed — new listings and recently sold"
-              >
-                <Clock className="h-6 w-6" />
-              </Button>
-            </Link>
-
             <Link
               href={
                 user
@@ -1312,14 +1300,6 @@ export function Header() {
                 </Link>
               ))}
               <hr className="my-2 border-border" />
-              <Link
-                href="/feed"
-                onClick={onMobileDrawerLinkClick}
-                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
-              >
-                <Clock className="h-5 w-5 shrink-0" aria-hidden />
-                Feed
-              </Link>
               <Link
                 href="/cart"
                 onClick={onMobileDrawerLinkClick}

@@ -138,7 +138,13 @@ export default function AdminSettingsPage() {
         toast.error(msg)
         return
       }
-      toast.success(`Reindex complete: ${data.indexed} listings indexed${data.errors ? `, ${data.errors} errors` : ''}`)
+      const brandsPart =
+        typeof data.brandsIndexed === "number"
+          ? `, ${data.brandsIndexed} brands in directory index${data.brandErrors ? ` (${data.brandErrors} brand errors)` : ""}`
+          : ""
+      toast.success(
+        `Reindex complete: ${data.indexed} listings indexed${data.errors ? `, ${data.errors} listing errors` : ""}${brandsPart}`,
+      )
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Reindex failed'
       toast.error(msg)
@@ -262,7 +268,8 @@ export default function AdminSettingsPage() {
             Search index (Elasticsearch)
           </CardTitle>
           <p className="text-sm text-muted-foreground font-normal">
-            Rebuild the search index from your listings. Use after adding Elasticsearch, or if search results seem stale.
+            Rebuild listing search and the brand directory index used for sell-form and nav brand typeahead. Use after adding
+            Elasticsearch, or if results seem stale.
           </p>
         </CardHeader>
         <CardContent>

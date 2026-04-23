@@ -180,7 +180,6 @@ export function BrandEditorDialog({
           toast.error(typeof json.error === "string" ? json.error : "Could not create brand")
           return
         }
-        toast.success("Brand created")
         onOpenChange(false)
         onSaved?.()
         router.push(`${BRANDS_BASE}/${json.slug}`)
@@ -210,7 +209,6 @@ export function BrandEditorDialog({
         toast.error(typeof json.error === "string" ? json.error : "Could not save")
         return
       }
-      toast.success("Brand updated")
       onOpenChange(false)
       onSaved?.()
       if (json.slug && json.slug !== brand.slug) {
