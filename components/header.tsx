@@ -1013,6 +1013,23 @@ export function Header() {
               </div>
             ) : null}
 
+            {/* Mobile-only Sign in button: shown to the left of the hamburger when signed out.
+                Hidden sm+ since the inline "Log in" / "Sign up" text links take over. */}
+            {authLoaded && !user && (
+              <Link
+                href="/auth/login"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                  e.preventDefault()
+                  openLogin()
+                }}
+                className="inline-flex h-10 shrink-0 items-center rounded-lg border border-border bg-white px-3 text-[15px] font-medium text-foreground transition-colors hover:bg-muted sm:hidden"
+                aria-label="Sign in"
+              >
+                Sign in
+              </Link>
+            )}
+
             {/* Menu toggle: phone & tablet only (below lg). Desktop/Mac use category bar + primary nav. */}
             <button
               type="button"
@@ -1087,33 +1104,19 @@ export function Header() {
                 />
               </SiteSearchBar>
             </div>
-            {!user && (
-              <div className="mb-6 flex flex-col gap-1">
-                <Link
-                  href="/auth/login"
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openLogin()
-                    queueMicrotask(() => setMobileMenuOpen(false))
-                  }}
-                  className="cat-link block min-h-touch rounded-lg px-2 py-3 text-lg font-medium transition-colors hover:bg-muted/50"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/auth/sign-up"
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openSignUp()
-                    queueMicrotask(() => setMobileMenuOpen(false))
-                  }}
-                  className="cat-link block min-h-touch rounded-lg px-2 py-3 text-lg font-medium transition-colors hover:bg-muted/50"
-                >
-                  Get Started
-                </Link>
-              </div>
+            {!user && authLoaded && (
+              <Link
+                href="/auth/login"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                  e.preventDefault()
+                  openLogin()
+                  queueMicrotask(() => setMobileMenuOpen(false))
+                }}
+                className="mb-6 flex min-h-touch items-center justify-center rounded-lg bg-primary px-4 py-3 text-base font-medium text-primary-foreground no-underline transition-colors hover:bg-primary/90 hover:no-underline"
+              >
+                Sign in or create account
+              </Link>
             )}
             {user && authLoaded && (
               <Link

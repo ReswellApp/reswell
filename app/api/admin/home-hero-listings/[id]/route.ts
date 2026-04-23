@@ -1,0 +1,27 @@
+import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
+import { requireAdmin } from "@/lib/brands/admin-server"
+import { deleteHomeHeroListingService } from "@/lib/services/homeHeroListings"
+
+/** UUIDs only — row primary keys in `home_hero_listings`. */
+const ROW_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export async function DELETE(_request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const gate = await requireAdmin()
+  if (!gate.ok) return gate.response
+
+  const { id: raw } = await ctx.params
+  const id = typeof raw === "string" ? decodeURIComponent(raw.trim()) : ""
+  if (!id || !ROW_ID_RE.test(id)) {
+    return NextResponse.json({ error: "Invalid hero listing id" }, { status: 400 })
+  }
+
+  const result = await deleteHomeHeroListingService(id)
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
+  }
+
+  revalidatePath("/", "layout")
+  revalidatePath("/", "page")
+  return NextResponse.json({ data: { deleted: true } }, { status: 200 })
+}

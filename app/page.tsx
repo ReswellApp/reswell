@@ -2,7 +2,9 @@ import Link from "next/link"
 import Image from "next/image"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { FALLBACK_HOME_HERO_SLIDE_PATHS, HeroSlideshow } from "@/components/hero-slideshow"
+import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
 import { normalizeHeroSlideUrl } from "@/lib/home-hero-slide-urls"
+import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -78,25 +80,40 @@ export const dynamic = "force-dynamic"
 export default async function HomePage() {
   const supabase = await createClient()
 
-  const { data: heroListingCandidates } = await supabase
-    .from("listings")
-    .select("listing_images (url, is_primary)")
-    .eq("status", "active")
-    .eq("section", "surfboards")
-    .eq("hidden_from_site", false)
-    .order("created_at", { ascending: false })
-    .limit(24)
+  // Admins can curate specific listings in `home_hero_listings`. When any curated rows exist,
+  // the hero uses ONLY those images (already filtered to active + visible). Otherwise, fall
+  // back to the most-recent active surfboard listings, then to static assets.
+  const curatedHeroUrls = await listHomeHeroCuratedSlideUrls(supabase)
 
   const heroSlideUrls: string[] = []
-  const heroSeen = new Set<string>()
-  for (const row of heroListingCandidates ?? []) {
-    const src = listingHeroSlideSrc(row.listing_images as ListingImageForCard[] | null)
-    if (!src) continue
-    const key = normalizeHeroSlideUrl(src)
-    if (!key || heroSeen.has(key)) continue
-    heroSeen.add(key)
-    heroSlideUrls.push(src)
-    if (heroSlideUrls.length >= 5) break
+  if (curatedHeroUrls.length > 0) {
+    const heroSeen = new Set<string>()
+    for (const src of curatedHeroUrls) {
+      const key = normalizeHeroSlideUrl(src)
+      if (!key || heroSeen.has(key)) continue
+      heroSeen.add(key)
+      heroSlideUrls.push(src)
+    }
+  } else {
+    const { data: heroListingCandidates } = await supabase
+      .from("listings")
+      .select("listing_images (url, is_primary)")
+      .eq("status", "active")
+      .eq("section", "surfboards")
+      .eq("hidden_from_site", false)
+      .order("created_at", { ascending: false })
+      .limit(24)
+
+    const heroSeen = new Set<string>()
+    for (const row of heroListingCandidates ?? []) {
+      const src = listingHeroSlideSrc(row.listing_images as ListingImageForCard[] | null)
+      if (!src) continue
+      const key = normalizeHeroSlideUrl(src)
+      if (!key || heroSeen.has(key)) continue
+      heroSeen.add(key)
+      heroSlideUrls.push(src)
+      if (heroSlideUrls.length >= 5) break
+    }
   }
   if (heroSlideUrls.length === 0) {
     heroSlideUrls.push(...FALLBACK_HOME_HERO_SLIDE_PATHS)
@@ -308,6 +325,13 @@ export default async function HomePage() {
             slides={heroSlideUrls}
           />
           <div className="absolute inset-0 z-[1] bg-white/55" aria-hidden />
+          {/* Admin-only CMS control (renders nothing for non-admins). Positioned top-right of the
+              hero with safe-area padding so the + button never collides with the header. */}
+          <div className="pointer-events-none absolute right-4 top-4 z-20 flex sm:right-6 sm:top-6">
+            <div className="pointer-events-auto">
+              <HomeHeroSlideshowAdminBar />
+            </div>
+          </div>
           <div className="container mx-auto relative z-10 py-12 sm:py-14 md:py-32">
             <div className="mx-auto max-w-3xl text-center">
               <Badge variant="secondary" className="mb-3.5 text-black md:mb-4">

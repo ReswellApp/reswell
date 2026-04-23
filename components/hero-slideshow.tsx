@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import * as React from "react"
+import ReactDOM from "react-dom"
 
 /** Default hero art when there are no recent listing images to show. */
 export const FALLBACK_HOME_HERO_SLIDE_PATHS = [
@@ -24,6 +25,17 @@ const SECONDS_PER_SLIDE = 14
  */
 export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
   if (slides.length === 0) return null
+
+  // Preload every slide as soon as the page streams in so the carousel never
+  // shows a partially-loaded image on refresh. First slide gets high priority
+  // (it's visible immediately / LCP); the rest get low to avoid contending
+  // with higher-value resources.
+  for (let i = 0; i < slides.length; i++) {
+    ReactDOM.preload(slides[i], {
+      as: "image",
+      fetchPriority: i === 0 ? "high" : "low",
+    })
+  }
 
   const slideCount = slides.length
   const slidesLoop = [...slides, slides[0]]
@@ -84,8 +96,9 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
                 quality={100}
                 sizes="100vw"
                 className="object-cover object-center"
-                loading={i === 0 ? "eager" : "lazy"}
+                loading="eager"
                 priority={i === 0}
+                fetchPriority={i === 0 ? "high" : "auto"}
                 unoptimized={!isRemote}
               />
             </div>

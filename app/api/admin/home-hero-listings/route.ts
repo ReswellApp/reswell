@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
-import { adminHomeHeroSlideBodySchema } from "@/lib/validations/home-hero-slides"
+import { adminHomeHeroListingBodySchema } from "@/lib/validations/home-hero-listings"
 import {
-  addHomeHeroSlideService,
-  listHomeHeroSlidesForAdminService,
-} from "@/lib/services/homeHeroSlides"
+  addHomeHeroListingService,
+  listHomeHeroListingsForAdminService,
+} from "@/lib/services/homeHeroListings"
 
 export async function GET() {
   const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
-  const result = await listHomeHeroSlidesForAdminService(gate.ctx.supabase)
+  const result = await listHomeHeroListingsForAdminService(gate.ctx.supabase)
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 })
   }
-  return NextResponse.json({ data: { slides: result.slides } }, { status: 200 })
+  return NextResponse.json({ data: { rows: result.rows } }, { status: 200 })
 }
 
 export async function POST(request: Request) {
@@ -29,15 +29,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
   }
 
-  const parsed = adminHomeHeroSlideBodySchema.safeParse(json)
+  const parsed = adminHomeHeroListingBodySchema.safeParse(json)
   if (!parsed.success) {
     const err = parsed.error.flatten().formErrors.join(", ") || "Invalid input"
     return NextResponse.json({ error: err }, { status: 400 })
   }
 
-  const result = await addHomeHeroSlideService(parsed.data.image_url)
+  const result = await addHomeHeroListingService(parsed.data.listing_id)
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 500 })
+    return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
   revalidatePath("/", "layout")
