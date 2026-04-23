@@ -1,5 +1,5 @@
-import { RouteTransitionMark } from "@/components/route-transition-mark"
+import { DashboardPageSkeleton } from "@/components/features/dashboard/dashboard-page-skeleton"
 
 export default function DashboardListingsLoading() {
-  return <RouteTransitionMark variant="overlay" />
+  return <DashboardPageSkeleton />
 }

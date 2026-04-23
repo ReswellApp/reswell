@@ -63,6 +63,7 @@ export async function POST(req: Request) {
     user.id,
     parsed.data.amount,
     parsed.data.speed,
+    parsed.data.externalAccountId,
   )
   if (!result.ok) {
     return NextResponse.json(

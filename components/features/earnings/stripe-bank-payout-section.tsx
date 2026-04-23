@@ -138,6 +138,8 @@ export function StripeBankPayoutSection({
   const [removeTarget, setRemoveTarget] = useState<StripeConnectBankAccountRow | null>(null)
   const [removeBusy, setRemoveBusy] = useState(false)
   const [defaultBusyId, setDefaultBusyId] = useState<string | null>(null)
+  /** Selected Stripe `ba_` id for the cash-out dialog (must match a linked bank when sent to the API). */
+  const [cashOutDestinationId, setCashOutDestinationId] = useState("")
   /** Full-screen layer inside the cash-out dialog for readable payout errors (replaces easy-to-miss toasts). */
   const [cashOutError, setCashOutError] = useState<{ title: string; detail: string } | null>(null)
 
@@ -165,12 +167,20 @@ export function StripeBankPayoutSection({
     bankRows.length > 0 &&
     Boolean(bankRows.some((b) => b.last4))
 
+  const banksWithStripeIds = useMemo(
+    () => bankRows.filter((b) => Boolean(b.id?.trim().startsWith("ba_"))),
+    [bankRows],
+  )
+
   const openCashOut = useCallback(() => {
     setCashOutError(null)
     setAmountStr(availableBalance > 0 ? availableBalance.toFixed(2) : "")
     setPayoutSpeed("standard")
+    const defaultPick =
+      banksWithStripeIds.find((b) => b.defaultForCurrency) ?? banksWithStripeIds[0] ?? null
+    setCashOutDestinationId(defaultPick?.id ?? "")
     setCashOpen(true)
-  }, [availableBalance])
+  }, [availableBalance, banksWithStripeIds])
 
   const parsedAmount = useMemo(() => {
     const n = parseFloat(amountStr)
@@ -195,10 +205,18 @@ export function StripeBankPayoutSection({
     }
     setSubmitting(true)
     try {
+      const payload: { amount: number; speed: typeof payoutSpeed; externalAccountId?: string } = {
+        amount,
+        speed: payoutSpeed,
+      }
+      if (cashOutDestinationId.trim().startsWith("ba_")) {
+        payload.externalAccountId = cashOutDestinationId.trim()
+      }
+
       const res = await fetch("/api/payouts/stripe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, speed: payoutSpeed }),
+        body: JSON.stringify(payload),
       })
       const data = (await res.json()) as {
         error?: string
@@ -248,7 +266,7 @@ export function StripeBankPayoutSection({
     } finally {
       setSubmitting(false)
     }
-  }, [amountStr, payoutSpeed, onRefresh, onCashOutSettled])
+  }, [amountStr, payoutSpeed, cashOutDestinationId, onRefresh, onCashOutSettled])
 
   const setDefaultBank = useCallback(
     async (externalAccountId: string) => {
@@ -372,20 +390,33 @@ export function StripeBankPayoutSection({
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   Payout accounts
                 </p>
-                <Button
-                  type="button"
-                  className={cn(
-                    "rounded-full font-medium",
-                    "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
-                  )}
-                  onClick={openPayoutManagement}
-                >
-                  Manage payout banks
-                </Button>
+                <div className="flex flex-wrap items-center gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full font-medium"
+                    onClick={() => {
+                      setSetupUseManagement(true)
+                      setSetupOpen(true)
+                    }}
+                  >
+                    Add another bank
+                  </Button>
+                  <Button
+                    type="button"
+                    className={cn(
+                      "rounded-full font-medium",
+                      "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
+                    )}
+                    onClick={openPayoutManagement}
+                  >
+                    Manage payout banks
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground leading-snug">
-                Reswell can’t store bank numbers — this opens Stripe’s secure form to add, change, or remove payout
-                accounts (remove usually requires two linked banks first).
+                Reswell can’t store bank numbers — Add another bank or Manage opens Stripe’s secure form to link
+                additional accounts, change details, or remove one (removal usually needs two banks first).
               </p>
               <ul className="space-y-2">
                 {bankRows.map((row) => {
@@ -592,7 +623,51 @@ export function StripeBankPayoutSection({
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-2">
-            <div className="space-y-2">
+              {banksWithStripeIds.length > 1 ? (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Pay out to</Label>
+                  <RadioGroup
+                    value={cashOutDestinationId}
+                    onValueChange={setCashOutDestinationId}
+                    className="grid gap-2"
+                  >
+                    {banksWithStripeIds.map((b) => (
+                      <label
+                        key={b.id}
+                        htmlFor={`cash-dest-${b.id}`}
+                        className={cn(
+                          "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
+                          cashOutDestinationId === b.id && "ring-2 ring-primary/30 bg-muted/20",
+                        )}
+                      >
+                        <RadioGroupItem value={b.id} id={`cash-dest-${b.id}`} className="mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="font-medium text-sm leading-tight block truncate">
+                            {b.bankName ?? "Bank account"}{" "}
+                            <span className="text-muted-foreground font-normal">
+                              ····{b.last4 ?? "••••"}
+                            </span>
+                            {b.defaultForCurrency ? (
+                              <Badge
+                                variant="secondary"
+                                className="ml-2 align-middle text-[10px] uppercase tracking-wide"
+                              >
+                                Default
+                              </Badge>
+                            ) : null}
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </RadioGroup>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    The account you pick becomes your default for future bank cash-outs until you change it in the
+                    list above or in Stripe.
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="space-y-2">
               <Label htmlFor="stripe-cash-amount">Amount</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">

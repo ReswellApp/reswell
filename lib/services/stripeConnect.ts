@@ -446,6 +446,32 @@ export async function setDefaultConnectBankAccount(
   return { ok: true }
 }
 
+/**
+ * Ensures `externalAccountId` is a linked bank on the user’s Connect account and is the default
+ * payout destination. Standard ACH follows Stripe’s automatic payout to the default bank; instant
+ * payouts use the default as well unless we set it here first.
+ */
+export async function ensureCashOutDestinationBank(
+  supabase: SupabaseClient,
+  userId: string,
+  stripeAccountId: string,
+  externalAccountId: string,
+): Promise<ConnectBankMutationResult> {
+  const banks = await listExternalBankAccountsForConnectAccount(stripeAccountId)
+  const found = banks.find((b) => b.id === externalAccountId)
+  if (!found) {
+    return {
+      ok: false,
+      error: "That bank account isn’t linked to your payout profile. Refresh the page and try again.",
+      status: 400,
+    }
+  }
+  if (found.defaultForCurrency) {
+    return { ok: true }
+  }
+  return setDefaultConnectBankAccount(supabase, userId, externalAccountId)
+}
+
 export type ConnectCashOutResult =
   | {
       ok: true
@@ -467,6 +493,7 @@ export async function cashOutToStripeConnectedAccount(
   userId: string,
   amountUsdRaw: number,
   speed: "standard" | "instant" = "standard",
+  externalAccountId?: string,
 ): Promise<ConnectCashOutResult> {
   const amountUsd = roundMoney(amountUsdRaw)
   if (amountUsd < 10) {
@@ -604,6 +631,18 @@ export async function cashOutToStripeConnectedAccount(
       error:
         "Stripe hasn’t finished activating transfers on your payout profile. Open Manage payout banks and complete any verification Stripe requests.",
       status: 400,
+    }
+  }
+
+  if (externalAccountId?.trim()) {
+    const dest = await ensureCashOutDestinationBank(
+      supabase,
+      userId,
+      row.stripe_account_id,
+      externalAccountId.trim(),
+    )
+    if (!dest.ok) {
+      return { ok: false, error: dest.error, status: dest.status }
     }
   }
 

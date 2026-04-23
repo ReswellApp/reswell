@@ -13,6 +13,7 @@ import { metadataForListingDetail } from "@/lib/listing-metadata"
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
+import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 
 export async function generateMetadata(props: {
   params: Promise<{ listing: string }>
@@ -82,12 +83,19 @@ export default async function ListingDetailPage(props: {
     redirect(`/l/${redirectSlug}`)
   }
 
-  switch (listing.section) {
-    case "surfboards":
-      return <SurfboardListingDetailPage listingParam={listingParam} />
-    case "new":
-      return <ShopListingDetailPage listingParam={listingParam} />
-    default:
-      notFound()
-  }
+  return (
+    <>
+      <ListingViewTracker listingId={listing.id} />
+      {(() => {
+        switch (listing.section) {
+          case "surfboards":
+            return <SurfboardListingDetailPage listingParam={listingParam} />
+          case "new":
+            return <ShopListingDetailPage listingParam={listingParam} />
+          default:
+            notFound()
+        }
+      })()}
+    </>
+  )
 }
