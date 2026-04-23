@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, type ReactNode } from "react"
+import { useLayoutEffect, useRef, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
 interface FadeInSectionProps {
@@ -24,18 +24,34 @@ export function FadeInSection({
 }: FadeInSectionProps) {
   const ref = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
+
+    const markVisible = () => {
+      el.classList.add("is-visible")
+    }
+
+    // Avoid a post-hydration “blank band” for sections already in the viewport: run before paint
+    // so the first paint matches the scroll-driven case as closely as possible.
+    const rect = el.getBoundingClientRect()
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    const overlapsViewport =
+      rect.top < vh && rect.bottom > 0 && rect.left < vw && rect.right > 0
+    if (overlapsViewport) {
+      markVisible()
+      return
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          el.classList.add("is-visible")
+          markVisible()
           observer.unobserve(el)
         }
       },
-      { threshold },
+      { threshold, rootMargin: "0px 0px 12% 0px" },
     )
 
     observer.observe(el)

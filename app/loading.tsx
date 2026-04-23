@@ -1,5 +1,5 @@
-import { SurfboardPageLoading } from "@/components/listing-detail-page-loading"
+import { RootRouteLoading } from "@/components/root-route-loading"
 
 export default function RootLoading() {
-  return <SurfboardPageLoading withShell={false} />
+  return <RootRouteLoading />
 }
