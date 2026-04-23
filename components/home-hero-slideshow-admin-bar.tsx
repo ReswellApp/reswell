@@ -15,8 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { getAdminSession } from "@/app/actions/account"
+import { cn } from "@/lib/utils"
 
 /** GET /api/admin/home-hero-listings returns these rows (joined listing metadata). */
 type CuratedHeroRow = {
@@ -42,7 +41,7 @@ type SearchHit = {
 }
 
 const plusButtonClass =
-  "h-10 w-10 shrink-0 rounded-full bg-foreground text-background shadow-soft hover:bg-foreground/90"
+  "h-10 w-10 shrink-0 rounded-full border-2 border-white/90 bg-foreground text-background shadow-md ring-2 ring-black/5 hover:bg-foreground/90"
 
 const SEARCH_DEBOUNCE_MS = 200
 
@@ -50,12 +49,10 @@ const SEARCH_DEBOUNCE_MS = 200
  * Admin-only CMS control for the homepage hero carousel. Restores the "+" affordance in the
  * top-right of the hero and opens a dialog where admins pick which active listings should
  * appear. The homepage reads `home_hero_listings` in server-render and falls back to most-
- * recent active listings when empty.
+ * recent active listings when empty. Pass `isAdmin` from the server page (same session as RSC).
  */
-export function HomeHeroSlideshowAdminBar() {
+export function HomeHeroSlideshowAdminBar({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter()
-  const [isAdmin, setIsAdmin] = React.useState(false)
-  const [loaded, setLoaded] = React.useState(false)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const [curated, setCurated] = React.useState<CuratedHeroRow[]>([])
@@ -66,23 +63,6 @@ export function HomeHeroSlideshowAdminBar() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [searchHits, setSearchHits] = React.useState<SearchHit[]>([])
   const [searching, setSearching] = React.useState(false)
-
-  React.useEffect(() => {
-    let cancelled = false
-    getAdminSession()
-      .then((d: { isAdmin?: boolean }) => {
-        if (!cancelled) {
-          setIsAdmin(d.isAdmin === true)
-          setLoaded(true)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoaded(true)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   const loadCurated = React.useCallback(async () => {
     setLoadingCurated(true)
@@ -187,7 +167,7 @@ export function HomeHeroSlideshowAdminBar() {
     }
   }
 
-  if (!loaded || !isAdmin) return null
+  if (!isAdmin) return null
 
   return (
     <>
@@ -203,18 +183,23 @@ export function HomeHeroSlideshowAdminBar() {
       </Button>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent
+          className={cn(
+            "grid max-h-[min(90dvh,720px)] w-[min(100%,calc(100vw-1.5rem))] min-w-0 max-w-xl gap-4 overflow-x-hidden overflow-y-auto sm:max-w-xl",
+            "p-4 sm:p-6",
+          )}
+        >
+          <DialogHeader className="shrink-0 min-w-0 text-left sm:text-left">
             <DialogTitle>Homepage hero listings</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-pretty [overflow-wrap:anywhere]">
               Pick which active listings appear in the homepage hero carousel. While there is at
               least one pick, the hero uses <strong>only</strong> those listings&rsquo; primary
               images. Remove every pick to fall back to the 5 most-recently added listings.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-6">
-            <section className="flex flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-6">
+            <section className="flex min-w-0 flex-col gap-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-foreground">
                   Featured ({curated.length})
@@ -229,8 +214,8 @@ export function HomeHeroSlideshowAdminBar() {
                   No picks yet. The hero is using the 5 most-recent active listings.
                 </p>
               ) : (
-                <ScrollArea className="max-h-[min(220px,30vh)] pr-3">
-                  <ul className="space-y-2">
+                <div className="max-h-[min(220px,30vh)] min-w-0 overflow-y-auto overflow-x-hidden overscroll-y-contain">
+                  <ul className="min-w-0 space-y-2 pr-0.5">
                     {curated.map((row) => (
                       <HeroListingRow
                         key={row.id}
@@ -264,19 +249,19 @@ export function HomeHeroSlideshowAdminBar() {
                       />
                     ))}
                   </ul>
-                </ScrollArea>
+                </div>
               )}
             </section>
 
-            <section className="flex flex-col gap-2">
+            <section className="flex min-w-0 flex-col gap-2">
               <h3 className="text-sm font-semibold text-foreground">Add a listing</h3>
-              <div className="relative">
+              <div className="relative w-full min-w-0 max-w-full">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search active listings by title…"
-                  className="pl-9"
+                  className="w-full min-w-0 pl-9"
                   aria-label="Search listings"
                 />
               </div>
@@ -291,8 +276,8 @@ export function HomeHeroSlideshowAdminBar() {
                     : "No active listings yet."}
                 </p>
               ) : (
-                <ScrollArea className="max-h-[min(300px,40vh)] pr-3">
-                  <ul className="space-y-2">
+                <div className="max-h-[min(300px,40vh)] min-w-0 overflow-y-auto overflow-x-hidden overscroll-y-contain">
+                  <ul className="min-w-0 space-y-2 pr-0.5">
                     {searchHits.map((hit) => (
                       <HeroListingRow
                         key={hit.id}
@@ -331,7 +316,7 @@ export function HomeHeroSlideshowAdminBar() {
                       />
                     ))}
                   </ul>
-                </ScrollArea>
+                </div>
               )}
             </section>
           </div>
@@ -355,7 +340,7 @@ function HeroListingRow({
   action: React.ReactNode
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-border/80 bg-muted/20 p-2">
+    <li className="flex w-full min-w-0 max-w-full items-center gap-2 rounded-lg border border-border/80 bg-muted/20 p-2 sm:gap-3">
       <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
         {imageUrl ? (
           <Image
@@ -372,22 +357,24 @@ function HeroListingRow({
           </div>
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 overflow-hidden">
         <Link
           href={href}
           target="_blank"
           rel="noreferrer"
-          className="group inline-flex min-w-0 max-w-full items-center gap-1.5 text-sm font-medium text-foreground hover:text-foreground/80"
+          className="group flex min-w-0 max-w-full items-start gap-1.5 text-sm font-medium text-foreground hover:text-foreground/80"
           title={title}
         >
-          <span className="line-clamp-1 min-w-0 truncate">{title}</span>
-          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground/80" />
+          <span className="line-clamp-2 min-w-0 break-words [overflow-wrap:anywhere]">{title}</span>
+          <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground/80" />
         </Link>
         {warning ? (
-          <p className="mt-0.5 text-[11px] text-amber-700 dark:text-amber-400">{warning}</p>
+          <p className="mt-0.5 break-words text-[11px] text-amber-700 [overflow-wrap:anywhere] dark:text-amber-400">
+            {warning}
+          </p>
         ) : null}
       </div>
-      {action}
+      <div className="shrink-0 self-center">{action}</div>
     </li>
   )
 }

@@ -138,15 +138,10 @@ function WalletPaymentRequestButton({
             onConfirm={handleConfirm}
           />
         </div>
-        {applePayVisible === false ? (
+        {applePayVisible === false && (
           <p className="text-[11px] text-neutral-500">
             Apple Pay isn’t available in this browser. Open <span className="font-medium">Safari</span> on a Mac or
             iPhone with a card in Apple Wallet to see the button, or pay with card below.
-          </p>
-        ) : (
-          <p className="text-[11px] text-neutral-400">
-            Same order total as below. Requires HTTPS, an Apple Wallet card, and your domain registered under Stripe →
-            Payment method domains.
           </p>
         )}
       </div>

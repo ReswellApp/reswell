@@ -299,6 +299,11 @@ export default async function HomePage() {
       .slice(0, 4) ?? []
 
   const { data: { user } } = await supabase.auth.getUser()
+  const { data: homeHeroAdminProfile } = user
+    ? await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle()
+    : { data: null }
+  const isHomeHeroAdmin = homeHeroAdminProfile?.is_admin === true
+
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
@@ -327,9 +332,10 @@ export default async function HomePage() {
           <div className="absolute inset-0 z-[1] bg-white/55" aria-hidden />
           {/* Admin-only CMS control (renders nothing for non-admins). Positioned top-right of the
               hero with safe-area padding so the + button never collides with the header. */}
-          <div className="pointer-events-none absolute right-4 top-4 z-20 flex sm:right-6 sm:top-6">
+          {/* Sticky site header is z-50 — hero CMS control must sit above it when the bar overlaps. */}
+          <div className="pointer-events-none absolute right-3 top-3 z-[60] flex sm:right-5 sm:top-5">
             <div className="pointer-events-auto">
-              <HomeHeroSlideshowAdminBar />
+              <HomeHeroSlideshowAdminBar isAdmin={isHomeHeroAdmin} />
             </div>
           </div>
           <div className="container mx-auto relative z-10 py-12 sm:py-14 md:py-32">
