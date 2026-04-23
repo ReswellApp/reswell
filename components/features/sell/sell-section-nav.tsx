@@ -106,7 +106,7 @@ export function SellSectionNavHorizontal({
 }
 
 /**
- * Desktop sidebar: dots on a vertical rail with section labels; completed steps show a checkmark.
+ * Desktop sidebar: vertical stepper (bold rail + rings) with section labels; completed steps are solid with a check.
  */
 export function SellSectionNav({
   items,
@@ -123,13 +123,13 @@ export function SellSectionNav({
       aria-label="Listing form sections"
       className={cn("sticky top-24", className)}
     >
-      <div className="w-full overflow-auto">
-        <div className="relative py-2">
+      <div className="w-full overflow-auto rounded-xl bg-muted px-3 py-6 xl:px-4">
+        <div className="relative">
           <div
-            className="absolute left-[10px] top-2.5 bottom-2.5 w-px -translate-x-1/2 bg-foreground/25"
+            className="absolute left-3 top-3 bottom-3 w-[3px] -translate-x-1/2 bg-foreground"
             aria-hidden
           />
-          <ul className="relative m-0 list-none space-y-5 p-0">
+          <ul className="relative m-0 list-none space-y-8 p-0">
             {items.map((item) => {
               const complete = sectionCompletion?.[item.id] === true
               return (
@@ -141,23 +141,29 @@ export function SellSectionNav({
                       complete ? `${item.label}, completed` : `Go to ${item.label}`
                     }
                     className={cn(
-                      "group flex w-full items-start gap-2.5 rounded-sm text-left",
+                      "group flex w-full items-start gap-3 rounded-sm text-left",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     )}
                   >
                     <span
-                      className="relative z-10 mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground transition-opacity group-hover:opacity-90"
+                      className={cn(
+                        "relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-opacity",
+                        "group-hover:opacity-90",
+                        complete
+                          ? "bg-foreground"
+                          : "border-[3px] border-foreground bg-background",
+                      )}
                       aria-hidden
                     >
                       {complete ? (
                         <Check
-                          className="h-3 w-3 text-background"
+                          className="h-3.5 w-3.5 text-background"
                           strokeWidth={3}
                           aria-hidden
                         />
                       ) : null}
                     </span>
-                    <span className="min-w-0 max-w-[13rem] pt-0.5 text-sm leading-snug text-foreground group-hover:underline group-hover:underline-offset-4">
+                    <span className="min-w-0 max-w-[13rem] pt-1 text-sm leading-snug text-foreground group-hover:underline group-hover:underline-offset-4">
                       {item.label}
                     </span>
                   </button>

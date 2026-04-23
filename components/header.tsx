@@ -1005,7 +1005,7 @@ export function Header() {
               asChild
               variant="ghost"
               size="icon"
-              className="h-10 w-10 text-foreground hover:bg-muted lg:hidden"
+              className="h-10 w-10 shrink-0 text-foreground hover:bg-muted"
             >
               <Link
                 href={
@@ -1025,31 +1025,6 @@ export function Header() {
                 aria-label="Create listing"
               >
                 <Plus className="h-[22px] w-[22px]" aria-hidden />
-              </Link>
-            </Button>
-
-            <Button
-              asChild
-              size="default"
-              className="hidden shrink-0 px-5 lg:inline-flex"
-            >
-              <Link
-                href={
-                  user
-                    ? "/sell"
-                    : `/auth/login?redirect=${encodeURIComponent("/sell")}`
-                }
-                onClick={
-                  user
-                    ? undefined
-                    : (e) => {
-                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                        e.preventDefault()
-                        openLogin("/sell")
-                      }
-                }
-              >
-                Sell your Board
               </Link>
             </Button>
 
