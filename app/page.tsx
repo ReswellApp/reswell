@@ -11,15 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  ArrowRight,
-  MapPin,
-  Shield,
-  MessageSquare,
-  Recycle,
-  Users,
-  Store,
-} from "lucide-react"
+import { ArrowRight, MapPin } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
@@ -52,28 +44,35 @@ const categories = surfboardBrowseLinks.map((c) => ({
   slug: boardBrowseSlugFromHref(c.href),
 }))
 
-const features = [
-  {
-    icon: Recycle,
-    title: "Sustainable Surfing",
-    description: "Give your gear a second life and reduce waste in the surfing community.",
-  },
-  {
-    icon: Shield,
-    title: "Secure Transactions",
-    description: "Protected payments and verified sellers for peace of mind.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Direct Communication",
-    description: "Chat directly with buyers and sellers to ask questions and negotiate.",
-  },
-  {
-    icon: MapPin,
-    title: "Local Pickup",
-    description: "Find surfboards near you for in-person inspection and pickup.",
-  },
-]
+const profilePublicFields =
+  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+
+const verifiedForSpotlightFields =
+  "id, seller_slug, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified, shop_verified_at, updated_at"
+
+const listingWithProfileSelect = `
+  *,
+  listing_images (url, thumbnail_url, sort_order, is_primary),
+  profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
+  categories (name)
+`
+
+const listingWithProfileSelectVerified = `
+  *,
+  listing_images (url, thumbnail_url, sort_order, is_primary),
+  profiles!listings_user_id_fkey (display_name, avatar_url, sales_count, shop_verified),
+  categories (name)
+`
+
+const featuredNewSelect = `
+  id,
+  slug,
+  title,
+  price,
+  listing_images (url, thumbnail_url, sort_order, is_primary),
+  inventory (quantity),
+  categories (name)
+`
 
 export const dynamic = "force-dynamic"
 
@@ -83,10 +82,92 @@ export default async function HomePage() {
   // Admins can curate specific listings in `home_hero_listings`. When any curated rows exist,
   // the hero uses ONLY those images (already filtered to active + visible). Otherwise, fall
   // back to the most-recent active surfboard listings, then to static assets.
-  const curatedHeroUrls = await listHomeHeroCuratedSlideUrls(supabase)
+  const [
+    curatedHeroUrls,
+    featuredShopsRes,
+    boardsRes,
+    shortBoardsRes,
+    verifiedProfilesRes,
+    browseRes,
+    newGearRes,
+    authRes,
+  ] = await Promise.all([
+    listHomeHeroCuratedSlideUrls(supabase),
+    supabase
+      .from("profiles")
+      .select(profilePublicFields)
+      .eq("is_shop", true)
+      .order("sales_count", { ascending: false })
+      .order("shop_verified", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(4),
+    supabase
+      .from("listings")
+      .select(listingWithProfileSelect)
+      .eq("status", "active")
+      .eq("section", "surfboards")
+      .eq("hidden_from_site", false)
+      .order("created_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("listings")
+      .select(listingWithProfileSelect)
+      .eq("status", "active")
+      .eq("section", "surfboards")
+      .eq("board_type", "shortboard")
+      .eq("hidden_from_site", false)
+      .order("created_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("profiles")
+      .select(verifiedForSpotlightFields)
+      .eq("shop_verified", true)
+      .order("shop_verified_at", { ascending: false, nullsFirst: false })
+      .order("updated_at", { ascending: false })
+      .limit(48),
+    supabase
+      .from("listings")
+      .select(listingWithProfileSelect)
+      .eq("status", "active")
+      .eq("section", "surfboards")
+      .eq("hidden_from_site", false)
+      .order("created_at", { ascending: false })
+      .limit(400),
+    supabase
+      .from("listings")
+      .select(featuredNewSelect)
+      .eq("section", "new")
+      .eq("status", "active")
+      .eq("hidden_from_site", false)
+      .order("created_at", { ascending: false })
+      .limit(12),
+    supabase.auth.getUser(),
+  ])
+
+  const useCuratedHeroOnly = curatedHeroUrls.length > 0
+  const heroListingsRes = useCuratedHeroOnly
+    ? { data: null as { listing_images: unknown }[] | null }
+    : await supabase
+        .from("listings")
+        .select("listing_images (url, is_primary)")
+        .eq("status", "active")
+        .eq("section", "surfboards")
+        .eq("hidden_from_site", false)
+        .order("created_at", { ascending: false })
+        .limit(24)
+
+  const { data: featuredShops } = featuredShopsRes
+  const { data: rawFeaturedBoards } = boardsRes
+  const { data: rawFeaturedShortboards } = shortBoardsRes
+  const { data: recentVerifiedProfiles } = verifiedProfilesRes
+  const { data: listingsForBrowseByCategory } = browseRes
+  const { data: rawFeaturedNew } = newGearRes
+  const {
+    data: { user },
+  } = authRes
 
   const heroSlideUrls: string[] = []
-  if (curatedHeroUrls.length > 0) {
+  if (useCuratedHeroOnly) {
     const heroSeen = new Set<string>()
     for (const src of curatedHeroUrls) {
       const key = normalizeHeroSlideUrl(src)
@@ -95,15 +176,7 @@ export default async function HomePage() {
       heroSlideUrls.push(src)
     }
   } else {
-    const { data: heroListingCandidates } = await supabase
-      .from("listings")
-      .select("listing_images (url, is_primary)")
-      .eq("status", "active")
-      .eq("section", "surfboards")
-      .eq("hidden_from_site", false)
-      .order("created_at", { ascending: false })
-      .limit(24)
-
+    const heroListingCandidates = heroListingsRes.data
     const heroSeen = new Set<string>()
     for (const row of heroListingCandidates ?? []) {
       const src = listingHeroSlideSrc(row.listing_images as ListingImageForCard[] | null)
@@ -119,53 +192,11 @@ export default async function HomePage() {
     heroSlideUrls.push(...FALLBACK_HOME_HERO_SLIDE_PATHS)
   }
 
-  // Fetch featured shops - public profile fields only; never expose email or role flags
-  const profilePublicFields =
-    "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
-  const { data: featuredShops } = await supabase
-    .from("profiles")
-    .select(profilePublicFields)
-    .eq("is_shop", true)
-    .order("sales_count", { ascending: false })
-    .order("shop_verified", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(4)
-
-  // Fetch featured boards (in-person only) - prioritize top sellers
-  const { data: rawFeaturedBoards } = await supabase
-    .from("listings")
-    .select(`
-      *,
-      listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
-      categories (name)
-    `)
-    .eq("status", "active")
-    .eq("section", "surfboards")
-    .eq("hidden_from_site", false)
-    .order("created_at", { ascending: false })
-    .limit(20)
-
   const featuredBoards = rawFeaturedBoards
     ? [...rawFeaturedBoards]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 20)
     : null
-
-  const { data: rawFeaturedShortboards } = await supabase
-    .from("listings")
-    .select(`
-      *,
-      listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
-      categories (name)
-    `)
-    .eq("status", "active")
-    .eq("section", "surfboards")
-    .eq("board_type", "shortboard")
-    .eq("hidden_from_site", false)
-    .order("created_at", { ascending: false })
-    .limit(20)
 
   const featuredShortboards = rawFeaturedShortboards
     ? [...rawFeaturedShortboards]
@@ -173,32 +204,14 @@ export default async function HomePage() {
         .slice(0, 20)
     : null
 
-  // Recently verified sellers: each card shows their single most expensive active listing + profile
-  const verifiedForSpotlightFields =
-    "id, seller_slug, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified, shop_verified_at, updated_at"
-  const { data: recentVerifiedProfiles } = await supabase
-    .from("profiles")
-    .select(verifiedForSpotlightFields)
-    .eq("shop_verified", true)
-    .order("shop_verified_at", { ascending: false, nullsFirst: false })
-    .order("updated_at", { ascending: false })
-    .limit(48)
-
   const verifiedProfileIds = (recentVerifiedProfiles ?? []).map((p) => p.id)
-  type ListingRow = NonNullable<typeof rawFeaturedBoards>[number]
-  let verifiedSpotlight: { profile: NonNullable<typeof recentVerifiedProfiles>[number]; listing: ListingRow }[] = []
+  type ListingRow = NonNullable<NonNullable<typeof rawFeaturedBoards>[number]>
+  const verifiedSpotlight: { profile: NonNullable<typeof recentVerifiedProfiles>[number]; listing: ListingRow }[] = []
 
   if (verifiedProfileIds.length > 0) {
     const { data: listingsForVerified } = await supabase
       .from("listings")
-      .select(
-        `
-        *,
-        listing_images (url, thumbnail_url, sort_order, is_primary),
-        profiles!listings_user_id_fkey (display_name, avatar_url, sales_count, shop_verified),
-        categories (name)
-      `
-      )
+      .select(listingWithProfileSelectVerified)
       .in("user_id", verifiedProfileIds)
       .eq("status", "active")
       .eq("section", "surfboards")
@@ -223,24 +236,7 @@ export default async function HomePage() {
     }
   }
 
-  // Browse by Category: same real listings as “Recently added surfboards” — resolve by `board_type` = `/boards?type=` param.
-  const { data: listingsForBrowseByCategory } = await supabase
-    .from("listings")
-    .select(
-      `
-      *,
-      listing_images (url, thumbnail_url, sort_order, is_primary),
-      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
-      categories (name)
-    `,
-    )
-    .eq("status", "active")
-    .eq("section", "surfboards")
-    .eq("hidden_from_site", false)
-    .order("created_at", { ascending: false })
-    .limit(400)
-
-  type BrowseListingRow = NonNullable<typeof listingsForBrowseByCategory>[number]
+  type BrowseListingRow = NonNullable<NonNullable<typeof listingsForBrowseByCategory>[number]>
   const sortedForBrowse =
     listingsForBrowseByCategory != null
       ? [...listingsForBrowseByCategory].sort(
@@ -267,25 +263,6 @@ export default async function HomePage() {
     }
   }
 
-  const { data: rawFeaturedNew } = await supabase
-    .from("listings")
-    .select(
-      `
-      id,
-      slug,
-      title,
-      price,
-      listing_images (url, thumbnail_url, sort_order, is_primary),
-      inventory (quantity),
-      categories (name)
-    `,
-    )
-    .eq("section", "new")
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .order("created_at", { ascending: false })
-    .limit(12)
-
   const featuredNew =
     rawFeaturedNew
       ?.map((l) => {
@@ -298,28 +275,29 @@ export default async function HomePage() {
       .filter((x) => x.stockQuantity > 0)
       .slice(0, 4) ?? []
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: homeHeroAdminProfile } = user
-    ? await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle()
-    : { data: null }
-  const isHomeHeroAdmin = homeHeroAdminProfile?.is_admin === true
-
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
-    ...verifiedSpotlight.map(({ listing }) => listing.id),
-    ...browseCategoryTiles.map(({ listing }) => listing.id),
-    ...featuredNew.map(({ listing }) => listing.id),
+    ...verifiedSpotlight.map(({ listing: l }) => l.id),
+    ...browseCategoryTiles.map(({ listing: l }) => l.id),
+    ...featuredNew.map(({ listing: l }) => l.id),
   ]
-  let favoritedIds: string[] = []
-  if (user && featuredListingIds.length > 0) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", featuredListingIds)
-    favoritedIds = (favs ?? []).map((f) => f.listing_id)
-  }
+
+  const [favoritesRes, adminRes] = await Promise.all([
+    user && featuredListingIds.length > 0
+      ? supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", featuredListingIds)
+      : Promise.resolve({ data: null as { listing_id: string }[] | null }),
+    user
+      ? supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle()
+      : Promise.resolve({ data: null as { is_admin: boolean | null } | null }),
+  ])
+
+  const favoritedIds = (favoritesRes.data ?? []).map((f) => f.listing_id)
+  const isHomeHeroAdmin = adminRes.data?.is_admin === true
 
   return (
       <main className="flex-1">

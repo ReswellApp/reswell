@@ -6,10 +6,12 @@ import { ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
-export function CartHeaderLink() {
+export function CartHeaderLink({ showOnNarrowScreens = false }: { showOnNarrowScreens?: boolean }) {
   const [count, setCount] = useState<number | null>(null)
+  const visibility = showOnNarrowScreens ? "inline-flex" : "hidden sm:inline-flex"
 
   useEffect(() => {
     const supabase = createClient()
@@ -19,7 +21,7 @@ export function CartHeaderLink() {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        setCount(null)
+        setCount(0)
         return
       }
       const { count: n, error } = await supabase
@@ -44,18 +46,15 @@ export function CartHeaderLink() {
 
   if (count === null) {
     return (
-      <div
-        className="hidden h-11 w-11 shrink-0 items-center justify-center sm:flex"
-        aria-hidden
-      >
+      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center", visibility)} aria-hidden>
         <Skeleton className="h-10 w-10 rounded-lg" />
       </div>
     )
   }
 
   return (
-    <Link href="/cart" className="relative hidden sm:inline-flex">
-      <Button variant="ghost" size="icon" className="h-11 w-11 text-black hover:bg-pacific/5">
+    <Link href="/cart" className={cn("relative", visibility)}>
+      <Button variant="ghost" size="icon" className="h-10 w-10 text-foreground hover:bg-pacific/5">
         <ShoppingCart className="h-6 w-6" />
         {count > 0 && (
           <Badge

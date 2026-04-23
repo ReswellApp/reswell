@@ -45,11 +45,9 @@ import {
   PackageCheck,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
-import { SearchSuggestPortalContainerContext } from "@/components/search-suggest-portal-context"
 import { HeaderNavSearch } from "@/components/header-nav-search"
-import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
+import { SiteSearchBar, SITE_SEARCH_SHELL_CLASS, siteSearchInputClassName } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
@@ -347,7 +345,7 @@ export function Header() {
   const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [mobileSearchSuggestPortalEl, setMobileSearchSuggestPortalEl] = useState<HTMLDivElement | null>(null)
+  const [mobileNavSearchQuery, setMobileNavSearchQuery] = useState("")
   // CLS-FIX: track when auth check has resolved so we can reserve the
   // correct amount of space for auth-dependent action buttons before they
   // appear, preventing the search bar from shifting horizontally.
@@ -755,7 +753,7 @@ export function Header() {
 
   if (isMinimalNavChrome) {
     return (
-      <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
+      <header className="relative z-50 w-full border-b border-border bg-softwhite shadow-sm">
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <Link
             href="/"
@@ -794,11 +792,163 @@ export function Header() {
     <>
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
-      <header className="relative z-50 w-full border-b border-border bg-white shadow-sm">
+      <header
+        className="relative z-50 w-full border-b border-border bg-softwhite shadow-sm"
+      >
         <div
           ref={headerMainRowRef}
-          className="container mx-auto flex min-w-0 items-center gap-2 py-2 sm:py-2.5 md:py-3 md:gap-4 min-h-[56px] sm:min-h-[64px] md:min-h-[80px]"
+          className={cn(
+            "container mx-auto min-w-0",
+            isMobileViewport
+              ? "flex flex-col gap-2 py-2 pb-2.5"
+              : "flex min-h-[56px] items-center gap-2 py-2 sm:min-h-[64px] sm:py-2.5 md:min-h-[80px] md:gap-4 md:py-3",
+          )}
         >
+          {isMobileViewport ? (
+            <>
+              <div className="flex min-h-[48px] min-w-0 items-center justify-between gap-2">
+                <Link
+                  href="/"
+                  className="flex shrink-0 items-center rounded-md px-1 py-1 no-underline hover:no-underline"
+                >
+                  <span
+                    className="text-2xl font-black tracking-tight text-foreground"
+                    style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
+                  >
+                    Reswell
+                  </span>
+                </Link>
+                <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
+                  {!authLoaded ? (
+                    <Skeleton className="h-9 w-28 shrink-0 rounded-md" aria-hidden />
+                  ) : user ? (
+                    <>
+                      <Link href="/favorites" className="inline-flex shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 text-foreground hover:bg-black/5"
+                          aria-label="Favorites"
+                        >
+                          <Heart className="h-[22px] w-[22px]" />
+                        </Button>
+                      </Link>
+                      <Link href="/messages" className="relative inline-flex shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 text-foreground hover:bg-black/5"
+                        >
+                          <MessageSquare className="h-[22px] w-[22px]" />
+                          {unreadMessages > 0 && (
+                            <Badge
+                              variant="destructive"
+                              className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs text-white hover:bg-red-600"
+                            >
+                              {unreadMessages > 9 ? "9+" : unreadMessages}
+                            </Badge>
+                          )}
+                          <span className="sr-only">Messages</span>
+                        </Button>
+                      </Link>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 text-foreground hover:bg-black/5"
+                      >
+                        <Link
+                          href="/sell?new=1"
+                          aria-label="Create listing"
+                        >
+                          <Plus className="h-[22px] w-[22px]" aria-hidden />
+                        </Link>
+                      </Button>
+                      <div className="shrink-0">{accountDropdown}</div>
+                      <CartHeaderLink showOnNarrowScreens />
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/auth/login"
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                          e.preventDefault()
+                          openLogin()
+                        }}
+                        className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
+                      >
+                        Sign in
+                      </Link>
+                      <CartHeaderLink showOnNarrowScreens />
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex min-w-0 items-center gap-2">
+                <button
+                  type="button"
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "bg-muted text-foreground hover:bg-lightgray/80",
+                  )}
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                >
+                  {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+                <form
+                  className={cn(
+                    SITE_SEARCH_SHELL_CLASS,
+                    "min-w-0 flex-1 border-foreground/20 bg-white pl-3 pr-1 shadow-none focus-within:border-foreground/35",
+                  )}
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    const q = mobileNavSearchQuery.trim()
+                    if (!q) {
+                      clearNavSearchQuery()
+                      setMobileNavSearchQuery("")
+                      await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+                      return
+                    }
+                    router.push(`/search?q=${encodeURIComponent(q)}`)
+                    setMobileNavSearchQuery("")
+                    clearNavSearchQuery()
+                  }}
+                >
+                  <div className="relative min-w-0 flex-1">
+                    <SearchInputWithSuggest
+                      value={mobileNavSearchQuery}
+                      onChange={setMobileNavSearchQuery}
+                      onSelect={(text) => {
+                        router.push(`/search?q=${encodeURIComponent(text)}`)
+                        setMobileNavSearchQuery("")
+                        clearNavSearchQuery()
+                      }}
+                      onNavigate={() => {
+                        setMobileNavSearchQuery("")
+                        clearNavSearchQuery()
+                      }}
+                      placeholder="Search surfboards…"
+                      section=""
+                      listboxId="nav-search-suggestions-mobile-nav"
+                      inputClassName={siteSearchInputClassName({ compact: true })}
+                      className="w-full"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                    aria-label="Search"
+                  >
+                    <Search className="h-4 w-4" aria-hidden />
+                  </Button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <>
           {/* Logo + home link; padding keeps white breathing room around the mark */}
           <Link
             href="/"
@@ -829,64 +979,28 @@ export function Header() {
               The invisible placeholder reserves space equal to the logged-in
               desktop layout so the search bar never shifts horizontally. */}
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5 text-foreground">
-            {isMobileViewport ? (
-              <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "flex h-10 w-10 text-foreground hover:bg-muted",
-                      !headerRowCompact && "md:hidden",
-                    )}
-                    aria-label="Search"
-                  >
-                    <Search className="h-[22px] w-[22px]" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="top"
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className={cn(
-                    "z-[100] w-full max-w-none gap-0 overflow-visible border-border bg-popover p-4 shadow-lg",
-                    "rounded-none border-x-0 border-t-0 pt-[max(1rem,env(safe-area-inset-top))]",
-                    "[&>button:last-child]:hidden",
+                    "flex h-10 w-10 text-foreground hover:bg-muted",
+                    !headerRowCompact && "md:hidden",
                   )}
+                  aria-label="Search"
                 >
-                  <SearchSuggestPortalContainerContext.Provider value={mobileSearchSuggestPortalEl}>
-                    <div
-                      ref={setMobileSearchSuggestPortalEl}
-                      className="relative z-0 w-full min-w-0 overflow-visible"
-                    >
-                      <SheetTitle className="sr-only">Search listings</SheetTitle>
-                      {headerSearchOverlayForm}
-                    </div>
-                  </SearchSuggestPortalContainerContext.Provider>
-                </SheetContent>
-              </Sheet>
-            ) : (
-              <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "flex h-10 w-10 text-foreground hover:bg-muted",
-                      !headerRowCompact && "md:hidden",
-                    )}
-                    aria-label="Search"
-                  >
-                    <Search className="h-[22px] w-[22px]" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[min(100vw-2rem,380px)] rounded-xl border border-border bg-popover p-4 shadow-lg"
-                  align="center"
-                  sideOffset={8}
-                >
-                  {headerSearchOverlayForm}
-                </PopoverContent>
-              </Popover>
-            )}
+                  <Search className="h-[22px] w-[22px]" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-[min(100vw-2rem,380px)] rounded-xl border border-border bg-popover p-4 shadow-lg"
+                align="center"
+                sideOffset={8}
+              >
+                {headerSearchOverlayForm}
+              </PopoverContent>
+            </Popover>
 
             <Button
               asChild
@@ -1037,23 +1151,6 @@ export function Header() {
               </div>
             ) : null}
 
-            {/* Mobile-only Sign in button: shown to the left of the hamburger when signed out.
-                Hidden sm+ since the inline "Log in" / "Sign up" text links take over. */}
-            {authLoaded && !user && (
-              <Link
-                href="/auth/login"
-                onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                  e.preventDefault()
-                  openLogin()
-                }}
-                className="inline-flex h-10 shrink-0 items-center rounded-lg border border-border bg-white px-3 text-[15px] font-medium text-foreground transition-colors hover:bg-muted sm:hidden"
-                aria-label="Sign in"
-              >
-                Sign in
-              </Link>
-            )}
-
             {/* Menu toggle: phone & tablet only (below lg). Desktop/Mac use category bar + primary nav. */}
             <button
               type="button"
@@ -1076,6 +1173,8 @@ export function Header() {
               )}
             </button>
           </div>
+            </>
+          )}
         </div>
 
         <HeaderDesktopCategoryBar pathname={pathname} headerSearchParams={headerSearchParams} />

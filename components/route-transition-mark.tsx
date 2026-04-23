@@ -5,7 +5,7 @@ import { useLayoutEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 const overlayEase =
-  "transition-opacity duration-300 transition-timing-function-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
+  "transition-opacity duration-500 transition-timing-function-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
 const logoEase =
   "transition-[transform,opacity] duration-300 transition-timing-function-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
 
@@ -48,22 +48,39 @@ export function RouteTransitionMark({ variant = "overlay" }: RouteTransitionMark
 
   const mark = <ReswellMarkImage visible={enter} />
 
-  const className = cn(
-    "flex w-full min-h-0 flex-1 flex-col items-center justify-center bg-white px-6 py-16",
+  const overlayClassName = cn(
+    "flex w-full flex-1 flex-col items-center justify-center self-stretch",
+    /* Fill the SiteChrome main column: keep footer under the fold while RSC loads (min-h-0 on flex-1
+       alone can collapse the strip to the logo, so the footer “jumps up” mid-viewport on refresh). */
+    "h-full min-h-[calc(100dvh-12rem)] sm:min-h-[calc(100dvh-10rem)]",
+    "bg-gradient-to-b from-background via-background to-muted/30",
+    "px-6 py-20",
+    overlayEase,
+    enter ? "opacity-100" : "opacity-0",
+  )
+
+  const inlineClassName = cn(
+    "flex w-full min-h-0 flex-1 flex-col items-center justify-center self-stretch",
+    "bg-gradient-to-b from-background via-background to-muted/30",
+    "px-6 py-20",
     overlayEase,
     enter ? "opacity-100" : "opacity-0",
   )
 
   if (variant === "inline") {
     return (
-      <main className={className} aria-hidden>
+      <main className={inlineClassName} aria-hidden>
         {mark}
       </main>
     )
   }
 
   return (
-    <div className={className} aria-hidden>
+    <div
+      className={overlayClassName}
+      role="status"
+      aria-label="Loading page"
+    >
       {mark}
     </div>
   )

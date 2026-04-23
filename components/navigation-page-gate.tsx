@@ -1,14 +1,14 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { useLayoutEffect, useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
 
 /**
  * Scrolls to top and applies a CSS fade+slide entrance animation on client-side
  * navigations. `navCount` increments only on actual navigations (not initial load),
  * so the `page-enter` animation is skipped on first render to prevent FOIC.
  */
-export function NavigationPageGate({ children }: { children: React.ReactNode }) {
+export function NavigationPageGate({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const prevPathRef = useRef<string | null>(null)
   const [navCount, setNavCount] = useState(0)
@@ -26,13 +26,13 @@ export function NavigationPageGate({ children }: { children: React.ReactNode }) 
   }, [pathname])
 
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col">
       <div
         key={navCount}
         className={
           navCount > 0
-            ? "page-enter flex min-h-0 min-w-0 flex-1 flex-col"
-            : "flex min-h-0 min-w-0 flex-1 flex-col"
+            ? "page-enter flex w-full min-h-0 min-w-0 flex-1 flex-col"
+            : "flex w-full min-h-0 min-w-0 flex-1 flex-col"
         }
       >
         {children}
