@@ -1,0 +1,46 @@
+import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
+import { requireAdmin } from "@/lib/brands/admin-server"
+import { adminHomeTrendingBrandBodySchema } from "@/lib/validations/home-trending-brands"
+import {
+  addHomeTrendingBrandService,
+  listHomeTrendingBrandsForAdminService,
+} from "@/lib/services/homeTrendingBrands"
+
+export async function GET() {
+  const gate = await requireAdmin()
+  if (!gate.ok) return gate.response
+
+  const result = await listHomeTrendingBrandsForAdminService(gate.ctx.supabase)
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 })
+  }
+  return NextResponse.json({ data: { rows: result.rows } }, { status: 200 })
+}
+
+export async function POST(request: Request) {
+  const gate = await requireAdmin()
+  if (!gate.ok) return gate.response
+
+  let json: unknown
+  try {
+    json = await request.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = adminHomeTrendingBrandBodySchema.safeParse(json)
+  if (!parsed.success) {
+    const err = parsed.error.flatten().formErrors.join(", ") || "Invalid input"
+    return NextResponse.json({ error: err }, { status: 400 })
+  }
+
+  const result = await addHomeTrendingBrandService(parsed.data.brand_id)
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
+  }
+
+  revalidatePath("/", "layout")
+  revalidatePath("/", "page")
+  return NextResponse.json({ data: { id: result.id } }, { status: 201 })
+}

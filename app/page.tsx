@@ -20,7 +20,8 @@ import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import { surfboardBrowseLinks } from "@/lib/site-category-directory"
 import { boardTypeForDbFromBrowseParam } from "@/lib/marketplace-slug-metadata"
-import { HomeListingScrollRow, HomePeerListingScrollTile } from "@/components/features/home"
+import { HomeListingScrollRow, HomePeerListingScrollTile, TrendingBrandsSection } from "@/components/features/home"
+import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
@@ -47,20 +48,10 @@ const categories = surfboardBrowseLinks.map((c) => ({
 const profilePublicFields =
   "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
-const verifiedForSpotlightFields =
-  "id, seller_slug, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified, shop_verified_at, updated_at"
-
 const listingWithProfileSelect = `
   *,
   listing_images (url, thumbnail_url, sort_order, is_primary),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
-  categories (name)
-`
-
-const listingWithProfileSelectVerified = `
-  *,
-  listing_images (url, thumbnail_url, sort_order, is_primary),
-  profiles!listings_user_id_fkey (display_name, avatar_url, sales_count, shop_verified),
   categories (name)
 `
 
@@ -84,15 +75,17 @@ export default async function HomePage() {
   // back to the most-recent active surfboard listings, then to static assets.
   const [
     curatedHeroUrls,
+    homeTrendingBrandRows,
     featuredShopsRes,
     boardsRes,
     shortBoardsRes,
-    verifiedProfilesRes,
+    grovelerBoardsRes,
     browseRes,
     newGearRes,
     authRes,
   ] = await Promise.all([
     listHomeHeroCuratedSlideUrls(supabase),
+    listHomeTrendingBrandsForPublicService(supabase),
     supabase
       .from("profiles")
       .select(profilePublicFields)
@@ -119,12 +112,14 @@ export default async function HomePage() {
       .order("created_at", { ascending: false })
       .limit(20),
     supabase
-      .from("profiles")
-      .select(verifiedForSpotlightFields)
-      .eq("shop_verified", true)
-      .order("shop_verified_at", { ascending: false, nullsFirst: false })
-      .order("updated_at", { ascending: false })
-      .limit(48),
+      .from("listings")
+      .select(listingWithProfileSelect)
+      .eq("status", "active")
+      .eq("section", "surfboards")
+      .eq("board_type", "groveler")
+      .eq("hidden_from_site", false)
+      .order("created_at", { ascending: false })
+      .limit(20),
     supabase
       .from("listings")
       .select(listingWithProfileSelect)
@@ -159,7 +154,7 @@ export default async function HomePage() {
   const { data: featuredShops } = featuredShopsRes
   const { data: rawFeaturedBoards } = boardsRes
   const { data: rawFeaturedShortboards } = shortBoardsRes
-  const { data: recentVerifiedProfiles } = verifiedProfilesRes
+  const { data: rawFeaturedGrovelers } = grovelerBoardsRes
   const { data: listingsForBrowseByCategory } = browseRes
   const { data: rawFeaturedNew } = newGearRes
   const {
@@ -204,37 +199,11 @@ export default async function HomePage() {
         .slice(0, 20)
     : null
 
-  const verifiedProfileIds = (recentVerifiedProfiles ?? []).map((p) => p.id)
-  type ListingRow = NonNullable<NonNullable<typeof rawFeaturedBoards>[number]>
-  const verifiedSpotlight: { profile: NonNullable<typeof recentVerifiedProfiles>[number]; listing: ListingRow }[] = []
-
-  if (verifiedProfileIds.length > 0) {
-    const { data: listingsForVerified } = await supabase
-      .from("listings")
-      .select(listingWithProfileSelectVerified)
-      .in("user_id", verifiedProfileIds)
-      .eq("status", "active")
-      .eq("section", "surfboards")
-      .eq("hidden_from_site", false)
-
-    const bestByUser = new Map<string, ListingRow>()
-    for (const listing of (listingsForVerified ?? []) as ListingRow[]) {
-      const uid = listing.user_id
-      const prev = bestByUser.get(uid)
-      const price = Number(listing.price)
-      if (!prev || price > Number(prev.price)) {
-        bestByUser.set(uid, listing)
-      }
-    }
-
-    for (const profile of recentVerifiedProfiles ?? []) {
-      const listing = bestByUser.get(profile.id)
-      if (listing) {
-        verifiedSpotlight.push({ profile, listing })
-        if (verifiedSpotlight.length >= 20) break
-      }
-    }
-  }
+  const featuredGrovelers = rawFeaturedGrovelers
+    ? [...rawFeaturedGrovelers]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 20)
+    : null
 
   type BrowseListingRow = NonNullable<NonNullable<typeof listingsForBrowseByCategory>[number]>
   const sortedForBrowse =
@@ -278,7 +247,7 @@ export default async function HomePage() {
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
-    ...verifiedSpotlight.map(({ listing: l }) => l.id),
+    ...(featuredGrovelers ?? []).map((b) => b.id),
     ...browseCategoryTiles.map(({ listing: l }) => l.id),
     ...featuredNew.map(({ listing: l }) => l.id),
   ]
@@ -350,7 +319,6 @@ export default async function HomePage() {
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <h2 className="text-2xl font-bold">Recently added surfboards</h2>
-                  <p className="text-muted-foreground">In-person pickup only</p>
                 </div>
                 <Button variant="outline" asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
@@ -400,7 +368,6 @@ export default async function HomePage() {
                 <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <h2 className="text-2xl font-bold">Recently added shortboards</h2>
-                    <p className="text-muted-foreground">In-person pickup only</p>
                   </div>
                   <Button variant="outline" asChild>
                     <Link
@@ -427,6 +394,8 @@ export default async function HomePage() {
           </FadeInSection>
         )}
 
+        <TrendingBrandsSection rows={homeTrendingBrandRows} isAdmin={isHomeHeroAdmin} />
+
         {/* Confidence banner */}
         <section className="py-8">
           <div className="container mx-auto">
@@ -446,32 +415,31 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Recently verified — same listing tile as Recently added surfboards (priciest active listing per verified seller) */}
-        {verifiedSpotlight.length > 0 && (
+        {featuredGrovelers && featuredGrovelers.length > 0 && (
           <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <h2 className="text-2xl font-bold">Recently verified users</h2>
-                  <p className="text-muted-foreground">
-                    Each verified seller&apos;s priciest active surfboard listing right now
-                  </p>
+                  <h2 className="text-2xl font-bold">Recently added grovelers</h2>
                 </div>
                 <Button variant="outline" asChild>
-                  <Link href="/sellers">
-                    Browse sellers
+                  <Link
+                    href="/boards?type=groveler"
+                    prefetch={boardsBrowseLinkPrefetch("/boards?type=groveler")}
+                  >
+                    Find More
                     <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
               <HomeListingScrollRow uniformCardHeights>
-                {verifiedSpotlight.map(({ profile, listing }) => (
+                {featuredGrovelers.map((board) => (
                   <HomePeerListingScrollTile
-                    key={`${profile.id}-${listing.id}`}
-                    listing={listing}
+                    key={board.id}
+                    listing={board}
                     userId={user?.id ?? null}
-                    isFavorited={favoritedIds.includes(listing.id)}
+                    isFavorited={favoritedIds.includes(board.id)}
                   />
                 ))}
               </HomeListingScrollRow>
