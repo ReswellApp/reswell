@@ -379,13 +379,14 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/sell" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
               <div>
-                <p className="text-lg font-semibold text-foreground">List your surfboard in minutes</p>
+                <p className="text-lg font-semibold text-foreground">Every board deserves another session</p>
                 <p className="text-muted-foreground mt-1">
-                  Secure payments, verified sellers, direct messaging, and local pickup or shipping — all in one place.
+                  A community of surfers buying, selling, and passing along the boards they love. Find your next ride,
+                  or send one off to its next.
                 </p>
               </div>
               <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
-                Start selling
+                List your board
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -431,13 +432,14 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/contact" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
               <div>
-                <p className="text-lg font-semibold text-foreground">Buy and sell with confidence!</p>
+                <p className="text-lg font-semibold text-foreground">We&apos;re here whenever you need us</p>
                 <p className="text-muted-foreground mt-1">
-                  All transactions on Reswell are backed by verified sellers and secure payments. Contact our support team anytime for help.
+                  Real people, real surfers, happy to help with a listing, a question, or just pointing you toward the
+                  right board. Say hi anytime.
                 </p>
               </div>
               <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
-                Contact us
+                Say hello
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
