@@ -14,7 +14,6 @@ import {
 } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +37,6 @@ import {
   LayoutDashboard,
   Banknote,
   ChevronDown,
-  ShoppingCart,
   Handshake,
   ShoppingBag,
   PackageCheck,
@@ -351,7 +349,6 @@ export function Header() {
   const [authLoaded, setAuthLoaded] = useState(false)
   /** When the image URL is set but fails to load (403, blocked, bad URL), hide img so fallback letter shows. */
   const [avatarImageFailed, setAvatarImageFailed] = useState(false)
-  const mobileSearchRef = useRef<HTMLInputElement>(null)
   const headerMainRowRef = useRef<HTMLDivElement>(null)
   const [headerRowCompact, setHeaderRowCompact] = useState(false)
   const pathname = usePathname()
@@ -540,12 +537,6 @@ export function Header() {
       })
     return () => { cancelled = true }
   }, [supabase, user?.id, pathname])
-
-  useEffect(() => {
-    if (mobileMenuOpen && mobileSearchRef.current) {
-      mobileSearchRef.current.value = ""
-    }
-  }, [mobileMenuOpen])
 
   useBodyScrollLock(mobileMenuOpen)
 
@@ -1162,34 +1153,6 @@ export function Header() {
                 <span className="sr-only">Close menu</span>
               </Button>
             </div>
-            <div className="mb-6 min-w-0 w-full">
-              <SiteSearchBar
-                compact
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  const input = mobileSearchRef.current
-                  const q = (input?.value || "").trim()
-                  if (!q) {
-                    clearNavSearchQuery()
-                    setMobileMenuOpen(false)
-                    await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
-                    return
-                  }
-                  router.push(`/search?q=${encodeURIComponent(q)}`)
-                  if (input) input.value = ""
-                  clearNavSearchQuery()
-                  setMobileMenuOpen(false)
-                }}
-                className="min-w-0 w-full"
-              >
-                <Input
-                  ref={mobileSearchRef}
-                  type="search"
-                  placeholder="Search surfboards…"
-                  className={cn(siteSearchInputClassName({ compact: true }), "min-h-touch")}
-                />
-              </SiteSearchBar>
-            </div>
             {!user && authLoaded && (
               <Link
                 href="/auth/login"
@@ -1274,36 +1237,6 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
-              <hr className="my-2 border-border" />
-              <Link
-                href="/cart"
-                onClick={onMobileDrawerLinkClick}
-                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
-              >
-                <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
-                Cart
-              </Link>
-              <Link
-                href={
-                  user
-                    ? "/favorites"
-                    : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
-                }
-                onClick={
-                  user
-                    ? onMobileDrawerLinkClick
-                    : (e) => {
-                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                        e.preventDefault()
-                        openLogin("/favorites")
-                        queueMicrotask(() => setMobileMenuOpen(false))
-                      }
-                }
-                className="flex items-center gap-2 py-3 px-2 text-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors min-h-touch"
-              >
-                <Heart className="h-5 w-5 shrink-0" aria-hidden />
-                Favorites
-              </Link>
             </nav>
           </div>
         </div>

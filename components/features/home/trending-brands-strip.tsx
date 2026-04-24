@@ -8,20 +8,36 @@ import { Button } from "@/components/ui/button"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { cn } from "@/lib/utils"
 import type { BrandRow } from "@/lib/brands/types"
+import {
+  homeHorizontalScrollOuterClassName,
+  homeHorizontalScrollPlDefault,
+} from "@/components/features/home/home-listing-scroll-row"
 
 export type TrendingStripBrand = Pick<BrandRow, "id" | "slug" | "name" | "logo_url">
 
 const TILE_MIN_W = "min-w-[6.5rem] max-w-[9.5rem] sm:min-w-[7.5rem] sm:max-w-[10.5rem]"
 
-function splitRows(brands: TrendingStripBrand[]): { row1: TrendingStripBrand[]; row2: TrendingStripBrand[] } {
-  if (brands.length === 0) return { row1: [], row2: [] }
+/**
+ * Same “first half / second half” split as the old two-row strip, but as columns so horizontal
+ * scroll-snap can align to each brand pair (matches `HomeListingScrollRow` affordance).
+ */
+function splitIntoColumns(
+  brands: TrendingStripBrand[],
+): { top: TrendingStripBrand | null; bottom: TrendingStripBrand | null }[] {
+  if (brands.length === 0) return []
   const cut = Math.ceil(brands.length / 2)
-  return { row1: brands.slice(0, cut), row2: brands.slice(cut) }
+  const row1 = brands.slice(0, cut)
+  const row2 = brands.slice(cut)
+  const n = Math.max(row1.length, row2.length)
+  return Array.from({ length: n }, (_, i) => ({
+    top: row1[i] ?? null,
+    bottom: row2[i] ?? null,
+  }))
 }
 
 function BrandCell({ b }: { b: TrendingStripBrand }) {
   return (
-    <li className={cn("shrink-0 list-none", TILE_MIN_W)}>
+    <div className="w-full min-w-0 shrink-0">
       <Link
         href={`${BRANDS_BASE}/${b.slug}`}
         className="group flex flex-col items-center gap-2.5 text-center no-underline"
@@ -53,23 +69,13 @@ function BrandCell({ b }: { b: TrendingStripBrand }) {
           {b.name}
         </span>
       </Link>
-    </li>
-  )
-}
-
-function BrandRow({ brands }: { brands: TrendingStripBrand[] }) {
-  if (brands.length === 0) return null
-  return (
-    <ul className="flex w-max min-w-0 flex-nowrap items-end justify-start gap-7 sm:gap-10">
-      {brands.map((b) => (
-        <BrandCell key={b.id} b={b} />
-      ))}
-    </ul>
+    </div>
   )
 }
 
 /**
- * Two-row, horizontally scrollable brand strip (homepage “Trending brands” carousel).
+ * Two rows (as column pairs), horizontally scrollable with the same full-bleed + snap feel as
+ * `HomeListingScrollRow` (recently added surfboards).
  */
 /** Pixels of tolerance so subpixel/rounding at scroll extremes doesn’t flash arrow visibility. */
 const SCROLL_END_SLOP = 6
@@ -92,7 +98,7 @@ export function TrendingBrandsStrip({ brands, className }: { brands: TrendingStr
   const [arrows, setArrows] = React.useState<ArrowState>({ canPrev: false, canNext: false })
   const rafRef = React.useRef<number | null>(null)
 
-  const { row1, row2 } = splitRows(brands)
+  const columns = splitIntoColumns(brands)
 
   const updateArrows = React.useCallback(() => {
     const el = scrollRef.current
@@ -126,8 +132,7 @@ export function TrendingBrandsStrip({ brands, className }: { brands: TrendingStr
     const el = scrollRef.current
     if (!el) return
     const amount = Math.min(320, Math.max(200, el.clientWidth * 0.45))
-    // Instant step avoids a smooth-scroll “middle” where both arrows apply — that read as a UI flicker.
-    el.scrollBy({ left: dir === "next" ? amount : -amount, behavior: "auto" })
+    el.scrollBy({ left: dir === "next" ? amount : -amount, behavior: "smooth" })
     requestAnimationFrame(() => updateArrows())
   }
 
@@ -158,12 +163,14 @@ export function TrendingBrandsStrip({ brands, className }: { brands: TrendingStr
 
   return (
     <div className={cn("min-w-0", className)}>
-      {/* Relative box so chevrons stay locked to the vertical center of the two logo rows (inset-y-0),
-          not a flex lane that re-centers when 1 vs 2 buttons are mounted. */}
       <div className="relative min-w-0">
         <div
           ref={scrollRef}
-          className="min-w-0 overflow-x-auto overflow-y-hidden pr-9 [scrollbar-width:none] sm:pr-10 [&::-webkit-scrollbar]:hidden"
+          className={cn(
+            homeHorizontalScrollOuterClassName,
+            "touch-pan-x",
+            canPrev ? "pl-8 sm:pl-10 lg:pl-10" : homeHorizontalScrollPlDefault,
+          )}
           tabIndex={0}
           role="region"
           aria-label="Trending brands"
@@ -177,41 +184,66 @@ export function TrendingBrandsStrip({ brands, className }: { brands: TrendingStr
             }
           }}
         >
-          <div className="inline-flex w-max min-w-0 flex-col gap-5">
-            <BrandRow brands={row1} />
-            <BrandRow brands={row2} />
-          </div>
+          <ul
+            className={cn(
+              "list-none",
+              "flex w-max min-w-0 flex-row items-stretch gap-7 sm:gap-10",
+              "snap-x snap-proximity sm:snap-none",
+              canNext ? "pr-8 sm:pr-10 lg:pr-10" : "pr-4 sm:pr-6 lg:pr-8",
+            )}
+            role="list"
+          >
+            {columns.map((col, i) => {
+              const key = `${col.top?.id ?? "t"}-${col.bottom?.id ?? "b"}-${i}`
+              return (
+                <li
+                  key={key}
+                  className={cn("snap-start shrink-0", TILE_MIN_W)}
+                >
+                  <div className="flex min-h-0 w-full min-w-0 flex-col items-center justify-start gap-5">
+                    {col.top ? <BrandCell b={col.top} /> : null}
+                    {col.bottom ? <BrandCell b={col.bottom} /> : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
         </div>
 
         {showNav ? (
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-8 flex-col items-center justify-center gap-0.5">
-            <nav className="pointer-events-auto flex flex-col items-center justify-center gap-0.5" aria-label="Scroll trending brands">
-              {canPrev ? (
+          <nav
+            className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[1]"
+            aria-label="Scroll trending brands"
+          >
+            {canPrev ? (
+              <div className="absolute inset-y-0 left-0 flex w-8 items-center justify-center sm:w-9">
                 <Button
                   type="button"
                   size="icon"
                   variant="outline"
-                  className="h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm"
+                  className="pointer-events-auto h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm"
                   onClick={() => scrollBy("prev")}
                   aria-label="Scroll brands left"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-              ) : null}
-              {canNext ? (
+              </div>
+            ) : null}
+            {canNext ? (
+              <div className="absolute inset-y-0 right-0 flex w-8 items-center justify-center sm:w-9">
                 <Button
                   type="button"
                   size="icon"
                   variant="outline"
-                  className="h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm"
+                  className="pointer-events-auto h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm"
                   onClick={() => scrollBy("next")}
                   aria-label="Scroll brands right"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-              ) : null}
-            </nav>
-          </div>
+              </div>
+            ) : null}
+          </nav>
         ) : null}
       </div>
     </div>

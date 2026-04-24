@@ -21,6 +21,7 @@ import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
+import { cn } from "@/lib/utils"
 
 interface Profile {
   id: string
@@ -43,6 +44,7 @@ export function DashboardProfileSettings() {
   const [profileSavedFlash, setProfileSavedFlash] = useState(false)
   const [avatarSavedFlash, setAvatarSavedFlash] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [removingAvatar, setRemovingAvatar] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -168,6 +170,38 @@ export function DashboardProfileSettings() {
     }
   }
 
+  async function handleRemoveAvatar() {
+    if (!profile?.avatar_url) return
+
+    setRemovingAvatar(true)
+    try {
+      const res = await fetch("/api/profile/avatar", {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      const json = (await res.json()) as { data?: { removed: boolean }; error?: string }
+
+      if (!res.ok) {
+        throw new Error(json.error || "Remove failed")
+      }
+
+      setProfile({ ...profile, avatar_url: null })
+      setAvatarSavedFlash(true)
+      window.setTimeout(() => setAvatarSavedFlash(false), 2000)
+      void revalidateListingDetailAfterProfileUpdate()
+      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      router.refresh()
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to remove photo"
+      console.error("Avatar remove error:", message)
+      toast.error(message)
+    } finally {
+      setRemovingAvatar(false)
+    }
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut()
     router.push("/")
@@ -238,7 +272,7 @@ export function DashboardProfileSettings() {
                     accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
                     className="hidden"
                     onChange={handleAvatarUpload}
-                    disabled={uploadingAvatar}
+                    disabled={uploadingAvatar || removingAvatar}
                   />
                 </div>
                 <div className="space-y-1">
@@ -249,12 +283,29 @@ export function DashboardProfileSettings() {
                       Updated
                     </p>
                   ) : null}
-                  <label
-                    htmlFor="avatar-upload"
-                    className="inline-flex cursor-pointer items-center text-xs font-medium text-primary hover:underline"
-                  >
-                    {uploadingAvatar ? p.uploading : p.changePhoto}
-                  </label>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <label
+                      htmlFor="avatar-upload"
+                      className={cn(
+                        "inline-flex items-center text-xs font-medium text-primary hover:underline",
+                        uploadingAvatar || removingAvatar
+                          ? "cursor-not-allowed opacity-60"
+                          : "cursor-pointer",
+                      )}
+                    >
+                      {uploadingAvatar ? p.uploading : p.changePhoto}
+                    </label>
+                    {profile.avatar_url ? (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        disabled={uploadingAvatar || removingAvatar}
+                        className="inline-flex items-center text-xs font-medium text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:text-muted-foreground disabled:hover:no-underline"
+                      >
+                        {removingAvatar ? p.removingPhoto : p.removePhoto}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 

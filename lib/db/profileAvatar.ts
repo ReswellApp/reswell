@@ -39,3 +39,29 @@ export async function updateProfileAvatarUrlRow(
     .eq("id", userId)
   if (error) throw error
 }
+
+export async function clearProfileAvatarUrlRow(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      avatar_url: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId)
+  if (error) throw error
+}
+
+/** Best-effort cleanup after profile row no longer references the object. */
+export async function removeAvatarObjectFromStorage(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const path = objectPath(userId)
+  const { error } = await supabase.storage.from(BUCKET).remove([path])
+  if (error) {
+    console.warn("[profileAvatar] storage remove failed", { userId, message: error.message })
+  }
+}

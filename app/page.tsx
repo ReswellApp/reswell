@@ -18,8 +18,6 @@ import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
-import { surfboardBrowseLinks } from "@/lib/site-category-directory"
-import { boardTypeForDbFromBrowseParam } from "@/lib/marketplace-slug-metadata"
 import {
   HomeHowItWorksSection,
   HomeListingScrollRow,
@@ -36,19 +34,6 @@ export const metadata = pageSeoMetadata({
     "Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.",
   path: "/",
 })
-
-function boardBrowseSlugFromHref(href: string): string | null {
-  const q = href.split("?")[1]
-  if (!q) return null
-  const type = new URLSearchParams(q).get("type")
-  return type?.trim() ? type : null
-}
-
-const categories = surfboardBrowseLinks.map((c) => ({
-  name: c.label,
-  href: c.href,
-  slug: boardBrowseSlugFromHref(c.href),
-}))
 
 const profilePublicFields =
   "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
@@ -84,7 +69,6 @@ export default async function HomePage() {
     featuredShopsRes,
     boardsRes,
     shortBoardsRes,
-    browseRes,
     newGearRes,
     authRes,
   ] = await Promise.all([
@@ -117,14 +101,6 @@ export default async function HomePage() {
       .limit(20),
     supabase
       .from("listings")
-      .select(listingWithProfileSelect)
-      .eq("status", "active")
-      .eq("section", "surfboards")
-      .eq("hidden_from_site", false)
-      .order("created_at", { ascending: false })
-      .limit(400),
-    supabase
-      .from("listings")
       .select(featuredNewSelect)
       .eq("section", "new")
       .eq("status", "active")
@@ -149,7 +125,6 @@ export default async function HomePage() {
   const { data: featuredShops } = featuredShopsRes
   const { data: rawFeaturedBoards } = boardsRes
   const { data: rawFeaturedShortboards } = shortBoardsRes
-  const { data: listingsForBrowseByCategory } = browseRes
   const { data: rawFeaturedNew } = newGearRes
   const {
     data: { user },
@@ -193,33 +168,6 @@ export default async function HomePage() {
         .slice(0, 20)
     : null
 
-  type BrowseListingRow = NonNullable<NonNullable<typeof listingsForBrowseByCategory>[number]>
-  const sortedForBrowse =
-    listingsForBrowseByCategory != null
-      ? [...listingsForBrowseByCategory].sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )
-      : []
-
-  const latestByBoardType = new Map<string, BrowseListingRow>()
-  for (const row of sortedForBrowse) {
-    const bt = typeof row.board_type === "string" ? row.board_type.trim() : ""
-    if (bt && !latestByBoardType.has(bt)) {
-      latestByBoardType.set(bt, row)
-    }
-  }
-
-  const browseCategoryTiles: { category: (typeof categories)[number]; listing: BrowseListingRow }[] = []
-  for (const cat of categories) {
-    const dbTypeKey =
-      cat.slug === null ? null : boardTypeForDbFromBrowseParam(cat.slug) ?? cat.slug
-    const listing =
-      cat.slug === null ? sortedForBrowse[0] : dbTypeKey ? latestByBoardType.get(dbTypeKey) : undefined
-    if (listing) {
-      browseCategoryTiles.push({ category: cat, listing })
-    }
-  }
-
   const featuredNew =
     rawFeaturedNew
       ?.map((l) => {
@@ -235,7 +183,6 @@ export default async function HomePage() {
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
-    ...browseCategoryTiles.map(({ listing: l }) => l.id),
     ...featuredNew.map(({ listing: l }) => l.id),
   ]
 
@@ -406,52 +353,32 @@ export default async function HomePage() {
           <HomeHowItWorksSection />
         </FadeInSection>
 
-        {/* CTA */}
+        {/* CTA below How it works */}
         <section className="py-8">
           <div className="container mx-auto">
-            <Link href="/auth/sign-up" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
-              <div>
-                <p className="text-lg font-semibold text-foreground">Ready to ride the wave?</p>
-                <p className="text-muted-foreground mt-1">
-                  Join our community of surfers and start buying, selling, or trading today.
-                </p>
+            <div className="rounded-2xl bg-primary/5 px-6 py-8 sm:px-8">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold text-foreground">Ready to get started?</p>
+                  <p className="mt-1 text-muted-foreground text-pretty">
+                    Browse boards from locals and shops, or list yours with photos and pickup options in a few minutes.
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
+                  <Button size="lg" asChild>
+                    <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
+                      Browse surfboards
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button size="lg" variant="outline" asChild>
+                    <Link href="/sell">List your board</Link>
+                  </Button>
+                </div>
               </div>
-              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
-                Create account
-                <ArrowRight className="h-4 w-4" />
-              </span>
-            </Link>
-          </div>
-        </section>
-
-        {/* Categories — same `HomePeerListingScrollTile` as Recently added surfboards; one listing per `board_type` */}
-        {browseCategoryTiles.length > 0 && (
-        <FadeInSection>
-        <section className="py-16 bg-offwhite">
-          <div className="container mx-auto">
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="min-w-0 text-2xl font-bold">Browse by Category</h2>
-              <Button variant="ghost" asChild>
-                <Link href="/categories">
-                  View All
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
             </div>
-            <HomeListingScrollRow uniformCardHeights>
-              {browseCategoryTiles.map(({ category, listing }) => (
-                <HomePeerListingScrollTile
-                  key={category.href}
-                  listing={listing}
-                  userId={user?.id ?? null}
-                  isFavorited={favoritedIds.includes(listing.id)}
-                />
-              ))}
-            </HomeListingScrollRow>
           </div>
         </section>
-        </FadeInSection>
-        )}
 
         {/* Featured Sellers */}
         {featuredShops && featuredShops.length > 0 && (

@@ -20,6 +20,8 @@ type Translations = {
       photo: string
       photoHint: string
       changePhoto: string
+      removePhoto: string
+      removingPhoto: string
       uploading: string
       email: string
       emailHint: string
@@ -87,6 +89,8 @@ const en: Translations = {
       photo: 'Profile Photo',
       photoHint: 'Click the avatar to upload.',
       changePhoto: 'Change photo',
+      removePhoto: 'Remove photo',
+      removingPhoto: 'Removing...',
       uploading: 'Uploading...',
       email: 'Email',
       emailHint: 'Your email cannot be changed',
@@ -154,6 +158,8 @@ const es: Translations = {
       photo: 'Foto de perfil',
       photoHint: 'Haz clic en el avatar para subir.',
       changePhoto: 'Cambiar foto',
+      removePhoto: 'Quitar foto',
+      removingPhoto: 'Quitando...',
       uploading: 'Subiendo...',
       email: 'Correo electrónico',
       emailHint: 'Tu correo no se puede cambiar',

@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-import { upsertAvatarWebp, updateProfileAvatarUrlRow } from "@/lib/db/profileAvatar"
+import {
+  upsertAvatarWebp,
+  updateProfileAvatarUrlRow,
+  clearProfileAvatarUrlRow,
+  removeAvatarObjectFromStorage,
+} from "@/lib/db/profileAvatar"
 import { processProfileAvatarToWebp } from "@/lib/services/profileAvatarImage"
 
 export async function uploadProcessedProfileAvatar(params: {
@@ -21,4 +26,13 @@ export async function uploadProcessedProfileAvatar(params: {
   await updateProfileAvatarUrlRow(supabase, userId, avatarUrl)
 
   return { avatarUrl }
+}
+
+export async function removeProfileAvatar(params: {
+  supabase: SupabaseClient
+  userId: string
+}): Promise<void> {
+  const { supabase, userId } = params
+  await clearProfileAvatarUrlRow(supabase, userId)
+  await removeAvatarObjectFromStorage(supabase, userId)
 }

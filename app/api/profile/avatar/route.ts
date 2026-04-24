@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
 import { createClient } from "@/lib/supabase/server"
-import { uploadProcessedProfileAvatar } from "@/lib/services/profileAvatar"
+import { removeProfileAvatar, uploadProcessedProfileAvatar } from "@/lib/services/profileAvatar"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 
 export const maxDuration = 60
 export const runtime = "nodejs"
 
 function errMessage(err: unknown): string {
-  return err instanceof Error ? err.message : "Upload failed"
+  return err instanceof Error ? err.message : "Request failed"
 }
 
 export async function POST(request: NextRequest) {
@@ -52,5 +52,26 @@ export async function POST(request: NextRequest) {
     const message = errMessage(err)
     console.error("[profile/avatar]", message)
     return NextResponse.json({ error: "Failed to process or upload photo" }, { status: 500 })
+  }
+}
+
+export async function DELETE() {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    await removeProfileAvatar({ supabase, userId: user.id })
+
+    return NextResponse.json({ data: { removed: true } }, { status: 200 })
+  } catch (err: unknown) {
+    const message = errMessage(err)
+    console.error("[profile/avatar] DELETE", message)
+    return NextResponse.json({ error: "Failed to remove photo" }, { status: 500 })
   }
 }
