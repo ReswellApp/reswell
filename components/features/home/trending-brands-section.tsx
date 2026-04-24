@@ -34,15 +34,15 @@ export function TrendingBrandsSection({
 
   return (
     <FadeInSection>
-      <section className="py-12 sm:py-16">
+      <section className="py-16">
         <div className="container mx-auto">
-          <div className="mb-6 flex min-w-0 items-center justify-between gap-3 sm:mb-8">
-            <h2 className="min-w-0 text-left text-sm font-bold uppercase tracking-[0.2em] text-foreground sm:text-base">
-              Trending brands
-            </h2>
-            <div className="flex shrink-0 items-center gap-2">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-2xl font-bold">Trending brands</h2>
+            </div>
+            <div className="flex shrink-0 items-center gap-2 sm:justify-end">
               {brands.length > 0 && (
-                <Button variant="ghost" asChild className="inline-flex">
+                <Button variant="outline" asChild>
                   <Link href={BRANDS_BASE}>
                     All brands
                     <ArrowRight className="ml-1 h-4 w-4" />
