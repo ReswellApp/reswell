@@ -20,7 +20,12 @@ import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import { surfboardBrowseLinks } from "@/lib/site-category-directory"
 import { boardTypeForDbFromBrowseParam } from "@/lib/marketplace-slug-metadata"
-import { HomeListingScrollRow, HomePeerListingScrollTile, TrendingBrandsSection } from "@/components/features/home"
+import {
+  HomeHowItWorksSection,
+  HomeListingScrollRow,
+  HomePeerListingScrollTile,
+  TrendingBrandsSection,
+} from "@/components/features/home"
 import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 import { pageSeoMetadata } from "@/lib/site-metadata"
@@ -79,7 +84,6 @@ export default async function HomePage() {
     featuredShopsRes,
     boardsRes,
     shortBoardsRes,
-    grovelerBoardsRes,
     browseRes,
     newGearRes,
     authRes,
@@ -108,15 +112,6 @@ export default async function HomePage() {
       .eq("status", "active")
       .eq("section", "surfboards")
       .eq("board_type", "shortboard")
-      .eq("hidden_from_site", false)
-      .order("created_at", { ascending: false })
-      .limit(20),
-    supabase
-      .from("listings")
-      .select(listingWithProfileSelect)
-      .eq("status", "active")
-      .eq("section", "surfboards")
-      .eq("board_type", "groveler")
       .eq("hidden_from_site", false)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -154,7 +149,6 @@ export default async function HomePage() {
   const { data: featuredShops } = featuredShopsRes
   const { data: rawFeaturedBoards } = boardsRes
   const { data: rawFeaturedShortboards } = shortBoardsRes
-  const { data: rawFeaturedGrovelers } = grovelerBoardsRes
   const { data: listingsForBrowseByCategory } = browseRes
   const { data: rawFeaturedNew } = newGearRes
   const {
@@ -195,12 +189,6 @@ export default async function HomePage() {
 
   const featuredShortboards = rawFeaturedShortboards
     ? [...rawFeaturedShortboards]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 20)
-    : null
-
-  const featuredGrovelers = rawFeaturedGrovelers
-    ? [...rawFeaturedGrovelers]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 20)
     : null
@@ -247,7 +235,6 @@ export default async function HomePage() {
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
-    ...(featuredGrovelers ?? []).map((b) => b.id),
     ...browseCategoryTiles.map(({ listing: l }) => l.id),
     ...featuredNew.map(({ listing: l }) => l.id),
   ]
@@ -349,12 +336,33 @@ export default async function HomePage() {
               <div>
                 <p className="text-lg font-semibold text-foreground">Every board deserves another session</p>
                 <p className="text-muted-foreground mt-1">
-                  A community of surfers buying, selling, and passing along the boards they love. Find your next ride,
+                  A community of surfers buying, selling, and passing along the boards they love. Find your next board,
                   or send one off to its next.
                 </p>
               </div>
               <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
                 List your board
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          </div>
+        </section>
+
+        <TrendingBrandsSection rows={homeTrendingBrandRows} isAdmin={isHomeHeroAdmin} />
+
+        {/* Confidence banner */}
+        <section className="py-8">
+          <div className="container mx-auto">
+            <Link href="/contact" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+              <div>
+                <p className="text-lg font-semibold text-foreground">We&apos;re here whenever you need us</p>
+                <p className="text-muted-foreground mt-1">
+                  Real people, real surfers, happy to help with a listing, a question, or just pointing you toward the
+                  right board. Say hi anytime.
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+                Say hello
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -394,59 +402,9 @@ export default async function HomePage() {
           </FadeInSection>
         )}
 
-        <TrendingBrandsSection rows={homeTrendingBrandRows} isAdmin={isHomeHeroAdmin} />
-
-        {/* Confidence banner */}
-        <section className="py-8">
-          <div className="container mx-auto">
-            <Link href="/contact" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
-              <div>
-                <p className="text-lg font-semibold text-foreground">We&apos;re here whenever you need us</p>
-                <p className="text-muted-foreground mt-1">
-                  Real people, real surfers, happy to help with a listing, a question, or just pointing you toward the
-                  right board. Say hi anytime.
-                </p>
-              </div>
-              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
-                Say hello
-                <ArrowRight className="h-4 w-4" />
-              </span>
-            </Link>
-          </div>
-        </section>
-
-        {featuredGrovelers && featuredGrovelers.length > 0 && (
-          <FadeInSection>
-          <section className="py-16 bg-offwhite">
-            <div className="container mx-auto">
-              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-bold">Recently added grovelers</h2>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link
-                    href="/boards?type=groveler"
-                    prefetch={boardsBrowseLinkPrefetch("/boards?type=groveler")}
-                  >
-                    Find More
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <HomeListingScrollRow uniformCardHeights>
-                {featuredGrovelers.map((board) => (
-                  <HomePeerListingScrollTile
-                    key={board.id}
-                    listing={board}
-                    userId={user?.id ?? null}
-                    isFavorited={favoritedIds.includes(board.id)}
-                  />
-                ))}
-              </HomeListingScrollRow>
-            </div>
-          </section>
-          </FadeInSection>
-        )}
+        <FadeInSection>
+          <HomeHowItWorksSection />
+        </FadeInSection>
 
         {/* CTA */}
         <section className="py-8">
