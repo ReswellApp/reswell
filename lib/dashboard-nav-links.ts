@@ -18,11 +18,11 @@ export interface DashboardNavLink {
 
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
+  { name: "Offers", href: "/dashboard/offers", icon: Handshake },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
-  { name: "Offers", href: "/dashboard/offers", icon: Handshake },
   { name: "Followers", href: "/dashboard/followers", icon: Users },
-  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]

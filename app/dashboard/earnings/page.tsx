@@ -2,18 +2,14 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw } from "lucide-react"
 import { getEarningsWalletData, loadMoreEarningsActivity } from "@/app/actions/wallet"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-lifetime-stats"
-import { EarningsQuickReference } from "@/components/features/earnings/earnings-quick-reference"
 import { EarningsActivity } from "@/components/features/earnings/earnings-activity"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
-import { EarningsPayoutBalanceSection } from "@/components/features/earnings/earnings-payout-balance-section"
 import type { StripeConnectStatusPayload } from "@/components/features/earnings/stripe-bank-payout-section"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
 
@@ -29,7 +25,6 @@ interface StripeTransferHistoryItem {
 }
 
 export default function EarningsPage() {
-  const [earningsTab, setEarningsTab] = useState("payments")
   const [wallet, setWallet] = useState<EarningsWalletSnapshot | null>(null)
   const [walletLoading, setWalletLoading] = useState(true)
   const [walletError, setWalletError] = useState<string | null>(null)
@@ -57,7 +52,6 @@ export default function EarningsPage() {
   } | null>(null)
 
   const fetchGenerationRef = useRef(0)
-  const pendingBankScrollRef = useRef(false)
   const earningsResyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** First wallet+activity fetch only — later refetches update in place without skeleton flash. */
   const initialWalletActivityPaintRef = useRef(true)
@@ -202,18 +196,10 @@ export default function EarningsPage() {
     void fetchData()
   }, [fetchData])
 
-  useEffect(() => {
-    if (earningsTab !== "payments" || !pendingBankScrollRef.current) return
-    pendingBankScrollRef.current = false
-    const t = window.setTimeout(() => {
+  const scrollToBankPayout = useCallback(() => {
+    window.setTimeout(() => {
       document.getElementById("earnings-bank-payout")?.scrollIntoView({ behavior: "smooth", block: "start" })
     }, 100)
-    return () => window.clearTimeout(t)
-  }, [earningsTab])
-
-  const openBankSetupFromPayoutTab = useCallback(() => {
-    setEarningsTab("payments")
-    pendingBankScrollRef.current = true
   }, [])
 
   useEffect(() => {
@@ -344,102 +330,61 @@ export default function EarningsPage() {
         </Button>
       </div>
 
-      <Tabs value={earningsTab} onValueChange={setEarningsTab} className="w-full">
-        <TabsList
-          className={cn(
-            "w-full sm:w-auto h-auto p-0 bg-transparent rounded-none justify-start gap-8",
-            "border-b border-border",
-          )}
-        >
-          <TabsTrigger
-            value="payments"
-            className={cn(
-              "rounded-none border-0 border-b-2 border-transparent px-0 pb-3 -mb-px bg-transparent shadow-none",
-              "data-[state=active]:shadow-none data-[state=active]:bg-transparent",
-              "data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground",
-            )}
-          >
-            Payments
-          </TabsTrigger>
-          <TabsTrigger
-            value="balance"
-            className={cn(
-              "rounded-none border-0 border-b-2 border-transparent px-0 pb-3 -mb-px bg-transparent shadow-none",
-              "data-[state=active]:shadow-none data-[state=active]:bg-transparent",
-              "data-[state=active]:border-foreground text-muted-foreground data-[state=active]:text-foreground",
-            )}
-          >
-            Payout balance
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="payments" className="mt-6 space-y-8 focus-visible:outline-none">
-          <section className="space-y-4">
-            <h2 className="text-base font-semibold text-foreground">Overview</h2>
-            <EarningsPaymentsOverview
-              wallet={wallet}
-              transactions={transactions}
-              isLoading={walletLoading}
-              errorMessage={walletError}
-              stripePayoutsEnabled={stripePayoutsEnabled}
-              stripeLoading={stripePayoutsEnabled ? stripeBlockLoading : false}
-              connectStatus={stripeConnectStatus}
-              activityHasMore={activityHasMore}
-            />
-          </section>
-
-          <EarningsLifetimeStats wallet={wallet} isLoading={walletLoading} />
-
-          {stripePayoutsEnabled ? (
-            <section id="earnings-bank-payout" className="scroll-mt-28 space-y-3">
-              <h2 className="text-base font-semibold text-foreground">Bank transfers</h2>
-              <EarningsStripePayoutCard
-                enabled={stripePayoutsEnabled}
-                isLoading={stripeBlockLoading}
-                statusFetchFailed={stripeStatusFailed}
-                historyFetchFailed={stripeHistoryFailed}
-                onRetry={() => void fetchData()}
-                availableBalance={displayAvailable}
-                connectStatus={stripeConnectStatus}
-                transferHistory={stripeTransferHistory}
-                onRefresh={fetchData}
-                onCashOutSettled={handleStripeBankCashOutSettled}
-              />
-            </section>
-          ) : null}
-        </TabsContent>
-
-        <TabsContent value="balance" className="mt-6 space-y-8 focus-visible:outline-none">
-          <EarningsPayoutBalanceSection
+      <div className="mt-6 space-y-8">
+        <section className="space-y-4">
+          <h2 className="text-base font-semibold text-foreground">Overview</h2>
+          <EarningsPaymentsOverview
             wallet={wallet}
+            transactions={transactions}
             isLoading={walletLoading}
             errorMessage={walletError}
             stripePayoutsEnabled={stripePayoutsEnabled}
             stripeLoading={stripePayoutsEnabled ? stripeBlockLoading : false}
             connectStatus={stripeConnectStatus}
             statusFetchFailed={stripeStatusFailed}
-            onCompletePayoutDetails={openBankSetupFromPayoutTab}
+            activityHasMore={activityHasMore}
+            onScrollToBankPayout={scrollToBankPayout}
           />
-          <EarningsActivity
-            transactions={transactions}
-            reversedOrderIds={reversedOrderIds}
-            hasMore={activityHasMore}
-            isLoading={activityLoading}
-            isLoadingMore={loadingMoreActivity}
-            loadError={walletError}
-            loadMoreError={activityLoadMoreError}
-            onLoadMore={loadMoreActivity}
-            onCollapseLoadedActivity={collapseActivityToFirstPage}
-            heading="Payout history"
-            caption={payoutHistoryCaption}
-            globalEmptyCopy={{
-              title: "You don’t have a payout history yet",
-              body: "Here you’ll see a complete record of money coming in from sales and going out as payouts, refunds, and purchases.",
-            }}
-          />
-          <EarningsQuickReference stripePayoutsEnabled={stripePayoutsEnabled} />
-        </TabsContent>
-      </Tabs>
+        </section>
+
+        <EarningsLifetimeStats wallet={wallet} isLoading={walletLoading} />
+
+        {stripePayoutsEnabled ? (
+          <section id="earnings-bank-payout" className="scroll-mt-28 space-y-3">
+            <h2 className="text-base font-semibold text-foreground">Bank transfers</h2>
+            <EarningsStripePayoutCard
+              enabled={stripePayoutsEnabled}
+              isLoading={stripeBlockLoading}
+              statusFetchFailed={stripeStatusFailed}
+              historyFetchFailed={stripeHistoryFailed}
+              onRetry={() => void fetchData()}
+              availableBalance={displayAvailable}
+              connectStatus={stripeConnectStatus}
+              transferHistory={stripeTransferHistory}
+              onRefresh={fetchData}
+              onCashOutSettled={handleStripeBankCashOutSettled}
+            />
+          </section>
+        ) : null}
+
+        <EarningsActivity
+          transactions={transactions}
+          reversedOrderIds={reversedOrderIds}
+          hasMore={activityHasMore}
+          isLoading={activityLoading}
+          isLoadingMore={loadingMoreActivity}
+          loadError={walletError}
+          loadMoreError={activityLoadMoreError}
+          onLoadMore={loadMoreActivity}
+          onCollapseLoadedActivity={collapseActivityToFirstPage}
+          heading="Payout history"
+          caption={payoutHistoryCaption}
+          globalEmptyCopy={{
+            title: "You don’t have a payout history yet",
+            body: "Here you’ll see a complete record of money coming in from sales and going out as payouts, refunds, and purchases.",
+          }}
+        />
+      </div>
     </div>
   )
 }

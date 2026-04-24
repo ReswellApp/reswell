@@ -30,16 +30,9 @@ import {
   MessageSquare,
   User,
   LogOut,
-  Package,
   Heart,
   Plus,
-  UserCircle,
-  LayoutDashboard,
-  Banknote,
   ChevronDown,
-  Handshake,
-  ShoppingBag,
-  PackageCheck,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
@@ -57,6 +50,7 @@ import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -628,55 +622,34 @@ export function Header() {
             </div>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/earnings" className="flex items-center justify-between">
-              <span className="flex items-center">
-                <Banknote className="mr-2 h-4 w-4" />
-                Earnings
-              </span>
-              {walletBalance !== null && (
-                <span className="text-xs font-medium text-foreground dark:text-white ml-2 tabular-nums">
-                  ${walletBalance.toFixed(2)}
-                </span>
-              )}
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="flex items-center">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Dashboard
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/listings" className="flex items-center">
-              <Package className="mr-2 h-4 w-4" />
-              My Listings
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/orders" className="flex items-center">
-              <ShoppingBag className="mr-2 h-4 w-4" />
-              Orders
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/sales" className="flex items-center">
-              <PackageCheck className="mr-2 h-4 w-4" />
-              Sales
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/offers" className="flex items-center">
-              <Handshake className="mr-2 h-4 w-4" />
-              Offers
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/profile" className="flex items-center">
-              <UserCircle className="mr-2 h-4 w-4" />
-              Profile
-            </Link>
-          </DropdownMenuItem>
+          {DASHBOARD_NAV_LINKS.map((link) => {
+            const Icon = link.icon
+            if (link.href === "/dashboard/earnings") {
+              return (
+                <DropdownMenuItem key={link.href} asChild>
+                  <Link href={link.href} className="flex items-center justify-between">
+                    <span className="flex items-center">
+                      <Icon className="mr-2 h-4 w-4" />
+                      {link.name}
+                    </span>
+                    {walletBalance !== null && (
+                      <span className="text-xs font-medium text-foreground dark:text-white ml-2 tabular-nums">
+                        ${walletBalance.toFixed(2)}
+                      </span>
+                    )}
+                  </Link>
+                </DropdownMenuItem>
+              )
+            }
+            return (
+              <DropdownMenuItem key={link.href} asChild>
+                <Link href={link.href} className="flex items-center">
+                  <Icon className="mr-2 h-4 w-4" />
+                  {link.name}
+                </Link>
+              </DropdownMenuItem>
+            )
+          })}
           {isAdmin && (
             <>
               <DropdownMenuSeparator />

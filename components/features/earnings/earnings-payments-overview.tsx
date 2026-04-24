@@ -1,8 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
-import { AlertTriangle, Banknote, CheckCircle2, HelpCircle } from "lucide-react"
+import { Banknote, CheckCircle2, HelpCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
@@ -28,8 +28,8 @@ function msDays(d: number) {
 }
 
 const PERIOD_OPTIONS = [
-  { value: "90", days: 90, label: "in the last 3 months" },
   { value: "30", days: 30, label: "in the last 30 days" },
+  { value: "90", days: 90, label: "in the last 3 months" },
   { value: "365", days: 365, label: "in the last 12 months" },
 ] as const
 
@@ -50,13 +50,14 @@ function earnedInPeriodUsd(transactions: EarningsTransaction[], periodDays: numb
 
 export function EarningsPaymentsOverviewSkeleton() {
   return (
-    <div className="grid gap-3 lg:grid-cols-3">
-      {Array.from({ length: 3 }).map((_, i) => (
+    <div className="grid gap-3 lg:grid-cols-2">
+      {Array.from({ length: 2 }).map((_, i) => (
         <Card key={i} className="border-border/80">
           <CardContent className="p-4 space-y-2">
             <Skeleton className="h-9 w-full" />
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-full" />
+            {i === 1 ? <Skeleton className="h-16 w-full rounded-md mt-2" /> : null}
           </CardContent>
         </Card>
       ))}
@@ -72,7 +73,9 @@ export function EarningsPaymentsOverview({
   stripePayoutsEnabled,
   stripeLoading,
   connectStatus,
+  statusFetchFailed,
   activityHasMore,
+  onScrollToBankPayout,
 }: {
   wallet: EarningsWalletSnapshot | null
   transactions: EarningsTransaction[]
@@ -81,7 +84,9 @@ export function EarningsPaymentsOverview({
   stripePayoutsEnabled: boolean
   stripeLoading: boolean
   connectStatus: StripeConnectStatusPayload | null
+  statusFetchFailed: boolean
   activityHasMore: boolean
+  onScrollToBankPayout: () => void
 }) {
   const [periodValue, setPeriodValue] = useState<string>(PERIOD_OPTIONS[0].value)
   const periodDays =
@@ -120,7 +125,7 @@ export function EarningsPaymentsOverview({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Card className="border-border/80 shadow-sm">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-start gap-2">
@@ -160,9 +165,8 @@ export function EarningsPaymentsOverview({
                   </p>
                   {activityHasMore ? (
                     <p>
-                      Totals use loaded history only. In <span className="font-semibold">Payout balance</span>, use{" "}
-                      <span className="font-semibold">Load more</span> under payout history if this period might include
-                      older sales.
+                      Totals use loaded history only. Under <span className="font-semibold">Payout history</span> below,
+                      use <span className="font-semibold">Load more</span> if this period might include older sales.
                     </p>
                   ) : null}
                 </TooltipContent>
@@ -178,56 +182,13 @@ export function EarningsPaymentsOverview({
           </CardContent>
         </Card>
 
-        <Card className="border-border/80 shadow-sm">
-          <CardContent className="p-4">
-            {!stripePayoutsEnabled ? (
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Bank payouts aren&apos;t enabled for this app build. Your marketplace balance still updates with sales
-                and refunds.
-              </p>
-            ) : stripeLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </div>
-            ) : bankReady ? (
-              <div className="flex gap-3">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" aria-hidden />
-                <div className="text-sm leading-relaxed">
-                  <p className="font-medium text-foreground">You&apos;re set up for bank payouts</p>
-                  {connectStatus?.bankLast4 ? (
-                    <p className="text-muted-foreground mt-1">
-                      Linked account ending in <span className="font-mono">{connectStatus.bankLast4}</span>
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground mt-1">Use the bank section below to cash out.</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" aria-hidden />
-                <p className="text-sm leading-relaxed text-foreground">
-                  Provide your{" "}
-                  <Link
-                    href="#earnings-bank-payout"
-                    className="font-semibold underline underline-offset-2 decoration-foreground/70 hover:decoration-foreground"
-                  >
-                    bank information
-                  </Link>{" "}
-                  so you can get paid.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         <Card
           className={cn(
             "border-transparent shadow-sm text-primary-foreground",
-            "bg-primary",
-            // Readable text selection on dark primary (avoid default / OS black wash)
-            "selection:bg-sky-300 selection:text-slate-950",
+            // Light theme: primary token is very dark (~11% L); soften so the card isn’t near-black.
+            "bg-[hsl(222_36%_30%)] dark:bg-primary",
+            // Readable text selection on the tinted balance panel
+            "selection:bg-sky-300 selection:text-slate-950 dark:selection:bg-sky-700 dark:selection:text-sky-50",
           )}
         >
           <CardContent className="p-4 flex flex-col gap-3">
@@ -270,29 +231,77 @@ export function EarningsPaymentsOverview({
               </Tooltip>
             </div>
 
+            <p className="text-sm text-primary-foreground/80 leading-relaxed -mt-0.5">
+              Your balance can be transferred to a linked bank account.
+            </p>
+
             <div className="space-y-2">
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-primary-foreground/75 mb-0.5">
-                  Total (including pending)
+                <p className="text-[11px] font-medium tracking-wide text-primary-foreground/75 mb-0.5 leading-snug">
+                  Ready to transfer to your bank
                 </p>
                 <p className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight">
-                  ${displayTotal.toFixed(2)}
+                  ${displayAvailable.toFixed(2)}
                 </p>
               </div>
               <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
                 <div>
-                  <p className="text-[11px] text-primary-foreground/75 mb-0.5">Ready to spend</p>
-                  <p className="text-base font-semibold tabular-nums">${displayAvailable.toFixed(2)}</p>
+                  <p className="text-[11px] text-primary-foreground/75 mb-0.5">Total (including pending)</p>
+                  <p className="text-base font-semibold tabular-nums">${displayTotal.toFixed(2)}</p>
                 </div>
-                {displayPending > 0 ? (
-                  <div>
-                    <p className="text-[11px] text-primary-foreground/75 mb-0.5">Pending (until delivery)</p>
-                    <p className="text-base font-semibold tabular-nums text-primary-foreground/90">
-                      ${displayPending.toFixed(2)}
-                    </p>
-                  </div>
-                ) : null}
+                <div>
+                  <p className="text-[11px] text-primary-foreground/75 mb-0.5">Pending (until order confirmed)</p>
+                  <p className="text-base font-semibold tabular-nums">${displayPending.toFixed(2)}</p>
+                </div>
               </div>
+            </div>
+
+            <div className="pt-2 mt-1 border-t border-primary-foreground/20 space-y-3 text-left text-sm">
+              {!stripePayoutsEnabled ? (
+                <p className="text-primary-foreground/85 leading-relaxed">
+                  Bank payouts aren&apos;t enabled for this workspace. Your balance still tracks sales and refunds.
+                </p>
+              ) : stripeLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-3.5 w-full bg-primary-foreground/15" />
+                  <Skeleton className="h-9 w-48 rounded-md bg-primary-foreground/15" />
+                </div>
+              ) : statusFetchFailed ? (
+                <p className="text-primary-foreground/85 leading-relaxed">
+                  We couldn&apos;t verify your payout setup. Use <span className="font-medium">Refresh</span> at the top
+                  of the page, or finish setup in <span className="font-medium">Bank transfers</span> below.
+                </p>
+              ) : bankReady ? (
+                <div className="flex gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0 mt-0.5" aria-hidden />
+                  <p className="text-primary-foreground/90 leading-relaxed">
+                    <span className="font-medium">Payout details on file.</span>{" "}
+                    {connectStatus?.bankLast4 ? (
+                      <>
+                        Linked account ending in <span className="font-mono tabular-nums">{connectStatus.bankLast4}</span>
+                        . Cash out in Bank transfers below.
+                      </>
+                    ) : (
+                      <>You can cash out in Bank transfers below.</>
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <p className="text-primary-foreground/90 leading-relaxed">
+                    Payout details aren&apos;t finished yet. Complete them before earnings can transfer to your bank.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="w-full sm:w-auto font-medium bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    onClick={onScrollToBankPayout}
+                  >
+                    Complete payout details
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

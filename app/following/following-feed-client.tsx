@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FollowButton } from "@/components/follows/follow-button"
 import { MapPin, Users, Loader2, Package } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowingFeedPage } from "@/app/actions/follows"
@@ -55,12 +54,6 @@ interface Props {
   suggestedSellers: SuggestedSeller[]
 }
 
-const SECTIONS = [
-  { label: "All", value: "all" },
-  { label: "Surfboards", value: "surfboards" },
-  { label: "Shop (new)", value: "new" },
-]
-
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
 function isNew(dateStr: string) {
@@ -90,7 +83,6 @@ export function FollowingFeedClient({
   suggestedSellers,
 }: Props) {
   const [listings, setListings] = useState<Listing[]>(initialListings)
-  const [activeSection, setActiveSection] = useState("all")
   const [loadingMore, setLoadingMore] = useState(false)
   const [cursor, setCursor] = useState<string | null>(
     initialListings.length === 20
@@ -98,7 +90,6 @@ export function FollowingFeedClient({
       : null
   )
   const [hasMore, setHasMore] = useState(initialListings.length === 20)
-  const [localTab, setLocalTab] = useState<"all" | "local">("all")
 
   const loadMore = useCallback(async () => {
     if (!cursor || loadingMore) return
@@ -114,45 +105,18 @@ export function FollowingFeedClient({
     }
   }, [cursor, loadingMore])
 
-  const filtered = listings.filter((l) => {
-    if (activeSection !== "all" && l.section !== activeSection) return false
-    if (localTab === "local" && userCity) {
-      const sellerCity = l.seller?.city || l.city
-      if (!sellerCity?.toLowerCase().includes(userCity.toLowerCase())) return false
+  const groupMap = new Map<
+    string,
+    {
+      sellerId: string
+      sellerSlug: string | null
+      sellerName: string
+      sellerCity: string | null
+      avatarUrl: string | null
+      listings: Listing[]
     }
-    return true
-  })
-
-  // Group by seller for display
-  const grouped: {
-    sellerId: string
-    sellerSlug: string | null
-    sellerName: string
-    sellerCity: string | null
-    avatarUrl: string | null
-    listings: Listing[]
-  }[] = []
-  const seen = new Set<string>()
-  for (const l of filtered) {
-    const sid = l.seller?.id
-    if (!sid) continue
-    if (!seen.has(sid)) {
-      seen.add(sid)
-      grouped.push({
-        sellerId: sid,
-        sellerSlug: l.seller.seller_slug,
-        sellerName: l.seller.shop_name || l.seller.display_name || "Seller",
-        sellerCity: l.seller.city,
-        avatarUrl: l.seller.avatar_url,
-        listings: [],
-      })
-    }
-    grouped[grouped.length - 1]?.listings.push(l)
-  }
-
-  // Re-group properly (above algo is wrong for out-of-order sellers)
-  const groupMap = new Map<string, (typeof grouped)[0]>()
-  for (const l of filtered) {
+  >()
+  for (const l of listings) {
     const sid = l.seller?.id
     if (!sid) continue
     if (!groupMap.has(sid)) {
@@ -183,54 +147,12 @@ export function FollowingFeedClient({
         </p>
       </div>
 
-      {/* Tabs: All / Local */}
-      <div className="flex items-center gap-1 mb-4">
-        <Button
-          variant={localTab === "all" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setLocalTab("all")}
-        >
-          All
-        </Button>
-        {userCity && (
-          <Button
-            variant={localTab === "local" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setLocalTab("local")}
-            className="flex items-center gap-1.5"
-          >
-            <MapPin className="h-3.5 w-3.5" />
-            Local sellers
-          </Button>
-        )}
-      </div>
-
-      {/* Section filters */}
-      <div className="flex flex-wrap gap-1.5 mb-6">
-        {SECTIONS.map((s) => (
-          <button
-            key={s.value}
-            onClick={() => setActiveSection(s.value)}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
-              activeSection === s.value
-                ? "bg-foreground text-background border-foreground"
-                : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-
       {/* Feed */}
       {sellerGroups.length === 0 ? (
         <div className="text-center py-16">
           <Package className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
           <p className="text-muted-foreground">
-            {localTab === "local"
-              ? "No local listings in the last 30 days."
-              : "No new listings in the last 30 days. Check back soon!"}
+            No new listings in the last 30 days. Check back soon!
           </p>
         </div>
       ) : (

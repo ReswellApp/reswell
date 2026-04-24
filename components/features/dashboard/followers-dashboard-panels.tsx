@@ -5,7 +5,7 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { MapPin, Users, TrendingUp, Lightbulb, Sparkles, Heart } from "lucide-react"
+import { MapPin, Users, TrendingUp, Heart } from "lucide-react"
 import { UnfollowButton } from "@/app/dashboard/followers/unfollow-button"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -169,7 +169,7 @@ export async function FollowersDashboardPanels() {
             <TrendingUp className="h-3.5 w-3.5" aria-hidden />
             New this month
           </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-green-600 dark:text-green-500">
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
             +{newThisMonth.toLocaleString()}
           </p>
         </CardContent>
@@ -190,10 +190,7 @@ export async function FollowersDashboardPanels() {
     <section id="people-following-you" className="scroll-mt-8 space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" aria-hidden />
-            People into your shop
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground">People into your shop</h2>
           <p className="text-sm text-muted-foreground mt-0.5 max-w-xl">
             Only you see this. Say hi by listing something new.
           </p>
@@ -204,7 +201,7 @@ export async function FollowersDashboardPanels() {
       </div>
 
       {myFollowerRows.length === 0 ? (
-        <Card className="border-dashed border-amber-200/60 bg-amber-50/30 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <Card className="border-dashed border-border bg-muted/20">
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
             <Users className="h-9 w-9 text-muted-foreground" />
             <p className="font-medium text-foreground">Nobody here yet—your first follower is on the way</p>
@@ -430,30 +427,8 @@ export async function FollowersDashboardPanels() {
     </section>
   )
 
-  const keepGrowing = (
-    <Card className="border-blue-200/80 bg-gradient-to-br from-blue-50/90 to-sky-50/50 dark:border-blue-900 dark:from-blue-950/50 dark:to-slate-900/30">
-      <CardContent className="p-5 sm:p-6">
-        <div className="flex gap-3 sm:gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-            <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">List something—they’ll get the heads-up</p>
-            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-              New posts ping your followers in the app and in the daily email. One listing can bring people back
-              to your shop.
-            </p>
-            <Button asChild className="mt-3" size="sm">
-              <Link href="/sell?new=1">List new gear</Link>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-
   return (
-    <div className="space-y-8 sm:space-y-10">
+    <div className="space-y-8 sm:space-y-10 pb-10 sm:pb-12">
       <header className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Your community</h1>
         <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
@@ -464,7 +439,6 @@ export async function FollowersDashboardPanels() {
       {statStrip}
       {peopleFollowingYou}
       {shopsYouFollow}
-      {keepGrowing}
     </div>
   )
 }
