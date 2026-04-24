@@ -74,7 +74,8 @@ export default async function DashboardPage() {
       .from("listings")
       .select("*, listing_images (url, is_primary)")
       .eq("user_id", user.id)
-      .neq("status", "draft")
+      .in("status", ["active", "sold"])
+      .is("archived_at", null)
       .order("updated_at", { ascending: false })
       .limit(4),
     supabase

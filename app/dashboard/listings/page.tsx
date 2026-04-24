@@ -15,6 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
@@ -25,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from "lucide-react"
+import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive, CheckCircle2 } from "lucide-react"
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -217,52 +218,66 @@ export default function MyListingsPage() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Listing actions">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="min-w-[12rem] p-1.5">
                     {isDraft ? (
-                      <DropdownMenuItem asChild>
-                        <Link href={`/sell?edit=${listing.id}`}>
-                          <Edit className="h-4 w-4 mr-2" /> Continue editing
-                        </Link>
-                      </DropdownMenuItem>
-                    ) : (
                       <>
-                        <DropdownMenuItem asChild>
-                          <Link href={getListingHref(listing.section, listing.id, listing.slug)}>
-                            <Eye className="h-4 w-4 mr-2" /> View
+                        <DropdownMenuItem asChild className="py-2.5">
+                          <Link href={`/sell?edit=${listing.id}`} className="cursor-default">
+                            <Edit className="h-4 w-4" />
+                            Continue editing
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/sell?edit=${listing.id}`}>
-                            <Edit className="h-4 w-4 mr-2" /> Edit
-                          </Link>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="py-2.5 text-destructive focus:text-destructive"
+                          onClick={() => void handleDiscardDraft(listing.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Discard draft
                         </DropdownMenuItem>
                       </>
-                    )}
-                    {listing.status === 'active' && (
-                      <DropdownMenuItem onClick={() => handleStatusChange(listing.id, 'sold')}>
-                        Mark as Sold
-                      </DropdownMenuItem>
-                    )}
-                    {listing.status === 'sold' && (
-                      <DropdownMenuItem onClick={() => handleStatusChange(listing.id, 'active')}>
-                        Relist
-                      </DropdownMenuItem>
-                    )}
-                    {isDraft ? (
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => void handleDiscardDraft(listing.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Discard draft
-                      </DropdownMenuItem>
                     ) : (
-                      <DropdownMenuItem onClick={() => { setEndListingId(listing.id); setEndChoice(null); }}>
-                        <Archive className="h-4 w-4 mr-2" /> End listing
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem asChild className="py-2.5">
+                          <Link
+                            href={getListingHref(listing.section, listing.id, listing.slug)}
+                            className="cursor-default"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="py-2.5">
+                          <Link href={`/sell?edit=${listing.id}`} className="cursor-default">
+                            <Edit className="h-4 w-4" />
+                            Edit
+                          </Link>
+                        </DropdownMenuItem>
+                        {listing.status === 'active' && (
+                          <DropdownMenuItem
+                            className="py-2.5"
+                            onClick={() => handleStatusChange(listing.id, 'sold')}
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Mark as Sold
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="py-2.5"
+                          onClick={() => {
+                            setEndListingId(listing.id)
+                            setEndChoice(null)
+                          }}
+                        >
+                          <Archive className="h-4 w-4" />
+                          End listing
+                        </DropdownMenuItem>
+                      </>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
