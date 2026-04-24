@@ -6,6 +6,13 @@ import {
   indexListingDocument,
   listingRowToSearchDocFromRow,
 } from "@/lib/elasticsearch/listings-index"
+import {
+  deleteSellerDocument,
+  ensureSellersIndex,
+  indexSellerDocument,
+  profileRowToSellerDoc,
+  type SellerProfileRow,
+} from "@/lib/elasticsearch/sellers-index"
 import { getElasticsearchClient } from "@/lib/elasticsearch/client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 
@@ -72,6 +79,7 @@ export async function POST(request: NextRequest) {
   try {
     await ensureListingsIndex()
     await ensureBrandsIndex()
+    await ensureSellersIndex()
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json(
@@ -88,6 +96,10 @@ export async function POST(request: NextRequest) {
   let brandsIndexed = 0
   let brandErrors = 0
   let brandFrom = 0
+  let sellersIndexed = 0
+  let sellersRemoved = 0
+  let sellerErrors = 0
+  let sellerFrom = 0
 
   for (;;) {
     const { data: rows, error } = await supabase
@@ -159,5 +171,77 @@ export async function POST(request: NextRequest) {
     brandFrom += pageSize
   }
 
-  return NextResponse.json({ ok: true, indexed, errors, brandsIndexed, brandErrors })
+  // Collect user_ids with at least one active, visible listing so we can set
+  // `has_active_listings` per profile without an N+1 query.
+  const activeListingUserIds = new Set<string>()
+  {
+    const activeListingPageSize = 1000
+    let activeListingFrom = 0
+    for (;;) {
+      const { data: rows, error } = await supabase
+        .from("listings")
+        .select("user_id")
+        .eq("status", "active")
+        .eq("hidden_from_site", false)
+        .is("archived_at", null)
+        .range(activeListingFrom, activeListingFrom + activeListingPageSize - 1)
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      if (!rows?.length) break
+
+      for (const row of rows) {
+        const uid = (row as { user_id?: string }).user_id
+        if (uid) activeListingUserIds.add(uid)
+      }
+      if (rows.length < activeListingPageSize) break
+      activeListingFrom += activeListingPageSize
+    }
+  }
+
+  for (;;) {
+    const { data: sellerRows, error: sellerListError } = await supabase
+      .from("profiles")
+      .select(
+        "id, seller_slug, display_name, shop_name, shop_description, bio, city, shop_address, is_shop, shop_verified",
+      )
+      .order("id", { ascending: true })
+      .range(sellerFrom, sellerFrom + pageSize - 1)
+
+    if (sellerListError) {
+      return NextResponse.json({ error: sellerListError.message }, { status: 500 })
+    }
+    if (!sellerRows?.length) break
+
+    for (const row of sellerRows as SellerProfileRow[]) {
+      try {
+        const hasListings = activeListingUserIds.has(row.id)
+        const eligible = Boolean(row.is_shop) || hasListings
+        if (!eligible || !row.seller_slug) {
+          await deleteSellerDocument(row.id)
+          sellersRemoved++
+          continue
+        }
+        await indexSellerDocument(profileRowToSellerDoc(row, hasListings))
+        sellersIndexed++
+      } catch {
+        sellerErrors++
+      }
+    }
+
+    if (sellerRows.length < pageSize) break
+    sellerFrom += pageSize
+  }
+
+  return NextResponse.json({
+    ok: true,
+    indexed,
+    errors,
+    brandsIndexed,
+    brandErrors,
+    sellersIndexed,
+    sellersRemoved,
+    sellerErrors,
+  })
 }

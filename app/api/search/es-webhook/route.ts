@@ -4,13 +4,19 @@ import {
   deleteListingDocument,
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
+import {
+  deleteSellerDocument,
+  syncProfileToSellerIndex,
+} from "@/lib/elasticsearch/sellers-index"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
+
+type WebhookRecord = { id?: string; user_id?: string }
 
 type WebhookBody = {
   type?: string
   table?: string
-  record?: { id?: string }
-  old_record?: { id?: string }
+  record?: WebhookRecord
+  old_record?: WebhookRecord
 }
 
 /**
@@ -19,6 +25,11 @@ type WebhookBody = {
  *
  * Set header: Authorization: Bearer <SUPABASE_ES_WEBHOOK_SECRET>
  * (or X-ES-Webhook-Secret: same value)
+ *
+ * Tables handled:
+ *   - `listings` → listings index; also resync the listing owner's sellers doc
+ *     (active-listing eligibility changes when a listing flips active/archived/hidden).
+ *   - `profiles` → sellers index (shops + sellers with active listings).
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_ES_WEBHOOK_SECRET
@@ -48,26 +59,49 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
   }
 
-  if (body.table !== "listings") {
-    return NextResponse.json({ ok: true, ignored: true })
-  }
-
   const supabase = createServiceRoleClient()
 
   try {
-    if (body.type === "DELETE") {
-      const id = body.old_record?.id
-      if (id) await deleteListingDocument(id)
-      return NextResponse.json({ ok: true, action: "deleted" })
+    if (body.table === "listings") {
+      const ownerId = body.record?.user_id ?? body.old_record?.user_id ?? null
+
+      if (body.type === "DELETE") {
+        const id = body.old_record?.id
+        if (id) await deleteListingDocument(id)
+        if (ownerId) await syncProfileToSellerIndex(supabase, ownerId)
+        return NextResponse.json({ ok: true, action: "deleted" })
+      }
+
+      if (body.type === "INSERT" || body.type === "UPDATE") {
+        const id = body.record?.id
+        if (!id) {
+          return NextResponse.json({ ok: true, ignored: true })
+        }
+        await syncListingToIndex(supabase, id)
+        if (ownerId) await syncProfileToSellerIndex(supabase, ownerId)
+        return NextResponse.json({ ok: true, action: "synced" })
+      }
+
+      return NextResponse.json({ ok: true, ignored: true })
     }
 
-    if (body.type === "INSERT" || body.type === "UPDATE") {
-      const id = body.record?.id
-      if (!id) {
-        return NextResponse.json({ ok: true, ignored: true })
+    if (body.table === "profiles") {
+      if (body.type === "DELETE") {
+        const id = body.old_record?.id
+        if (id) await deleteSellerDocument(id)
+        return NextResponse.json({ ok: true, action: "deleted" })
       }
-      await syncListingToIndex(supabase, id)
-      return NextResponse.json({ ok: true, action: "synced" })
+
+      if (body.type === "INSERT" || body.type === "UPDATE") {
+        const id = body.record?.id
+        if (!id) {
+          return NextResponse.json({ ok: true, ignored: true })
+        }
+        await syncProfileToSellerIndex(supabase, id)
+        return NextResponse.json({ ok: true, action: "synced" })
+      }
+
+      return NextResponse.json({ ok: true, ignored: true })
     }
 
     return NextResponse.json({ ok: true, ignored: true })

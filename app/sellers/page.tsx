@@ -3,9 +3,7 @@ import Image from "next/image"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
 import { MapPin, Store, ArrowRight } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardClassName } from "@/lib/listing-card-styles"
@@ -15,6 +13,7 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
+import { SellersDirectorySearch } from "@/components/sellers/sellers-directory-search"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
@@ -155,18 +154,10 @@ export default async function SellersPage({
             <p className="mt-2 text-sm text-muted-foreground text-pretty sm:text-base">
               Browse seller profiles and a sample of what they have listed right now.
             </p>
-            <SiteSearchBar
-              action="/sellers"
-              method="GET"
-              className="mx-auto mt-6 w-full max-w-lg"
-            >
-              <Input
-                name="q"
-                defaultValue={q || ""}
-                placeholder="Search by name or location…"
-                className={siteSearchInputClassName()}
-              />
-            </SiteSearchBar>
+            <SellersDirectorySearch
+              defaultValue={q || ""}
+              className="mx-auto mt-6 max-w-lg"
+            />
           </div>
         </div>
       </section>

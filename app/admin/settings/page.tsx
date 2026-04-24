@@ -142,8 +142,14 @@ export default function AdminSettingsPage() {
         typeof data.brandsIndexed === "number"
           ? `, ${data.brandsIndexed} brands in directory index${data.brandErrors ? ` (${data.brandErrors} brand errors)` : ""}`
           : ""
+      const sellersPart =
+        typeof data.sellersIndexed === "number"
+          ? `, ${data.sellersIndexed} sellers in directory index${
+              data.sellersRemoved ? ` (${data.sellersRemoved} removed)` : ""
+            }${data.sellerErrors ? ` (${data.sellerErrors} seller errors)` : ""}`
+          : ""
       toast.success(
-        `Reindex complete: ${data.indexed} listings indexed${data.errors ? `, ${data.errors} listing errors` : ""}${brandsPart}`,
+        `Reindex complete: ${data.indexed} listings indexed${data.errors ? `, ${data.errors} listing errors` : ""}${brandsPart}${sellersPart}`,
       )
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Reindex failed'
