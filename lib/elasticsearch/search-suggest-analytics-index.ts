@@ -7,11 +7,16 @@ const INDEX_MAPPINGS = {
     surface: { type: "keyword" as const },
     pick_kind: { type: "keyword" as const },
     suggest_trace: { type: "keyword" as const },
+    /** `pick` (default) = click/selection; `hover` = dwell hover in the dropdown. */
+    interaction: { type: "keyword" as const },
     query_prefix: { type: "keyword" as const, ignore_above: 512 },
     selection_label: { type: "keyword" as const, ignore_above: 512 },
     listing_id: { type: "keyword" as const },
   },
 }
+
+/** Legacy docs omit `interaction`; those events are treated as clicks in aggregations. */
+export type SearchSuggestInteraction = "pick" | "hover"
 
 export type SearchSuggestPickSurface = "header_nav" | "sell_brand_title" | "other"
 
@@ -37,6 +42,7 @@ export type SearchSuggestPickDoc = {
   surface: SearchSuggestPickSurface
   pick_kind: SearchSuggestPickKind
   suggest_trace: SearchSuggestPickTrace
+  interaction: SearchSuggestInteraction
   query_prefix: string
   selection_label: string
   listing_id: string | null
@@ -53,6 +59,15 @@ export async function ensureSearchSuggestAnalyticsIndex(): Promise<boolean> {
         index: ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX,
         mappings: INDEX_MAPPINGS,
       })
+    } else {
+      try {
+        await es.indices.putMapping({
+          index: ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX,
+          properties: { interaction: { type: "keyword" } },
+        })
+      } catch {
+        // Index may already include the field or mapping update unsupported — safe to ignore.
+      }
     }
     return true
   } catch (e) {
@@ -81,10 +96,38 @@ export async function indexSearchSuggestPickDocument(doc: SearchSuggestPickDoc):
   }
 }
 
+export type SearchSuggestListingClickRow = {
+  listingId: string
+  title: string
+  count: number
+}
+
 export type SearchSuggestPickAggregateResult = {
-  totalPicks: number
+  /** Click / selection events (excludes hover-only). */
+  totalClicks: number
+  totalHovers: number
   byKind: { kind: string; count: number }[]
   byTrace: { trace: string; count: number }[]
+  topQueryPrefixesClicks: { prefix: string; count: number }[]
+  topQueryPrefixesHovers: { prefix: string; count: number }[]
+  topListingClicks: SearchSuggestListingClickRow[]
+  hoverByKind: { kind: string; count: number }[]
+}
+
+const CLICK_INTERACTION_FILTER = {
+  bool: {
+    should: [
+      { term: { interaction: "pick" } },
+      { bool: { must_not: { exists: { field: "interaction" } } } },
+    ],
+    minimum_should_match: 1,
+  },
+}
+
+function parseTopHitsLabel(hit: unknown): string {
+  const h = hit as { _source?: { selection_label?: string } } | undefined
+  const raw = h?._source?.selection_label
+  return typeof raw === "string" && raw.trim() ? raw.trim() : "—"
 }
 
 export async function aggregateSearchSuggestPicks(
@@ -93,6 +136,17 @@ export async function aggregateSearchSuggestPicks(
 ): Promise<SearchSuggestPickAggregateResult | null> {
   const es = getElasticsearchClient()
   if (!es) return null
+
+  const empty: SearchSuggestPickAggregateResult = {
+    totalClicks: 0,
+    totalHovers: 0,
+    byKind: [],
+    byTrace: [],
+    topQueryPrefixesClicks: [],
+    topQueryPrefixesHovers: [],
+    topListingClicks: [],
+    hoverByKind: [],
+  }
 
   try {
     const res = await es.search({
@@ -105,37 +159,125 @@ export async function aggregateSearchSuggestPicks(
         },
       },
       aggs: {
-        by_kind: {
-          terms: { field: "pick_kind", size: 24, order: { _count: "desc" } },
+        clicks: {
+          filter: CLICK_INTERACTION_FILTER,
+          aggs: {
+            by_kind: {
+              terms: { field: "pick_kind", size: 24, order: { _count: "desc" } },
+            },
+            by_trace: {
+              terms: { field: "suggest_trace", size: 8, order: { _count: "desc" } },
+            },
+            top_prefixes: {
+              terms: { field: "query_prefix", size: 30, order: { _count: "desc" } },
+            },
+            listing_rows: {
+              filter: {
+                bool: {
+                  must: [
+                    { term: { pick_kind: "top_listing" } },
+                    { exists: { field: "listing_id" } },
+                  ],
+                },
+              },
+              aggs: {
+                by_listing: {
+                  terms: { field: "listing_id", size: 20, order: { _count: "desc" } },
+                  aggs: {
+                    sample: {
+                      top_hits: {
+                        size: 1,
+                        sort: [{ occurred_at: { order: "desc" } }],
+                        _source: { includes: ["selection_label"] },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
-        by_trace: {
-          terms: { field: "suggest_trace", size: 8, order: { _count: "desc" } },
+        hovers: {
+          filter: { term: { interaction: "hover" } },
+          aggs: {
+            by_kind: {
+              terms: { field: "pick_kind", size: 24, order: { _count: "desc" } },
+            },
+            top_prefixes: {
+              terms: { field: "query_prefix", size: 30, order: { _count: "desc" } },
+            },
+          },
         },
       },
     })
 
-    const total =
-      typeof res.hits.total === "number" ? res.hits.total : (res.hits.total?.value ?? 0)
     const aggs = res.aggregations as {
-      by_kind?: { buckets?: Array<{ key: string | number; doc_count: number }> }
-      by_trace?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+      clicks?: {
+        doc_count: number
+        by_kind?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+        by_trace?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+        top_prefixes?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+        listing_rows?: {
+          by_listing?: {
+            buckets?: Array<{
+              key: string | number
+              doc_count: number
+              sample?: { hits?: { hits?: unknown[] } }
+            }>
+          }
+        }
+      }
+      hovers?: {
+        doc_count: number
+        by_kind?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+        top_prefixes?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+      }
+    }
+
+    const clicks = aggs.clicks
+    const hovers = aggs.hovers
+
+    const topListingClicks: SearchSuggestListingClickRow[] = []
+    for (const b of clicks?.listing_rows?.by_listing?.buckets ?? []) {
+      const listingId = String(b.key)
+      if (!listingId || listingId === "null") continue
+      const labelHit = b.sample?.hits?.hits?.[0]
+      topListingClicks.push({
+        listingId,
+        title: parseTopHitsLabel(labelHit),
+        count: b.doc_count,
+      })
     }
 
     return {
-      totalPicks: total,
-      byKind: (aggs.by_kind?.buckets ?? []).map((b) => ({
+      totalClicks: clicks?.doc_count ?? 0,
+      totalHovers: hovers?.doc_count ?? 0,
+      byKind: (clicks?.by_kind?.buckets ?? []).map((b) => ({
         kind: String(b.key),
         count: b.doc_count,
       })),
-      byTrace: (aggs.by_trace?.buckets ?? []).map((b) => ({
+      byTrace: (clicks?.by_trace?.buckets ?? []).map((b) => ({
         trace: String(b.key),
+        count: b.doc_count,
+      })),
+      topQueryPrefixesClicks: (clicks?.top_prefixes?.buckets ?? []).map((b) => ({
+        prefix: String(b.key),
+        count: b.doc_count,
+      })),
+      topQueryPrefixesHovers: (hovers?.top_prefixes?.buckets ?? []).map((b) => ({
+        prefix: String(b.key),
+        count: b.doc_count,
+      })),
+      topListingClicks,
+      hoverByKind: (hovers?.by_kind?.buckets ?? []).map((b) => ({
+        kind: String(b.key),
         count: b.doc_count,
       })),
     }
   } catch (e) {
     const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
     if (status === 404) {
-      return { totalPicks: 0, byKind: [], byTrace: [] }
+      return empty
     }
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[elasticsearch] aggregateSearchSuggestPicks failed:", msg)

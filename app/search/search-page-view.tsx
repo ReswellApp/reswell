@@ -59,14 +59,13 @@ export async function SearchPageView({
   const matched = requestedSlug
     ? sortedCategories.find((c) => c.slug === requestedSlug)
     : undefined
-  const categoryId = matched?.id ?? null
   const selectedSlug = matched?.slug ?? null
   const categorySlugForLog = matched?.slug ?? null
 
   const { listings, searchMeta } = await resolveSearchListings(
     supabase,
     rawQuery,
-    categoryId,
+    matched ? { id: matched.id, name: matched.name } : null,
   )
 
   if (rawQuery.trim() && searchMeta) {
@@ -156,37 +155,31 @@ export async function SearchPageView({
 async function resolveSearchListings(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
-  categoryId: string | null,
+  category: { id: string; name: string } | null,
 ): Promise<{
   listings: RecentListing[]
   searchMeta: MarketplaceSearchResolutionMeta | null
 }> {
+  const categoryId = category?.id ?? null
+
   if (!rawQuery.trim()) {
     const r = await fetchCuratedRecentListings(supabase, categoryId, LIMIT)
     return { listings: r.listings, searchMeta: null }
   }
 
-  if (categoryId) {
-    const { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
-    return {
-      listings,
-      searchMeta: { resultCount: listings.length, backend: "supabase" },
-    }
-  }
-
   if (isElasticsearchConfigured()) {
     try {
-      const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT)
-      if (ids.length > 0) {
-        const listings = await hydrateListingsByIds(supabase, ids)
-        return {
-          listings,
-          searchMeta: { resultCount: listings.length, backend: "elasticsearch" },
-        }
+      const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
+        categoryName: category?.name ?? null,
+      })
+      const listings = await hydrateListingsByIds(supabase, ids)
+      return {
+        listings,
+        searchMeta: { resultCount: listings.length, backend: "elasticsearch" },
       }
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)
-      const { listings } = await buildSearchFromSupabase(supabase, rawQuery, null, LIMIT)
+      const { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
       return {
         listings,
         searchMeta: { resultCount: listings.length, backend: "supabase" },
@@ -194,7 +187,7 @@ async function resolveSearchListings(
     }
   }
 
-  const { listings } = await buildSearchFromSupabase(supabase, rawQuery, null, LIMIT)
+  const { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
   return {
     listings,
     searchMeta: { resultCount: listings.length, backend: "supabase" },

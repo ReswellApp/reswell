@@ -14,10 +14,14 @@ const INDEX_MAPPINGS = {
     query_display: { type: "keyword" as const, ignore_above: 512 },
     result_count: { type: "integer" as const },
     backend: { type: "keyword" as const },
+    /** `marketplace` = /search listing search; `brand_directory` = /brands catalog typeahead. */
+    search_surface: { type: "keyword" as const },
     category_slug: { type: "keyword" as const },
     has_category_filter: { type: "boolean" as const },
   },
 }
+
+export type SearchAnalyticsSurface = "marketplace" | "brand_directory"
 
 export type SearchAnalyticsDoc = {
   occurred_at: string
@@ -25,8 +29,20 @@ export type SearchAnalyticsDoc = {
   query_display: string
   result_count: number
   backend: "elasticsearch" | "supabase"
+  search_surface: SearchAnalyticsSurface
   category_slug: string | null
   has_category_filter: boolean
+}
+
+/** Legacy docs omit `search_surface`; treat as marketplace listing search. */
+const MARKETPLACE_SURFACE_FILTER = {
+  bool: {
+    should: [
+      { term: { search_surface: "marketplace" } },
+      { bool: { must_not: { exists: { field: "search_surface" } } } },
+    ],
+    minimum_should_match: 1,
+  },
 }
 
 export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
@@ -40,6 +56,15 @@ export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
         index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
         mappings: INDEX_MAPPINGS,
       })
+    } else {
+      try {
+        await es.indices.putMapping({
+          index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+          properties: { search_surface: { type: "keyword" } },
+        })
+      } catch {
+        // Field may already exist.
+      }
     }
     return true
   } catch (e) {
@@ -91,6 +116,30 @@ export type SearchAnalyticsAggregateResult = {
   topQueries: { query: string; count: number }[]
   zeroResultQueries: { query: string; count: number }[]
   byBackend: { backend: string; count: number }[]
+  /** `/brands` directory searches (`searchBrandsCatalogSuggest` pipeline). */
+  brandDirectory: {
+    totalSearches: number
+    uniqueQueriesApprox: number
+    avgResultCount: number | null
+    zeroResultEventCount: number
+    volumeByDay: { date: string; count: number }[]
+    topQueries: { query: string; count: number }[]
+    zeroResultQueries: { query: string; count: number }[]
+    byBackend: { backend: string; count: number }[]
+  }
+}
+
+function emptyBrandDirectoryAgg(): SearchAnalyticsAggregateResult["brandDirectory"] {
+  return {
+    totalSearches: 0,
+    uniqueQueriesApprox: 0,
+    avgResultCount: null,
+    zeroResultEventCount: 0,
+    volumeByDay: [],
+    topQueries: [],
+    zeroResultQueries: [],
+    byBackend: [],
+  }
 }
 
 function bucketTerms(
@@ -111,6 +160,15 @@ export async function aggregateSearchAnalytics(
   if (!es) return null
 
   try {
+    const dateHistogram = {
+      date_histogram: {
+        field: "occurred_at",
+        calendar_interval: "day" as const,
+        min_doc_count: 0,
+        extended_bounds: { min: fromIso, max: toIso },
+      },
+    }
+
     const res = await es.search({
       index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
       size: 0,
@@ -121,95 +179,140 @@ export async function aggregateSearchAnalytics(
         },
       },
       aggs: {
-        unique_queries: {
-          cardinality: { field: "query_normalized", precision_threshold: 4000 },
-        },
-        avg_results: {
-          avg: { field: "result_count" },
-        },
-        by_day: {
-          date_histogram: {
-            field: "occurred_at",
-            calendar_interval: "day",
-            min_doc_count: 0,
-            extended_bounds: { min: fromIso, max: toIso },
-          },
-        },
-        top_queries: {
-          terms: { field: "query_normalized", size: 50, order: { _count: "desc" } },
-        },
-        zero_hits: {
-          filter: { term: { result_count: 0 } },
+        marketplace: {
+          filter: MARKETPLACE_SURFACE_FILTER,
           aggs: {
-            zq: {
-              terms: { field: "query_normalized", size: 30, order: { _count: "desc" } },
+            unique_queries: {
+              cardinality: { field: "query_normalized", precision_threshold: 4000 },
+            },
+            avg_results: {
+              avg: { field: "result_count" },
+            },
+            by_day: dateHistogram,
+            top_queries: {
+              terms: { field: "query_normalized", size: 50, order: { _count: "desc" } },
+            },
+            zero_hits: {
+              filter: { term: { result_count: 0 } },
+              aggs: {
+                zq: {
+                  terms: { field: "query_normalized", size: 30, order: { _count: "desc" } },
+                },
+              },
+            },
+            backends: {
+              terms: { field: "backend", size: 10 },
+            },
+            result_stats: {
+              extended_stats: { field: "result_count" },
+            },
+            result_buckets: {
+              range: {
+                field: "result_count",
+                keyed: true,
+                ranges: [
+                  { key: "0", to: 1 },
+                  { key: "1-5", from: 1, to: 6 },
+                  { key: "6-15", from: 6, to: 16 },
+                  { key: "16+", from: 16 },
+                ],
+              },
+            },
+            category_filter: {
+              terms: { field: "has_category_filter", size: 4 },
+            },
+            top_categories: {
+              terms: { field: "category_slug", size: 12, missing: "__none__" },
             },
           },
         },
-        backends: {
-          terms: { field: "backend", size: 10 },
-        },
-        result_stats: {
-          extended_stats: { field: "result_count" },
-        },
-        result_buckets: {
-          range: {
-            field: "result_count",
-            keyed: true,
-            ranges: [
-              { key: "0", to: 1 },
-              { key: "1-5", from: 1, to: 6 },
-              { key: "6-15", from: 6, to: 16 },
-              { key: "16+", from: 16 },
-            ],
+        brand_directory: {
+          filter: { term: { search_surface: "brand_directory" } },
+          aggs: {
+            unique_queries: {
+              cardinality: { field: "query_normalized", precision_threshold: 4000 },
+            },
+            avg_results: {
+              avg: { field: "result_count" },
+            },
+            by_day: dateHistogram,
+            top_queries: {
+              terms: { field: "query_normalized", size: 30, order: { _count: "desc" } },
+            },
+            backends: {
+              terms: { field: "backend", size: 6 },
+            },
+            zero_hits: {
+              filter: { term: { result_count: 0 } },
+              aggs: {
+                zq: {
+                  terms: { field: "query_normalized", size: 20, order: { _count: "desc" } },
+                },
+              },
+            },
           },
-        },
-        category_filter: {
-          terms: { field: "has_category_filter", size: 4 },
-        },
-        top_categories: {
-          terms: { field: "category_slug", size: 12, missing: "__none__" },
         },
       },
     })
 
     const aggs = res.aggregations as Record<string, unknown> | undefined
-    const total =
-      typeof res.hits.total === "number" ? res.hits.total : (res.hits.total?.value ?? 0)
+    const mp = aggs?.marketplace as Record<string, unknown> | undefined
+    const bd = aggs?.brand_directory as Record<string, unknown> | undefined
 
-    const uniqueRaw = aggs?.unique_queries as { value?: number } | undefined
-    const avgRaw = aggs?.avg_results as { value?: number | null } | undefined
-    const byDayRaw = aggs?.by_day as
+    const uniqueRaw = mp?.unique_queries as { value?: number } | undefined
+    const avgRaw = mp?.avg_results as { value?: number | null } | undefined
+    const byDayRaw = mp?.by_day as
       | { buckets?: Array<{ key_as_string?: string; doc_count: number }> }
       | undefined
-    const topRaw = aggs?.top_queries as
+    const topRaw = mp?.top_queries as
       | { buckets?: Array<{ key: string | number; doc_count: number }> }
       | undefined
-    const zeroRaw = aggs?.zero_hits as
+    const zeroRaw = mp?.zero_hits as
       | {
           doc_count?: number
           zq?: { buckets?: Array<{ key: string | number; doc_count: number }> }
         }
       | undefined
-    const backendsRaw = aggs?.backends as
+    const backendsRaw = mp?.backends as
       | { buckets?: Array<{ key: string | number; doc_count: number }> }
       | undefined
-    const extStatsRaw = aggs?.result_stats as
+    const extStatsRaw = mp?.result_stats as
       | {
           min?: number | null
           max?: number | null
           std_deviation?: number | null
         }
       | undefined
-    const rangeBucketsRaw = aggs?.result_buckets as
+    const rangeBucketsRaw = mp?.result_buckets as
       | { buckets?: Record<string, { doc_count: number }> }
       | undefined
-    const catFilterRaw = aggs?.category_filter as
+    const catFilterRaw = mp?.category_filter as
       | { buckets?: Array<{ key: string | number; doc_count: number }> }
       | undefined
-    const topCatRaw = aggs?.top_categories as
+    const topCatRaw = mp?.top_categories as
       | { buckets?: Array<{ key: string | number; doc_count: number }> }
       | undefined
+
+    const mpDocCount = typeof mp?.doc_count === "number" ? mp.doc_count : 0
+
+    const bdUnique = bd?.unique_queries as { value?: number } | undefined
+    const bdAvg = bd?.avg_results as { value?: number | null } | undefined
+    const bdByDay = bd?.by_day as
+      | { buckets?: Array<{ key_as_string?: string; doc_count: number }> }
+      | undefined
+    const bdTop = bd?.top_queries as
+      | { buckets?: Array<{ key: string | number; doc_count: number }> }
+      | undefined
+    const bdBackends = bd?.backends as
+      | { buckets?: Array<{ key: string | number; doc_count: number }> }
+      | undefined
+    const bdZero = bd?.zero_hits as
+      | {
+          doc_count?: number
+          zq?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+        }
+      | undefined
+    const bdDocCount = typeof bd?.doc_count === "number" ? bd.doc_count : 0
 
     const rb = rangeBucketsRaw?.buckets ?? {}
     const resultCountDistribution: { band: string; count: number }[] =
@@ -219,7 +322,7 @@ export async function aggregateSearchAnalytics(
       }))
 
     return {
-      totalSearches: total,
+      totalSearches: mpDocCount,
       uniqueQueriesApprox: uniqueRaw?.value ?? 0,
       avgResultCount:
         avgRaw?.value != null && Number.isFinite(avgRaw.value) ? avgRaw.value : null,
@@ -264,6 +367,23 @@ export async function aggregateSearchAnalytics(
         backend: String(b.key),
         count: b.doc_count,
       })),
+      brandDirectory: {
+        totalSearches: bdDocCount,
+        uniqueQueriesApprox: bdUnique?.value ?? 0,
+        avgResultCount:
+          bdAvg?.value != null && Number.isFinite(bdAvg.value) ? bdAvg.value : null,
+        zeroResultEventCount: bdZero?.doc_count ?? 0,
+        volumeByDay: (bdByDay?.buckets ?? []).map((b) => ({
+          date: (b.key_as_string ?? "").slice(0, 10),
+          count: b.doc_count,
+        })),
+        topQueries: bucketTerms(bdTop?.buckets),
+        zeroResultQueries: bucketTerms(bdZero?.zq?.buckets),
+        byBackend: (bdBackends?.buckets ?? []).map((b) => ({
+          backend: String(b.key),
+          count: b.doc_count,
+        })),
+      },
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -282,6 +402,7 @@ export async function aggregateSearchAnalytics(
         topQueries: [],
         zeroResultQueries: [],
         byBackend: [],
+        brandDirectory: emptyBrandDirectoryAgg(),
       }
     }
     console.error("[elasticsearch] aggregateSearchAnalytics failed:", msg)
@@ -303,7 +424,10 @@ export async function topQueriesInRange(
       size: 0,
       query: {
         bool: {
-          filter: [{ range: { occurred_at: { gte: fromIso, lte: toIso } } }],
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lte: toIso } } },
+            MARKETPLACE_SURFACE_FILTER,
+          ],
         },
       },
       aggs: {

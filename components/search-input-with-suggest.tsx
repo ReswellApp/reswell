@@ -30,6 +30,9 @@ const SUGGEST_COMBINED_CAP = 24
 /** Matches `hooks/use-mobile` — below this, panel spans the sheet/viewport (not only the text field). */
 const SUGGEST_PANEL_COMPACT_VIEWPORT_PX = 768
 
+/** Log a suggest hover after the pointer rests on a row (reduces noise vs raw mousemove). */
+const SUGGEST_HOVER_DWELL_MS = 450
+
 function getSuggestPanelLayout(args: {
   top: number
   /** Anchor (input wrapper) — used on non-compact layouts. */
@@ -234,6 +237,9 @@ export function SearchInputWithSuggest({
     marketplaceListings: "elasticsearch" | "supabase"
     brandCatalog: "elasticsearch" | "supabase"
   }>({ marketplaceListings: "supabase", brandCatalog: "supabase" })
+  const valueRef = useRef(value)
+  valueRef.current = value
+  const hoverTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const invalidatePendingSuggest = () => {
     suggestGenerationRef.current += 1
@@ -449,6 +455,13 @@ export function SearchInputWithSuggest({
     return () => document.removeEventListener("click", handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    return () => {
+      for (const t of hoverTimersRef.current.values()) clearTimeout(t)
+      hoverTimersRef.current.clear()
+    }
+  }, [])
+
   /** After choosing a link result: kill stale fetches, clear cache, blur so focus doesn’t reopen the menu. */
   const dismissForNavigation = () => {
     invalidatePendingSuggest()
@@ -463,8 +476,9 @@ export function SearchInputWithSuggest({
       pickKind: SearchSuggestPickKind
       selectionLabel: string
       listingId?: string | null
+      interaction?: "pick" | "hover"
     }) => {
-      const q = value.trim()
+      const q = valueRef.current.trim()
       const minQ = isBrands ? 1 : minLength
       if (q.length < minQ) return
 
@@ -488,10 +502,39 @@ export function SearchInputWithSuggest({
         queryPrefix: q,
         selectionLabel: args.selectionLabel,
         listingId: args.listingId ?? null,
+        interaction: args.interaction ?? "pick",
       })
     },
-    [value, minLength, isBrands, analyticsSurface],
+    [minLength, isBrands, analyticsSurface],
   )
+
+  const scheduleSuggestHover = useCallback(
+    (
+      rowKey: string,
+      args: {
+        pickKind: SearchSuggestPickKind
+        selectionLabel: string
+        listingId?: string | null
+      },
+    ) => {
+      const existing = hoverTimersRef.current.get(rowKey)
+      if (existing) clearTimeout(existing)
+      const t = setTimeout(() => {
+        hoverTimersRef.current.delete(rowKey)
+        logSuggestAnalytics({ ...args, interaction: "hover" })
+      }, SUGGEST_HOVER_DWELL_MS)
+      hoverTimersRef.current.set(rowKey, t)
+    },
+    [logSuggestAnalytics],
+  )
+
+  const cancelSuggestHover = useCallback((rowKey: string) => {
+    const existing = hoverTimersRef.current.get(rowKey)
+    if (existing) {
+      clearTimeout(existing)
+      hoverTimersRef.current.delete(rowKey)
+    }
+  }, [])
 
   const handleSelectText = (text: string, pickKind: SearchSuggestPickKind) => {
     logSuggestAnalytics({ pickKind, selectionLabel: text, listingId: null })
@@ -604,6 +647,14 @@ export function SearchInputWithSuggest({
                       type="button"
                       className="mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-left text-sm outline-none min-h-touch transition-colors hover:bg-muted/80 focus-visible:bg-muted/80 sm:gap-3 sm:rounded-xl sm:py-2.5"
                       onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() =>
+                        scheduleSuggestHover(`bc:${item.id}`, {
+                          pickKind: "brand_catalog",
+                          selectionLabel: item.name,
+                          listingId: null,
+                        })
+                      }
+                      onMouseLeave={() => cancelSuggestHover(`bc:${item.id}`)}
                       onClick={() => handleBrandCatalogPick(item)}
                     >
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14 sm:rounded-lg">
@@ -656,6 +707,14 @@ export function SearchInputWithSuggest({
                 href={`/search?q=${encodeURIComponent(value.trim())}`}
                 className="shrink-0 text-xs font-medium text-cerulean hover:text-pacific hover:underline sm:text-sm"
                 onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() =>
+                  scheduleSuggestHover("view_all", {
+                    pickKind: "view_all_results",
+                    selectionLabel: valueRef.current.trim() || "view all",
+                    listingId: null,
+                  })
+                }
+                onMouseLeave={() => cancelSuggestHover("view_all")}
                 onClick={(e) => {
                   e.preventDefault()
                   logSuggestAnalytics({
@@ -695,6 +754,14 @@ export function SearchInputWithSuggest({
                       href={listingHref(item)}
                       className="mx-1 flex gap-2 rounded-lg px-2 py-2 outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80 sm:gap-3 sm:rounded-xl sm:py-2.5"
                       onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() =>
+                        scheduleSuggestHover(`tl:${item.id}`, {
+                          pickKind: "top_listing",
+                          selectionLabel: item.title,
+                          listingId: item.id,
+                        })
+                      }
+                      onMouseLeave={() => cancelSuggestHover(`tl:${item.id}`)}
                       onClick={(e) => {
                         e.preventDefault()
                         logSuggestAnalytics({
@@ -769,6 +836,14 @@ export function SearchInputWithSuggest({
                       type="button"
                       className="flex w-full cursor-pointer select-none items-center px-3 py-2.5 text-left text-sm outline-none min-h-touch hover:bg-accent/60 focus-visible:bg-accent"
                       onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() =>
+                        scheduleSuggestHover(`brand-row:${brand}`, {
+                          pickKind: boardsTitleStyle ? "brand_row" : "brand_strip",
+                          selectionLabel: brand,
+                          listingId: null,
+                        })
+                      }
+                      onMouseLeave={() => cancelSuggestHover(`brand-row:${brand}`)}
                       onClick={() =>
                         handleSelectText(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
                       }
@@ -786,6 +861,14 @@ export function SearchInputWithSuggest({
                     type="button"
                     className="flex min-w-[4rem] max-w-[4.75rem] flex-col items-center gap-1.5 text-center sm:min-w-[4.5rem] sm:max-w-[5.5rem]"
                     onMouseDown={(e) => e.preventDefault()}
+                    onMouseEnter={() =>
+                      scheduleSuggestHover(`brand-strip:${brand}`, {
+                        pickKind: "brand_strip",
+                        selectionLabel: brand,
+                        listingId: null,
+                      })
+                    }
+                    onMouseLeave={() => cancelSuggestHover(`brand-strip:${brand}`)}
                     onClick={() =>
                       handleSelectText(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
                     }
@@ -815,6 +898,14 @@ export function SearchInputWithSuggest({
                   type="button"
                   className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted hover:border-cerulean/30 sm:px-3 sm:py-1.5 sm:text-xs"
                   onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() =>
+                    scheduleSuggestHover(`cat:${cat}`, {
+                      pickKind: "category_chip",
+                      selectionLabel: cat,
+                      listingId: null,
+                    })
+                  }
+                  onMouseLeave={() => cancelSuggestHover(`cat:${cat}`)}
                   onClick={() => handleSelectText(cat, "category_chip")}
                 >
                   {cat}
@@ -851,6 +942,22 @@ export function SearchInputWithSuggest({
                           : "mx-1 w-[calc(100%-0.5rem)] rounded-lg py-2 hover:bg-muted/80 focus-visible:bg-muted/80",
                       )}
                       onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => {
+                        const kind: SearchSuggestPickKind =
+                          item.type === "title"
+                            ? "suggestion_title"
+                            : item.type === "brand"
+                              ? "suggestion_brand"
+                              : "suggestion_category"
+                        scheduleSuggestHover(`sg:${item.type}:${item.text}:${i}`, {
+                          pickKind: kind,
+                          selectionLabel: item.text,
+                          listingId: null,
+                        })
+                      }}
+                      onMouseLeave={() =>
+                        cancelSuggestHover(`sg:${item.type}:${item.text}:${i}`)
+                      }
                       onClick={() =>
                         handleSelectText(
                           item.text,

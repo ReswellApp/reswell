@@ -232,7 +232,7 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
 export async function searchListingIdsFromElasticsearch(
   rawQuery: string,
   limit: number,
-  options?: { sections?: string[] },
+  options?: { sections?: string[]; categoryName?: string | null },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
   if (!es) return []
@@ -246,6 +246,11 @@ export async function searchListingIdsFromElasticsearch(
       { term: { status: "active" } },
       { terms: { section: sections } },
     ]
+
+    const cat = typeof options?.categoryName === "string" ? options.categoryName.trim() : ""
+    if (cat) {
+      filter.push({ match_phrase: { category_name: cat } })
+    }
 
     const q = rawQuery.trim()
 
@@ -271,7 +276,7 @@ export async function searchListingIdsFromElasticsearch(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[elasticsearch] searchListingIdsFromElasticsearch failed:", msg, e)
-    return []
+    throw e
   }
 }
 

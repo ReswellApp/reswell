@@ -12,6 +12,7 @@ import {
   type SearchSuggestPickKind,
   type SearchSuggestPickSurface,
   type SearchSuggestPickTrace,
+  type SearchSuggestInteraction,
 } from "@/lib/elasticsearch/search-suggest-analytics-index"
 
 export type MarketplaceSearchAnalyticsPayload = {
@@ -47,8 +48,37 @@ export async function recordMarketplaceSearchAnalyticsEvent(
     query_display: payload.queryDisplay,
     result_count: payload.resultCount,
     backend: payload.backend,
+    search_surface: "marketplace",
     category_slug: payload.categorySlug,
     has_category_filter: Boolean(payload.categorySlug),
+  }
+
+  await indexSearchAnalyticsDocument(doc)
+}
+
+export type BrandDirectorySearchAnalyticsPayload = {
+  queryDisplay: string
+  queryNormalized: string
+  /** Number of brand rows returned from `searchBrandsCatalogSuggest`. */
+  resultCount: number
+  backend: "elasticsearch" | "supabase"
+}
+
+export async function recordBrandDirectorySearchAnalyticsEvent(
+  payload: BrandDirectorySearchAnalyticsPayload,
+): Promise<void> {
+  if (!isElasticsearchConfigured()) return
+  if (!payload.queryNormalized.trim()) return
+
+  const doc: SearchAnalyticsDoc = {
+    occurred_at: new Date().toISOString(),
+    query_normalized: payload.queryNormalized,
+    query_display: payload.queryDisplay,
+    result_count: payload.resultCount,
+    backend: payload.backend,
+    search_surface: "brand_directory",
+    category_slug: null,
+    has_category_filter: false,
   }
 
   await indexSearchAnalyticsDocument(doc)
@@ -61,6 +91,7 @@ export type SearchSuggestPickPayload = {
   queryPrefix: string
   selectionLabel: string
   listingId: string | null
+  interaction?: SearchSuggestInteraction
 }
 
 export async function recordSearchSuggestPickEvent(
@@ -75,6 +106,7 @@ export async function recordSearchSuggestPickEvent(
     surface: payload.surface,
     pick_kind: payload.pickKind,
     suggest_trace: payload.suggestTrace,
+    interaction: payload.interaction ?? "pick",
     query_prefix: q.slice(0, 500),
     selection_label: payload.selectionLabel.trim().slice(0, 500) || "—",
     listing_id: payload.listingId,
@@ -115,11 +147,37 @@ export type SearchAnalyticsDashboard = {
   zeroResultQueries: { query: string; count: number }[]
   byBackend: { backend: string; count: number }[]
   trendingQueries: SearchAnalyticsTrendingRow[]
-  /** Typeahead / dropdown picks (nav + sell form) in the selected range. */
+  /** Typeahead dropdown clicks (excludes hover-only events) in the selected range. */
   suggestPickTotal: number
+  suggestHoverTotal: number
   suggestPicksByKind: { kind: string; count: number }[]
   suggestPicksByTrace: { trace: string; count: number }[]
+  suggestHoversByKind: { kind: string; count: number }[]
+  suggestTopQueryPrefixes: { prefix: string; count: number }[]
+  suggestTopQueryPrefixesHover: { prefix: string; count: number }[]
+  suggestTopListingClicks: { listingId: string; title: string; count: number }[]
+  brandDirectory: {
+    totalSearches: number
+    uniqueQueriesApprox: number
+    avgResultCount: number | null
+    zeroResultSearchShare: number | null
+    volumeByDay: { date: string; count: number }[]
+    topQueries: { query: string; count: number }[]
+    zeroResultQueries: { query: string; count: number }[]
+    byBackend: { backend: string; count: number }[]
+  }
   fetchedAt: string
+}
+
+const EMPTY_BRAND_DIRECTORY_DASH: SearchAnalyticsDashboard["brandDirectory"] = {
+  totalSearches: 0,
+  uniqueQueriesApprox: 0,
+  avgResultCount: null,
+  zeroResultSearchShare: null,
+  volumeByDay: [],
+  topQueries: [],
+  zeroResultQueries: [],
+  byBackend: [],
 }
 
 const TREND_RECENT_MS = 2 * 24 * 60 * 60 * 1000
@@ -151,8 +209,14 @@ export async function getSearchAnalyticsDashboardService(
       byBackend: [],
       trendingQueries: [],
       suggestPickTotal: 0,
+      suggestHoverTotal: 0,
       suggestPicksByKind: [],
       suggestPicksByTrace: [],
+      suggestHoversByKind: [],
+      suggestTopQueryPrefixes: [],
+      suggestTopQueryPrefixesHover: [],
+      suggestTopListingClicks: [],
+      brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
       fetchedAt,
     }
   }
@@ -187,9 +251,15 @@ export async function getSearchAnalyticsDashboardService(
       zeroResultQueries: [],
       byBackend: [],
       trendingQueries: [],
-      suggestPickTotal: suggestPicks?.totalPicks ?? 0,
+      suggestPickTotal: suggestPicks?.totalClicks ?? 0,
+      suggestHoverTotal: suggestPicks?.totalHovers ?? 0,
       suggestPicksByKind: suggestPicks?.byKind ?? [],
       suggestPicksByTrace: suggestPicks?.byTrace ?? [],
+      suggestHoversByKind: suggestPicks?.hoverByKind ?? [],
+      suggestTopQueryPrefixes: suggestPicks?.topQueryPrefixesClicks ?? [],
+      suggestTopQueryPrefixesHover: suggestPicks?.topQueryPrefixesHovers ?? [],
+      suggestTopListingClicks: suggestPicks?.topListingClicks ?? [],
+      brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
       fetchedAt,
     }
   }
@@ -225,6 +295,10 @@ export async function getSearchAnalyticsDashboardService(
   trendingQueries.sort((a, b) => b.velocity - a.velocity)
   const trendingTop = trendingQueries.slice(0, 20)
 
+  const bd = main.brandDirectory
+  const bdZeroShare =
+    bd.totalSearches > 0 ? bd.zeroResultEventCount / bd.totalSearches : null
+
   return {
     configured: true,
     rangeDays,
@@ -244,9 +318,24 @@ export async function getSearchAnalyticsDashboardService(
     zeroResultQueries: main.zeroResultQueries,
     byBackend: main.byBackend,
     trendingQueries: trendingTop,
-    suggestPickTotal: suggestPicks?.totalPicks ?? 0,
+    suggestPickTotal: suggestPicks?.totalClicks ?? 0,
+    suggestHoverTotal: suggestPicks?.totalHovers ?? 0,
     suggestPicksByKind: suggestPicks?.byKind ?? [],
     suggestPicksByTrace: suggestPicks?.byTrace ?? [],
+    suggestHoversByKind: suggestPicks?.hoverByKind ?? [],
+    suggestTopQueryPrefixes: suggestPicks?.topQueryPrefixesClicks ?? [],
+    suggestTopQueryPrefixesHover: suggestPicks?.topQueryPrefixesHovers ?? [],
+    suggestTopListingClicks: suggestPicks?.topListingClicks ?? [],
+    brandDirectory: {
+      totalSearches: bd.totalSearches,
+      uniqueQueriesApprox: bd.uniqueQueriesApprox,
+      avgResultCount: bd.avgResultCount,
+      zeroResultSearchShare: bdZeroShare,
+      volumeByDay: bd.volumeByDay,
+      topQueries: bd.topQueries,
+      zeroResultQueries: bd.zeroResultQueries,
+      byBackend: bd.byBackend,
+    },
     fetchedAt,
   }
 }

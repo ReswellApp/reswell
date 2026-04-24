@@ -13,20 +13,12 @@ import {
 import { cn } from "@/lib/utils"
 import type { BrandRow } from "@/lib/brands/types"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import { searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
+import type { BrandCatalogSuggestRow } from "@/app/actions/marketplace"
+import { recordBrandDirectorySearchAnalytics } from "@/app/actions/brand-directory-search-analytics"
 
 const BROWSE_LIMIT = 36
-const FILTER_LIMIT = 40
-
-function filterBrands(brands: BrandRow[], query: string): BrandRow[] {
-  const q = query.trim().toLowerCase()
-  if (!q) return []
-  return brands
-    .filter((b) => {
-      const hay = `${b.name} ${b.slug} ${b.location_label ?? ""}`.toLowerCase()
-      return hay.includes(q)
-    })
-    .slice(0, FILTER_LIMIT)
-}
+const SUGGEST_DEBOUNCE_MS = 280
 
 function browseBrands(brands: BrandRow[]): BrandRow[] {
   return [...brands].sort((a, b) => a.name.localeCompare(b.name)).slice(0, BROWSE_LIMIT)
@@ -38,8 +30,8 @@ type BrandsDirectorySearchProps = {
 }
 
 /**
- * Brand-directory-only typeahead: `public.brands` rows, not marketplace / nav search.
- * Pill + button shell; dropdown is portaled so it is never clipped by the hero layout.
+ * Brand-directory typeahead: uses the same `searchBrandsCatalogSuggest` pipeline as nav/sell
+ * (Elasticsearch when configured). Logs to `reswell_search_analytics` with `search_surface: brand_directory`.
  */
 export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySearchProps) {
   const router = useRouter()
@@ -55,18 +47,73 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
     width: number
   } | null>(null)
 
-  const q = value.trim()
-  const displayed = React.useMemo(() => {
-    if (!q) return browseBrands(brands)
-    return filterBrands(brands, value)
-  }, [brands, value])
+  const [suggestedRows, setSuggestedRows] = React.useState<BrandCatalogSuggestRow[] | null>(null)
+  const [suggestLoading, setSuggestLoading] = React.useState(false)
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const suggestGen = React.useRef(0)
 
-  const showNoMatch = open && q.length > 0 && brands.length > 0 && displayed.length === 0
-  const showDropdown = open && brands.length > 0 && (displayed.length > 0 || showNoMatch)
+  const q = value.trim()
+  const browseList = React.useMemo(() => browseBrands(brands), [brands])
+  const showBrowse = !q
+
+  const listLength = showBrowse ? browseList.length : (suggestedRows?.length ?? 0)
+  const showNoMatch =
+    open &&
+    q.length > 0 &&
+    !suggestLoading &&
+    brands.length > 0 &&
+    (suggestedRows?.length ?? 0) === 0
+  const showDropdown =
+    open &&
+    brands.length > 0 &&
+    (showBrowse
+      ? browseList.length > 0
+      : suggestLoading || showNoMatch || (suggestedRows?.length ?? 0) > 0)
+
+  React.useEffect(() => {
+    const gen = ++suggestGen.current
+    if (!q) {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+      setSuggestedRows(null)
+      setSuggestLoading(false)
+      return
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setSuggestLoading(true)
+    setSuggestedRows([])
+
+    debounceRef.current = setTimeout(() => {
+      void (async () => {
+        try {
+          const { rows, meta } = await searchBrandsCatalogSuggest(q)
+          if (gen !== suggestGen.current) return
+          setSuggestedRows(rows)
+          void recordBrandDirectorySearchAnalytics({
+            queryRaw: q,
+            resultCount: rows.length,
+            backend: meta.backend,
+          })
+        } finally {
+          if (gen === suggestGen.current) setSuggestLoading(false)
+        }
+      })()
+    }, SUGGEST_DEBOUNCE_MS)
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+    }
+  }, [q])
 
   React.useEffect(() => {
     setHighlight(0)
-  }, [value, displayed.length])
+  }, [value, showBrowse, listLength, suggestedRows?.length])
 
   React.useEffect(() => {
     if (!showDropdown || !containerRef.current || typeof document === "undefined") {
@@ -112,7 +159,6 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
     setValue("")
   }
 
-  /** Search button / form submit: always freeform marketplace search (`q` = whatever is typed). */
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     searchMarketplaceForQuery(value)
@@ -154,10 +200,61 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
             Choose a row for a profile, or press Search for listings
           </p>
         </div>
-        {showNoMatch ? (
+        {showBrowse ? (
+          <ul className="max-h-[min(45vh,340px)] overflow-y-auto py-1">
+            {browseList.map((b, i) => (
+              <li key={b.id} role="none">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={i === highlight}
+                  className={cn(
+                    "flex w-full cursor-pointer select-none items-center gap-3 px-4 py-2.5 text-left text-sm outline-none min-h-touch transition-colors hover:bg-muted/80",
+                    i === highlight && "bg-muted/80",
+                  )}
+                  onMouseEnter={() => setHighlight(i)}
+                  onMouseDown={(ev) => {
+                    ev.preventDefault()
+                    goToBrand(b.slug)
+                  }}
+                >
+                  {b.logo_url ? (
+                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background">
+                      <Image
+                        src={b.logo_url}
+                        alt=""
+                        fill
+                        className="object-contain p-1"
+                        sizes="40px"
+                      />
+                    </span>
+                  ) : (
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-sm font-semibold text-cerulean"
+                      aria-hidden
+                    >
+                      {b.name.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 truncate font-semibold text-foreground">
+                    {b.name}
+                  </span>
+                  {b.location_label ? (
+                    <span className="hidden max-w-[38%] shrink-0 truncate text-xs text-muted-foreground sm:inline">
+                      {b.location_label}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : suggestLoading && (suggestedRows?.length ?? 0) === 0 && !showNoMatch ? (
+          <div className="px-4 py-10 text-center text-sm text-muted-foreground">Searching…</div>
+        ) : showNoMatch ? (
           <div className="space-y-3 px-4 py-4">
             <p className="text-sm text-muted-foreground">
-              No profile in this directory for &quot;{q}&quot;. You can still search the marketplace for that name.
+              No profile in this directory for &quot;{q}&quot;. You can still search the marketplace for
+              that name.
             </p>
             <button
               type="button"
@@ -170,7 +267,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
           </div>
         ) : (
           <ul className="max-h-[min(45vh,340px)] overflow-y-auto py-1">
-            {displayed.map((b, i) => (
+            {(suggestedRows ?? []).map((b, i) => (
               <li key={b.id} role="none">
                 <button
                   type="button"
@@ -221,6 +318,8 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
       document.body,
     )
 
+  const highlightMax = showBrowse ? browseList.length - 1 : (suggestedRows?.length ?? 0) - 1
+
   return (
     <div className={cn("w-full max-w-xl", className)}>
       <p className="mb-2 text-center text-sm font-medium text-foreground">Search the brand directory</p>
@@ -258,8 +357,20 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                   }
                   return
                 }
-                if (!showDropdown || displayed.length === 0) {
+                if (!showDropdown) {
                   if (e.key === "Escape") setOpen(false)
+                  return
+                }
+                if (showBrowse) {
+                  if (browseList.length === 0) {
+                    if (e.key === "Escape") setOpen(false)
+                    return
+                  }
+                } else if (suggestLoading || (suggestedRows?.length ?? 0) === 0) {
+                  if (e.key === "Escape") {
+                    e.preventDefault()
+                    setOpen(false)
+                  }
                   return
                 }
                 if (e.key === "Escape") {
@@ -269,7 +380,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                 }
                 if (e.key === "ArrowDown") {
                   e.preventDefault()
-                  setHighlight((h) => Math.min(h + 1, displayed.length - 1))
+                  setHighlight((h) => Math.min(h + 1, Math.max(0, highlightMax)))
                   return
                 }
                 if (e.key === "ArrowUp") {
@@ -278,9 +389,14 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                   return
                 }
                 if (e.key === "Enter") {
-                  if (open && !showNoMatch && displayed.length > 0 && q.length > 0) {
+                  if (open && !showNoMatch && q.length > 0 && highlightMax >= 0) {
                     e.preventDefault()
-                    goToBrand(displayed[highlight].slug)
+                    if (showBrowse) {
+                      goToBrand(browseList[highlight].slug)
+                    } else {
+                      const row = suggestedRows?.[highlight]
+                      if (row) goToBrand(row.slug)
+                    }
                   }
                 }
               }}
@@ -290,7 +406,8 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
       </div>
       {dropdownPanel}
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        Choose a brand below to open its profile. Search always uses your text for marketplace results — same as Brand / shaper on Sell.
+        Matches use the same Elasticsearch-backed directory as the header and Sell flow when the cluster is
+        configured. Search always uses your text for marketplace results — same as Brand / shaper on Sell.
       </p>
     </div>
   )

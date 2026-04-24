@@ -31,6 +31,7 @@ const payloadSchema = z.object({
   queryPrefix: z.string().max(500),
   selectionLabel: z.string().max(500),
   listingId: z.string().uuid().nullable(),
+  interaction: z.enum(["pick", "hover"]).optional().default("pick"),
 })
 
 export async function recordSearchSuggestPick(

@@ -505,6 +505,48 @@ export function SearchAnalyticsAdminClient() {
     [data?.suggestPicksByTrace],
   )
 
+  const suggestPrefixClickChartRows = useMemo(
+    () =>
+      (data?.suggestTopQueryPrefixes ?? [])
+        .filter((r) => r.count > 0)
+        .map((row) => ({
+          ...row,
+          short: truncateQuery(row.prefix, 28),
+        })),
+    [data?.suggestTopQueryPrefixes],
+  )
+
+  const suggestPrefixHoverChartRows = useMemo(
+    () =>
+      (data?.suggestTopQueryPrefixesHover ?? [])
+        .filter((r) => r.count > 0)
+        .map((row) => ({
+          ...row,
+          short: truncateQuery(row.prefix, 28),
+        })),
+    [data?.suggestTopQueryPrefixesHover],
+  )
+
+  const suggestHoverKindChartRows = useMemo(
+    () =>
+      (data?.suggestHoversByKind ?? [])
+        .filter((r) => r.count > 0)
+        .map((row) => ({
+          ...row,
+          label: SUGGEST_KIND_LABELS[row.kind] ?? row.kind,
+        })),
+    [data?.suggestHoversByKind],
+  )
+
+  const suggestListingClickChartRows = useMemo(
+    () =>
+      (data?.suggestTopListingClicks ?? []).map((row) => ({
+        ...row,
+        short: truncateQuery(row.title, 26),
+      })),
+    [data?.suggestTopListingClicks],
+  )
+
   const treemapFlat = useMemo(
     () =>
       (data?.topQueries ?? []).slice(0, 20).map((q, i) => ({
@@ -616,6 +658,33 @@ export function SearchAnalyticsAdminClient() {
   const volTrend = volumeTrendDelta(data?.volumeByDay ?? [])
   const kpiSpark = data?.volumeByDay?.length ? data.volumeByDay : sparkSlice
 
+  const brandDirBackendPieRows = useMemo((): ReportPieRow[] => {
+    return (data?.brandDirectory?.byBackend ?? []).map((row, i) => ({
+      name: row.backend === "elasticsearch" ? "Elasticsearch" : "Database (fallback)",
+      value: row.count,
+      fill: REPORT_PIE_PALETTE[i % REPORT_PIE_PALETTE.length],
+    }))
+  }, [data?.brandDirectory?.byBackend])
+
+  const brandDirTopBarData = useMemo(
+    () =>
+      (data?.brandDirectory?.topQueries ?? []).slice(0, 16).map((row) => ({
+        ...row,
+        short: truncateQuery(row.query, 28),
+      })),
+    [data?.brandDirectory?.topQueries],
+  )
+
+  const brandDirZeroPct =
+    data?.brandDirectory?.zeroResultSearchShare != null
+      ? Math.round(data.brandDirectory.zeroResultSearchShare * 1000) / 10
+      : null
+
+  const brandDirVolumeChartData = useMemo(
+    () => data?.brandDirectory?.volumeByDay ?? [],
+    [data?.brandDirectory?.volumeByDay],
+  )
+
   return (
     <div className="w-full space-y-0 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:bg-transparent dark:border-border">
       {error && (
@@ -648,7 +717,9 @@ export function SearchAnalyticsAdminClient() {
                 </p>
                 <p className="mt-2 max-w-2xl text-xs text-slate-500">
                   <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">reswell_search_analytics</code>{" "}
-                  (page searches) ·{" "}
+                  — marketplace <code className="rounded bg-slate-100 px-1 text-[11px]">search_surface: marketplace</code>{" "}
+                  and brand directory{" "}
+                  <code className="rounded bg-slate-100 px-1 text-[11px]">brand_directory</code> ·{" "}
                   <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">
                     reswell_search_suggest_analytics
                   </code>{" "}
@@ -711,7 +782,7 @@ export function SearchAnalyticsAdminClient() {
               value={data.totalSearches.toLocaleString()}
               change={volTrend.change}
               changeType={volTrend.changeType}
-              subtitle={`${data.rangeDays}-day window`}
+              subtitle={`Marketplace /search · ${data.rangeDays}d`}
               icon="📊"
               trend={kpiSpark}
             />
@@ -720,7 +791,7 @@ export function SearchAnalyticsAdminClient() {
               value={data.uniqueQueriesApprox.toLocaleString()}
               change={volTrend.change}
               changeType={volTrend.changeType}
-              subtitle="ES cardinality (approx.)"
+              subtitle="Marketplace · ES cardinality (approx.)"
               icon="🔍"
               trend={kpiSpark}
             />
@@ -735,8 +806,8 @@ export function SearchAnalyticsAdminClient() {
               changeType="neutral"
               subtitle={
                 data.resultCountStats.max != null
-                  ? `max ${data.resultCountStats.max} · σ ${data.resultCountStats.stdDeviation != null ? data.resultCountStats.stdDeviation.toFixed(1) : "—"}`
-                  : "Mean listings returned"
+                  ? `Listings · max ${data.resultCountStats.max} · σ ${data.resultCountStats.stdDeviation != null ? data.resultCountStats.stdDeviation.toFixed(1) : "—"}`
+                  : "Mean listings returned per search"
               }
               icon="📈"
               trend={kpiSpark}
@@ -748,12 +819,156 @@ export function SearchAnalyticsAdminClient() {
               changeType="neutral"
               subtitle={
                 data.queryConcentration != null
-                  ? `HHI ${data.queryConcentration.toFixed(2)}`
-                  : "Logged empty grids"
+                  ? `Marketplace HHI ${data.queryConcentration.toFixed(2)}`
+                  : "Marketplace · no matching listings"
               }
               icon="🎯"
               trend={kpiSpark}
             />
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Brand directory (/brands)</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Debounced catalog queries via <code className="rounded bg-slate-100 px-1 text-[11px]">searchBrandsCatalogSuggest</code> — same Elasticsearch / Supabase pipeline as the nav and Sell brand fields.{" "}
+                  <span className="font-medium text-slate-600">Result count</span> is matching brand rows (cap 20), not
+                  listings.
+                </p>
+              </div>
+            </div>
+            {data.brandDirectory.totalSearches < 1 ? (
+              <p className="py-8 text-center text-sm text-slate-500">
+                No brand-directory searches logged in this range yet. Uses client builds that call{" "}
+                <code className="rounded bg-slate-100 px-1 text-[11px]">recordBrandDirectorySearchAnalytics</code>.
+              </p>
+            ) : (
+              <>
+                <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Directory searches</p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {data.brandDirectory.totalSearches.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Unique queries</p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {data.brandDirectory.uniqueQueriesApprox.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Avg. brands returned</p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {data.brandDirectory.avgResultCount != null &&
+                      Number.isFinite(data.brandDirectory.avgResultCount)
+                        ? data.brandDirectory.avgResultCount.toFixed(1)
+                        : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Zero-result share</p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {brandDirZeroPct != null ? `${brandDirZeroPct}%` : "—"}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                  <div>
+                    <h4 className="mb-4 text-sm font-semibold text-slate-800">Backend mix (directory)</h4>
+                    {!brandDirBackendPieRows.some((r) => r.value > 0) ? (
+                      <EmptyChart />
+                    ) : (
+                      <ReportStylePieBlock rows={brandDirBackendPieRows} minLabelPercent={0.05} />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="mb-4 text-sm font-semibold text-slate-800">Top directory queries</h4>
+                    <div className="h-[min(280px,40vh)] min-h-[200px]">
+                      {brandDirTopBarData.length === 0 ? (
+                        <EmptyChart />
+                      ) : (
+                        <ChartContainer
+                          config={{
+                            bdq: { label: "Searches", color: "hsl(173 58% 39%)" },
+                          }}
+                          className="h-full w-full"
+                        >
+                          <BarChart
+                            data={[...brandDirTopBarData].reverse()}
+                            layout="vertical"
+                            margin={{ left: 4, right: 8, top: 4, bottom: 4 }}
+                          >
+                            <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
+                            <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} />
+                            <YAxis
+                              type="category"
+                              dataKey="short"
+                              width={120}
+                              tick={{ fill: "#64748B", fontSize: 10 }}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="count" fill="var(--color-bdq)" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ChartContainer>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-8">
+                  <h4 className="mb-4 text-sm font-semibold text-slate-800">Daily volume (directory)</h4>
+                  {brandDirVolumeChartData.length === 0 ? (
+                    <EmptyChart />
+                  ) : (
+                    <div className="h-[220px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={brandDirVolumeChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fill: "#64748B", fontSize: 11 }}
+                            tickLine={false}
+                            axisLine={{ stroke: "#E2E8F0" }}
+                            tickFormatter={(v) => {
+                              try {
+                                return format(parseISO(String(v)), "MMM d")
+                              } catch {
+                                return String(v)
+                              }
+                            }}
+                          />
+                          <YAxis tick={{ fill: "#64748B", fontSize: 11 }} tickLine={false} axisLine={false} width={36} />
+                          <RechartsTooltip
+                            content={({ active, payload, label }) => {
+                              if (!active || !payload?.length) return null
+                              let labelStr = ""
+                              if (label != null && label !== "") {
+                                try {
+                                  labelStr = format(parseISO(String(label)), "MMM d, yyyy")
+                                } catch {
+                                  labelStr = String(label)
+                                }
+                              }
+                              return (
+                                <AnalyticsTooltip
+                                  active
+                                  payload={[{ name: "Searches", value: payload[0]?.value, color: "#0d9488" }]}
+                                  label={labelStr || undefined}
+                                />
+                              )
+                            }}
+                          />
+                          <Bar dataKey="count" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Volume + MA — composed with gradient area (reference layout) */}
@@ -764,7 +979,7 @@ export function SearchAnalyticsAdminClient() {
                   Volume &amp; 3-day moving average
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Daily search events with a smoothed trend line to damp single-day spikes
+                  Marketplace /search only — daily events with a smoothed trend line to damp single-day spikes
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -1103,7 +1318,9 @@ export function SearchAnalyticsAdminClient() {
             <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">Backend mix</h3>
-                <p className="mt-1 text-sm text-slate-500">Elasticsearch vs database fallback</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Marketplace /search — Elasticsearch vs database fallback for listing search
+                </p>
               </div>
               {!backendPieRows.some((r) => r.value > 0) ? (
                 <EmptyChart />
@@ -1118,8 +1335,15 @@ export function SearchAnalyticsAdminClient() {
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">Search dropdown picks</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Typeahead row clicks (nav + sell form). Listing strip uses Elasticsearch when configured.
+                  Typeahead row <span className="font-medium text-slate-600">clicks</span> only (nav + sell
+                  form). Hovers are counted separately below. Listing strip uses Elasticsearch when configured.
                 </p>
+                {data.suggestPickTotal > 0 || data.suggestHoverTotal > 0 ? (
+                  <p className="mt-2 text-xs tabular-nums text-slate-500">
+                    {data.suggestPickTotal.toLocaleString()} clicks ·{" "}
+                    {data.suggestHoverTotal.toLocaleString()} hover events
+                  </p>
+                ) : null}
               </div>
               <div className="h-[min(320px,50vh)] min-h-[220px]">
                 {suggestPickChartRows.length === 0 ? (
@@ -1160,7 +1384,10 @@ export function SearchAnalyticsAdminClient() {
             <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">Suggest pipeline mix</h3>
-                <p className="mt-1 text-sm text-slate-500">Elasticsearch vs database for each click session</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Elasticsearch vs database for each <span className="font-medium text-slate-600">click</span>{" "}
+                  (not hover)
+                </p>
               </div>
               {!suggestTraceChartRows.some((r) => r.count > 0) ? (
                 <EmptyChart />
@@ -1174,6 +1401,181 @@ export function SearchAnalyticsAdminClient() {
                   minLabelPercent={0.05}
                 />
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Typed prefixes (dropdown clicks)</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Text in the field when the user <span className="font-medium text-slate-600">clicked</span> a
+                  suggest row (same index as{" "}
+                  <code className="rounded bg-slate-100 px-1 text-[11px]">query_prefix</code>).
+                </p>
+              </div>
+              <div className="h-[min(360px,52vh)] min-h-[220px]">
+                {suggestPrefixClickChartRows.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ChartContainer
+                    config={{
+                      n: { label: "Clicks", color: "hsl(221.2 83.2% 48%)" },
+                    }}
+                    className="h-full w-full"
+                  >
+                    <BarChart
+                      data={[...suggestPrefixClickChartRows].reverse()}
+                      layout="vertical"
+                      margin={{ left: 4, right: 8, top: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="short"
+                        width={132}
+                        tick={{ fill: "#64748B", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="var(--color-n)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Typed prefixes (hover dwell)</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Prefix when the pointer rested ~450ms on a row without clicking (exploratory interest; see
+                  client constant <code className="rounded bg-slate-100 px-1 text-[11px]">SUGGEST_HOVER_DWELL_MS</code>
+                  ).
+                </p>
+              </div>
+              <div className="h-[min(360px,52vh)] min-h-[220px]">
+                {suggestPrefixHoverChartRows.length === 0 ? (
+                  <p className="py-12 text-center text-sm text-slate-500">
+                    No hover events in this range yet. Hover logging ships with new client builds.
+                  </p>
+                ) : (
+                  <ChartContainer
+                    config={{
+                      h: { label: "Hovers", color: "hsl(262 83% 52%)" },
+                    }}
+                    className="h-full w-full"
+                  >
+                    <BarChart
+                      data={[...suggestPrefixHoverChartRows].reverse()}
+                      layout="vertical"
+                      margin={{ left: 4, right: 8, top: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="short"
+                        width={132}
+                        tick={{ fill: "#64748B", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="var(--color-h)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Listing opens from dropdown</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Clicks on <span className="font-medium text-slate-600">Top listings</span> rows that navigate
+                  to a listing (UUID aggregated in Elasticsearch).
+                </p>
+              </div>
+              <div className="h-[min(360px,52vh)] min-h-[220px]">
+                {suggestListingClickChartRows.length === 0 ? (
+                  <p className="py-12 text-center text-sm text-slate-500">
+                    No listing clicks from the typeahead in this window.
+                  </p>
+                ) : (
+                  <ChartContainer
+                    config={{
+                      lc: { label: "Clicks", color: "hsl(173 58% 39%)" },
+                    }}
+                    className="h-full w-full"
+                  >
+                    <BarChart
+                      data={[...suggestListingClickChartRows].reverse()}
+                      layout="vertical"
+                      margin={{ left: 4, right: 8, top: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="short"
+                        width={140}
+                        tick={{ fill: "#64748B", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="var(--color-lc)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Dropdown hovers by row type</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Same row taxonomy as picks; counts are dwell-based hovers, not clicks.
+                </p>
+              </div>
+              <div className="h-[min(360px,52vh)] min-h-[220px]">
+                {suggestHoverKindChartRows.length === 0 ? (
+                  <p className="py-12 text-center text-sm text-slate-500">
+                    No hover events in this range yet.
+                  </p>
+                ) : (
+                  <ChartContainer
+                    config={{
+                      hv: { label: "Hovers", color: "hsl(38 92% 45%)" },
+                    }}
+                    className="h-full w-full"
+                  >
+                    <BarChart
+                      data={[...suggestHoverKindChartRows].reverse()}
+                      layout="vertical"
+                      margin={{ left: 4, right: 8, top: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        width={148}
+                        tick={{ fill: "#64748B", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="var(--color-hv)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                )}
+              </div>
             </div>
           </div>
 
