@@ -96,6 +96,7 @@ export function BrandInputWithSuggestions({
             className="w-full"
             autoOpenDropdownOnFetch
             showTypeLabels={false}
+            analyticsSurface="sell_brand_title"
           />
         </div>
         <button

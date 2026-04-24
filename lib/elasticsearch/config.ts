@@ -15,6 +15,10 @@ export const ELASTICSEARCH_BRANDS_INDEX =
 export const ELASTICSEARCH_SEARCH_ANALYTICS_INDEX =
   process.env.ELASTICSEARCH_SEARCH_ANALYTICS_INDEX || "reswell_search_analytics"
 
+/** Nav/sell-form typeahead picks (which dropdown row types users choose, ES vs DB pipeline). */
+export const ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX =
+  process.env.ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX || "reswell_search_suggest_analytics"
+
 function hasElasticsearchAuth(): boolean {
   const apiKey = process.env.ELASTICSEARCH_API_KEY?.trim()
   if (apiKey) return true

@@ -1,5 +1,4 @@
 import { Suspense } from "react"
-import { after } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
@@ -71,14 +70,14 @@ export async function SearchPageView({
   )
 
   if (rawQuery.trim() && searchMeta) {
-    after(() => {
-      void recordMarketplaceSearchAnalyticsEvent({
-        queryDisplay: displayMarketplaceSearchQueryForAnalytics(rawQuery),
-        queryNormalized: normalizeMarketplaceSearchQueryForAnalytics(rawQuery),
-        resultCount: searchMeta.resultCount,
-        backend: searchMeta.backend,
-        categorySlug: categorySlugForLog,
-      })
+    // Await so the ES index completes in this request (Next.js `after()` work can be cut short
+    // when the invocation ends, especially in serverless). Failures are logged inside the service.
+    await recordMarketplaceSearchAnalyticsEvent({
+      queryDisplay: displayMarketplaceSearchQueryForAnalytics(rawQuery),
+      queryNormalized: normalizeMarketplaceSearchQueryForAnalytics(rawQuery),
+      resultCount: searchMeta.resultCount,
+      backend: searchMeta.backend,
+      categorySlug: categorySlugForLog,
     })
   }
 

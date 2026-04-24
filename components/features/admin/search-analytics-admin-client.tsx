@@ -19,6 +19,7 @@ import {
   PolarRadiusAxis,
   Radar,
   RadarChart,
+  ResponsiveContainer,
   Scatter,
   ScatterChart,
   Tooltip as RechartsTooltip,
@@ -27,10 +28,8 @@ import {
   YAxis,
   ZAxis,
 } from "recharts"
-import { Loader2, RefreshCw, Sparkles } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
@@ -72,6 +71,28 @@ const REPORT_PIE_PALETTE = [
   "#9842E3",
   "#B89B37",
 ] as const
+
+const SUGGEST_KIND_LABELS: Record<string, string> = {
+  top_listing: "Top listing row",
+  brand_strip: "Brand (chip strip)",
+  brand_row: "Brand (vertical list)",
+  category_chip: "Category chip",
+  suggestion_title: "Suggestions · title",
+  suggestion_brand: "Suggestions · brand",
+  suggestion_category: "Suggestions · category",
+  view_all_results: "View all results",
+  brand_catalog: "Brand catalog row",
+}
+
+const SUGGEST_TRACE_LABELS: Record<string, string> = {
+  marketplace_elasticsearch: "Marketplace · Elasticsearch",
+  marketplace_supabase: "Marketplace · Database",
+  brand_catalog_elasticsearch: "Brand catalog · Elasticsearch",
+  brand_catalog_supabase: "Brand catalog · Database",
+}
+
+/** Treemap tile colors aligned with the “Enhance Data Visualizations” reference. */
+const TREEMAP_SLATE_FILLS = ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B"] as const
 
 type ReportPieRow = { name: string; value: number; fill?: string }
 
@@ -170,7 +191,7 @@ function ReportStylePieBlock({
   return (
     <div
       className={cn(
-        "flex flex-col items-stretch gap-5 rounded-xl border border-border/60 bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-center sm:gap-10",
+        "flex flex-col items-stretch gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8",
         className,
       )}
     >
@@ -214,21 +235,22 @@ function ReportStylePieBlock({
           />
         </PieChart>
       </ChartContainer>
-      <ul className="flex min-w-0 flex-1 flex-col gap-3 text-sm sm:max-w-[240px]">
+      <ul className="flex min-w-0 flex-1 flex-col gap-3 text-sm sm:max-w-[280px]">
         {data.map((row) => {
           const pct = total > 0 ? Math.round((row.value / total) * 100) : 0
           return (
-            <li key={row.name} className="flex gap-2.5">
-              <span
-                className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-[2px] border border-white/80 shadow-sm"
-                style={{ backgroundColor: row.fill }}
-              />
-              <span className="min-w-0">
-                <span className="block font-medium leading-snug text-foreground">{row.name}</span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {row.value.toLocaleString()} searches · {pct}%
-                </span>
-              </span>
+            <li
+              key={row.name}
+              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full border border-white shadow-sm"
+                  style={{ backgroundColor: row.fill }}
+                />
+                <span className="truncate font-medium text-slate-700">{row.name}</span>
+              </div>
+              <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">{pct}%</span>
             </li>
           )
         })}
@@ -252,6 +274,147 @@ function movingAverageSeries(
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n))
+}
+
+function volumeTrendDelta(rows: { count: number }[]): {
+  change: string
+  changeType: "positive" | "negative" | "neutral"
+} {
+  if (rows.length < 2) return { change: "—", changeType: "neutral" }
+  const mid = Math.floor(rows.length / 2) || 1
+  const first = rows.slice(0, mid).reduce((s, r) => s + r.count, 0)
+  const second = rows.slice(mid).reduce((s, r) => s + r.count, 0)
+  if (first === 0 && second === 0) return { change: "0%", changeType: "neutral" }
+  const base = Math.max(first, 1)
+  const pct = ((second - first) / base) * 100
+  const rounded = Math.round(pct * 10) / 10
+  const sign = rounded > 0 ? "+" : ""
+  return {
+    change: `${sign}${rounded}%`,
+    changeType:
+      rounded > 0.5 ? "positive" : rounded < -0.5 ? "negative" : "neutral",
+  }
+}
+
+function AnalyticsTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: Array<{ name?: string; value?: unknown; color?: string }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-xs shadow-xl">
+      {label ? (
+        <div className="mb-2 border-b border-slate-700 pb-2 font-medium text-slate-300">
+          {label}
+        </div>
+      ) : null}
+      <div className="space-y-1.5">
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center justify-between gap-6">
+            <span className="flex items-center gap-2 font-medium text-slate-200">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: entry.color ?? "#94a3b8" }}
+              />
+              {entry.name}
+            </span>
+            <span className="font-bold text-white tabular-nums">
+              {typeof entry.value === "number"
+                ? Number.isInteger(entry.value)
+                  ? entry.value.toLocaleString()
+                  : entry.value.toFixed(2)
+                : String(entry.value ?? "")}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DashboardKPICard({
+  label,
+  value,
+  change,
+  changeType,
+  subtitle,
+  icon,
+  trend,
+}: {
+  label: string
+  value: string
+  change: string
+  changeType: "positive" | "negative" | "neutral"
+  subtitle: string
+  icon: string
+  trend: { count: number }[]
+}) {
+  const changeColors = {
+    positive: "text-emerald-600 bg-emerald-50 border-emerald-200",
+    negative: "text-rose-600 bg-rose-50 border-rose-200",
+    neutral: "text-slate-600 bg-slate-50 border-slate-200",
+  }
+  const trendColor = {
+    positive: "#10B981",
+    negative: "#F43F5E",
+    neutral: "#64748B",
+  }
+  const stroke = trendColor[changeType]
+  const gradId = `kpi-${label.replace(/\s+/g, "-")}`
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md">
+      <div className="mb-4 flex items-start justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-2xl" aria-hidden>
+              {icon}
+            </span>
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              {label}
+            </span>
+          </div>
+          <div className="mb-1 text-3xl font-bold tabular-nums text-slate-900">{value}</div>
+          <p className="text-xs text-slate-500">{subtitle}</p>
+        </div>
+        <span
+          className={cn(
+            "shrink-0 rounded-md border px-2.5 py-1 text-xs font-semibold",
+            changeColors[changeType],
+          )}
+        >
+          {change}
+        </span>
+      </div>
+      {trend.length > 1 ? (
+        <div className="h-16 -mx-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={trend} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={stroke} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="monotone"
+                dataKey="count"
+                stroke={stroke}
+                strokeWidth={2}
+                fill={`url(#${gradId})`}
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 export function SearchAnalyticsAdminClient() {
@@ -320,15 +483,52 @@ export function SearchAnalyticsAdminClient() {
     }))
   }, [data?.byBackend])
 
+  const suggestPickChartRows = useMemo(
+    () =>
+      (data?.suggestPicksByKind ?? [])
+        .filter((r) => r.count > 0)
+        .map((row) => ({
+          ...row,
+          label: SUGGEST_KIND_LABELS[row.kind] ?? row.kind,
+        })),
+    [data?.suggestPicksByKind],
+  )
+
+  const suggestTraceChartRows = useMemo(
+    () =>
+      (data?.suggestPicksByTrace ?? [])
+        .filter((r) => r.count > 0)
+        .map((row) => ({
+          ...row,
+          label: SUGGEST_TRACE_LABELS[row.trace] ?? row.trace,
+        })),
+    [data?.suggestPicksByTrace],
+  )
+
   const treemapFlat = useMemo(
     () =>
-      (data?.topQueries ?? []).slice(0, 20).map((q) => ({
+      (data?.topQueries ?? []).slice(0, 20).map((q, i) => ({
         name: truncateQuery(q.query, 22),
         size: q.count,
         full: q.query,
+        fill: TREEMAP_SLATE_FILLS[i % TREEMAP_SLATE_FILLS.length],
       })),
     [data?.topQueries],
   )
+
+  /** Visual analog to the reference “percentile” chart: bands derived from daily counts only. */
+  const activityBandsData = useMemo(() => {
+    return volumeWithMa.map((row, i) => {
+      const slice = volumeWithMa.slice(Math.max(0, i - 3), i + 1)
+      const peak = slice.reduce((m, r) => Math.max(m, r.count), 0)
+      return {
+        date: row.date,
+        p50: row.count,
+        p95: Math.round((row.count + peak) / 2),
+        p99: peak,
+      }
+    })
+  }, [volumeWithMa])
 
   const radarRows = useMemo(() => {
     if (!data || data.totalSearches < 1) return []
@@ -413,166 +613,190 @@ export function SearchAnalyticsAdminClient() {
     [data?.volumeByDay],
   )
 
-  return (
-    <div className="space-y-8">
-      <div className="rounded-xl border bg-gradient-to-br from-muted/40 via-background to-background p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">
-              <Sparkles className="h-5 w-5" aria-hidden />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Elasticsearch event stream</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-                Each point reflects a real <code className="rounded bg-muted px-1">/search?q=</code>{" "}
-                request. Charts combine time series, distribution, and concentration metrics from the{" "}
-                <code className="rounded bg-muted px-1">reswell_search_analytics</code> index.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">Range</span>
-            <Select value={days} onValueChange={setDays}>
-              <SelectTrigger className="w-[168px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {RANGE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9"
-              onClick={() => void load({ silent: false })}
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="ml-2">Refresh</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+  const volTrend = volumeTrendDelta(data?.volumeByDay ?? [])
+  const kpiSpark = data?.volumeByDay?.length ? data.volumeByDay : sparkSlice
 
+  return (
+    <div className="w-full space-y-0 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:bg-transparent dark:border-border">
       {error && (
-        <p className="text-sm text-destructive" role="alert">
+        <p className="mb-4 text-sm text-destructive" role="alert">
           {error}
         </p>
       )}
 
       {loading && !data ? (
-        <div className="flex items-center gap-2 text-muted-foreground text-sm py-16 justify-center">
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-20 text-sm text-slate-500 shadow-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading search analytics…
         </div>
       ) : data && !data.configured ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Elasticsearch not configured</CardTitle>
-            <CardDescription>
-              Set cluster URL and credentials; this dashboard reads the same client as listing search.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Elasticsearch not configured</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Set cluster URL and credentials; this dashboard reads the same client as listing search.
+          </p>
+        </div>
       ) : data ? (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <InsightStat
-              title="Total searches"
+        <div className="min-h-[60vh] w-full max-w-[1600px] space-y-8">
+          {/* Top bar — reference dashboard header */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900">Search Analytics Dashboard</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Marketplace search volume, typeahead picks, and Elasticsearch-backed aggregates
+                </p>
+                <p className="mt-2 max-w-2xl text-xs text-slate-500">
+                  <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">reswell_search_analytics</code>{" "}
+                  (page searches) ·{" "}
+                  <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">
+                    reswell_search_suggest_analytics
+                  </code>{" "}
+                  (dropdown clicks)
+                </p>
+              </div>
+              <div className="flex flex-col items-stretch gap-3 sm:items-end">
+                <div className="flex items-center gap-3">
+                  <div className="text-right text-sm">
+                    <div className="text-xs text-slate-500">Last updated</div>
+                    <div className="font-medium text-slate-700">
+                      {data.fetchedAt
+                        ? format(parseISO(data.fetchedAt), "MMM d, yyyy h:mm a")
+                        : "—"}
+                    </div>
+                  </div>
+                  <div
+                    className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse"
+                    aria-hidden
+                  />
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Range
+                  </span>
+                  <Select value={days} onValueChange={setDays}>
+                    <SelectTrigger className="h-9 w-[168px] border-slate-200 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RANGE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 border-slate-200 bg-white"
+                    onClick={() => void load({ silent: false })}
+                    disabled={refreshing}
+                  >
+                    {refreshing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    <span className="ml-2">Refresh</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <DashboardKPICard
+              label="Total searches"
               value={data.totalSearches.toLocaleString()}
-              hint={`${data.rangeDays}-day window`}
-              spark={sparkSlice}
+              change={volTrend.change}
+              changeType={volTrend.changeType}
+              subtitle={`${data.rangeDays}-day window`}
+              icon="📊"
+              trend={kpiSpark}
             />
-            <InsightStat
-              title="Unique queries"
+            <DashboardKPICard
+              label="Unique queries"
               value={data.uniqueQueriesApprox.toLocaleString()}
-              hint="ES cardinality (approx.)"
-              badge={
-                data.totalSearches > 0
-                  ? `${Math.round((data.uniqueQueriesApprox / data.totalSearches) * 100)}% of volume`
-                  : undefined
-              }
-              spark={sparkSlice}
+              change={volTrend.change}
+              changeType={volTrend.changeType}
+              subtitle="ES cardinality (approx.)"
+              icon="🔍"
+              trend={kpiSpark}
             />
-            <InsightStat
-              title="Avg. results"
+            <DashboardKPICard
+              label="Avg. results"
               value={
                 data.avgResultCount != null && Number.isFinite(data.avgResultCount)
                   ? data.avgResultCount.toFixed(1)
                   : "—"
               }
-              hint={
+              change="—"
+              changeType="neutral"
+              subtitle={
                 data.resultCountStats.max != null
                   ? `max ${data.resultCountStats.max} · σ ${data.resultCountStats.stdDeviation != null ? data.resultCountStats.stdDeviation.toFixed(1) : "—"}`
                   : "Mean listings returned"
               }
-              spark={sparkSlice}
+              icon="📈"
+              trend={kpiSpark}
             />
-            <InsightStat
-              title="Zero-result share"
+            <DashboardKPICard
+              label="Zero-result share"
               value={zeroSharePct != null ? `${zeroSharePct}%` : "—"}
-              hint="Logged empty grids"
-              badge={
+              change="—"
+              changeType="neutral"
+              subtitle={
                 data.queryConcentration != null
                   ? `HHI ${data.queryConcentration.toFixed(2)}`
-                  : undefined
+                  : "Logged empty grids"
               }
-              spark={sparkSlice}
+              icon="🎯"
+              trend={kpiSpark}
             />
           </div>
 
-          <Card className="overflow-hidden border-primary/15 shadow-sm">
-            <CardHeader className="pb-2">
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base">Volume and 3-day moving average</CardTitle>
-                  <CardDescription>
-                    Daily search events with a smoothed trend line to damp single-day spikes.
-                  </CardDescription>
-                </div>
-                <Badge variant="secondary" className="font-normal">
-                  Composed chart
-                </Badge>
+          {/* Volume + MA — composed with gradient area (reference layout) */}
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Volume &amp; 3-day moving average
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Daily search events with a smoothed trend line to damp single-day spikes
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {volumeWithMa.length === 0 ? (
-                <EmptyChart />
-              ) : (
-                <ChartContainer
-                  config={{
-                    count: {
-                      label: "Searches",
-                      theme: {
-                        light: "hsl(240 5.9% 10%)",
-                        dark: "hsl(0 0% 92%)",
-                      },
-                    },
-                    ma: {
-                      label: "3d MA",
-                      theme: {
-                        light: "hsl(262 83% 48%)",
-                        dark: "hsl(262 83% 65%)",
-                      },
-                    },
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <ComposedChart data={volumeWithMa} margin={{ left: 8, right: 8, top: 12 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  Volume
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                  <span className="h-2 w-2 rounded-full bg-violet-600" />
+                  3-day MA
+                </span>
+              </div>
+            </div>
+            {volumeWithMa.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={volumeWithMa} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="volumeGradientDash" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.15} />
+                        <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                     <XAxis
                       dataKey="date"
+                      stroke="#94A3B8"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
                       tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
+                      axisLine={{ stroke: "#E2E8F0" }}
                       tickFormatter={(v) => {
                         try {
                           return format(parseISO(String(v)), "MMM d")
@@ -581,69 +805,210 @@ export function SearchAnalyticsAdminClient() {
                         }
                       }}
                     />
-                    <YAxis yAxisId="left" tickLine={false} axisLine={false} width={40} />
-                    <ChartTooltip
-                      content={
-                        <ChartTooltipContent
-                          labelFormatter={(_v, payload) => {
-                            const d = payload?.[0]?.payload?.date
-                            if (typeof d !== "string") return ""
-                            try {
-                              return format(parseISO(d), "MMM d, yyyy")
-                            } catch {
-                              return d
-                            }
-                          }}
-                        />
-                      }
+                    <YAxis
+                      stroke="#94A3B8"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: "#E2E8F0" }}
+                    />
+                    <RechartsTooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null
+                        const rows: { name: string; value: unknown; color?: string }[] = []
+                        let sawCount = false
+                        for (const p of payload) {
+                          if (p.dataKey === "count") {
+                            if (sawCount) continue
+                            sawCount = true
+                            rows.push({
+                              name: "Volume",
+                              value: p.value,
+                              color: "#3B82F6",
+                            })
+                            continue
+                          }
+                          if (p.dataKey === "ma") {
+                            rows.push({
+                              name: "3d MA",
+                              value: p.value,
+                              color: String(p.color ?? "#8B5CF6"),
+                            })
+                          }
+                        }
+                        let labelStr = ""
+                        if (label != null && label !== "") {
+                          try {
+                            labelStr = format(parseISO(String(label)), "MMM d, yyyy")
+                          } catch {
+                            labelStr = String(label)
+                          }
+                        }
+                        return <AnalyticsTooltip active payload={rows} label={labelStr || undefined} />
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="none"
+                      fill="url(#volumeGradientDash)"
+                      isAnimationActive={false}
+                      name="Volume"
                     />
                     <Bar
-                      yAxisId="left"
                       dataKey="count"
+                      fill="#3B82F6"
                       radius={[4, 4, 0, 0]}
-                      fill="var(--color-count)"
-                      fillOpacity={0.85}
+                      maxBarSize={40}
+                      name="Volume"
                     />
                     <Line
-                      yAxisId="left"
                       type="monotone"
                       dataKey="ma"
-                      stroke="var(--color-ma)"
-                      strokeWidth={2}
-                      dot={false}
+                      stroke="#8B5CF6"
+                      strokeWidth={3}
+                      dot={{ fill: "#8B5CF6", r: 4, strokeWidth: 2, stroke: "#fff" }}
+                      activeDot={{ r: 6 }}
+                      name="3d MA"
                       connectNulls
                     />
                   </ComposedChart>
-                </ChartContainer>
-              )}
-            </CardContent>
-          </Card>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Query demand treemap</CardTitle>
-                <CardDescription>
-                  Tile area encodes search frequency; hover to read the full string.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-[320px]">
+          {/* Activity bands — same visual language as reference “percentiles” chart */}
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Daily volume bands</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  P50 = daily count; P95/P99 = blends and trailing-window peaks from the same series (not API
+                  latency).
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                  P50
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
+                  <span className="h-2 w-2 rounded-full bg-amber-600" />
+                  P95
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700">
+                  <span className="h-2 w-2 rounded-full bg-rose-600" />
+                  P99
+                </span>
+              </div>
+            </div>
+            {activityBandsData.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={activityBandsData} margin={{ top: 10, right: 10, left: 8, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="p50g" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10B981" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="p95g" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.15} />
+                        <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="p99g" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#F43F5E" stopOpacity={0.1} />
+                        <stop offset="100%" stopColor="#F43F5E" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#94A3B8"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: "#E2E8F0" }}
+                      tickFormatter={(v) => {
+                        try {
+                          return format(parseISO(String(v)), "MMM d")
+                        } catch {
+                          return String(v)
+                        }
+                      }}
+                    />
+                    <YAxis
+                      stroke="#94A3B8"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: "#E2E8F0" }}
+                      label={{
+                        value: "Searches",
+                        angle: -90,
+                        position: "insideLeft",
+                        style: { fill: "#64748B", fontSize: 12 },
+                      }}
+                    />
+                    <RechartsTooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null
+                        const rows = payload.map((p) => ({
+                          name: p.name,
+                          value: p.value,
+                          color: p.color,
+                        }))
+                        return <AnalyticsTooltip active payload={rows} label={String(label ?? "")} />
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="p99"
+                      name="P99 (peak)"
+                      stroke="#F43F5E"
+                      strokeWidth={2}
+                      fill="url(#p99g)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="p95"
+                      name="P95 (blend)"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      fill="url(#p95g)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="p50"
+                      name="P50 (volume)"
+                      stroke="#10B981"
+                      strokeWidth={2.5}
+                      fill="url(#p50g)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Query demand treemap</h3>
+                <p className="mt-1 text-sm text-slate-500">Area encodes search frequency by query</p>
+              </div>
+              <div className="h-[320px]">
                 {treemapFlat.length === 0 ? (
                   <EmptyChart />
                 ) : (
-                  <ChartContainer
-                    config={{
-                      tm: { label: "Searches", color: ACCENT.primary },
-                    }}
-                    className="h-full w-full"
-                  >
+                  <ResponsiveContainer width="100%" height="100%">
                     <Treemap
                       data={treemapFlat}
                       dataKey="size"
                       aspectRatio={4 / 3}
-                      stroke="hsl(var(--border))"
+                      stroke="#fff"
+                      strokeWidth={2}
                       isAnimationActive={false}
-                      content={<TreemapCell />}
+                      content={<TreemapCellFigma />}
                     >
                       <RechartsTooltip
                         content={({ payload }) => {
@@ -652,11 +1017,9 @@ export function SearchAnalyticsAdminClient() {
                             | undefined
                           if (!p) return null
                           return (
-                            <div className="rounded-md border bg-background px-2 py-1.5 text-xs shadow-md">
-                              <p className="font-medium text-foreground max-w-[240px] break-words">
-                                {p.full ?? p.name}
-                              </p>
-                              <p className="text-muted-foreground tabular-nums">
+                            <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white shadow-xl">
+                              <p className="max-w-[240px] break-words font-medium">{p.full ?? p.name}</p>
+                              <p className="mt-1 text-slate-300 tabular-nums">
                                 {p.size?.toLocaleString()} searches
                               </p>
                             </div>
@@ -664,110 +1027,179 @@ export function SearchAnalyticsAdminClient() {
                         }}
                       />
                     </Treemap>
-                  </ChartContainer>
+                  </ResponsiveContainer>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Health radar</CardTitle>
-                <CardDescription>
-                  Normalized scores from live totals for at-a-glance balance.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-[320px]">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Health radar</h3>
+                <p className="mt-1 text-sm text-slate-500">Normalized scores from live totals</p>
+              </div>
+              <div className="mx-auto h-[320px] max-w-[360px]">
                 {radarRows.length === 0 ? (
+                  <EmptyChart />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarRows} cx="50%" cy="50%" outerRadius="72%">
+                      <defs>
+                        <linearGradient id="radarGradientDash" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366F1" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0.3} />
+                        </linearGradient>
+                      </defs>
+                      <PolarGrid stroke="#E2E8F0" strokeWidth={1} />
+                      <PolarAngleAxis
+                        dataKey="subject"
+                        tick={{ fill: "#475569", fontSize: 11, fontWeight: 500 }}
+                      />
+                      <PolarRadiusAxis
+                        angle={90}
+                        tick={{ fill: "#94A3B8", fontSize: 10 }}
+                        stroke="#CBD5E1"
+                      />
+                      <Radar
+                        name="Score"
+                        dataKey="A"
+                        stroke="#6366F1"
+                        fill="url(#radarGradientDash)"
+                        strokeWidth={2.5}
+                      />
+                      <RechartsTooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null
+                          const row = payload[0].payload as { subject?: string; A?: number }
+                          return (
+                            <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white shadow-xl">
+                              <span className="font-medium">{row.subject}</span>
+                              <span className="ml-2 tabular-nums">{row.A}</span>
+                            </div>
+                          )
+                        }}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Result count distribution</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Listings attached to each logged search (bucketed)
+                </p>
+              </div>
+              {data.totalSearches < 1 || !distPieRows.some((r) => r.value > 0) ? (
+                <EmptyChart />
+              ) : (
+                <ReportStylePieBlock rows={distPieRows} minLabelPercent={0.06} />
+              )}
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Backend mix</h3>
+                <p className="mt-1 text-sm text-slate-500">Elasticsearch vs database fallback</p>
+              </div>
+              {!backendPieRows.some((r) => r.value > 0) ? (
+                <EmptyChart />
+              ) : (
+                <ReportStylePieBlock rows={backendPieRows} minLabelPercent={0.05} />
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Search dropdown picks</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Typeahead row clicks (nav + sell form). Listing strip uses Elasticsearch when configured.
+                </p>
+              </div>
+              <div className="h-[min(320px,50vh)] min-h-[220px]">
+                {suggestPickChartRows.length === 0 ? (
                   <EmptyChart />
                 ) : (
                   <ChartContainer
                     config={{
-                      radar: {
-                        label: "Composite",
-                        color: ACCENT.violet,
+                      picks: {
+                        label: "Clicks",
+                        color: "hsl(221.2 83.2% 48%)",
                       },
                     }}
-                    className="h-full w-full mx-auto max-w-[340px]"
+                    className="h-full w-full"
                   >
-                    <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarRows}>
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                      <Radar
-                        name="Score"
-                        dataKey="A"
-                        stroke={ACCENT.violet}
-                        fill={ACCENT.violet}
-                        fillOpacity={0.35}
+                    <BarChart
+                      data={[...suggestPickChartRows].reverse()}
+                      layout="vertical"
+                      margin={{ left: 4, right: 8, top: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis type="number" tick={{ fill: "#64748B", fontSize: 12 }} tickLine={false} axisLine={false} />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        width={148}
+                        tick={{ fill: "#64748B", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={false}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                    </RadarChart>
+                      <Bar dataKey="count" fill="var(--color-picks)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
                   </ChartContainer>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Suggest pipeline mix</h3>
+                <p className="mt-1 text-sm text-slate-500">Elasticsearch vs database for each click session</p>
+              </div>
+              {!suggestTraceChartRows.some((r) => r.count > 0) ? (
+                <EmptyChart />
+              ) : (
+                <ReportStylePieBlock
+                  rows={suggestTraceChartRows.map((row, i) => ({
+                    name: row.label,
+                    value: row.count,
+                    fill: REPORT_PIE_PALETTE[i % REPORT_PIE_PALETTE.length],
+                  }))}
+                  minLabelPercent={0.05}
+                />
+              )}
+            </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Result count distribution</CardTitle>
-                <CardDescription>
-                  How many listings were attached to each logged search (bucketed).
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.totalSearches < 1 || !distPieRows.some((r) => r.value > 0) ? (
-                  <EmptyChart />
-                ) : (
-                  <ReportStylePieBlock rows={distPieRows} minLabelPercent={0.06} />
-                )}
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Category scope</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Filtered browse vs open surfboard search
+                </p>
+              </div>
+              {!categoryPieRows.some((r) => r.value > 0) ? (
+                <EmptyChart />
+              ) : (
+                <ReportStylePieBlock rows={categoryPieRows} minLabelPercent={0.05} />
+              )}
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Backend mix</CardTitle>
-                <CardDescription>
-                  Report-style pie: white slice borders, labels on larger segments, legend at right.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!backendPieRows.some((r) => r.value > 0) ? (
-                  <EmptyChart />
-                ) : (
-                  <ReportStylePieBlock rows={backendPieRows} minLabelPercent={0.05} />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Category scope</CardTitle>
-                <CardDescription>
-                  Filtered browse (category on <code className="text-xs">/search</code>) vs open surfboard
-                  search.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!categoryPieRows.some((r) => r.value > 0) ? (
-                  <EmptyChart />
-                ) : (
-                  <ReportStylePieBlock rows={categoryPieRows} minLabelPercent={0.05} />
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Top category slugs</CardTitle>
-                <CardDescription>When a category filter was present, these slugs dominated.</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[180px]">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Top category slugs</h3>
+                <p className="mt-1 text-sm text-slate-500">When a category filter was present</p>
+              </div>
+              <div className="h-[180px]">
                 {!(data.topCategorySlugs?.length) ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center">
+                  <p className="py-8 text-center text-sm text-slate-500">
                     No category-tagged searches in this window.
                   </p>
                 ) : (
@@ -775,10 +1207,7 @@ export function SearchAnalyticsAdminClient() {
                     config={{
                       c: {
                         label: "Searches",
-                        theme: {
-                          light: "hsl(173 58% 36%)",
-                          dark: "hsl(173 58% 48%)",
-                        },
+                        color: "hsl(173 58% 39%)",
                       },
                     }}
                     className="h-full w-full"
@@ -788,7 +1217,7 @@ export function SearchAnalyticsAdminClient() {
                       layout="vertical"
                       margin={{ left: 4, right: 8, top: 4, bottom: 4 }}
                     >
-                      <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
                       <XAxis type="number" tickLine={false} axisLine={false} />
                       <YAxis
                         type="category"
@@ -796,97 +1225,94 @@ export function SearchAnalyticsAdminClient() {
                         width={100}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10 }}
+                        tick={{ fontSize: 10, fill: "#64748B" }}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Bar dataKey="count" fill="var(--color-c)" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ChartContainer>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Trending momentum (scatter)</CardTitle>
-                <CardDescription>
-                  Bubble position: recent volume vs velocity. Pair with the trending table below for exact
-                  counts.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                {trendingScatter.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-12 text-center">
-                    Not enough overlapping windows yet for a scatter plot.
-                  </p>
-                ) : (
-                  <ChartContainer
-                    config={{
-                      recent: { label: "Recent (2d)", color: ACCENT.primary },
-                    }}
-                    className="h-full w-full"
-                  >
-                    <ScatterChart margin={{ top: 12, right: 12, bottom: 12, left: 8 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        type="number"
-                        dataKey="recent"
-                        name="Recent"
-                        tickLine={false}
-                        axisLine={false}
-                        label={{ value: "Recent searches (2d)", position: "bottom", offset: 0, fontSize: 11 }}
-                      />
-                      <YAxis
-                        type="number"
-                        dataKey="velocity"
-                        name="Velocity"
-                        tickLine={false}
-                        axisLine={false}
-                        label={{
-                          value: "Velocity",
-                          angle: -90,
-                          position: "insideLeft",
-                          fontSize: 11,
-                        }}
-                      />
-                      <ZAxis type="number" dataKey="recent" range={[80, 400]} />
-                      <RechartsTooltip
-                        cursor={{ strokeDasharray: "3 3" }}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null
-                          const row = payload[0].payload as {
-                            query?: string
-                            recent?: number
-                            velocity?: number
-                          }
-                          return (
-                            <div className="rounded-md border bg-background px-2 py-1.5 text-xs shadow-md">
-                              <p className="font-medium max-w-[200px] break-words">{row.query}</p>
-                              <p className="text-muted-foreground tabular-nums">
-                                Recent {row.recent} · v {row.velocity}
-                              </p>
-                            </div>
-                          )
-                        }}
-                      />
-                      <Scatter data={trendingScatter} fill={ACCENT.primary} fillOpacity={0.75} />
-                    </ScatterChart>
-                  </ChartContainer>
-                )}
-              </CardContent>
-            </Card>
-
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-900">Trending momentum</h3>
+              <p className="mt-1 text-sm text-slate-500">Recent volume vs velocity (2-day windows)</p>
+            </div>
+            <div className="h-[300px]">
+              {trendingScatter.length === 0 ? (
+                <p className="py-12 text-center text-sm text-slate-500">
+                  Not enough overlapping windows yet for a scatter plot.
+                </p>
+              ) : (
+                <ChartContainer
+                  config={{
+                    recent: { label: "Recent (2d)", color: ACCENT.primary },
+                  }}
+                  className="h-full w-full"
+                >
+                  <ScatterChart margin={{ top: 12, right: 12, bottom: 12, left: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis
+                      type="number"
+                      dataKey="recent"
+                      name="Recent"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                      label={{ value: "Recent searches (2d)", position: "bottom", offset: 0, fontSize: 11, fill: "#64748B" }}
+                    />
+                    <YAxis
+                      type="number"
+                      dataKey="velocity"
+                      name="Velocity"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                      label={{
+                        value: "Velocity",
+                        angle: -90,
+                        position: "insideLeft",
+                        fontSize: 11,
+                        fill: "#64748B",
+                      }}
+                    />
+                    <ZAxis type="number" dataKey="recent" range={[80, 400]} />
+                    <RechartsTooltip
+                      cursor={{ strokeDasharray: "3 3" }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
+                        const row = payload[0].payload as {
+                          query?: string
+                          recent?: number
+                          velocity?: number
+                        }
+                        return (
+                          <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white shadow-xl">
+                            <p className="max-w-[200px] break-words font-medium">{row.query}</p>
+                            <p className="mt-1 text-slate-300 tabular-nums">
+                              Recent {row.recent} · v {row.velocity}
+                            </p>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Scatter data={trendingScatter} fill={ACCENT.primary} fillOpacity={0.75} />
+                  </ScatterChart>
+                </ChartContainer>
+              )}
+            </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Top normalized queries</CardTitle>
-                <CardDescription>Rank-ordered terms aggregated in Elasticsearch.</CardDescription>
-              </CardHeader>
-              <CardContent className="pl-0">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Top normalized queries</h3>
+                <p className="mt-1 text-sm text-slate-500">Rank-ordered terms in Elasticsearch</p>
+              </div>
+              <div className="pl-0">
                 {topBarData.length === 0 ? (
                   <EmptyChart />
                 ) : (
@@ -894,10 +1320,7 @@ export function SearchAnalyticsAdminClient() {
                     config={{
                       count: {
                         label: "Searches",
-                        theme: {
-                          light: "hsl(240 5.9% 10%)",
-                          dark: "hsl(0 0% 90%)",
-                        },
+                        color: "hsl(221.2 83.2% 48%)",
                       },
                     }}
                     className="h-[min(440px,62vh)] w-full"
@@ -907,7 +1330,7 @@ export function SearchAnalyticsAdminClient() {
                       layout="vertical"
                       margin={{ left: 4, right: 16, top: 8, bottom: 8 }}
                     >
-                      <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#E2E8F0" />
                       <XAxis type="number" tickLine={false} axisLine={false} />
                       <YAxis
                         type="category"
@@ -915,139 +1338,134 @@ export function SearchAnalyticsAdminClient() {
                         width={112}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 11 }}
+                        tick={{ fontSize: 11, fill: "#64748B" }}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Bar dataKey="count" radius={[0, 4, 4, 0]} fill="var(--color-count)" />
                     </BarChart>
                   </ChartContainer>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Trending detail</CardTitle>
-                <CardDescription>2-day vs prior 2-day velocity leaderboard.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.trendingQueries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-6 text-center">
-                    Needs more recent searches to compute momentum.
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto max-h-[440px] overflow-y-auto rounded-md border">
-                    <table className="w-full text-sm">
-                      <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm border-b">
-                        <tr className="text-left text-muted-foreground">
-                          <th className="p-2 font-medium">Query</th>
-                          <th className="p-2 font-medium text-right">Recent</th>
-                          <th className="p-2 font-medium text-right">Prior</th>
-                          <th className="p-2 font-medium text-right">v</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.trendingQueries.map((row) => (
-                          <tr key={row.query} className="border-b border-border/50 last:border-0">
-                            <td className="p-2 max-w-[200px] truncate" title={row.query}>
-                              {row.query}
-                            </td>
-                            <td className="p-2 text-right tabular-nums">{row.recentCount}</td>
-                            <td className="p-2 text-right tabular-nums text-muted-foreground">
-                              {row.previousCount}
-                            </td>
-                            <td className="p-2 text-right tabular-nums font-medium">
-                              {row.velocity.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Zero-result demand</CardTitle>
-              <CardDescription>Queries that logged zero listings — prioritize content or synonyms here.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {data.zeroResultQueries.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">
-                  No zero-result events in this range.
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">Trending detail</h3>
+                <p className="mt-1 text-sm text-slate-500">2-day vs prior 2-day velocity</p>
+              </div>
+              {data.trendingQueries.length === 0 ? (
+                <p className="py-6 text-center text-sm text-slate-500">
+                  Needs more recent searches to compute momentum.
                 </p>
               ) : (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="overflow-x-auto max-h-[300px] overflow-y-auto rounded-md border">
-                    <table className="w-full text-sm">
-                      <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm border-b">
-                        <tr className="text-left text-muted-foreground">
-                          <th className="p-2 font-medium">Query</th>
-                          <th className="p-2 font-medium text-right">Count</th>
+                <div className="max-h-[440px] overflow-x-auto overflow-y-auto rounded-lg border border-slate-200">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 border-b border-slate-200 bg-slate-50">
+                      <tr className="text-left text-slate-500">
+                        <th className="p-2 font-medium">Query</th>
+                        <th className="p-2 text-right font-medium">Recent</th>
+                        <th className="p-2 text-right font-medium">Prior</th>
+                        <th className="p-2 text-right font-medium">v</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.trendingQueries.map((row) => (
+                        <tr key={row.query} className="border-b border-slate-100 last:border-0">
+                          <td className="max-w-[200px] truncate p-2" title={row.query}>
+                            {row.query}
+                          </td>
+                          <td className="p-2 text-right tabular-nums">{row.recentCount}</td>
+                          <td className="p-2 text-right tabular-nums text-slate-500">
+                            {row.previousCount}
+                          </td>
+                          <td className="p-2 text-right font-medium tabular-nums">
+                            {row.velocity.toFixed(2)}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {data.zeroResultQueries.map((row) => (
-                          <tr key={row.query} className="border-b border-border/50 last:border-0">
-                            <td className="p-2 max-w-[240px] truncate" title={row.query}>
-                              {row.query}
-                            </td>
-                            <td className="p-2 text-right tabular-nums">{row.count}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="h-[280px]">
-                    <ChartContainer
-                      config={{
-                        count: {
-                          label: "Zero-result",
-                          theme: {
-                            light: "hsl(350 80% 48%)",
-                            dark: "hsl(350 70% 55%)",
-                          },
-                        },
-                      }}
-                      className="h-full w-full"
-                    >
-                      <BarChart
-                        data={data.zeroResultQueries.slice(0, 12).map((row) => ({
-                          ...row,
-                          short: truncateQuery(row.query, 18),
-                        }))}
-                        margin={{ left: 8, right: 8, top: 8, bottom: 48 }}
-                      >
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="short"
-                          tickLine={false}
-                          axisLine={false}
-                          tickMargin={8}
-                          angle={-28}
-                          textAnchor="end"
-                          height={52}
-                          interval={0}
-                          tick={{ fontSize: 10 }}
-                        />
-                        <YAxis tickLine={false} axisLine={false} width={32} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="var(--color-count)" />
-                      </BarChart>
-                    </ChartContainer>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Separator />
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-slate-900">Zero-result demand</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Queries that logged zero listings — prioritize content or synonyms here
+              </p>
+            </div>
+            {data.zeroResultQueries.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-500">
+                No zero-result events in this range.
+              </p>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="max-h-[300px] overflow-x-auto overflow-y-auto rounded-lg border border-slate-200">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 border-b border-slate-200 bg-slate-50">
+                      <tr className="text-left text-slate-500">
+                        <th className="p-2 font-medium">Query</th>
+                        <th className="p-2 text-right font-medium">Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.zeroResultQueries.map((row) => (
+                        <tr key={row.query} className="border-b border-slate-100 last:border-0">
+                          <td className="max-w-[240px] truncate p-2" title={row.query}>
+                            {row.query}
+                          </td>
+                          <td className="p-2 text-right tabular-nums">{row.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="h-[280px]">
+                  <ChartContainer
+                    config={{
+                      count: {
+                        label: "Zero-result",
+                        color: "hsl(350 80% 48%)",
+                      },
+                    }}
+                    className="h-full w-full"
+                  >
+                    <BarChart
+                      data={data.zeroResultQueries.slice(0, 12).map((row) => ({
+                        ...row,
+                        short: truncateQuery(row.query, 18),
+                      }))}
+                      margin={{ left: 8, right: 8, top: 8, bottom: 48 }}
+                    >
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <XAxis
+                        dataKey="short"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        angle={-28}
+                        textAnchor="end"
+                        height={52}
+                        interval={0}
+                        tick={{ fontSize: 10, fill: "#64748B" }}
+                      />
+                      <YAxis tickLine={false} axisLine={false} width={32} tick={{ fill: "#64748B" }} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="var(--color-count)" />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Separator className="bg-slate-200" />
 
           {data.fetchedAt && (
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-center text-xs text-slate-500">
               Fetched {formatDistanceToNow(new Date(data.fetchedAt), { addSuffix: true })}
               {data.from && data.to ? (
                 <>
@@ -1058,98 +1476,63 @@ export function SearchAnalyticsAdminClient() {
               ) : null}
             </p>
           )}
-        </>
+        </div>
       ) : null}
     </div>
   )
 }
 
-function TreemapCell(props: {
-  x?: number
-  y?: number
-  width?: number
-  height?: number
-  name?: string
-  full?: string
-  value?: number
-  index?: number
-}) {
-  const { x = 0, y = 0, width = 0, height = 0, name, index = 0 } = props
+/** Treemap cell styled like the “Enhance Data Visualizations” reference (white labels on slate tiles). */
+function TreemapCellFigma(props: Record<string, unknown>) {
+  const x = Number(props.x ?? 0)
+  const y = Number(props.y ?? 0)
+  const width = Number(props.width ?? 0)
+  const height = Number(props.height ?? 0)
+  const name = String(props.name ?? "")
+  const fill = String(props.fill ?? "#334155")
+  const rawVal = props.size ?? props.value ?? 0
+  const value = typeof rawVal === "number" ? rawVal : Number(rawVal) || 0
   if (width < 4 || height < 4) return null
-  const fills = [
-    "hsl(221.2 83.2% 53.3% / 0.85)",
-    "hsl(262 83% 58% / 0.8)",
-    "hsl(173 58% 39% / 0.82)",
-    "hsl(38 92% 50% / 0.78)",
-    "hsl(215 16% 47% / 0.85)",
-  ]
-  const fill = fills[index % fills.length]
+  const fontSize = width > 100 ? 14 : width > 60 ? 12 : 0
+  const showLabel = width > 50 && height > 40
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="hsl(var(--background))" strokeWidth={2} rx={4} />
-      {width > 52 && height > 18 ? (
-        <text
-          x={x + 6}
-          y={y + 16}
-          className="fill-white text-[11px] drop-shadow-md"
-        >
-          {name}
-        </text>
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill={fill}
+        stroke="#fff"
+        strokeWidth={2}
+        className="transition-opacity hover:opacity-90"
+        rx={2}
+      />
+      {showLabel && fontSize > 0 ? (
+        <>
+          <text
+            x={x + width / 2}
+            y={y + height / 2 - 6}
+            textAnchor="middle"
+            fill="#fff"
+            fontSize={fontSize}
+            fontWeight={600}
+          >
+            {name}
+          </text>
+          <text
+            x={x + width / 2}
+            y={y + height / 2 + 12}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.82)"
+            fontSize={fontSize - 2}
+            fontWeight={500}
+          >
+            {value.toLocaleString()}
+          </text>
+        </>
       ) : null}
     </g>
-  )
-}
-
-function InsightStat({
-  title,
-  value,
-  hint,
-  badge,
-  spark,
-}: {
-  title: string
-  value: string
-  hint: string
-  badge?: string
-  spark: { date: string; count: number }[]
-}) {
-  return (
-    <Card className="relative overflow-hidden border-l-4 border-l-primary/60 shadow-sm">
-      <CardHeader className="pb-1 space-y-1">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {title}
-          </CardTitle>
-          {badge ? (
-            <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">
-              {badge}
-            </Badge>
-          ) : null}
-        </div>
-        <p className="text-2xl font-bold tabular-nums tracking-tight">{value}</p>
-        <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p>
-      </CardHeader>
-      <CardContent className="pt-0 pb-2">
-        {spark.length > 1 ? (
-          <ChartContainer
-            config={{
-              c: {
-                label: "Vol",
-                theme: {
-                  light: "hsl(221.2 83.2% 53.3% / 0.35)",
-                  dark: "hsl(217 91% 60% / 0.4)",
-                },
-              },
-            }}
-            className="h-12 w-full opacity-90"
-          >
-            <AreaChart data={spark} margin={{ left: 0, right: 0, top: 2, bottom: 0 }}>
-              <Area type="monotone" dataKey="count" stroke="none" fill="var(--color-c)" />
-            </AreaChart>
-          </ChartContainer>
-        ) : null}
-      </CardContent>
-    </Card>
   )
 }
 

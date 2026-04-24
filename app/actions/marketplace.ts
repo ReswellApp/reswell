@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-index"
+import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
 import { listBrands } from "@/lib/brands/server"
 
 export async function getDistinctBrandsFromListings(section: string): Promise<string[]> {
@@ -89,15 +90,38 @@ export type SuggestListing = {
   condition: string | null
 }
 
+export type SearchSuggestMeta = {
+  /** How the “Top listings” strip was populated when suggestions ran. */
+  listingsBackend: "elasticsearch" | "supabase"
+}
+
 export type SearchSuggestResult = {
   titles: string[]
   categories: string[]
   brands: string[]
   listings: SuggestListing[]
+  meta: SearchSuggestMeta
 }
 
 function escapeIlikeToken(q: string) {
   return q.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+}
+
+function rowToSuggestListing(row: Record<string, unknown>): SuggestListing {
+  const imgs = row.listing_images as { url?: string; is_primary?: boolean }[] | null
+  const primary = imgs?.find((i) => i.is_primary) || imgs?.[0]
+  return {
+    id: row.id as string,
+    slug: (row.slug as string | null) ?? null,
+    title: (row.title as string) ?? "",
+    price: typeof row.price === "number" ? row.price : parseFloat(String(row.price)) || 0,
+    section: row.section as string,
+    imageUrl: primary?.url ?? null,
+    brand: (row.brand as string | null) ?? null,
+    city: (row.city as string | null) ?? null,
+    state: (row.state as string | null) ?? null,
+    condition: (row.condition as string | null) ?? null,
+  }
 }
 
 export async function searchSuggest(qRaw: string, section: string): Promise<SearchSuggestResult> {
@@ -108,6 +132,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       categories: [],
       brands: [],
       listings: [],
+      meta: { listingsBackend: "supabase" },
     }
   }
 
@@ -169,22 +194,53 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       .limit(MAX_BRANDS * 4),
   ])
 
-  const listings: SuggestListing[] = (listingsRes.data || []).map((row: Record<string, unknown>) => {
-    const imgs = row.listing_images as { url?: string; is_primary?: boolean }[] | null
-    const primary = imgs?.find((i) => i.is_primary) || imgs?.[0]
-    return {
-      id: row.id as string,
-      slug: (row.slug as string | null) ?? null,
-      title: (row.title as string) ?? "",
-      price: typeof row.price === "number" ? row.price : parseFloat(String(row.price)) || 0,
-      section: row.section as string,
-      imageUrl: primary?.url ?? null,
-      brand: (row.brand as string | null) ?? null,
-      city: (row.city as string | null) ?? null,
-      state: (row.state as string | null) ?? null,
-      condition: (row.condition as string | null) ?? null,
+  let listings: SuggestListing[] = (listingsRes.data || []).map((row: Record<string, unknown>) =>
+    rowToSuggestListing(row),
+  )
+  let listingsBackend: SearchSuggestMeta["listingsBackend"] = "supabase"
+
+  if (isElasticsearchConfigured()) {
+    try {
+      const ids = await searchListingIdsFromElasticsearch(q, MAX_LISTINGS, { sections })
+      if (ids.length > 0) {
+        const { data: esRows } = await supabase
+          .from("listings")
+          .select(
+            `
+            id,
+            slug,
+            title,
+            price,
+            section,
+            city,
+            state,
+            brand,
+            condition,
+            listing_images (url, is_primary)
+          `,
+          )
+          .in("id", ids)
+          .eq("status", "active")
+          .eq("hidden_from_site", false)
+
+        if (esRows?.length) {
+          const byId = new Map(
+            (esRows as Record<string, unknown>[]).map((row) => [row.id as string, row]),
+          )
+          const ordered = ids
+            .map((id) => byId.get(id))
+            .filter((row): row is Record<string, unknown> => row != null)
+            .map((row) => rowToSuggestListing(row))
+          if (ordered.length > 0) {
+            listings = ordered
+            listingsBackend = "elasticsearch"
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[searchSuggest] Elasticsearch listing suggestions failed, using Supabase:", err)
     }
-  })
+  }
 
   const titleSet = new Set<string>()
   const titles = (titlesRes.data || [])
@@ -215,7 +271,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
     })
     .slice(0, MAX_BRANDS)
 
-  return { titles, categories, brands, listings }
+  return { titles, categories, brands, listings, meta: { listingsBackend } }
 }
 
 /** `public.brands` row shape for the `/sell` brand typeahead (nav-style dropdown). */
@@ -229,6 +285,11 @@ export type BrandCatalogSuggestRow = {
   lead_shaper_name: string | null
 }
 
+export type BrandCatalogSuggestResponse = {
+  rows: BrandCatalogSuggestRow[]
+  meta: { backend: "elasticsearch" | "supabase" }
+}
+
 const MAX_BRAND_CATALOG_SUGGEST = 20
 
 /**
@@ -239,10 +300,10 @@ const MAX_BRAND_CATALOG_SUGGEST = 20
  */
 export async function searchBrandsCatalogSuggest(
   qRaw: string,
-): Promise<BrandCatalogSuggestRow[]> {
+): Promise<BrandCatalogSuggestResponse> {
   const q = (qRaw || "").trim().replace(/%/g, "")
   if (q.length < 1) {
-    return []
+    return { rows: [], meta: { backend: "supabase" } }
   }
 
   const supabase = await createClient()
@@ -257,9 +318,12 @@ export async function searchBrandsCatalogSuggest(
 
         if (!error && data?.length) {
           const byId = new Map(data.map((row) => [row.id, row as BrandCatalogSuggestRow]))
-          return ids
+          const rows = ids
             .map((id) => byId.get(id))
             .filter((row): row is BrandCatalogSuggestRow => row != null)
+          if (rows.length > 0) {
+            return { rows, meta: { backend: "elasticsearch" } }
+          }
         }
       }
     } catch (err) {
@@ -281,8 +345,8 @@ export async function searchBrandsCatalogSuggest(
     if (error && process.env.NODE_ENV === "development") {
       console.error("[searchBrandsCatalogSuggest]", error)
     }
-    return []
+    return { rows: [], meta: { backend: "supabase" } }
   }
 
-  return data as BrandCatalogSuggestRow[]
+  return { rows: data as BrandCatalogSuggestRow[], meta: { backend: "supabase" } }
 }

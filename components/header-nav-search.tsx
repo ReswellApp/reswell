@@ -335,6 +335,7 @@ export function HeaderNavSearch() {
           inputClassName={siteSearchInputClassName()}
           className="w-full"
           minLength={2}
+          analyticsSurface="header_nav"
         />
       </SiteSearchBar>
       {idleDropdown}

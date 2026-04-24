@@ -5,6 +5,14 @@ import {
   topQueriesInRange,
   type SearchAnalyticsDoc,
 } from "@/lib/elasticsearch/search-analytics-index"
+import {
+  aggregateSearchSuggestPicks,
+  indexSearchSuggestPickDocument,
+  type SearchSuggestPickDoc,
+  type SearchSuggestPickKind,
+  type SearchSuggestPickSurface,
+  type SearchSuggestPickTrace,
+} from "@/lib/elasticsearch/search-suggest-analytics-index"
 
 export type MarketplaceSearchAnalyticsPayload = {
   queryDisplay: string
@@ -46,6 +54,35 @@ export async function recordMarketplaceSearchAnalyticsEvent(
   await indexSearchAnalyticsDocument(doc)
 }
 
+export type SearchSuggestPickPayload = {
+  surface: SearchSuggestPickSurface
+  pickKind: SearchSuggestPickKind
+  suggestTrace: SearchSuggestPickTrace
+  queryPrefix: string
+  selectionLabel: string
+  listingId: string | null
+}
+
+export async function recordSearchSuggestPickEvent(
+  payload: SearchSuggestPickPayload,
+): Promise<void> {
+  if (!isElasticsearchConfigured()) return
+  const q = payload.queryPrefix.trim()
+  if (!q) return
+
+  const doc: SearchSuggestPickDoc = {
+    occurred_at: new Date().toISOString(),
+    surface: payload.surface,
+    pick_kind: payload.pickKind,
+    suggest_trace: payload.suggestTrace,
+    query_prefix: q.slice(0, 500),
+    selection_label: payload.selectionLabel.trim().slice(0, 500) || "—",
+    listing_id: payload.listingId,
+  }
+
+  await indexSearchSuggestPickDocument(doc)
+}
+
 export type SearchAnalyticsTrendingRow = {
   query: string
   recentCount: number
@@ -78,6 +115,10 @@ export type SearchAnalyticsDashboard = {
   zeroResultQueries: { query: string; count: number }[]
   byBackend: { backend: string; count: number }[]
   trendingQueries: SearchAnalyticsTrendingRow[]
+  /** Typeahead / dropdown picks (nav + sell form) in the selected range. */
+  suggestPickTotal: number
+  suggestPicksByKind: { kind: string; count: number }[]
+  suggestPicksByTrace: { trace: string; count: number }[]
   fetchedAt: string
 }
 
@@ -109,6 +150,9 @@ export async function getSearchAnalyticsDashboardService(
       zeroResultQueries: [],
       byBackend: [],
       trendingQueries: [],
+      suggestPickTotal: 0,
+      suggestPicksByKind: [],
+      suggestPicksByTrace: [],
       fetchedAt,
     }
   }
@@ -118,7 +162,10 @@ export async function getSearchAnalyticsDashboardService(
   const from = start.toISOString()
   const to = end.toISOString()
 
-  const main = await aggregateSearchAnalytics(from, to)
+  const [main, suggestPicks] = await Promise.all([
+    aggregateSearchAnalytics(from, to),
+    aggregateSearchSuggestPicks(from, to),
+  ])
 
   if (!main) {
     return {
@@ -140,6 +187,9 @@ export async function getSearchAnalyticsDashboardService(
       zeroResultQueries: [],
       byBackend: [],
       trendingQueries: [],
+      suggestPickTotal: suggestPicks?.totalPicks ?? 0,
+      suggestPicksByKind: suggestPicks?.byKind ?? [],
+      suggestPicksByTrace: suggestPicks?.byTrace ?? [],
       fetchedAt,
     }
   }
@@ -194,6 +244,9 @@ export async function getSearchAnalyticsDashboardService(
     zeroResultQueries: main.zeroResultQueries,
     byBackend: main.byBackend,
     trendingQueries: trendingTop,
+    suggestPickTotal: suggestPicks?.totalPicks ?? 0,
+    suggestPicksByKind: suggestPicks?.byKind ?? [],
+    suggestPicksByTrace: suggestPicks?.byTrace ?? [],
     fetchedAt,
   }
 }

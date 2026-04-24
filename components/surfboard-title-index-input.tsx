@@ -11,6 +11,7 @@ import {
   searchBrandsCatalogSuggest,
   type BrandCatalogSuggestRow,
 } from "@/app/actions/marketplace"
+import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 
 const BRAND_SUGGEST_DEBOUNCE_MS = 200
@@ -80,10 +81,25 @@ export function SurfboardTitleIndexInput({
   const suggestGen = React.useRef(0)
   /** After a catalog pick, suppress suggestions while the user extends the title (e.g. space + model name). */
   const pickedCatalogTitleRef = React.useRef<string | null>(null)
+  const brandSuggestBackendRef = React.useRef<"elasticsearch" | "supabase">("supabase")
   const listId = React.useId()
 
   const commitCatalogPick = React.useCallback(
     (row: BrandCatalogSuggestRow) => {
+      const q = value.trim()
+      if (q.length >= 1) {
+        void recordSearchSuggestPick({
+          surface: "sell_brand_title",
+          pickKind: "brand_catalog",
+          suggestTrace:
+            brandSuggestBackendRef.current === "elasticsearch"
+              ? "brand_catalog_elasticsearch"
+              : "brand_catalog_supabase",
+          queryPrefix: q,
+          selectionLabel: row.name,
+          listingId: null,
+        })
+      }
       const opt = brandRowToIndexSelection(row)
       pickedCatalogTitleRef.current = titleFromIndexModelPick(opt).slice(0, LISTING_TITLE_MAX_LENGTH)
       onSelectModel(opt)
@@ -92,7 +108,7 @@ export function SurfboardTitleIndexInput({
       setLoading(false)
       setOpen(false)
     },
-    [onSelectModel],
+    [onSelectModel, value],
   )
 
   React.useEffect(() => {
@@ -129,8 +145,9 @@ export function SurfboardTitleIndexInput({
       setLoading(true)
       void (async () => {
         try {
-          const rows = await searchBrandsCatalogSuggest(q)
+          const { rows, meta } = await searchBrandsCatalogSuggest(q)
           if (gen !== suggestGen.current) return
+          brandSuggestBackendRef.current = meta.backend
           setBrandRows(rows)
           if (rows.length === 0) {
             setOpen(false)

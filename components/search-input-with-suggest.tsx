@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
 import Link from "next/link"
@@ -14,6 +14,12 @@ import {
   searchSuggest,
   type BrandCatalogSuggestRow,
 } from "@/app/actions/marketplace"
+import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
+import type {
+  SearchSuggestPickKind,
+  SearchSuggestPickSurface,
+  SearchSuggestPickTrace,
+} from "@/lib/elasticsearch/search-suggest-analytics-index"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { useSearchSuggestPortalContainer } from "@/components/search-suggest-portal-context"
@@ -87,6 +93,7 @@ export interface SuggestResult {
   categories: string[]
   brands: string[]
   listings?: SuggestListing[]
+  meta: { listingsBackend: "elasticsearch" | "supabase" }
 }
 
 interface SearchInputWithSuggestProps {
@@ -131,6 +138,8 @@ interface SearchInputWithSuggestProps {
   onCatalogBrandPicked?: (b: { id: string; name: string; slug: string }) => void
   /** Fires when a `brands` search finishes (e.g. show “request brand” when count is 0). */
   onBrandsSearchSettled?: (query: string, resultCount: number) => void
+  /** Where this typeahead lives — drives search analytics “dropdown pick” events. */
+  analyticsSurface?: SearchSuggestPickSurface
   inputType?: "search" | "text"
   id?: string
   disabled?: boolean
@@ -150,8 +159,15 @@ async function fetchSearchSuggestionsJson(
   q: string,
   section: string,
 ): Promise<{ data: SuggestResult; hasAny: boolean }> {
-  const data: SuggestResult = await searchSuggest(q, section)
-  const listings = data.listings ?? []
+  const res = await searchSuggest(q, section)
+  const listings = res.listings ?? []
+  const data: SuggestResult = {
+    titles: res.titles,
+    categories: res.categories,
+    brands: res.brands,
+    listings,
+    meta: res.meta,
+  }
   const hasAny =
     listings.length > 0 ||
     (data.titles?.length ?? 0) > 0 ||
@@ -184,6 +200,7 @@ export function SearchInputWithSuggest({
   suggestSource = "marketplace",
   onCatalogBrandPicked,
   onBrandsSearchSettled,
+  analyticsSurface = "other",
   inputType = "search",
   id: inputId,
   disabled = false,
@@ -213,6 +230,10 @@ export function SearchInputWithSuggest({
   const router = useRouter()
   /** Bumps when user dismisses or starts a new fetch; stale async results must not reopen the dropdown. */
   const suggestGenerationRef = useRef(0)
+  const suggestBackendMetaRef = useRef<{
+    marketplaceListings: "elasticsearch" | "supabase"
+    brandCatalog: "elasticsearch" | "supabase"
+  }>({ marketplaceListings: "supabase", brandCatalog: "supabase" })
 
   const invalidatePendingSuggest = () => {
     suggestGenerationRef.current += 1
@@ -232,6 +253,9 @@ export function SearchInputWithSuggest({
     source: "valueEffect" | "focus",
   ) => {
     if (generation !== suggestGenerationRef.current) return
+    if (hasAny) {
+      suggestBackendMetaRef.current.marketplaceListings = data.meta.listingsBackend
+    }
     setSuggestions(hasAny ? data : null)
     if (!hasAny) {
       setOpen(false)
@@ -298,8 +322,9 @@ export function SearchInputWithSuggest({
         if (q.length < minLength) return
         setLoading(true)
         try {
-          const rows = await searchBrandsCatalogSuggest(q)
+          const { rows, meta } = await searchBrandsCatalogSuggest(q)
           if (generation !== suggestGenerationRef.current) return
+          suggestBackendMetaRef.current.brandCatalog = meta.backend
           setBrandRows(rows)
           onBrandsSearchSettledRef.current?.(q, rows.length)
           if (rows.length === 0) {
@@ -433,7 +458,43 @@ export function SearchInputWithSuggest({
     if (inputRef.current && document.activeElement === inputRef.current) inputRef.current.blur()
   }
 
-  const handleSelect = (text: string) => {
+  const logSuggestAnalytics = useCallback(
+    (args: {
+      pickKind: SearchSuggestPickKind
+      selectionLabel: string
+      listingId?: string | null
+    }) => {
+      const q = value.trim()
+      const minQ = isBrands ? 1 : minLength
+      if (q.length < minQ) return
+
+      let suggestTrace: SearchSuggestPickTrace
+      if (isBrands) {
+        suggestTrace =
+          suggestBackendMetaRef.current.brandCatalog === "elasticsearch"
+            ? "brand_catalog_elasticsearch"
+            : "brand_catalog_supabase"
+      } else {
+        suggestTrace =
+          suggestBackendMetaRef.current.marketplaceListings === "elasticsearch"
+            ? "marketplace_elasticsearch"
+            : "marketplace_supabase"
+      }
+
+      void recordSearchSuggestPick({
+        surface: analyticsSurface,
+        pickKind: args.pickKind,
+        suggestTrace,
+        queryPrefix: q,
+        selectionLabel: args.selectionLabel,
+        listingId: args.listingId ?? null,
+      })
+    },
+    [value, minLength, isBrands, analyticsSurface],
+  )
+
+  const handleSelectText = (text: string, pickKind: SearchSuggestPickKind) => {
+    logSuggestAnalytics({ pickKind, selectionLabel: text, listingId: null })
     invalidatePendingSuggest()
     onChange(text)
     onSelect?.(text)
@@ -442,6 +503,11 @@ export function SearchInputWithSuggest({
   }
 
   const handleBrandCatalogPick = (b: BrandCatalogSuggestRow) => {
+    logSuggestAnalytics({
+      pickKind: "brand_catalog",
+      selectionLabel: b.name,
+      listingId: null,
+    })
     invalidatePendingSuggest()
     onChange(b.name)
     onSelect?.(b.name)
@@ -592,6 +658,11 @@ export function SearchInputWithSuggest({
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.preventDefault()
+                  logSuggestAnalytics({
+                    pickKind: "view_all_results",
+                    selectionLabel: value.trim() || "view all",
+                    listingId: null,
+                  })
                   onNavigate?.()
                   router.push(`/search?q=${encodeURIComponent(value.trim())}`)
                   dismissForNavigation()
@@ -626,6 +697,11 @@ export function SearchInputWithSuggest({
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={(e) => {
                         e.preventDefault()
+                        logSuggestAnalytics({
+                          pickKind: "top_listing",
+                          selectionLabel: item.title,
+                          listingId: item.id,
+                        })
                         onNavigate?.()
                         router.push(listingHref(item))
                         dismissForNavigation()
@@ -693,7 +769,9 @@ export function SearchInputWithSuggest({
                       type="button"
                       className="flex w-full cursor-pointer select-none items-center px-3 py-2.5 text-left text-sm outline-none min-h-touch hover:bg-accent/60 focus-visible:bg-accent"
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleSelect(brand)}
+                      onClick={() =>
+                        handleSelectText(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
+                      }
                     >
                       <span className="truncate font-medium text-foreground">{brand}</span>
                     </button>
@@ -708,7 +786,9 @@ export function SearchInputWithSuggest({
                     type="button"
                     className="flex min-w-[4rem] max-w-[4.75rem] flex-col items-center gap-1.5 text-center sm:min-w-[4.5rem] sm:max-w-[5.5rem]"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSelect(brand)}
+                    onClick={() =>
+                      handleSelectText(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
+                    }
                   >
                     <span className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-muted text-sm font-bold text-cerulean sm:h-12 sm:w-12 sm:text-base">
                       {brand.slice(0, 1).toUpperCase()}
@@ -735,7 +815,7 @@ export function SearchInputWithSuggest({
                   type="button"
                   className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted hover:border-cerulean/30 sm:px-3 sm:py-1.5 sm:text-xs"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleSelect(cat)}
+                  onClick={() => handleSelectText(cat, "category_chip")}
                 >
                   {cat}
                 </button>
@@ -771,7 +851,16 @@ export function SearchInputWithSuggest({
                           : "mx-1 w-[calc(100%-0.5rem)] rounded-lg py-2 hover:bg-muted/80 focus-visible:bg-muted/80",
                       )}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleSelect(item.text)}
+                      onClick={() =>
+                        handleSelectText(
+                          item.text,
+                          item.type === "title"
+                            ? "suggestion_title"
+                            : item.type === "brand"
+                              ? "suggestion_brand"
+                              : "suggestion_category",
+                        )
+                      }
                     >
                       {showTypeLabels && item.type !== "title" ? (
                         <>
@@ -828,8 +917,9 @@ export function SearchInputWithSuggest({
                 if (q.length < minLength) return
                 setLoading(true)
                 try {
-                  const rows = await searchBrandsCatalogSuggest(q)
+                  const { rows, meta } = await searchBrandsCatalogSuggest(q)
                   if (gen !== suggestGenerationRef.current) return
+                  suggestBackendMetaRef.current.brandCatalog = meta.backend
                   setBrandRows(rows)
                   onBrandsSearchSettledRef.current?.(q, rows.length)
                   if (rows.length > 0) {

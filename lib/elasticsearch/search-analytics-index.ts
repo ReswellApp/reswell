@@ -60,7 +60,8 @@ export async function indexSearchAnalyticsDocument(doc: SearchAnalyticsDoc): Pro
     await es.index({
       index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
       document: doc,
-      refresh: false,
+      // Make events visible to aggregations immediately (low volume; avoids “refresh and still empty”).
+      refresh: true,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

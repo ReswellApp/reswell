@@ -710,6 +710,7 @@ export function Header() {
         inputClassName={siteSearchInputClassName({ compact: true })}
         className="w-full"
         autoFocus={searchOpen}
+        analyticsSurface="header_nav"
       />
     </SiteSearchBar>
   )
@@ -897,6 +898,7 @@ export function Header() {
                       listboxId="nav-search-suggestions-mobile-nav"
                       inputClassName={siteSearchInputClassName({ compact: true })}
                       className="w-full"
+                      analyticsSurface="header_nav"
                     />
                   </div>
                   <Button
