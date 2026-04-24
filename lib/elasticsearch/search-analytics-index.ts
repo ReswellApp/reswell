@@ -1,0 +1,327 @@
+import { getElasticsearchClient } from "./client"
+import { ELASTICSEARCH_SEARCH_ANALYTICS_INDEX } from "./config"
+
+const RESULT_COUNT_BANDS = ["0", "1-5", "6-15", "16+"] as const
+
+function emptyDistribution(): { band: string; count: number }[] {
+  return RESULT_COUNT_BANDS.map((band) => ({ band, count: 0 }))
+}
+
+const INDEX_MAPPINGS = {
+  properties: {
+    occurred_at: { type: "date" as const },
+    query_normalized: { type: "keyword" as const, ignore_above: 512 },
+    query_display: { type: "keyword" as const, ignore_above: 512 },
+    result_count: { type: "integer" as const },
+    backend: { type: "keyword" as const },
+    category_slug: { type: "keyword" as const },
+    has_category_filter: { type: "boolean" as const },
+  },
+}
+
+export type SearchAnalyticsDoc = {
+  occurred_at: string
+  query_normalized: string
+  query_display: string
+  result_count: number
+  backend: "elasticsearch" | "supabase"
+  category_slug: string | null
+  has_category_filter: boolean
+}
+
+export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
+  const es = getElasticsearchClient()
+  if (!es) return false
+
+  try {
+    const exists = await es.indices.exists({ index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX })
+    if (!exists) {
+      await es.indices.create({
+        index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+        mappings: INDEX_MAPPINGS,
+      })
+    }
+    return true
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] ensureSearchAnalyticsIndex failed:", msg)
+    return false
+  }
+}
+
+export async function indexSearchAnalyticsDocument(doc: SearchAnalyticsDoc): Promise<void> {
+  const es = getElasticsearchClient()
+  if (!es) return
+
+  const ready = await ensureSearchAnalyticsIndex()
+  if (!ready) return
+
+  try {
+    await es.index({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      document: doc,
+      refresh: false,
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] indexSearchAnalyticsDocument failed:", msg)
+  }
+}
+
+export type SearchAnalyticsAggregateResult = {
+  totalSearches: number
+  uniqueQueriesApprox: number
+  avgResultCount: number | null
+  /** Count of logged searches where `result_count` was 0. */
+  zeroResultEventCount: number
+  /** Min / max / stddev of listing counts returned (sample stats). */
+  resultCountStats: {
+    min: number | null
+    max: number | null
+    stdDeviation: number | null
+  }
+  /** Searches grouped by how many listings matched. */
+  resultCountDistribution: { band: string; count: number }[]
+  /** Logged searches with a category filter vs open surfboard search. */
+  categoryFilterSplit: { key: string; count: number }[]
+  /** Non-empty category slugs only; capped list. */
+  topCategorySlugs: { slug: string; count: number }[]
+  volumeByDay: { date: string; count: number }[]
+  topQueries: { query: string; count: number }[]
+  zeroResultQueries: { query: string; count: number }[]
+  byBackend: { backend: string; count: number }[]
+}
+
+function bucketTerms(
+  buckets: Array<{ key: string | number; doc_count: number }> | undefined,
+): { query: string; count: number }[] {
+  if (!buckets?.length) return []
+  return buckets.map((b) => ({
+    query: String(b.key),
+    count: b.doc_count,
+  }))
+}
+
+export async function aggregateSearchAnalytics(
+  fromIso: string,
+  toIso: string,
+): Promise<SearchAnalyticsAggregateResult | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: true,
+      query: {
+        bool: {
+          filter: [{ range: { occurred_at: { gte: fromIso, lte: toIso } } }],
+        },
+      },
+      aggs: {
+        unique_queries: {
+          cardinality: { field: "query_normalized", precision_threshold: 4000 },
+        },
+        avg_results: {
+          avg: { field: "result_count" },
+        },
+        by_day: {
+          date_histogram: {
+            field: "occurred_at",
+            calendar_interval: "day",
+            min_doc_count: 0,
+            extended_bounds: { min: fromIso, max: toIso },
+          },
+        },
+        top_queries: {
+          terms: { field: "query_normalized", size: 50, order: { _count: "desc" } },
+        },
+        zero_hits: {
+          filter: { term: { result_count: 0 } },
+          aggs: {
+            zq: {
+              terms: { field: "query_normalized", size: 30, order: { _count: "desc" } },
+            },
+          },
+        },
+        backends: {
+          terms: { field: "backend", size: 10 },
+        },
+        result_stats: {
+          extended_stats: { field: "result_count" },
+        },
+        result_buckets: {
+          range: {
+            field: "result_count",
+            keyed: true,
+            ranges: [
+              { key: "0", to: 1 },
+              { key: "1-5", from: 1, to: 6 },
+              { key: "6-15", from: 6, to: 16 },
+              { key: "16+", from: 16 },
+            ],
+          },
+        },
+        category_filter: {
+          terms: { field: "has_category_filter", size: 4 },
+        },
+        top_categories: {
+          terms: { field: "category_slug", size: 12, missing: "__none__" },
+        },
+      },
+    })
+
+    const aggs = res.aggregations as Record<string, unknown> | undefined
+    const total =
+      typeof res.hits.total === "number" ? res.hits.total : (res.hits.total?.value ?? 0)
+
+    const uniqueRaw = aggs?.unique_queries as { value?: number } | undefined
+    const avgRaw = aggs?.avg_results as { value?: number | null } | undefined
+    const byDayRaw = aggs?.by_day as
+      | { buckets?: Array<{ key_as_string?: string; doc_count: number }> }
+      | undefined
+    const topRaw = aggs?.top_queries as
+      | { buckets?: Array<{ key: string | number; doc_count: number }> }
+      | undefined
+    const zeroRaw = aggs?.zero_hits as
+      | {
+          doc_count?: number
+          zq?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+        }
+      | undefined
+    const backendsRaw = aggs?.backends as
+      | { buckets?: Array<{ key: string | number; doc_count: number }> }
+      | undefined
+    const extStatsRaw = aggs?.result_stats as
+      | {
+          min?: number | null
+          max?: number | null
+          std_deviation?: number | null
+        }
+      | undefined
+    const rangeBucketsRaw = aggs?.result_buckets as
+      | { buckets?: Record<string, { doc_count: number }> }
+      | undefined
+    const catFilterRaw = aggs?.category_filter as
+      | { buckets?: Array<{ key: string | number; doc_count: number }> }
+      | undefined
+    const topCatRaw = aggs?.top_categories as
+      | { buckets?: Array<{ key: string | number; doc_count: number }> }
+      | undefined
+
+    const rb = rangeBucketsRaw?.buckets ?? {}
+    const resultCountDistribution: { band: string; count: number }[] =
+      RESULT_COUNT_BANDS.map((band) => ({
+        band,
+        count: rb[band]?.doc_count ?? 0,
+      }))
+
+    return {
+      totalSearches: total,
+      uniqueQueriesApprox: uniqueRaw?.value ?? 0,
+      avgResultCount:
+        avgRaw?.value != null && Number.isFinite(avgRaw.value) ? avgRaw.value : null,
+      zeroResultEventCount: zeroRaw?.doc_count ?? 0,
+      resultCountStats: {
+        min:
+          extStatsRaw?.min != null && Number.isFinite(extStatsRaw.min)
+            ? extStatsRaw.min
+            : null,
+        max:
+          extStatsRaw?.max != null && Number.isFinite(extStatsRaw.max)
+            ? extStatsRaw.max
+            : null,
+        stdDeviation:
+          extStatsRaw?.std_deviation != null &&
+          Number.isFinite(extStatsRaw.std_deviation)
+            ? extStatsRaw.std_deviation
+            : null,
+      },
+      resultCountDistribution,
+      categoryFilterSplit: (catFilterRaw?.buckets ?? []).map((b) => {
+        const k = b.key
+        const isFiltered =
+          k === 1 ||
+          k === "true" ||
+          String(k).toLowerCase() === "true"
+        return {
+          key: isFiltered ? "category_filter" : "open_search",
+          count: b.doc_count,
+        }
+      }),
+      topCategorySlugs: (topCatRaw?.buckets ?? [])
+        .filter((b) => String(b.key) !== "__none__")
+        .map((b) => ({ slug: String(b.key), count: b.doc_count })),
+      volumeByDay: (byDayRaw?.buckets ?? []).map((b) => ({
+        date: (b.key_as_string ?? "").slice(0, 10),
+        count: b.doc_count,
+      })),
+      topQueries: bucketTerms(topRaw?.buckets),
+      zeroResultQueries: bucketTerms(zeroRaw?.zq?.buckets),
+      byBackend: (backendsRaw?.buckets ?? []).map((b) => ({
+        backend: String(b.key),
+        count: b.doc_count,
+      })),
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) {
+      return {
+        totalSearches: 0,
+        uniqueQueriesApprox: 0,
+        avgResultCount: null,
+        zeroResultEventCount: 0,
+        resultCountStats: { min: null, max: null, stdDeviation: null },
+        resultCountDistribution: emptyDistribution(),
+        categoryFilterSplit: [],
+        topCategorySlugs: [],
+        volumeByDay: [],
+        topQueries: [],
+        zeroResultQueries: [],
+        byBackend: [],
+      }
+    }
+    console.error("[elasticsearch] aggregateSearchAnalytics failed:", msg)
+    return null
+  }
+}
+
+export async function topQueriesInRange(
+  fromIso: string,
+  toIso: string,
+  size: number,
+): Promise<Map<string, number>> {
+  const es = getElasticsearchClient()
+  if (!es) return new Map()
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      query: {
+        bool: {
+          filter: [{ range: { occurred_at: { gte: fromIso, lte: toIso } } }],
+        },
+      },
+      aggs: {
+        q: {
+          terms: { field: "query_normalized", size, order: { _count: "desc" } },
+        },
+      },
+    })
+    const aggs = res.aggregations as { q?: { buckets?: Array<{ key: string | number; doc_count: number }> } }
+    const m = new Map<string, number>()
+    for (const b of aggs?.q?.buckets ?? []) {
+      m.set(String(b.key), b.doc_count)
+    }
+    return m
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return new Map()
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] topQueriesInRange failed:", msg)
+    return new Map()
+  }
+}

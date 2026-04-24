@@ -11,6 +11,10 @@ export const ELASTICSEARCH_LISTINGS_INDEX =
 export const ELASTICSEARCH_BRANDS_INDEX =
   process.env.ELASTICSEARCH_BRANDS_INDEX || "reswell_brands"
 
+/** Append-only marketplace search events for admin analytics (trending queries, volume, zero-result rate). */
+export const ELASTICSEARCH_SEARCH_ANALYTICS_INDEX =
+  process.env.ELASTICSEARCH_SEARCH_ANALYTICS_INDEX || "reswell_search_analytics"
+
 function hasElasticsearchAuth(): boolean {
   const apiKey = process.env.ELASTICSEARCH_API_KEY?.trim()
   if (apiKey) return true

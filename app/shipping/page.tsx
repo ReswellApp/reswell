@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, Truck, MapPin, DollarSign } from "lucide-react"
+import { Package } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { ShippingLabelTool } from "@/components/shipping-label-tool"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -10,7 +10,7 @@ import { pageSeoMetadata } from "@/lib/site-metadata"
 export const metadata = pageSeoMetadata({
   title: "Shipping guide — Reswell",
   description:
-    "How to ship and receive surfboards on Reswell — packaging, pickup, labels, and buyer/seller responsibilities.",
+    "How to ship and receive surfboards on Reswell, from packaging to pickup, labels, and what each side is responsible for.",
   path: "/shipping",
 })
 
@@ -20,52 +20,34 @@ function ShippingGuideCards() {
   return (
     <>
       <p className="text-muted-foreground mb-8 leading-relaxed">
-        Sellers choose whether to offer shipping on each listing. For surfboards you can offer local pickup,
-        shipping, or both—if you ship, you set a flat shipping price at listing time. Use this guide whether
-        you are sending or receiving a board.
+        Sellers choose whether to offer shipping on each listing. For surfboards you can offer
+        local pickup, shipping, or both. If you ship, you set a flat shipping price when you post
+        the listing. This guide covers both sides, whether you&apos;re sending a board or waiting
+        on one.
       </p>
 
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Truck className="h-5 w-5 text-primary" />
-              For sellers: offering shipping
-            </CardTitle>
+            <CardTitle className="text-lg">If you&apos;re the seller</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-muted-foreground">
             <p>
-              When you create a listing, you can enable “Shipping available” and set a shipping price or
-              “Buyer pays shipping.”
+              When you create a listing you can turn on “Shipping available” and either set a flat
+              price or pick “Buyer pays shipping.”
             </p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Pack items securely (bubble wrap, cardboard, sturdy box) to avoid damage in transit.</li>
               <li>
-                Use a trackable service (USPS, FedEx, UPS) and share the tracking number with the buyer in
-                Messages—or use integrated label printing from your sale when ShipEngine is configured.
+                Pack the board well. Bubble wrap, a sturdy box, and plenty of padding around the
+                nose and tail go a long way.
               </li>
-              <li>Ship within the timeframe you agreed with the buyer (e.g. 1–3 business days).</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              For buyers: receiving shipped items
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-muted-foreground">
-            <p>
-              If a listing says “Ships,” you can buy and have it shipped. The seller will send tracking once
-              shipped.
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Confirm your shipping address with the seller in Messages before they ship.</li>
               <li>
-                Inspect the package when it arrives. If something is damaged or not as described, message the
-                seller right away and, if you used Reswell Bucks, you may be eligible for help from our team.
+                Use a tracked service like USPS, FedEx, or UPS, and drop the tracking number in
+                Messages. You can also buy a label straight from the sale when ShipEngine is set
+                up.
+              </li>
+              <li>
+                Ship within the window you agreed with the buyer, usually 1 to 3 business days.
               </li>
             </ul>
           </CardContent>
@@ -73,34 +55,56 @@ function ShippingGuideCards() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              Local pickup (surfboards and in-person sales)
-            </CardTitle>
+            <CardTitle className="text-lg">If you&apos;re the buyer</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-muted-foreground">
             <p>
-              Many listings, especially surfboards, are local pickup only. Meet in a safe, public place and
-              inspect the item before paying. See our{" "}
+              If a listing says “Ships,” you can buy it and have the seller send it to you. The
+              seller will add tracking once the board is on its way.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                Double check your shipping address with the seller in Messages before they send
+                the board.
+              </li>
+              <li>
+                Inspect the package when it arrives. If something is damaged or not as described,
+                message the seller right away. Eligible orders paid through Reswell checkout are
+                covered by{" "}
+                <Link href="/protection-policy" className="text-primary underline">
+                  Purchase Protection
+                </Link>
+                , so you can open a refund claim from the order page if you need help.
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Local pickup</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-muted-foreground">
+            <p>
+              Plenty of listings, especially surfboards, are pickup only. Meet somewhere public,
+              take a proper look at the board, and only pay once you&apos;re happy. Our{" "}
               <Link href="/safety" className="text-primary underline">
-                Safety Tips
+                Safety tips
               </Link>{" "}
-              for meeting in person.
+              have more on meeting up with someone for the first time.
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              Who pays for shipping?
-            </CardTitle>
+            <CardTitle className="text-lg">Who pays for shipping?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-muted-foreground">
             <p>
-              The listing will show whether shipping is free, a flat rate, or “Buyer pays shipping.” Agree on
-              the final cost and method in Messages before the seller ships.
+              Every listing tells you whether shipping is free, a flat rate, or “Buyer pays
+              shipping.” It&apos;s worth confirming the final cost and carrier in Messages before
+              the seller ships.
             </p>
           </CardContent>
         </Card>
@@ -125,7 +129,7 @@ export default async function ShippingGuidePage(props: {
     ? `/auth/login?redirect=${encodeURIComponent(`/shipping?order=${encodeURIComponent(orderId)}`)}`
     : "/auth/login?redirect=/shipping"
 
-  /** With `?order=`, this route is the seller label workflow — not the long guide. */
+  /** With `?order=`, this route is the seller label workflow, not the long guide. */
   const labelFlow = Boolean(orderId)
 
   return (
@@ -161,11 +165,11 @@ export default async function ShippingGuidePage(props: {
 
         {labelFlow && (
           <p className="mt-10 text-sm text-muted-foreground border-t border-border/60 pt-8">
-            Looking for packaging tips, buyer/seller responsibilities, and pickup info?{" "}
+            Looking for packaging tips, who does what, and pickup info?{" "}
             <Link href="/shipping" className="text-primary font-medium underline underline-offset-4">
               Open the full shipping guide
             </Link>{" "}
-            (same site — without an order link).
+            (same page, no order link needed).
           </p>
         )}
 

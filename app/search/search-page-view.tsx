@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { after } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
@@ -10,8 +11,18 @@ import {
 } from "@/lib/elasticsearch/listings-index"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import { formatDecimalDimension } from "@/lib/board-measurements"
+import {
+  displayMarketplaceSearchQueryForAnalytics,
+  normalizeMarketplaceSearchQueryForAnalytics,
+  recordMarketplaceSearchAnalyticsEvent,
+} from "@/lib/services/searchAnalytics"
 
 const LIMIT = 48
+
+type MarketplaceSearchResolutionMeta = {
+  resultCount: number
+  backend: "elasticsearch" | "supabase"
+}
 
 function sortMarketplaceBrowseCategories<T extends { name: string; board?: boolean | null }>(
   rows: T[],
@@ -51,8 +62,25 @@ export async function SearchPageView({
     : undefined
   const categoryId = matched?.id ?? null
   const selectedSlug = matched?.slug ?? null
+  const categorySlugForLog = matched?.slug ?? null
 
-  const { listings } = await resolveSearchListings(supabase, rawQuery, categoryId)
+  const { listings, searchMeta } = await resolveSearchListings(
+    supabase,
+    rawQuery,
+    categoryId,
+  )
+
+  if (rawQuery.trim() && searchMeta) {
+    after(() => {
+      void recordMarketplaceSearchAnalyticsEvent({
+        queryDisplay: displayMarketplaceSearchQueryForAnalytics(rawQuery),
+        queryNormalized: normalizeMarketplaceSearchQueryForAnalytics(rawQuery),
+        resultCount: searchMeta.resultCount,
+        backend: searchMeta.backend,
+        categorySlug: categorySlugForLog,
+      })
+    })
+  }
 
   let favoritedListingIds: string[] = []
   if (user) {
@@ -132,15 +160,19 @@ async function resolveSearchListings(
   categoryId: string | null,
 ): Promise<{
   listings: RecentListing[]
+  searchMeta: MarketplaceSearchResolutionMeta | null
 }> {
   if (!rawQuery.trim()) {
     const r = await fetchCuratedRecentListings(supabase, categoryId, LIMIT)
-    return { listings: r.listings }
+    return { listings: r.listings, searchMeta: null }
   }
 
   if (categoryId) {
     const { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
-    return { listings }
+    return {
+      listings,
+      searchMeta: { resultCount: listings.length, backend: "supabase" },
+    }
   }
 
   if (isElasticsearchConfigured()) {
@@ -148,17 +180,26 @@ async function resolveSearchListings(
       const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT)
       if (ids.length > 0) {
         const listings = await hydrateListingsByIds(supabase, ids)
-        return { listings }
+        return {
+          listings,
+          searchMeta: { resultCount: listings.length, backend: "elasticsearch" },
+        }
       }
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)
       const { listings } = await buildSearchFromSupabase(supabase, rawQuery, null, LIMIT)
-      return { listings }
+      return {
+        listings,
+        searchMeta: { resultCount: listings.length, backend: "supabase" },
+      }
     }
   }
 
   const { listings } = await buildSearchFromSupabase(supabase, rawQuery, null, LIMIT)
-  return { listings }
+  return {
+    listings,
+    searchMeta: { resultCount: listings.length, backend: "supabase" },
+  }
 }
 
 async function fetchCuratedRecentListings(

@@ -7,22 +7,22 @@ import { portraitShimmer } from "@/lib/image-shimmer"
 
 const SELLER_STEPS = [
   {
-    imageSrc: "/images/home/hero-slide-1.png",
-    imageAlt: "Surfboard listing with photos and details",
+    imageSrc: "/images/home/how-it-works-sell-list.png",
+    imageAlt: "Surfer in a wetsuit riding a wave, black and white",
     title: "List your board",
     body:
       "Add photos, dimensions, condition, and price. Offer local pickup, shipping, or both so buyers know how the handoff works.",
   },
   {
-    imageSrc: "/images/home/hero-slide-3.png",
-    imageAlt: "Seller and buyer messaging about a board",
+    imageSrc: "/images/home/how-it-works-sell-connect.png",
+    imageAlt: "Aerial view of a coastline at sunset with surfers in the lineup",
     title: "Connect with buyers",
     body:
       "Get messages, offers, and questions in one place. When it’s a match, agree on pickup or ship it out. Your call.",
   },
   {
-    imageSrc: "/images/home/hero-slide-2.png",
-    imageAlt: "Packing a surfboard for sale",
+    imageSrc: "/images/home/how-it-works-sell-paid.png",
+    imageAlt: "Surfer turning on a large green wave with spray",
     title: "Get paid directly",
     body:
       "When the sale is done, your earnings are yours. Cash out straight to your bank when you’re ready. Simple and community-first.",

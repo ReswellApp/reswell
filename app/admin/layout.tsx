@@ -16,11 +16,13 @@ import {
   LifeBuoy,
   ShoppingBag,
   Wallet,
+  LineChart,
 } from 'lucide-react'
 
 const adminNavItems = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/live', label: 'Live', icon: Activity },
+  { href: '/admin/search-analytics', label: 'Search analytics', icon: LineChart },
   { href: '/admin/listings', label: 'Listings', icon: Package },
   { href: '/admin/listings/brand-requests', label: 'Brand requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },
