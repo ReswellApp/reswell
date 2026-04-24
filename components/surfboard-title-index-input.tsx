@@ -87,6 +87,9 @@ export function SurfboardTitleIndexInput({
       const opt = brandRowToIndexSelection(row)
       pickedCatalogTitleRef.current = titleFromIndexModelPick(opt).slice(0, LISTING_TITLE_MAX_LENGTH)
       onSelectModel(opt)
+      // Invalidate in-flight suggest so a late response cannot call setOpen(true) again.
+      suggestGen.current += 1
+      setLoading(false)
       setOpen(false)
     },
     [onSelectModel],
@@ -130,6 +133,11 @@ export function SurfboardTitleIndexInput({
           if (gen !== suggestGen.current) return
           setBrandRows(rows)
           if (rows.length === 0) {
+            setOpen(false)
+            return
+          }
+          const pick = pickedCatalogTitleRef.current
+          if (pick != null && q === pick.trim()) {
             setOpen(false)
             return
           }
@@ -223,6 +231,9 @@ export function SurfboardTitleIndexInput({
         }}
         onFocus={() => {
           const pick = pickedCatalogTitleRef.current
+          if (pick != null && value.trim() === pick.trim()) {
+            return
+          }
           if (pick != null && value.startsWith(pick) && value !== pick) {
             return
           }

@@ -121,6 +121,7 @@ import { cn } from "@/lib/utils"
 import { RequestBrandDialog } from "@/components/request-brand-dialog"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
+import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import {
   validateSellListingForm,
   buildResolvedListingTitle,
@@ -135,8 +136,6 @@ import {
   boardDimensionsToDbFields,
   formatBoardLengthForTitle,
   formatBoardLengthInputFromParts,
-  isBoardLengthEntryComplete,
-  isTapeStyleInchesEntryComplete,
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
   normalizeVolumeLitersInput,
@@ -425,6 +424,14 @@ function SellPageContent() {
   const prevBoardThicknessRef = useRef<string | undefined>(undefined)
   const reswellPkgLastAutoRef = useRef<{ l: string; w: string; h: string } | null>(null)
   const reswellWeightLastAutoRef = useRef<{ lb: string; oz: string } | null>(null)
+  /**
+   * Locality prefill for /sell: `undefined` = not loaded, `null` = no profile/address hint.
+   * City/region only (never street) — matches what we store after a successful publish.
+   */
+  const sellLocationPrefillCacheRef = useRef<
+    { city: string; state: string } | null | undefined
+  >(undefined)
+  const sellLocationPrefillUserIdRef = useRef<string | null>(null)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
     { value: string; label: string; board: boolean; slug?: string | null }[]
@@ -688,6 +695,61 @@ function SellPageContent() {
     setAvailableDrafts(drafts)
   }, [supabase])
 
+  const applySellLocationPrefillIfEmpty = useCallback(async () => {
+    if (editId) return
+    if (getImpersonation()) return
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+    if (sellLocationPrefillUserIdRef.current !== user.id) {
+      sellLocationPrefillUserIdRef.current = user.id
+      sellLocationPrefillCacheRef.current = undefined
+    }
+    if (sellLocationPrefillCacheRef.current === undefined) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("default_listing_city, default_listing_state")
+        .eq("id", user.id)
+        .maybeSingle()
+      const row = profile as {
+        default_listing_city?: string | null
+        default_listing_state?: string | null
+      } | null
+      let city = row?.default_listing_city?.trim() ?? ""
+      let state = row?.default_listing_state?.trim() ?? ""
+      if (!city) {
+        const { data: addr } = await supabase
+          .from("addresses")
+          .select("city, state")
+          .eq("profile_id", user.id)
+          .order("is_default", { ascending: false })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        if (addr?.city?.trim()) {
+          city = addr.city.trim()
+          state = addr.state?.trim() ?? ""
+        }
+      }
+      sellLocationPrefillCacheRef.current = city
+        ? { city, state: state || "" }
+        : null
+    }
+    const hint = sellLocationPrefillCacheRef.current
+    if (!hint?.city) return
+    setFormData((fd) => {
+      if (fd.locationCity.trim() || fd.locationDisplay.trim()) return fd
+      const display = [hint.city, hint.state].filter(Boolean).join(", ")
+      return {
+        ...fd,
+        locationCity: hint.city,
+        locationState: hint.state,
+        locationDisplay: display,
+      }
+    })
+  }, [editId, supabase])
+
   /** `/sell?new=1` — blank form; existing server draft row (if any) stays in the dropdown. */
   useEffect(() => {
     if (searchParams.get("new") !== "1") return
@@ -856,10 +918,13 @@ function SellPageContent() {
       if (editId) {
         router.replace("/sell")
       }
+      window.setTimeout(() => {
+        void applySellLocationPrefillIfEmpty()
+      }, 0)
     } finally {
       setStartNewListingBusy(false)
     }
-  }, [editId, router, reloadDeferredDraftHints, supabase])
+  }, [applySellLocationPrefillIfEmpty, editId, router, reloadDeferredDraftHints, supabase])
 
   const currentDraftId = useMemo(() => {
     if (editId && listingIsDraft) return editId
@@ -911,12 +976,15 @@ function SellPageContent() {
           setDescriptionGenerated(false)
           const uid = sellDraftUserIdRef.current
           if (uid) await clearSellListingDraft(uid)
+          window.setTimeout(() => {
+            void applySellLocationPrefillIfEmpty()
+          }, 0)
         } else {
           router.push("/sell")
         }
       }
     },
-    [currentDraftId, editId, router],
+    [applySellLocationPrefillIfEmpty, currentDraftId, editId, router],
   )
 
   useEffect(() => {
@@ -941,6 +1009,15 @@ function SellPageContent() {
     }
   }, [editId, reloadDeferredDraftHints])
 
+  /** New listing (no ?edit=): prefill city/region from profile or a saved address when the field is empty. */
+  useEffect(() => {
+    if (editId || !draftHydrated) return
+    const t = window.setTimeout(() => {
+      void applySellLocationPrefillIfEmpty()
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [editId, draftHydrated, searchParams, applySellLocationPrefillIfEmpty])
+
   /** Clear session draft hints when the account changes; reload /sell draft availability for the new user. */
   useEffect(() => {
     const {
@@ -952,6 +1029,8 @@ function SellPageContent() {
         clearSellServerDraftListingId()
         clearRemoteResumeDraftIdStorage()
         setLocalServerDraftId(null)
+        sellLocationPrefillCacheRef.current = undefined
+        sellLocationPrefillUserIdRef.current = uid
         if (!editIdRef.current) {
           void reloadDeferredDraftHints()
         }
@@ -961,6 +1040,8 @@ function SellPageContent() {
         clearRemoteResumeDraftIdStorage()
         setLocalServerDraftId(null)
         setAvailableDrafts([])
+        sellLocationPrefillCacheRef.current = undefined
+        sellLocationPrefillUserIdRef.current = null
       }
       authUserIdRef.current = uid
       sellDraftUserIdRef.current = uid
@@ -1696,6 +1777,15 @@ function SellPageContent() {
       const boardLocationCity = fd.locationCity.trim() || null
       const boardLocationState = fd.locationState.trim() || null
 
+      function persistDefaultListingLocalityForProfile() {
+        if (listingImpersonation) return
+        if (!boardLocationCity) return
+        void saveDefaultListingLocationAction({
+          city: boardLocationCity,
+          state: (boardLocationState ?? "").trim() || undefined,
+        })
+      }
+
       const resolvedListingTitle = buildResolvedListingTitle({
         listingType: "board",
         ...fd,
@@ -2068,6 +2158,7 @@ function SellPageContent() {
           clearRemoteResumeDraftIdStorage()
           setLocalServerDraftId(null)
           setAvailableDrafts((prev) => prev.filter((d) => d.id !== listingId))
+          persistDefaultListingLocalityForProfile()
           await revalidateListingDetailAfterListingMutation()
           router.push(detailPath)
           return
@@ -2103,6 +2194,7 @@ function SellPageContent() {
       clearRemoteResumeDraftIdStorage()
       setLocalServerDraftId(null)
       setAvailableDrafts((prev) => prev.filter((d) => d.id !== listingId))
+      persistDefaultListingLocalityForProfile()
       await revalidateListingDetailAfterListingMutation()
       router.push(detailPath)
     } catch (error: unknown) {
@@ -2333,36 +2425,6 @@ function SellPageContent() {
                           defaultName={titleRequestBrandSeed}
                         />
                       </div>
-                      {formData.boardBrandId ? (
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground/45">
-                          <span>
-                            Linked to brand catalog:{" "}
-                            <span className="font-medium text-foreground">
-                              {formData.boardLinkedBrandName.trim() ||
-                                formData.brand.trim() ||
-                                formData.boardIndexLabel.trim()}
-                            </span>
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs text-muted-foreground/45"
-                            onClick={() =>
-                              setFormData((f) => ({
-                                ...f,
-                                boardBrandId: "",
-                                boardIndexBrandSlug: "",
-                                boardIndexModelSlug: "",
-                                boardIndexLabel: "",
-                                boardLinkedBrandName: "",
-                              }))
-                            }
-                          >
-                            Clear link
-                          </Button>
-                        </div>
-                      ) : null}
                   </div>
 
                   <Separator className="bg-border" />
@@ -2605,37 +2667,13 @@ function SellPageContent() {
                               <Input
                                 ref={boardDimLengthRef}
                                 type="text"
-                                inputMode="decimal"
+                                inputMode="text"
                                 placeholder="6'2"
                                 value={formData.boardLength}
                                 onChange={(e) => {
                                   const next = normalizeBoardLengthInput(e.target.value)
-                                  const prev = prevBoardLengthRef.current ?? ""
                                   prevBoardLengthRef.current = next
                                   setFormData((fd) => ({ ...fd, boardLength: next }))
-                                  if (
-                                    !isBoardLengthEntryComplete(prev) &&
-                                    isBoardLengthEntryComplete(next)
-                                  ) {
-                                    requestAnimationFrame(() => {
-                                      const w = boardDimWidthRef.current
-                                      if (w && !w.disabled) {
-                                        w.focus({ preventScroll: true })
-                                      }
-                                    })
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key !== "Enter") return
-                                  const next = normalizeBoardLengthInput(
-                                    (e.target as HTMLInputElement).value,
-                                  )
-                                  if (!isBoardLengthEntryComplete(next)) return
-                                  e.preventDefault()
-                                  const w = boardDimWidthRef.current
-                                  if (w && !w.disabled) {
-                                    w.focus({ preventScroll: true })
-                                  }
                                 }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 required
@@ -2649,19 +2687,9 @@ function SellPageContent() {
                                 }
                               />
                               {shouldShowLengthInchHint(formData.boardLength) ? (
-                                <>
-                                  <span id="sell-length-inches-hint-sr" className="sr-only">
-                                    {`Then type inches after the apostrophe (for example six foot two as 6'2).`}
-                                  </span>
-                                  <span
-                                    className="pointer-events-none shrink-0 select-none text-sm tabular-nums text-muted-foreground/45"
-                                    aria-hidden
-                                  >
-                                    <span className="font-medium text-muted-foreground/55">'</span>
-                                    <span>·</span>
-                                    <span className="opacity-80">_</span>
-                                  </span>
-                                </>
+                                <span id="sell-length-inches-hint-sr" className="sr-only">
+                                  {`Then type inches after the apostrophe (for example six foot two as 6'2).`}
+                                </span>
                               ) : null}
                             </div>
                             {/* Reserve same width as &quot;in&quot; / &quot;L&quot; on other rows so the input matches on narrow screens */}
@@ -2688,26 +2716,14 @@ function SellPageContent() {
                               <Input
                                 ref={boardDimWidthRef}
                                 type="text"
-                                inputMode="decimal"
+                                inputMode="text"
                                 placeholder="19 1/4"
                                 value={formData.boardWidthInches}
                                 disabled={formData.boardSkipOptionalDimensions}
                                 onChange={(e) => {
                                   const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  const prev = prevBoardWidthRef.current ?? ""
                                   prevBoardWidthRef.current = next
                                   setFormData((fd) => ({ ...fd, boardWidthInches: next }))
-                                  if (
-                                    !isTapeStyleInchesEntryComplete(prev) &&
-                                    isTapeStyleInchesEntryComplete(next)
-                                  ) {
-                                    requestAnimationFrame(() => {
-                                      const el = boardDimThicknessRef.current
-                                      if (el && !el.disabled) {
-                                        el.focus({ preventScroll: true })
-                                      }
-                                    })
-                                  }
                                 }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
@@ -2735,26 +2751,14 @@ function SellPageContent() {
                               <Input
                                 ref={boardDimThicknessRef}
                                 type="text"
-                                inputMode="decimal"
+                                inputMode="text"
                                 placeholder="2 3/8"
                                 value={formData.boardThicknessInches}
                                 disabled={formData.boardSkipOptionalDimensions}
                                 onChange={(e) => {
                                   const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  const prev = prevBoardThicknessRef.current ?? ""
                                   prevBoardThicknessRef.current = next
                                   setFormData((fd) => ({ ...fd, boardThicknessInches: next }))
-                                  if (
-                                    !isTapeStyleInchesEntryComplete(prev) &&
-                                    isTapeStyleInchesEntryComplete(next)
-                                  ) {
-                                    requestAnimationFrame(() => {
-                                      const el = boardDimVolumeRef.current
-                                      if (el && !el.disabled) {
-                                        el.focus({ preventScroll: true })
-                                      }
-                                    })
-                                  }
                                 }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
@@ -2782,7 +2786,7 @@ function SellPageContent() {
                               <Input
                                 ref={boardDimVolumeRef}
                                 type="text"
-                                inputMode="decimal"
+                                inputMode="text"
                                 placeholder="30.4"
                                 value={formData.boardVolumeL}
                                 disabled={formData.boardSkipOptionalDimensions}

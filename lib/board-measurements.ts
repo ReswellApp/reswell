@@ -20,8 +20,18 @@ export function parseLengthFeet(input: string): number | null {
  * Parse a single measurement: plain decimal, mixed fraction ("19 1/2"), or simple fraction ("3/4").
  */
 export function parseBoardMeasurement(input: string): number | null {
-  const normalized = input.trim()
-  if (!normalized) return null
+  const trimmed = input.trim()
+  if (!trimmed) return null
+  let normalized = trimmed
+  if (!normalized.includes("/")) {
+    if (/^\d+,\d+$/.test(normalized)) {
+      normalized = normalized.replace(/^(\d+),(\d+)$/, "$1.$2")
+    } else {
+      normalized = normalized.replace(/,/g, "")
+    }
+  } else {
+    normalized = normalized.replace(/,/g, "")
+  }
   if (/^\d*\.?\d+$/.test(normalized)) {
     const decimal = Number.parseFloat(normalized)
     return Number.isFinite(decimal) ? decimal : null
@@ -106,186 +116,40 @@ export function combineInchesFractionFields(
   return w
 }
 
-/** Single `.`, digits elsewhere — tape decimal branch and {@link normalizeVolumeLitersInput}. */
-function sanitizeDecimalLiteralInput(raw: string): string {
-  const noBad = raw.replace(/[^\d.]/g, "")
-  const firstDot = noBad.indexOf(".")
-  if (firstDot === -1) return noBad
-  return noBad.slice(0, firstDot + 1) + noBad.slice(firstDot + 1).replace(/\./g, "")
+const BOARD_DIM_INCHES_INPUT_MAX = 80
+const BOARD_DIM_VOLUME_L_INPUT_MAX = 48
+
+function stripInvis(s: string): string {
+  return s.replace(
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200D\uFEFF]/g,
+    "",
+  )
 }
+
+function normalizeTypographicToAsciiMath(s: string): string {
+  return s
+    .replace(/\u2044/g, "/")
+    .replace(/[／﹨]/g, "/")
+    .replace(/[\uFF0E\u2024\u00B7]/g, ".")
+}
+
+const BOARD_LENGTH_INPUT_MAX = 80
 
 /**
- * Digit-only liters: insert a decimal as soon as the run is long enough (`304` → `30.4`, `3045` → `30.45`).
- * Round hundreds stay literal so `100` can still mean 100 L.
- */
-function inferVolumeLitersDigitRun(stripped: string): string {
-  if (stripped.length === 3) {
-    if (stripped === "100" || stripped === "200" || stripped === "300") return stripped
-    return `${stripped.slice(0, 2)}.${stripped[2]}`
-  }
-  if (stripped.length === 4) {
-    return `${stripped.slice(0, 2)}.${stripped.slice(2)}`
-  }
-  if (stripped.length === 5) {
-    return `${stripped.slice(0, 3)}.${stripped.slice(3)}`
-  }
-  return stripped
-}
-
-/** Tape-style inch fractions only: small numerators, denominators like /8 … /128 — not arbitrary long tails. */
-const TAPE_INCH_NUM_MAX_DIGITS = 2
-const TAPE_INCH_DEN_MAX_DIGITS = 3
-const TAPE_INCH_DEN_MAX_VALUE = 128
-/** Upper bound for two-digit whole inches in digit-only inference (e.g. `1914` → `19 1/4`). */
-const TAPE_INCH_TWO_DIGIT_WHOLE_MAX = 48
-
-function clampDenominatorDigits(denRaw: string): string {
-  let d = denRaw.replace(/\D/g, "").slice(0, TAPE_INCH_DEN_MAX_DIGITS)
-  if (d === "") return ""
-  let v = Number.parseInt(d, 10)
-  while (d.length > 1 && (v > TAPE_INCH_DEN_MAX_VALUE || v < 1)) {
-    d = d.slice(0, -1)
-    v = Number.parseInt(d, 10)
-  }
-  if (v > TAPE_INCH_DEN_MAX_VALUE) return String(TAPE_INCH_DEN_MAX_VALUE)
-  if (v < 1) return ""
-  return d
-}
-
-/**
- * Keep tape-style inch fields (width, thickness) close to real formats (`2 3/8`, `2 5/16`, `19 1/2`):
- * cap digit runs after `/` and enforce numerator/denominator bounds.
- */
-function clampTapeMeasureInches(s: string): string {
-  const t = s.trim()
-  if (!t || t.includes(".")) return s
-
-  const simple = t.match(/^(\d{1,2})\/(\d+)$/)
-  if (simple) {
-    let num = simple[1].slice(0, TAPE_INCH_NUM_MAX_DIGITS)
-    const den = clampDenominatorDigits(simple[2])
-    if (!den) return t
-    let nv = Number.parseInt(num, 10)
-    const dv = Number.parseInt(den, 10)
-    if (nv >= dv) {
-      num = String(Math.max(0, dv - 1))
-      nv = Number.parseInt(num, 10)
-    }
-    return `${num}/${den}`
-  }
-
-  const mixed = t.match(/^(\d{1,2})\s+(\d+)\/(\d+)$/)
-  if (!mixed) return s
-
-  const w = mixed[1].slice(0, 2)
-  let num = mixed[2].slice(0, TAPE_INCH_NUM_MAX_DIGITS)
-  const den = clampDenominatorDigits(mixed[3])
-  if (!den) {
-    return `${w} ${num}`.trim()
-  }
-  let nv = Number.parseInt(num, 10)
-  const dv = Number.parseInt(den, 10)
-  if (nv >= dv) {
-    num = String(Math.max(0, dv - 1))
-    nv = Number.parseInt(num, 10)
-  }
-  if (!Number.isFinite(nv) || nv < 0) return `${w} ${den}`
-  return `${w} ${num}/${den}`
-}
-
-/**
- * Single-field UX for **width and thickness** (same spirit as length): type digits and spaces; `/` is inserted
- * for common tape patterns (`2 5/16`, `2 3/8`, `19 1/4`, `19 1/2`). Digit-only entry works too: `2516` → `2 5/16`,
- * `238` → `2 3/8`, `1914` → `19 1/4`, `1912` → `19 1/2` when the result is a valid fraction.
+ * **Width and thickness (in):** true freeform while typing — no stripping letters or punctuation.
+ * We only remove invisible characters, map common unicode fraction/decimal glyphs, trim leading
+ * space, and cap length. {@link parseBoardMeasurement} and validation interpret the value on save.
  */
 export function normalizeTapeStyleInchesInput(raw: string): string {
-  const t = raw.replace(/\u2044/g, "/").replace(/[／]/g, "/")
-  const trimmed = t.trim()
-  if (trimmed === "") return ""
-
-  const decCandidate = trimmed.replace(/[^\d.]/g, "")
-  if (decCandidate.includes(".")) {
-    return sanitizeDecimalLiteralInput(decCandidate)
-  }
-
-  let s = trimmed.replace(/[^\d\s/]/g, "").replace(/\s+/g, " ")
-
-  if (s.includes("/")) {
-    const compact = s.replace(/\s*\/\s*/g, "/")
-    const simple = compact.match(/^(\d+)\/(\d+)$/)
-    if (simple) return clampTapeMeasureInches(`${simple[1]}/${simple[2]}`)
-    const mixed = compact.match(/^(\d+)\s+(\d+)\/(\d+)$/)
-    if (mixed) return clampTapeMeasureInches(`${mixed[1]} ${mixed[2]}/${mixed[3]}`)
-    return clampTapeMeasureInches(compact)
-  }
-
-  const parts = s.split(" ").filter(Boolean)
-  if (parts.length === 3 && parts.every((p) => /^\d+$/.test(p))) {
-    return clampTapeMeasureInches(`${parts[0]} ${parts[1]}/${parts[2]}`)
-  }
-  if (parts.length === 2 && parts.every((p) => /^\d+$/.test(p))) {
-    const [a, b] = parts
-    if (b.length >= 3) {
-      return clampTapeMeasureInches(`${a} ${b[0]}/${b.slice(1)}`)
-    }
-    if (a.length >= 2 && b.length === 2) {
-      return clampTapeMeasureInches(`${a} ${b[0]}/${b[1]}`)
-    }
-    return `${a} ${b}`
-  }
-
-  const digits = s.replace(/\D/g, "")
-  if (digits.length === 0) return ""
-  if (!/^\d+$/.test(digits)) return s
-
-  return clampTapeMeasureInches(inferWidthDigitsSmooth(digits))
+  if (!/\S/.test(raw)) return ""
+  let s = stripInvis(raw).replace(/^\s+/, "")
+  s = normalizeTypographicToAsciiMath(s)
+  if (s.length > BOARD_DIM_INCHES_INPUT_MAX) s = s.slice(0, BOARD_DIM_INCHES_INPUT_MAX)
+  return s
 }
 
 /** @deprecated Prefer {@link normalizeTapeStyleInchesInput} — alias kept for existing imports. */
 export const normalizeBoardWidthInchesInput = normalizeTapeStyleInchesInput
-
-function inferWidthDigitsSmooth(d: string): string {
-  if (d.length < 3) return d
-
-  /** Three digits only: `238` → `2 3/8`, `251` → `2 5/1` invalid → keep raw */
-  if (d.length === 3) {
-    const cand = `${d[0]} ${d[1]}/${d[2]}`
-    if (parseBoardMeasurement(cand) != null) return cand
-    return d
-  }
-
-  if (d.length === 4) {
-    const tail = d.slice(2)
-    // Single-digit whole + /16 /32 /64 (must run before two-digit-whole so `2516` → `2 5/16`, not `25 1/6`)
-    if ("23456789".includes(d[0]) && (tail === "16" || tail === "32" || tail === "64")) {
-      const sixteenth = `${d[0]} ${d[1]}/${tail}`
-      if (parseBoardMeasurement(sixteenth) != null) return sixteenth
-    }
-    const ww = d.slice(0, 2)
-    const nWW = Number.parseInt(ww, 10)
-    const twoDigitMixed = `${ww} ${d[2]}/${d[3]}`
-    if (
-      nWW >= 10 &&
-      nWW <= TAPE_INCH_TWO_DIGIT_WHOLE_MAX &&
-      parseBoardMeasurement(twoDigitMixed) != null
-    ) {
-      return twoDigitMixed
-    }
-    const oneDigitWhole = `${d[0]} ${d[1]}/${tail}`
-    if (parseBoardMeasurement(oneDigitWhole) != null) return oneDigitWhole
-    return d
-  }
-
-  if (d.length >= 5) {
-    const w2 = d.slice(0, 2)
-    const rest = d.slice(2)
-    if (rest.length >= 3) {
-      return `${w2} ${rest[0]}/${rest.slice(1)}`
-    }
-  }
-
-  return d
-}
 
 /** True while only a single foot digit is present (before `'` / inches) — show inch placeholder hint. */
 export function shouldShowLengthInchHint(raw: string): boolean {
@@ -296,54 +160,28 @@ export function shouldShowLengthInchHint(raw: string): boolean {
 }
 
 /**
- * Sell-flow volume field: decimals only (`30.4`, `~32.5`), optional trailing `L`, optional `~` prefix.
- * Digit-only entry inserts the decimal (`304` → `30.4`) once 3–5 digits are typed, like tape-style inches.
- * Commas stripped or treated as decimal comma when unambiguous.
+ * **Volume (L):** freeform — we only strip invisible characters, normalize common unicode
+ * decimal/separator glyphs, trim leading space, and cap length. Parsers (see
+ * {@link parseVolumeLiters}) find the first plausible number, including in strings like
+ * `approx 32.5` or `32,4 L`.
  */
 export function normalizeVolumeLitersInput(raw: string): string {
-  let t = raw.trim()
-  if (t === "") return ""
-
-  let approx = ""
-  if (t.startsWith("~")) {
-    approx = "~"
-    t = t.slice(1).trim()
-  }
-
-  t = t.replace(/\s*[lL]\s*$/u, "").trim()
-
-  const compact = t.replace(/\s/g, "")
-  if (compact !== "" && !compact.includes(".") && /^\d+,\d+$/.test(compact)) {
-    t = compact.replace(",", ".")
-  } else {
-    t = t.replace(/,/g, "")
-  }
-
-  t = t.replace(/[^\d.]/g, "")
-
-  if (!t.includes(".")) {
-    const onlyDigits = t
-    if (/^\d+$/.test(onlyDigits)) {
-      const stripped = onlyDigits.replace(/^0+/, "") || "0"
-      if (stripped.length >= 3 && stripped.length <= 5) {
-        t = inferVolumeLitersDigitRun(stripped)
-      } else {
-        t = onlyDigits
-      }
-    }
-  }
-
-  const num = sanitizeDecimalLiteralInput(t)
-  if (num === "") return approx
-
-  return `${approx}${num}`
+  if (!/\S/.test(raw)) return ""
+  let t = stripInvis(raw).replace(/^\s+/, "")
+  t = normalizeTypographicToAsciiMath(t)
+  if (t.length > BOARD_DIM_VOLUME_L_INPUT_MAX) t = t.slice(0, BOARD_DIM_VOLUME_L_INPUT_MAX)
+  return t
 }
 
-/** Liters: leading number, optional unit suffix (e.g. "25", "25 L", "~32.5"). */
+/** Liters: first number in the string (or leading after ~ with optional L suffix). */
 export function parseVolumeLiters(input: string): number | null {
-  const t = input.trim().replace(/,/g, "")
+  let t = input.trim()
   if (!t) return null
-  const m = t.match(/^[\s~]*(\d+\.?\d*)/)
+  if (/^\d+,\d+$/.test(t)) t = t.replace(/^(\d+),(\d+)$/, "$1.$2")
+  else t = t.replace(/,/g, "")
+
+  let m = t.match(/^[\s~]*(\d+\.?\d*)/)
+  if (!m) m = t.match(/(\d+\.?\d*)/)
   if (!m) return null
   const v = Number.parseFloat(m[1])
   return Number.isFinite(v) && v > 0 ? v : null
@@ -368,27 +206,23 @@ export function isBoardLengthEntryComplete(raw: string): boolean {
 }
 
 /**
- * Tape-style width/thickness: advance only once there is a decimal or a fraction slash,
- * so digit-only entry can finish normalizing (e.g. `1914` → `19 1/4`) without jumping early.
+ * Width/thickness: a positive measurement parses as a number (decimal, fraction, or plain integer string).
  */
 export function isTapeStyleInchesEntryComplete(raw: string): boolean {
   const t = raw.trim()
   if (!t) return false
   const v = parseBoardMeasurement(t) ?? Number.parseFloat(t)
-  if (!Number.isFinite(v) || v <= 0) return false
-  return t.includes("/") || t.includes(".")
+  return Number.isFinite(v) && v > 0
 }
 
-/** Liters field: require a decimal point so `30` can become `30.4` via inference before we advance. */
+/** Liters: a positive value parses. */
 export function isVolumeLitersEntryComplete(raw: string): boolean {
-  const t = raw.trim()
-  if (!t) return false
-  if (parseVolumeLiters(t) == null) return false
-  return t.includes(".")
+  return parseVolumeLiters(raw) != null
 }
 
 /**
- * Split a combined length like `6'2`, `10'8`, `6'2 1/2`, or digit-only `62` → 6'2.
+ * Split a combined length for validation and storage (`6'2`, `6 2`, or digit run `62` as 6 ft + 2 in when no `'`).
+ * The sell input normalizer no longer rewrites the display value to insert `'` — that happens here only for parsing.
  */
 export function parseBoardLengthParts(raw: string): { feetStr: string; inchesStr: string } {
   const t = raw.trim()
@@ -422,35 +256,27 @@ export function parseBoardLengthParts(raw: string): { feetStr: string; inchesStr
 }
 
 /**
- * Single-field sell UX: keep a literal `'` in the value and auto-insert it while typing digits
- * (e.g. `62` → `6'2`, `108` → `10'8`) so users do not hunt for the apostrophe key.
+ * **Length (ft/in):** freeform. Feet left of the first `'` stay digits-only for parsing; the inch
+ * segment is not character-restricted. We strip invisible bytes and normalize typographic
+ * quotes/slashes/dots, trim leading space, and cap total length.
  */
 export function normalizeBoardLengthInput(raw: string): string {
-  const t = raw.replace(/[\u2032\u2019＇]/g, "'")
+  let t = stripInvis(raw).replace(/[\u2032\u2019＇]/g, "'")
+  t = t.replace(/[\u201c\u201d\u2033\uFF02]/g, '"')
   if (t.includes("'")) {
     const i = t.indexOf("'")
     const left = t.slice(0, i).replace(/\D/g, "")
-    const right = t.slice(i + 1)
+    let right = t.slice(i + 1)
+    right = normalizeTypographicToAsciiMath(right)
+    if (right.length + left.length + 1 > BOARD_LENGTH_INPUT_MAX) {
+      right = right.slice(0, Math.max(0, BOARD_LENGTH_INPUT_MAX - left.length - 1))
+    }
     return `${left}'${right}`
   }
-  const spaceParts = t.trim().split(/\s+/).filter(Boolean)
-  if (spaceParts.length >= 2) {
-    const feetStr = spaceParts[0].replace(/\D/g, "")
-    const inchesStr = spaceParts.slice(1).join(" ")
-    if (feetStr) return `${feetStr}'${inchesStr}`
-  }
-  const digits = t.replace(/\D/g, "")
-  if (digits === "") return ""
-  if (digits.length === 1) return digits[0]
-  const two = digits.slice(0, 2)
-  const n = Number.parseInt(two, 10)
-  if (n >= 10 && n <= 15) {
-    const rest = digits.slice(2)
-    return rest === "" ? `${two}'` : `${two}'${rest}`
-  }
-  const ft = digits.slice(0, 1)
-  const rest = digits.slice(1)
-  return rest === "" ? ft : `${ft}'${rest}`
+  t = normalizeTypographicToAsciiMath(t)
+  t = t.replace(/^\s+/, "")
+  if (t.length > BOARD_LENGTH_INPUT_MAX) t = t.slice(0, BOARD_LENGTH_INPUT_MAX)
+  return t
 }
 
 /** Hydrate combined length from legacy feet + inches fields or listing row parts. */
