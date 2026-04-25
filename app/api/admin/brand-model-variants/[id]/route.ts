@@ -38,6 +38,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     body.thickness_label === undefined &&
     body.volume_label === undefined &&
     body.fin_box_type === undefined &&
+    body.condition === undefined &&
     body.image_url === undefined &&
     body.sort_order === undefined
   ) {
@@ -50,6 +51,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     thickness_label: body.thickness_label,
     volume_label: body.volume_label,
     fin_box_type: body.fin_box_type,
+    condition: body.condition,
     image_url: body.image_url,
     sort_order: body.sort_order,
   })

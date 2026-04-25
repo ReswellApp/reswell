@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     thickness_label: parsed.data.thickness_label,
     volume_label: parsed.data.volume_label,
     fin_box_type: parsed.data.fin_box_type,
+    condition: parsed.data.condition,
     image_url: imageUrl,
     sort_order: parsed.data.sort_order,
   })

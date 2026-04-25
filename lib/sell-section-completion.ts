@@ -17,7 +17,7 @@ const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
 
 function titleSectionComplete(form: SellFormValidationInput): boolean {
-  if (!form.title?.trim()) return false
+  if (!form.title?.trim() || !form.brand?.trim()) return false
   return buildResolvedListingTitle(form).length <= LISTING_TITLE_MAX_LENGTH
 }
 

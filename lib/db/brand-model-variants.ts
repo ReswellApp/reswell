@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
 
 export type FinBoxType = "futures" | "fcs" | "single_fin"
 
@@ -11,6 +12,7 @@ export type BrandModelVariantRow = {
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  condition: BrandModelVariantCondition
   image_url: string | null
   sort_order: number
   created_at: string
@@ -24,7 +26,7 @@ export async function listBrandModelVariantsForAdmin(
   const { data, error } = await supabase
     .from("brand_model_variants")
     .select(
-      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, image_url, sort_order, created_at, updated_at",
+      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, image_url, sort_order, created_at, updated_at",
     )
     .eq("brand_model_id", brandModelId)
     .order("sort_order", { ascending: true })
@@ -47,6 +49,7 @@ export async function insertBrandModelVariant(
     thickness_label: string
     volume_label: string
     fin_box_type: FinBoxType
+    condition: BrandModelVariantCondition
     image_url: string | null
     sort_order: number
   },
@@ -62,18 +65,23 @@ export async function insertBrandModelVariant(
       thickness_label: input.thickness_label.trim(),
       volume_label: input.volume_label.trim(),
       fin_box_type: input.fin_box_type,
+      condition: input.condition,
       image_url: input.image_url,
       sort_order: input.sort_order,
       updated_at: now,
     })
     .select(
-      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, image_url, sort_order, created_at, updated_at",
+      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, image_url, sort_order, created_at, updated_at",
     )
     .single()
 
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "This size and fin setup already exists for this model", code: error.code }
+      return {
+        ok: false,
+        error: "This size, fin system, and condition already exist for this model",
+        code: error.code,
+      }
     }
     if (error.code === "23503") {
       return { ok: false, error: "Model or brand not found", code: error.code }
@@ -93,6 +101,7 @@ export async function updateBrandModelVariant(
     thickness_label?: string
     volume_label?: string
     fin_box_type?: FinBoxType
+    condition?: BrandModelVariantCondition
     image_url?: string | null
     sort_order?: number
   },
@@ -103,6 +112,7 @@ export async function updateBrandModelVariant(
   if (patch.thickness_label !== undefined) updates.thickness_label = patch.thickness_label.trim()
   if (patch.volume_label !== undefined) updates.volume_label = patch.volume_label.trim()
   if (patch.fin_box_type !== undefined) updates.fin_box_type = patch.fin_box_type
+  if (patch.condition !== undefined) updates.condition = patch.condition
   if (patch.image_url !== undefined) updates.image_url = patch.image_url
   if (patch.sort_order !== undefined) updates.sort_order = patch.sort_order
 
@@ -110,7 +120,11 @@ export async function updateBrandModelVariant(
 
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "This size and fin setup already exists for this model", code: error.code }
+      return {
+        ok: false,
+        error: "This size, fin system, and condition already exist for this model",
+        code: error.code,
+      }
     }
     console.error("updateBrandModelVariant:", error.message)
     return { ok: false, error: error.message }

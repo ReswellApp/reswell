@@ -18,7 +18,8 @@ import {
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import type { BrandRow } from "@/lib/brands/types"
-import type { FinBoxType } from "@/lib/validations/brand-model-variants"
+import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import type { BrandModelVariantCondition, FinBoxType } from "@/lib/validations/brand-model-variants"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -72,6 +73,7 @@ type PendingVariant = {
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  condition: BrandModelVariantCondition
   image_url: string | null
 }
 
@@ -102,6 +104,7 @@ export function BrandModelEditorDialog({
   const [createDimT, setCreateDimT] = React.useState("")
   const [createDimV, setCreateDimV] = React.useState("")
   const [createFinBoxType, setCreateFinBoxType] = React.useState<FinBoxType>("futures")
+  const [createCondition, setCreateCondition] = React.useState<BrandModelVariantCondition>("brand_new")
   const createDimImageRef = React.useRef<HTMLInputElement>(null)
 
   const loadModels = React.useCallback(async (bid: string) => {
@@ -233,6 +236,7 @@ export function BrandModelEditorDialog({
           thickness_label: T,
           volume_label: V,
           fin_box_type: createFinBoxType,
+          condition: createCondition,
           image_url: imageUrl,
         },
       ])
@@ -337,6 +341,7 @@ export function BrandModelEditorDialog({
             thickness_label: v.thickness_label,
             volume_label: v.volume_label,
             fin_box_type: v.fin_box_type,
+            condition: v.condition,
             image_url: v.image_url,
           }),
         })
@@ -362,6 +367,7 @@ export function BrandModelEditorDialog({
       setCreateDimT("")
       setCreateDimV("")
       setCreateFinBoxType("futures")
+      setCreateCondition("brand_new")
       if (createDimImageRef.current) createDimImageRef.current.value = ""
       await loadModels(brandId)
     } finally {
@@ -549,8 +555,8 @@ export function BrandModelEditorDialog({
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground">Variant queue (optional)</p>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                  One entry per size and fin system. Same dimensions can appear twice if fin type differs. Saved when you
-                  create the model.
+                  One entry per size, fin system, and condition. Same dimensions can repeat when fin and/or condition
+                  differ. Saved when you create the model.
                 </p>
               </div>
             </div>
@@ -571,6 +577,27 @@ export function BrandModelEditorDialog({
                     <SelectItem value="futures">Futures</SelectItem>
                     <SelectItem value="fcs">FCS</SelectItem>
                     <SelectItem value="single_fin">Single fin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="create-cond" className="text-xs">
+                  Condition
+                </Label>
+                <Select
+                  value={createCondition}
+                  onValueChange={(v) => setCreateCondition(v as BrandModelVariantCondition)}
+                  disabled={saving || !brandId}
+                >
+                  <SelectTrigger id="create-cond" className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LISTING_CONDITION_SELL_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

@@ -8,6 +8,18 @@ export const finBoxTypeSchema = z.enum(["futures", "fcs", "single_fin"])
 
 export type FinBoxType = z.infer<typeof finBoxTypeSchema>
 
+/** Same value set as listings (sellable / browse) — see LISTING_CONDITION_LABELS. */
+export const brandModelVariantConditionSchema = z.enum([
+  "brand_new",
+  "excellent",
+  "very_good",
+  "good",
+  "fair",
+  "poor",
+])
+
+export type BrandModelVariantCondition = z.infer<typeof brandModelVariantConditionSchema>
+
 const optionalImageUrl = z.preprocess(
   (v: unknown) => {
     if (v === undefined) return undefined
@@ -30,6 +42,7 @@ export const adminBrandModelVariantCreateBodySchema = z.object({
   thickness_label: dimLabel80,
   volume_label: dimLabel80,
   fin_box_type: finBoxTypeSchema,
+  condition: brandModelVariantConditionSchema,
   image_url: optionalImageUrl,
   sort_order: z.number().int().min(0).max(1_000_000).optional(),
 })
@@ -42,6 +55,7 @@ export const adminBrandModelVariantPatchBodySchema = z.object({
   thickness_label: dimLabel80.optional(),
   volume_label: dimLabel80.optional(),
   fin_box_type: finBoxTypeSchema.optional(),
+  condition: brandModelVariantConditionSchema.optional(),
   image_url: optionalImageUrl,
   sort_order: z.number().int().min(0).max(1_000_000).optional(),
 })

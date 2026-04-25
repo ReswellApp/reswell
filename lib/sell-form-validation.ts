@@ -84,6 +84,9 @@ export function validateSellListingForm(
   if (!form.title?.trim() || !form.price?.trim() || !form.condition) {
     return "Please fill in all required fields."
   }
+  if (!relaxed && !form.brand?.trim()) {
+    return "Please fill in all required fields."
+  }
 
   if (!isListingSellableCondition(form.condition)) {
     return "Please select a condition."

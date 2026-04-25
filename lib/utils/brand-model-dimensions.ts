@@ -1,4 +1,5 @@
-import type { FinBoxType } from "@/lib/validations/brand-model-variants"
+import { formatCondition } from "@/lib/listing-labels"
+import type { BrandModelVariantCondition, FinBoxType } from "@/lib/validations/brand-model-variants"
 
 /** Display L × W × T · volume for board model size rows (labels are free text). */
 export function formatBrandModelDimensionLabel(row: {
@@ -16,13 +17,14 @@ function finBoxDisplayName(f: FinBoxType): string {
   return "Single fin"
 }
 
-/** Full variant line including fin system (mutually exclusive). */
+/** Full variant line: dims · fin system · condition (matches marketplace listing labels). */
 export function formatBrandModelVariantLabel(row: {
   length_label: string
   width_label: string
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  condition: BrandModelVariantCondition
 }): string {
-  return `${formatBrandModelDimensionLabel(row)} · ${finBoxDisplayName(row.fin_box_type)}`
+  return `${formatBrandModelDimensionLabel(row)} · ${finBoxDisplayName(row.fin_box_type)} · ${formatCondition(row.condition)}`
 }

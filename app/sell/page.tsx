@@ -1,5 +1,5 @@
 "use client"
-/** Sell flow: no separate Brand / shaper field — catalog + request CTA live under the title. */
+/** Sell flow: free-form listing title; brand line uses catalog (brands) + request CTA; no separate shaper field. */
 
 import React, { Suspense } from "react"
 
@@ -91,10 +91,7 @@ import {
   type ImpersonationData,
 } from "@/lib/impersonation"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
-import {
-  SurfboardTitleIndexInput,
-  titleFromIndexModelPick,
-} from "@/components/surfboard-title-index-input"
+import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
   assertListingOriginalSize,
   browserCanDecodeImage as pipelineCanDecodeImage,
@@ -642,7 +639,7 @@ function SellPageContent() {
     formData.reswellPackageWeightOz,
   ])
 
-  // Count completed “board” fields for progress (same 9 as pre–freeform: photos, title, category, length, width, thick, condition, price, description).
+  // Count completed “board” fields for progress (10: photos, title, brand, category, length, width, thick, condition, price, description).
   const boardFieldsCompleted = useMemo(() => {
     const widthOk =
       formData.boardSkipOptionalDimensions || formData.boardWidthInches.trim()
@@ -651,6 +648,7 @@ function SellPageContent() {
     return [
       images.length >= LISTING_MIN_PHOTOS,
       formData.title.trim(),
+      formData.brand.trim(),
       formData.category.trim(),
       formData.boardLength.trim(),
       widthOk,
@@ -662,6 +660,7 @@ function SellPageContent() {
   }, [
     images.length,
     formData.title,
+    formData.brand,
     formData.category,
     formData.boardLength,
     formData.boardWidthInches,
@@ -2357,14 +2356,14 @@ function SellPageContent() {
             >
                 <SellFormSection
                   sectionId="sell-section-photos-title"
-                  title="Listing title & photos"
-                  description="Your title appears on the listing and in the URL — pick a brand from the directory in the field below, or type any name you like. Then add clear photos of your board."
+                  title="Title, brand & photos"
+                  description="Write a title in your own words — it’s what buyers see first and what we use in the link. Choose a brand from our directory (or type one) so we can link your listing to the right brand on the site. Then add clear photos of your board."
                 >
                 <div className="space-y-8">
                   <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-foreground">Listing title</h3>
+                      <h3 className="text-sm font-semibold text-foreground">Title</h3>
                       <div className="flex items-end justify-between gap-2">
-                        <Label htmlFor="title">Title *</Label>
+                        <Label htmlFor="listing-title">Title *</Label>
                         <span
                           className={cn(
                             "text-xs tabular-nums",
@@ -2377,43 +2376,78 @@ function SellPageContent() {
                           {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
                         </span>
                       </div>
-                      <SurfboardTitleIndexInput
-                        id="title"
-                        placeholder={`e.g., Channel Islands Dumpster Diver - 5'6"`}
+                      <Input
+                        id="listing-title"
+                        className="placeholder:text-muted-foreground/45"
+                        placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
                         value={formData.title}
-                        onChange={(title) => setFormData((f) => ({ ...f, title }))}
-                        boardLength={boardLengthFormatted}
-                        onSelectModel={(opt: IndexBoardModelSelection) => {
+                        onChange={(e) =>
+                          setFormData((f) => ({ ...f, title: e.target.value }))
+                        }
+                        autoComplete="off"
+                        required
+                        maxLength={LISTING_TITLE_MAX_LENGTH}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Shown on the listing card and detail page. Keep it clear and specific — we
+                        also use it in the public URL.
+                      </p>
+                  </div>
+
+                  <Separator className="bg-border" />
+
+                  <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-foreground">Brand</h3>
+                      <div className="flex items-end justify-between gap-2">
+                        <Label htmlFor="listing-brand">Brand *</Label>
+                      </div>
+                      <SurfboardTitleIndexInput
+                        id="listing-brand"
+                        placeholder="e.g., Channel Islands"
+                        value={formData.brand}
+                        onChange={(v) => {
                           setFormData((f) => {
+                            const clear =
+                              f.boardBrandId &&
+                              f.boardLinkedBrandName &&
+                              v.trim() !== f.boardLinkedBrandName.trim()
+                            if (!clear) return { ...f, brand: v }
                             return {
                               ...f,
-                              title: titleFromIndexModelPick(opt).slice(
-                                0,
-                                LISTING_TITLE_MAX_LENGTH,
-                              ),
-                              boardBrandId: opt.brandId,
-                              boardIndexBrandSlug: opt.brandSlug,
-                              boardIndexModelSlug: opt.modelSlug,
-                              boardIndexLabel: opt.label,
-                              brand: opt.brandName,
-                              boardLinkedBrandName: opt.brandName,
+                              brand: v,
+                              boardBrandId: "",
+                              boardIndexBrandSlug: "",
+                              boardIndexModelSlug: "",
+                              boardIndexLabel: "",
+                              boardLinkedBrandName: "",
                             }
                           })
+                        }}
+                        boardLength={boardLengthFormatted}
+                        onSelectModel={(opt: IndexBoardModelSelection) => {
+                          setFormData((f) => ({
+                            ...f,
+                            boardBrandId: opt.brandId,
+                            boardIndexBrandSlug: opt.brandSlug,
+                            boardIndexModelSlug: opt.modelSlug,
+                            boardIndexLabel: opt.label,
+                            brand: opt.brandName,
+                            boardLinkedBrandName: opt.brandName,
+                          }))
                         }}
                         required
                       />
                       <div className="space-y-1.5">
                         <p className="text-xs text-muted-foreground">
-                          Suggestions from our brand list — you can enter any brand; nothing has to
-                          match exactly.
+                          Search to pick a brand we already have — that links this listing to our
+                          brand data. You can also type a name; it doesn’t have to match the directory
+                          exactly.
                         </p>
                         <button
                           type="button"
                           className="text-left text-xs text-primary underline-offset-4 hover:underline"
                           onClick={() => {
-                            setTitleRequestBrandSeed(
-                              formData.brand.trim() || formData.title.trim(),
-                            )
+                            setTitleRequestBrandSeed(formData.brand.trim())
                             setTitleRequestBrandOpen(true)
                           }}
                         >
@@ -2643,11 +2677,11 @@ function SellPageContent() {
                           </p>
                         )}
                         <div className="flex items-center justify-between text-sm text-muted-foreground/45 pb-1 pt-1">
-                          <span>{boardFieldsCompleted} of 9 fields complete</span>
+                          <span>{boardFieldsCompleted} of 10 fields complete</span>
                           <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
                             <div
                               className="h-full rounded-full bg-primary transition-all duration-300"
-                              style={{ width: `${(boardFieldsCompleted / 9) * 100}%` }}
+                              style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
                             />
                           </div>
                         </div>

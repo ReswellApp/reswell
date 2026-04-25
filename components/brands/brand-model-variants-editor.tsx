@@ -16,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { FinBoxType } from "@/lib/validations/brand-model-variants"
+import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import type { BrandModelVariantCondition, FinBoxType } from "@/lib/validations/brand-model-variants"
 import { formatBrandModelVariantLabel } from "@/lib/utils/brand-model-dimensions"
 import { cn } from "@/lib/utils"
 
@@ -29,6 +30,7 @@ type VariantRow = {
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  condition: BrandModelVariantCondition
   image_url: string | null
 }
 
@@ -39,6 +41,7 @@ type VariantEditDraft = {
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  condition: BrandModelVariantCondition
 }
 
 export function BrandModelVariantsEditor({
@@ -64,6 +67,7 @@ export function BrandModelVariantsEditor({
   const [thicknessLabel, setThicknessLabel] = React.useState("")
   const [volumeLabel, setVolumeLabel] = React.useState("")
   const [finBoxType, setFinBoxType] = React.useState<FinBoxType>("futures")
+  const [condition, setCondition] = React.useState<BrandModelVariantCondition>("brand_new")
   /** Reused for new row when duplicating (file upload overrides on submit). */
   const [stagedImageUrl, setStagedImageUrl] = React.useState<string | null>(null)
   const [duplicateDraft, setDuplicateDraft] = React.useState(false)
@@ -127,6 +131,7 @@ export function BrandModelVariantsEditor({
     setThicknessLabel("")
     setVolumeLabel("")
     setFinBoxType("futures")
+    setCondition("brand_new")
     setStagedImageUrl(null)
     setDuplicateDraft(false)
     if (dimImageInputRef.current) dimImageInputRef.current.value = ""
@@ -144,6 +149,7 @@ export function BrandModelVariantsEditor({
       thickness_label: row.thickness_label,
       volume_label: row.volume_label,
       fin_box_type: row.fin_box_type,
+      condition: row.condition,
     })
   }
 
@@ -170,6 +176,7 @@ export function BrandModelVariantsEditor({
           thickness_label: T,
           volume_label: V,
           fin_box_type: editDraft.fin_box_type,
+          condition: editDraft.condition,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -193,11 +200,12 @@ export function BrandModelVariantsEditor({
     setThicknessLabel(row.thickness_label)
     setVolumeLabel(row.volume_label)
     setFinBoxType(row.fin_box_type)
+    setCondition(row.condition)
     setStagedImageUrl(row.image_url)
     setDuplicateDraft(true)
     if (dimImageInputRef.current) dimImageInputRef.current.value = ""
     toast.message("Copied to form", {
-      description: "Adjust fin, dimensions, or photo, then click Add variant.",
+      description: "Adjust fin, condition, dimensions, or photo, then click Add variant.",
     })
     window.requestAnimationFrame(() => {
       addFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
@@ -239,6 +247,7 @@ export function BrandModelVariantsEditor({
           thickness_label: T,
           volume_label: V,
           fin_box_type: finBoxType,
+          condition,
           image_url: imageUrl,
         }),
       })
@@ -311,7 +320,8 @@ export function BrandModelVariantsEditor({
         <div>
           <p className="text-sm font-semibold text-foreground">Variants · {modelName}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            Each row is one size plus a fin system (never combined). Duplicate dims are OK if fin type differs.
+            Each row is one size, fin system, and condition. Duplicate dimensions are fine when fin type and/or
+            condition differ.
           </p>
         </div>
         {!loading ? (
@@ -355,8 +365,8 @@ export function BrandModelVariantsEditor({
           {duplicateDraft ? (
             <div className="flex flex-col gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-relaxed text-foreground">
-                <span className="font-medium">Duplicate draft.</span> Change fin system or dimensions if this would
-                collide with an existing row, then save.
+                <span className="font-medium">Duplicate draft.</span> Change fin, condition, or dimensions if this
+                would collide with an existing row, then save.
               </p>
               {stagedImageUrl ? (
                 <div className="flex items-center gap-2 shrink-0">
@@ -444,6 +454,27 @@ export function BrandModelVariantsEditor({
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`var-cond-${brandModelId}`} className="text-xs">
+              Condition
+            </Label>
+            <Select
+              value={condition}
+              onValueChange={(v) => setCondition(v as BrandModelVariantCondition)}
+              disabled={addFormDisabled}
+            >
+              <SelectTrigger id={`var-cond-${brandModelId}`} className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LISTING_CONDITION_SELL_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
             <Label htmlFor={`var-img-${brandModelId}`} className="text-xs">
               Photo (optional)
@@ -473,7 +504,7 @@ export function BrandModelVariantsEditor({
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saved variants</p>
         {!loading && rows.length === 0 ? (
           <p className="mt-3 rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-6 text-center text-xs text-muted-foreground">
-            No variants yet. Add dimensions and a fin system above.
+            No variants yet. Add dimensions, fin system, and condition above.
           </p>
         ) : null}
         {!loading && rows.length > 0 ? (
@@ -612,6 +643,33 @@ export function BrandModelVariantsEditor({
                                   <SelectItem value="futures">Futures</SelectItem>
                                   <SelectItem value="fcs">FCS</SelectItem>
                                   <SelectItem value="single_fin">Single fin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1 sm:col-span-2">
+                              <Label htmlFor={`edit-cond-${d.id}`} className="text-[11px]">
+                                Condition
+                              </Label>
+                              <Select
+                                value={editDraft.condition}
+                                onValueChange={(v) =>
+                                  setEditDraft((prev) =>
+                                    prev && prev.id === d.id
+                                      ? { ...prev, condition: v as BrandModelVariantCondition }
+                                      : prev,
+                                  )
+                                }
+                                disabled={savingEditId === d.id}
+                              >
+                                <SelectTrigger id={`edit-cond-${d.id}`} className="h-8 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {LISTING_CONDITION_SELL_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>

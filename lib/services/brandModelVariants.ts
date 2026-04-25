@@ -8,8 +8,9 @@ import {
   type BrandModelVariantRow,
   type FinBoxType,
 } from "@/lib/db/brand-model-variants"
+import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
 
-export type { BrandModelVariantRow, FinBoxType }
+export type { BrandModelVariantRow, FinBoxType, BrandModelVariantCondition }
 
 export async function listBrandModelVariantsAdminService(
   supabase: SupabaseClient,
@@ -33,6 +34,7 @@ export async function createBrandModelVariantService(
     thickness_label: string
     volume_label: string
     fin_box_type: FinBoxType
+    condition: BrandModelVariantCondition
     image_url: string | null
     sort_order?: number
   },
@@ -68,6 +70,7 @@ export async function createBrandModelVariantService(
     thickness_label: input.thickness_label,
     volume_label: input.volume_label,
     fin_box_type: input.fin_box_type,
+    condition: input.condition,
     image_url: input.image_url,
     sort_order: sortOrder,
   })
@@ -87,6 +90,7 @@ export async function updateBrandModelVariantService(
     thickness_label?: string
     volume_label?: string
     fin_box_type?: FinBoxType
+    condition?: BrandModelVariantCondition
     image_url?: string | null
     sort_order?: number
   },
