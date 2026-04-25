@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS public.listings (
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   price DECIMAL(10, 2) NOT NULL,
-  condition TEXT CHECK (condition IN ('new', 'like_new', 'good', 'fair')),
+  condition TEXT CHECK (condition IN ('brand_new', 'excellent', 'very_good', 'good', 'fair', 'poor')),
   section TEXT NOT NULL CHECK (section IN ('new', 'surfboards')),
   shipping_available BOOLEAN DEFAULT FALSE,
   local_pickup BOOLEAN DEFAULT TRUE,
