@@ -2,19 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { loadStripe } from "@stripe/stripe-js"
-import {
-  Elements,
-  ExpressCheckoutElement,
-  PaymentElement,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js"
-import type {
-  Appearance,
-  Stripe,
-  StripeExpressCheckoutElementConfirmEvent,
-  StripeExpressCheckoutElementReadyEvent,
-} from "@stripe/stripe-js"
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import type { Appearance, Stripe } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
@@ -46,258 +35,29 @@ function getStripeBrowser() {
 }
 
 /**
- * Apple Pay only. Uses `ExpressCheckoutElement` with `applePay: "always"` so the button shows on every Stripe-supported
- * platform (including desktop Chrome on macOS), not just Safari. Still requires HTTPS and a
- * [registered payment-method domain](https://dashboard.stripe.com/settings/payment_method_domains) in production.
+ * Single Payment Element (card, Link, Klarna) plus Apple Pay via `wallets.applePay`.
+ * We intentionally do not mount a separate Express Checkout Element: two `<Elements>`
+ * trees for the same client secret can prevent `confirmPayment` from attaching the
+ * wallet payment method, which surfaces as Apple Pay failing after authorization.
  */
-function WalletPaymentRequestButton({
-  disabled,
-  onBusy,
-  onComplete,
-}: {
-  disabled: boolean
-  onBusy: (busy: boolean) => void
-  onComplete: (paymentIntentId: string) => Promise<void>
-}) {
-  const stripe = useStripe()
-  const elements = useElements()
-  const [applePayVisible, setApplePayVisible] = useState<boolean | null>(null)
-
-  const handleReady = useCallback((event: StripeExpressCheckoutElementReadyEvent) => {
-    const available = event.availablePaymentMethods
-    const hasApplePay = Boolean(available?.applePay)
-    if (typeof window !== "undefined") {
-      console.info("[ApplePay] ExpressCheckout availablePaymentMethods =", available)
-    }
-    setApplePayVisible(hasApplePay)
-  }, [])
-
-  const handleConfirm = useCallback(
-    async (event: StripeExpressCheckoutElementConfirmEvent) => {
-      if (!stripe || !elements) return
-      onBusy(true)
-      try {
-        const { error: submitError } = await elements.submit()
-        if (submitError) {
-          event.paymentFailed({
-            reason: "fail",
-            message: submitError.message ?? "Payment could not be completed.",
-          })
-          toast.error(submitError.message ?? "Apple Pay could not be started.")
-          return
-        }
-
-        const origin = window.location.origin
-        const { error, paymentIntent } = await stripe.confirmPayment({
-          elements,
-          confirmParams: { return_url: `${origin}/checkout/success` },
-          redirect: "if_required",
-        })
-
-        if (error) {
-          const detail = formatStripeConfirmError(error)
-          console.error("Apple Pay confirmPayment error", detail, error)
-          event.paymentFailed({
-            reason: "fail",
-            message:
-              (typeof error.message === "string" && error.message.trim()) ||
-              "Payment could not be completed.",
-          })
-          toast.error(error.message ?? "Apple Pay could not be completed.")
-          return
-        }
-
-        if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
-          await onComplete(paymentIntent.id)
-        }
-      } catch (err) {
-        console.error("Apple Pay error", err)
-        event.paymentFailed({ reason: "fail", message: "Something went wrong. Try again." })
-        toast.error("Apple Pay could not be completed. Try a card below.")
-      } finally {
-        onBusy(false)
-      }
-    },
-    [stripe, elements, onBusy, onComplete],
-  )
-
-  if (disabled) {
-    return null
-  }
-
-  return (
-    <>
-      <div className="space-y-2">
-        <p className="text-[12px] font-medium uppercase tracking-wide text-neutral-500">Apple Pay</p>
-        <div className="w-full min-h-12">
-          <ExpressCheckoutElement
-            options={{
-              paymentMethods: {
-                applePay: "always",
-                googlePay: "never",
-                link: "never",
-                paypal: "never",
-                amazonPay: "never",
-                klarna: "never",
-              },
-              buttonType: { applePay: "buy" },
-              buttonTheme: { applePay: "black" },
-              buttonHeight: 48,
-            }}
-            onReady={handleReady}
-            onConfirm={handleConfirm}
-          />
-        </div>
-        {applePayVisible === false && (
-          <p className="text-[11px] text-neutral-500">
-            Apple Pay isn’t available in this browser. Open <span className="font-medium">Safari</span> on a Mac or
-            iPhone with a card in Apple Wallet to see the button, or pay with card below.
-          </p>
-        )}
-      </div>
-      <div className="flex items-center gap-2 py-1">
-        <div className="h-px flex-1 bg-neutral-200" />
-        <span className="text-[12px] text-neutral-500">or pay another way</span>
-        <div className="h-px flex-1 bg-neutral-200" />
-      </div>
-    </>
-  )
-}
-
-/** Card + manual submit only — must render inside `<Elements>` so hooks resolve to the Payment Element instance. */
-function CardPaymentForm({
-  disabled,
-  busy,
-  setBusy,
-  elementLoadError,
-  setElementLoadError,
-  amountLabel,
-  submitButtonLabel,
-  submitButtonClassName,
-  onPaymentSuccess,
-}: {
-  disabled: boolean
-  busy: boolean
-  setBusy: (v: boolean) => void
-  elementLoadError: string | null
-  setElementLoadError: (msg: string) => void
-  amountLabel: string
-  submitButtonLabel?: string
-  submitButtonClassName?: string
-  onPaymentSuccess: (paymentIntentId: string) => Promise<void>
-}) {
-  const stripe = useStripe()
-  const elements = useElements()
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault()
-      if (!stripe || !elements) return
-
-      setBusy(true)
-      try {
-        const { error: submitError } = await elements.submit()
-        if (submitError) {
-          toast.error(submitError.message ?? "Check your payment details and try again.")
-          return
-        }
-
-        const origin = window.location.origin
-        const { error, paymentIntent } = await stripe.confirmPayment({
-          elements,
-          confirmParams: {
-            return_url: `${origin}/checkout/success`,
-          },
-          redirect: "if_required",
-        })
-
-        if (error) {
-          const detail = formatStripeConfirmError(error)
-          console.error("Stripe confirmPayment error", detail, error)
-          const userMsg =
-            (typeof error.message === "string" && error.message.trim()) ||
-            "Payment could not be confirmed. If this persists, confirm your Stripe publishable and secret keys are both test or both live from the same Stripe account (then redeploy so the publishable key matches the server)."
-          toast.error(userMsg)
-          return
-        }
-
-        if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
-          await onPaymentSuccess(paymentIntent.id)
-        }
-      } catch (err) {
-        console.error("Stripe checkout error", err)
-        toast.error("Something went wrong. Try again.")
-      } finally {
-        setBusy(false)
-      }
-    },
-    [stripe, elements, onPaymentSuccess, setBusy],
-  )
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement
-        options={{
-          paymentMethodOrder: ["card", "klarna", "link"],
-          wallets: { applePay: "never", googlePay: "never" },
-        }}
-        onLoadError={(event) => {
-          const stripeErr = event.error
-          const msg =
-            stripeErr?.message?.trim() ||
-            "Payment form failed to load. Use Stripe keys from the same account and the same mode (test vs live) for the publishable key and server secret."
-          setElementLoadError(msg)
-          console.error("Stripe PaymentElement load error", {
-            code: stripeErr?.code,
-            message: stripeErr?.message,
-            type: stripeErr?.type,
-          })
-          toast.error(msg)
-        }}
-      />
-      <Button
-        type="submit"
-        size="lg"
-        className={submitButtonClassName ?? "w-full gap-2"}
-        disabled={disabled || busy || !stripe || !!elementLoadError}
-      >
-        {busy ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Processing…
-          </>
-        ) : (
-          <>{submitButtonLabel ?? `Pay — ${amountLabel}`}</>
-        )}
-      </Button>
-    </form>
-  )
-}
-
-function StripePayButton({
-  stripePromise,
+function CheckoutForm({
   clientSecret,
-  appearance,
   amountLabel,
   disabled,
   submitButtonLabel,
   submitButtonClassName,
 }: {
-  stripePromise: Promise<Stripe | null>
   clientSecret: string
-  appearance: Appearance
   amountLabel: string
   disabled: boolean
   submitButtonLabel?: string
   submitButtonClassName?: string
 }) {
+  const stripe = useStripe()
+  const elements = useElements()
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [elementLoadError, setElementLoadError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setElementLoadError(null)
-  }, [clientSecret])
 
   const completeAfterSuccess = useCallback(
     async (paymentIntentId: string) => {
@@ -321,46 +81,94 @@ function StripePayButton({
     [router],
   )
 
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!stripe || !elements) return
+
+      setBusy(true)
+      try {
+        const { error: submitError } = await elements.submit()
+        if (submitError) {
+          toast.error(submitError.message ?? "Check your payment details and try again.")
+          return
+        }
+
+        const origin = window.location.origin
+        const { error, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          clientSecret,
+          confirmParams: {
+            return_url: `${origin}/checkout/success`,
+          },
+          redirect: "if_required",
+        })
+
+        if (error) {
+          const detail = formatStripeConfirmError(error)
+          console.error("Stripe confirmPayment error", detail, error)
+          const userMsg =
+            (typeof error.message === "string" && error.message.trim()) ||
+            "Payment could not be confirmed. If this persists, confirm your Stripe publishable and secret keys are both test or both live from the same Stripe account (then redeploy so the publishable key matches the server)."
+          toast.error(userMsg)
+          return
+        }
+
+        if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
+          await completeAfterSuccess(paymentIntent.id)
+        }
+      } catch (err) {
+        console.error("Stripe checkout error", err)
+        toast.error("Something went wrong. Try again.")
+      } finally {
+        setBusy(false)
+      }
+    },
+    [stripe, elements, clientSecret, completeAfterSuccess],
+  )
+
   return (
     <div className="space-y-4">
       {elementLoadError ? (
         <p className="text-sm text-destructive">{elementLoadError}</p>
       ) : null}
 
-      {/*
-        Wallet and card must use separate Elements instances. A single instance runs
-        `elements.submit()` for every mounted Element; an empty Payment Element would
-        invalidate Apple Pay / Express Checkout.
-      */}
-      <Elements
-        key={`${clientSecret}-express`}
-        stripe={stripePromise}
-        options={{ clientSecret, appearance }}
-      >
-        <WalletPaymentRequestButton
-          disabled={disabled || busy || !!elementLoadError}
-          onBusy={setBusy}
-          onComplete={completeAfterSuccess}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <PaymentElement
+          options={{
+            paymentMethodOrder: ["card", "klarna", "link"],
+            wallets: { applePay: "always", googlePay: "never" },
+          }}
+          onLoadError={(event) => {
+            const stripeErr = event.error
+            const msg =
+              stripeErr?.message?.trim() ||
+              "Payment form failed to load. Use Stripe keys from the same account and the same mode (test vs live) for the publishable key and server secret."
+            setElementLoadError(msg)
+            console.error("Stripe PaymentElement load error", {
+              code: stripeErr?.code,
+              message: stripeErr?.message,
+              type: stripeErr?.type,
+            })
+            toast.error(msg)
+          }}
         />
-      </Elements>
-
-      <Elements
-        key={`${clientSecret}-payment`}
-        stripe={stripePromise}
-        options={{ clientSecret, appearance }}
-      >
-        <CardPaymentForm
-          disabled={disabled}
-          busy={busy}
-          setBusy={setBusy}
-          elementLoadError={elementLoadError}
-          setElementLoadError={setElementLoadError}
-          amountLabel={amountLabel}
-          submitButtonLabel={submitButtonLabel}
-          submitButtonClassName={submitButtonClassName}
-          onPaymentSuccess={completeAfterSuccess}
-        />
-      </Elements>
+        <Button
+          type="submit"
+          size="lg"
+          className={submitButtonClassName ?? "w-full gap-2"}
+          disabled={disabled || busy || !stripe || !!elementLoadError}
+        >
+          {busy ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Processing…
+            </>
+          ) : (
+            <>{submitButtonLabel ?? `Pay — ${amountLabel}`}</>
+          )}
+        </Button>
+      </form>
     </div>
   )
 }
@@ -504,11 +312,11 @@ export function StripeCardCheckout({
     return <p className="text-sm text-muted-foreground">Card payment is unavailable.</p>
   }
 
-  const appearance =
+  const appearance: Appearance =
     resolvedTheme === "dark"
-      ? { theme: "night" as const, variables: { colorPrimary: "#fafafa" } }
+      ? { theme: "night", variables: { colorPrimary: "#fafafa" } }
       : {
-          theme: "stripe" as const,
+          theme: "stripe",
           variables: {
             colorPrimary: BRAND_CTA_BLUE,
             borderRadius: "6px",
@@ -516,15 +324,15 @@ export function StripeCardCheckout({
         }
 
   return (
-    <StripePayButton
-      stripePromise={stripePromise}
-      clientSecret={clientSecret}
-      appearance={appearance}
-      amountLabel={`$${price.toFixed(2)}`}
-      disabled={false}
-      submitButtonLabel={submitButtonLabel}
-      submitButtonClassName={submitButtonClassName}
-    />
+    <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance }}>
+      <CheckoutForm
+        clientSecret={clientSecret}
+        amountLabel={`$${price.toFixed(2)}`}
+        disabled={false}
+        submitButtonLabel={submitButtonLabel}
+        submitButtonClassName={submitButtonClassName}
+      />
+    </Elements>
   )
 }
 
