@@ -32,22 +32,12 @@ export function RequestBrandDialog({
 }: RequestBrandDialogProps) {
   const [name, setName] = React.useState("")
   const [shortDescription, setShortDescription] = React.useState("")
-  const [websiteUrl, setWebsiteUrl] = React.useState("")
-  const [founderName, setFounderName] = React.useState("")
-  const [leadShaperName, setLeadShaperName] = React.useState("")
-  const [locationLabel, setLocationLabel] = React.useState("")
-  const [about, setAbout] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
 
   React.useEffect(() => {
     if (!open) return
     setName(defaultName.trim())
     setShortDescription("")
-    setWebsiteUrl("")
-    setFounderName("")
-    setLeadShaperName("")
-    setLocationLabel("")
-    setAbout("")
   }, [open, defaultName])
 
   async function onSubmit(e: React.FormEvent) {
@@ -63,11 +53,6 @@ export function RequestBrandDialog({
       const fd = new FormData()
       fd.set("name", trimmedName)
       if (shortDescription.trim()) fd.set("shortDescription", shortDescription.trim())
-      if (websiteUrl.trim()) fd.set("websiteUrl", websiteUrl.trim())
-      if (founderName.trim()) fd.set("founderName", founderName.trim())
-      if (leadShaperName.trim()) fd.set("leadShaperName", leadShaperName.trim())
-      if (locationLabel.trim()) fd.set("locationLabel", locationLabel.trim())
-      if (about.trim()) fd.set("about", about.trim())
 
       const res = await fetch("/api/brand-requests", {
         method: "POST",
@@ -88,13 +73,13 @@ export function RequestBrandDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,720px)] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[min(90vh,520px)] overflow-y-auto sm:max-w-md">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>Request a brand</DialogTitle>
             <DialogDescription>
-              Only the brand name is required. Other fields are optional. We review requests before they appear in the
-              directory; you can publish your listing anytime without a directory link.
+              Enter the brand name to request. A short description is optional. We review requests before they appear
+              in the directory; you can publish your listing anytime without a directory link.
             </DialogDescription>
           </DialogHeader>
 
@@ -110,6 +95,7 @@ export function RequestBrandDialog({
                 required
                 maxLength={200}
                 autoComplete="organization"
+                autoFocus
               />
             </div>
             <div className="space-y-1.5">
@@ -124,69 +110,6 @@ export function RequestBrandDialog({
                 maxLength={2000}
                 placeholder="One or two sentences"
                 className="resize-y min-h-[3rem]"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rb-web" className="text-muted-foreground">
-                Website <span className="font-normal">(optional)</span>
-              </Label>
-              <Input
-                id="rb-web"
-                value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value)}
-                placeholder="https://"
-                inputMode="url"
-                maxLength={500}
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="rb-founder" className="text-muted-foreground">
-                  Founder <span className="font-normal">(optional)</span>
-                </Label>
-                <Input
-                  id="rb-founder"
-                  value={founderName}
-                  onChange={(e) => setFounderName(e.target.value)}
-                  maxLength={200}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="rb-shaper" className="text-muted-foreground">
-                  Lead shaper <span className="font-normal">(optional)</span>
-                </Label>
-                <Input
-                  id="rb-shaper"
-                  value={leadShaperName}
-                  onChange={(e) => setLeadShaperName(e.target.value)}
-                  maxLength={200}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rb-loc" className="text-muted-foreground">
-                Location <span className="font-normal">(optional)</span>
-              </Label>
-              <Input
-                id="rb-loc"
-                value={locationLabel}
-                onChange={(e) => setLocationLabel(e.target.value)}
-                placeholder="City, region"
-                maxLength={200}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rb-about" className="text-muted-foreground">
-                About <span className="font-normal">(optional)</span>
-              </Label>
-              <Textarea
-                id="rb-about"
-                value={about}
-                onChange={(e) => setAbout(e.target.value)}
-                rows={4}
-                maxLength={12000}
-                placeholder="Separate paragraphs with a blank line."
-                className="resize-y min-h-[5rem]"
               />
             </div>
           </div>
