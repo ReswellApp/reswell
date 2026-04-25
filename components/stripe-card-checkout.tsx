@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
-import type { Appearance, Stripe } from "@stripe/stripe-js"
+import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
@@ -35,10 +35,11 @@ function getStripeBrowser() {
 }
 
 /**
- * Single Payment Element (card, Link, Klarna) plus Apple Pay via `wallets.applePay`.
- * We intentionally do not mount a separate Express Checkout Element: two `<Elements>`
- * trees for the same client secret can prevent `confirmPayment` from attaching the
- * wallet payment method, which surfaces as Apple Pay failing after authorization.
+ * Single Payment Element (card, Link, Klarna) plus Apple Pay when Stripe can offer it (default; we only override Google Pay).
+ * Stripe.js only allows `wallets.applePay: "auto" | "never"`. We omit `applePay` so the default is `auto`.
+ * Apple Pay still requires a registered domain in Dashboard, HTTPS, Safari (or supported context), and a card in Wallet.
+ * We do not mount a separate Express Checkout Element: two `<Elements>` trees for the same client secret
+ * can break `confirmPayment` for wallets.
  */
 function CheckoutForm({
   clientSecret,
@@ -135,9 +136,12 @@ function CheckoutForm({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <PaymentElement
+          key="stripe-payment-element"
           options={{
             paymentMethodOrder: ["card", "klarna", "link"],
-            wallets: { applePay: "always", googlePay: "never" },
+            // Only set googlePay: omit applePay (defaults to "auto" in Stripe). Never pass the invalid
+            // Express-only value "always" here — it throws IntegrationError at runtime.
+            wallets: { googlePay: "never" },
           }}
           onLoadError={(event) => {
             const stripeErr = event.error

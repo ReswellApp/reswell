@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import Stripe from "stripe"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { computePeerCheckoutTotalsUsd } from "@/lib/services/peerListingShippingQuote"
@@ -174,16 +175,32 @@ export async function POST(request: NextRequest) {
       clientSecret: paymentIntent.client_secret,
     })
   } catch (err: unknown) {
-    const stripeErr = err as { type?: string; code?: string; message?: string; statusCode?: number }
-    console.error("[create-payment-intent] Stripe API error:", {
-      type: stripeErr.type,
-      code: stripeErr.code,
-      message: stripeErr.message,
-      statusCode: stripeErr.statusCode,
-    })
-    return NextResponse.json(
-      { error: stripeErr.message ?? "Could not create payment" },
-      { status: stripeErr.statusCode ?? 500 },
-    )
+    const logPayload =
+      err instanceof Stripe.errors.StripeError
+        ? { type: err.type, code: err.code, message: err.message, statusCode: err.statusCode }
+        : { message: String(err) }
+    console.error("[create-payment-intent] Stripe API error:", logPayload)
+
+    if (err instanceof Stripe.errors.StripeAuthenticationError) {
+      return NextResponse.json(
+        {
+          error:
+            "Payments are temporarily unavailable. Please try again later or contact support.",
+        },
+        { status: 503 },
+      )
+    }
+
+    let publicMessage = "Could not create payment"
+    let status = 500
+    if (err instanceof Stripe.errors.StripeError) {
+      publicMessage = err.message?.trim() || publicMessage
+      status = typeof err.statusCode === "number" && err.statusCode >= 400 ? err.statusCode : 500
+      if (/sk_(live|test)_/i.test(publicMessage) || /api key/i.test(publicMessage)) {
+        publicMessage = "Could not start payment. Please try again or contact support."
+      }
+    }
+
+    return NextResponse.json({ error: publicMessage }, { status })
   }
 }
