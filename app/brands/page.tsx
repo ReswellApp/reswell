@@ -35,7 +35,7 @@ export default async function BrandsPage({
       <section className="border-b border-border/80 bg-offwhite">
         <div className="container relative mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
           <div className="absolute right-4 top-10 sm:right-6 sm:top-12">
-            <BrandsListAdminBar brandRequestImportId={brandRequestImportId} />
+            <BrandsListAdminBar brandRequestImportId={brandRequestImportId} brands={brands} />
           </div>
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Directory</p>

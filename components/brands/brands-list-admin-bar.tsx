@@ -2,21 +2,30 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Plus } from "lucide-react"
+import { Layers2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   BrandEditorDialog,
   type BrandCreatePrefillFromRequest,
 } from "@/components/brands/brand-editor-dialog"
+import { BrandModelEditorDialog } from "@/components/brands/brand-model-editor-dialog"
 import { getAdminSession } from "@/app/actions/account"
 import { slugifyBrandName } from "@/lib/brands/slug"
+import type { BrandRow } from "@/lib/brands/types"
 
-export function BrandsListAdminBar({ brandRequestImportId }: { brandRequestImportId?: string }) {
+export function BrandsListAdminBar({
+  brandRequestImportId,
+  brands,
+}: {
+  brandRequestImportId?: string
+  brands: Pick<BrandRow, "id" | "name">[]
+}) {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = React.useState(false)
   const [loaded, setLoaded] = React.useState(false)
   const [open, setOpen] = React.useState(false)
+  const [modelsOpen, setModelsOpen] = React.useState(false)
   const [createPrefill, setCreatePrefill] = React.useState<BrandCreatePrefillFromRequest | null>(null)
   const handledImportIds = React.useRef(new Set<string>())
 
@@ -114,19 +123,31 @@ export function BrandsListAdminBar({ brandRequestImportId }: { brandRequestImpor
 
   return (
     <>
-      <Button
-        type="button"
-        size="icon"
-        variant="default"
-        className="h-10 w-10 shrink-0 rounded-full shadow-soft"
-        onClick={() => {
-          setCreatePrefill(null)
-          setOpen(true)
-        }}
-        aria-label="Add brand"
-      >
-        <Plus className="h-5 w-5" />
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="icon"
+          variant="default"
+          className="h-10 w-10 shrink-0 rounded-full shadow-soft"
+          onClick={() => {
+            setCreatePrefill(null)
+            setOpen(true)
+          }}
+          aria-label="Add brand"
+        >
+          <Plus className="h-5 w-5" />
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="secondary"
+          className="h-10 w-10 shrink-0 rounded-full border border-border/80 shadow-soft"
+          onClick={() => setModelsOpen(true)}
+          aria-label="Manage board models"
+        >
+          <Layers2 className="h-5 w-5" />
+        </Button>
+      </div>
       <BrandEditorDialog
         open={open}
         onOpenChange={(next) => {
@@ -137,6 +158,7 @@ export function BrandsListAdminBar({ brandRequestImportId }: { brandRequestImpor
         brand={null}
         createPrefill={createPrefill}
       />
+      <BrandModelEditorDialog open={modelsOpen} onOpenChange={setModelsOpen} brands={brands} />
     </>
   )
 }
