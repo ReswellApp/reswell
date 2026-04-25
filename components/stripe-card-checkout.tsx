@@ -35,9 +35,9 @@ function getStripeBrowser() {
 }
 
 /**
- * Single Payment Element (card, Link, Klarna) plus Apple Pay when Stripe can offer it (default; we only override Google Pay).
- * Stripe.js only allows `wallets.applePay: "auto" | "never"`. We omit `applePay` so the default is `auto`.
- * Apple Pay still requires a registered domain in Dashboard, HTTPS, Safari (or supported context), and a card in Wallet.
+ * Single Payment Element (card, Link, Klarna). Wallets: Apple Pay and Google Pay are hidden in the
+ * element (`wallets.*: "never"`) until we re-enable; flip `applePay` to `"auto"` to show it again.
+ * Server-side payment intent, `confirmPayment`, and finalize flow are unchanged.
  * We do not mount a separate Express Checkout Element: two `<Elements>` trees for the same client secret
  * can break `confirmPayment` for wallets.
  */
@@ -139,9 +139,8 @@ function CheckoutForm({
           key="stripe-payment-element"
           options={{
             paymentMethodOrder: ["card", "klarna", "link"],
-            // Only set googlePay: omit applePay (defaults to "auto" in Stripe). Never pass the invalid
-            // Express-only value "always" here — it throws IntegrationError at runtime.
-            wallets: { googlePay: "never" },
+            // Hide wallet buttons in PE until ready; re-enable with applePay: "auto" (and optionally googlePay).
+            wallets: { applePay: "never", googlePay: "never" },
           }}
           onLoadError={(event) => {
             const stripeErr = event.error
