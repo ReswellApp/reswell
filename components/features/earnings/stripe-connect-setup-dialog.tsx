@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { loadConnectAndInitialize } from "@stripe/connect-js"
-import type { StripeConnectInstance } from "@stripe/connect-js"
+import {
+  loadConnectAndInitialize,
+  type StripeConnectInstance,
+} from "@stripe/connect-js/pure"
 import {
   ConnectAccountManagement,
   ConnectAccountOnboarding,
