@@ -103,6 +103,7 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   buildSellListingDraft,
   clearSellListingDraft,
+  loadSellListingDraft,
   saveSellListingDraft,
   sellDraftFormLooksFilled,
   type SellListingDraftFormSnapshot,
@@ -289,6 +290,15 @@ function shippingPriceToFormValue(v: unknown): string {
   return String(n)
 }
 
+function sellFormStateFromIdbSnapshot(
+  snapshot: SellListingDraftFormSnapshot,
+): ReturnType<typeof createInitialSellFormData> {
+  return {
+    ...createInitialSellFormData(),
+    ...snapshot,
+  } as ReturnType<typeof createInitialSellFormData>
+}
+
 function createInitialSellFormData() {
   return {
     title: "",
@@ -330,19 +340,29 @@ function createInitialSellFormData() {
   }
 }
 
-function SellPageContent() {
+/** While set, IndexedDB restore must not run — coordinates with `clearSellListingDraft` after `?new=1`. */
+const SELL_SUPPRESS_IDB_RESTORE_KEY = "reswell.sell.suppressIdbRestoreOnce"
+
+type SellPageContentProps = {
+  editId: string | null
+  startFresh: boolean
+}
+
+function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const listingPhotosInputId = useId()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
-  const editId = searchParams.get("edit")
-  const startFresh = searchParams.get("new") === "1"
 
   /** Start blank: clear session hint only (no auto-redirect — avoids loading flash). */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
       clearSellServerDraftListingId()
+      try {
+        sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
+      } catch {
+        /* quota / private mode */
+      }
       router.replace("/sell")
     }
   }, [startFresh, router])
@@ -463,6 +483,8 @@ function SellPageContent() {
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
+  /** Slots from IndexedDB restore — optimized in useLayoutEffect after `optimizeAndUploadSlot` exists. */
+  const idbRestoreOptimizeQueueRef = useRef<ListingPhotoSlot[] | null>(null)
   const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
 
@@ -783,6 +805,11 @@ function SellPageContent() {
         data: { user },
       } = await supabase.auth.getUser()
       if (user) await clearSellListingDraft(user.id)
+      try {
+        sessionStorage.removeItem(SELL_SUPPRESS_IDB_RESTORE_KEY)
+      } catch {
+        /* ignore */
+      }
     })()
     clearSellServerDraftListingId()
     clearRemoteResumeDraftIdStorage()
@@ -1041,7 +1068,7 @@ function SellPageContent() {
     }
   }, [editId])
 
-  /** Blank /sell: load draft availability only — form stays empty until the user continues. */
+  /** Blank /sell: load draft availability; restore local IDB snapshot before hydrating so debounced persist never wipes it. */
   useEffect(() => {
     if (editId) {
       setDraftHydrated(true)
@@ -1049,13 +1076,82 @@ function SellPageContent() {
     }
     let cancelled = false
     void (async () => {
+      /** Capture before any await: layout may strip `?new=1` while draft hints load. */
+      const wantsBlankListing =
+        startFresh ||
+        (typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search).get("new") === "1")
       await reloadDeferredDraftHints()
+      if (cancelled) return
+
+      const suppressIdbForNewListing =
+        typeof window !== "undefined" &&
+        (() => {
+          try {
+            return sessionStorage.getItem(SELL_SUPPRESS_IDB_RESTORE_KEY) === "1"
+          } catch {
+            return false
+          }
+        })()
+
+      if (
+        !wantsBlankListing &&
+        !suppressIdbForNewListing &&
+        !getImpersonation()
+      ) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!cancelled && user) {
+          const record = await loadSellListingDraft(user.id)
+          if (record && !cancelled) {
+            setFormData(sellFormStateFromIdbSnapshot(record.formData))
+            const sid = record.serverListingId?.trim()
+            if (sid && /^[0-9a-f-]{36}$/i.test(sid)) {
+              setLocalServerDraftId(sid)
+              setSellServerDraftListingId(sid)
+            }
+            const blobs = Array.isArray(record.imageBlobs) ? record.imageBlobs : []
+            if (blobs.length > 0) {
+              const slots: ListingPhotoSlot[] = []
+              for (const b of blobs) {
+                try {
+                  const file = new File(
+                    [b.buffer],
+                    b.name || "photo.jpg",
+                    { type: b.type || "image/jpeg" },
+                  )
+                  assertListingOriginalSize(file)
+                  const clientId = crypto.randomUUID()
+                  const previewUrl = URL.createObjectURL(file)
+                  slots.push({
+                    clientId,
+                    previewUrl,
+                    optimizePhase: "running",
+                    uploadPhase: "idle",
+                    progressFull: 0,
+                    progressThumb: 0,
+                    sourceFile: file,
+                  })
+                } catch {
+                  /* skip oversized / invalid blob */
+                }
+              }
+              if (slots.length > 0) {
+                idbRestoreOptimizeQueueRef.current = slots
+                setImages(slots)
+              }
+            }
+          }
+        }
+      }
+
       if (!cancelled) setDraftHydrated(true)
     })()
     return () => {
       cancelled = true
     }
-  }, [editId, reloadDeferredDraftHints])
+  }, [editId, reloadDeferredDraftHints, startFresh, supabase])
 
   /** New listing (no ?edit=): prefill city/region from profile or a saved address when the field is empty. */
   useEffect(() => {
@@ -1064,7 +1160,7 @@ function SellPageContent() {
       void applySellLocationPrefillIfEmpty()
     }, 0)
     return () => window.clearTimeout(t)
-  }, [editId, draftHydrated, searchParams, applySellLocationPrefillIfEmpty])
+  }, [editId, draftHydrated, applySellLocationPrefillIfEmpty])
 
   /** Clear session draft hints when the account changes; reload /sell draft availability for the new user. */
   useEffect(() => {
@@ -1590,6 +1686,13 @@ function SellPageContent() {
       toast.error(msg)
     }
   }
+
+  useLayoutEffect(() => {
+    const q = idbRestoreOptimizeQueueRef.current
+    if (!q?.length) return
+    idbRestoreOptimizeQueueRef.current = null
+    for (const s of q) void optimizeAndUploadSlot(s)
+  }, [draftHydrated])
 
   function retryListingPhotoUpload(clientId: string) {
     const live = imagesRef.current.find((s) => s.clientId === clientId)
@@ -3755,14 +3858,26 @@ function SellPageContent() {
   )
 }
 
+const SellPageContent = React.memo(SellPageContentInner)
+
 export default function SellPage() {
   return (
-    <Suspense fallback={
+    <Suspense
+      fallback={
         <div className="flex min-h-[50vh] flex-1 w-full items-center justify-center bg-muted py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-    }>
-      <SellPageContent />
+      }
+    >
+      <SellSearchParamsBridge />
     </Suspense>
   )
+}
+
+/** Reads URL params only — keeps `useSearchParams` off the heavy form so router updates don’t remount upload state. */
+function SellSearchParamsBridge() {
+  const searchParams = useSearchParams()
+  const edit = searchParams.get("edit")
+  const fresh = searchParams.get("new") === "1"
+  return <SellPageContent editId={edit} startFresh={fresh} />
 }
