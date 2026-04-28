@@ -41,6 +41,31 @@ export type UserListingBoardModelDataRow = {
 const SELECT_ADMIN =
   "id, listing_id, listing_url, user_id, brand_id, catalog_brand_slug, catalog_model_slug, model_name, category_id, dimensions, length_label, width_label, thickness_label, volume_label, condition, listing_price, fins_setup, sold_price, sold_at, converted_brand_model_variant_id, converted_at, dismissed_at, admin_notes, created_at, updated_at"
 
+/** Joined `listings` row fields for admin board-catalog tools (prefill from live listing). */
+export type UserListingBoardModelDataListingEmbed = {
+  title: string | null
+  slug: string | null
+  status: string | null
+  board_type: string | null
+  price: number | string | null
+  condition: string | null
+  fins_setup: string | null
+  description: string | null
+  brand: string | null
+  length_feet: number | null
+  length_inches: number | null
+  length_inches_display: string | null
+  width: number | null
+  width_inches_display: string | null
+  thickness: number | null
+  thickness_inches_display: string | null
+  volume: number | null
+  volume_display: string | null
+}
+
+const LISTING_EMBED_FOR_ADMIN =
+  "title, slug, status, board_type, price, condition, fins_setup, description, brand, length_feet, length_inches, length_inches_display, width, width_inches_display, thickness, thickness_inches_display, volume, volume_display"
+
 function normalizeMoney(v: unknown): number | null {
   if (v == null) return null
   if (typeof v === "number" && Number.isFinite(v)) return v
@@ -63,6 +88,8 @@ export async function upsertUserListingBoardModelDataFromSellForm(
     listingUrl: string
     sellerUserId: string
     form: SellFormBoardCatalogSlice
+    /** Optional; omit on live publishes so concurrent sold_* updates are not cleared. */
+    sold_snapshot?: { sold_price: number; sold_at: string }
   },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const listingUrl = input.listingUrl.trim().slice(0, 2048)
@@ -113,6 +140,12 @@ export async function upsertUserListingBoardModelDataFromSellForm(
     listing_price: listingPrice,
     fins_setup: fins,
     updated_at: now,
+    ...(input.sold_snapshot
+      ? {
+          sold_price: input.sold_snapshot.sold_price,
+          sold_at: input.sold_snapshot.sold_at,
+        }
+      : {}),
   }
 
   const { error } = await supabase.from("user_listing_board_model_data").upsert(payload, {
@@ -137,7 +170,7 @@ export async function listUserListingBoardModelDataForAdminPage(
   },
 ): Promise<{
   rows: (UserListingBoardModelDataRow & {
-    listings?: { title: string | null; slug: string | null; status: string | null } | null
+    listings?: UserListingBoardModelDataListingEmbed | null
     brands?: { name: string | null; slug: string | null } | null
   })[]
   total: number
@@ -148,7 +181,7 @@ export async function listUserListingBoardModelDataForAdminPage(
   let q = supabase
     .from("user_listing_board_model_data")
     .select(
-      `${SELECT_ADMIN}, listings ( title, slug, status ), brands ( name, slug )`,
+      `${SELECT_ADMIN}, listings ( ${LISTING_EMBED_FOR_ADMIN} ), brands ( name, slug )`,
       { count: "exact" },
     )
 
@@ -168,8 +201,8 @@ export async function listUserListingBoardModelDataForAdminPage(
   const rows = ((data ?? []) as Record<string, unknown>[]).map((raw) => {
     const base = normalizeRow(raw)
     const listings = raw.listings as
-      | { title: string | null; slug: string | null; status: string | null }
-      | { title: string | null; slug: string | null; status: string | null }[]
+      | UserListingBoardModelDataListingEmbed
+      | UserListingBoardModelDataListingEmbed[]
       | null
       | undefined
     const listingsObj = Array.isArray(listings) ? listings[0] ?? null : listings ?? null
@@ -185,7 +218,7 @@ export async function listUserListingBoardModelDataForAdminPage(
       brands: brandsObj,
     }
   }) as (UserListingBoardModelDataRow & {
-    listings?: { title: string | null; slug: string | null; status: string | null } | null
+    listings?: UserListingBoardModelDataListingEmbed | null
     brands?: { name: string | null; slug: string | null } | null
   })[]
 

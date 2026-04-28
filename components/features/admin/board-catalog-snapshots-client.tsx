@@ -3,22 +3,32 @@
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { format } from "date-fns"
-import { Loader2 } from "lucide-react"
+import { Loader2, PlusCircle } from "lucide-react"
 import { toast } from "sonner"
 
 import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
 import { finBoxTypeFromListingFinsSetup } from "@/lib/utils/fins-setup-to-fin-box"
 import {
+  formatBoardType,
   formatCondition,
+  isListingSellableCondition,
   listingConditionFilterRows,
+  sellFormConditionValue,
 } from "@/lib/listing-labels"
+import { buildBoardCatalogDimensionLabelsFromListingRow } from "@/lib/utils/listing-board-catalog-snapshot"
 
-import type { UserListingBoardModelDataRow } from "@/lib/db/user-listing-board-model-data"
+import type {
+  UserListingBoardModelDataRow,
+  UserListingBoardModelDataListingEmbed,
+} from "@/lib/db/user-listing-board-model-data"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import { slugifyBrandName } from "@/lib/brands/slug"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -47,10 +57,7 @@ import {
 } from "@/components/ui/table"
 
 export type SnapshotAdminRowApi = UserListingBoardModelDataRow & {
-  listings?:
-    | { title: string | null; slug: string | null; status: string | null }
-    | null
-    | undefined
+  listings?: UserListingBoardModelDataListingEmbed | null | undefined
   brands?: { name: string | null; slug: string | null } | null | undefined
 }
 
@@ -68,6 +75,28 @@ type ApiListResponse =
 function listingHref(slug: string | null | undefined): string {
   const s = slug?.trim()
   return s ? `/l/${encodeURIComponent(s)}` : ""
+}
+
+function coalesceSnapshotThenListing(
+  snapshot: string | null | undefined,
+  fromListing: string | undefined,
+): string {
+  const a = (snapshot ?? "").trim()
+  if (a) return a
+  return (fromListing ?? "").trim()
+}
+
+function listingPriceAsNumber(
+  listing: UserListingBoardModelDataListingEmbed | null | undefined,
+): number | null {
+  if (!listing || listing.price == null) return null
+  const p = listing.price
+  if (typeof p === "number" && Number.isFinite(p) && p >= 0) return p
+  if (typeof p === "string") {
+    const n = Number.parseFloat(p.replace(/,/g, ""))
+    return Number.isFinite(n) && n >= 0 ? n : null
+  }
+  return null
 }
 
 export function BoardCatalogSnapshotsClient() {
@@ -105,7 +134,7 @@ export function BoardCatalogSnapshotsClient() {
   }, [load])
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-xl space-y-1">
           <h1 className="text-2xl font-bold text-foreground">Board catalog snapshots</h1>
@@ -115,7 +144,9 @@ export function BoardCatalogSnapshotsClient() {
             <Link href={`${BRANDS_BASE}`} className="text-primary underline-offset-2 hover:underline">
               brand models → variants
             </Link>
-            , or dismiss rows you do not catalog.
+            . Rows without a linked catalog brand can use{" "}
+            <span className="font-medium text-foreground">Attach brand</span> first. Dismiss rows you do not
+            catalog.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -143,121 +174,500 @@ export function BoardCatalogSnapshotsClient() {
       ) : rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">No rows yet.</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Saved</TableHead>
-              <TableHead>Listing</TableHead>
-              <TableHead>Brand</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead>Dimensions</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Sold</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="whitespace-nowrap text-muted-foreground text-xs">
-                  {format(new Date(r.updated_at ?? r.created_at), "MMM d yyyy")}
-                </TableCell>
-                <TableCell className="max-w-[220px]">
-                  {(() => {
-                    const snapUrl =
-                      typeof r.listing_url === "string" &&
-                      r.listing_url.trim().startsWith("/l/")
-                        ? r.listing_url.trim()
-                        : ""
-                    const lg = r.listings
-                    const slug = lg && typeof lg.slug === "string" ? lg.slug : null
-                    const title = lg && typeof lg.title === "string" ? lg.title : "Listing"
-                    const href = snapUrl || listingHref(slug)
-                    return href ? (
-                      <Link href={href} className="text-primary truncate font-medium hover:underline">
-                        {title}
-                      </Link>
-                    ) : (
-                      <span className="truncate">{title}</span>
-                    )
-                  })()}
-                </TableCell>
-                <TableCell>
-                  {(() => {
-                    const b = r.brands?.name?.trim()
-                    const slug = r.brands?.slug?.trim()
-                    const label = r.brand_id ? b ?? "Brand ID set" : "—"
-                    return slug ? (
-                      <Link
-                        href={`${BRANDS_BASE}/${encodeURIComponent(slug)}`}
-                        className="hover:underline"
-                      >
-                        {label}
-                      </Link>
-                    ) : (
-                      label
-                    )
-                  })()}
-                </TableCell>
-                <TableCell className="max-w-[140px] text-sm">
-                  {r.model_name?.trim() ?? "—"}
-                </TableCell>
-                <TableCell className="max-w-[200px] text-xs leading-snug">{r.dimensions || "—"}</TableCell>
-                <TableCell className="whitespace-nowrap tabular-nums text-sm">${r.listing_price.toFixed(2)}</TableCell>
-                <TableCell className="whitespace-nowrap text-xs">
-                  {r.sold_price != null ? `$${Number(r.sold_price).toFixed(2)}` : "—"}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-xs">
-                  {r.converted_brand_model_variant_id ? (
-                    <span className="text-emerald-600">Converted</span>
-                  ) : r.dismissed_at ? (
-                    <span>Dismissed</span>
-                  ) : (
-                    <span className="text-muted-foreground">Open</span>
-                  )}
-                </TableCell>
-                <TableCell className="space-y-2 text-right">
-                  <ConvertCatalogSnapshotDialog
-                    row={r}
-                    disabled={Boolean(r.dismissed_at) || Boolean(r.converted_brand_model_variant_id)}
-                    onConverted={() => void load()}
-                  />
-                  {!r.dismissed_at && !r.converted_brand_model_variant_id && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full md:w-auto"
-                      onClick={async () => {
-                        const res = await fetch(
-                          `/api/admin/user-listing-board-model-data/${encodeURIComponent(r.id)}`,
-                          {
-                            method: "PATCH",
-                            credentials: "include",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ dismissed: true }),
-                          },
-                        )
-                        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string }
-                        if (!res.ok || !j.ok) {
-                          toast.error(j.error || "Could not dismiss")
-                          return
-                        }
-                        toast.success("Dismissed")
-                        void load()
-                      }}
-                    >
-                      Dismiss
-                    </Button>
-                  )}
-                </TableCell>
+        <div className="bg-card border-border w-full min-w-0 max-w-full rounded-lg border shadow-sm">
+          <Table className="w-full max-w-full table-fixed">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[12%] whitespace-nowrap px-2 py-2 text-left text-xs font-semibold">
+                  Saved
+                </TableHead>
+                <TableHead className="w-[20%] px-2 py-2 text-xs font-semibold">Listing</TableHead>
+                <TableHead className="w-[11%] px-2 py-2 text-xs font-semibold">Brand</TableHead>
+                <TableHead className="w-[12%] px-2 py-2 text-xs font-semibold" title="Model label">
+                  Model
+                </TableHead>
+                <TableHead className="w-[10%] px-2 py-2 text-xs font-semibold" title="Dimensions">
+                  Dims
+                </TableHead>
+                <TableHead className="w-[7%] px-2 py-2 text-xs font-semibold">Price</TableHead>
+                <TableHead className="w-[7%] px-2 py-2 text-xs font-semibold">Sold</TableHead>
+                <TableHead className="w-[7%] px-2 py-2 text-xs font-semibold">Status</TableHead>
+                <TableHead className="w-[14%] px-2 py-2 text-right text-xs font-semibold">
+                  Actions
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id} className="align-top">
+                  <TableCell className="w-[12%] overflow-hidden px-2 py-2 align-top text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                    {format(new Date(r.updated_at ?? r.created_at), "MMM d yyyy")}
+                  </TableCell>
+                  <TableCell className="max-w-0 px-2 py-2 align-top">
+                    {(() => {
+                      const snapUrl =
+                        typeof r.listing_url === "string" &&
+                        r.listing_url.trim().startsWith("/l/")
+                          ? r.listing_url.trim()
+                          : ""
+                      const lg = r.listings
+                      const slug = lg && typeof lg.slug === "string" ? lg.slug : null
+                      const title = lg && typeof lg.title === "string" ? lg.title : "Listing"
+                      const href = snapUrl || listingHref(slug)
+                      return href ? (
+                        <Link
+                          href={href}
+                          className="text-primary block max-w-full truncate text-sm font-medium leading-snug hover:underline"
+                          title={title}
+                        >
+                          {title}
+                        </Link>
+                      ) : (
+                        <span
+                          className="block max-w-full truncate text-sm font-medium leading-snug"
+                          title={title}
+                        >
+                          {title}
+                        </span>
+                      )
+                    })()}
+                  </TableCell>
+                  <TableCell className="max-w-0 px-2 py-2 align-top text-sm">
+                    {(() => {
+                      const b = r.brands?.name?.trim()
+                      const slug = r.brands?.slug?.trim()
+                      const label = r.brand_id ? b ?? "Brand ID set" : "—"
+                      return slug ? (
+                        <Link
+                          href={`${BRANDS_BASE}/${encodeURIComponent(slug)}`}
+                          className="block max-w-full truncate hover:underline"
+                          title={label}
+                        >
+                          {label}
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground block max-w-full truncate" title={label}>
+                          {label}
+                        </span>
+                      )
+                    })()}
+                  </TableCell>
+                  <TableCell className="max-w-0 px-2 py-2 align-top text-sm leading-snug">
+                    {(() => {
+                      const label = r.model_name?.trim()
+                      const bt = r.listings?.board_type?.trim()
+                      return (
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <span className="truncate font-medium" title={label || undefined}>
+                            {label || "—"}
+                          </span>
+                          {bt ? (
+                            <span
+                              className="text-muted-foreground truncate text-[11px]"
+                              title={`${formatBoardType(bt)}${!label ? " · no index label" : ""}`}
+                            >
+                              {formatBoardType(bt)}
+                              {!label ? " · no label" : ""}
+                            </span>
+                          ) : !label ? (
+                            <span
+                              className="text-muted-foreground truncate text-[11px]"
+                              title="No model index on listing — use Convert to add catalog model"
+                            >
+                              No index label
+                            </span>
+                          ) : null}
+                        </div>
+                      )
+                    })()}
+                  </TableCell>
+                  <TableCell className="max-w-0 px-2 py-2 align-top text-xs leading-snug text-muted-foreground">
+                    <span
+                      className="line-clamp-2 break-words [overflow-wrap:anywhere]"
+                      title={r.dimensions || undefined}
+                    >
+                      {r.dimensions || "—"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="max-w-0 px-2 py-2 align-top text-sm tabular-nums whitespace-nowrap">
+                    ${r.listing_price.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="max-w-0 px-2 py-2 align-top text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                    {r.sold_price != null ? `$${Number(r.sold_price).toFixed(2)}` : "—"}
+                  </TableCell>
+                  <TableCell className="max-w-0 px-2 py-2 align-top text-xs whitespace-nowrap">
+                    {r.converted_brand_model_variant_id ? (
+                      <span className="text-emerald-600">Converted</span>
+                    ) : r.dismissed_at ? (
+                      <span>Dismissed</span>
+                    ) : (
+                      <span className="text-muted-foreground">Open</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="w-[14%] px-2 py-2 align-top">
+                    <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5">
+                      {!r.brand_id?.trim() &&
+                        !r.dismissed_at &&
+                        !r.converted_brand_model_variant_id && (
+                          <AttachCatalogBrandDialog row={r} onAttached={() => void load()} />
+                        )}
+                      <ConvertCatalogSnapshotDialog
+                        row={r}
+                        disabled={Boolean(r.dismissed_at) || Boolean(r.converted_brand_model_variant_id)}
+                        onConverted={() => void load()}
+                      />
+                      {!r.dismissed_at && !r.converted_brand_model_variant_id && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-auto w-full shrink-0 whitespace-normal px-2 py-1.5 text-xs leading-snug"
+                          onClick={async () => {
+                            const res = await fetch(
+                              `/api/admin/user-listing-board-model-data/${encodeURIComponent(r.id)}`,
+                              {
+                                method: "PATCH",
+                                credentials: "include",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ dismissed: true }),
+                              },
+                            )
+                            const j = (await res.json().catch(() => ({}))) as {
+                              ok?: boolean
+                              error?: string
+                            }
+                            if (!res.ok || !j.ok) {
+                              toast.error(j.error || "Could not dismiss")
+                              return
+                            }
+                            toast.success("Dismissed")
+                            void load()
+                          }}
+                        >
+                          Dismiss
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
+  )
+}
+
+type CatalogBrandPickerRow = { id: string; name: string; slug: string }
+
+function AttachCatalogBrandDialog({
+  row,
+  onAttached,
+}: {
+  row: SnapshotAdminRowApi
+  onAttached: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [attachMode, setAttachMode] = useState<"existing" | "create">("existing")
+  const [brands, setBrands] = useState<CatalogBrandPickerRow[]>([])
+  const [loadingBrands, setLoadingBrands] = useState(false)
+  const [pickBrandId, setPickBrandId] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [newBrandName, setNewBrandName] = useState("")
+  const [newBrandSlug, setNewBrandSlug] = useState("")
+  const [slugTouched, setSlugTouched] = useState(false)
+  const [newBrandShortDescription, setNewBrandShortDescription] = useState("")
+
+  useEffect(() => {
+    if (!open) return
+
+    let cancelled = false
+    async function loadBrands() {
+      setLoadingBrands(true)
+      try {
+        const res = await fetch("/api/admin/brands", { credentials: "include" })
+        const j = (await res.json()) as {
+          data?: { rows?: CatalogBrandPickerRow[] }
+          error?: string
+        }
+        if (!res.ok || !Array.isArray(j.data?.rows)) {
+          toast.error(typeof j.error === "string" ? j.error : "Could not load brands")
+          if (!cancelled) setBrands([])
+          return
+        }
+        if (!cancelled) setBrands(j.data.rows)
+      } catch {
+        if (!cancelled) setBrands([])
+        toast.error("Could not load brands")
+      } finally {
+        if (!cancelled) setLoadingBrands(false)
+      }
+    }
+    void loadBrands()
+    return () => {
+      cancelled = true
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    setPickBrandId("")
+    setAttachMode("existing")
+    setSlugTouched(false)
+    const hint =
+      row.listings?.brand?.trim() ||
+      row.brands?.name?.trim() ||
+      ""
+    setNewBrandName(hint)
+    setNewBrandSlug(hint ? slugifyBrandName(hint) : "")
+    setNewBrandShortDescription("")
+  }, [open, row.id, row.listings?.brand, row.brands?.name])
+
+  useEffect(() => {
+    if (!open || attachMode !== "create" || slugTouched) return
+    setNewBrandSlug(slugifyBrandName(newBrandName))
+  }, [open, attachMode, slugTouched, newBrandName])
+
+  async function attachById(brandId: string) {
+    const res = await fetch(
+      `/api/admin/user-listing-board-model-data/${encodeURIComponent(row.id)}`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brand_id: brandId.trim() }),
+      },
+    )
+    const j = (await res.json().catch(() => ({}))) as {
+      ok?: boolean
+      error?: string
+      data?: { brand?: { name: string } }
+    }
+    if (!res.ok || !j.ok) {
+      toast.error(typeof j.error === "string" ? j.error : "Could not attach brand")
+      return false
+    }
+    toast.success(
+      j.data?.brand?.name ? `Attached catalog brand: ${j.data.brand.name}` : "Catalog brand attached",
+    )
+    setOpen(false)
+    onAttached()
+    return true
+  }
+
+  async function saveExisting() {
+    if (!pickBrandId.trim()) {
+      toast.error("Select a catalog brand")
+      return
+    }
+    setSaving(true)
+    try {
+      await attachById(pickBrandId.trim())
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function saveCreate() {
+    const name = newBrandName.trim()
+    const slug = newBrandSlug.trim()
+    if (!name) {
+      toast.error("Brand name is required")
+      return
+    }
+    if (!slug) {
+      toast.error("URL slug is required")
+      return
+    }
+    setCreating(true)
+    try {
+      const res = await fetch("/api/admin/brands", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          name,
+          short_description: newBrandShortDescription.trim() || null,
+          website_url: null,
+          logo_url: null,
+          founder_name: null,
+          lead_shaper_name: null,
+          location_label: null,
+          model_count: 0,
+          about_paragraphs: [],
+        }),
+      })
+      const j = (await res.json().catch(() => ({}))) as {
+        id?: string
+        slug?: string
+        error?: string
+      }
+      if (!res.ok) {
+        toast.error(typeof j.error === "string" ? j.error : "Could not create brand")
+        return
+      }
+      const newId = typeof j.id === "string" ? j.id : ""
+      if (!newId) {
+        toast.error("Brand was created but did not return an id — refresh and pick it from the list")
+        return
+      }
+      toast.success("Brand created — attaching…")
+      await attachById(newId)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const primaryDisabled =
+    saving ||
+    creating ||
+    (attachMode === "existing" &&
+      (loadingBrands || brands.length === 0 || !pickBrandId.trim())) ||
+    (attachMode === "create" && (!newBrandName.trim() || !newBrandSlug.trim()))
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-auto w-full whitespace-normal px-2 py-1.5 text-xs leading-snug">
+          Attach brand
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-4 overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Attach catalog brand</DialogTitle>
+        </DialogHeader>
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Links this snapshot and its listing to a brand in{" "}
+          <Link href={BRANDS_BASE} className="text-primary underline-offset-2 hover:underline">
+            the catalog
+          </Link>{" "}
+          so you can convert it to a model variant.
+        </p>
+
+        <div className="space-y-2">
+          <Label>Source</Label>
+          <RadioGroup
+            value={attachMode}
+            onValueChange={(v) => {
+              const m = v as "existing" | "create"
+              setAttachMode(m)
+              if (m === "create") {
+                setSlugTouched(false)
+              }
+            }}
+            className="gap-3"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="existing" id="attach-brand-existing" />
+              <Label htmlFor="attach-brand-existing" className="font-normal">
+                Link to existing brand
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="create" id="attach-brand-create" />
+              <Label htmlFor="attach-brand-create" className="inline-flex items-center gap-1.5 font-normal">
+                <PlusCircle className="text-muted-foreground h-4 w-4" />
+                Create new brand and attach
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {attachMode === "existing" ? (
+          <>
+            {loadingBrands ? (
+              <p className="text-muted-foreground flex items-center gap-2 text-xs">
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                Loading brands…
+              </p>
+            ) : brands.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No brands in the directory yet. Switch to{" "}
+                <span className="text-foreground font-medium">Create new brand</span> above.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <Label>Catalog brand</Label>
+                <Select value={pickBrandId} onValueChange={setPickBrandId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose brand…" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {brands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="attach-new-brand-name">Brand name</Label>
+              <Input
+                id="attach-new-brand-name"
+                value={newBrandName}
+                onChange={(e) => setNewBrandName(e.target.value)}
+                placeholder="e.g. as it should appear in the catalog"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attach-new-brand-slug">URL slug</Label>
+              <Input
+                id="attach-new-brand-slug"
+                value={newBrandSlug}
+                onChange={(e) => {
+                  setSlugTouched(true)
+                  setNewBrandSlug(e.target.value)
+                }}
+                placeholder="lowercase-with-hyphens"
+                autoComplete="off"
+              />
+              <p className="text-muted-foreground text-[11px]">
+                Filled automatically from the name; edit if the slug is taken.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attach-new-brand-desc">Short description (optional)</Label>
+              <Input
+                id="attach-new-brand-desc"
+                value={newBrandShortDescription}
+                onChange={(e) => setNewBrandShortDescription(e.target.value)}
+                placeholder="One line for the brand profile"
+              />
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void (attachMode === "existing" ? saveExisting() : saveCreate())}
+            disabled={primaryDisabled}
+          >
+            {saving || creating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {creating ? "Creating…" : "Saving…"}
+              </>
+            ) : attachMode === "create" ? (
+              "Create & attach"
+            ) : (
+              "Save"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -274,6 +684,8 @@ export function ConvertCatalogSnapshotDialog({
 }) {
   const brandId = row.brand_id?.trim() ?? ""
   const brandSlugForModels = row.brands?.slug?.trim()
+  const listingBoardTypeLabel = formatBoardType(row.listings?.board_type)
+  const snapshotModelLabel = row.model_name?.trim() ?? ""
 
   const [open, setOpen] = useState(false)
   const [loadingModels, setLoadingModels] = useState(false)
@@ -298,6 +710,7 @@ export function ConvertCatalogSnapshotDialog({
 
   useEffect(() => {
     if (!open || !brandId) return
+    setBrandModels([])
 
     let cancelled = false
     async function fetchModels() {
@@ -308,11 +721,19 @@ export function ConvertCatalogSnapshotDialog({
           { credentials: "include" },
         )
         const j = (await res.json()) as {
-          data?: { rows?: BrandModelItem[] }
+          data?: { rows?: unknown[] }
           error?: string
         }
-        const list = Array.isArray(j.data?.rows) ? j.data!.rows! : []
-        if (!cancelled) setBrandModels(list ?? [])
+        const raw = Array.isArray(j.data?.rows) ? j.data!.rows! : []
+        const list: BrandModelItem[] = raw
+          .map((r) => {
+            if (typeof r !== "object" || r === null) return null
+            const rec = r as { id?: unknown; name?: unknown }
+            if (typeof rec.id !== "string" || typeof rec.name !== "string") return null
+            return { id: rec.id, name: rec.name }
+          })
+          .filter((x): x is BrandModelItem => x !== null)
+        if (!cancelled) setBrandModels(list)
       } catch {
         if (!cancelled) setBrandModels([])
       } finally {
@@ -327,25 +748,86 @@ export function ConvertCatalogSnapshotDialog({
 
   useEffect(() => {
     if (!open) return
-    const sl = row.length_label ?? ""
-    const sw = row.width_label ?? ""
-    const st = row.thickness_label ?? ""
-    const sv = row.volume_label ?? ""
-    setFinBox(finBoxTypeFromListingFinsSetup(row.fins_setup ?? null))
-    setCondition(row.condition as BrandModelVariantCondition)
-    setLengthLabel(sl)
-    setWidthLabel(sw)
-    setThicknessLabel(st)
-    setVolumeLabel(sv)
+    const lg = row.listings ?? undefined
+
+    const hasListingDims =
+      lg != null &&
+      (lg.length_feet != null ||
+        lg.length_inches != null ||
+        Boolean(lg.length_inches_display?.trim()) ||
+        lg.width != null ||
+        Boolean(lg.width_inches_display?.trim()) ||
+        lg.thickness != null ||
+        Boolean(lg.thickness_inches_display?.trim()) ||
+        lg.volume != null ||
+        Boolean(lg.volume_display?.trim()))
+
+    const dimsFromListing = hasListingDims
+      ? buildBoardCatalogDimensionLabelsFromListingRow({
+          length_feet: lg.length_feet,
+          length_inches: lg.length_inches,
+          length_inches_display: lg.length_inches_display,
+          width: lg.width,
+          width_inches_display: lg.width_inches_display,
+          thickness: lg.thickness,
+          thickness_inches_display: lg.thickness_inches_display,
+          volume: lg.volume,
+          volume_display: lg.volume_display,
+        })
+      : null
+
+    setLengthLabel(coalesceSnapshotThenListing(row.length_label, dimsFromListing?.length_label))
+    setWidthLabel(coalesceSnapshotThenListing(row.width_label, dimsFromListing?.width_label))
+    setThicknessLabel(coalesceSnapshotThenListing(row.thickness_label, dimsFromListing?.thickness_label))
+    setVolumeLabel(coalesceSnapshotThenListing(row.volume_label, dimsFromListing?.volume_label))
+
+    const finsRaw = lg?.fins_setup?.trim() || row.fins_setup?.trim() || null
+    setFinBox(finBoxTypeFromListingFinsSetup(finsRaw))
+
+    let nextCondition = row.condition as BrandModelVariantCondition
+    if (lg?.condition?.trim()) {
+      const normalized = sellFormConditionValue(lg.condition)
+      if (isListingSellableCondition(normalized)) {
+        nextCondition = normalized
+      }
+    }
+    setCondition(nextCondition)
+
+    const livePrice = listingPriceAsNumber(lg)
+    const fallbackSnapPrice =
+      row.listing_price != null && Number.isFinite(row.listing_price) ? row.listing_price : null
+    const priceToShow = livePrice ?? fallbackSnapPrice
+    setCatalogPrice(priceToShow != null && priceToShow >= 0 ? String(priceToShow) : "")
+
     setBrandModelId("")
-    setNewModelName(row.model_name?.trim() ?? "")
-    setNewModelDescription("")
-    const priceStr =
-      row.listing_price != null && Number.isFinite(row.listing_price) ? String(row.listing_price) : ""
-    setCatalogPrice(priceStr)
+    const snapModel = row.model_name?.trim() ?? ""
+    const titleHint =
+      !snapModel && lg?.title?.trim() ? lg.title.trim().slice(0, 200) : ""
+    setNewModelName(snapModel || titleHint)
+
+    const desc = lg?.description?.trim() ?? ""
+    setNewModelDescription(desc.length > 8000 ? desc.slice(0, 8000) : desc)
+
     setMode("existing_model")
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when opening snapshot
   }, [open, row])
+
+  useEffect(() => {
+    if (!open || loadingModels || !brandId) return
+    if (brandModels.length === 0) {
+      setMode("new_model")
+      setBrandModelId("")
+    }
+  }, [open, loadingModels, brandModels.length, brandId])
+
+  useEffect(() => {
+    if (!open || loadingModels) return
+    const needle = row.model_name?.trim().toLowerCase()
+    if (!needle) return
+    const hit = brandModels.find((m) => m.name.trim().toLowerCase() === needle)
+    if (!hit) return
+    setBrandModelId((prev) => (prev === "" ? hit.id : prev))
+  }, [open, loadingModels, brandModels, row.model_name])
 
   async function onSubmit() {
     if (!brandId) {
@@ -353,16 +835,6 @@ export function ConvertCatalogSnapshotDialog({
       setOpen(false)
       return
     }
-    if (
-      !lengthLabel.trim() ||
-      !widthLabel.trim() ||
-      !thicknessLabel.trim() ||
-      !volumeLabel.trim()
-    ) {
-      toast.error("All dimension labels are required")
-      return
-    }
-
     let body: Record<string, unknown>
 
     let priceParsed: number | null | undefined
@@ -398,6 +870,13 @@ export function ConvertCatalogSnapshotDialog({
       const nm = newModelName.trim()
       if (!nm) {
         toast.error("Enter a model name")
+        return
+      }
+      const dup = brandModels.find((m) => m.name.trim().toLowerCase() === nm.toLowerCase())
+      if (dup) {
+        toast.error(
+          `"${dup.name}" is already a model line — use "Attach variant to existing model line" and select it.`,
+        )
         return
       }
       body = {
@@ -444,16 +923,42 @@ export function ConvertCatalogSnapshotDialog({
     }
   }
 
+  const catalogLinesSummary =
+    brandModels.length <= 4
+      ? brandModels.map((m) => m.name.trim()).join(", ")
+      : `${brandModels
+          .slice(0, 3)
+          .map((m) => m.name.trim())
+          .join(", ")} +${brandModels.length - 3} more`
+
+  const newModelTrimmed = newModelName.trim()
+  const newModelDuplicateHit =
+    mode === "new_model" && newModelTrimmed.length > 0
+      ? brandModels.find(
+          (m) => m.name.trim().toLowerCase() === newModelTrimmed.toLowerCase(),
+        ) ?? null
+      : null
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="secondary" size="sm" disabled={disabled || !brandId}>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="h-auto w-full whitespace-normal px-2 py-1.5 text-xs leading-snug"
+          disabled={disabled || !brandId}
+        >
           Convert
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-4 overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-4 overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Convert snapshot to catalog variant</DialogTitle>
+          <DialogDescription className="text-muted-foreground text-left text-xs leading-relaxed">
+            The catalog brand is already set on this row. You are attaching one variant (dims, fins, condition,
+            price) under a model line — pick an existing line or create a new line name first.
+          </DialogDescription>
         </DialogHeader>
 
         {!brandId ? (
@@ -484,57 +989,178 @@ export function ConvertCatalogSnapshotDialog({
               ) : null}
             </p>
 
-            <div className="space-y-2">
-              <Label>Mode</Label>
-              <RadioGroup value={mode} onValueChange={(v) => setMode(v as "existing_model" | "new_model")}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem id="snap-exist" value="existing_model" />
-                  <Label htmlFor="snap-exist">Link to existing catalog model</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem id="snap-new" value="new_model" />
-                  <Label htmlFor="snap-new">Create new catalog model, then add this variant row</Label>
-                </div>
-              </RadioGroup>
+            <div className="bg-muted/40 border-border space-y-2 rounded-md border px-3 py-2">
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                <span className="font-medium text-foreground">Model line</span> is the product family in the
+                catalog (e.g. board name / shape line). <span className="font-medium text-foreground">Variant</span>{" "}
+                is this specific size/build (fields below). The listing&apos;s{" "}
+                <span className="font-medium text-foreground">saved model index</span> is a seller tag — not board
+                type.
+                {listingBoardTypeLabel ? (
+                  <>
+                    {" "}
+                    Board type on listing:{" "}
+                    <span className="font-medium text-foreground">{listingBoardTypeLabel}</span>
+                  </>
+                ) : null}
+              </p>
+              <div>
+                <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">
+                  Saved index / model label
+                </p>
+                <p className="text-foreground mt-0.5 text-sm font-medium">
+                  {snapshotModelLabel || "Not set — use existing line or type a new line name below"}
+                </p>
+                {row.catalog_model_slug?.trim() ? (
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Index slug: <span className="text-foreground">{row.catalog_model_slug.trim()}</span>
+                  </p>
+                ) : null}
+              </div>
             </div>
 
-            {mode === "existing_model" ? (
-              <div className="space-y-2">
-                <Label>Catalog model</Label>
-                {loadingModels ? (
-                  <p className="text-muted-foreground text-xs flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Loading models…
-                  </p>
-                ) : brandModels.length === 0 ? (
-                  <p className="text-destructive text-xs">No catalog models yet for this brand.</p>
-                ) : (
-                  <Select value={brandModelId} onValueChange={setBrandModelId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pick a model…" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {brandModels.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "existing_model" ? "secondary" : "outline"}
+                className="justify-center sm:flex-1"
+                disabled={loadingModels || brandModels.length === 0}
+                onClick={() => {
+                  setMode("existing_model")
+                }}
+              >
+                Attach variant to existing model line
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "new_model" ? "secondary" : "outline"}
+                className="justify-center sm:flex-1"
+                onClick={() => {
+                  setMode("new_model")
+                  setBrandModelId("")
+                }}
+              >
+                <PlusCircle className="mr-2 h-4 w-4 shrink-0" />
+                Create new model line + variant
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label className="text-foreground">
+                  {mode === "existing_model" ? (
+                    <>
+                      Catalog model lines
+                      {!loadingModels ? (
+                        <span className="text-muted-foreground font-normal"> ({brandModels.length})</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>When creating a new line</>
+                  )}
+                </Label>
               </div>
-            ) : (
+              {loadingModels ? (
+                <p className="text-muted-foreground flex items-center gap-2 text-xs">
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> Loading models…
+                </p>
+              ) : brandModels.length === 0 ? (
+                <div className="border-destructive/30 bg-destructive/5 rounded-md border px-3 py-2 text-xs">
+                  <p className="text-foreground font-medium">No model lines in the catalog for this brand yet.</p>
+                  <p className="text-muted-foreground mt-1">
+                    Use <span className="text-foreground font-medium">Create new model line + variant</span> above
+                    to name the first line and attach this board&apos;s variant in one step.
+                  </p>
+                </div>
+              ) : mode === "existing_model" ? (
+                <>
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    Pick the line this board belongs to. Dims, fins, and price below become a new variant under
+                    that line.
+                  </p>
+                  <div className="border-input max-h-52 overflow-y-auto rounded-md border">
+                    <ul className="divide-border divide-y">
+                      {brandModels.map((m) => {
+                        const selected = brandModelId === m.id
+                        return (
+                          <li key={m.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBrandModelId(m.id)
+                              }}
+                              className={cn(
+                                "hover:bg-accent/60 w-full cursor-pointer px-3 py-2.5 text-left text-sm transition-colors",
+                                selected && "bg-accent",
+                              )}
+                            >
+                              <span className="font-medium">{m.name}</span>
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                  {!brandModelId ? (
+                    <p className="text-amber-700 dark:text-amber-400 text-xs">Select a model line to continue.</p>
+                  ) : null}
+                </>
+              ) : (
+                <div className="border-border bg-muted/30 space-y-2 rounded-md border px-3 py-2 text-xs">
+                  <p className="text-foreground font-medium">This board already matches a catalog line?</p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    This brand already has {brandModels.length} model line
+                    {brandModels.length === 1 ? "" : "s"} ({catalogLinesSummary}). If this listing is just another
+                    size or build of one of those, use{" "}
+                    <button
+                      type="button"
+                      className="text-primary font-medium underline underline-offset-2"
+                      onClick={() => setMode("existing_model")}
+                    >
+                      Attach variant to existing model line
+                    </button>{" "}
+                    and select it. Use the new name field only when the product family does not exist yet.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {mode === "new_model" ? (
               <>
+                {newModelDuplicateHit ? (
+                  <div className="border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30 rounded-md border px-3 py-2 text-xs">
+                    <p className="text-foreground font-medium">
+                      &ldquo;{newModelDuplicateHit.name}&rdquo; is already a model line
+                    </p>
+                    <p className="text-muted-foreground mt-1 leading-relaxed">
+                      To add this board as a variant under that line, switch to{" "}
+                      <button
+                        type="button"
+                        className="text-primary font-medium underline underline-offset-2"
+                        onClick={() => {
+                          setMode("existing_model")
+                          setBrandModelId(newModelDuplicateHit.id)
+                        }}
+                      >
+                        Attach variant to existing model line
+                      </button>{" "}
+                      and select it. The field below is only for naming a line that is not in the catalog yet.
+                    </p>
+                  </div>
+                ) : null}
                 <div className="space-y-2">
-                  <Label htmlFor="snap-nm-name">New model name</Label>
+                  <Label htmlFor="snap-nm-name">New catalog model line name</Label>
                   <Input
                     id="snap-nm-name"
                     value={newModelName}
                     onChange={(e) => setNewModelName(e.target.value)}
-                    placeholder=""
+                    placeholder="Name for the new product family (not board type)"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="snap-nm-desc">Description (optional)</Label>
+                  <Label htmlFor="snap-nm-desc">Model description (optional)</Label>
                   <textarea
                     id="snap-nm-desc"
                     className="border-input placeholder:text-muted-foreground focus-visible:ring-ring min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2"
@@ -543,23 +1169,23 @@ export function ConvertCatalogSnapshotDialog({
                   />
                 </div>
               </>
-            )}
+            ) : null}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Length label</Label>
+                <Label>Length label (optional)</Label>
                 <Input value={lengthLabel} onChange={(e) => setLengthLabel(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Width label</Label>
+                <Label>Width label (optional)</Label>
                 <Input value={widthLabel} onChange={(e) => setWidthLabel(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Thickness label</Label>
+                <Label>Thickness label (optional)</Label>
                 <Input value={thicknessLabel} onChange={(e) => setThicknessLabel(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Volume label</Label>
+                <Label>Volume label (optional)</Label>
                 <Input value={volumeLabel} onChange={(e) => setVolumeLabel(e.target.value)} />
               </div>
             </div>
@@ -606,14 +1232,18 @@ export function ConvertCatalogSnapshotDialog({
                 placeholder="Defaults from snapshot listing price when omitted"
               />
               <p className="text-muted-foreground text-xs">
-                Stored on the catalog variant. Leave blank to use this snapshot&apos;s listing price ({row.listing_price != null ? `$${Number(row.listing_price).toFixed(2)}` : ""}).
+                Stored on the catalog variant. Prefilled from the live listing price when available; leave blank
+                to fall back to this row&apos;s snapshot price (
+                {row.listing_price != null ? `$${Number(row.listing_price).toFixed(2)}` : "none"}).
               </p>
             </div>
 
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Snapshot listing condition:&nbsp;
-              <span className="text-foreground">{formatCondition(row.condition)}</span> · fins_setup:&nbsp;
-              <span className="text-foreground">{row.fins_setup?.trim() || "—"}</span>
+              Prefilled condition / fins (listing when present):&nbsp;
+              <span className="text-foreground">{formatCondition(condition)}</span> · fins_setup:&nbsp;
+              <span className="text-foreground">
+                {row.listings?.fins_setup?.trim() || row.fins_setup?.trim() || "—"}
+              </span>
             </p>
           </div>
         )}
@@ -622,13 +1252,24 @@ export function ConvertCatalogSnapshotDialog({
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={() => void onSubmit()} disabled={submitting || !brandId}>
+          <Button
+            type="button"
+            onClick={() => void onSubmit()}
+            disabled={
+              submitting ||
+              !brandId ||
+              (mode === "existing_model" && brandModels.length > 0 && !brandModelId.trim()) ||
+              Boolean(mode === "new_model" && newModelDuplicateHit)
+            }
+          >
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Converting…
               </>
+            ) : mode === "new_model" ? (
+              "Create model & variant"
             ) : (
-              "Create variant"
+              "Add catalog variant"
             )}
           </Button>
         </DialogFooter>

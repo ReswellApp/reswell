@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { BrandCatalogImagePickButton } from "@/components/brands/brand-catalog-image-picker-dialog"
 import {
   Select,
   SelectContent,
@@ -516,18 +517,31 @@ export function BrandModelVariantsEditor({
             <Label htmlFor={`var-img-${brandModelId}`} className="text-xs">
               Photo (optional)
             </Label>
-            <Input
-              id={`var-img-${brandModelId}`}
-              ref={dimImageInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              disabled={addFormDisabled}
-              className="h-9 cursor-pointer text-sm file:mr-2 file:text-xs"
-              onChange={() => {
-                const f = dimImageInputRef.current?.files?.[0]
-                if (f) setStagedImageUrl(null)
-              }}
-            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Input
+                id={`var-img-${brandModelId}`}
+                ref={dimImageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                disabled={addFormDisabled}
+                className="h-9 min-w-0 flex-1 cursor-pointer text-sm file:mr-2 file:text-xs"
+                onChange={() => {
+                  const f = dimImageInputRef.current?.files?.[0]
+                  if (f) setStagedImageUrl(null)
+                }}
+              />
+              <BrandCatalogImagePickButton
+                brandId={brandId}
+                focusBrandModelId={brandModelId}
+                disabled={addFormDisabled}
+                title={`Choose a catalog photo for ${modelName}`}
+                onSelected={(url) => {
+                  setStagedImageUrl(url)
+                  if (dimImageInputRef.current) dimImageInputRef.current.value = ""
+                }}
+                className="w-full shrink-0 sm:w-auto"
+              />
+            </div>
           </div>
         </div>
         <Button type="submit" size="sm" className="gap-1.5" disabled={addFormDisabled}>
@@ -794,6 +808,16 @@ export function BrandModelVariantsEditor({
                               <Copy className="h-3 w-3" />
                               Duplicate
                             </Button>
+                            <BrandCatalogImagePickButton
+                              brandId={brandId}
+                              focusBrandModelId={brandModelId}
+                              disabled={rowBusy || !!editDraft}
+                              title={`Choose a catalog photo for ${modelName}`}
+                              label="Catalog"
+                              size="sm"
+                              className="h-8 gap-1 px-2.5 text-[11px]"
+                              onSelected={(url) => void patchVariantImage(d.id, url)}
+                            />
                             <Button
                               type="button"
                               variant="outline"
@@ -807,7 +831,7 @@ export function BrandModelVariantsEditor({
                               ) : (
                                 <ImagePlus className="h-3 w-3" />
                               )}
-                              {d.image_url ? "Replace photo" : "Add photo"}
+                              {d.image_url ? "Replace" : "Add photo"}
                             </Button>
                           </div>
                         </div>

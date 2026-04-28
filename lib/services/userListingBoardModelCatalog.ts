@@ -12,14 +12,17 @@ import {
 
 const uuid = z.string().trim().uuid()
 
+/** Labels may be empty when snapshot data is incomplete; persisted as trimmed text (incl. ""). */
+const convertSnapshotDimLabel = z.string().trim().max(80)
+
 export const convertUserListingBoardModelDataBodySchema = z.discriminatedUnion("mode", [
   z.object({
     mode: z.literal("existing_model"),
     brand_model_id: uuid,
-    length_label: z.string().trim().min(1).max(80),
-    width_label: z.string().trim().min(1).max(80),
-    thickness_label: z.string().trim().min(1).max(80),
-    volume_label: z.string().trim().min(1).max(80),
+    length_label: convertSnapshotDimLabel,
+    width_label: convertSnapshotDimLabel,
+    thickness_label: convertSnapshotDimLabel,
+    volume_label: convertSnapshotDimLabel,
     fin_box_type: finBoxTypeSchema,
     condition: adminBrandModelVariantCreateBodySchema.shape.condition,
     price: z.union([z.number().positive(), z.null()]).optional(),
@@ -28,10 +31,10 @@ export const convertUserListingBoardModelDataBodySchema = z.discriminatedUnion("
     mode: z.literal("new_model"),
     new_model_name: z.string().trim().min(1).max(200),
     new_model_description: z.union([z.string().max(8000), z.null()]).optional(),
-    length_label: z.string().trim().min(1).max(80),
-    width_label: z.string().trim().min(1).max(80),
-    thickness_label: z.string().trim().min(1).max(80),
-    volume_label: z.string().trim().min(1).max(80),
+    length_label: convertSnapshotDimLabel,
+    width_label: convertSnapshotDimLabel,
+    thickness_label: convertSnapshotDimLabel,
+    volume_label: convertSnapshotDimLabel,
     fin_box_type: finBoxTypeSchema,
     condition: adminBrandModelVariantCreateBodySchema.shape.condition,
     price: z.union([z.number().positive(), z.null()]).optional(),

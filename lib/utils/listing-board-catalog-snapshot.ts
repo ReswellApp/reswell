@@ -1,4 +1,8 @@
-import { formatBoardLengthForTitle } from "@/lib/board-measurements"
+import {
+  formatBoardLengthForTitle,
+  formatBoardLengthInputFromParts,
+  formatDecimalDimension,
+} from "@/lib/board-measurements"
 
 function dimensionInchesLabel(raw: string): string {
   const t = raw.trim().replace(/\s+/g, " ")
@@ -71,4 +75,62 @@ export function buildBoardCatalogDimensionLabels(
     thickness_label,
     volume_label,
   }
+}
+
+/** Same labels as {@link buildBoardCatalogDimensionLabels}, built from a `listings` row (live seller data). */
+export type ListingRowDimensionSource = {
+  length_feet?: number | null
+  length_inches?: number | null
+  length_inches_display?: string | null
+  width?: number | null
+  width_inches_display?: string | null
+  thickness?: number | null
+  thickness_inches_display?: string | null
+  volume?: number | null
+  volume_display?: string | null
+}
+
+export function buildBoardCatalogDimensionLabelsFromListingRow(
+  listing: ListingRowDimensionSource,
+): BoardCatalogDimensionLabels {
+  const feetStr =
+    listing.length_feet != null && Number.isFinite(Number(listing.length_feet))
+      ? String(Math.trunc(Number(listing.length_feet)))
+      : ""
+  const inchForLength =
+    listing.length_inches_display?.trim() ||
+    (listing.length_inches != null &&
+    Number.isFinite(Number(listing.length_inches)) &&
+    Number(listing.length_inches) !== 0
+      ? String(listing.length_inches)
+      : "")
+  const boardLength = formatBoardLengthInputFromParts(feetStr, inchForLength)
+
+  const boardWidthInches =
+    listing.width_inches_display?.trim() ||
+    (listing.width != null && Number.isFinite(Number(listing.width))
+      ? formatDecimalDimension(Number(listing.width))
+      : "") ||
+    ""
+
+  const boardThicknessInches =
+    listing.thickness_inches_display?.trim() ||
+    (listing.thickness != null && Number.isFinite(Number(listing.thickness))
+      ? formatDecimalDimension(Number(listing.thickness))
+      : "") ||
+    ""
+
+  const boardVolumeL =
+    listing.volume_display?.trim() ||
+    (listing.volume != null && Number.isFinite(Number(listing.volume))
+      ? formatDecimalDimension(Number(listing.volume))
+      : "") ||
+    ""
+
+  return buildBoardCatalogDimensionLabels({
+    boardLength,
+    boardWidthInches,
+    boardThicknessInches,
+    boardVolumeL,
+  })
 }

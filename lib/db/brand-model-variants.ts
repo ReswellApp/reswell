@@ -101,6 +101,18 @@ export async function insertBrandModelVariant(
     if (error.code === "23503") {
       return { ok: false, error: "Model or brand not found", code: error.code }
     }
+    if (
+      error.code === "23514" &&
+      typeof error.message === "string" &&
+      error.message.includes("brand_model_variants_labels_nonempty")
+    ) {
+      return {
+        ok: false,
+        error:
+          "This database still requires every dimension label to be filled. Apply migration 20260628130000_brand_model_variants_optional_dim_labels, or temporarily enter non-empty values for all four labels.",
+        code: error.code,
+      }
+    }
     console.error("insertBrandModelVariant:", error.message)
     return { ok: false, error: error.message }
   }

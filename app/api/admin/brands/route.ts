@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { listBrands } from "@/lib/brands/server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 
@@ -9,6 +10,22 @@ const MAX_PARAGRAPH = 20000
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/** Picker list for admin tools (board catalog attach-brand, etc.). */
+export async function GET() {
+  const gate = await requireAdmin()
+  if (!gate.ok) return gate.response
+
+  const rows = await listBrands(gate.ctx.supabase)
+  return NextResponse.json(
+    {
+      data: {
+        rows: rows.map((b) => ({ id: b.id, name: b.name, slug: b.slug })),
+      },
+    },
+    { status: 200 },
+  )
+}
 
 function parseBody(body: unknown): {
   slug: string
@@ -161,5 +178,5 @@ export async function POST(request: Request) {
   revalidatePath(BRANDS_BASE)
   revalidatePath(`${BRANDS_BASE}/${data.slug}`)
   void syncBrandToIndex(supabase, data.id)
-  return NextResponse.json({ slug: data.slug })
+  return NextResponse.json({ slug: data.slug, id: data.id })
 }

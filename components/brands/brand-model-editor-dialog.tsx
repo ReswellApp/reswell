@@ -49,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { BrandCatalogImagePickButton } from "@/components/brands/brand-catalog-image-picker-dialog"
 import { BrandModelVariantsEditor } from "@/components/brands/brand-model-variants-editor"
 import { formatBrandModelVariantLabel, parseOptionalPriceInput } from "@/lib/utils/brand-model-dimensions"
 import { cn } from "@/lib/utils"
@@ -108,6 +109,8 @@ export function BrandModelEditorDialog({
   const [createCondition, setCreateCondition] = React.useState<BrandModelVariantCondition>("brand_new")
   const [createPrice, setCreatePrice] = React.useState("")
   const createDimImageRef = React.useRef<HTMLInputElement>(null)
+  const [newModelCatalogImageUrl, setNewModelCatalogImageUrl] = React.useState<string | null>(null)
+  const [queueVariantCatalogImageUrl, setQueueVariantCatalogImageUrl] = React.useState<string | null>(null)
 
   const loadModels = React.useCallback(async (bid: string) => {
     if (!bid) {
@@ -147,6 +150,8 @@ export function BrandModelEditorDialog({
     setCreateFinBoxType("futures")
     setCreatePrice("")
     if (createDimImageRef.current) createDimImageRef.current.value = ""
+    setNewModelCatalogImageUrl(null)
+    setQueueVariantCatalogImageUrl(null)
     if (brands.length === 1) {
       setBrandId(brands[0].id)
     } else {
@@ -234,6 +239,8 @@ export function BrandModelEditorDialog({
         const uploaded = await uploadDimensionImageFile(file)
         if (!uploaded) return
         imageUrl = uploaded
+      } else if (queueVariantCatalogImageUrl) {
+        imageUrl = queueVariantCatalogImageUrl
       }
       setPendingCreateVariants((prev) => [
         ...prev,
@@ -255,6 +262,7 @@ export function BrandModelEditorDialog({
       setCreateDimV("")
       setCreatePrice("")
       if (createDimImageRef.current) createDimImageRef.current.value = ""
+      setQueueVariantCatalogImageUrl(null)
       toast.success("Variant queued — it will save when you click Add model")
     })()
   }
@@ -310,6 +318,8 @@ export function BrandModelEditorDialog({
           return
         }
         imageUrl = uploaded
+      } else if (newModelCatalogImageUrl) {
+        imageUrl = newModelCatalogImageUrl
       }
 
       const res = await fetch("/api/admin/brand-models", {
@@ -372,6 +382,7 @@ export function BrandModelEditorDialog({
       setModelName("")
       setDescription("")
       if (modelImageInputRef.current) modelImageInputRef.current.value = ""
+      setNewModelCatalogImageUrl(null)
       setPendingCreateVariants([])
       setCreateDimL("")
       setCreateDimW("")
@@ -417,13 +428,13 @@ export function BrandModelEditorDialog({
           const t = e.target as HTMLElement | null
           // Popover content is portaled outside the dialog node; without this, Radix treats
           // clicks on the brand list as “outside” the dialog and the selection never applies.
-          if (t?.closest("[data-brand-model-picker]")) {
+          if (t?.closest("[data-brand-model-picker]") || t?.closest("[data-brand-catalog-image-picker]")) {
             e.preventDefault()
           }
         }}
         onFocusOutside={(e) => {
           const t = e.target as HTMLElement | null
-          if (t?.closest("[data-brand-model-picker]")) {
+          if (t?.closest("[data-brand-model-picker]") || t?.closest("[data-brand-catalog-image-picker]")) {
             e.preventDefault()
           }
         }}
@@ -548,13 +559,44 @@ export function BrandModelEditorDialog({
 
           <div className="space-y-2">
             <Label htmlFor="brand-model-image">Model image (optional)</Label>
-            <Input
-              id="brand-model-image"
-              ref={modelImageInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="cursor-pointer text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium"
-            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+              <Input
+                id="brand-model-image"
+                ref={modelImageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={() => setNewModelCatalogImageUrl(null)}
+                className="min-h-10 flex-1 cursor-pointer text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium"
+              />
+              <BrandCatalogImagePickButton
+                brandId={brandId}
+                disabled={saving || !brandId}
+                title="Choose a model or variant photo from this brand"
+                onSelected={(url) => {
+                  setNewModelCatalogImageUrl(url)
+                  if (modelImageInputRef.current) modelImageInputRef.current.value = ""
+                }}
+                className="shrink-0"
+              />
+            </div>
+            {newModelCatalogImageUrl ? (
+              <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-2">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-border/40">
+                  <Image src={newModelCatalogImageUrl} alt="" fill className="object-cover" sizes="56px" />
+                </div>
+                <p className="min-w-0 flex-1 text-xs text-muted-foreground">Using catalog image. Upload a file above to replace.</p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 shrink-0 text-xs"
+                  disabled={saving}
+                  onClick={() => setNewModelCatalogImageUrl(null)}
+                >
+                  Clear
+                </Button>
+              </div>
+            ) : null}
             <p className="text-xs text-muted-foreground">PNG, JPG, WebP, or GIF — max 5MB. Stored in brand assets.</p>
           </div>
 
@@ -685,18 +727,49 @@ export function BrandModelEditorDialog({
                 className="h-9 text-sm"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
               <Label htmlFor="create-dim-img" className="text-xs">
                 Image for this size (optional)
               </Label>
-              <Input
-                id="create-dim-img"
-                ref={createDimImageRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                disabled={saving || !brandId}
-                className="h-9 cursor-pointer text-sm file:mr-2 file:text-xs"
-              />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  id="create-dim-img"
+                  ref={createDimImageRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  disabled={saving || !brandId}
+                  onChange={() => setQueueVariantCatalogImageUrl(null)}
+                  className="h-9 min-w-0 flex-1 cursor-pointer text-sm file:mr-2 file:text-xs"
+                />
+                <BrandCatalogImagePickButton
+                  brandId={brandId}
+                  disabled={saving || !brandId}
+                  title="Choose a photo from this brand’s catalog"
+                  onSelected={(url) => {
+                    setQueueVariantCatalogImageUrl(url)
+                    if (createDimImageRef.current) createDimImageRef.current.value = ""
+                  }}
+                  className="w-full shrink-0 sm:w-auto"
+                />
+              </div>
+              {queueVariantCatalogImageUrl ? (
+                <div className="flex items-center gap-2 rounded-md border border-border/50 bg-muted/20 px-2 py-1.5">
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-muted">
+                    <Image src={queueVariantCatalogImageUrl} alt="" fill className="object-cover" sizes="40px" />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">Catalog image selected · upload to replace</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-7 text-[11px]"
+                    disabled={saving}
+                    onClick={() => setQueueVariantCatalogImageUrl(null)}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              ) : null}
             </div>
             <Button
               type="button"
@@ -930,21 +1003,32 @@ export function BrandModelEditorDialog({
                                 void handleRowImageFile(m.id, f)
                               }}
                             />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-9 gap-1.5 text-xs"
-                              disabled={imagePatchingId === m.id || deletingId === m.id}
-                              onClick={() => document.getElementById(`brand-model-row-image-${m.id}`)?.click()}
-                            >
-                              {imagePatchingId === m.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <ImagePlus className="h-3.5 w-3.5" />
-                              )}
-                              {m.image_url ? "Image" : "Add photo"}
-                            </Button>
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              <BrandCatalogImagePickButton
+                                brandId={m.brand_id}
+                                focusBrandModelId={m.id}
+                                disabled={imagePatchingId === m.id || deletingId === m.id}
+                                title={`Choose a catalog photo for ${m.name}`}
+                                label="Catalog"
+                                onSelected={(url) => void patchModelImage(m.id, url)}
+                                className="h-9"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-9 gap-1.5 text-xs"
+                                disabled={imagePatchingId === m.id || deletingId === m.id}
+                                onClick={() => document.getElementById(`brand-model-row-image-${m.id}`)?.click()}
+                              >
+                                {imagePatchingId === m.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <ImagePlus className="h-3.5 w-3.5" />
+                                )}
+                                {m.image_url ? "Replace" : "Add photo"}
+                              </Button>
+                            </div>
                             <Button
                               type="button"
                               variant="ghost"
