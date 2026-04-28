@@ -35,6 +35,7 @@ export async function createBrandModelVariantService(
     volume_label: string
     fin_box_type: FinBoxType
     condition: BrandModelVariantCondition
+    price?: number | null
     image_url: string | null
     sort_order?: number
   },
@@ -71,6 +72,7 @@ export async function createBrandModelVariantService(
     volume_label: input.volume_label,
     fin_box_type: input.fin_box_type,
     condition: input.condition,
+    price: input.price ?? null,
     image_url: input.image_url,
     sort_order: sortOrder,
   })
@@ -91,6 +93,7 @@ export async function updateBrandModelVariantService(
     volume_label?: string
     fin_box_type?: FinBoxType
     condition?: BrandModelVariantCondition
+    price?: number | null
     image_url?: string | null
     sort_order?: number
   },

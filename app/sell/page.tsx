@@ -749,9 +749,13 @@ function SellPageContent() {
     })
   }, [editId, supabase])
 
-  /** `/sell?new=1` — blank form; existing server draft row (if any) stays in the dropdown. */
+  /**
+   * `/sell?new=1` — blank form; existing server draft row (if any) stays in the dropdown.
+   * Depends on `startFresh` (boolean), not the `searchParams` object identity — unstable
+   * param references otherwise re-trigger this reset during photo upload.
+   */
   useEffect(() => {
-    if (searchParams.get("new") !== "1") return
+    if (!startFresh) return
     for (const im of imagesRef.current) {
       if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
     }
@@ -771,7 +775,7 @@ function SellPageContent() {
     clearSellServerDraftListingId()
     clearRemoteResumeDraftIdStorage()
     void reloadDeferredDraftHints()
-  }, [searchParams, supabase, reloadDeferredDraftHints])
+  }, [startFresh, reloadDeferredDraftHints, supabase])
 
   type PersistDraftResult = { ok: false } | { ok: true; listingId: string }
 
@@ -2127,7 +2131,7 @@ function SellPageContent() {
           if (imagesInsertError) {
             throw new Error(submitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
-          requestKlaviyoListingCreated(listingId)
+          requestKlaviyoListingCreated(String(listing.id))
           goSubmitStep(2)
         }
       }

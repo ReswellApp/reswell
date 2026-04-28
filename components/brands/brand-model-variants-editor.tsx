@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
 import type { BrandModelVariantCondition, FinBoxType } from "@/lib/validations/brand-model-variants"
-import { formatBrandModelVariantLabel } from "@/lib/utils/brand-model-dimensions"
+import { formatBrandModelVariantLabel, parseOptionalPriceInput } from "@/lib/utils/brand-model-dimensions"
 import { cn } from "@/lib/utils"
 
 const DIM_IMAGE_MAX = 5 * 1024 * 1024
@@ -31,6 +31,7 @@ type VariantRow = {
   volume_label: string
   fin_box_type: FinBoxType
   condition: BrandModelVariantCondition
+  price: number | null
   image_url: string | null
 }
 
@@ -42,6 +43,7 @@ type VariantEditDraft = {
   volume_label: string
   fin_box_type: FinBoxType
   condition: BrandModelVariantCondition
+  priceText: string
 }
 
 export function BrandModelVariantsEditor({
@@ -68,6 +70,7 @@ export function BrandModelVariantsEditor({
   const [volumeLabel, setVolumeLabel] = React.useState("")
   const [finBoxType, setFinBoxType] = React.useState<FinBoxType>("futures")
   const [condition, setCondition] = React.useState<BrandModelVariantCondition>("brand_new")
+  const [priceText, setPriceText] = React.useState("")
   /** Reused for new row when duplicating (file upload overrides on submit). */
   const [stagedImageUrl, setStagedImageUrl] = React.useState<string | null>(null)
   const [duplicateDraft, setDuplicateDraft] = React.useState(false)
@@ -132,6 +135,7 @@ export function BrandModelVariantsEditor({
     setVolumeLabel("")
     setFinBoxType("futures")
     setCondition("brand_new")
+    setPriceText("")
     setStagedImageUrl(null)
     setDuplicateDraft(false)
     if (dimImageInputRef.current) dimImageInputRef.current.value = ""
@@ -150,6 +154,7 @@ export function BrandModelVariantsEditor({
       volume_label: row.volume_label,
       fin_box_type: row.fin_box_type,
       condition: row.condition,
+      priceText: row.price != null && Number.isFinite(Number(row.price)) ? String(row.price) : "",
     })
   }
 
@@ -161,6 +166,12 @@ export function BrandModelVariantsEditor({
     const V = editDraft.volume_label.trim()
     if (!L || !W || !T || !V) {
       toast.error("Length, width, thickness, and volume are required")
+      return
+    }
+
+    const priceParsed = parseOptionalPriceInput(editDraft.priceText)
+    if (!priceParsed.ok) {
+      toast.error(priceParsed.message)
       return
     }
 
@@ -177,6 +188,7 @@ export function BrandModelVariantsEditor({
           volume_label: V,
           fin_box_type: editDraft.fin_box_type,
           condition: editDraft.condition,
+          price: priceParsed.value,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -201,6 +213,9 @@ export function BrandModelVariantsEditor({
     setVolumeLabel(row.volume_label)
     setFinBoxType(row.fin_box_type)
     setCondition(row.condition)
+    setPriceText(
+      row.price != null && Number.isFinite(Number(row.price)) ? String(row.price) : "",
+    )
     setStagedImageUrl(row.image_url)
     setDuplicateDraft(true)
     if (dimImageInputRef.current) dimImageInputRef.current.value = ""
@@ -220,6 +235,12 @@ export function BrandModelVariantsEditor({
     const V = volumeLabel.trim()
     if (!L || !W || !T || !V) {
       toast.error("Length, width, thickness, and volume are required")
+      return
+    }
+
+    const priceParsed = parseOptionalPriceInput(priceText)
+    if (!priceParsed.ok) {
+      toast.error(priceParsed.message)
       return
     }
 
@@ -248,6 +269,7 @@ export function BrandModelVariantsEditor({
           volume_label: V,
           fin_box_type: finBoxType,
           condition,
+          price: priceParsed.value,
           image_url: imageUrl,
         }),
       })
@@ -475,6 +497,21 @@ export function BrandModelVariantsEditor({
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`var-price-${brandModelId}`} className="text-xs">
+              Price (USD, optional)
+            </Label>
+            <Input
+              id={`var-price-${brandModelId}`}
+              value={priceText}
+              onChange={(e) => setPriceText(e.target.value)}
+              placeholder="895"
+              inputMode="decimal"
+              autoComplete="off"
+              disabled={addFormDisabled}
+              className="h-9 text-sm"
+            />
+          </div>
           <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
             <Label htmlFor={`var-img-${brandModelId}`} className="text-xs">
               Photo (optional)
@@ -672,6 +709,24 @@ export function BrandModelVariantsEditor({
                                   ))}
                                 </SelectContent>
                               </Select>
+                            </div>
+                            <div className="space-y-1 sm:col-span-2">
+                              <Label htmlFor={`edit-price-${d.id}`} className="text-[11px]">
+                                Price (USD, optional)
+                              </Label>
+                              <Input
+                                id={`edit-price-${d.id}`}
+                                value={editDraft.priceText}
+                                onChange={(e) =>
+                                  setEditDraft((prev) =>
+                                    prev && prev.id === d.id ? { ...prev, priceText: e.target.value } : prev,
+                                  )
+                                }
+                                placeholder="895"
+                                inputMode="decimal"
+                                className="h-8 text-sm"
+                                disabled={savingEditId === d.id}
+                              />
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-2">

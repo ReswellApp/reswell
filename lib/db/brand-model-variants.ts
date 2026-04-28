@@ -13,10 +13,19 @@ export type BrandModelVariantRow = {
   volume_label: string
   fin_box_type: FinBoxType
   condition: BrandModelVariantCondition
+  /** USD; null when unset. Postgres numeric may arrive as string from PostgREST. */
+  price: number | null
   image_url: string | null
   sort_order: number
   created_at: string
   updated_at: string
+}
+
+function normalizeNullableMoney(v: unknown): number | null {
+  if (v == null) return null
+  if (typeof v === "number" && Number.isFinite(v)) return v
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
 }
 
 export async function listBrandModelVariantsForAdmin(
@@ -26,7 +35,7 @@ export async function listBrandModelVariantsForAdmin(
   const { data, error } = await supabase
     .from("brand_model_variants")
     .select(
-      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, image_url, sort_order, created_at, updated_at",
+      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, price, image_url, sort_order, created_at, updated_at",
     )
     .eq("brand_model_id", brandModelId)
     .order("sort_order", { ascending: true })
@@ -36,7 +45,11 @@ export async function listBrandModelVariantsForAdmin(
     console.error("listBrandModelVariantsForAdmin:", error.message)
     return []
   }
-  return (data ?? []) as BrandModelVariantRow[]
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return rows.map((r) => ({
+    ...(r as Omit<BrandModelVariantRow, "price">),
+    price: normalizeNullableMoney(r.price),
+  })) as BrandModelVariantRow[]
 }
 
 export async function insertBrandModelVariant(
@@ -50,6 +63,7 @@ export async function insertBrandModelVariant(
     volume_label: string
     fin_box_type: FinBoxType
     condition: BrandModelVariantCondition
+    price: number | null
     image_url: string | null
     sort_order: number
   },
@@ -66,12 +80,13 @@ export async function insertBrandModelVariant(
       volume_label: input.volume_label.trim(),
       fin_box_type: input.fin_box_type,
       condition: input.condition,
+      price: input.price,
       image_url: input.image_url,
       sort_order: input.sort_order,
       updated_at: now,
     })
     .select(
-      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, image_url, sort_order, created_at, updated_at",
+      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, price, image_url, sort_order, created_at, updated_at",
     )
     .single()
 
@@ -89,7 +104,14 @@ export async function insertBrandModelVariant(
     console.error("insertBrandModelVariant:", error.message)
     return { ok: false, error: error.message }
   }
-  return { ok: true, row: data as BrandModelVariantRow }
+  const row = data as Record<string, unknown>
+  return {
+    ok: true,
+    row: {
+      ...(row as Omit<BrandModelVariantRow, "price">),
+      price: normalizeNullableMoney(row.price),
+    } as BrandModelVariantRow,
+  }
 }
 
 export async function updateBrandModelVariant(
@@ -102,6 +124,7 @@ export async function updateBrandModelVariant(
     volume_label?: string
     fin_box_type?: FinBoxType
     condition?: BrandModelVariantCondition
+    price?: number | null
     image_url?: string | null
     sort_order?: number
   },
@@ -113,6 +136,7 @@ export async function updateBrandModelVariant(
   if (patch.volume_label !== undefined) updates.volume_label = patch.volume_label.trim()
   if (patch.fin_box_type !== undefined) updates.fin_box_type = patch.fin_box_type
   if (patch.condition !== undefined) updates.condition = patch.condition
+  if (patch.price !== undefined) updates.price = patch.price
   if (patch.image_url !== undefined) updates.image_url = patch.image_url
   if (patch.sort_order !== undefined) updates.sort_order = patch.sort_order
 

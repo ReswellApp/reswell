@@ -56,6 +56,7 @@ export async function POST(request: Request) {
     volume_label: parsed.data.volume_label,
     fin_box_type: parsed.data.fin_box_type,
     condition: parsed.data.condition,
+    price: parsed.data.price ?? null,
     image_url: imageUrl,
     sort_order: parsed.data.sort_order,
   })

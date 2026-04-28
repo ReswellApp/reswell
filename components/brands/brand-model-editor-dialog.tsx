@@ -50,7 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { BrandModelVariantsEditor } from "@/components/brands/brand-model-variants-editor"
-import { formatBrandModelVariantLabel } from "@/lib/utils/brand-model-dimensions"
+import { formatBrandModelVariantLabel, parseOptionalPriceInput } from "@/lib/utils/brand-model-dimensions"
 import { cn } from "@/lib/utils"
 
 const MODEL_IMAGE_MAX = 5 * 1024 * 1024
@@ -74,6 +74,7 @@ type PendingVariant = {
   volume_label: string
   fin_box_type: FinBoxType
   condition: BrandModelVariantCondition
+  price: number | null
   image_url: string | null
 }
 
@@ -105,6 +106,7 @@ export function BrandModelEditorDialog({
   const [createDimV, setCreateDimV] = React.useState("")
   const [createFinBoxType, setCreateFinBoxType] = React.useState<FinBoxType>("futures")
   const [createCondition, setCreateCondition] = React.useState<BrandModelVariantCondition>("brand_new")
+  const [createPrice, setCreatePrice] = React.useState("")
   const createDimImageRef = React.useRef<HTMLInputElement>(null)
 
   const loadModels = React.useCallback(async (bid: string) => {
@@ -143,6 +145,7 @@ export function BrandModelEditorDialog({
     setCreateDimT("")
     setCreateDimV("")
     setCreateFinBoxType("futures")
+    setCreatePrice("")
     if (createDimImageRef.current) createDimImageRef.current.value = ""
     if (brands.length === 1) {
       setBrandId(brands[0].id)
@@ -219,6 +222,11 @@ export function BrandModelEditorDialog({
       toast.error("Fill length, width, thickness, and volume to add a size")
       return
     }
+    const priceParsed = parseOptionalPriceInput(createPrice)
+    if (!priceParsed.ok) {
+      toast.error(priceParsed.message)
+      return
+    }
     void (async () => {
       const file = createDimImageRef.current?.files?.[0]
       let imageUrl: string | null = null
@@ -237,6 +245,7 @@ export function BrandModelEditorDialog({
           volume_label: V,
           fin_box_type: createFinBoxType,
           condition: createCondition,
+          price: priceParsed.value,
           image_url: imageUrl,
         },
       ])
@@ -244,6 +253,7 @@ export function BrandModelEditorDialog({
       setCreateDimW("")
       setCreateDimT("")
       setCreateDimV("")
+      setCreatePrice("")
       if (createDimImageRef.current) createDimImageRef.current.value = ""
       toast.success("Variant queued — it will save when you click Add model")
     })()
@@ -342,6 +352,7 @@ export function BrandModelEditorDialog({
             volume_label: v.volume_label,
             fin_box_type: v.fin_box_type,
             condition: v.condition,
+            price: v.price,
             image_url: v.image_url,
           }),
         })
@@ -368,6 +379,7 @@ export function BrandModelEditorDialog({
       setCreateDimV("")
       setCreateFinBoxType("futures")
       setCreateCondition("brand_new")
+      setCreatePrice("")
       if (createDimImageRef.current) createDimImageRef.current.value = ""
       await loadModels(brandId)
     } finally {
@@ -657,6 +669,21 @@ export function BrandModelEditorDialog({
                   className="h-9 text-sm"
                 />
               </div>
+            </div>
+            <div className="space-y-1.5 sm:max-w-xs">
+              <Label htmlFor="create-price" className="text-xs">
+                Price (USD, optional)
+              </Label>
+              <Input
+                id="create-price"
+                value={createPrice}
+                onChange={(e) => setCreatePrice(e.target.value)}
+                placeholder="895"
+                inputMode="decimal"
+                autoComplete="off"
+                disabled={saving || !brandId}
+                className="h-9 text-sm"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="create-dim-img" className="text-xs">

@@ -360,7 +360,7 @@ export function DraftSavedStatus({
   useEffect(() => {
     if (status !== "saved" || savedAt == null) return
     const age = Date.now() - savedAt
-    let quietBoundary: ReturnType<typeof setTimeout> | undefined
+    let quietBoundary: number | undefined
     if (age < DRAFT_SAVED_RECENT_MS) {
       quietBoundary = window.setTimeout(() => {
         setCoarseTick((t) => t + 1)

@@ -20,6 +20,25 @@ export const brandModelVariantConditionSchema = z.enum([
 
 export type BrandModelVariantCondition = z.infer<typeof brandModelVariantConditionSchema>
 
+/** USD amount; empty / omitted / null = no price stored. */
+const optionalPriceUsd = z.preprocess(
+  (v: unknown) => {
+    if (v === undefined) return undefined
+    if (v === null) return null
+    if (typeof v === "number" && Number.isFinite(v)) return v
+    if (typeof v === "string") {
+      const t = v.trim()
+      if (t === "") return null
+      const n = Number(t)
+      return Number.isFinite(n) ? n : v
+    }
+    return v
+  },
+  z
+    .union([z.undefined(), z.null(), z.number().positive().max(999_999.99)])
+    .optional(),
+)
+
 const optionalImageUrl = z.preprocess(
   (v: unknown) => {
     if (v === undefined) return undefined
@@ -43,6 +62,7 @@ export const adminBrandModelVariantCreateBodySchema = z.object({
   volume_label: dimLabel80,
   fin_box_type: finBoxTypeSchema,
   condition: brandModelVariantConditionSchema,
+  price: optionalPriceUsd,
   image_url: optionalImageUrl,
   sort_order: z.number().int().min(0).max(1_000_000).optional(),
 })
@@ -56,6 +76,7 @@ export const adminBrandModelVariantPatchBodySchema = z.object({
   volume_label: dimLabel80.optional(),
   fin_box_type: finBoxTypeSchema.optional(),
   condition: brandModelVariantConditionSchema.optional(),
+  price: optionalPriceUsd,
   image_url: optionalImageUrl,
   sort_order: z.number().int().min(0).max(1_000_000).optional(),
 })
