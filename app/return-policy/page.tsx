@@ -5,11 +5,17 @@ import { pageSeoMetadata } from "@/lib/site-metadata"
 export const metadata = pageSeoMetadata({
   title: "Return Policy — Reswell",
   description:
-    "How returns, refunds, and exchanges work on Reswell for peer-to-peer surfboard sales and eligible checkout orders.",
+    "United States return policy for Reswell: defective and non-defective returns, 7-day window, no exchanges, refund timing, labels, and eligibility.",
   path: "/return-policy",
 })
 
 export default function ReturnPolicyPage() {
+  const lastUpdated = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+
   return (
     <main className="flex-1 py-12">
       <div className="container mx-auto max-w-3xl">
@@ -17,110 +23,155 @@ export default function ReturnPolicyPage() {
           <Undo2 className="h-10 w-10 text-primary" aria-hidden />
           <div>
             <h1 className="text-3xl font-bold text-foreground">Return Policy</h1>
-            <p className="mt-1 text-muted-foreground">
-              Last updated:{" "}
-              {new Date().toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
+            <p className="mt-1 text-muted-foreground">Last updated: {lastUpdated}</p>
           </div>
         </div>
 
-        <div className="prose prose-neutral max-w-none space-y-6 text-muted-foreground dark:prose-invert">
+        <div className="prose prose-neutral max-w-none space-y-8 text-muted-foreground dark:prose-invert">
           <section>
-            <h2 className="mb-2 mt-8 text-xl font-semibold text-foreground">1. How Reswell works</h2>
-            <p className="leading-relaxed">
-              Reswell is a peer-to-peer marketplace. Sales are primarily between individual buyers and
-              sellers — not traditional retail where a store publishes a blanket &ldquo;change your mind&rdquo;
-              return window. What happens after you pay depends on how you paid, what went wrong (if anything),
-              and whether your order is eligible for our buyer coverage.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="mb-2 mt-8 text-xl font-semibold text-foreground">
-              2. Orders paid through Reswell checkout
+            <h2 className="!mb-3 !mt-0 text-xl font-semibold text-foreground">
+              Countries &amp; overview
             </h2>
             <p className="leading-relaxed">
-              For eligible orders completed through Reswell checkout, buyers may be entitled to refunds
-              when a covered problem occurs — for example non-delivery, the item arriving materially
-              different from the listing, or damage in transit, subject to the rules and timelines in
-              our{" "}
-              <Link href="/protection-policy" className="text-primary underline">
-                Purchase Protection
-              </Link>{" "}
-              policy. That page is the authoritative description of protections, exclusions, claims,
-              evidence, and returns that we coordinate (such as prepaid return labels where required).
+              This return policy applies to buyers with a delivery address in the{" "}
+              <strong className="text-foreground">United States</strong> for eligible orders processed
+              through Reswell checkout, except where exclusions apply below.
             </p>
-            <p className="leading-relaxed mt-4">
-              Buyers do not pay a separate fee for Purchase Protection on covered eligible orders.
-            </p>
+            <ul className="mt-4 list-none space-y-3 pl-0 leading-relaxed">
+              <li>
+                <strong className="text-foreground">Returns.</strong> We accept returns for{" "}
+                <strong className="text-foreground">defective and non-defective products</strong>, when the
+                product and order meet this policy&apos;s eligibility, condition, timing, and process
+                requirements.
+              </li>
+              <li>
+                <strong className="text-foreground">Exchanges.</strong>{" "}
+                <strong className="text-foreground">We do not accept exchanges.</strong> If an item doesn&apos;t work
+                out, start a qualifying return instead of an exchange — refund timing is described below.
+              </li>
+            </ul>
           </section>
 
           <section>
-            <h2 className="mb-2 mt-8 text-xl font-semibold text-foreground">
-              3. Voluntary returns and exchanges
+            <h2 className="!mb-3 !mt-0 text-xl font-semibold text-foreground">
+              Product condition &amp; return window
             </h2>
             <p className="leading-relaxed">
-              Outside of Purchase Protection — for example when you simply change your mind, or when a
-              situation is not covered — returns and exchanges are{' '}
-              <strong className="text-foreground">between you and the other party</strong>. We encourage buyers
-              and sellers to agree on expectations in messages before completing a sale. If both parties want
-              to arrange a voluntary return or exchange, you can coordinate shipping or meetup yourselves;
-              Reswell does not guarantee that outcome unless it falls under Purchase Protection after a covered
-              claim is approved according to our policy.
+              <strong className="text-foreground">Eligible product condition:</strong>{" "}
+              <strong>New and slightly used</strong> — meaning the board or item qualifies as unused
+              (&ldquo;new&rdquo;), opened, or lightly ridden / slightly used consistent with honest listing
+              condition; it must remain return-eligible without abuse, undisclosed damage beyond what was
+              agreed at sale, or loss of parts materially affecting resale.
+            </p>
+            <p className="mt-4 leading-relaxed">
+              <strong className="text-foreground">Return window:</strong> you must initiate a qualifying
+              return request within{" "}
+              <strong className="text-foreground">
+                seven (7) calendar days of delivery
+              </strong>{" "}
+              for shipped orders — measured from carrier delivery confirmation on the qualifying shipment —
+              unless a longer promotional window applies (for example seasonal extensions we advertise on
+              the site). For other fulfillment types, timelines may follow from handoff confirmation as
+              described in your order and support communications.
             </p>
           </section>
 
           <section>
-            <h2 className="mb-2 mt-8 text-xl font-semibold text-foreground">4. Local pickup</h2>
-            <p className="leading-relaxed">
-              Orders completed as{' '}
-              <strong className="text-foreground">local pickup</strong> do not qualify for Purchase Protection
-              the same way shipped orders do. Inspect the board at pickup when you can. Problems after pickup
-              are resolved between buyer and seller unless another policy applies.
+            <h2 className="!mb-3 !mt-0 text-xl font-semibold text-foreground">
+              Methods, labels, fees &amp; refunds
+            </h2>
+            <p className="leading-relaxed mb-2">
+              Depending on order type and what we authorize for your case, completing a return may use any
+              of these paths when available:
+            </p>
+            <ul className="list-disc space-y-2 pl-6 leading-relaxed">
+              <li>
+                <strong className="text-foreground">By mail</strong> — Ship back using tracked mail with a
+                return label issued through Reswell when we provide one.
+              </li>
+              <li>
+                <strong className="text-foreground">At a drop-off location</strong> — e.g., carrier-operated drop
+                spots when mailing a return parcel as instructed.
+              </li>
+              <li>
+                <strong className="text-foreground">In person</strong> — Returning to a seller storefront or agreed
+                in-person drop-off/meet-up when coordinated for your eligible order through Reswell and the
+                seller.
+              </li>
+            </ul>
+            <p className="mt-4 leading-relaxed">
+              <strong className="text-foreground">Return label.</strong> When Reswell supplies a prepaid return label
+              for your approved return (including download-and-print labeling where offered),{" "}
+              <strong className="text-foreground">there is no separate charge</strong> to you for that label fee.
+              Follow the instructions attached to your return authorization.
+            </p>
+            <p className="mt-4 leading-relaxed">
+              <strong className="text-foreground">Restocking fee.</strong>{" "}
+              <strong>No restocking fee</strong> is assessed on approved returns governed by this policy.
+              Other amounts (for example disputed damage or misuse) follow our Purchase Protection dispute
+              review if applicable.
+            </p>
+            <p className="mt-4 leading-relaxed">
+              <strong className="text-foreground">Refund processing time:</strong> after we approve a qualifying
+              return and receive the returned item — or confirmation from tracking or seller receipt as stated
+              in your case — we aim to process the refund{" "}
+              <strong className="text-foreground">within approximately seven (7) days</strong>. Refunds typically
+              return to your original payment method; bank posting times afterward depend on your card issuer or
+              bank.
+            </p>
+            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+              Amounts involving currency conversion elsewhere on the marketplace may settle in USD as applicable
+              to your checkout.
             </p>
           </section>
 
           <section>
-            <h2 className="mb-2 mt-8 text-xl font-semibold text-foreground">5. Sellers</h2>
+            <h2 className="!mb-3 !mt-0 text-xl font-semibold text-foreground">
+              Purchase Protection &amp; how this policy fits together
+            </h2>
             <p className="leading-relaxed">
-              Describe your listings accurately — condition, flaws, measurements, and photos — so buyers know
-              what they are purchasing. Covered claims handled under Purchase Protection follow the process set
-              out on the{' '}
+              Many returns involving damage in transit, non-delivery (where applicable), materially not as
+              described, and related protection claims follow{" "}
               <Link href="/protection-policy" className="text-primary underline">
-                Purchase Protection
+                Reswell Purchase Protection
               </Link>{" "}
-              page (including payouts and required returns where applicable).
+              (evidence windows, exclusions, prepaid return labels where stated). Label and restocking terms on
+              this page apply once a return path is authorized. Initiate defective and quality issues primarily
+              through Purchase Protection workflows; initiate other qualifying returns via your order and support,
+              staying within eligibility (including exclusions such as unsupported claims or pickups outside
+              policy).
             </p>
-          </section>
-
-          <section>
-            <h2 className="mb-2 mt-8 text-xl font-semibold text-foreground">6. Relationship to other terms</h2>
-            <p className="leading-relaxed">
-              This Return Policy supplements our{" "}
+            <p className="mt-4 leading-relaxed">
+              This Return Policy is the storefront summary aligned with Merchant Center disclosures (US buyers,
+              acceptance of defective and non-defective returns where eligible, no exchanges, timing, labels, and
+              refund horizons). Orders that aren&apos;t eligible for checkout-backed returns (examples: some local
+              pickup-only paths, violations of{" "}
               <Link href="/terms" className="text-primary underline">
                 Terms of Service
               </Link>
-              , which describe fees, eligibility, disputes, and platform rules. Nothing here limits our ability
-              to enforce those terms or apply Purchase Protection consistently with the{" "}
-              <Link href="/protection-policy" className="text-primary underline">
-                Purchase Protection
-              </Link>{" "}
-              policy.
+              , or exclusions in Purchase Protection for your claim type) aren&apos;t covered by the return paths
+              above even if broadly described here — use your order screens and support prompts for definitive
+              qualification.
             </p>
           </section>
 
           <section>
-            <h2 className="mb-2 mt-8 text-xl font-semibold text-foreground">7. Questions</h2>
+            <h2 className="!mb-3 !mt-0 text-xl font-semibold text-foreground">Sellers</h2>
             <p className="leading-relaxed">
-              For help with a specific order or claim, follow the prompts on your order page or{" "}
+              Accurate listings (photos, flaws, measurements, condition) reduce disputes and help buyers return
+              only within fair expectations. Payout adjustments for approved refunds follow Checkout and Purchase
+              Protection procedures.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="!mb-3 !mt-0 text-xl font-semibold text-foreground">Contact</h2>
+            <p className="leading-relaxed">
+              Start from your order in the dashboard or{" "}
               <Link href="/contact" className="text-primary underline">
                 contact us
-              </Link>
-              . We read every message.
+              </Link>{" "}
+              with questions. Region-specific exceptions may be layered over time via separate posted terms.
             </p>
           </section>
         </div>
