@@ -28,9 +28,12 @@ export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
     label: "Board & description",
     shortLabel: "Board",
   },
-  { id: "sell-section-price", label: "Price", shortLabel: "Price" },
   { id: "sell-section-delivery", label: "Pickup & shipping", shortLabel: "Delivery" },
-  { id: "sell-section-publish", label: "Publish", shortLabel: "Publish" },
+  {
+    id: "sell-section-publish",
+    label: "Price & publish",
+    shortLabel: "Publish",
+  },
 ]
 
 /**

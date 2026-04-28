@@ -85,13 +85,6 @@ function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
   return true
 }
 
-function priceSectionComplete(form: SellFormValidationInput): boolean {
-  const raw = form.price?.trim() ?? ""
-  if (!raw) return false
-  const price = parseFloat(raw)
-  return Number.isFinite(price) && price >= PRICE_MIN && price <= PRICE_MAX
-}
-
 function parseInchField(raw: string | undefined): number | null {
   const t = raw?.trim() ?? ""
   if (!t) return null
@@ -169,7 +162,6 @@ export function computeSellSectionCompletion(
       shapeSectionComplete(form) &&
       dimensionsSectionComplete(form) &&
       descriptionSectionComplete(form),
-    "sell-section-price": priceSectionComplete(form),
     "sell-section-delivery": deliverySectionComplete(form),
     "sell-section-publish": publishComplete,
   }

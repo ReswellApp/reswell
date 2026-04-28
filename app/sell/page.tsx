@@ -2865,7 +2865,90 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   title="Board shape, dimensions & description"
                 >
                     <div className="space-y-8">
-                      <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label>Board shape / category *</Label>
+                        <Select
+                          value={
+                            formData.category.trim()
+                              ? formData.category
+                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
+                          }
+                          disabled={editLoading}
+                          onValueChange={(value) => {
+                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                category: "",
+                                boardType: "",
+                              }))
+                              return
+                            }
+                            setFormData((prev) => ({
+                              ...prev,
+                              category: value,
+                              boardType: boardTypeFromCategoryId(value),
+                            }))
+                          }}
+                        >
+                          <SelectTrigger aria-label="Board shape or category">
+                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {boardCategoryOptions.length === 0 ? (
+                              <SelectItem value="__loading__" disabled>
+                                {sellCategoryOptions.length === 0
+                                  ? "Loading categories…"
+                                  : "No board categories found — add rows with board = true in public.categories."}
+                              </SelectItem>
+                            ) : (
+                              <>
+                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
+                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
+                                </SelectItem>
+                                {boardCategoryOptions.map((cat) => (
+                                  <SelectItem key={cat.value} value={cat.value}>
+                                    {cat.label}
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground/45 pb-1 pt-1">
+                          <span>{boardFieldsCompleted} of 10 fields complete</span>
+                          <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all duration-300"
+                              style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="max-w-md space-y-2">
+                        <Label htmlFor="sell-condition">Condition *</Label>
+                        <Select
+                          value={formData.condition}
+                          onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                        >
+                          <SelectTrigger id="sell-condition">
+                            <SelectValue placeholder="Select condition" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LISTING_CONDITION_SELL_OPTIONS.map((cond) => (
+                              <SelectItem key={cond.value} value={cond.value}>
+                                {cond.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <Separator className="bg-border" />
+
+                      {/* Brand, model & dimensions — one zone; divider separates from shape / condition */}
+                      <div className="space-y-4">
+                        <div className="space-y-3">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
                           <div className="min-w-0 space-y-2">
                             <div className="flex items-end justify-between gap-2">
@@ -2972,68 +3055,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         </p>
                       </div>
 
-                      <Separator className="bg-border" />
-
-                      <div className="space-y-2">
-                        <Label>Board shape / category *</Label>
-                        <Select
-                          value={
-                            formData.category.trim()
-                              ? formData.category
-                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
-                          }
-                          disabled={editLoading}
-                          onValueChange={(value) => {
-                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                category: "",
-                                boardType: "",
-                              }))
-                              return
-                            }
-                            setFormData((prev) => ({
-                              ...prev,
-                              category: value,
-                              boardType: boardTypeFromCategoryId(value),
-                            }))
-                          }}
-                        >
-                          <SelectTrigger aria-label="Board shape or category">
-                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {boardCategoryOptions.length === 0 ? (
-                              <SelectItem value="__loading__" disabled>
-                                {sellCategoryOptions.length === 0
-                                  ? "Loading categories…"
-                                  : "No board categories found — add rows with board = true in public.categories."}
-                              </SelectItem>
-                            ) : (
-                              <>
-                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
-                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
-                                </SelectItem>
-                                {boardCategoryOptions.map((cat) => (
-                                  <SelectItem key={cat.value} value={cat.value}>
-                                    {cat.label}
-                                  </SelectItem>
-                                ))}
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground/45 pb-1 pt-1">
-                          <span>{boardFieldsCompleted} of 10 fields complete</span>
-                          <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-primary transition-all duration-300"
-                              style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    <div className="space-y-3">
+                      <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
                         <div className="space-y-1.5">
@@ -3261,29 +3283,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         </DropdownMenu>
                       </div>
                     </div>
+                      </div>
 
                     <Separator className="bg-border" />
 
                     <div className="space-y-6">
-                      <h3 className="text-sm font-semibold text-foreground">Condition & description</h3>
-                  <div className="max-w-md space-y-2">
-                    <Label htmlFor="sell-condition">Condition *</Label>
-                    <Select
-                      value={formData.condition}
-                      onValueChange={(value) => setFormData({ ...formData, condition: value })}
-                    >
-                      <SelectTrigger id="sell-condition">
-                        <SelectValue placeholder="Select condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LISTING_CONDITION_SELL_OPTIONS.map((cond) => (
-                          <SelectItem key={cond.value} value={cond.value}>
-                            {cond.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">
                     Description *
@@ -3460,19 +3464,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     </div>
 
                     </div>
-                </SellFormSection>
-
-                <SellFormSection sectionId="sell-section-price" title="Price">
-                  <SellPriceFields
-                    listingPrice={formData.price}
-                    onListingPriceChange={(value) =>
-                      setFormData({ ...formData, price: value })
-                    }
-                    sellerPurchasePrice={formData.sellerPurchasePrice}
-                    onSellerPurchasePriceChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasePrice: value })
-                    }
-                  />
                 </SellFormSection>
 
                 <SellFormSection
@@ -3881,11 +3872,23 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   title={
                     editId
                       ? listingIsDraft
-                        ? "Publish your listing"
-                        : "Save your listing"
-                      : "Publish your listing"
+                        ? "Price & publish your listing"
+                        : "Price & save your listing"
+                      : "Price & publish your listing"
                   }
                 >
+                <div className="space-y-6">
+                  <SellPriceFields
+                    listingPrice={formData.price}
+                    onListingPriceChange={(value) =>
+                      setFormData({ ...formData, price: value })
+                    }
+                    sellerPurchasePrice={formData.sellerPurchasePrice}
+                    onSellerPurchasePriceChange={(value) =>
+                      setFormData({ ...formData, sellerPurchasePrice: value })
+                    }
+                  />
+                  <Separator />
                 {publishPreview && (
                   <div
                     className={cn(
@@ -4007,6 +4010,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
                   </Button>
                 )}
+                </div>
                 </SellFormSection>
                 </form>
               </div>
