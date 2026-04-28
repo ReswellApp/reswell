@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { format } from "date-fns"
-import { Loader2, PlusCircle } from "lucide-react"
+import { Check, Loader2, MoreHorizontal, PlusCircle, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
@@ -21,10 +21,29 @@ import type {
   UserListingBoardModelDataRow,
   UserListingBoardModelDataListingEmbed,
 } from "@/lib/db/user-listing-board-model-data"
+import { BrandEditorFormFields } from "@/components/brands/brand-editor-form-fields"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { slugifyBrandName } from "@/lib/brands/slug"
+import { uploadBrandLogoFile } from "@/lib/brands/upload-brand-logo-client"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -71,6 +90,134 @@ type ApiListResponse =
       }
     }
   | { error: string }
+
+/** Client-only triage labels for this admin table — stored in `localStorage`, not the DB. */
+type BoardCatalogSnapshotPriority = "high" | "medium" | "low"
+
+const BOARD_CATALOG_SNAPSHOT_PRIORITY_STORAGE_KEY =
+  "reswell:admin:board-catalog-snapshot-priorities"
+
+/** Snapshot row ids hidden from this admin table (client-only; same browser). */
+const BOARD_CATALOG_SNAPSHOT_DISMISSED_STORAGE_KEY =
+  "reswell:admin:board-catalog-dismissed-row-ids"
+
+const PRIORITY_LABEL: Record<BoardCatalogSnapshotPriority, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+}
+
+function parseStoredPriorities(raw: string): Record<string, BoardCatalogSnapshotPriority> {
+  try {
+    const data = JSON.parse(raw) as unknown
+    if (!data || typeof data !== "object" || Array.isArray(data)) return {}
+    const out: Record<string, BoardCatalogSnapshotPriority> = {}
+    for (const [id, v] of Object.entries(data as Record<string, unknown>)) {
+      if (typeof id !== "string" || id.length === 0) continue
+      if (v === "high" || v === "medium" || v === "low") out[id] = v
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+function loadBoardCatalogSnapshotPriorities(): Record<string, BoardCatalogSnapshotPriority> {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = window.localStorage.getItem(BOARD_CATALOG_SNAPSHOT_PRIORITY_STORAGE_KEY)
+    return raw ? parseStoredPriorities(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function loadDismissedRowIds(): Record<string, true> {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = window.localStorage.getItem(BOARD_CATALOG_SNAPSHOT_DISMISSED_STORAGE_KEY)
+    if (!raw) return {}
+    const data = JSON.parse(raw) as unknown
+    if (!Array.isArray(data)) return {}
+    const out: Record<string, true> = {}
+    for (const id of data) {
+      if (typeof id === "string" && id.length > 0) out[id] = true
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+function snapshotPriorityBadgeClass(p: BoardCatalogSnapshotPriority): string {
+  switch (p) {
+    case "high":
+      return "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+    case "medium":
+      return "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+    case "low":
+      return "border-border bg-muted/60 text-muted-foreground"
+    default:
+      return ""
+  }
+}
+
+function SnapshotRowActionsDropdown({
+  rowId,
+  priority,
+  onSetPriority,
+  onClearPriority,
+  onRequestRemoveFromTable,
+}: {
+  rowId: string
+  priority: BoardCatalogSnapshotPriority | undefined
+  onSetPriority: (id: string, p: BoardCatalogSnapshotPriority) => void
+  onClearPriority: (id: string) => void
+  onRequestRemoveFromTable: () => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          aria-label="Row actions"
+          title={priority ? `Priority: ${PRIORITY_LABEL[priority]}` : "Row actions"}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        {(["high", "medium", "low"] as const).map((p) => (
+          <DropdownMenuItem key={p} onClick={() => onSetPriority(rowId, p)} className="justify-between gap-2">
+            <span>{PRIORITY_LABEL[p]}</span>
+            {priority === p ? <Check className="text-muted-foreground h-4 w-4 shrink-0" aria-hidden /> : null}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => onClearPriority(rowId)}
+          disabled={priority == null}
+          className="text-muted-foreground"
+        >
+          Clear priority
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => {
+            onRequestRemoveFromTable()
+          }}
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+          Delete from table
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 function listingHref(slug: string | null | undefined): string {
   const s = slug?.trim()
@@ -152,6 +299,78 @@ export function BoardCatalogSnapshotsClient() {
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
 
+  const [priorityFilter, setPriorityFilter] = useState<
+    "all" | BoardCatalogSnapshotPriority
+  >("all")
+  const [priorities, setPriorities] = useState<
+    Record<string, BoardCatalogSnapshotPriority>
+  >({})
+  const [dismissedRowIds, setDismissedRowIds] = useState<Record<string, true>>({})
+  const [tablePrefsHydrated, setTablePrefsHydrated] = useState(false)
+  const [dismissConfirmId, setDismissConfirmId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPriorities(loadBoardCatalogSnapshotPriorities())
+    setDismissedRowIds(loadDismissedRowIds())
+    setTablePrefsHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!tablePrefsHydrated || typeof window === "undefined") return
+    try {
+      window.localStorage.setItem(
+        BOARD_CATALOG_SNAPSHOT_PRIORITY_STORAGE_KEY,
+        JSON.stringify(priorities),
+      )
+      window.localStorage.setItem(
+        BOARD_CATALOG_SNAPSHOT_DISMISSED_STORAGE_KEY,
+        JSON.stringify(Object.keys(dismissedRowIds)),
+      )
+    } catch {
+      /* ignore quota */
+    }
+  }, [priorities, dismissedRowIds, tablePrefsHydrated])
+
+  const setRowPriority = useCallback((id: string, p: BoardCatalogSnapshotPriority) => {
+    setPriorities((prev) => ({ ...prev, [id]: p }))
+  }, [])
+
+  const clearRowPriority = useCallback((id: string) => {
+    setPriorities((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+  }, [])
+
+  const restoreDismissedRows = useCallback(() => {
+    setDismissedRowIds({})
+    toast.success("Hidden rows are visible again")
+  }, [])
+
+  const visibleRows = useMemo(
+    () => rows.filter((r) => !dismissedRowIds[r.id]),
+    [rows, dismissedRowIds],
+  )
+
+  const filteredRows = useMemo(() => {
+    if (priorityFilter === "all") return visibleRows
+    return visibleRows.filter((r) => priorities[r.id] === priorityFilter)
+  }, [visibleRows, priorities, priorityFilter])
+
+  const confirmRemoveRowFromTable = useCallback(() => {
+    if (!dismissConfirmId) return
+    const id = dismissConfirmId
+    setDismissedRowIds((prev) => ({ ...prev, [id]: true }))
+    setPriorities((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    setDismissConfirmId(null)
+    toast.success("Removed from table")
+  }, [dismissConfirmId])
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -179,6 +398,8 @@ export function BoardCatalogSnapshotsClient() {
   useEffect(() => {
     void load()
   }, [load])
+
+  const hiddenDismissCount = rows.length - visibleRows.length
 
   return (
     <div className="w-full min-w-0 max-w-full space-y-6">
@@ -212,6 +433,45 @@ export function BoardCatalogSnapshotsClient() {
         </div>
       </div>
 
+      {!loading && rows.length > 0 ? (
+        <div className="border-border bg-muted/20 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2.5">
+          <span className="text-muted-foreground shrink-0 text-xs font-medium uppercase tracking-wide">
+            Priority filter
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant={priorityFilter === "all" ? "secondary" : "outline"}
+              size="sm"
+              className="h-8"
+              onClick={() => setPriorityFilter("all")}
+            >
+              All
+            </Button>
+            {(["high", "medium", "low"] as const).map((p) => (
+              <Button
+                key={p}
+                type="button"
+                variant={priorityFilter === p ? "secondary" : "outline"}
+                size="sm"
+                className={cn("h-8", priorityFilter === p && snapshotPriorityBadgeClass(p))}
+                onClick={() => setPriorityFilter(p)}
+              >
+                {PRIORITY_LABEL[p]}
+              </Button>
+            ))}
+          </div>
+          <span className="text-muted-foreground ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
+            <span>
+              Showing {filteredRows.length} of {visibleRows.length}
+              {hiddenDismissCount > 0 ? (
+                <span className="text-muted-foreground/90"> ({hiddenDismissCount} hidden)</span>
+              ) : null}
+            </span>
+          </span>
+        </div>
+      ) : null}
+
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -219,6 +479,29 @@ export function BoardCatalogSnapshotsClient() {
         </div>
       ) : rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">No rows yet.</p>
+      ) : visibleRows.length === 0 ? (
+        <div className="border-border bg-muted/15 space-y-3 rounded-lg border px-4 py-4">
+          <p className="text-muted-foreground text-sm">
+            Every snapshot row is hidden from this view. Rows you remove stay hidden until you restore them (stored in
+            this browser only).
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={() => restoreDismissedRows()}>
+            Show hidden rows
+          </Button>
+        </div>
+      ) : filteredRows.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          No snapshots match this priority
+          {priorityFilter !== "all" ? ` (${PRIORITY_LABEL[priorityFilter]})` : ""}. Choose{" "}
+          <button
+            type="button"
+            className="text-primary font-medium underline-offset-2 hover:underline"
+            onClick={() => setPriorityFilter("all")}
+          >
+            All
+          </button>{" "}
+          to see every row.
+        </p>
       ) : (
         <div className="bg-card border-border w-full min-w-0 max-w-full rounded-lg border shadow-sm">
           <Table className="w-full max-w-full table-fixed">
@@ -244,7 +527,9 @@ export function BoardCatalogSnapshotsClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
+              {filteredRows.map((r) => {
+                const rowPriority = priorities[r.id]
+                return (
                 <TableRow key={r.id} className="align-top">
                   <TableCell className="w-[12%] overflow-hidden px-2 py-2 align-top text-xs tabular-nums text-muted-foreground whitespace-nowrap">
                     {listingUpdatedLabel(r.listings?.updated_at)}
@@ -345,6 +630,29 @@ export function BoardCatalogSnapshotsClient() {
                   </TableCell>
                   <TableCell className="w-[14%] px-2 py-2 align-top">
                     <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5">
+                      <div className="flex items-start justify-end gap-1.5">
+                        {rowPriority ? (
+                          <span
+                            className={cn(
+                              "inline-flex shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] leading-none font-semibold uppercase tracking-wide",
+                              snapshotPriorityBadgeClass(rowPriority),
+                            )}
+                          >
+                            {PRIORITY_LABEL[rowPriority]}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground shrink-0 text-[10px] uppercase tracking-wide">
+                            —
+                          </span>
+                        )}
+                        <SnapshotRowActionsDropdown
+                          rowId={r.id}
+                          priority={rowPriority}
+                          onSetPriority={setRowPriority}
+                          onClearPriority={clearRowPriority}
+                          onRequestRemoveFromTable={() => setDismissConfirmId(r.id)}
+                        />
+                      </div>
                       {!r.brand_id?.trim() && !r.converted_brand_model_variant_id && (
                         <AttachCatalogBrandDialog row={r} onAttached={() => void load()} />
                       )}
@@ -356,11 +664,38 @@ export function BoardCatalogSnapshotsClient() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )
+              })}
             </TableBody>
           </Table>
         </div>
       )}
+
+      <AlertDialog
+        open={dismissConfirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDismissConfirmId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from table?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This hides the row in this admin table on this browser only. It does not delete the listing or catalog
+              snapshot in Reswell. Use &quot;Show hidden rows&quot; to bring dismissed rows back.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={cn(buttonVariants({ variant: "destructive" }))}
+              onClick={() => confirmRemoveRowFromTable()}
+            >
+              Remove from table
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -385,6 +720,14 @@ function AttachCatalogBrandDialog({
   const [newBrandSlug, setNewBrandSlug] = useState("")
   const [slugTouched, setSlugTouched] = useState(false)
   const [newBrandShortDescription, setNewBrandShortDescription] = useState("")
+  const [newBrandWebsiteUrl, setNewBrandWebsiteUrl] = useState("")
+  const [newBrandLogoUrl, setNewBrandLogoUrl] = useState("")
+  const [newBrandFounderName, setNewBrandFounderName] = useState("")
+  const [newBrandLeadShaperName, setNewBrandLeadShaperName] = useState("")
+  const [newBrandLocationLabel, setNewBrandLocationLabel] = useState("")
+  const [newBrandModelCount, setNewBrandModelCount] = useState("0")
+  const [newBrandAboutText, setNewBrandAboutText] = useState("")
+  const logoFileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -429,6 +772,14 @@ function AttachCatalogBrandDialog({
     setNewBrandName(hint)
     setNewBrandSlug(hint ? slugifyBrandName(hint) : "")
     setNewBrandShortDescription("")
+    setNewBrandWebsiteUrl("")
+    setNewBrandLogoUrl("")
+    setNewBrandFounderName("")
+    setNewBrandLeadShaperName("")
+    setNewBrandLocationLabel("")
+    setNewBrandModelCount("0")
+    setNewBrandAboutText("")
+    if (logoFileInputRef.current) logoFileInputRef.current.value = ""
   }, [open, row.id, row.listings?.brand, row.brands?.name])
 
   useEffect(() => {
@@ -489,6 +840,22 @@ function AttachCatalogBrandDialog({
     }
     setCreating(true)
     try {
+      const file = logoFileInputRef.current?.files?.[0]
+      let finalLogoUrl = newBrandLogoUrl.trim() || null
+      if (file) {
+        const uploaded = await uploadBrandLogoFile(file)
+        if (!uploaded) {
+          return
+        }
+        finalLogoUrl = uploaded
+      }
+
+      const about_paragraphs = newBrandAboutText
+        .split(/\n{2,}/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+      const mc = Math.max(0, Math.floor(Number(newBrandModelCount) || 0))
+
       const res = await fetch("/api/admin/brands", {
         method: "POST",
         credentials: "include",
@@ -497,13 +864,13 @@ function AttachCatalogBrandDialog({
           slug,
           name,
           short_description: newBrandShortDescription.trim() || null,
-          website_url: null,
-          logo_url: null,
-          founder_name: null,
-          lead_shaper_name: null,
-          location_label: null,
-          model_count: 0,
-          about_paragraphs: [],
+          website_url: newBrandWebsiteUrl.trim() || null,
+          logo_url: finalLogoUrl,
+          founder_name: newBrandFounderName.trim() || null,
+          lead_shaper_name: newBrandLeadShaperName.trim() || null,
+          location_label: newBrandLocationLabel.trim() || null,
+          model_count: mc,
+          about_paragraphs,
         }),
       })
       const j = (await res.json().catch(() => ({}))) as {
@@ -541,7 +908,7 @@ function AttachCatalogBrandDialog({
           Attach brand
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-4 overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[min(90vh,880px)] gap-4 overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Attach catalog brand</DialogTitle>
         </DialogHeader>
@@ -613,42 +980,34 @@ function AttachCatalogBrandDialog({
             )}
           </>
         ) : (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="attach-new-brand-name">Brand name</Label>
-              <Input
-                id="attach-new-brand-name"
-                value={newBrandName}
-                onChange={(e) => setNewBrandName(e.target.value)}
-                placeholder="e.g. as it should appear in the catalog"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="attach-new-brand-slug">URL slug</Label>
-              <Input
-                id="attach-new-brand-slug"
-                value={newBrandSlug}
-                onChange={(e) => {
-                  setSlugTouched(true)
-                  setNewBrandSlug(e.target.value)
-                }}
-                placeholder="lowercase-with-hyphens"
-                autoComplete="off"
-              />
-              <p className="text-muted-foreground text-[11px]">
-                Filled automatically from the name; edit if the slug is taken.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="attach-new-brand-desc">Short description (optional)</Label>
-              <Input
-                id="attach-new-brand-desc"
-                value={newBrandShortDescription}
-                onChange={(e) => setNewBrandShortDescription(e.target.value)}
-                placeholder="One line for the brand profile"
-              />
-            </div>
-          </div>
+          <BrandEditorFormFields
+            idPrefix="attach-catalog-brand"
+            slug={newBrandSlug}
+            onSlugChange={(v) => {
+              setSlugTouched(true)
+              setNewBrandSlug(v)
+            }}
+            name={newBrandName}
+            onNameChange={setNewBrandName}
+            shortDescription={newBrandShortDescription}
+            onShortDescriptionChange={setNewBrandShortDescription}
+            websiteUrl={newBrandWebsiteUrl}
+            onWebsiteUrlChange={setNewBrandWebsiteUrl}
+            logoUrl={newBrandLogoUrl}
+            onLogoUrlChange={setNewBrandLogoUrl}
+            logoFileInputRef={logoFileInputRef}
+            founderName={newBrandFounderName}
+            onFounderNameChange={setNewBrandFounderName}
+            leadShaperName={newBrandLeadShaperName}
+            onLeadShaperNameChange={setNewBrandLeadShaperName}
+            locationLabel={newBrandLocationLabel}
+            onLocationLabelChange={setNewBrandLocationLabel}
+            modelCount={newBrandModelCount}
+            onModelCountChange={setNewBrandModelCount}
+            aboutText={newBrandAboutText}
+            onAboutTextChange={setNewBrandAboutText}
+            slugExtraHint="Filled automatically from the name until you edit the slug."
+          />
         )}
 
         <DialogFooter>

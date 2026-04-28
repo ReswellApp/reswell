@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server"
 import { BrandRequestsAdminClient } from "./brand-requests-client"
 
 export const metadata = privatePageMetadata({
-  title: "Brand requests — Admin — Reswell",
-  description: "Review and approve new surfboard brand labels submitted by sellers.",
+  title: "Brand & model requests — Admin — Reswell",
+  description:
+    "Review seller-submitted brand and surfboard model requests from the listing flow.",
   path: "/admin/listings/brand-requests",
 })
 

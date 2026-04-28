@@ -341,7 +341,7 @@ export default function AdminListingsPage() {
             <Button variant="outline" asChild>
               <Link href="/admin/listings/brand-requests">
                 <Tag className="h-4 w-4 mr-2" />
-                Brand requests
+                Brand & model requests
               </Link>
             </Button>
           ) : null}

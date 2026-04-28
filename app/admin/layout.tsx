@@ -26,7 +26,7 @@ const adminNavItems = [
   { href: '/admin/search-analytics', label: 'Search analytics', icon: LineChart },
   { href: '/admin/listings', label: 'Listings', icon: Package },
   { href: '/admin/listings/board-catalog-data', label: 'Board catalog data', icon: Layers },
-  { href: '/admin/listings/brand-requests', label: 'Brand requests', icon: Tag },
+  { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/wallet-reconcile', label: 'Wallet sync', icon: Wallet },

@@ -117,6 +117,7 @@ import {
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { cn } from "@/lib/utils"
 import { RequestBrandDialog } from "@/components/request-brand-dialog"
+import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
@@ -124,7 +125,6 @@ import {
   validateSellListingForm,
   buildResolvedListingTitle,
   LISTING_TITLE_MAX_LENGTH,
-  LISTING_BOARD_MODEL_MAX_LENGTH,
   LISTING_MIN_PHOTOS,
   type BoardShippingCostMode,
   type SellFormValidationInput,
@@ -1462,7 +1462,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           `
           *,
           listing_images (id, url, thumbnail_url, is_primary, sort_order),
-          user_listing_board_model_data ( model_name )
+          user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug )
         `,
         )
         .eq("id", editId)
@@ -1539,13 +1539,23 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const snapRel = (
         listing as {
           user_listing_board_model_data?:
-            | { model_name?: string | null }
-            | { model_name?: string | null }[]
+            | {
+                model_name?: string | null
+                catalog_model_slug?: string | null
+                catalog_brand_slug?: string | null
+              }
+            | {
+                model_name?: string | null
+                catalog_model_slug?: string | null
+                catalog_brand_slug?: string | null
+              }[]
             | null
         }
       ).user_listing_board_model_data
       const snapRow = Array.isArray(snapRel) ? snapRel[0] : snapRel
       const loadedBoardModelName = snapRow?.model_name?.trim() ?? ""
+      const loadedCatalogModelSlug = snapRow?.catalog_model_slug?.trim() ?? ""
+      const loadedCatalogBrandSlug = snapRow?.catalog_brand_slug?.trim() ?? ""
 
       setFormData({
         title: listing.title ?? "",
@@ -1632,9 +1642,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
-        boardIndexBrandSlug: "",
-        boardIndexModelSlug: "",
-        boardIndexLabel: "",
+        boardIndexBrandSlug: loadedCatalogBrandSlug,
+        boardIndexModelSlug: loadedCatalogModelSlug,
+        boardIndexLabel: (() => {
+          const b = (listing as { brand?: string | null }).brand?.trim() ?? ""
+          const m = loadedBoardModelName
+          if (b && m) return `${b} ${m}`.trim()
+          return b || m || ""
+        })(),
         boardModelName: loadedBoardModelName,
         boardLinkedBrandName:
           (listing as { brand_id?: string | null }).brand_id?.trim()
@@ -2854,31 +2869,21 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     </div>
 
                     <div className="min-w-0 space-y-2">
-                      <div className="flex items-end justify-between gap-2">
-                        <Label htmlFor="listing-board-model">Model *</Label>
-                        <span
-                          className={cn(
-                            "text-xs tabular-nums",
-                            formData.boardModelName.length > LISTING_BOARD_MODEL_MAX_LENGTH
-                              ? "font-medium text-destructive"
-                              : "text-muted-foreground/45",
-                          )}
-                          aria-live="polite"
-                        >
-                          {formData.boardModelName.length}/{LISTING_BOARD_MODEL_MAX_LENGTH}
-                        </span>
-                      </div>
-                      <Input
-                        id="listing-board-model"
-                        className="placeholder:text-muted-foreground/45"
-                        placeholder="e.g., Rookie, Neckbeard — Mayhem"
-                        value={formData.boardModelName}
-                        onChange={(e) =>
-                          setFormData((f) => ({ ...f, boardModelName: e.target.value }))
+                      <SellBoardModelField
+                        catalogBrandId={formData.boardBrandId}
+                        linkedBrandDisplayName={
+                          formData.boardLinkedBrandName.trim() || formData.brand.trim()
                         }
-                        autoComplete="off"
-                        required
-                        maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
+                        modelName={formData.boardModelName}
+                        modelCatalogSlug={formData.boardIndexModelSlug}
+                        boardIndexBrandSlug={formData.boardIndexBrandSlug}
+                        onCatalogModelChange={(patch) =>
+                          setFormData((f) => ({
+                            ...f,
+                            ...patch,
+                          }))
+                        }
+                        disabled={editLoading}
                       />
                     </div>
                   </div>

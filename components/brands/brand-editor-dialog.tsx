@@ -4,10 +4,11 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { createClient } from "@/lib/supabase/client"
 import { slugifyBrandName } from "@/lib/brands/slug"
 import type { BrandRow } from "@/lib/brands/types"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import { uploadBrandLogoFile } from "@/lib/brands/upload-brand-logo-client"
+import { BrandEditorFormFields } from "@/components/brands/brand-editor-form-fields"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,11 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-
-const LOGO_MAX = 5 * 1024 * 1024
 
 type Mode = "create" | "edit"
 
@@ -114,27 +110,6 @@ export function BrandEditorDialog({
     }
   }, [open, mode, brand, createPrefill])
 
-  async function uploadLogoFile(file: File): Promise<string | null> {
-    if (file.size > LOGO_MAX) {
-      toast.error("Image must be under 5MB")
-      return null
-    }
-    const supabase = createClient()
-    const ext = (file.name.split(".").pop() || "png").toLowerCase()
-    const safeExt = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext) ? ext : "png"
-    const path = `logos/${crypto.randomUUID()}.${safeExt}`
-    const { error } = await supabase.storage.from("brand-assets").upload(path, file, { upsert: false })
-    if (error) {
-      console.error(error)
-      toast.error(error.message || "Upload failed")
-      return null
-    }
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("brand-assets").getPublicUrl(path)
-    return `${publicUrl}?t=${Date.now()}`
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -142,7 +117,7 @@ export function BrandEditorDialog({
       const file = fileInputRef.current?.files?.[0]
       let finalLogoUrl = logoUrl.trim() || null
       if (file) {
-        const uploaded = await uploadLogoFile(file)
+        const uploaded = await uploadBrandLogoFile(file)
         if (!uploaded) {
           setSaving(false)
           return
@@ -240,103 +215,31 @@ export function BrandEditorDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="brand-slug">Slug</Label>
-            <Input
-              id="brand-slug"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-              placeholder="bing-surfboards"
-              required
-              autoComplete="off"
-            />
-            <p className="text-xs text-muted-foreground">{`${BRANDS_BASE}/${slug || "…"}`}</p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-name">Name</Label>
-            <Input
-              id="brand-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={onNameBlur}
-              placeholder="Bing Surfboards"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-short">Short description</Label>
-            <Textarea
-              id="brand-short"
-              value={shortDescription}
-              onChange={(e) => setShortDescription(e.target.value)}
-              rows={2}
-              placeholder="One-line summary"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-web">Website URL</Label>
-            <Input
-              id="brand-web"
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-logo-url">Logo URL (optional if you upload a file)</Label>
-            <Input
-              id="brand-logo-url"
-              type="url"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://…"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-logo-file">Upload logo</Label>
-            <Input id="brand-logo-file" ref={fileInputRef} type="file" accept="image/*" className="cursor-pointer" />
-            <p className="text-xs text-muted-foreground">PNG, JPG, WebP, GIF, or SVG — max 5MB. Overrides URL if set.</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="brand-founder">Founder</Label>
-              <Input id="brand-founder" value={founderName} onChange={(e) => setFounderName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="brand-lead">Lead shaper / designer</Label>
-              <Input id="brand-lead" value={leadShaperName} onChange={(e) => setLeadShaperName(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-loc">Location</Label>
-            <Input
-              id="brand-loc"
-              value={locationLabel}
-              onChange={(e) => setLocationLabel(e.target.value)}
-              placeholder="Encinitas, California"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-models">Model count</Label>
-            <Input
-              id="brand-models"
-              inputMode="numeric"
-              value={modelCount}
-              onChange={(e) => setModelCount(e.target.value.replace(/\D/g, ""))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="brand-about">About (paragraphs separated by a blank line)</Label>
-            <Textarea
-              id="brand-about"
-              value={aboutText}
-              onChange={(e) => setAboutText(e.target.value)}
-              rows={8}
-              className="min-h-[160px] font-mono text-sm"
-              placeholder={"First paragraph…\n\nSecond paragraph…"}
-            />
-          </div>
+          <BrandEditorFormFields
+            idPrefix="brand-editor"
+            slug={slug}
+            onSlugChange={setSlug}
+            name={name}
+            onNameChange={setName}
+            onNameBlur={onNameBlur}
+            shortDescription={shortDescription}
+            onShortDescriptionChange={setShortDescription}
+            websiteUrl={websiteUrl}
+            onWebsiteUrlChange={setWebsiteUrl}
+            logoUrl={logoUrl}
+            onLogoUrlChange={setLogoUrl}
+            logoFileInputRef={fileInputRef}
+            founderName={founderName}
+            onFounderNameChange={setFounderName}
+            leadShaperName={leadShaperName}
+            onLeadShaperNameChange={setLeadShaperName}
+            locationLabel={locationLabel}
+            onLocationLabelChange={setLocationLabel}
+            modelCount={modelCount}
+            onModelCountChange={setModelCount}
+            aboutText={aboutText}
+            onAboutTextChange={setAboutText}
+          />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel

@@ -1,10 +1,13 @@
 "use server"
 
+import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
+import { getBrandModelsCatalogOptionsForSell } from "@/lib/db/brand-models"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-index"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
 import { listBrands } from "@/lib/brands/server"
+import { slugify } from "@/lib/slugify"
 
 export async function getDistinctBrandsFromListings(section: string): Promise<string[]> {
   const sections = section === "new" ? ["new"] : ["surfboards"]
@@ -68,6 +71,39 @@ export async function getBoardModelsCatalogItems() {
     label: b.name,
   }))
   return { items }
+}
+
+const sellCatalogBrandIdSchema = z.string().uuid()
+
+export type SellBrandModelCatalogRow = {
+  id: string
+  name: string
+  catalogSlug: string
+}
+
+/**
+ * Surfboard models from `brand_models` for the selected directory brand (excludes variants).
+ */
+export async function getBrandModelsCatalogForSellForm(brandId: string): Promise<
+  | { ok: true; brandSlug: string; models: SellBrandModelCatalogRow[] }
+  | { ok: false; error: string }
+> {
+  const parsed = sellCatalogBrandIdSchema.safeParse(brandId.trim())
+  if (!parsed.success) {
+    return { ok: false, error: "Choose a brand from the directory first." }
+  }
+  const supabase = await createClient()
+  const result = await getBrandModelsCatalogOptionsForSell(supabase, parsed.data)
+  if (!result.ok) return result
+  return {
+    ok: true,
+    brandSlug: result.brandSlug,
+    models: result.models.map((m) => ({
+      id: m.id,
+      name: m.name,
+      catalogSlug: slugify(m.name),
+    })),
+  }
 }
 
 /** Returned to the client after dedupe / slice */

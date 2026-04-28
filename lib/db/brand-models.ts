@@ -39,6 +39,53 @@ const LIST_SELECT = `
   brands:brand_id ( id, name, slug )
 `
 
+/** Public catalog rows for sell-flow model picker (`brand_models` only — not variants). */
+export async function listBrandModelsForPublicCatalogByBrandId(
+  supabase: SupabaseClient,
+  brandId: string,
+): Promise<{ id: string; name: string }[]> {
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select("id, name")
+    .eq("brand_id", brandId)
+    .order("name", { ascending: true })
+
+  if (error) {
+    console.error("listBrandModelsForPublicCatalogByBrandId:", error.message)
+    return []
+  }
+  return ((data ?? []) as { id: string; name: string }[]).map((r) => ({
+    id: r.id,
+    name: r.name.trim(),
+  }))
+}
+
+/** Brand slug + `brand_models` rows for the sell form (no variants). */
+export async function getBrandModelsCatalogOptionsForSell(
+  supabase: SupabaseClient,
+  brandId: string,
+): Promise<
+  | { ok: true; brandSlug: string; models: { id: string; name: string }[] }
+  | { ok: false; error: string }
+> {
+  const { data: brand, error: brandError } = await supabase
+    .from("brands")
+    .select("slug")
+    .eq("id", brandId)
+    .maybeSingle()
+
+  if (brandError) {
+    console.error("getBrandModelsCatalogOptionsForSell (brand):", brandError.message)
+    return { ok: false, error: "Could not load brand" }
+  }
+  if (!brand?.slug?.trim()) {
+    return { ok: false, error: "Brand not found" }
+  }
+
+  const models = await listBrandModelsForPublicCatalogByBrandId(supabase, brandId)
+  return { ok: true, brandSlug: brand.slug.trim(), models }
+}
+
 export async function listBrandModelsForAdmin(
   supabase: SupabaseClient,
   brandId?: string,
