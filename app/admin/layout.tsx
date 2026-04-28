@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   Wallet,
   LineChart,
+  Layers,
 } from 'lucide-react'
 
 const adminNavItems = [
@@ -24,6 +25,7 @@ const adminNavItems = [
   { href: '/admin/live', label: 'Live', icon: Activity },
   { href: '/admin/search-analytics', label: 'Search analytics', icon: LineChart },
   { href: '/admin/listings', label: 'Listings', icon: Package },
+  { href: '/admin/listings/board-catalog-data', label: 'Board catalog data', icon: Layers },
   { href: '/admin/listings/brand-requests', label: 'Brand requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
@@ -66,7 +68,8 @@ export default async function AdminLayout({
           item.href !== '/admin/settings' &&
           item.href !== '/admin/shipping' &&
           item.href !== '/admin/wallet-reconcile' &&
-          item.href !== '/admin/listings/brand-requests',
+          item.href !== '/admin/listings/brand-requests' &&
+          item.href !== '/admin/listings/board-catalog-data',
       )
 
   return (

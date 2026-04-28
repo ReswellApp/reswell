@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,17 +38,25 @@ type Row = {
   listings: {
     id: string
     title: string
-    listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+    listing_images: Array<{
+      url: string
+      thumbnail_url?: string | null
+      is_primary: boolean | null
+    }> | null
   } | null
   sellerReview: { canSubmit: boolean; existing: ExistingSellerReview | null } | null
   sellerDisplayName: string
 }
 
-function primaryImage(images: Array<{ url: string; is_primary: boolean | null }> | null | undefined) {
-  if (!images?.length) return null
-  const primary = images.find((i) => i.is_primary)
-  const raw = (primary ?? images[0]).url
-  return proxiedListingImageSrc(raw) || null
+function primaryImage(
+  images: Array<{
+    url: string
+    thumbnail_url?: string | null
+    is_primary: boolean | null
+  }> | null | undefined,
+) {
+  const s = listingTitleThumbnailSrc(images ?? null)
+  return s || null
 }
 
 export function BuyerOrdersTab() {
@@ -78,7 +86,7 @@ export function BuyerOrdersTab() {
         fulfillment_method,
         stripe_checkout_session_id,
         seller_id,
-        listings ( id, title, listing_images ( url, is_primary ) )
+        listings ( id, title, listing_images ( url, thumbnail_url, is_primary ) )
       `
       )
       .eq("buyer_id", user.id)

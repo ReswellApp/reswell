@@ -5,12 +5,11 @@ import Link from "next/link"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
 import { CheckoutOrderSummaryAside } from "@/components/checkout-order-summary-aside"
 import type { CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+
 function primaryListingImageUrl(images: CheckoutListing["listing_images"]): string | null {
-  if (!images?.length) return null
-  const primary = images.find((i) => i.is_primary)
-  const raw = (primary ?? images[0]).url
-  return proxiedListingImageSrc(raw) || null
+  const s = listingTitleThumbnailSrc(images ?? null)
+  return s || null
 }
 
 export function CheckoutAccountRequired({

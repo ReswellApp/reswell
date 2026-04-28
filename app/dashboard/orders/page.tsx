@@ -16,7 +16,7 @@ import {
 } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
@@ -58,23 +58,35 @@ type MarketplaceOrderRow = {
         title: string
         slug?: string | null
         section: string
-        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+        listing_images: Array<{
+          url: string
+          thumbnail_url?: string | null
+          is_primary: boolean | null
+        }> | null
       }
     | {
         id: string
         title: string
         slug?: string | null
         section: string
-        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+        listing_images: Array<{
+          url: string
+          thumbnail_url?: string | null
+          is_primary: boolean | null
+        }> | null
       }[]
     | null
 }
 
-function primaryImage(images: Array<{ url: string; is_primary: boolean | null }> | null | undefined) {
-  if (!images?.length) return null
-  const primary = images.find((i) => i.is_primary)
-  const raw = (primary ?? images[0]).url
-  return proxiedListingImageSrc(raw) || null
+function primaryImage(
+  images: Array<{
+    url: string
+    thumbnail_url?: string | null
+    is_primary: boolean | null
+  }> | null | undefined,
+) {
+  const s = listingTitleThumbnailSrc(images ?? null)
+  return s || null
 }
 
 function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
@@ -126,7 +138,7 @@ export default async function OrdersPage() {
         title,
         slug,
         section,
-        listing_images ( url, is_primary )
+        listing_images ( url, thumbnail_url, is_primary )
       )
     `
     )

@@ -14,7 +14,11 @@ export type CheckoutListing = PayableListing & {
   title: string
   user_id: string
   section: string
-  listing_images?: Array<{ url: string; is_primary: boolean | null }> | null
+  listing_images?: Array<{
+    url: string
+    thumbnail_url?: string | null
+    is_primary: boolean | null
+  }> | null
 }
 
 export type CheckoutSeller = {

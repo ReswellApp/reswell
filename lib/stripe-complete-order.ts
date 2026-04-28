@@ -16,6 +16,7 @@ import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -549,6 +550,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     console.error("[stripe-complete-order] listing update:", listingErr)
     return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
+
+  void markUserListingBoardModelDataSold(
+    serviceSupabase,
+    listing.id,
+    chargedUsd,
+    new Date().toISOString(),
+  )
 
   if (buyerId) {
     void postPurchaseThreadNotification(serviceSupabase, {

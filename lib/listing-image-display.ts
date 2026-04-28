@@ -1,6 +1,9 @@
 /**
- * Prefer stored thumbnail for browse UIs; fall back to full `url` (legacy rows).
- * Detail / lightbox views should use `url` only.
+ * - `listingCardImageSrc` — marketplace tiles (`ListingTile` and similar): prefer full `url`
+ *   so `next/image` can downscale from a sharp source; fall back to `thumbnail_url`.
+ * - `listingTitleThumbnailSrc` — compact “thumb + title” rows (cart, checkout, orders):
+ *   prefer `thumbnail_url` for bandwidth; fall back to `url`.
+ * - `listingHeroSlideSrc` — large hero imagery: full `url` only.
  */
 
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -16,10 +19,29 @@ export function listingCardImageSrc(
 ): string {
   const list = images ?? []
   const primary = list.find((i) => i.is_primary) || list[0]
-  if (!primary?.url) return ""
+  if (!primary) return ""
+  const full = primary.url?.trim()
+  if (full) return proxiedListingImageSrc(full)
   const thumb = primary.thumbnail_url?.trim()
-  const raw = thumb || primary.url.trim()
-  return proxiedListingImageSrc(raw)
+  if (thumb) return proxiedListingImageSrc(thumb)
+  return ""
+}
+
+/**
+ * Compact rows (cart, checkout summary, order lists, nav search): prefer stored
+ * `thumbnail_url` for bandwidth; fall back to full `url` when missing.
+ */
+export function listingTitleThumbnailSrc(
+  images: ListingImageForCard[] | null | undefined,
+): string {
+  const list = images ?? []
+  const primary = list.find((i) => i.is_primary) || list[0]
+  if (!primary) return ""
+  const thumb = primary.thumbnail_url?.trim()
+  if (thumb) return proxiedListingImageSrc(thumb)
+  const full = primary.url?.trim()
+  if (full) return proxiedListingImageSrc(full)
+  return ""
 }
 
 /** Full-size primary image for large backdrops (e.g. homepage hero); skips thumbnails. */

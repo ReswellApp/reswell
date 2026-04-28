@@ -7,6 +7,7 @@ import { generatePickupCode } from "@/lib/order-status"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 
 export async function POST(request: NextRequest) {
@@ -204,6 +205,8 @@ export async function POST(request: NextRequest) {
     console.error("[wallet/purchase] listing update:", listingErr)
     return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
   }
+
+  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, price, new Date().toISOString())
 
   void postPurchaseThreadNotification(supabase, {
     buyerId: user.id,

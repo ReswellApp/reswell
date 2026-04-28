@@ -170,6 +170,8 @@ import {
   SELL_BOARD_CATEGORY_UNSELECTED_LABEL,
   SELL_BOARD_CATEGORY_UNSELECTED_VALUE,
 } from "@/lib/surfboard-sell-categories"
+import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
+import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -283,6 +285,147 @@ function listingPhotosReadyForDraftSync(slots: ListingPhotoSlot[]): boolean {
   )
 }
 
+function SellListingPhotoTile({
+  image,
+  index,
+  totalCount,
+  onRemove,
+  onMove,
+  onRetry,
+}: {
+  image: ListingPhotoSlot
+  index: number
+  totalCount: number
+  onRemove: () => void
+  onMove: (delta: number) => void
+  onRetry: () => void
+}) {
+  const [thumbLoaded, setThumbLoaded] = useState(false)
+
+  useEffect(() => {
+    setThumbLoaded(false)
+  }, [image.clientId, image.thumbnailUrl, image.url])
+
+  const isFailure =
+    image.optimizePhase === "error" || image.uploadPhase === "error"
+
+  const remote =
+    image.uploadPhase === "done"
+      ? (image.thumbnailUrl?.trim() || image.url?.trim() || "").trim()
+      : ""
+  const photoReady = Boolean(remote)
+
+  const skeletonVisible =
+    !isFailure &&
+    (!photoReady || !thumbLoaded)
+
+  const thumbSrc = remote ? proxiedListingImageSrc(remote) : ""
+
+  return (
+    <div
+      className="relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col border border-transparent"
+      aria-busy={!isFailure && (!photoReady || !thumbLoaded) ? true : undefined}
+      aria-live="polite"
+    >
+      <div className="relative flex-1 min-h-0">
+        {thumbSrc ? (
+          <Image
+            src={thumbSrc}
+            alt={`Photo ${index + 1}`}
+            fill
+            className={cn(
+              "object-cover object-center transition-opacity duration-500 ease-out motion-reduce:duration-150",
+              thumbLoaded ? "opacity-100" : "opacity-0",
+            )}
+            unoptimized
+            onLoadingComplete={() => setThumbLoaded(true)}
+          />
+        ) : null}
+        {!isFailure ? (
+          <div
+            className={cn(
+              "skeleton pointer-events-none absolute inset-0 z-[1] rounded-lg motion-reduce:[animation-duration:1ms]",
+              skeletonVisible ? "opacity-100" : "opacity-0 transition-opacity duration-500 ease-out motion-reduce:duration-150 motion-reduce:transition-none",
+            )}
+            aria-hidden
+          />
+        ) : null}
+        {!isFailure ? (
+          <>
+            <button
+              type="button"
+              onClick={onRemove}
+              className={cn(
+                "absolute top-1 right-1 p-1 rounded-full hover:bg-background z-[5]",
+                skeletonVisible
+                  ? "bg-background/90 shadow-sm ring-1 ring-black/5"
+                  : "bg-background/80",
+              )}
+              aria-label={`Remove photo ${index + 1}`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+            {skeletonVisible ? (
+              <span className="sr-only">
+                {photoReady ? "Loading thumbnail preview" : "Processing photo"}
+              </span>
+            ) : (
+              <>
+                <div className="absolute bottom-6 left-1 flex items-center gap-1 z-[5]">
+                  {index === 0 ? (
+                    <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
+                      Main
+                    </span>
+                  ) : null}
+                </div>
+                <div className="absolute bottom-6 right-1 flex gap-1 z-[5]">
+                  {index > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => onMove(-1)}
+                      className="p-1 rounded-full bg-background/80 hover:bg-background"
+                      aria-label="Move photo left"
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                    </button>
+                  ) : null}
+                  {index < totalCount - 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => onMove(1)}
+                      className="p-1 rounded-full bg-background/80 hover:bg-background"
+                      aria-label="Move photo right"
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
+                  ) : null}
+                </div>
+              </>
+            )}
+          </>
+        ) : null}
+      </div>
+      {isFailure ? (
+        <div className="shrink-0 p-1 bg-destructive/10 border-t border-destructive/20 space-y-1">
+          <p className="text-[9px] text-destructive line-clamp-2">
+            {image.errorMessage || "Failed"}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-6 w-full text-[10px] px-1"
+            onClick={onRetry}
+          >
+            <RefreshCw className="h-3 w-3 mr-0.5" />
+            Retry
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function shippingPriceToFormValue(v: unknown): string {
   if (v == null || v === "") return ""
   const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""))
@@ -337,6 +480,26 @@ function createInitialSellFormData() {
     locationCity: "",
     locationState: "",
     locationDisplay: "",
+  }
+}
+
+function boardCatalogSnapshotFromSellForm(
+  form: ReturnType<typeof createInitialSellFormData>,
+): SellFormBoardCatalogSlice {
+  return {
+    boardLength: form.boardLength,
+    boardWidthInches: form.boardWidthInches,
+    boardThicknessInches: form.boardThicknessInches,
+    boardVolumeL: form.boardVolumeL,
+    boardBrandId: form.boardBrandId,
+    boardIndexBrandSlug: form.boardIndexBrandSlug,
+    boardIndexModelSlug: form.boardIndexModelSlug,
+    boardIndexLabel: form.boardIndexLabel,
+    category: form.category,
+    condition: form.condition,
+    brand: form.brand,
+    price: form.price,
+    boardFins: form.boardFins,
   }
 }
 
@@ -1938,6 +2101,23 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       const fd = submitForm
 
+      const persistBoardCatalogSnapshot = (
+        listingIdForSnap: string,
+        sellerUserId: string,
+        listingUrlPath: string,
+      ) => {
+        void upsertUserListingBoardModelDataFromSellForm(supabase, {
+          listingId: listingIdForSnap,
+          listingUrl: listingUrlPath,
+          sellerUserId,
+          form: boardCatalogSnapshotFromSellForm(fd),
+        }).then((r) => {
+          if (!r.ok && process.env.NODE_ENV === "development") {
+            console.warn("[sell] user_listing_board_model_data:", r.error)
+          }
+        })
+      }
+
       const fulfillmentFlags = resolveListingFulfillmentFlagsForSellSubmit(fd)
 
       const fulfillmentRow = {
@@ -2146,6 +2326,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           }
           if (updateError) throw new Error(submitErrorMessage(updateError, "Failed to update listing"))
           listingSlug = updated?.slug ?? null
+          persistBoardCatalogSnapshot(
+            effectiveEditId,
+            user.id,
+            listingDetailHref({
+              id: effectiveEditId,
+              slug: listingSlug ?? undefined,
+              section: "surfboards",
+            }),
+          )
           if (publishingFromDraftRow && effectiveEditId) {
             requestKlaviyoListingCreated(effectiveEditId)
           }
@@ -2186,6 +2375,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               listing: editListingFields,
               removedImageIds,
               images: imageOps,
+              catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
             }),
           })
           const data = await res.json()
@@ -2252,7 +2442,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ listing: listingFields, images: imagePayload }),
+            body: JSON.stringify({
+              listing: listingFields,
+              images: imagePayload,
+              catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
+            }),
           })
           const data = await res.json()
           if (!res.ok) throw new Error(data.error || "Failed to create listing")
@@ -2301,6 +2495,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           }
           listingId = listing.id
           listingSlug = listing.slug ?? newSlug
+          persistBoardCatalogSnapshot(
+            listing.id,
+            user.id,
+            listingDetailHref({
+              id: listing.id,
+              slug: listingSlug ?? undefined,
+              section: "surfboards",
+            }),
+          )
           goSubmitStep(1)
           const imageRows = images.map((im, index) => ({
             listing_id: listingId,
@@ -2549,7 +2752,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                 >
                 <div className="space-y-8">
                   <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-foreground">Title</h3>
                       <div className="flex items-end justify-between gap-2">
                         <Label htmlFor="listing-title">Title *</Label>
                         <span
@@ -2576,16 +2778,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         required
                         maxLength={LISTING_TITLE_MAX_LENGTH}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Shown on the listing card and detail page. Keep it clear and specific — we
-                        also use it in the public URL.
-                      </p>
                   </div>
 
                   <Separator className="bg-border" />
 
                   <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-foreground">Brand</h3>
                       <div className="flex items-end justify-between gap-2">
                         <Label htmlFor="listing-brand">Brand *</Label>
                       </div>
@@ -2626,11 +2823,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         required
                       />
                       <div className="space-y-1.5">
-                        <p className="text-xs text-muted-foreground">
-                          Search to pick a brand we already have — that links this listing to our
-                          brand data. You can also type a name; it doesn’t have to match the directory
-                          exactly.
-                        </p>
                         <button
                           type="button"
                           className="text-left text-xs text-primary underline-offset-4 hover:underline"
@@ -2654,100 +2846,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Photos</h3>
                   <Label className="sr-only">Listing photos</Label>
-                  {optimizingAny ? (
-                    <p className="text-xs text-muted-foreground/45 flex items-center gap-2">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                      Optimizing images…
-                    </p>
-                  ) : null}
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {images.map((image, index) => (
-                      <div
+                      <SellListingPhotoTile
                         key={image.clientId}
-                        className="relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col"
-                      >
-                        <div className="relative flex-1 min-h-0">
-                          <Image
-                            src={
-                              image.thumbnailUrl || image.url
-                                ? proxiedListingImageSrc(image.thumbnailUrl || image.url)
-                                : image.previewUrl || "/placeholder.svg"
-                            }
-                            alt={`Photo ${index + 1}`}
-                            fill
-                            className="object-cover object-center"
-                            unoptimized
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-1 right-1 p-1 rounded-full bg-background/80 hover:bg-background z-10"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                          <div className="absolute bottom-6 left-1 flex items-center gap-1 z-10">
-                            {index === 0 && (
-                              <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
-                                Main
-                              </span>
-                            )}
-                          </div>
-                          <div className="absolute bottom-6 right-1 flex gap-1 z-10">
-                            {index > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => moveImage(index, -1)}
-                                className="p-1 rounded-full bg-background/80 hover:bg-background"
-                                aria-label="Move left"
-                              >
-                                <ChevronLeft className="h-3 w-3" />
-                              </button>
-                            )}
-                            {index < images.length - 1 && (
-                              <button
-                                type="button"
-                                onClick={() => moveImage(index, 1)}
-                                className="p-1 rounded-full bg-background/80 hover:bg-background"
-                                aria-label="Move right"
-                              >
-                                <ChevronRight className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {image.optimizePhase === "running" && image.uploadPhase === "idle" ? (
-                          <div className="shrink-0 px-1 py-1 bg-background/90 border-t border-border/60">
-                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
-                              Optimizing…
-                            </p>
-                          </div>
-                        ) : image.uploadPhase === "uploading" ? (
-                          <div className="shrink-0 px-1 pb-1 pt-0.5 space-y-0.5 bg-background/90 border-t border-border/60">
-                            <p className="text-[9px] text-muted-foreground/45 text-center leading-tight">
-                              Uploading
-                            </p>
-                            <Progress value={image.progressFull} className="h-1" title="Full size" />
-                            <Progress value={image.progressThumb} className="h-1" title="Thumbnail" />
-                          </div>
-                        ) : null}
-                        {image.uploadPhase === "error" || image.optimizePhase === "error" ? (
-                          <div className="shrink-0 p-1 bg-destructive/10 border-t border-destructive/20 space-y-1">
-                            <p className="text-[9px] text-destructive line-clamp-2">
-                              {image.errorMessage || "Failed"}
-                            </p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-6 w-full text-[10px] px-1"
-                              onClick={() => retryListingPhotoUpload(image.clientId)}
-                            >
-                              <RefreshCw className="h-3 w-3 mr-0.5" />
-                              Retry
-                            </Button>
-                          </div>
-                        ) : null}
-                      </div>
+                        image={image}
+                        index={index}
+                        totalCount={images.length}
+                        onRemove={() => removeImage(index)}
+                        onMove={(delta) => moveImage(index, delta)}
+                        onRetry={() => retryListingPhotoUpload(image.clientId)}
+                      />
                     ))}
                     {images.length < 12 && (
                       <div className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden">
@@ -2772,18 +2881,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                       </div>
                     )}
                   </div>
-                  <p className="lg:hidden text-xs text-muted-foreground/55">
-                    iPhone/iPad: In Photo Library, tap{" "}
-                    <span className="font-medium text-foreground/80">Select</span>, choose several photos, then Add
-                    or Done. Tapping thumbnails without Select first usually uploads only one photo — that is how
-                    Apple’s photo picker works in Safari.
-                  </p>
-                  <p className="text-xs text-muted-foreground/45">
-                    At least {LISTING_MIN_PHOTOS} photo, max 12. Upload a few angles of your board — top, bottom,
-                    rails, fins, whatever helps someone see what they&apos;re buying. The more you add, the less
-                    back-and-forth in messages. If a shot is horizontal we will rotate it into vertical; the first pic is your
-                    cover. Any normal phone pic works; we&apos;ll swap odd formats to JPEG. Thank you for listing on
-                    Reswell.{" "}
+                  <p className="text-xs text-muted-foreground/45 space-y-1">
+                    <span className="block">Thank you for listing on Reswell.</span>
                     <span className="inline-flex flex-wrap items-center gap-1">
                       <span>Made with</span>
                       <Heart
@@ -2793,11 +2892,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                       <span>in Santa Barbara.</span>
                     </span>
                   </p>
-                  {images.length >= LISTING_MIN_PHOTOS && images.length < 12 && (
-                    <p className="text-xs text-muted-foreground/45">
-                      Room for {12 - images.length} more — a fuller gallery usually gets more interest.
-                    </p>
-                  )}
                   </div>
                 </div>
                 </SellFormSection>

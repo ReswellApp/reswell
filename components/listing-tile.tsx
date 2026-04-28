@@ -195,7 +195,7 @@ export function ListingTile({
           alt={imageAlt}
           fill
           sizes={imageSizes}
-          quality={80}
+          quality={90}
           className={cn(
             "transition-transform duration-300 group-hover:scale-105",
             imageFit === "cover" && "object-cover",

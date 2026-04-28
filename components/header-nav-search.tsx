@@ -13,7 +13,7 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 
 const RECENT_SEARCHES_KEY = "reswell_recent_searches"
 
@@ -96,7 +96,7 @@ export function HeaderNavSearch() {
       const supabase = createClient()
       const { data } = await supabase
         .from("listings")
-        .select("id, slug, title, price, listing_images (url, is_primary)")
+        .select("id, slug, title, price, listing_images (url, thumbnail_url, is_primary)")
         .eq("status", "active")
         .eq("section", "surfboards")
         .eq("hidden_from_site", false)
@@ -106,13 +106,12 @@ export function HeaderNavSearch() {
         setSuggestedListings(
           data.map((l: any) => {
             const imgs = l.listing_images ?? []
-            const primary = imgs.find((i: any) => i.is_primary)
             return {
               id: l.id,
               slug: l.slug ?? null,
               title: l.title,
               price: l.price,
-              imageUrl: primary?.url ?? imgs[0]?.url ?? null,
+              imageUrl: listingTitleThumbnailSrc(imgs) || null,
             }
           }),
         )
@@ -286,7 +285,7 @@ export function HeaderNavSearch() {
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                       {listing.imageUrl ? (
                         <Image
-                          src={proxiedListingImageSrc(listing.imageUrl)}
+                          src={listing.imageUrl}
                           alt=""
                           fill
                           className="object-cover"

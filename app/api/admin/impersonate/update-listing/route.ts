@@ -6,6 +6,9 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
+import { listingDetailHref } from "@/lib/listing-href"
+import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
+import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -50,6 +53,7 @@ export async function PUT(request: NextRequest) {
     listing: listingData,
     removedImageIds = [],
     images = [],
+    catalog_snapshot,
   } = body as {
     listingId: string
     listing: Record<string, unknown>
@@ -61,6 +65,7 @@ export async function PUT(request: NextRequest) {
       is_primary: boolean
       sort_order: number
     }[]
+    catalog_snapshot?: SellFormBoardCatalogSlice
   }
 
   if (!listingId || !listingData) {
@@ -126,6 +131,15 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update listing" }, { status: 500 })
   }
 
+  const slugTrim =
+    updatedRow && typeof (updatedRow as { slug?: string }).slug === "string"
+      ? String((updatedRow as { slug: string }).slug).trim()
+      : ""
+  const snapshotListingUrl = listingDetailHref({
+    id: listingId,
+    slug: slugTrim.length > 0 ? slugTrim : undefined,
+  })
+
   if (removedImageIds.length > 0) {
     const { error: delErr } = await service
       .from("listing_images")
@@ -155,6 +169,22 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  if (
+    String(listingData?.section ?? "") === "surfboards" &&
+    catalog_snapshot &&
+    typeof catalog_snapshot === "object"
+  ) {
+    const r = await upsertUserListingBoardModelDataFromSellForm(supabase, {
+      listingId,
+      listingUrl: snapshotListingUrl,
+      sellerUserId: impersonation.userId,
+      form: catalog_snapshot,
+    })
+    if (!r.ok) {
+      console.warn("[impersonate update-listing] user_listing_board_model_data:", r.error)
+    }
+  }
+
   const { data: sellerProfile } = await service
     .from("profiles")
     .select("display_name")
@@ -164,10 +194,7 @@ export async function PUT(request: NextRequest) {
   const sellerDisplayName =
     (sellerProfile?.display_name && String(sellerProfile.display_name).trim()) || "Seller"
 
-  const slug =
-    updatedRow && typeof (updatedRow as { slug?: string }).slug === "string"
-      ? (updatedRow as { slug: string }).slug
-      : ""
+  const slug = slugTrim
 
   if (slug.trim()) {
     revalidatePath(`/l/${slug.trim()}`, "page")

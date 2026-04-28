@@ -14,7 +14,7 @@ import {
 } from "@/app/actions/cart"
 import { toggleFavoriteListing } from "@/app/actions/favorites"
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
-import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { formatBoardType, formatCondition, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -249,7 +249,7 @@ export function CartPageView({
           <div className="rounded-lg border border-neutral-200 bg-white p-4 sm:p-6 dark:border-white/10 dark:bg-background">
             <ul className="divide-y divide-neutral-200 dark:divide-white/10">
               {initialItems.map(({ cartCreatedAt, listing }) => {
-                const img = listingCardImageSrc(listing.listing_images ?? null)
+                const img = listingTitleThumbnailSrc(listing.listing_images ?? null)
                 const seller = listing.profiles
                 const sellerName = getPublicSellerDisplayName(seller)
                 const sellerHref = sellerProfileHref(seller)

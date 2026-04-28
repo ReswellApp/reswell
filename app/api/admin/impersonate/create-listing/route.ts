@@ -8,6 +8,9 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { revalidatePath } from "next/cache"
+import { listingDetailHref } from "@/lib/listing-href"
+import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
+import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -49,7 +52,12 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { listing: listingData, images = [] } = body
+  const { listing: listingData, images: imagesRaw = [], catalog_snapshot } = body as {
+    listing?: Record<string, unknown>
+    images?: unknown
+    catalog_snapshot?: SellFormBoardCatalogSlice
+  }
+  const images = Array.isArray(imagesRaw) ? imagesRaw : []
 
   if (!listingData?.title || listingData?.price == null) {
     return NextResponse.json({ error: "Missing required listing fields" }, { status: 400 })
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const baseSlug = slugify(listingData.title)
+  const baseSlug = slugify(String(listingData.title ?? ""))
   let slug = baseSlug
   const { count } = await service
     .from("listings")
@@ -118,6 +126,30 @@ export async function POST(request: NextRequest) {
   if (listingError || !listing) {
     console.error("[impersonate] listing insert error:", listingError)
     return NextResponse.json({ error: "Failed to create listing" }, { status: 500 })
+  }
+
+  if (
+    String(listingData?.section ?? "") === "surfboards" &&
+    catalog_snapshot &&
+    typeof catalog_snapshot === "object"
+  ) {
+    const listingSlug =
+      listing && typeof (listing as { slug?: string }).slug === "string"
+        ? String((listing as { slug: string }).slug).trim()
+        : ""
+    const listingUrl = listingDetailHref({
+      id: listing.id,
+      slug: listingSlug.length > 0 ? listingSlug : undefined,
+    })
+    const r = await upsertUserListingBoardModelDataFromSellForm(supabase, {
+      listingId: listing.id,
+      listingUrl,
+      sellerUserId: targetUserId,
+      form: catalog_snapshot,
+    })
+    if (!r.ok) {
+      console.warn("[impersonate create-listing] user_listing_board_model_data:", r.error)
+    }
   }
 
   if (images.length > 0) {

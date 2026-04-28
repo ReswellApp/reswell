@@ -10,7 +10,7 @@ import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -24,10 +24,8 @@ const SURFBOARD_COPY = {
 } as const
 
 function primaryListingImageUrl(images: CheckoutListing["listing_images"]): string | null {
-  if (!images?.length) return null
-  const primary = images.find((i) => i.is_primary)
-  const raw = (primary ?? images[0]).url
-  return proxiedListingImageSrc(raw) || null
+  const s = listingTitleThumbnailSrc(images ?? null)
+  return s || null
 }
 
 interface CheckoutClientProps {
