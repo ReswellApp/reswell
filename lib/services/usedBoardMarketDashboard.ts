@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import {
+  canonicalListingsBoardTypeKey,
+  listingBoardTypeDbValuesForFilter,
+} from "@/lib/board-type-canonical"
+import {
   DASHBOARD_RANGE_OPTIONS,
   type DashboardBoardTypeRow,
   type DashboardConditionRow,
@@ -383,7 +387,14 @@ export async function getUsedBoardMarketDashboardService(
     .limit(ABSOLUTE_FETCH_CAP)
 
   if (filters.brandId) inventoryQuery = inventoryQuery.eq("brand_id", filters.brandId)
-  if (filters.boardType) inventoryQuery = inventoryQuery.eq("board_type", filters.boardType)
+  if (filters.boardType) {
+    const boardTypeVals = listingBoardTypeDbValuesForFilter(filters.boardType)
+    if (boardTypeVals.length === 1) {
+      inventoryQuery = inventoryQuery.eq("board_type", boardTypeVals[0])
+    } else if (boardTypeVals.length > 1) {
+      inventoryQuery = inventoryQuery.in("board_type", boardTypeVals)
+    }
+  }
   if (filters.condition) inventoryQuery = inventoryQuery.eq("condition", filters.condition)
   if (filters.state) inventoryQuery = inventoryQuery.eq("state", filters.state.toUpperCase())
   if (snapshotListingIdAllowList) {
@@ -407,7 +418,14 @@ export async function getUsedBoardMarketDashboardService(
   if (fromIso) newListingsCurrentQuery = newListingsCurrentQuery.gte("created_at", fromIso)
   newListingsCurrentQuery = newListingsCurrentQuery.lte("created_at", toIso).limit(ABSOLUTE_FETCH_CAP)
   if (filters.brandId) newListingsCurrentQuery = newListingsCurrentQuery.eq("brand_id", filters.brandId)
-  if (filters.boardType) newListingsCurrentQuery = newListingsCurrentQuery.eq("board_type", filters.boardType)
+  if (filters.boardType) {
+    const boardTypeVals = listingBoardTypeDbValuesForFilter(filters.boardType)
+    if (boardTypeVals.length === 1) {
+      newListingsCurrentQuery = newListingsCurrentQuery.eq("board_type", boardTypeVals[0])
+    } else if (boardTypeVals.length > 1) {
+      newListingsCurrentQuery = newListingsCurrentQuery.in("board_type", boardTypeVals)
+    }
+  }
   if (filters.condition) newListingsCurrentQuery = newListingsCurrentQuery.eq("condition", filters.condition)
   if (filters.state) newListingsCurrentQuery = newListingsCurrentQuery.eq("state", filters.state.toUpperCase())
   if (snapshotListingIdAllowList) {
@@ -447,7 +465,13 @@ export async function getUsedBoardMarketDashboardService(
     if (!listing) continue
     if (listing.section !== "surfboards") continue
     if (filters.brandId && listing.brand_id !== filters.brandId) continue
-    if (filters.boardType && listing.board_type !== filters.boardType) continue
+    if (
+      filters.boardType &&
+      canonicalListingsBoardTypeKey(listing.board_type) !==
+        canonicalListingsBoardTypeKey(filters.boardType)
+    ) {
+      continue
+    }
     if (filters.condition && listing.condition !== filters.condition) continue
     if (
       filters.state &&
@@ -956,16 +980,16 @@ function aggregateByBoardType(args: {
     { raw: string; activeInventory: number; soldOrders: OrderJoinedRow[] }
   >()
 
-  function key(value: string | null | undefined): string {
-    const v = (value ?? "").trim().toLowerCase()
-    return v || "__unspecified"
+  function bucketKey(value: string | null | undefined): string {
+    const canonical = canonicalListingsBoardTypeKey(value)
+    return canonical || "__unspecified"
   }
 
   function getBucket(raw: string | null | undefined) {
-    const k = key(raw)
+    const k = bucketKey(raw)
     let b = buckets.get(k)
     if (!b) {
-      b = { raw: k === "__unspecified" ? "" : (raw ?? "").trim(), activeInventory: 0, soldOrders: [] }
+      b = { raw: k === "__unspecified" ? "" : k, activeInventory: 0, soldOrders: [] }
       buckets.set(k, b)
     }
     return b
@@ -1301,8 +1325,8 @@ async function buildFilterOptions(args: {
   const stateMap = new Map<string, number>()
   const conditionMap = new Map<string, number>()
   for (const l of activeListings) {
-    const bt = l.board_type?.trim().toLowerCase()
-    if (bt) boardTypeMap.set(bt, (boardTypeMap.get(bt) ?? 0) + 1)
+    const canonical = canonicalListingsBoardTypeKey(l.board_type)
+    if (canonical) boardTypeMap.set(canonical, (boardTypeMap.get(canonical) ?? 0) + 1)
     const st = l.state?.trim().toUpperCase()
     if (st) stateMap.set(st, (stateMap.get(st) ?? 0) + 1)
     const cond = l.condition?.trim().toLowerCase()

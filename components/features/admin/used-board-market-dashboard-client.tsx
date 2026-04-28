@@ -61,6 +61,7 @@ import {
   type DashboardSeriesPoint,
   type UsedBoardMarketDashboard,
 } from "@/lib/services/usedBoardMarketDashboard.shared"
+import { canonicalListingsBoardTypeKey } from "@/lib/board-type-canonical"
 import { cn } from "@/lib/utils"
 
 const CONDITION_PALETTE = ["#0F172A", "#1E40AF", "#0EA5E9", "#14B8A6", "#F59E0B", "#EF4444"]
@@ -175,12 +176,17 @@ function readFiltersFromSearchParams(params: URLSearchParams): UrlFilters {
   const brandId = params.get("brandId") || null
   const modelSlug = brandId ? params.get("modelSlug") || null : null
   const variantId = brandId && modelSlug ? params.get("variantId") || null : null
+  const boardParam = params.get("boardType")?.trim()
+  const boardType =
+    boardParam && boardParam.length > 0
+      ? canonicalListingsBoardTypeKey(boardParam) || null
+      : null
   return {
     range: validRange,
     brandId,
     modelSlug,
     variantId,
-    boardType: params.get("boardType") || null,
+    boardType,
     condition: params.get("condition") || null,
     state: params.get("state") || null,
   }
@@ -1244,6 +1250,7 @@ function InventoryByBoardTypeCard({
         .filter((r) => r.activeInventory + r.soldInRange > 0)
         .slice(0, 8)
         .map((r, i) => ({
+          id: r.boardType.trim() ? r.boardType : "__unspecified",
           name: r.boardTypeLabel || "Unspecified",
           active: r.activeInventory,
           sold: r.soldInRange,
@@ -1278,7 +1285,7 @@ function InventoryByBoardTypeCard({
                 paddingAngle={1}
               >
                 {data.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} stroke="#ffffff" strokeWidth={2} />
+                  <Cell key={entry.id} fill={entry.color} stroke="#ffffff" strokeWidth={2} />
                 ))}
               </Pie>
               <RechartsTooltip
@@ -1308,7 +1315,7 @@ function InventoryByBoardTypeCard({
           <ul className="space-y-2">
             {data.map((row) => (
               <li
-                key={row.name}
+                key={row.id}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
               >
                 <div className="flex min-w-0 items-center gap-2">
