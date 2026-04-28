@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { BoardCatalogSnapshotsClient } from "@/components/features/admin/board-catalog-snapshots-client"
 
 export const metadata = privatePageMetadata({
-  title: "Board catalog snapshots — Admin — Reswell",
+  title: "User Listings Board Data — Admin — Reswell",
   description:
     "Review surfboard listing field snapshots from sellers and convert them into normalized brand catalog variants.",
   path: "/admin/listings/board-catalog-data",

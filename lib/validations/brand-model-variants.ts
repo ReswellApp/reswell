@@ -39,7 +39,8 @@ const optionalPriceUsd = z.preprocess(
     .optional(),
 )
 
-const optionalImageUrl = z.preprocess(
+/** Optional stored image pointer (omit / null / "" = unset). Exported for snapshot→catalog convert flow. */
+export const catalogOptionalStoredImageUrlSchema = z.preprocess(
   (v: unknown) => {
     if (v === undefined) return undefined
     if (v === null || v === "") return null
@@ -51,6 +52,8 @@ const optionalImageUrl = z.preprocess(
     .union([z.undefined(), z.null(), z.string().max(2048)])
     .refine((s) => s === undefined || s === null || URL.canParse(s), { message: "Invalid image URL" }),
 )
+
+const optionalImageUrl = catalogOptionalStoredImageUrlSchema
 
 export const adminBrandModelVariantCreateBodySchema = z.object({
   brand_model_id: uuid,

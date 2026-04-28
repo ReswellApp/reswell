@@ -31,6 +31,15 @@ export type UserListingBoardModelDataRow = {
 const SELECT_ADMIN =
   "id, listing_id, user_id, brand_id, catalog_brand_slug, catalog_model_slug, model_name, length_label, width_label, thickness_label, volume_label, condition, listing_price, sold_price, converted_brand_model_variant_id"
 
+/** Joined `listing_images` rows for picker when converting snapshots to catalog imagery. */
+export type UserListingBoardModelDataListingImageEmbed = {
+  id: string
+  url: string
+  thumbnail_url: string | null
+  is_primary: boolean | null
+  sort_order: number | null
+}
+
 /** Joined `listings` row fields for admin board-catalog tools (prefill from live listing). */
 export type UserListingBoardModelDataListingEmbed = {
   title: string | null
@@ -52,16 +61,43 @@ export type UserListingBoardModelDataListingEmbed = {
   volume: number | null
   volume_display: string | null
   updated_at: string | null
+  listing_images?: UserListingBoardModelDataListingImageEmbed[] | null
 }
 
-const LISTING_EMBED_FOR_ADMIN =
-  "title, slug, status, board_type, price, condition, fins_setup, description, brand, length_feet, length_inches, length_inches_display, width, width_inches_display, thickness, thickness_inches_display, volume, volume_display, updated_at"
+const LISTING_EMBED_FOR_ADMIN = `title, slug, status, board_type, price, condition, fins_setup, description, brand, length_feet, length_inches, length_inches_display, width, width_inches_display, thickness, thickness_inches_display, volume, volume_display, updated_at,
+  listing_images ( id, url, thumbnail_url, is_primary, sort_order )`
 
 function normalizeMoney(v: unknown): number | null {
   if (v == null) return null
   if (typeof v === "number" && Number.isFinite(v)) return v
   const n = Number(v)
   return Number.isFinite(n) ? n : null
+}
+
+function normalizeListingImages(raw: unknown): UserListingBoardModelDataListingImageEmbed[] | null {
+  if (raw == null) return null
+  if (!Array.isArray(raw)) return null
+  const out: UserListingBoardModelDataListingImageEmbed[] = []
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue
+    const r = item as Record<string, unknown>
+    const id = r.id
+    const url = r.url
+    if (typeof id !== "string" || typeof url !== "string" || !url.trim()) continue
+    const thumb = r.thumbnail_url
+    const isPrimary = r.is_primary
+    const sortOrder = r.sort_order
+    out.push({
+      id,
+      url: url.trim(),
+      thumbnail_url:
+        thumb === null ? null : typeof thumb === "string" && thumb.trim() ? thumb.trim() : null,
+      is_primary: typeof isPrimary === "boolean" ? isPrimary : null,
+      sort_order:
+        typeof sortOrder === "number" && Number.isFinite(sortOrder) ? sortOrder : null,
+    })
+  }
+  return out.length ? out : null
 }
 
 function normalizeRow(raw: Record<string, unknown>): UserListingBoardModelDataRow {
@@ -188,9 +224,19 @@ export async function listUserListingBoardModelDataForAdminPage(
       | null
       | undefined
     const brandsObj = Array.isArray(brands) ? brands[0] ?? null : brands ?? null
+    const listingsNormalized =
+      listingsObj && typeof listingsObj === "object"
+        ? ({
+            ...(listingsObj as UserListingBoardModelDataListingEmbed),
+            listing_images: normalizeListingImages(
+              (listingsObj as Record<string, unknown>).listing_images,
+            ),
+          } satisfies UserListingBoardModelDataListingEmbed)
+        : null
+
     return {
       ...base,
-      listings: listingsObj,
+      listings: listingsNormalized,
       brands: brandsObj,
     }
   }) as (UserListingBoardModelDataRow & {

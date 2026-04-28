@@ -39,12 +39,13 @@ export type BrandRequestRow = {
 export type BrandModelRequestRow = {
   id: string
   user_id: string
-  brand_id: string
+  brand_id: string | null
   requested_model_name: string
   notes: string | null
   created_at: string
   brand_name: string | null
   brand_slug: string | null
+  seller_brand_name: string | null
 }
 
 export function BrandRequestsAdminClient() {
@@ -111,7 +112,7 @@ export function BrandRequestsAdminClient() {
             <Link href={BRANDS_BASE} className="text-primary underline-offset-2 hover:underline">
               /brands
             </Link>{" "}
-            Add brand dialog; model requests are for existing brands — add the model in the brand editor after review.
+            Add brand dialog. Model requests are tied to an existing `/brands` row when possible; otherwise they include the typed maker label until we add that brand.
           </p>
         </div>
         <Button variant="outline" asChild>

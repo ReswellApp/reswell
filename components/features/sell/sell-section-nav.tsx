@@ -20,7 +20,7 @@ function scrollToSection(id: string) {
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-section-photos-title",
-    label: "Title, brand & photos",
+    label: "Title & photos",
     shortLabel: "Start",
   },
   {

@@ -1,10 +1,13 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { format } from "date-fns"
-import { Check, Loader2, MoreHorizontal, PlusCircle, Search, Trash2, X } from "lucide-react"
+import { Check, ImagePlus, Loader2, MoreHorizontal, PlusCircle, Search, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
+
+import { createClient } from "@/lib/supabase/client"
 
 import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
 import { finBoxTypeFromListingFinsSetup } from "@/lib/utils/fins-setup-to-fin-box"
@@ -20,6 +23,7 @@ import { buildBoardCatalogDimensionLabelsFromListingRow } from "@/lib/utils/list
 import type {
   UserListingBoardModelDataRow,
   UserListingBoardModelDataListingEmbed,
+  UserListingBoardModelDataListingImageEmbed,
 } from "@/lib/db/user-listing-board-model-data"
 import { BrandEditorFormFields } from "@/components/brands/brand-editor-form-fields"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -105,6 +109,73 @@ const PRIORITY_LABEL: Record<BoardCatalogSnapshotPriority, string> = {
   high: "High",
   medium: "Medium",
   low: "Low",
+}
+
+const CATALOG_SNAPSHOT_IMAGE_UPLOAD_MAX = 5 * 1024 * 1024
+
+function sortedListingImagesForPicker(
+  row: SnapshotAdminRowApi,
+): UserListingBoardModelDataListingImageEmbed[] {
+  const raw = row.listings?.listing_images
+  if (!raw || !Array.isArray(raw)) return []
+  const valid = raw.filter(
+    (img): img is UserListingBoardModelDataListingImageEmbed =>
+      typeof img === "object" &&
+      img !== null &&
+      typeof (img as UserListingBoardModelDataListingImageEmbed).id === "string" &&
+      typeof (img as UserListingBoardModelDataListingImageEmbed).url === "string",
+  )
+  return [...valid].sort((a, b) => {
+    const ap = a.is_primary ? 1 : 0
+    const bp = b.is_primary ? 1 : 0
+    if (ap !== bp) return bp - ap
+    const ao = typeof a.sort_order === "number" && Number.isFinite(a.sort_order) ? a.sort_order : 0
+    const bo = typeof b.sort_order === "number" && Number.isFinite(b.sort_order) ? b.sort_order : 0
+    if (ao !== bo) return ao - bo
+    return a.id.localeCompare(b.id)
+  })
+}
+
+async function uploadSnapshotConvertModelHeroFile(file: File): Promise<string | null> {
+  if (file.size > CATALOG_SNAPSHOT_IMAGE_UPLOAD_MAX) {
+    toast.error("Image must be under 5MB")
+    return null
+  }
+  const supabase = createClient()
+  const ext = (file.name.split(".").pop() || "png").toLowerCase()
+  const safeExt = ["png", "jpg", "jpeg", "webp", "gif"].includes(ext) ? ext : "png"
+  const path = `board-models/${crypto.randomUUID()}.${safeExt}`
+  const { error } = await supabase.storage.from("brand-assets").upload(path, file, { upsert: false })
+  if (error) {
+    console.error(error)
+    toast.error(error.message || "Upload failed")
+    return null
+  }
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("brand-assets").getPublicUrl(path)
+  return `${publicUrl}?t=${Date.now()}`
+}
+
+async function uploadSnapshotConvertVariantFile(file: File): Promise<string | null> {
+  if (file.size > CATALOG_SNAPSHOT_IMAGE_UPLOAD_MAX) {
+    toast.error("Image must be under 5MB")
+    return null
+  }
+  const supabase = createClient()
+  const ext = (file.name.split(".").pop() || "png").toLowerCase()
+  const safeExt = ["png", "jpg", "jpeg", "webp", "gif"].includes(ext) ? ext : "png"
+  const path = `board-models/dimensions/${crypto.randomUUID()}.${safeExt}`
+  const { error } = await supabase.storage.from("brand-assets").upload(path, file, { upsert: false })
+  if (error) {
+    console.error(error)
+    toast.error(error.message || "Upload failed")
+    return null
+  }
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("brand-assets").getPublicUrl(path)
+  return `${publicUrl}?t=${Date.now()}`
 }
 
 function parseStoredPriorities(raw: string): Record<string, BoardCatalogSnapshotPriority> {
@@ -459,7 +530,7 @@ export function BoardCatalogSnapshotsClient() {
     <div className="w-full min-w-0 max-w-full space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-xl space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Board catalog snapshots</h1>
+          <h1 className="text-2xl font-bold text-foreground">User Listings Board Data</h1>
           <p className="text-muted-foreground text-sm">
             Aggregated surfboard listing fields from sellers ({total} matching). Use{" "}
             <span className="font-medium text-foreground">Convert</span> to add a normalized row under{" "}
@@ -1184,6 +1255,15 @@ export function ConvertCatalogSnapshotDialog({
   const [catalogPrice, setCatalogPrice] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
+  const newModelImageInputRef = useRef<HTMLInputElement>(null)
+  const variantImageInputRef = useRef<HTMLInputElement>(null)
+  const [newModelImageUrl, setNewModelImageUrl] = useState<string | null>(null)
+  const [variantImageUrl, setVariantImageUrl] = useState<string | null>(null)
+  const [newModelImageUploading, setNewModelImageUploading] = useState(false)
+  const [variantImageUploading, setVariantImageUploading] = useState(false)
+
+  const listingPickerImages = useMemo(() => sortedListingImagesForPicker(row), [row])
+
   useEffect(() => {
     if (!open || !brandId) return
     setBrandModels([])
@@ -1257,6 +1337,17 @@ export function ConvertCatalogSnapshotDialog({
     const desc = lg?.description?.trim() ?? ""
     setNewModelDescription(desc.length > 8000 ? desc.slice(0, 8000) : desc)
 
+    setNewModelImageUrl(null)
+    setNewModelImageUploading(false)
+    setVariantImageUploading(false)
+    if (newModelImageInputRef.current) newModelImageInputRef.current.value = ""
+    if (variantImageInputRef.current) variantImageInputRef.current.value = ""
+
+    const picks = sortedListingImagesForPicker(row)
+    const defaultVariantUrl =
+      picks.find((i) => i.is_primary)?.url ?? picks[0]?.url ?? null
+    setVariantImageUrl(defaultVariantUrl)
+
     setMode("existing_model")
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when opening snapshot
   }, [open, row])
@@ -1299,6 +1390,16 @@ export function ConvertCatalogSnapshotDialog({
       priceParsed = n
     }
 
+    const variantTrim = variantImageUrl?.trim()
+    const variantImagePayload =
+      variantTrim && URL.canParse(variantTrim) ? variantTrim : undefined
+
+    const newModelImageTrim = newModelImageUrl?.trim()
+    const newModelImagePayload =
+      mode === "new_model" && newModelImageTrim && URL.canParse(newModelImageTrim)
+        ? newModelImageTrim
+        : undefined
+
     if (mode === "existing_model") {
       if (!brandModelId.trim()) {
         toast.error("Select a catalog model")
@@ -1314,6 +1415,7 @@ export function ConvertCatalogSnapshotDialog({
         fin_box_type: finBox,
         condition,
         ...(priceParsed !== undefined ? { price: priceParsed } : {}),
+        ...(variantImagePayload ? { variant_image_url: variantImagePayload } : {}),
       }
     } else {
       const nm = newModelName.trim()
@@ -1340,6 +1442,8 @@ export function ConvertCatalogSnapshotDialog({
         fin_box_type: finBox,
         condition,
         ...(priceParsed !== undefined ? { price: priceParsed } : {}),
+        ...(newModelImagePayload ? { new_model_image_url: newModelImagePayload } : {}),
+        ...(variantImagePayload ? { variant_image_url: variantImagePayload } : {}),
       }
     }
 
@@ -1617,6 +1721,101 @@ export function ConvertCatalogSnapshotDialog({
                     onChange={(e) => setNewModelDescription(e.target.value)}
                   />
                 </div>
+
+                {!newModelDuplicateHit ? (
+                  <div className="border-border bg-muted/25 space-y-3 rounded-md border px-3 py-2">
+                    <div className="space-y-1">
+                      <Label className="text-foreground">Model hero image (optional)</Label>
+                      <p className="text-muted-foreground text-[11px] leading-relaxed">
+                        Saved on the new catalog model line. Choose a seller photo from this listing, or upload
+                        to catalog storage under board-models/.
+                      </p>
+                    </div>
+                    {listingPickerImages.length === 0 ? (
+                      <p className="text-muted-foreground text-xs">
+                        No photos on this listing — upload below to supply a hero image.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {listingPickerImages.map((img) => {
+                          const src = (img.thumbnail_url?.trim() || img.url).trim()
+                          const sel = Boolean(newModelImageUrl?.trim()) && newModelImageUrl === img.url
+                          return (
+                            <button
+                              key={`model-pick-${img.id}`}
+                              type="button"
+                              onClick={() => setNewModelImageUrl(img.url)}
+                              className={cn(
+                                "relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-md border-2 bg-muted transition-colors",
+                                sel
+                                  ? "border-primary ring-2 ring-primary/25"
+                                  : "border-transparent hover:border-border",
+                              )}
+                              title="Use as model hero image"
+                            >
+                              <Image src={src} alt="" fill sizes="76px" className="object-cover" />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        ref={newModelImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(e) => {
+                          void (async () => {
+                            const input = e.currentTarget
+                            const f = input.files?.[0]
+                            input.value = ""
+                            if (!f) return
+                            setNewModelImageUploading(true)
+                            try {
+                              const url = await uploadSnapshotConvertModelHeroFile(f)
+                              if (url) setNewModelImageUrl(url)
+                            } finally {
+                              setNewModelImageUploading(false)
+                            }
+                          })()
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={newModelImageUploading}
+                        onClick={() => newModelImageInputRef.current?.click()}
+                      >
+                        {newModelImageUploading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading…
+                          </>
+                        ) : (
+                          <>
+                            <ImagePlus className="mr-2 h-4 w-4 shrink-0" /> Upload image
+                          </>
+                        )}
+                      </Button>
+                      {newModelImageUrl?.trim() ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground h-auto px-2"
+                          onClick={() => {
+                            setNewModelImageUrl(null)
+                            if (newModelImageInputRef.current)
+                              newModelImageInputRef.current.value = ""
+                          }}
+                        >
+                          Clear hero
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </>
             ) : null}
 
@@ -1670,6 +1869,97 @@ export function ConvertCatalogSnapshotDialog({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="border-border bg-muted/25 space-y-3 rounded-md border px-3 py-2">
+              <div className="space-y-1">
+                <Label className="text-foreground">Variant catalog image</Label>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  This size-specific photo in catalog. Prefer a seller image from below, or upload a board shot
+                  under catalog storage (dimensions/).
+                </p>
+              </div>
+              {listingPickerImages.length === 0 ? (
+                <p className="text-muted-foreground text-xs">No seller photos linked on this listing — upload below.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {listingPickerImages.map((img) => {
+                    const src = (img.thumbnail_url?.trim() || img.url).trim()
+                    const sel =
+                      Boolean(variantImageUrl?.trim()) && variantImageUrl?.trim() === img.url.trim()
+                    return (
+                      <button
+                        key={`variant-pick-${img.id}`}
+                        type="button"
+                        onClick={() => setVariantImageUrl(img.url)}
+                        className={cn(
+                          "relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-md border-2 bg-muted transition-colors",
+                          sel
+                            ? "border-primary ring-2 ring-primary/25"
+                            : "border-transparent hover:border-border",
+                        )}
+                        title="Use as variant catalog image"
+                      >
+                        <Image src={src} alt="" fill sizes="76px" className="object-cover" />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={variantImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    void (async () => {
+                      const input = e.currentTarget
+                      const f = input.files?.[0]
+                      input.value = ""
+                      if (!f) return
+                      setVariantImageUploading(true)
+                      try {
+                        const url = await uploadSnapshotConvertVariantFile(f)
+                        if (url) setVariantImageUrl(url)
+                      } finally {
+                        setVariantImageUploading(false)
+                      }
+                    })()
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={variantImageUploading}
+                  onClick={() => variantImageInputRef.current?.click()}
+                >
+                  {variantImageUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading…
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus className="mr-2 h-4 w-4 shrink-0" /> Upload variant image
+                    </>
+                  )}
+                </Button>
+                {variantImageUrl?.trim() ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground h-auto px-2"
+                    onClick={() => {
+                      setVariantImageUrl(null)
+                      if (variantImageInputRef.current) variantImageInputRef.current.value = ""
+                    }}
+                  >
+                    Clear variant image
+                  </Button>
+                ) : null}
               </div>
             </div>
 

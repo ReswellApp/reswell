@@ -116,7 +116,10 @@ import {
 } from "@/lib/sell-draft-local-meta"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { cn } from "@/lib/utils"
-import { RequestBrandDialog } from "@/components/request-brand-dialog"
+import {
+  RequestBrandModelDialog,
+  type ListingCatalogRequestVariant,
+} from "@/components/request-brand-model-dialog"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
@@ -606,8 +609,20 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     removedImageIdsRef.current = removedImageIds
   }, [removedImageIds])
   const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
-  const [titleRequestBrandOpen, setTitleRequestBrandOpen] = useState(false)
+  const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
+    useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+
+  const openListingCatalogRequestFromBrand = useCallback(() => {
+    setListingCatalogRequestVariant("full")
+  }, [])
+
+  const openListingCatalogRequestFromModel = useCallback(() => {
+    const bid = formData.boardBrandId.trim()
+    setListingCatalogRequestVariant(
+      bid ? { modelOnlyWithDirectoryBrandId: bid } : "full",
+    )
+  }, [formData.boardBrandId])
 
   const boardDimLengthRef = useRef<HTMLInputElement>(null)
   const boardDimWidthRef = useRef<HTMLInputElement>(null)
@@ -2757,8 +2772,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             >
                 <SellFormSection
                   sectionId="sell-section-photos-title"
-                  title="Title, brand & photos"
-                  description="Write a title in your own words — it’s what buyers see first and what we use in the link. Choose a brand from our directory (or type one) so we can link your listing to the right brand on the site, then enter the board model. Add clear photos of your board."
+                  title="Title & photos"
+                  description="Write a title in your own words — it’s what buyers see first and what we use in the link. Add clear photos of your board."
                 >
                 <div className="space-y-8">
                   <div className="space-y-2">
@@ -2788,110 +2803,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         required
                         maxLength={LISTING_TITLE_MAX_LENGTH}
                       />
-                  </div>
-
-                  <Separator className="bg-border" />
-
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
-                    <div className="min-w-0 space-y-2">
-                      <div className="flex items-end justify-between gap-2">
-                        <Label htmlFor="listing-brand">Brand *</Label>
-                      </div>
-                      <SurfboardTitleIndexInput
-                        id="listing-brand"
-                        placeholder="e.g., Channel Islands"
-                        value={formData.brand}
-                        onChange={(v) => {
-                          setFormData((f) => {
-                            const clear =
-                              f.boardBrandId &&
-                              f.boardLinkedBrandName &&
-                              v.trim() !== f.boardLinkedBrandName.trim()
-                            if (!clear) return { ...f, brand: v }
-                            return {
-                              ...f,
-                              brand: v,
-                              boardBrandId: "",
-                              boardIndexBrandSlug: "",
-                              boardIndexModelSlug: "",
-                              boardIndexLabel: "",
-                              boardModelName: "",
-                              boardLinkedBrandName: "",
-                            }
-                          })
-                        }}
-                        boardLength={boardLengthFormatted}
-                        onSelectModel={(opt: IndexBoardModelSelection) => {
-                          const modelFromCatalog =
-                            opt.modelName.trim() ||
-                            (opt.modelSlug.trim() ? opt.label.trim() : "")
-                          setFormData((f) => ({
-                            ...f,
-                            boardBrandId: opt.brandId,
-                            boardIndexBrandSlug: opt.brandSlug,
-                            boardIndexModelSlug: opt.modelSlug,
-                            boardIndexLabel: opt.label,
-                            boardModelName: modelFromCatalog,
-                            brand: opt.brandName,
-                            boardLinkedBrandName: opt.brandName,
-                          }))
-                        }}
-                        onRequestBrand={() => setTitleRequestBrandOpen(true)}
-                        required
-                      />
-                      <div className="space-y-1.5">
-                        <button
-                          type="button"
-                          className="text-left text-xs text-primary underline-offset-4 hover:underline"
-                          onClick={() => setTitleRequestBrandOpen(true)}
-                        >
-                          Brand not listed? Request we add it
-                        </button>
-                        <RequestBrandDialog
-                          open={titleRequestBrandOpen}
-                          onOpenChange={setTitleRequestBrandOpen}
-                          defaultName={formData.brand.trim()}
-                          onSubmitted={(brandName) => {
-                            setFormData((f) => ({
-                              ...f,
-                              brand: brandName,
-                              boardBrandId: "",
-                              boardIndexBrandSlug: "",
-                              boardIndexModelSlug: "",
-                              boardIndexLabel: "",
-                              boardModelName: "",
-                              boardLinkedBrandName: "",
-                            }))
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="min-w-0 space-y-2">
-                      <SellBoardModelField
-                        catalogBrandId={formData.boardBrandId}
-                        linkedBrandDisplayName={
-                          formData.boardLinkedBrandName.trim() || formData.brand.trim()
-                        }
-                        modelName={formData.boardModelName}
-                        modelCatalogSlug={formData.boardIndexModelSlug}
-                        boardIndexBrandSlug={formData.boardIndexBrandSlug}
-                        onCatalogModelChange={(patch) =>
-                          setFormData((f) => ({
-                            ...f,
-                            ...patch,
-                          }))
-                        }
-                        disabled={editLoading}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground/45">
-                    {
-                      "Brand and model don't appear on your listing. We use them to match your board to search and filters so shoppers can find it."
-                    }
-                  </p>
                   </div>
 
                   <Separator className="bg-border" />
@@ -2954,6 +2865,115 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   title="Board shape, dimensions & description"
                 >
                     <div className="space-y-8">
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
+                          <div className="min-w-0 space-y-2">
+                            <div className="flex items-end justify-between gap-2">
+                              <Label htmlFor="listing-brand">Brand *</Label>
+                            </div>
+                            <SurfboardTitleIndexInput
+                              id="listing-brand"
+                              placeholder="e.g., Channel Islands"
+                              value={formData.brand}
+                              onChange={(v) => {
+                                setFormData((f) => {
+                                  const clear =
+                                    f.boardBrandId &&
+                                    f.boardLinkedBrandName &&
+                                    v.trim() !== f.boardLinkedBrandName.trim()
+                                  if (!clear) return { ...f, brand: v }
+                                  return {
+                                    ...f,
+                                    brand: v,
+                                    boardBrandId: "",
+                                    boardIndexBrandSlug: "",
+                                    boardIndexModelSlug: "",
+                                    boardIndexLabel: "",
+                                    boardModelName: "",
+                                    boardLinkedBrandName: "",
+                                  }
+                                })
+                              }}
+                              boardLength={boardLengthFormatted}
+                              onSelectModel={(opt: IndexBoardModelSelection) => {
+                                const modelFromCatalog =
+                                  opt.modelName.trim() ||
+                                  (opt.modelSlug.trim() ? opt.label.trim() : "")
+                                setFormData((f) => ({
+                                  ...f,
+                                  boardBrandId: opt.brandId,
+                                  boardIndexBrandSlug: opt.brandSlug,
+                                  boardIndexModelSlug: opt.modelSlug,
+                                  boardIndexLabel: opt.label,
+                                  boardModelName: modelFromCatalog,
+                                  brand: opt.brandName,
+                                  boardLinkedBrandName: opt.brandName,
+                                }))
+                              }}
+                              onRequestBrand={openListingCatalogRequestFromBrand}
+                              required
+                            />
+                            <div className="space-y-1.5">
+                              <button
+                                type="button"
+                                className="text-left text-xs text-primary hover:text-primary/90"
+                                onClick={openListingCatalogRequestFromBrand}
+                              >
+                                Brand not listed? Request we add it
+                              </button>
+                              <RequestBrandModelDialog
+                                open={listingCatalogRequestVariant !== null}
+                                onOpenChange={(next) => {
+                                  if (!next) setListingCatalogRequestVariant(null)
+                                }}
+                                variant={listingCatalogRequestVariant ?? "full"}
+                                defaultBrandName={formData.boardLinkedBrandName.trim() || formData.brand.trim()}
+                                defaultModelName={formData.boardModelName.trim()}
+                                onBrandSubmitted={(brandName) => {
+                                  setFormData((f) => ({
+                                    ...f,
+                                    brand: brandName,
+                                    boardBrandId: "",
+                                    boardIndexBrandSlug: "",
+                                    boardIndexModelSlug: "",
+                                    boardIndexLabel: "",
+                                    boardModelName: "",
+                                    boardLinkedBrandName: "",
+                                  }))
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="min-w-0 space-y-2">
+                            <SellBoardModelField
+                              catalogBrandId={formData.boardBrandId}
+                              linkedBrandDisplayName={
+                                formData.boardLinkedBrandName.trim() || formData.brand.trim()
+                              }
+                              modelName={formData.boardModelName}
+                              modelCatalogSlug={formData.boardIndexModelSlug}
+                              boardIndexBrandSlug={formData.boardIndexBrandSlug}
+                              onCatalogModelChange={(patch) =>
+                                setFormData((f) => ({
+                                  ...f,
+                                  ...patch,
+                                }))
+                              }
+                              disabled={editLoading}
+                              onRequestCatalogAdd={openListingCatalogRequestFromModel}
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground/45">
+                          {
+                            "Brand and model don't appear on your listing. We use them to match your board to search and filters so surfers can find it."
+                          }
+                        </p>
+                      </div>
+
+                      <Separator className="bg-border" />
+
                       <div className="space-y-2">
                         <Label>Board shape / category *</Label>
                         <Select

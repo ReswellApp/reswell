@@ -21,21 +21,44 @@ export async function POST(request: NextRequest) {
 
   const parsed = brandModelRequestSellPostBodySchema.safeParse(json)
   if (!parsed.success) {
-    return NextResponse.json({ error: "Enter a model name." }, { status: 400 })
+    const msg =
+      parsed.error.issues[0]?.message ?? "Provide a model name and either a matched directory brand or the brand text from your listing."
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  const { brandId, requestedModelName, notes } = parsed.data
+  const brandIdTrim = parsed.data.brandId?.trim() ?? ""
+  const sellerFreeTrim = parsed.data.sellerBrandName?.trim() ?? ""
+  const requestedModelName = parsed.data.requestedModelName.trim()
+  const notesTrimmed = parsed.data.notes?.trim() || null
 
-  const { data: brandRow } = await supabase.from("brands").select("id").eq("id", brandId).maybeSingle()
-  if (!brandRow) {
-    return NextResponse.json({ error: "Brand not found." }, { status: 400 })
+  if (brandIdTrim) {
+    const { data: brandRow } = await supabase.from("brands").select("id").eq("id", brandIdTrim).maybeSingle()
+    if (!brandRow) {
+      return NextResponse.json({ error: "Brand not found." }, { status: 400 })
+    }
+
+    const result = await submitSellBrandModelRequestService(supabase, {
+      userId: user.id,
+      brandId: brandIdTrim,
+      requestedModelName,
+      notes: notesTrimmed,
+    })
+    if (!result.ok) {
+      return NextResponse.json({ error: "Could not save your request. Try again." }, { status: 500 })
+    }
+    return NextResponse.json({ ok: true })
   }
 
-  const notesTrimmed = notes?.trim() || null
+  if (!sellerFreeTrim) {
+    return NextResponse.json(
+      { error: "Include the brand above (as you typed it) so we know which maker this model belongs to." },
+      { status: 400 },
+    )
+  }
 
   const result = await submitSellBrandModelRequestService(supabase, {
     userId: user.id,
-    brandId,
+    sellerBrandName: sellerFreeTrim,
     requestedModelName,
     notes: notesTrimmed,
   })

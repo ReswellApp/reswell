@@ -16,7 +16,6 @@ import {
 } from "@/app/actions/marketplace"
 import { LISTING_BOARD_MODEL_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { slugify } from "@/lib/slugify"
-import { RequestModelDialog } from "@/components/request-model-dialog"
 import { Input } from "@/components/ui/input"
 
 export type SellBoardModelCatalogPatch = {
@@ -29,7 +28,7 @@ export type SellBoardModelCatalogPatch = {
 const UNSELECTED_VALUE = "__sell_board_model_none__"
 
 type SellBoardModelFieldProps = {
-  /** Linked directory brand (`boardBrandId`) — models load only when set. */
+  /** Directory brand id when the seller matched a row in `public.brands` — used to fetch optional catalog models only. Model entry is never blocked without this. */
   catalogBrandId: string
   linkedBrandDisplayName: string
   modelName: string
@@ -37,6 +36,8 @@ type SellBoardModelFieldProps = {
   /** Existing slug from the sell form; overwritten when a catalog row is picked. */
   boardIndexBrandSlug: string
   onCatalogModelChange: (patch: SellBoardModelCatalogPatch) => void
+  /** Opens the unified brand+model catalog request dialog (wired from `/sell`). */
+  onRequestCatalogAdd: () => void
   disabled?: boolean
 }
 
@@ -47,13 +48,13 @@ export function SellBoardModelField({
   modelCatalogSlug,
   boardIndexBrandSlug,
   onCatalogModelChange,
+  onRequestCatalogAdd,
   disabled,
 }: SellBoardModelFieldProps) {
   const [models, setModels] = React.useState<SellBrandModelCatalogRow[]>([])
   const [resolvedBrandSlug, setResolvedBrandSlug] = React.useState("")
   const [loading, setLoading] = React.useState(false)
   const [loadError, setLoadError] = React.useState<string | null>(null)
-  const [requestOpen, setRequestOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (!catalogBrandId.trim()) {
@@ -84,7 +85,11 @@ export function SellBoardModelField({
     }
   }, [catalogBrandId])
 
-  const effectiveBrandSlug = boardIndexBrandSlug.trim() || resolvedBrandSlug
+  const brandForLabel = linkedBrandDisplayName.trim()
+
+  /** Slug for index/snapshot: directory pick > API-resolved brand > slugified display name (free-typed brand). */
+  const effectiveBrandSlug =
+    boardIndexBrandSlug.trim() || resolvedBrandSlug || (brandForLabel ? slugify(brandForLabel) : "")
 
   const selectedModelId = React.useMemo(() => {
     const name = modelName.trim()
@@ -107,6 +112,19 @@ export function SellBoardModelField({
 
   const brandForRequest = linkedBrandDisplayName.trim()
 
+  function applyFreeformModelValue(raw: string) {
+    const v = raw
+    const slugOut = effectiveBrandSlug.trim()
+    const brandLabel = brandForRequest
+    onCatalogModelChange({
+      boardModelName: v,
+      boardIndexModelSlug: v.trim() ? slugify(v) : "",
+      boardIndexBrandSlug: slugOut,
+      boardIndexLabel:
+        v.trim() && brandLabel ? `${brandLabel} ${v.trim()}`.trim() : brandLabel,
+    })
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-end justify-between gap-2">
@@ -124,114 +142,88 @@ export function SellBoardModelField({
         </span>
       </div>
 
-      {!catalogBrandId.trim() ? (
-        <div className="rounded-md border border-border/80 bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
-          Choose a brand from our directory above to see models for that brand.
-        </div>
-      ) : loadError ? (
+      {catalogBrandId.trim() && loadError ? (
         <p className="text-sm text-destructive">{loadError}</p>
-      ) : (
-        <>
-          {loading ? (
-            <div
-              id="listing-board-model-select"
-              className="flex min-h-touch w-full items-center rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground shadow-xs"
-            >
-              Loading models…
-            </div>
-          ) : models.length === 0 ? (
+      ) : null}
+
+          <Input
+            id="listing-board-model-select"
+            className="placeholder:text-muted-foreground/45"
+            placeholder={
+              catalogBrandId.trim() && loading
+                ? "Loading catalog models…"
+                : catalogBrandId.trim() && models.length > 0
+                  ? "Type your model — or pick a match from the catalog below"
+                  : "e.g., Step Deck Noserider — type the model as you know it"
+            }
+            value={modelName}
+            disabled={disabled}
+            onChange={(e) => applyFreeformModelValue(e.target.value)}
+            autoComplete="off"
+            maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
+          />
+
+          {catalogBrandId.trim() && loading ? (
+            <p className="text-xs text-muted-foreground">Loading models for this brand…</p>
+          ) : null}
+
+          {catalogBrandId.trim() && !loading && models.length > 0 ? (
             <>
-              <Input
-                id="listing-board-model-select"
-                className="placeholder:text-muted-foreground/45"
-                placeholder="e.g., Rookie — enter model until we add it to the directory"
-                value={modelName}
-                disabled={disabled}
-                onChange={(e) => {
-                  const v = e.target.value
-                  const slugOut = effectiveBrandSlug.trim()
-                  const brandLabel = linkedBrandDisplayName.trim()
-                  onCatalogModelChange({
-                    boardModelName: v,
-                    boardIndexModelSlug: v.trim() ? slugify(v) : "",
-                    boardIndexBrandSlug: slugOut,
-                    boardIndexLabel:
-                      v.trim() && brandLabel ? `${brandLabel} ${v.trim()}`.trim() : brandLabel,
-                  })
-                }}
-                autoComplete="off"
-                maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
-              />
-              <p className="text-xs text-muted-foreground">
-                No models in our catalog for this brand yet — type the model for now, or request we add it.
-              </p>
-            </>
-          ) : (
-            <>
-              <Select
-                disabled={disabled}
-                value={selectedModelId}
-                onValueChange={(id) => {
-                  const slugOut = effectiveBrandSlug.trim()
-                  const brandLabel = linkedBrandDisplayName.trim()
-                  if (id === UNSELECTED_VALUE) {
+              <div className="space-y-1.5">
+                <Label className="text-xs font-normal text-muted-foreground">
+                  Match to our catalog (optional)
+                </Label>
+                <Select
+                  disabled={disabled}
+                  value={selectedModelId !== UNSELECTED_VALUE ? selectedModelId : undefined}
+                  onValueChange={(id) => {
+                    const slugOut = effectiveBrandSlug.trim()
+                    const brandLabel = linkedBrandDisplayName.trim()
+                    const row = models.find((m) => m.id === id)
+                    if (!row) return
                     onCatalogModelChange({
-                      boardModelName: "",
-                      boardIndexModelSlug: "",
+                      boardModelName: row.name,
+                      boardIndexModelSlug: row.catalogSlug,
                       boardIndexBrandSlug: slugOut,
-                      boardIndexLabel: brandLabel,
+                      boardIndexLabel: `${brandLabel} ${row.name}`.trim(),
                     })
-                    return
-                  }
-                  const row = models.find((m) => m.id === id)
-                  if (!row) return
-                  onCatalogModelChange({
-                    boardModelName: row.name,
-                    boardIndexModelSlug: row.catalogSlug,
-                    boardIndexBrandSlug: slugOut,
-                    boardIndexLabel: `${brandLabel} ${row.name}`.trim(),
-                  })
-                }}
-              >
-                <SelectTrigger id="listing-board-model-select" aria-label="Board model" className="min-h-touch w-full">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNSELECTED_VALUE}>Select a model</SelectItem>
-                  {models.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  }}
+                >
+                  <SelectTrigger aria-label="Optional catalog model match" className="min-h-touch w-full">
+                    <SelectValue placeholder="Optional — choose a catalog model to fill details" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               {showLegacyMismatch ? (
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Your saved model name isn&apos;t in our catalog yet — choose a match below or request we add it.
+                  Your saved model isn&apos;t in our catalog yet — keep your text above, pick a match, or request we add it.
                 </p>
               ) : null}
             </>
-          )}
+          ) : null}
+
+          {catalogBrandId.trim() && !loading && models.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No models in our catalog for this brand yet — your text above is what we&apos;ll use. You can ask us to add this model once it&apos;s in the directory.
+            </p>
+          ) : null}
 
           <button
             type="button"
-            className="text-left text-xs text-primary underline-offset-4 hover:underline disabled:pointer-events-none disabled:opacity-50"
-            disabled={!catalogBrandId.trim() || Boolean(disabled)}
-            onClick={() => setRequestOpen(true)}
+            className="text-left text-xs font-normal text-primary hover:text-primary/90 disabled:pointer-events-none disabled:opacity-50"
+            disabled={Boolean(disabled)}
+            onClick={() => onRequestCatalogAdd()}
           >
             Model not listed? Request we add it
           </button>
-
-          <RequestModelDialog
-            open={requestOpen}
-            onOpenChange={setRequestOpen}
-            brandId={catalogBrandId.trim()}
-            brandDisplayName={brandForRequest}
-            defaultModelName={modelName.trim()}
-          />
-        </>
-      )}
     </div>
   )
 }

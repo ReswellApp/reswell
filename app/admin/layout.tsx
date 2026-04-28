@@ -19,14 +19,16 @@ import {
   LineChart,
   Layers,
   FolderTree,
+  Waves,
 } from 'lucide-react'
 
 const adminNavItems = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/used-board-market-dashboard', label: 'Used board market', icon: Waves },
   { href: '/admin/live', label: 'Live', icon: Activity },
   { href: '/admin/search-analytics', label: 'Search analytics', icon: LineChart },
   { href: '/admin/listings', label: 'Listings', icon: Package },
-  { href: '/admin/listings/board-catalog-data', label: 'Board catalog data', icon: Layers },
+  { href: '/admin/listings/board-catalog-data', label: 'User Listings Board Data', icon: Layers },
   { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: FolderTree },
   { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },

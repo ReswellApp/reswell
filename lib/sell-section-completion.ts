@@ -17,17 +17,21 @@ import {
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
 
-function titleSectionComplete(form: SellFormValidationInput): boolean {
+function photosTitleSectionComplete(form: SellFormValidationInput): boolean {
+  if (!form.title?.trim()) return false
+  return buildResolvedListingTitle(form).length <= LISTING_TITLE_MAX_LENGTH
+}
+
+function brandModelComplete(form: SellFormValidationInput): boolean {
   const model = form.boardModelName?.trim() ?? ""
   if (
-    !form.title?.trim() ||
     !form.brand?.trim() ||
     !model ||
     model.length > LISTING_BOARD_MODEL_MAX_LENGTH
   ) {
     return false
   }
-  return buildResolvedListingTitle(form).length <= LISTING_TITLE_MAX_LENGTH
+  return true
 }
 
 function shapeSectionComplete(form: SellFormValidationInput): boolean {
@@ -157,10 +161,11 @@ export function computeSellSectionCompletion(
 
   return {
     "sell-section-photos-title":
-      titleSectionComplete(form) &&
+      photosTitleSectionComplete(form) &&
       opts.imageCount >= LISTING_MIN_PHOTOS &&
       opts.imagesUploadReady,
     "sell-section-board":
+      brandModelComplete(form) &&
       shapeSectionComplete(form) &&
       dimensionsSectionComplete(form) &&
       descriptionSectionComplete(form),

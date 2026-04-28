@@ -2,7 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
 
 import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
-import { adminBrandModelVariantCreateBodySchema, finBoxTypeSchema } from "@/lib/validations/brand-model-variants"
+import {
+  adminBrandModelVariantCreateBodySchema,
+  catalogOptionalStoredImageUrlSchema,
+  finBoxTypeSchema,
+} from "@/lib/validations/brand-model-variants"
 import { createBrandModelService } from "@/lib/services/brandModels"
 import { createBrandModelVariantService } from "@/lib/services/brandModelVariants"
 import {
@@ -26,11 +30,13 @@ export const convertUserListingBoardModelDataBodySchema = z.discriminatedUnion("
     fin_box_type: finBoxTypeSchema,
     condition: adminBrandModelVariantCreateBodySchema.shape.condition,
     price: z.union([z.number().positive(), z.null()]).optional(),
+    variant_image_url: catalogOptionalStoredImageUrlSchema.optional(),
   }),
   z.object({
     mode: z.literal("new_model"),
     new_model_name: z.string().trim().min(1).max(200),
     new_model_description: z.union([z.string().max(8000), z.null()]).optional(),
+    new_model_image_url: catalogOptionalStoredImageUrlSchema.optional(),
     length_label: convertSnapshotDimLabel,
     width_label: convertSnapshotDimLabel,
     thickness_label: convertSnapshotDimLabel,
@@ -38,6 +44,7 @@ export const convertUserListingBoardModelDataBodySchema = z.discriminatedUnion("
     fin_box_type: finBoxTypeSchema,
     condition: adminBrandModelVariantCreateBodySchema.shape.condition,
     price: z.union([z.number().positive(), z.null()]).optional(),
+    variant_image_url: catalogOptionalStoredImageUrlSchema.optional(),
   }),
 ])
 
@@ -80,6 +87,12 @@ export async function convertUserListingBoardModelDataService(
     }
     brandModelId = model.id
   } else {
+    const newModelHero =
+      typeof body.new_model_image_url === "string" &&
+      URL.canParse(body.new_model_image_url.trim())
+        ? body.new_model_image_url.trim()
+        : null
+
     const created = await createBrandModelService(supabase, {
       brand_id: brandId,
       name: body.new_model_name,
@@ -88,7 +101,7 @@ export async function convertUserListingBoardModelDataService(
         body.new_model_description.trim()
           ? body.new_model_description.trim()
           : null,
-      image_url: null,
+      image_url: newModelHero,
     })
     if (!created.ok) {
       const st = created.status ?? 500
@@ -100,6 +113,11 @@ export async function convertUserListingBoardModelDataService(
   const price =
     body.price !== undefined ? body.price ?? null : snap.listing_price > 0 ? snap.listing_price : null
 
+  const variantImage =
+    typeof body.variant_image_url === "string" && URL.canParse(body.variant_image_url.trim())
+      ? body.variant_image_url.trim()
+      : null
+
   const variant = await createBrandModelVariantService(supabase, {
     brand_id: brandId,
     brand_model_id: brandModelId,
@@ -110,7 +128,7 @@ export async function convertUserListingBoardModelDataService(
     fin_box_type: body.fin_box_type,
     condition: body.condition as BrandModelVariantCondition,
     price,
-    image_url: null,
+    image_url: variantImage,
   })
 
   if (!variant.ok) {

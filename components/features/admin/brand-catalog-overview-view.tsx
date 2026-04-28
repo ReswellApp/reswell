@@ -5,6 +5,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Boxes, ChevronDown, Layers, Link2 } from "lucide-react"
 import type { BrandModelVariantRow } from "@/lib/db/brand-model-variants"
+import { cn } from "@/lib/utils"
 
 function shortId(id: string): string {
   return id.length > 12 ? `${id.slice(0, 8)}…` : id
@@ -12,6 +13,21 @@ function shortId(id: string): string {
 
 function formatCondition(condition: BrandModelVariantRow["condition"]): string {
   return condition.replace(/_/g, " ")
+}
+
+function CatalogRowImageThumb({ src, label }: { src: string | null | undefined; label: string }) {
+  const u = src?.trim()
+  if (!u || !URL.canParse(u)) {
+    return <span className="text-muted-foreground tabular-nums">—</span>
+  }
+  return (
+    <span
+      className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border bg-muted"
+      title={label}
+    >
+      <Image src={u} alt="" fill className="object-cover" sizes="40px" />
+    </span>
+  )
 }
 
 function DimensionFlow() {
@@ -167,15 +183,44 @@ export function BrandCatalogOverviewView(props: {
                     <div className="space-y-5 border-l-2 border-primary/30 pl-4">
                       {models.map(({ model, variants }) => (
                         <div key={model.id} className="rounded-md border bg-background p-4 shadow-sm">
-                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                            <span className="text-base font-semibold text-foreground">{model.name}</span>
-                            <span className="text-xs font-mono text-muted-foreground">
-                              brand_models.id {shortId(model.id)}
-                            </span>
-                            <span className="text-xs text-muted-foreground">· links to brands.id {shortId(brand.id)}</span>
+                          <div className="flex flex-wrap items-start gap-3">
+                            {model.image_url?.trim() && URL.canParse(model.image_url.trim()) ? (
+                              <span
+                                className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-muted"
+                                title={`${model.name} — model image`}
+                              >
+                                <Image
+                                  src={model.image_url.trim()}
+                                  alt=""
+                                  fill
+                                  className="object-cover"
+                                  sizes="56px"
+                                />
+                              </span>
+                            ) : null}
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                <span className="text-base font-semibold text-foreground">{model.name}</span>
+                                <span className="text-xs font-mono text-muted-foreground">
+                                  brand_models.id {shortId(model.id)}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  · links to brands.id {shortId(brand.id)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                           {model.description?.trim() ? (
-                            <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{model.description}</p>
+                            <p
+                              className={cn(
+                                "mt-2 line-clamp-4 text-sm text-muted-foreground",
+                                model.image_url?.trim() &&
+                                  URL.canParse(model.image_url.trim()) &&
+                                  "sm:pl-[4.75rem]",
+                              )}
+                            >
+                              {model.description}
+                            </p>
                           ) : null}
 
                           <div className="mt-4">
@@ -186,10 +231,11 @@ export function BrandCatalogOverviewView(props: {
                               <p className="text-sm text-muted-foreground">No rows in brand_model_variants.</p>
                             ) : (
                               <div className="overflow-x-auto rounded-md border">
-                                <table className="w-full min-w-[640px] border-collapse bg-background text-left text-sm">
+                                <table className="w-full min-w-[720px] border-collapse bg-background text-left text-sm">
                                   <thead>
                                     <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                                       <th className="px-3 py-2.5 font-medium">Variant id</th>
+                                      <th className="px-3 py-2.5 font-medium">Image</th>
                                       <th className="px-3 py-2.5 font-medium">Dims (L × W × T / vol)</th>
                                       <th className="px-3 py-2.5 font-medium">Fin box</th>
                                       <th className="px-3 py-2.5 font-medium">Condition</th>
@@ -201,6 +247,12 @@ export function BrandCatalogOverviewView(props: {
                                     {variants.map((v) => (
                                       <tr key={v.id} className="border-b border-muted/60 last:border-0">
                                         <td className="px-3 py-2.5 font-mono text-xs align-top">{shortId(v.id)}</td>
+                                        <td className="px-3 py-2.5 align-top">
+                                          <CatalogRowImageThumb
+                                            src={v.image_url}
+                                            label={`${model.name.trim() || "Model"} — ${v.length_label} × ${v.width_label}`}
+                                          />
+                                        </td>
                                         <td className="px-3 py-2.5 align-top tabular-nums">
                                           {v.length_label} × {v.width_label} × {v.thickness_label} / {v.volume_label}
                                         </td>
