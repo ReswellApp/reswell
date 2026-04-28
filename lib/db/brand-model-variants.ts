@@ -28,21 +28,45 @@ function normalizeNullableMoney(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+const ADMIN_SELECT_LIST =
+  "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, price, image_url, sort_order, created_at, updated_at"
+
 export async function listBrandModelVariantsForAdmin(
   supabase: SupabaseClient,
   brandModelId: string,
 ): Promise<BrandModelVariantRow[]> {
   const { data, error } = await supabase
     .from("brand_model_variants")
-    .select(
-      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, price, image_url, sort_order, created_at, updated_at",
-    )
+    .select(ADMIN_SELECT_LIST)
     .eq("brand_model_id", brandModelId)
     .order("sort_order", { ascending: true })
     .order("length_label", { ascending: true })
 
   if (error) {
     console.error("listBrandModelVariantsForAdmin:", error.message)
+    return []
+  }
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return rows.map((r) => ({
+    ...(r as Omit<BrandModelVariantRow, "price">),
+    price: normalizeNullableMoney(r.price),
+  })) as BrandModelVariantRow[]
+}
+
+/** Read-only: every row in `brand_model_variants` for admin catalog overview. */
+export async function listAllBrandModelVariantsForOverview(
+  supabase: SupabaseClient,
+): Promise<BrandModelVariantRow[]> {
+  const { data, error } = await supabase
+    .from("brand_model_variants")
+    .select(ADMIN_SELECT_LIST)
+    .order("brand_id", { ascending: true })
+    .order("brand_model_id", { ascending: true })
+    .order("sort_order", { ascending: true })
+    .order("length_label", { ascending: true })
+
+  if (error) {
+    console.error("listAllBrandModelVariantsForOverview:", error.message)
     return []
   }
   const rows = (data ?? []) as Record<string, unknown>[]

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { format } from "date-fns"
-import { Check, Loader2, MoreHorizontal, PlusCircle, Trash2 } from "lucide-react"
+import { Check, Loader2, MoreHorizontal, PlusCircle, Search, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
@@ -233,6 +233,62 @@ function coalesceSnapshotThenListing(
   return (fromListing ?? "").trim()
 }
 
+/**
+ * Snapshot row (`user_listing_board_model_data`) may carry labels from publish time; the joined `listings`
+ * row may carry fresher numeric/display dims. Merge per field — snapshot wins when set so admins keep
+ * intentional snapshot edits, otherwise listing-derived labels fill gaps (fixes missing width/vol when
+ * length existed only on the snapshot).
+ */
+function mergedBoardCatalogDimensionLabelsForSnapshotRow(row: SnapshotAdminRowApi): {
+  length_label: string
+  width_label: string
+  thickness_label: string
+  volume_label: string
+} {
+  const lg = row.listings ?? undefined
+  const fromListing =
+    lg != null
+      ? buildBoardCatalogDimensionLabelsFromListingRow({
+          length_feet: lg.length_feet,
+          length_inches: lg.length_inches,
+          length_inches_display: lg.length_inches_display,
+          width: lg.width,
+          width_inches_display: lg.width_inches_display,
+          thickness: lg.thickness,
+          thickness_inches_display: lg.thickness_inches_display,
+          volume: lg.volume,
+          volume_display: lg.volume_display,
+        })
+      : null
+
+  return {
+    length_label: coalesceSnapshotThenListing(row.length_label, fromListing?.length_label),
+    width_label: coalesceSnapshotThenListing(row.width_label, fromListing?.width_label),
+    thickness_label: coalesceSnapshotThenListing(row.thickness_label, fromListing?.thickness_label),
+    volume_label: coalesceSnapshotThenListing(row.volume_label, fromListing?.volume_label),
+  }
+}
+
+function dimensionsSummaryFromMergedLabels(m: {
+  length_label: string
+  width_label: string
+  thickness_label: string
+  volume_label: string
+}): string {
+  const pieces = [m.length_label, m.width_label, m.thickness_label].map((s) => s.trim()).filter(Boolean)
+  const mid = pieces.join(" × ")
+  const vol = m.volume_label.trim()
+  const out = vol ? `${mid}${mid ? " — " : ""}${vol}` : mid
+  return out.trim()
+}
+
+/** Prefer live listing dims; otherwise snapshot dimension labels still on `user_listing_board_model_data`. */
+function dimsSummaryFromSnapshotRow(r: SnapshotAdminRowApi): string {
+  const m = mergedBoardCatalogDimensionLabelsForSnapshotRow(r)
+  const s = dimensionsSummaryFromMergedLabels(m)
+  return s.trim() || "—"
+}
+
 function listingPriceAsNumber(
   listing: UserListingBoardModelDataListingEmbed | null | undefined,
 ): number | null {
@@ -246,44 +302,6 @@ function listingPriceAsNumber(
   return null
 }
 
-/** Prefer live listing dims; otherwise snapshot dimension labels still on `user_listing_board_model_data`. */
-function dimsSummaryFromSnapshotRow(r: SnapshotAdminRowApi): string {
-  const lg = r.listings
-  const hasListingDims =
-    lg != null &&
-    (lg.length_feet != null ||
-      lg.length_inches != null ||
-      Boolean(lg.length_inches_display?.trim()) ||
-      lg.width != null ||
-      Boolean(lg.width_inches_display?.trim()) ||
-      lg.thickness != null ||
-      Boolean(lg.thickness_inches_display?.trim()) ||
-      lg.volume != null ||
-      Boolean(lg.volume_display?.trim()))
-
-  if (hasListingDims && lg) {
-    const built = buildBoardCatalogDimensionLabelsFromListingRow({
-      length_feet: lg.length_feet,
-      length_inches: lg.length_inches,
-      length_inches_display: lg.length_inches_display,
-      width: lg.width,
-      width_inches_display: lg.width_inches_display,
-      thickness: lg.thickness,
-      thickness_inches_display: lg.thickness_inches_display,
-      volume: lg.volume,
-      volume_display: lg.volume_display,
-    })
-    const s = built.dimensions_summary.trim()
-    if (s) return s
-  }
-
-  const pieces = [r.length_label, r.width_label, r.thickness_label].filter(Boolean) as string[]
-  const mid = pieces.join(" × ")
-  const vol = r.volume_label?.trim() ?? ""
-  const out = vol ? `${mid}${mid ? " — " : ""}${vol}` : mid
-  return out.trim() || "—"
-}
-
 function listingUpdatedLabel(iso: string | null | undefined): string {
   if (!iso?.trim()) return "—"
   try {
@@ -291,6 +309,36 @@ function listingUpdatedLabel(iso: string | null | undefined): string {
   } catch {
     return "—"
   }
+}
+
+/** Lowercase haystack for client-side listing search on this admin page. */
+function boardCatalogSnapshotSearchHaystack(r: SnapshotAdminRowApi): string {
+  const parts: string[] = []
+  const lg = r.listings
+  if (lg?.title?.trim()) parts.push(lg.title.trim())
+  if (lg?.slug?.trim()) parts.push(lg.slug.trim())
+  if (lg?.brand?.trim()) parts.push(lg.brand.trim())
+  if (lg?.board_type?.trim()) parts.push(lg.board_type.trim())
+  if (lg?.condition?.trim()) parts.push(lg.condition.trim())
+  if (lg?.description?.trim()) parts.push(lg.description.trim().slice(0, 4000))
+  if (r.brands?.name?.trim()) parts.push(r.brands.name.trim())
+  const brandSlug = r.brands?.slug?.trim()
+  if (brandSlug) parts.push(brandSlug)
+  if (r.model_name?.trim()) parts.push(r.model_name.trim())
+  if (r.catalog_brand_slug?.trim()) parts.push(r.catalog_brand_slug.trim())
+  if (r.catalog_model_slug?.trim()) parts.push(r.catalog_model_slug.trim())
+  parts.push(dimsSummaryFromSnapshotRow(r))
+  parts.push(String(r.listing_price))
+  if (r.sold_price != null && Number.isFinite(Number(r.sold_price))) parts.push(String(r.sold_price))
+  return parts.join(" ").toLowerCase()
+}
+
+function snapshotRowMatchesSearch(r: SnapshotAdminRowApi, rawQuery: string): boolean {
+  const q = rawQuery.trim().toLowerCase()
+  if (!q) return true
+  const hay = boardCatalogSnapshotSearchHaystack(r)
+  const tokens = q.split(/\s+/).filter(Boolean)
+  return tokens.every((tok) => hay.includes(tok))
 }
 
 export function BoardCatalogSnapshotsClient() {
@@ -308,6 +356,7 @@ export function BoardCatalogSnapshotsClient() {
   const [dismissedRowIds, setDismissedRowIds] = useState<Record<string, true>>({})
   const [tablePrefsHydrated, setTablePrefsHydrated] = useState(false)
   const [dismissConfirmId, setDismissConfirmId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     setPriorities(loadBoardCatalogSnapshotPriorities())
@@ -353,10 +402,15 @@ export function BoardCatalogSnapshotsClient() {
     [rows, dismissedRowIds],
   )
 
-  const filteredRows = useMemo(() => {
+  const priorityFilteredRows = useMemo(() => {
     if (priorityFilter === "all") return visibleRows
     return visibleRows.filter((r) => priorities[r.id] === priorityFilter)
   }, [visibleRows, priorities, priorityFilter])
+
+  const displayRows = useMemo(
+    () => priorityFilteredRows.filter((r) => snapshotRowMatchesSearch(r, searchQuery)),
+    [priorityFilteredRows, searchQuery],
+  )
 
   const confirmRemoveRowFromTable = useCallback(() => {
     if (!dismissConfirmId) return
@@ -434,36 +488,73 @@ export function BoardCatalogSnapshotsClient() {
       </div>
 
       {!loading && rows.length > 0 ? (
-        <div className="border-border bg-muted/20 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2.5">
-          <span className="text-muted-foreground shrink-0 text-xs font-medium uppercase tracking-wide">
-            Priority filter
-          </span>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant={priorityFilter === "all" ? "secondary" : "outline"}
-              size="sm"
-              className="h-8"
-              onClick={() => setPriorityFilter("all")}
+        <div className="border-border bg-muted/20 flex flex-col gap-3 rounded-lg border px-3 py-2.5 lg:flex-row lg:flex-wrap lg:items-end">
+          <div className="flex min-w-[min(100%,18rem)] flex-1 flex-col gap-1.5">
+            <Label
+              htmlFor="board-catalog-search"
+              className="text-muted-foreground text-xs font-medium uppercase tracking-wide"
             >
-              All
-            </Button>
-            {(["high", "medium", "low"] as const).map((p) => (
-              <Button
-                key={p}
-                type="button"
-                variant={priorityFilter === p ? "secondary" : "outline"}
-                size="sm"
-                className={cn("h-8", priorityFilter === p && snapshotPriorityBadgeClass(p))}
-                onClick={() => setPriorityFilter(p)}
-              >
-                {PRIORITY_LABEL[p]}
-              </Button>
-            ))}
+              Search
+            </Label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                id="board-catalog-search"
+                type="search"
+                autoComplete="off"
+                placeholder="Title, brand, model, dims, slug…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 pr-9 pl-9"
+              />
+              {searchQuery.trim() ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0.5 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
           </div>
-          <span className="text-muted-foreground ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
+          <div className="flex flex-wrap items-center gap-2 lg:border-border lg:border-l lg:pl-4">
+            <span className="text-muted-foreground shrink-0 text-xs font-medium uppercase tracking-wide">
+              Priority filter
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={priorityFilter === "all" ? "secondary" : "outline"}
+                size="sm"
+                className="h-8"
+                onClick={() => setPriorityFilter("all")}
+              >
+                All
+              </Button>
+              {(["high", "medium", "low"] as const).map((p) => (
+                <Button
+                  key={p}
+                  type="button"
+                  variant={priorityFilter === p ? "secondary" : "outline"}
+                  size="sm"
+                  className={cn("h-8", priorityFilter === p && snapshotPriorityBadgeClass(p))}
+                  onClick={() => setPriorityFilter(p)}
+                >
+                  {PRIORITY_LABEL[p]}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <span className="text-muted-foreground lg:ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
             <span>
-              Showing {filteredRows.length} of {visibleRows.length}
+              Showing {displayRows.length} of {priorityFilteredRows.length}
               {hiddenDismissCount > 0 ? (
                 <span className="text-muted-foreground/90"> ({hiddenDismissCount} hidden)</span>
               ) : null}
@@ -489,7 +580,7 @@ export function BoardCatalogSnapshotsClient() {
             Show hidden rows
           </Button>
         </div>
-      ) : filteredRows.length === 0 ? (
+      ) : priorityFilteredRows.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           No snapshots match this priority
           {priorityFilter !== "all" ? ` (${PRIORITY_LABEL[priorityFilter]})` : ""}. Choose{" "}
@@ -501,6 +592,26 @@ export function BoardCatalogSnapshotsClient() {
             All
           </button>{" "}
           to see every row.
+        </p>
+      ) : displayRows.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          No listings match your search
+          {searchQuery.trim() ? (
+            <>
+              {" "}
+              (<span className="font-mono text-xs">{searchQuery.trim()}</span>)
+            </>
+          ) : null}
+          .{" "}
+          <button
+            type="button"
+            className="text-primary font-medium underline-offset-2 hover:underline"
+            onClick={() => setSearchQuery("")}
+          >
+            Clear search
+          </button>
+          {" "}
+          or adjust keywords.
         </p>
       ) : (
         <div className="bg-card border-border w-full min-w-0 max-w-full rounded-lg border shadow-sm">
@@ -527,7 +638,7 @@ export function BoardCatalogSnapshotsClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRows.map((r) => {
+              {displayRows.map((r) => {
                 const rowPriority = priorities[r.id]
                 return (
                 <TableRow key={r.id} className="align-top">
@@ -1114,38 +1225,11 @@ export function ConvertCatalogSnapshotDialog({
   useEffect(() => {
     if (!open) return
     const lg = row.listings ?? undefined
-
-    const hasListingDims =
-      lg != null &&
-      (lg.length_feet != null ||
-        lg.length_inches != null ||
-        Boolean(lg.length_inches_display?.trim()) ||
-        lg.width != null ||
-        Boolean(lg.width_inches_display?.trim()) ||
-        lg.thickness != null ||
-        Boolean(lg.thickness_inches_display?.trim()) ||
-        lg.volume != null ||
-        Boolean(lg.volume_display?.trim()))
-
-    const dimsFromListing = hasListingDims
-      ? buildBoardCatalogDimensionLabelsFromListingRow({
-          length_feet: lg.length_feet,
-          length_inches: lg.length_inches,
-          length_inches_display: lg.length_inches_display,
-          width: lg.width,
-          width_inches_display: lg.width_inches_display,
-          thickness: lg.thickness,
-          thickness_inches_display: lg.thickness_inches_display,
-          volume: lg.volume,
-          volume_display: lg.volume_display,
-        })
-      : null
-
-    setLengthLabel(coalesceSnapshotThenListing(row.length_label, dimsFromListing?.length_label))
-    setWidthLabel(coalesceSnapshotThenListing(row.width_label, dimsFromListing?.width_label))
-    setThicknessLabel(coalesceSnapshotThenListing(row.thickness_label, dimsFromListing?.thickness_label))
-    setVolumeLabel(coalesceSnapshotThenListing(row.volume_label, dimsFromListing?.volume_label))
-
+    const dims = mergedBoardCatalogDimensionLabelsForSnapshotRow(row)
+    setLengthLabel(dims.length_label)
+    setWidthLabel(dims.width_label)
+    setThicknessLabel(dims.thickness_label)
+    setVolumeLabel(dims.volume_label)
     const finsRaw = lg?.fins_setup?.trim() || null
     setFinBox(finBoxTypeFromListingFinsSetup(finsRaw))
 

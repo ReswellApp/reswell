@@ -18,6 +18,7 @@ import {
   Wallet,
   LineChart,
   Layers,
+  FolderTree,
 } from 'lucide-react'
 
 const adminNavItems = [
@@ -26,6 +27,7 @@ const adminNavItems = [
   { href: '/admin/search-analytics', label: 'Search analytics', icon: LineChart },
   { href: '/admin/listings', label: 'Listings', icon: Package },
   { href: '/admin/listings/board-catalog-data', label: 'Board catalog data', icon: Layers },
+  { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: FolderTree },
   { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: Tag },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
