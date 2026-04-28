@@ -2713,7 +2713,7 @@ function SellPageContent() {
                               ? formData.category
                               : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
                           }
-                          disabled={!!editId}
+                          disabled={editLoading}
                           onValueChange={(value) => {
                             if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
                               setFormData((prev) => ({
@@ -2742,11 +2742,9 @@ function SellPageContent() {
                               </SelectItem>
                             ) : (
                               <>
-                                {!editId && (
-                                  <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
-                                    {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
-                                  </SelectItem>
-                                )}
+                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
+                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
+                                </SelectItem>
                                 {boardCategoryOptions.map((cat) => (
                                   <SelectItem key={cat.value} value={cat.value}>
                                     {cat.label}
@@ -2756,11 +2754,6 @@ function SellPageContent() {
                             )}
                           </SelectContent>
                         </Select>
-                        {editId && (
-                          <p className="text-xs text-muted-foreground/45">
-                            Category can&apos;t be changed while editing.
-                          </p>
-                        )}
                         <div className="flex items-center justify-between text-sm text-muted-foreground/45 pb-1 pt-1">
                           <span>{boardFieldsCompleted} of 10 fields complete</span>
                           <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
