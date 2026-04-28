@@ -274,6 +274,14 @@ type ListingPhotoSlot = {
   prepared?: PreparedListingImagePair
 }
 
+/** Photos can be written to `listing_images` for a server draft row. */
+function listingPhotosReadyForDraftSync(slots: ListingPhotoSlot[]): boolean {
+  return (
+    slots.length > 0 &&
+    slots.every((im) => im.uploadPhase === "done" && Boolean(im.url?.trim()))
+  )
+}
+
 function shippingPriceToFormValue(v: unknown): string {
   if (v == null || v === "") return ""
   const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""))
@@ -407,6 +415,10 @@ function SellPageContent() {
     imagesRef.current = images
   }, [images])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+  const removedImageIdsRef = useRef<string[]>([])
+  useEffect(() => {
+    removedImageIdsRef.current = removedImageIds
+  }, [removedImageIds])
   const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
   const [titleRequestBrandOpen, setTitleRequestBrandOpen] = useState(false)
   const [titleRequestBrandSeed, setTitleRequestBrandSeed] = useState("")
@@ -890,11 +902,27 @@ function SellPageContent() {
 
   const handleSaveDraft = useCallback(async () => {
     const result = await persistServerDraft()
-    if (result.ok) {
-      toast.success("Draft saved")
-    } else {
+    if (!result.ok) {
       toast.error("Failed to save draft — please try again")
+      return
     }
+    const slots = imagesRef.current
+    if (listingPhotosReadyForDraftSync(slots)) {
+      try {
+        const { nextSlots, didInsert } = await syncListingImagesFromSnapshotRef.current(
+          result.listingId,
+          slots,
+          removedImageIdsRef.current,
+        )
+        if (didInsert) setImages(nextSlots)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Photos could not be saved to the draft."
+        toast.error(msg)
+        setDraftSaveStatus("error")
+        return
+      }
+    }
+    toast.success("Draft saved")
   }, [persistServerDraft])
 
   const handleStartNewListing = useCallback(async () => {
@@ -942,7 +970,24 @@ function SellPageContent() {
       setDraftSwitching(true)
       try {
         if (currentDraftId) {
-          await persistServerDraft()
+          const persisted = await persistServerDraft()
+          if (persisted.ok) {
+            const slots = imagesRef.current
+            if (listingPhotosReadyForDraftSync(slots)) {
+              try {
+                const { nextSlots, didInsert } = await syncListingImagesFromSnapshotRef.current(
+                  persisted.listingId,
+                  slots,
+                  removedImageIdsRef.current,
+                )
+                if (didInsert) setImages(nextSlots)
+              } catch (e) {
+                if (process.env.NODE_ENV === "development") {
+                  console.warn("[sell] draft image sync before switch", e)
+                }
+              }
+            }
+          }
         }
         router.push(`/sell?edit=${encodeURIComponent(draftId)}`)
       } finally {
@@ -1105,7 +1150,22 @@ function SellPageContent() {
     }
     const flushAll = () => {
       flushIdb()
-      void persistServerDraftRef.current({ keepalive: true })
+      void (async () => {
+        const persisted = await persistServerDraftRef.current({ keepalive: true })
+        if (!persisted.ok) return
+        const slots = imagesRef.current
+        if (!listingPhotosReadyForDraftSync(slots)) return
+        try {
+          const { nextSlots, didInsert } = await syncListingImagesFromSnapshotRef.current(
+            persisted.listingId,
+            slots,
+            removedImageIdsRef.current,
+          )
+          if (didInsert) setImages(nextSlots)
+        } catch {
+          /* best-effort — page may unload mid-request */
+        }
+      })()
     }
     const onVis = () => {
       if (document.visibilityState === "hidden") flushAll()
@@ -1603,16 +1663,24 @@ function SellPageContent() {
     }))
   }
 
-  async function syncListingImages(listingId: string) {
-    if (removedImageIds.length) {
+  /**
+   * Writes current photo URLs to `listing_images` for a draft (or live) listing.
+   * Uses explicit slots + removed ids so callers can pass `imagesRef` / refs (e.g. Save draft, pagehide).
+   */
+  async function syncListingImagesFromSnapshot(
+    listingId: string,
+    slots: ListingPhotoSlot[],
+    removedIds: string[],
+  ): Promise<{ nextSlots: ListingPhotoSlot[]; didInsert: boolean }> {
+    if (removedIds.length) {
       await supabase
         .from("listing_images")
         .delete()
-        .in("id", removedImageIds)
+        .in("id", removedIds)
         .eq("listing_id", listingId)
     }
 
-    const newRows = images
+    const newRows = slots
       .map((img, index) => ({ img, index }))
       .filter(({ img }) => !img.id && img.url)
 
@@ -1639,12 +1707,11 @@ function SellPageContent() {
       }),
     )
 
-    let working = [...images]
+    let working = [...slots]
     if (insertResults.length) {
       for (const { index, id } of insertResults) {
         working[index] = { ...working[index], id }
       }
-      setImages(working)
     }
 
     await Promise.all(
@@ -1664,7 +1731,21 @@ function SellPageContent() {
         }
       }),
     )
+
+    return { nextSlots: working, didInsert: insertResults.length > 0 }
   }
+
+  async function syncListingImages(listingId: string) {
+    const { nextSlots, didInsert } = await syncListingImagesFromSnapshot(
+      listingId,
+      images,
+      removedImageIds,
+    )
+    if (didInsert) setImages(nextSlots)
+  }
+
+  const syncListingImagesFromSnapshotRef = useRef(syncListingImagesFromSnapshot)
+  syncListingImagesFromSnapshotRef.current = syncListingImagesFromSnapshot
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
