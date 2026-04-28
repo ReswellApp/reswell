@@ -13,33 +13,23 @@ import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-v
 export type UserListingBoardModelDataRow = {
   id: string
   listing_id: string
-  listing_url: string
   user_id: string
   brand_id: string | null
   catalog_brand_slug: string | null
   catalog_model_slug: string | null
   model_name: string | null
-  category_id: string | null
-  dimensions: string
   length_label: string | null
   width_label: string | null
   thickness_label: string | null
   volume_label: string | null
   condition: BrandModelVariantCondition
   listing_price: number
-  fins_setup: string | null
   sold_price: number | null
-  sold_at: string | null
   converted_brand_model_variant_id: string | null
-  converted_at: string | null
-  dismissed_at: string | null
-  admin_notes: string | null
-  created_at: string
-  updated_at: string
 }
 
 const SELECT_ADMIN =
-  "id, listing_id, listing_url, user_id, brand_id, catalog_brand_slug, catalog_model_slug, model_name, category_id, dimensions, length_label, width_label, thickness_label, volume_label, condition, listing_price, fins_setup, sold_price, sold_at, converted_brand_model_variant_id, converted_at, dismissed_at, admin_notes, created_at, updated_at"
+  "id, listing_id, user_id, brand_id, catalog_brand_slug, catalog_model_slug, model_name, length_label, width_label, thickness_label, volume_label, condition, listing_price, sold_price, converted_brand_model_variant_id"
 
 /** Joined `listings` row fields for admin board-catalog tools (prefill from live listing). */
 export type UserListingBoardModelDataListingEmbed = {
@@ -61,10 +51,11 @@ export type UserListingBoardModelDataListingEmbed = {
   thickness_inches_display: string | null
   volume: number | null
   volume_display: string | null
+  updated_at: string | null
 }
 
 const LISTING_EMBED_FOR_ADMIN =
-  "title, slug, status, board_type, price, condition, fins_setup, description, brand, length_feet, length_inches, length_inches_display, width, width_inches_display, thickness, thickness_inches_display, volume, volume_display"
+  "title, slug, status, board_type, price, condition, fins_setup, description, brand, length_feet, length_inches, length_inches_display, width, width_inches_display, thickness, thickness_inches_display, volume, volume_display, updated_at"
 
 function normalizeMoney(v: unknown): number | null {
   if (v == null) return null
@@ -85,21 +76,14 @@ export async function upsertUserListingBoardModelDataFromSellForm(
   supabase: SupabaseClient,
   input: {
     listingId: string
-    listingUrl: string
     sellerUserId: string
     form: SellFormBoardCatalogSlice
     /** Optional; omit on live publishes so concurrent sold_* updates are not cleared. */
-    sold_snapshot?: { sold_price: number; sold_at: string }
+    sold_snapshot?: { sold_price: number }
   },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const listingUrl = input.listingUrl.trim().slice(0, 2048)
-  if (!listingUrl.startsWith("/l/") || listingUrl.length < 4) {
-    return { ok: false, error: "invalid_listing_url" }
-  }
-
   const dims: BoardCatalogDimensionLabels = buildBoardCatalogDimensionLabels(input.form)
   const brandId = input.form.boardBrandId.trim() || null
-  const categoryId = input.form.category.trim() || null
 
   const priceRaw = input.form.price.trim().replace(/,/g, "")
   const listingPrice = Number.parseFloat(priceRaw)
@@ -111,39 +95,31 @@ export async function upsertUserListingBoardModelDataFromSellForm(
   const cond: BrandModelVariantCondition = isListingSellableCondition(normalizedCond)
     ? normalizedCond
     : "good"
+  const explicitModel = input.form.boardModelName.trim()
   const modelName =
+    explicitModel ||
     input.form.boardIndexLabel.trim() ||
     (input.form.brand.trim() && !input.form.boardIndexModelSlug
       ? input.form.brand.trim()
       : "") ||
     null
 
-  const fins = input.form.boardFins.trim() ? input.form.boardFins.trim() : null
-
-  const now = new Date().toISOString()
-
   const payload = {
     listing_id: input.listingId,
-    listing_url: listingUrl,
     user_id: input.sellerUserId,
     brand_id: brandId,
     catalog_brand_slug: input.form.boardIndexBrandSlug.trim() || null,
     catalog_model_slug: input.form.boardIndexModelSlug.trim() || null,
     model_name: modelName,
-    category_id: categoryId,
-    dimensions: dims.dimensions_summary,
     length_label: dims.length_label || null,
     width_label: dims.width_label || null,
     thickness_label: dims.thickness_label || null,
     volume_label: dims.volume_label || null,
     condition: cond,
     listing_price: listingPrice,
-    fins_setup: fins,
-    updated_at: now,
     ...(input.sold_snapshot
       ? {
           sold_price: input.sold_snapshot.sold_price,
-          sold_at: input.sold_snapshot.sold_at,
         }
       : {}),
   }
@@ -186,11 +162,11 @@ export async function listUserListingBoardModelDataForAdminPage(
     )
 
   if (opts.pendingOnly) {
-    q = q.is("converted_at", null).is("dismissed_at", null)
+    q = q.is("converted_brand_model_variant_id", null)
   }
 
   const { data, error, count } = await q
-    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .range(offset, offset + limit - 1)
 
   if (error) {
@@ -246,39 +222,16 @@ export async function getUserListingBoardModelDataByIdForAdmin(
   return normalizeRow(data as Record<string, unknown>)
 }
 
-export async function patchUserListingBoardModelDataAdminFields(
-  supabase: SupabaseClient,
-  id: string,
-  patch: { admin_notes?: string | null; dismissed_at?: string | null },
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const updates: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  }
-  if (patch.admin_notes !== undefined) updates.admin_notes = patch.admin_notes
-  if (patch.dismissed_at !== undefined) updates.dismissed_at = patch.dismissed_at
-
-  const { error } = await supabase.from("user_listing_board_model_data").update(updates).eq("id", id)
-
-  if (error) {
-    console.error("patchUserListingBoardModelDataAdminFields:", error.message)
-    return { ok: false, error: error.message }
-  }
-  return { ok: true }
-}
-
 /** Service role — listing just sold via checkout. */
 export async function markUserListingBoardModelDataSold(
   service: SupabaseClient,
   listingId: string,
   soldPriceUsd: number,
-  soldAtIso: string,
 ): Promise<{ ok: true } | { ok: false }> {
   const { error } = await service
     .from("user_listing_board_model_data")
     .update({
       sold_price: soldPriceUsd,
-      sold_at: soldAtIso,
-      updated_at: new Date().toISOString(),
     })
     .eq("listing_id", listingId)
 
@@ -297,16 +250,13 @@ export async function linkSnapshotToConvertedVariant(
   snapshotId: string,
   variantId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from("user_listing_board_model_data")
     .update({
       converted_brand_model_variant_id: variantId,
-      converted_at: now,
-      updated_at: now,
     })
     .eq("id", snapshotId)
-    .is("converted_at", null)
+    .is("converted_brand_model_variant_id", null)
     .select("id")
     .maybeSingle()
 

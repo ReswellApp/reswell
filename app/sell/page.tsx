@@ -124,6 +124,7 @@ import {
   validateSellListingForm,
   buildResolvedListingTitle,
   LISTING_TITLE_MAX_LENGTH,
+  LISTING_BOARD_MODEL_MAX_LENGTH,
   LISTING_MIN_PHOTOS,
   type BoardShippingCostMode,
   type SellFormValidationInput,
@@ -474,6 +475,7 @@ function createInitialSellFormData() {
     boardIndexBrandSlug: "",
     boardIndexModelSlug: "",
     boardIndexLabel: "",
+    boardModelName: "",
     boardLinkedBrandName: "",
     locationLat: 0,
     locationLng: 0,
@@ -495,6 +497,7 @@ function boardCatalogSnapshotFromSellForm(
     boardIndexBrandSlug: form.boardIndexBrandSlug,
     boardIndexModelSlug: form.boardIndexModelSlug,
     boardIndexLabel: form.boardIndexLabel,
+    boardModelName: form.boardModelName,
     category: form.category,
     condition: form.condition,
     brand: form.brand,
@@ -604,7 +607,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [removedImageIds])
   const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
   const [titleRequestBrandOpen, setTitleRequestBrandOpen] = useState(false)
-  const [titleRequestBrandSeed, setTitleRequestBrandSeed] = useState("")
   const [formData, setFormData] = useState(createInitialSellFormData)
 
   const boardDimLengthRef = useRef<HTMLInputElement>(null)
@@ -696,6 +698,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       condition: formData.condition,
       category: formData.category,
       brand: formData.brand,
+      boardModelName: formData.boardModelName,
       boardType: formData.boardType,
       boardLength: formData.boardLength,
       boardWidthInches: formData.boardWidthInches,
@@ -1458,7 +1461,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         .select(
           `
           *,
-          listing_images (id, url, thumbnail_url, is_primary, sort_order)
+          listing_images (id, url, thumbnail_url, is_primary, sort_order),
+          user_listing_board_model_data ( model_name )
         `,
         )
         .eq("id", editId)
@@ -1532,6 +1536,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           if (Number.isFinite(n) && n > 0) boardShippingCostMode = "flat"
         }
       }
+      const snapRel = (
+        listing as {
+          user_listing_board_model_data?:
+            | { model_name?: string | null }
+            | { model_name?: string | null }[]
+            | null
+        }
+      ).user_listing_board_model_data
+      const snapRow = Array.isArray(snapRel) ? snapRel[0] : snapRel
+      const loadedBoardModelName = snapRow?.model_name?.trim() ?? ""
+
       setFormData({
         title: listing.title ?? "",
         description: listing.description ?? "",
@@ -1620,6 +1635,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         boardIndexBrandSlug: "",
         boardIndexModelSlug: "",
         boardIndexLabel: "",
+        boardModelName: loadedBoardModelName,
         boardLinkedBrandName:
           (listing as { brand_id?: string | null }).brand_id?.trim()
             ? ((listing as { brand?: string | null }).brand?.trim() ?? "")
@@ -2101,14 +2117,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       const fd = submitForm
 
-      const persistBoardCatalogSnapshot = (
-        listingIdForSnap: string,
-        sellerUserId: string,
-        listingUrlPath: string,
-      ) => {
+      const persistBoardCatalogSnapshot = (listingIdForSnap: string, sellerUserId: string) => {
         void upsertUserListingBoardModelDataFromSellForm(supabase, {
           listingId: listingIdForSnap,
-          listingUrl: listingUrlPath,
           sellerUserId,
           form: boardCatalogSnapshotFromSellForm(fd),
         }).then((r) => {
@@ -2326,15 +2337,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           }
           if (updateError) throw new Error(submitErrorMessage(updateError, "Failed to update listing"))
           listingSlug = updated?.slug ?? null
-          persistBoardCatalogSnapshot(
-            effectiveEditId,
-            user.id,
-            listingDetailHref({
-              id: effectiveEditId,
-              slug: listingSlug ?? undefined,
-              section: "surfboards",
-            }),
-          )
+          persistBoardCatalogSnapshot(effectiveEditId, user.id)
           if (publishingFromDraftRow && effectiveEditId) {
             requestKlaviyoListingCreated(effectiveEditId)
           }
@@ -2495,15 +2498,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           }
           listingId = listing.id
           listingSlug = listing.slug ?? newSlug
-          persistBoardCatalogSnapshot(
-            listing.id,
-            user.id,
-            listingDetailHref({
-              id: listing.id,
-              slug: listingSlug ?? undefined,
-              section: "surfboards",
-            }),
-          )
+          persistBoardCatalogSnapshot(listing.id, user.id)
           goSubmitStep(1)
           const imageRows = images.map((im, index) => ({
             listing_id: listingId,
@@ -2748,7 +2743,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                 <SellFormSection
                   sectionId="sell-section-photos-title"
                   title="Title, brand & photos"
-                  description="Write a title in your own words — it’s what buyers see first and what we use in the link. Choose a brand from our directory (or type one) so we can link your listing to the right brand on the site. Then add clear photos of your board."
+                  description="Write a title in your own words — it’s what buyers see first and what we use in the link. Choose a brand from our directory (or type one) so we can link your listing to the right brand on the site, then enter the board model. Add clear photos of your board."
                 >
                 <div className="space-y-8">
                   <div className="space-y-2">
@@ -2782,7 +2777,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
                   <Separator className="bg-border" />
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
+                    <div className="min-w-0 space-y-2">
                       <div className="flex items-end justify-between gap-2">
                         <Label htmlFor="listing-brand">Brand *</Label>
                       </div>
@@ -2804,41 +2801,92 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               boardIndexBrandSlug: "",
                               boardIndexModelSlug: "",
                               boardIndexLabel: "",
+                              boardModelName: "",
                               boardLinkedBrandName: "",
                             }
                           })
                         }}
                         boardLength={boardLengthFormatted}
                         onSelectModel={(opt: IndexBoardModelSelection) => {
+                          const modelFromCatalog =
+                            opt.modelName.trim() ||
+                            (opt.modelSlug.trim() ? opt.label.trim() : "")
                           setFormData((f) => ({
                             ...f,
                             boardBrandId: opt.brandId,
                             boardIndexBrandSlug: opt.brandSlug,
                             boardIndexModelSlug: opt.modelSlug,
                             boardIndexLabel: opt.label,
+                            boardModelName: modelFromCatalog,
                             brand: opt.brandName,
                             boardLinkedBrandName: opt.brandName,
                           }))
                         }}
+                        onRequestBrand={() => setTitleRequestBrandOpen(true)}
                         required
                       />
                       <div className="space-y-1.5">
                         <button
                           type="button"
                           className="text-left text-xs text-primary underline-offset-4 hover:underline"
-                          onClick={() => {
-                            setTitleRequestBrandSeed(formData.brand.trim())
-                            setTitleRequestBrandOpen(true)
-                          }}
+                          onClick={() => setTitleRequestBrandOpen(true)}
                         >
                           Brand not listed? Request we add it
                         </button>
                         <RequestBrandDialog
                           open={titleRequestBrandOpen}
                           onOpenChange={setTitleRequestBrandOpen}
-                          defaultName={titleRequestBrandSeed}
+                          defaultName={formData.brand.trim()}
+                          onSubmitted={(brandName) => {
+                            setFormData((f) => ({
+                              ...f,
+                              brand: brandName,
+                              boardBrandId: "",
+                              boardIndexBrandSlug: "",
+                              boardIndexModelSlug: "",
+                              boardIndexLabel: "",
+                              boardModelName: "",
+                              boardLinkedBrandName: "",
+                            }))
+                          }}
                         />
                       </div>
+                    </div>
+
+                    <div className="min-w-0 space-y-2">
+                      <div className="flex items-end justify-between gap-2">
+                        <Label htmlFor="listing-board-model">Model *</Label>
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums",
+                            formData.boardModelName.length > LISTING_BOARD_MODEL_MAX_LENGTH
+                              ? "font-medium text-destructive"
+                              : "text-muted-foreground/45",
+                          )}
+                          aria-live="polite"
+                        >
+                          {formData.boardModelName.length}/{LISTING_BOARD_MODEL_MAX_LENGTH}
+                        </span>
+                      </div>
+                      <Input
+                        id="listing-board-model"
+                        className="placeholder:text-muted-foreground/45"
+                        placeholder="e.g., Rookie, Neckbeard — Mayhem"
+                        value={formData.boardModelName}
+                        onChange={(e) =>
+                          setFormData((f) => ({ ...f, boardModelName: e.target.value }))
+                        }
+                        autoComplete="off"
+                        required
+                        maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground/45">
+                    {
+                      "Brand and model don't appear on your listing. We use them to match your board to search and filters so shoppers can find it."
+                    }
+                  </p>
                   </div>
 
                   <Separator className="bg-border" />
@@ -3263,8 +3311,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             try {
                               const listingData = {
                                 title: formData.title.trim(),
-                                brand: formData.brand || formData.boardIndexLabel?.split(" ")[0] || "",
-                                model: formData.boardIndexLabel || "",
+                                brand: formData.brand || "",
+                                model:
+                                  formData.boardModelName.trim() ||
+                                  formData.boardIndexLabel ||
+                                  "",
                                 category: boardCategoryOptions.find((c) => c.value === formData.category)?.label || "",
                                 boardType: formData.boardType,
                                 condition: formData.condition,

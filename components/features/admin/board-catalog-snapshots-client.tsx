@@ -99,6 +99,53 @@ function listingPriceAsNumber(
   return null
 }
 
+/** Prefer live listing dims; otherwise snapshot dimension labels still on `user_listing_board_model_data`. */
+function dimsSummaryFromSnapshotRow(r: SnapshotAdminRowApi): string {
+  const lg = r.listings
+  const hasListingDims =
+    lg != null &&
+    (lg.length_feet != null ||
+      lg.length_inches != null ||
+      Boolean(lg.length_inches_display?.trim()) ||
+      lg.width != null ||
+      Boolean(lg.width_inches_display?.trim()) ||
+      lg.thickness != null ||
+      Boolean(lg.thickness_inches_display?.trim()) ||
+      lg.volume != null ||
+      Boolean(lg.volume_display?.trim()))
+
+  if (hasListingDims && lg) {
+    const built = buildBoardCatalogDimensionLabelsFromListingRow({
+      length_feet: lg.length_feet,
+      length_inches: lg.length_inches,
+      length_inches_display: lg.length_inches_display,
+      width: lg.width,
+      width_inches_display: lg.width_inches_display,
+      thickness: lg.thickness,
+      thickness_inches_display: lg.thickness_inches_display,
+      volume: lg.volume,
+      volume_display: lg.volume_display,
+    })
+    const s = built.dimensions_summary.trim()
+    if (s) return s
+  }
+
+  const pieces = [r.length_label, r.width_label, r.thickness_label].filter(Boolean) as string[]
+  const mid = pieces.join(" × ")
+  const vol = r.volume_label?.trim() ?? ""
+  const out = vol ? `${mid}${mid ? " — " : ""}${vol}` : mid
+  return out.trim() || "—"
+}
+
+function listingUpdatedLabel(iso: string | null | undefined): string {
+  if (!iso?.trim()) return "—"
+  try {
+    return format(new Date(iso.trim()), "MMM d yyyy")
+  } catch {
+    return "—"
+  }
+}
+
 export function BoardCatalogSnapshotsClient() {
   const [pendingOnly, setPendingOnly] = useState(true)
   const [rows, setRows] = useState<SnapshotAdminRowApi[]>([])
@@ -145,8 +192,7 @@ export function BoardCatalogSnapshotsClient() {
               brand models → variants
             </Link>
             . Rows without a linked catalog brand can use{" "}
-            <span className="font-medium text-foreground">Attach brand</span> first. Dismiss rows you do not
-            catalog.
+            <span className="font-medium text-foreground">Attach brand</span> first.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -155,7 +201,7 @@ export function BoardCatalogSnapshotsClient() {
             variant={pendingOnly ? "secondary" : "outline"}
             onClick={() => setPendingOnly(!pendingOnly)}
           >
-            {pendingOnly ? "Showing pending only" : "Showing all statuses"}
+            {pendingOnly ? "Showing not converted only" : "Showing all snapshots"}
           </Button>
           <Button variant="outline" asChild>
             <Link href="/admin/listings">Back</Link>
@@ -179,7 +225,7 @@ export function BoardCatalogSnapshotsClient() {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-[12%] whitespace-nowrap px-2 py-2 text-left text-xs font-semibold">
-                  Saved
+                  Listing upd.
                 </TableHead>
                 <TableHead className="w-[20%] px-2 py-2 text-xs font-semibold">Listing</TableHead>
                 <TableHead className="w-[11%] px-2 py-2 text-xs font-semibold">Brand</TableHead>
@@ -201,19 +247,14 @@ export function BoardCatalogSnapshotsClient() {
               {rows.map((r) => (
                 <TableRow key={r.id} className="align-top">
                   <TableCell className="w-[12%] overflow-hidden px-2 py-2 align-top text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-                    {format(new Date(r.updated_at ?? r.created_at), "MMM d yyyy")}
+                    {listingUpdatedLabel(r.listings?.updated_at)}
                   </TableCell>
                   <TableCell className="max-w-0 px-2 py-2 align-top">
                     {(() => {
-                      const snapUrl =
-                        typeof r.listing_url === "string" &&
-                        r.listing_url.trim().startsWith("/l/")
-                          ? r.listing_url.trim()
-                          : ""
                       const lg = r.listings
                       const slug = lg && typeof lg.slug === "string" ? lg.slug : null
                       const title = lg && typeof lg.title === "string" ? lg.title : "Listing"
-                      const href = snapUrl || listingHref(slug)
+                      const href = listingHref(slug)
                       return href ? (
                         <Link
                           href={href}
@@ -284,9 +325,9 @@ export function BoardCatalogSnapshotsClient() {
                   <TableCell className="max-w-0 px-2 py-2 align-top text-xs leading-snug text-muted-foreground">
                     <span
                       className="line-clamp-2 break-words [overflow-wrap:anywhere]"
-                      title={r.dimensions || undefined}
+                      title={dimsSummaryFromSnapshotRow(r)}
                     >
-                      {r.dimensions || "—"}
+                      {dimsSummaryFromSnapshotRow(r)}
                     </span>
                   </TableCell>
                   <TableCell className="max-w-0 px-2 py-2 align-top text-sm tabular-nums whitespace-nowrap">
@@ -298,55 +339,20 @@ export function BoardCatalogSnapshotsClient() {
                   <TableCell className="max-w-0 px-2 py-2 align-top text-xs whitespace-nowrap">
                     {r.converted_brand_model_variant_id ? (
                       <span className="text-emerald-600">Converted</span>
-                    ) : r.dismissed_at ? (
-                      <span>Dismissed</span>
                     ) : (
                       <span className="text-muted-foreground">Open</span>
                     )}
                   </TableCell>
                   <TableCell className="w-[14%] px-2 py-2 align-top">
                     <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5">
-                      {!r.brand_id?.trim() &&
-                        !r.dismissed_at &&
-                        !r.converted_brand_model_variant_id && (
-                          <AttachCatalogBrandDialog row={r} onAttached={() => void load()} />
-                        )}
+                      {!r.brand_id?.trim() && !r.converted_brand_model_variant_id && (
+                        <AttachCatalogBrandDialog row={r} onAttached={() => void load()} />
+                      )}
                       <ConvertCatalogSnapshotDialog
                         row={r}
-                        disabled={Boolean(r.dismissed_at) || Boolean(r.converted_brand_model_variant_id)}
+                        disabled={Boolean(r.converted_brand_model_variant_id)}
                         onConverted={() => void load()}
                       />
-                      {!r.dismissed_at && !r.converted_brand_model_variant_id && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-auto w-full shrink-0 whitespace-normal px-2 py-1.5 text-xs leading-snug"
-                          onClick={async () => {
-                            const res = await fetch(
-                              `/api/admin/user-listing-board-model-data/${encodeURIComponent(r.id)}`,
-                              {
-                                method: "PATCH",
-                                credentials: "include",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ dismissed: true }),
-                              },
-                            )
-                            const j = (await res.json().catch(() => ({}))) as {
-                              ok?: boolean
-                              error?: string
-                            }
-                            if (!res.ok || !j.ok) {
-                              toast.error(j.error || "Could not dismiss")
-                              return
-                            }
-                            toast.success("Dismissed")
-                            void load()
-                          }}
-                        >
-                          Dismiss
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -700,7 +706,7 @@ export function ConvertCatalogSnapshotDialog({
   const [thicknessLabel, setThicknessLabel] = useState("")
   const [volumeLabel, setVolumeLabel] = useState("")
   const [finBox, setFinBox] = useState<"futures" | "fcs" | "single_fin">(() =>
-    finBoxTypeFromListingFinsSetup(row.fins_setup ?? null),
+    finBoxTypeFromListingFinsSetup(row.listings?.fins_setup ?? null),
   )
   const [condition, setCondition] = useState<BrandModelVariantCondition>(
     row.condition as BrandModelVariantCondition,
@@ -781,7 +787,7 @@ export function ConvertCatalogSnapshotDialog({
     setThicknessLabel(coalesceSnapshotThenListing(row.thickness_label, dimsFromListing?.thickness_label))
     setVolumeLabel(coalesceSnapshotThenListing(row.volume_label, dimsFromListing?.volume_label))
 
-    const finsRaw = lg?.fins_setup?.trim() || row.fins_setup?.trim() || null
+    const finsRaw = lg?.fins_setup?.trim() || null
     setFinBox(finBoxTypeFromListingFinsSetup(finsRaw))
 
     let nextCondition = row.condition as BrandModelVariantCondition
@@ -1242,7 +1248,7 @@ export function ConvertCatalogSnapshotDialog({
               Prefilled condition / fins (listing when present):&nbsp;
               <span className="text-foreground">{formatCondition(condition)}</span> · fins_setup:&nbsp;
               <span className="text-foreground">
-                {row.listings?.fins_setup?.trim() || row.fins_setup?.trim() || "—"}
+                {row.listings?.fins_setup?.trim() || "—"}
               </span>
             </p>
           </div>

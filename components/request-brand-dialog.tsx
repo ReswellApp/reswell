@@ -19,9 +19,10 @@ import { toast } from "sonner"
 export type RequestBrandDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Prefilled brand name from title search */
+  /** Prefilled brand name when the dialog opens (e.g. from the main brand field). */
   defaultName: string
-  onSubmitted?: () => void
+  /** Called after a successful request; use to sync the submitted name into the listing brand field. */
+  onSubmitted?: (brandName: string) => void
 }
 
 export function RequestBrandDialog({
@@ -33,11 +34,19 @@ export function RequestBrandDialog({
   const [name, setName] = React.useState("")
   const [shortDescription, setShortDescription] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
+  const wasOpenRef = React.useRef(false)
 
+  /** Seed from `defaultName` only when the dialog opens, not on every parent re-render. */
   React.useEffect(() => {
-    if (!open) return
-    setName(defaultName.trim())
-    setShortDescription("")
+    if (!open) {
+      wasOpenRef.current = false
+      return
+    }
+    if (!wasOpenRef.current) {
+      setName(defaultName.trim())
+      setShortDescription("")
+    }
+    wasOpenRef.current = true
   }, [open, defaultName])
 
   async function onSubmit(e: React.FormEvent) {
@@ -64,8 +73,8 @@ export function RequestBrandDialog({
         toast.error(data.error || "Request failed.")
         return
       }
+      onSubmitted?.(trimmedName)
       onOpenChange(false)
-      onSubmitted?.()
     } finally {
       setSubmitting(false)
     }

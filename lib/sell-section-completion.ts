@@ -7,6 +7,7 @@ import {
 import { flagsFromBoardFulfillment } from "@/lib/listing-fulfillment"
 import {
   buildResolvedListingTitle,
+  LISTING_BOARD_MODEL_MAX_LENGTH,
   LISTING_MIN_PHOTOS,
   LISTING_TITLE_MAX_LENGTH,
   validateSellListingForm,
@@ -17,7 +18,15 @@ const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
 
 function titleSectionComplete(form: SellFormValidationInput): boolean {
-  if (!form.title?.trim() || !form.brand?.trim()) return false
+  const model = form.boardModelName?.trim() ?? ""
+  if (
+    !form.title?.trim() ||
+    !form.brand?.trim() ||
+    !model ||
+    model.length > LISTING_BOARD_MODEL_MAX_LENGTH
+  ) {
+    return false
+  }
   return buildResolvedListingTitle(form).length <= LISTING_TITLE_MAX_LENGTH
 }
 

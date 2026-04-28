@@ -19,7 +19,8 @@ type BrandInputWithSuggestionsProps = {
   showHint?: boolean
   /** Show the “Brand not listed? Request we add it” link (default true). */
   showRequestBrandCta?: boolean
-  onBrandRequestSubmitted?: () => void
+  /** Runs after the request API succeeds — receives the submitted brand name. */
+  onBrandRequestSubmitted?: (brandName: string) => void
   /**
    * When the user picks a row from the directory dropdown (links `brand_id` to `public.brands`).
    * Free-typed text does not call this.

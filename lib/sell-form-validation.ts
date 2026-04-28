@@ -26,6 +26,9 @@ export const LISTING_TITLE_MAX_LENGTH = 60
 /** Minimum photos required to publish. More is strongly encouraged in the sell UI. */
 export const LISTING_MIN_PHOTOS = 1
 
+/** Max length for free-text board model on the sell form (matches catalog admin hints). */
+export const LISTING_BOARD_MODEL_MAX_LENGTH = 200
+
 export type SellFormValidationInput = {
   listingType: "board"
   title: string
@@ -34,6 +37,8 @@ export type SellFormValidationInput = {
   condition: string
   category: string
   brand: string
+  /** Surfboard model name (persisted to catalog snapshot `model_name`). */
+  boardModelName: string
   boardType: string
   /** Combined feet/inches, e.g. `6'2` or `10'8` */
   boardLength: string
@@ -84,8 +89,16 @@ export function validateSellListingForm(
   if (!form.title?.trim() || !form.price?.trim() || !form.condition) {
     return "Please fill in all required fields."
   }
-  if (!relaxed && !form.brand?.trim()) {
+  if (!relaxed && (!form.brand?.trim() || !form.boardModelName?.trim())) {
     return "Please fill in all required fields."
+  }
+
+  if (
+    !relaxed &&
+    form.boardModelName &&
+    form.boardModelName.trim().length > LISTING_BOARD_MODEL_MAX_LENGTH
+  ) {
+    return `Model must be ${LISTING_BOARD_MODEL_MAX_LENGTH} characters or fewer.`
   }
 
   if (!isListingSellableCondition(form.condition)) {

@@ -6,7 +6,6 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { listingDetailHref } from "@/lib/listing-href"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
@@ -135,10 +134,6 @@ export async function PUT(request: NextRequest) {
     updatedRow && typeof (updatedRow as { slug?: string }).slug === "string"
       ? String((updatedRow as { slug: string }).slug).trim()
       : ""
-  const snapshotListingUrl = listingDetailHref({
-    id: listingId,
-    slug: slugTrim.length > 0 ? slugTrim : undefined,
-  })
 
   if (removedImageIds.length > 0) {
     const { error: delErr } = await service
@@ -176,7 +171,6 @@ export async function PUT(request: NextRequest) {
   ) {
     const r = await upsertUserListingBoardModelDataFromSellForm(supabase, {
       listingId,
-      listingUrl: snapshotListingUrl,
       sellerUserId: impersonation.userId,
       form: catalog_snapshot,
     })

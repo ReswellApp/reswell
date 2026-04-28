@@ -56,7 +56,7 @@ export async function convertUserListingBoardModelDataService(
     return { ok: false, error: "Snapshot not found", status: 404 }
   }
   if (!snap.brand_id) {
-    return { ok: false, error: "This row has no brand — edit the listing snapshot or dismiss it", status: 400 }
+    return { ok: false, error: "This row has no brand — attach a catalog brand from the snapshots table first", status: 400 }
   }
   if (snap.converted_brand_model_variant_id) {
     return { ok: false, error: "This snapshot was already converted", status: 400 }

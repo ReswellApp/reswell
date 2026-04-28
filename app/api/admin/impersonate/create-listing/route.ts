@@ -8,7 +8,6 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { revalidatePath } from "next/cache"
-import { listingDetailHref } from "@/lib/listing-href"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
@@ -133,17 +132,8 @@ export async function POST(request: NextRequest) {
     catalog_snapshot &&
     typeof catalog_snapshot === "object"
   ) {
-    const listingSlug =
-      listing && typeof (listing as { slug?: string }).slug === "string"
-        ? String((listing as { slug: string }).slug).trim()
-        : ""
-    const listingUrl = listingDetailHref({
-      id: listing.id,
-      slug: listingSlug.length > 0 ? listingSlug : undefined,
-    })
     const r = await upsertUserListingBoardModelDataFromSellForm(supabase, {
       listingId: listing.id,
-      listingUrl,
       sellerUserId: targetUserId,
       form: catalog_snapshot,
     })

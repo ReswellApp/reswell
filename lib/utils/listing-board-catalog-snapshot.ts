@@ -31,6 +31,8 @@ export type SellFormBoardCatalogSlice = {
   boardIndexBrandSlug: string
   boardIndexModelSlug: string
   boardIndexLabel: string
+  /** Free-text model name; persisted as `user_listing_board_model_data.model_name`. */
+  boardModelName: string
   category: string
   condition: string
   brand: string

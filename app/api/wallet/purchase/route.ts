@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
   }
 
-  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, price, new Date().toISOString())
+  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, price)
 
   void postPurchaseThreadNotification(supabase, {
     buyerId: user.id,

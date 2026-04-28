@@ -25,7 +25,7 @@ export async function attachCatalogBrandToUserListingBoardSnapshotService(
 
   const { data: snap, error: snapErr } = await service
     .from("user_listing_board_model_data")
-    .select("id, listing_id, converted_brand_model_variant_id, dismissed_at")
+    .select("id, listing_id, converted_brand_model_variant_id")
     .eq("id", sid)
     .maybeSingle()
 
@@ -34,9 +34,6 @@ export async function attachCatalogBrandToUserListingBoardSnapshotService(
   }
   if (snap.converted_brand_model_variant_id) {
     return { ok: false, error: "This snapshot was already converted", status: 400 }
-  }
-  if (snap.dismissed_at) {
-    return { ok: false, error: "Undismiss this row before attaching a brand", status: 400 }
   }
 
   const { data: brand, error: brandErr } = await service
@@ -56,11 +53,9 @@ export async function attachCatalogBrandToUserListingBoardSnapshotService(
     .update({
       brand_id: brand.id,
       catalog_brand_slug: brand.slug,
-      updated_at: now,
     })
     .eq("id", sid)
     .is("converted_brand_model_variant_id", null)
-    .is("dismissed_at", null)
     .select("id")
     .maybeSingle()
 
@@ -88,7 +83,6 @@ export async function attachCatalogBrandToUserListingBoardSnapshotService(
       .update({
         brand_id: null,
         catalog_brand_slug: null,
-        updated_at: new Date().toISOString(),
       })
       .eq("id", sid)
     return { ok: false, error: "Listing update failed; snapshot brand link was reverted", status: 500 }

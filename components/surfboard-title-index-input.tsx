@@ -4,6 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
 import { SlidersHorizontal } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
@@ -57,6 +58,8 @@ type SurfboardTitleIndexInputProps = {
   onChange: (value: string) => void
   boardLength: string
   onSelectModel: (opt: IndexBoardModelSelection) => void
+  /** When search returns no rows, optional CTA opens the global “request a brand” flow (caller owns the dialog). */
+  onRequestBrand?: () => void
 }
 
 export function SurfboardTitleIndexInput({
@@ -69,6 +72,7 @@ export function SurfboardTitleIndexInput({
   onChange,
   boardLength: _boardLength,
   onSelectModel,
+  onRequestBrand,
 }: SurfboardTitleIndexInputProps) {
   const [items, setItems] = React.useState<IndexBoardModelSelection[]>([])
   const [loadError, setLoadError] = React.useState<string | null>(null)
@@ -299,9 +303,26 @@ export function SurfboardTitleIndexInput({
         {showSearching ? (
           <div className="px-3 py-8 text-center text-sm text-muted-foreground">Searching brands…</div>
         ) : showNoMatches && !showResultsList ? (
-          <div className="px-3 py-4 text-sm text-muted-foreground">
-            No brand profile in the directory matches that search. You can still type a brand name
-            above — it doesn’t have to be in the list.
+          <div className="px-3 py-4 text-sm">
+            <p className="text-muted-foreground">
+              No brand profile in the directory matches that search. You can still type a brand name
+              above — it doesn’t have to be in the list.
+            </p>
+            {onRequestBrand ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-3 w-full min-h-touch"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  setOpen(false)
+                  setDropdownRect(null)
+                  onRequestBrand()
+                }}
+              >
+                Request we add this brand
+              </Button>
+            ) : null}
           </div>
         ) : (
           <ul className="max-h-[min(45dvh,320px)] overflow-y-auto overscroll-contain py-1">

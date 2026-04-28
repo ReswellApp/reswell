@@ -551,12 +551,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
 
-  void markUserListingBoardModelDataSold(
-    serviceSupabase,
-    listing.id,
-    chargedUsd,
-    new Date().toISOString(),
-  )
+  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, chargedUsd)
 
   if (buyerId) {
     void postPurchaseThreadNotification(serviceSupabase, {
