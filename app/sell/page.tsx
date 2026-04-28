@@ -2899,7 +2899,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                 <SellFormSection
                   sectionId="sell-section-board"
                   title="Board shape, dimensions & description"
-                  description="Use any format for dimensions (decimals or fractions). Volume is optional. Then set condition and describe the board for buyers."
                 >
                     <div className="space-y-8">
                       <div className="space-y-2">
