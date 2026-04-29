@@ -1,8 +1,9 @@
 "use client"
 
+import type { ReactNode } from "react"
+
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import {
   Accordion,
   AccordionContent,
@@ -15,6 +16,8 @@ export interface SellPriceFieldsProps {
   onListingPriceChange: (value: string) => void
   sellerPurchasePrice: string
   onSellerPurchasePriceChange: (value: string) => void
+  /** Renders after “What you paid for the board” (e.g. sell-faster toggles). */
+  afterListingPrice?: ReactNode
 }
 
 export function SellPriceFields({
@@ -22,6 +25,7 @@ export function SellPriceFields({
   onListingPriceChange,
   sellerPurchasePrice,
   onSellerPurchasePriceChange,
+  afterListingPrice,
 }: SellPriceFieldsProps) {
   return (
     <div className="max-w-lg space-y-4">
@@ -56,8 +60,6 @@ export function SellPriceFields({
           />
         </div>
       </div>
-
-      <Separator />
 
       <div className="rounded-lg border border-border bg-muted/30">
         <Accordion type="single" collapsible className="w-full px-1">
@@ -98,6 +100,8 @@ export function SellPriceFields({
           </AccordionItem>
         </Accordion>
       </div>
+
+      {afterListingPrice}
     </div>
   )
 }

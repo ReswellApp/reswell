@@ -3604,7 +3604,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                 <SellFormSection
                   sectionId="sell-section-delivery"
                   title="Pickup & shipping"
-                  description="Pin where the board is, choose delivery options, then optional price-drop and offer settings."
+                  description="Pin where the board is and choose delivery options."
                 >
                   <div className="space-y-8">
                     <div className="space-y-6">
@@ -3884,8 +3884,66 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             </div>
                           ) : null}
                         </div>
-                      ) : null}
+                          ) : null}
 
+                    </div>
+                  </div>
+                </SellFormSection>
+
+                {deliveryFlags.shipping_available &&
+                formData.boardShippingCostMode === "reswell" ? (
+                  <SellFormSection
+                    sectionId="sell-section-reswell-package"
+                    title="Reswell shipping: packed size & weight"
+                  >
+                    <ReswellPackageDimensionsCard
+                      showHeading={false}
+                      className="border-0 bg-transparent p-0 shadow-none rounded-none"
+                      lengthIn={formData.reswellPackageLengthIn}
+                      widthIn={formData.reswellPackageWidthIn}
+                      heightIn={formData.reswellPackageHeightIn}
+                      weightLb={formData.reswellPackageWeightLb}
+                      weightOz={formData.reswellPackageWeightOz}
+                      onLengthInChange={(v) =>
+                        setFormData({ ...formData, reswellPackageLengthIn: v })
+                      }
+                      onWidthInChange={(v) =>
+                        setFormData({ ...formData, reswellPackageWidthIn: v })
+                      }
+                      onHeightInChange={(v) =>
+                        setFormData({ ...formData, reswellPackageHeightIn: v })
+                      }
+                      onWeightLbChange={(v) =>
+                        setFormData({ ...formData, reswellPackageWeightLb: v })
+                      }
+                      onWeightOzChange={(v) =>
+                        setFormData({ ...formData, reswellPackageWeightOz: v })
+                      }
+                    />
+                  </SellFormSection>
+                ) : null}
+
+                <SellFormSection
+                  sectionId="sell-section-publish"
+                  title={
+                    editId
+                      ? listingIsDraft
+                        ? "Price & publish your listing"
+                        : "Price & save your listing"
+                      : "Price & publish your listing"
+                  }
+                >
+                <div className="space-y-6">
+                  <SellPriceFields
+                    listingPrice={formData.price}
+                    onListingPriceChange={(value) =>
+                      setFormData({ ...formData, price: value })
+                    }
+                    sellerPurchasePrice={formData.sellerPurchasePrice}
+                    onSellerPurchasePriceChange={(value) =>
+                      setFormData({ ...formData, sellerPurchasePrice: value })
+                    }
+                    afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
                         <div className="flex gap-3">
                           <div
@@ -3983,62 +4041,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </SellFormSection>
-
-                {deliveryFlags.shipping_available &&
-                formData.boardShippingCostMode === "reswell" ? (
-                  <SellFormSection
-                    sectionId="sell-section-reswell-package"
-                    title="Reswell shipping: packed size & weight"
-                  >
-                    <ReswellPackageDimensionsCard
-                      showHeading={false}
-                      className="border-0 bg-transparent p-0 shadow-none rounded-none"
-                      lengthIn={formData.reswellPackageLengthIn}
-                      widthIn={formData.reswellPackageWidthIn}
-                      heightIn={formData.reswellPackageHeightIn}
-                      weightLb={formData.reswellPackageWeightLb}
-                      weightOz={formData.reswellPackageWeightOz}
-                      onLengthInChange={(v) =>
-                        setFormData({ ...formData, reswellPackageLengthIn: v })
-                      }
-                      onWidthInChange={(v) =>
-                        setFormData({ ...formData, reswellPackageWidthIn: v })
-                      }
-                      onHeightInChange={(v) =>
-                        setFormData({ ...formData, reswellPackageHeightIn: v })
-                      }
-                      onWeightLbChange={(v) =>
-                        setFormData({ ...formData, reswellPackageWeightLb: v })
-                      }
-                      onWeightOzChange={(v) =>
-                        setFormData({ ...formData, reswellPackageWeightOz: v })
-                      }
-                    />
-                  </SellFormSection>
-                ) : null}
-
-                <SellFormSection
-                  sectionId="sell-section-publish"
-                  title={
-                    editId
-                      ? listingIsDraft
-                        ? "Price & publish your listing"
-                        : "Price & save your listing"
-                      : "Price & publish your listing"
-                  }
-                >
-                <div className="space-y-6">
-                  <SellPriceFields
-                    listingPrice={formData.price}
-                    onListingPriceChange={(value) =>
-                      setFormData({ ...formData, price: value })
-                    }
-                    sellerPurchasePrice={formData.sellerPurchasePrice}
-                    onSellerPurchasePriceChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasePrice: value })
                     }
                   />
                   <Separator />
