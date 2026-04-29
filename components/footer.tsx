@@ -11,10 +11,11 @@ const footerLinks = {
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your board", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
-    { name: "Purchase Protection", href: "/protection-policy" },
+    { name: "What is Reswell", href: "/what-is-reswell" },
   ],
   support: [
     { name: "Help Center", href: "/help" },
+    { name: "Purchase Protection", href: "/protection-policy" },
     { name: "Safety Tips", href: "/safety" },
     { name: "Shipping Guide", href: "/shipping" },
     { name: "Contact Us", href: "/contact" },
