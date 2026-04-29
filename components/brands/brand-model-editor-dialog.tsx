@@ -111,6 +111,8 @@ export function BrandModelEditorDialog({
   const createDimImageRef = React.useRef<HTMLInputElement>(null)
   const [newModelCatalogImageUrl, setNewModelCatalogImageUrl] = React.useState<string | null>(null)
   const [queueVariantCatalogImageUrl, setQueueVariantCatalogImageUrl] = React.useState<string | null>(null)
+  /** Popover must portal inside this surface so dialog scroll-lock (`react-remove-scroll`) allows wheel scrolling. */
+  const [dialogSurfaceEl, setDialogSurfaceEl] = React.useState<HTMLElement | null>(null)
 
   const loadModels = React.useCallback(async (bid: string) => {
     if (!bid) {
@@ -420,6 +422,7 @@ export function BrandModelEditorDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        ref={setDialogSurfaceEl}
         className={cn(
           "left-0 top-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none sm:rounded-none",
           "data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100 data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:slide-out-to-bottom-2",
@@ -483,13 +486,20 @@ export function BrandModelEditorDialog({
                 </PopoverTrigger>
                 <PopoverContent
                   data-brand-model-picker
-                  className="w-[var(--radix-popover-trigger-width)] min-w-[min(100vw-2rem,22rem)] p-0"
+                  portalContainer={dialogSurfaceEl}
+                  className="z-[100] w-[var(--radix-popover-trigger-width)] min-w-[min(100vw-2rem,22rem)] p-0"
                   align="start"
                   onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  <Command>
+                  {/*
+                    Popovers inside full-screen dialogs: Command defaults to h-full while the
+                    popper has no definite height, so the list grew to full content height and
+                    never scrolled. Cap Command height and let the list flex + min-h-0 consume
+                    the remainder so overflow-y-auto applies.
+                  */}
+                  <Command className="h-auto max-h-[min(340px,50vh)]">
                     <CommandInput placeholder="Search brands…" />
-                    <CommandList className="max-h-[min(280px,45vh)]">
+                    <CommandList className="max-h-none min-h-0 flex-1 overflow-y-scroll overscroll-contain [touch-action:pan-y]">
                       <CommandEmpty>No brand found.</CommandEmpty>
                       <CommandGroup>
                         {brands.map((b) => (

@@ -9,11 +9,21 @@ const Popover = PopoverPrimitive.Root
 
 const PopoverTrigger = PopoverPrimitive.Trigger
 
+export type PopoverContentProps = React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
+  /**
+   * Mount the portal inside this node (e.g. the open `DialogContent` surface).
+   * Needed when a modal dialog uses scroll locking: portaling to `body` puts the
+   * popover outside the dialog’s RemoveScroll shard, so wheel/touch scrolling can
+   * be blocked or feel broken inside the dropdown.
+   */
+  portalContainer?: HTMLElement | null
+}
+
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = 'center', sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
+  PopoverContentProps
+>(({ className, align = 'center', sideOffset = 4, portalContainer, ...props }, ref) => (
+  <PopoverPrimitive.Portal container={portalContainer ?? undefined}>
     <PopoverPrimitive.Content
       ref={ref}
       align={align}
