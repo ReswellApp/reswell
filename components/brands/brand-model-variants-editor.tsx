@@ -18,8 +18,20 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
-import type { BrandModelVariantCondition, FinBoxType } from "@/lib/validations/brand-model-variants"
-import { formatBrandModelVariantLabel, parseOptionalPriceInput } from "@/lib/utils/brand-model-dimensions"
+import {
+  BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+  BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+  type BrandModelVariantCondition,
+  type BrandModelVariantMaterial,
+  type FinBoxesType,
+  type FinBoxType,
+} from "@/lib/validations/brand-model-variants"
+import {
+  FIN_BOXES_ADMIN_OPTIONS,
+  VARIANT_MATERIAL_ADMIN_OPTIONS,
+  formatBrandModelVariantLabel,
+  parseOptionalPriceInput,
+} from "@/lib/utils/brand-model-dimensions"
 import { cn } from "@/lib/utils"
 
 const DIM_IMAGE_MAX = 5 * 1024 * 1024
@@ -31,6 +43,8 @@ type VariantRow = {
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  fin_boxes: FinBoxesType
+  material: BrandModelVariantMaterial
   condition: BrandModelVariantCondition
   price: number | null
   image_url: string | null
@@ -43,6 +57,8 @@ type VariantEditDraft = {
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  fin_boxes: FinBoxesType
+  material: BrandModelVariantMaterial
   condition: BrandModelVariantCondition
   priceText: string
 }
@@ -70,6 +86,10 @@ export function BrandModelVariantsEditor({
   const [thicknessLabel, setThicknessLabel] = React.useState("")
   const [volumeLabel, setVolumeLabel] = React.useState("")
   const [finBoxType, setFinBoxType] = React.useState<FinBoxType>("futures")
+  const [finBoxes, setFinBoxes] = React.useState<FinBoxesType>(BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES)
+  const [foamMaterial, setFoamMaterial] = React.useState<BrandModelVariantMaterial>(
+    BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+  )
   const [condition, setCondition] = React.useState<BrandModelVariantCondition>("brand_new")
   const [priceText, setPriceText] = React.useState("")
   /** Reused for new row when duplicating (file upload overrides on submit). */
@@ -135,6 +155,8 @@ export function BrandModelVariantsEditor({
     setThicknessLabel("")
     setVolumeLabel("")
     setFinBoxType("futures")
+    setFinBoxes(BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES)
+    setFoamMaterial(BRAND_MODEL_VARIANT_DEFAULT_MATERIAL)
     setCondition("brand_new")
     setPriceText("")
     setStagedImageUrl(null)
@@ -154,6 +176,8 @@ export function BrandModelVariantsEditor({
       thickness_label: row.thickness_label,
       volume_label: row.volume_label,
       fin_box_type: row.fin_box_type,
+      fin_boxes: row.fin_boxes,
+      material: row.material,
       condition: row.condition,
       priceText: row.price != null && Number.isFinite(Number(row.price)) ? String(row.price) : "",
     })
@@ -188,6 +212,8 @@ export function BrandModelVariantsEditor({
           thickness_label: T,
           volume_label: V,
           fin_box_type: editDraft.fin_box_type,
+          fin_boxes: editDraft.fin_boxes,
+          material: editDraft.material,
           condition: editDraft.condition,
           price: priceParsed.value,
         }),
@@ -213,6 +239,8 @@ export function BrandModelVariantsEditor({
     setThicknessLabel(row.thickness_label)
     setVolumeLabel(row.volume_label)
     setFinBoxType(row.fin_box_type)
+    setFinBoxes(row.fin_boxes)
+    setFoamMaterial(row.material)
     setCondition(row.condition)
     setPriceText(
       row.price != null && Number.isFinite(Number(row.price)) ? String(row.price) : "",
@@ -269,6 +297,8 @@ export function BrandModelVariantsEditor({
           thickness_label: T,
           volume_label: V,
           fin_box_type: finBoxType,
+          fin_boxes: finBoxes,
+          material: foamMaterial,
           condition,
           price: priceParsed.value,
           image_url: imageUrl,
@@ -343,8 +373,8 @@ export function BrandModelVariantsEditor({
         <div>
           <p className="text-sm font-semibold text-foreground">Variants · {modelName}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            Each row is one size, fin system, and condition. Duplicate dimensions are fine when fin type and/or
-            condition differ.
+            Each row is one size, plugs, fin layout, foam, and condition. Duplicate dimensions are fine when plugs,
+            layout, foam, or condition differ.
           </p>
         </div>
         {!loading ? (
@@ -460,7 +490,7 @@ export function BrandModelVariantsEditor({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor={`var-fin-${brandModelId}`} className="text-xs">
-              Fin system
+              Fin plugs (Futures / FCS)
             </Label>
             <Select
               value={finBoxType}
@@ -474,6 +504,48 @@ export function BrandModelVariantsEditor({
                 <SelectItem value="futures">Futures</SelectItem>
                 <SelectItem value="fcs">FCS</SelectItem>
                 <SelectItem value="single_fin">Single fin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`var-fboxes-${brandModelId}`} className="text-xs">
+              Fin boxes
+            </Label>
+            <Select
+              value={finBoxes}
+              onValueChange={(v) => setFinBoxes(v as FinBoxesType)}
+              disabled={addFormDisabled}
+            >
+              <SelectTrigger id={`var-fboxes-${brandModelId}`} className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {FIN_BOXES_ADMIN_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`var-foam-${brandModelId}`} className="text-xs">
+              Material
+            </Label>
+            <Select
+              value={foamMaterial}
+              onValueChange={(v) => setFoamMaterial(v as BrandModelVariantMaterial)}
+              disabled={addFormDisabled}
+            >
+              <SelectTrigger id={`var-foam-${brandModelId}`} className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VARIANT_MATERIAL_ADMIN_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -555,7 +627,7 @@ export function BrandModelVariantsEditor({
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saved variants</p>
         {!loading && rows.length === 0 ? (
           <p className="mt-3 rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-6 text-center text-xs text-muted-foreground">
-            No variants yet. Add dimensions, fin system, and condition above.
+            No variants yet. Add dimensions, fin plugs, boxes, material, and condition above.
           </p>
         ) : null}
         {!loading && rows.length > 0 ? (
@@ -676,7 +748,7 @@ export function BrandModelVariantsEditor({
                             </div>
                             <div className="space-y-1 sm:col-span-2">
                               <Label htmlFor={`edit-fin-${d.id}`} className="text-[11px]">
-                                Fin system
+                                Fin plugs
                               </Label>
                               <Select
                                 value={editDraft.fin_box_type}
@@ -694,6 +766,56 @@ export function BrandModelVariantsEditor({
                                   <SelectItem value="futures">Futures</SelectItem>
                                   <SelectItem value="fcs">FCS</SelectItem>
                                   <SelectItem value="single_fin">Single fin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1 sm:col-span-2">
+                              <Label htmlFor={`edit-fboxes-${d.id}`} className="text-[11px]">
+                                Fin boxes
+                              </Label>
+                              <Select
+                                value={editDraft.fin_boxes}
+                                onValueChange={(v) =>
+                                  setEditDraft((prev) =>
+                                    prev && prev.id === d.id ? { ...prev, fin_boxes: v as FinBoxesType } : prev,
+                                  )
+                                }
+                                disabled={savingEditId === d.id}
+                              >
+                                <SelectTrigger id={`edit-fboxes-${d.id}`} className="h-8 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-72">
+                                  {FIN_BOXES_ADMIN_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1 sm:col-span-2">
+                              <Label htmlFor={`edit-foam-${d.id}`} className="text-[11px]">
+                                Material
+                              </Label>
+                              <Select
+                                value={editDraft.material}
+                                onValueChange={(v) =>
+                                  setEditDraft((prev) =>
+                                    prev && prev.id === d.id ? { ...prev, material: v as BrandModelVariantMaterial } : prev,
+                                  )
+                                }
+                                disabled={savingEditId === d.id}
+                              >
+                                <SelectTrigger id={`edit-foam-${d.id}`} className="h-8 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {VARIANT_MATERIAL_ADMIN_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>

@@ -9,7 +9,13 @@ import { toast } from "sonner"
 
 import { createClient } from "@/lib/supabase/client"
 
-import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
+import {
+  BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+  BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+  type BrandModelVariantCondition,
+  type BrandModelVariantMaterial,
+  type FinBoxesType,
+} from "@/lib/validations/brand-model-variants"
 import { finBoxTypeFromListingFinsSetup } from "@/lib/utils/fins-setup-to-fin-box"
 import {
   formatBoardType,
@@ -19,6 +25,10 @@ import {
   sellFormConditionValue,
 } from "@/lib/listing-labels"
 import { buildBoardCatalogDimensionLabelsFromListingRow } from "@/lib/utils/listing-board-catalog-snapshot"
+import {
+  FIN_BOXES_ADMIN_OPTIONS,
+  VARIANT_MATERIAL_ADMIN_OPTIONS,
+} from "@/lib/utils/brand-model-dimensions"
 
 import type {
   UserListingBoardModelDataRow,
@@ -1249,6 +1259,12 @@ export function ConvertCatalogSnapshotDialog({
   const [finBox, setFinBox] = useState<"futures" | "fcs" | "single_fin">(() =>
     finBoxTypeFromListingFinsSetup(row.listings?.fins_setup ?? null),
   )
+  const [finBoxesLayout, setFinBoxesLayout] = useState<FinBoxesType>(
+    BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+  )
+  const [variantMaterial, setVariantMaterial] = useState<BrandModelVariantMaterial>(
+    BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+  )
   const [condition, setCondition] = useState<BrandModelVariantCondition>(
     row.condition as BrandModelVariantCondition,
   )
@@ -1312,6 +1328,8 @@ export function ConvertCatalogSnapshotDialog({
     setVolumeLabel(dims.volume_label)
     const finsRaw = lg?.fins_setup?.trim() || null
     setFinBox(finBoxTypeFromListingFinsSetup(finsRaw))
+    setFinBoxesLayout(BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES)
+    setVariantMaterial(BRAND_MODEL_VARIANT_DEFAULT_MATERIAL)
 
     let nextCondition = row.condition as BrandModelVariantCondition
     if (lg?.condition?.trim()) {
@@ -1413,6 +1431,8 @@ export function ConvertCatalogSnapshotDialog({
         thickness_label: thicknessLabel.trim(),
         volume_label: volumeLabel.trim(),
         fin_box_type: finBox,
+        fin_boxes: finBoxesLayout,
+        material: variantMaterial,
         condition,
         ...(priceParsed !== undefined ? { price: priceParsed } : {}),
         ...(variantImagePayload ? { variant_image_url: variantImagePayload } : {}),
@@ -1440,6 +1460,8 @@ export function ConvertCatalogSnapshotDialog({
         thickness_label: thicknessLabel.trim(),
         volume_label: volumeLabel.trim(),
         fin_box_type: finBox,
+        fin_boxes: finBoxesLayout,
+        material: variantMaterial,
         condition,
         ...(priceParsed !== undefined ? { price: priceParsed } : {}),
         ...(newModelImagePayload ? { new_model_image_url: newModelImagePayload } : {}),
@@ -1838,9 +1860,9 @@ export function ConvertCatalogSnapshotDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
-                <Label>Fin box</Label>
+                <Label>Fin plugs</Label>
                 <Select value={finBox} onValueChange={(v) => setFinBox(v as typeof finBox)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1849,6 +1871,42 @@ export function ConvertCatalogSnapshotDialog({
                     <SelectItem value="futures">Futures</SelectItem>
                     <SelectItem value="fcs">FCS II</SelectItem>
                     <SelectItem value="single_fin">Single fin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Fin boxes</Label>
+                <Select
+                  value={finBoxesLayout}
+                  onValueChange={(v) => setFinBoxesLayout(v as FinBoxesType)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {FIN_BOXES_ADMIN_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Material</Label>
+                <Select
+                  value={variantMaterial}
+                  onValueChange={(v) => setVariantMaterial(v as BrandModelVariantMaterial)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VARIANT_MATERIAL_ADMIN_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

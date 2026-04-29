@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
+import type { BrandModelVariantCondition, BrandModelVariantMaterial, FinBoxesType } from "@/lib/validations/brand-model-variants"
 
 export type FinBoxType = "futures" | "fcs" | "single_fin"
+
+export type { FinBoxesType }
 
 export type BrandModelVariantRow = {
   id: string
@@ -11,7 +13,11 @@ export type BrandModelVariantRow = {
   width_label: string
   thickness_label: string
   volume_label: string
+  /** Futures / FCS plug routing — see `FinBoxType` in validations. */
   fin_box_type: FinBoxType
+  /** Thruster / quad / etc. layout. */
+  fin_boxes: FinBoxesType
+  material: BrandModelVariantMaterial
   condition: BrandModelVariantCondition
   /** USD; null when unset. Postgres numeric may arrive as string from PostgREST. */
   price: number | null
@@ -29,7 +35,7 @@ function normalizeNullableMoney(v: unknown): number | null {
 }
 
 const ADMIN_SELECT_LIST =
-  "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, price, image_url, sort_order, created_at, updated_at"
+  "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, price, image_url, sort_order, created_at, updated_at"
 
 export async function listBrandModelVariantsForAdmin(
   supabase: SupabaseClient,
@@ -86,6 +92,8 @@ export async function insertBrandModelVariant(
     thickness_label: string
     volume_label: string
     fin_box_type: FinBoxType
+    fin_boxes: FinBoxesType
+    material: BrandModelVariantMaterial
     condition: BrandModelVariantCondition
     price: number | null
     image_url: string | null
@@ -103,6 +111,8 @@ export async function insertBrandModelVariant(
       thickness_label: input.thickness_label.trim(),
       volume_label: input.volume_label.trim(),
       fin_box_type: input.fin_box_type,
+      fin_boxes: input.fin_boxes,
+      material: input.material,
       condition: input.condition,
       price: input.price,
       image_url: input.image_url,
@@ -110,7 +120,7 @@ export async function insertBrandModelVariant(
       updated_at: now,
     })
     .select(
-      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, price, image_url, sort_order, created_at, updated_at",
+      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, price, image_url, sort_order, created_at, updated_at",
     )
     .single()
 
@@ -118,7 +128,7 @@ export async function insertBrandModelVariant(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "This size, fin system, and condition already exist for this model",
+        error: "This size, plugs, fin layout, foam, and condition already exist for this model",
         code: error.code,
       }
     }
@@ -159,6 +169,8 @@ export async function updateBrandModelVariant(
     thickness_label?: string
     volume_label?: string
     fin_box_type?: FinBoxType
+    fin_boxes?: FinBoxesType
+    material?: BrandModelVariantMaterial
     condition?: BrandModelVariantCondition
     price?: number | null
     image_url?: string | null
@@ -171,6 +183,8 @@ export async function updateBrandModelVariant(
   if (patch.thickness_label !== undefined) updates.thickness_label = patch.thickness_label.trim()
   if (patch.volume_label !== undefined) updates.volume_label = patch.volume_label.trim()
   if (patch.fin_box_type !== undefined) updates.fin_box_type = patch.fin_box_type
+  if (patch.fin_boxes !== undefined) updates.fin_boxes = patch.fin_boxes
+  if (patch.material !== undefined) updates.material = patch.material
   if (patch.condition !== undefined) updates.condition = patch.condition
   if (patch.price !== undefined) updates.price = patch.price
   if (patch.image_url !== undefined) updates.image_url = patch.image_url
@@ -182,7 +196,7 @@ export async function updateBrandModelVariant(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "This size, fin system, and condition already exist for this model",
+        error: "This size, plugs, fin layout, foam, and condition already exist for this model",
         code: error.code,
       }
     }

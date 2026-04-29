@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import {
+  finBoxesDisplayName,
+  materialDisplayName,
+} from "@/lib/utils/brand-model-dimensions"
+import {
   canonicalListingsBoardTypeKey,
   listingBoardTypeDbValuesForFilter,
 } from "@/lib/board-type-canonical"
@@ -22,6 +26,7 @@ import {
   type DashboardViewingScope,
   type UsedBoardMarketDashboard,
 } from "@/lib/services/usedBoardMarketDashboard.shared"
+import type { BrandModelVariantMaterial, FinBoxesType } from "@/lib/validations/brand-model-variants"
 
 /**
  * Used surfboard market analytics — aggregates from `listings`, `orders`,
@@ -204,7 +209,7 @@ function variantSyntheticLabel(snap: SnapshotRow): string {
 function variantCanonicalLabel(v: VariantRow): string {
   return `${v.length_label} × ${v.width_label} × ${v.thickness_label} / ${v.volume_label} · ${finBoxLabel(
     v.fin_box_type,
-  )} · ${conditionLabel(v.condition)}`
+  )} · ${finBoxesDisplayName(v.fin_boxes)} · ${materialDisplayName(v.material)} · ${conditionLabel(v.condition)}`
 }
 
 // ---------------------------------------------------------------------------
@@ -282,6 +287,8 @@ type VariantRow = {
   thickness_label: string
   volume_label: string
   fin_box_type: string
+  fin_boxes: FinBoxesType
+  material: BrandModelVariantMaterial
   condition: string
   price: number | string | null
 }
@@ -306,7 +313,7 @@ const SNAPSHOT_SELECT =
   "listing_id, brand_id, catalog_brand_slug, catalog_model_slug, model_name, length_label, width_label, thickness_label, volume_label, condition, sold_price, converted_brand_model_variant_id"
 
 const VARIANT_SELECT =
-  "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, condition, price"
+  "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, price"
 
 export async function getUsedBoardMarketDashboardService(
   filters: DashboardFilters,

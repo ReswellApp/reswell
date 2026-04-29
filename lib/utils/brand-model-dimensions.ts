@@ -1,5 +1,10 @@
 import { formatCondition } from "@/lib/listing-labels"
-import type { BrandModelVariantCondition, FinBoxType } from "@/lib/validations/brand-model-variants"
+import type {
+  BrandModelVariantCondition,
+  BrandModelVariantMaterial,
+  FinBoxesType,
+  FinBoxType,
+} from "@/lib/validations/brand-model-variants"
 
 /** Optional USD (admin forms); empty string → null. */
 export function parseOptionalPriceInput(
@@ -27,23 +32,65 @@ export function formatBrandModelDimensionLabel(row: {
   return `${row.length_label.trim()} × ${row.width_label.trim()} × ${row.thickness_label.trim()} · ${row.volume_label.trim()}`
 }
 
-function finBoxDisplayName(f: FinBoxType): string {
+function finPlugsDisplayName(f: FinBoxType): string {
   if (f === "futures") return "Futures"
   if (f === "fcs") return "FCS"
   return "Single fin"
 }
 
-/** Full variant line: dims · fin system · condition (matches marketplace listing labels). */
+export function finBoxesDisplayName(boxes: FinBoxesType): string {
+  switch (boxes) {
+    case "five_fin":
+      return "Five fin"
+    case "thruster":
+      return "Thruster"
+    case "quad":
+      return "Quad"
+    case "single_fin":
+      return "Single fin"
+    case "two_plus_one":
+      return "2+1"
+    case "twinzer":
+      return "Twinzer"
+    default:
+      return boxes
+  }
+}
+
+export function materialDisplayName(material: BrandModelVariantMaterial): string {
+  return material === "eps" ? "EPS" : "PU"
+}
+
+export const FIN_BOXES_ADMIN_OPTIONS: readonly { value: FinBoxesType; label: string }[] = [
+  { value: "five_fin", label: "Five fin" },
+  { value: "thruster", label: "Thruster" },
+  { value: "quad", label: "Quad" },
+  { value: "single_fin", label: "Single fin" },
+  { value: "two_plus_one", label: "2+1" },
+  { value: "twinzer", label: "Twinzer" },
+] as const
+
+export const VARIANT_MATERIAL_ADMIN_OPTIONS: readonly { value: BrandModelVariantMaterial; label: string }[] = [
+  { value: "pu", label: "PU" },
+  { value: "eps", label: "EPS" },
+] as const
+
+/** Full variant line: dims · fin plugs · fin boxes · PU/EPS foam · condition. */
 export function formatBrandModelVariantLabel(row: {
   length_label: string
   width_label: string
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  fin_boxes: FinBoxesType
+  material: BrandModelVariantMaterial
   condition: BrandModelVariantCondition
   price?: number | null
 }): string {
-  const base = `${formatBrandModelDimensionLabel(row)} · ${finBoxDisplayName(row.fin_box_type)} · ${formatCondition(row.condition)}`
+  const plugs = finPlugsDisplayName(row.fin_box_type)
+  const layout = finBoxesDisplayName(row.fin_boxes)
+  const foam = materialDisplayName(row.material)
+  const base = `${formatBrandModelDimensionLabel(row)} · ${plugs} · ${layout} · ${foam} · ${formatCondition(row.condition)}`
   if (row.price != null) {
     const n = Number(row.price)
     if (Number.isFinite(n) && n > 0) {

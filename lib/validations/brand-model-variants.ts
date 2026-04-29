@@ -8,6 +8,25 @@ export const finBoxTypeSchema = z.enum(["futures", "fcs", "single_fin"])
 
 export type FinBoxType = z.infer<typeof finBoxTypeSchema>
 
+/** Fin layout / routing (distinct from plug type / `fin_box_type`). */
+export const finBoxesSchema = z.enum([
+  "five_fin",
+  "thruster",
+  "quad",
+  "single_fin",
+  "two_plus_one",
+  "twinzer",
+])
+
+export type FinBoxesType = z.infer<typeof finBoxesSchema>
+
+export const brandModelVariantMaterialSchema = z.enum(["pu", "eps"])
+
+export type BrandModelVariantMaterial = z.infer<typeof brandModelVariantMaterialSchema>
+
+export const BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES: FinBoxesType = "thruster"
+export const BRAND_MODEL_VARIANT_DEFAULT_MATERIAL: BrandModelVariantMaterial = "pu"
+
 /** Same value set as listings (sellable / browse) — see LISTING_CONDITION_LABELS. */
 export const brandModelVariantConditionSchema = z.enum([
   "brand_new",
@@ -64,6 +83,8 @@ export const adminBrandModelVariantCreateBodySchema = z.object({
   thickness_label: dimLabel80,
   volume_label: dimLabel80,
   fin_box_type: finBoxTypeSchema,
+  fin_boxes: finBoxesSchema.optional(),
+  material: brandModelVariantMaterialSchema.optional(),
   condition: brandModelVariantConditionSchema,
   price: optionalPriceUsd,
   image_url: optionalImageUrl,
@@ -78,6 +99,8 @@ export const adminBrandModelVariantPatchBodySchema = z.object({
   thickness_label: dimLabel80.optional(),
   volume_label: dimLabel80.optional(),
   fin_box_type: finBoxTypeSchema.optional(),
+  fin_boxes: finBoxesSchema.optional(),
+  material: brandModelVariantMaterialSchema.optional(),
   condition: brandModelVariantConditionSchema.optional(),
   price: optionalPriceUsd,
   image_url: optionalImageUrl,

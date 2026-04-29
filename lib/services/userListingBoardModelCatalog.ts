@@ -3,9 +3,13 @@ import { z } from "zod"
 
 import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
 import {
+  BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+  BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
   adminBrandModelVariantCreateBodySchema,
+  brandModelVariantMaterialSchema,
   catalogOptionalStoredImageUrlSchema,
   finBoxTypeSchema,
+  finBoxesSchema,
 } from "@/lib/validations/brand-model-variants"
 import { createBrandModelService } from "@/lib/services/brandModels"
 import { createBrandModelVariantService } from "@/lib/services/brandModelVariants"
@@ -28,6 +32,8 @@ export const convertUserListingBoardModelDataBodySchema = z.discriminatedUnion("
     thickness_label: convertSnapshotDimLabel,
     volume_label: convertSnapshotDimLabel,
     fin_box_type: finBoxTypeSchema,
+    fin_boxes: finBoxesSchema.optional(),
+    material: brandModelVariantMaterialSchema.optional(),
     condition: adminBrandModelVariantCreateBodySchema.shape.condition,
     price: z.union([z.number().positive(), z.null()]).optional(),
     variant_image_url: catalogOptionalStoredImageUrlSchema.optional(),
@@ -42,6 +48,8 @@ export const convertUserListingBoardModelDataBodySchema = z.discriminatedUnion("
     thickness_label: convertSnapshotDimLabel,
     volume_label: convertSnapshotDimLabel,
     fin_box_type: finBoxTypeSchema,
+    fin_boxes: finBoxesSchema.optional(),
+    material: brandModelVariantMaterialSchema.optional(),
     condition: adminBrandModelVariantCreateBodySchema.shape.condition,
     price: z.union([z.number().positive(), z.null()]).optional(),
     variant_image_url: catalogOptionalStoredImageUrlSchema.optional(),
@@ -126,6 +134,8 @@ export async function convertUserListingBoardModelDataService(
     thickness_label: body.thickness_label,
     volume_label: body.volume_label,
     fin_box_type: body.fin_box_type,
+    fin_boxes: body.fin_boxes ?? BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+    material: body.material ?? BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
     condition: body.condition as BrandModelVariantCondition,
     price,
     image_url: variantImage,

@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
+  BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+  BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+} from "@/lib/validations/brand-model-variants"
+import {
   deleteBrandModelVariant,
   insertBrandModelVariant,
   listBrandModelVariantsForAdmin,
@@ -7,10 +11,11 @@ import {
   updateBrandModelVariant,
   type BrandModelVariantRow,
   type FinBoxType,
+  type FinBoxesType,
 } from "@/lib/db/brand-model-variants"
-import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
+import type { BrandModelVariantCondition, BrandModelVariantMaterial } from "@/lib/validations/brand-model-variants"
 
-export type { BrandModelVariantRow, FinBoxType, BrandModelVariantCondition }
+export type { BrandModelVariantRow, FinBoxType, FinBoxesType, BrandModelVariantCondition, BrandModelVariantMaterial }
 
 export async function listBrandModelVariantsAdminService(
   supabase: SupabaseClient,
@@ -34,6 +39,8 @@ export async function createBrandModelVariantService(
     thickness_label: string
     volume_label: string
     fin_box_type: FinBoxType
+    fin_boxes?: FinBoxesType
+    material?: BrandModelVariantMaterial
     condition: BrandModelVariantCondition
     price?: number | null
     image_url: string | null
@@ -71,6 +78,8 @@ export async function createBrandModelVariantService(
     thickness_label: input.thickness_label,
     volume_label: input.volume_label,
     fin_box_type: input.fin_box_type,
+    fin_boxes: input.fin_boxes ?? BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+    material: input.material ?? BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
     condition: input.condition,
     price: input.price ?? null,
     image_url: input.image_url,
@@ -92,6 +101,8 @@ export async function updateBrandModelVariantService(
     thickness_label?: string
     volume_label?: string
     fin_box_type?: FinBoxType
+    fin_boxes?: FinBoxesType
+    material?: BrandModelVariantMaterial
     condition?: BrandModelVariantCondition
     price?: number | null
     image_url?: string | null

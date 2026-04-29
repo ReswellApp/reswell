@@ -5,6 +5,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Boxes, ChevronDown, Layers, Link2 } from "lucide-react"
 import type { BrandModelVariantRow } from "@/lib/db/brand-model-variants"
+import { finBoxesDisplayName, materialDisplayName } from "@/lib/utils/brand-model-dimensions"
 import { cn } from "@/lib/utils"
 
 function shortId(id: string): string {
@@ -231,13 +232,15 @@ export function BrandCatalogOverviewView(props: {
                               <p className="text-sm text-muted-foreground">No rows in brand_model_variants.</p>
                             ) : (
                               <div className="overflow-x-auto rounded-md border">
-                                <table className="w-full min-w-[720px] border-collapse bg-background text-left text-sm">
+                                <table className="w-full min-w-[980px] border-collapse bg-background text-left text-sm">
                                   <thead>
                                     <tr className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                                       <th className="px-3 py-2.5 font-medium">Variant id</th>
                                       <th className="px-3 py-2.5 font-medium">Image</th>
                                       <th className="px-3 py-2.5 font-medium">Dims (L × W × T / vol)</th>
-                                      <th className="px-3 py-2.5 font-medium">Fin box</th>
+                                      <th className="px-3 py-2.5 font-medium">Fin plugs</th>
+                                      <th className="px-3 py-2.5 font-medium">Fin boxes</th>
+                                      <th className="px-3 py-2.5 font-medium">Material</th>
                                       <th className="px-3 py-2.5 font-medium">Condition</th>
                                       <th className="px-3 py-2.5 font-medium">Price</th>
                                       <th className="px-3 py-2.5 font-medium">FKs</th>
@@ -258,6 +261,12 @@ export function BrandCatalogOverviewView(props: {
                                         </td>
                                         <td className="px-3 py-2.5 align-top capitalize">
                                           {v.fin_box_type.replace(/_/g, " ")}
+                                        </td>
+                                        <td className="px-3 py-2.5 align-top">
+                                          {finBoxesDisplayName(v.fin_boxes)}
+                                        </td>
+                                        <td className="px-3 py-2.5 align-top">
+                                          {materialDisplayName(v.material)}
                                         </td>
                                         <td className="px-3 py-2.5 align-top">{formatCondition(v.condition)}</td>
                                         <td className="px-3 py-2.5 align-top tabular-nums">

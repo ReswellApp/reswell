@@ -19,7 +19,14 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import type { BrandRow } from "@/lib/brands/types"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
-import type { BrandModelVariantCondition, FinBoxType } from "@/lib/validations/brand-model-variants"
+import {
+  BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+  BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+  type BrandModelVariantCondition,
+  type BrandModelVariantMaterial,
+  type FinBoxesType,
+  type FinBoxType,
+} from "@/lib/validations/brand-model-variants"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -51,7 +58,12 @@ import {
 } from "@/components/ui/select"
 import { BrandCatalogImagePickButton } from "@/components/brands/brand-catalog-image-picker-dialog"
 import { BrandModelVariantsEditor } from "@/components/brands/brand-model-variants-editor"
-import { formatBrandModelVariantLabel, parseOptionalPriceInput } from "@/lib/utils/brand-model-dimensions"
+import {
+  FIN_BOXES_ADMIN_OPTIONS,
+  VARIANT_MATERIAL_ADMIN_OPTIONS,
+  formatBrandModelVariantLabel,
+  parseOptionalPriceInput,
+} from "@/lib/utils/brand-model-dimensions"
 import { cn } from "@/lib/utils"
 
 const MODEL_IMAGE_MAX = 5 * 1024 * 1024
@@ -74,6 +86,8 @@ type PendingVariant = {
   thickness_label: string
   volume_label: string
   fin_box_type: FinBoxType
+  fin_boxes: FinBoxesType
+  material: BrandModelVariantMaterial
   condition: BrandModelVariantCondition
   price: number | null
   image_url: string | null
@@ -106,6 +120,12 @@ export function BrandModelEditorDialog({
   const [createDimT, setCreateDimT] = React.useState("")
   const [createDimV, setCreateDimV] = React.useState("")
   const [createFinBoxType, setCreateFinBoxType] = React.useState<FinBoxType>("futures")
+  const [createFinBoxes, setCreateFinBoxes] = React.useState<FinBoxesType>(
+    BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+  )
+  const [createFoamMaterial, setCreateFoamMaterial] = React.useState<BrandModelVariantMaterial>(
+    BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+  )
   const [createCondition, setCreateCondition] = React.useState<BrandModelVariantCondition>("brand_new")
   const [createPrice, setCreatePrice] = React.useState("")
   const createDimImageRef = React.useRef<HTMLInputElement>(null)
@@ -253,6 +273,8 @@ export function BrandModelEditorDialog({
           thickness_label: T,
           volume_label: V,
           fin_box_type: createFinBoxType,
+          fin_boxes: createFinBoxes,
+          material: createFoamMaterial,
           condition: createCondition,
           price: priceParsed.value,
           image_url: imageUrl,
@@ -363,6 +385,8 @@ export function BrandModelEditorDialog({
             thickness_label: v.thickness_label,
             volume_label: v.volume_label,
             fin_box_type: v.fin_box_type,
+            fin_boxes: v.fin_boxes,
+            material: v.material,
             condition: v.condition,
             price: v.price,
             image_url: v.image_url,
@@ -391,6 +415,8 @@ export function BrandModelEditorDialog({
       setCreateDimT("")
       setCreateDimV("")
       setCreateFinBoxType("futures")
+      setCreateFinBoxes(BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES)
+      setCreateFoamMaterial(BRAND_MODEL_VARIANT_DEFAULT_MATERIAL)
       setCreateCondition("brand_new")
       setCreatePrice("")
       if (createDimImageRef.current) createDimImageRef.current.value = ""
@@ -619,15 +645,15 @@ export function BrandModelEditorDialog({
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground">Variant queue (optional)</p>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                  One entry per size, fin system, and condition. Same dimensions can repeat when fin and/or condition
-                  differ. Saved when you create the model.
+                  One entry per size, fin plugs, boxes, foam, and condition. Same dimensions can repeat when other
+                  fields differ. Saved when you create the model.
                 </p>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="create-fin" className="text-xs">
-                  Fin system
+                  Fin plugs
                 </Label>
                 <Select
                   value={createFinBoxType}
@@ -641,6 +667,48 @@ export function BrandModelEditorDialog({
                     <SelectItem value="futures">Futures</SelectItem>
                     <SelectItem value="fcs">FCS</SelectItem>
                     <SelectItem value="single_fin">Single fin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="create-fboxes" className="text-xs">
+                  Fin boxes
+                </Label>
+                <Select
+                  value={createFinBoxes}
+                  onValueChange={(v) => setCreateFinBoxes(v as FinBoxesType)}
+                  disabled={saving || !brandId}
+                >
+                  <SelectTrigger id="create-fboxes" className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {FIN_BOXES_ADMIN_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="create-foam" className="text-xs">
+                  Material
+                </Label>
+                <Select
+                  value={createFoamMaterial}
+                  onValueChange={(v) => setCreateFoamMaterial(v as BrandModelVariantMaterial)}
+                  disabled={saving || !brandId}
+                >
+                  <SelectTrigger id="create-foam" className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VARIANT_MATERIAL_ADMIN_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
