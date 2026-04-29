@@ -13,6 +13,10 @@ import {
   parseVolumeLiters,
 } from "@/lib/board-measurements"
 import { isListingSellableCondition } from "@/lib/listing-labels"
+import {
+  parseReswellParcelLengthRawToCarrierInches,
+  parseReswellParcelWidthHeightRawToCarrierInches,
+} from "@/lib/reswell-parcel-fields"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -55,7 +59,7 @@ export type SellFormValidationInput = {
   boardFulfillment: BoardFulfillmentChoice
   boardShippingCostMode: BoardShippingCostMode
   boardShippingPrice: string
-  /** Packed box for Reswell-calculated rates (in / lb / oz). */
+  /** Packed parcel for Reswell: length = feet'inches (e.g. 6'1) or outer inches; W/H same inch style as Dimensions; DB stores carrier-ready inches. */
   reswellPackageLengthIn?: string
   reswellPackageWidthIn?: string
   reswellPackageHeightIn?: string
@@ -248,23 +252,21 @@ export function validateSellListingForm(
       }
     }
     if (mode === "reswell" && !relaxed) {
-      const parseInchField = (raw: string | undefined): number | null => {
-        const t = raw?.trim() ?? ""
-        if (!t) return null
-        const n = parseFloat(t.replace(/,/g, ""))
-        return Number.isFinite(n) ? n : null
-      }
-      const L = parseInchField(form.reswellPackageLengthIn)
-      const W = parseInchField(form.reswellPackageWidthIn)
-      const H = parseInchField(form.reswellPackageHeightIn)
+      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
+      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
+      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0) {
-        return "Enter packed box length (inches) for Reswell-calculated shipping."
+        const raw = form.reswellPackageLengthIn?.trim() ?? ""
+        const hasPrime = raw.replace(/[\u2032\u2019＇]/g, "'").includes("'")
+        return hasPrime
+          ? "Packed length: check feet and inches (e.g. 6'1) or use total outer length in inches."
+          : "Enter packed length — feet'inches such as 6'1 from your Dimensions, or outer box length in inches."
       }
       if (W == null || W <= 0) {
-        return "Enter packed box width (inches) for Reswell-calculated shipping."
+        return "Enter packed box width — use the same inches as in Dimensions (decimals or fractions) for Reswell shipping."
       }
       if (H == null || H <= 0) {
-        return "Enter packed box height (inches) for Reswell-calculated shipping."
+        return "Enter packed box height — use the same inches as board thickness (decimals or fractions) for Reswell shipping."
       }
       const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""
       const ozRaw = form.reswellPackageWeightOz?.trim() ?? ""

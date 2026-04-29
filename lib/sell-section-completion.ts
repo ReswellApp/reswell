@@ -6,6 +6,10 @@ import {
 } from "@/lib/board-measurements"
 import { flagsFromBoardFulfillment } from "@/lib/listing-fulfillment"
 import {
+  parseReswellParcelLengthRawToCarrierInches,
+  parseReswellParcelWidthHeightRawToCarrierInches,
+} from "@/lib/reswell-parcel-fields"
+import {
   buildResolvedListingTitle,
   LISTING_BOARD_MODEL_MAX_LENGTH,
   LISTING_MIN_PHOTOS,
@@ -85,13 +89,6 @@ function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
   return true
 }
 
-function parseInchField(raw: string | undefined): number | null {
-  const t = raw?.trim() ?? ""
-  if (!t) return null
-  const n = parseFloat(t.replace(/,/g, ""))
-  return Number.isFinite(n) ? n : null
-}
-
 function deliverySectionComplete(form: SellFormValidationInput): boolean {
   if (!form.locationCity?.trim() || !form.locationState?.trim()) return false
 
@@ -105,9 +102,9 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       if (!Number.isFinite(sp) || sp < 0) return false
     }
     if (mode === "reswell") {
-      const L = parseInchField(form.reswellPackageLengthIn)
-      const W = parseInchField(form.reswellPackageWidthIn)
-      const H = parseInchField(form.reswellPackageHeightIn)
+      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
+      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
+      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
 
       const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""

@@ -37,6 +37,7 @@ function SuffixInput({
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
   placeholder?: string
 }) {
+  const hasSuffix = suffix.trim() !== ""
   return (
     <div className="space-y-2">
       <Label htmlFor={id} className="text-sm font-semibold text-foreground">
@@ -51,14 +52,19 @@ function SuffixInput({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="rounded-lg pr-10 placeholder:text-muted-foreground/45"
+          className={cn(
+            "rounded-lg placeholder:text-muted-foreground/45",
+            hasSuffix ? "pr-10" : "pr-4",
+          )}
         />
-        <span
-          className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm tabular-nums text-muted-foreground/45"
-          aria-hidden
-        >
-          {suffix}
-        </span>
+        {hasSuffix ? (
+          <span
+            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm tabular-nums text-muted-foreground/45"
+            aria-hidden
+          >
+            {suffix}
+          </span>
+        ) : null}
       </div>
     </div>
   )
@@ -123,6 +129,17 @@ export function ReswellPackageDimensionsCard({
         </p>
       </div>
 
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground/45 leading-relaxed">
+          When Reswell shipping is on, these three fields stay in sync with <span className="font-medium text-foreground/80">Length</span>,{" "}
+          <span className="font-medium text-foreground/80">Width</span>, and{" "}
+          <span className="font-medium text-foreground/80">Thickness</span> above — change them here only if
+          your packed box differs. Length uses the same feet-and-inches style (such as 5&apos;4), or outer
+          inches. Width and height use the same inch values; packing cushion for carriers is applied when we
+          save.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SuffixInput
           id="reswell-pkg-length-in"
@@ -134,10 +151,11 @@ export function ReswellPackageDimensionsCard({
               </span>
             </>
           }
-          suffix="in"
+          suffix=""
           value={lengthIn}
           onChange={onLengthInChange}
-          placeholder="0"
+          inputMode="text"
+          placeholder="e.g. 6'1"
         />
         <SuffixInput
           id="reswell-pkg-width-in"

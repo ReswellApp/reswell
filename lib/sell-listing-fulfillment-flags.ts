@@ -4,6 +4,11 @@ import {
 } from "@/lib/listing-fulfillment"
 import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
 
+import {
+  parseReswellParcelLengthRawToCarrierInches,
+  parseReswellParcelWidthHeightRawToCarrierInches,
+} from "@/lib/reswell-parcel-fields"
+
 /**
  * Slice of the surfboard sell form used to persist fulfillment booleans.
  * Kept loose for draft autosave payloads (optional fields).
@@ -26,12 +31,6 @@ function normalizeBoardFulfillmentMode(m: unknown): BoardFulfillmentChoice {
   return "pickup_only"
 }
 
-function parseInchField(raw: string | undefined): number | null {
-  const t = raw?.trim() ?? ""
-  if (!t) return null
-  const n = parseFloat(t.replace(/,/g, ""))
-  return Number.isFinite(n) ? n : null
-}
 
 /**
  * Persists packed box + weight for Reswell-calculated shipping. Returns `null` when not applicable
@@ -52,9 +51,9 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
       shipping_packed_weight_oz: null,
     }
   }
-  const L = parseInchField(fd.reswellPackageLengthIn)
-  const W = parseInchField(fd.reswellPackageWidthIn)
-  const H = parseInchField(fd.reswellPackageHeightIn)
+  const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
+  const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
+  const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
   const lbRaw = fd.reswellPackageWeightLb?.trim() ?? ""
   const ozRaw = fd.reswellPackageWeightOz?.trim() ?? ""
   const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
@@ -157,9 +156,9 @@ export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput)
     const n = parseFloat(raw.replace(/,/g, ""))
     return Number.isFinite(n) && n >= 0
   }
-  const L = parseInchField(fd.reswellPackageLengthIn)
-  const W = parseInchField(fd.reswellPackageWidthIn)
-  const H = parseInchField(fd.reswellPackageHeightIn)
+  const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
+  const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
+  const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
   if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
   const lbRaw = fd.reswellPackageWeightLb?.trim() ?? ""
   const ozRaw = fd.reswellPackageWeightOz?.trim() ?? ""

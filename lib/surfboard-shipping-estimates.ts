@@ -5,10 +5,9 @@
 
 import {
   formatDecimalDimension,
-  parseBoardLengthParts,
   parseBoardMeasurement,
-  parseLengthFeet,
   parseVolumeLiters,
+  totalBoardLengthInchesFromCombinedInput,
 } from "@/lib/board-measurements"
 
 /**
@@ -27,20 +26,6 @@ export const RESWELL_PACKAGING_WEIGHT_LB = 4
 const KG_PER_LITER_ROUGH = 0.45
 const MIN_SHIP_LB = 5
 const MAX_SHIP_LB = 45
-
-function totalLengthInchesFromBoardLength(boardLength: string): number | null {
-  const { feetStr, inchesStr } = parseBoardLengthParts(boardLength)
-  const ft = parseLengthFeet(feetStr)
-  if (ft == null) return null
-  const inRaw = inchesStr.trim() === "" ? "0" : inchesStr.trim()
-  const inchesNum = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
-  if (!Number.isFinite(inchesNum) || inchesNum < 0 || inchesNum >= 12) {
-    return null
-  }
-  const totalLengthIn = ft * 12 + inchesNum
-  if (!Number.isFinite(totalLengthIn) || totalLengthIn <= 0) return null
-  return totalLengthIn
-}
 
 /**
  * Rough dry-board weight from overall length when liters aren’t available.
@@ -68,7 +53,7 @@ export function reswellSuggestedPackageInchesFromBoard(input: {
   boardWidthInches: string
   boardThicknessInches: string
 }): { lengthIn: string; widthIn: string; heightIn: string } | null {
-  const totalLengthIn = totalLengthInchesFromBoardLength(input.boardLength)
+  const totalLengthIn = totalBoardLengthInchesFromCombinedInput(input.boardLength)
   if (totalLengthIn == null) return null
 
   const wRaw = input.boardWidthInches.trim()
@@ -103,7 +88,7 @@ export function reswellSuggestedShipWeightLbOzFromBoard(input: {
   boardLength: string
   boardVolumeL: string
 }): { lb: string; oz: string } | null {
-  const totalLengthIn = totalLengthInchesFromBoardLength(input.boardLength)
+  const totalLengthIn = totalBoardLengthInchesFromCombinedInput(input.boardLength)
   if (totalLengthIn == null) return null
 
   const totalFt = totalLengthIn / 12
@@ -128,4 +113,37 @@ export function reswellSuggestedShipWeightLbOzFromBoard(input: {
   const lb = Math.floor(totalOz / 16)
   const oz = totalOz % 16
   return { lb: String(lb), oz: String(oz) }
+}
+
+/**
+ * Strings to pre-fill the Reswell packed parcel UI from the Dimensions section (“board” units).
+ * Packing cushion for carriers is applied when parsing for DB / quotes (see `lib/reswell-parcel-fields.ts`).
+ */
+export function reswellParcelAutofillStringsFromBoard(input: {
+  boardLength: string
+  boardWidthInches: string
+  boardThicknessInches: string
+  boardSkipOptionalDimensions?: boolean
+}): { length: string; width: string; height: string } | null {
+  if (totalBoardLengthInchesFromCombinedInput(input.boardLength) == null) return null
+
+  const width = input.boardWidthInches.trim()
+  const height = input.boardThicknessInches.trim()
+  const skip = input.boardSkipOptionalDimensions === true
+  if (!skip) {
+    if (!width || !height) return null
+    const wParsed =
+      parseBoardMeasurement(width) ?? Number.parseFloat(width.replace(/\s+/g, "").replace(/,/g, ""))
+    const hParsed =
+      parseBoardMeasurement(height) ?? Number.parseFloat(height.replace(/\s+/g, "").replace(/,/g, ""))
+    if (!Number.isFinite(wParsed) || wParsed <= 0 || !Number.isFinite(hParsed) || hParsed <= 0) {
+      return null
+    }
+  }
+
+  return {
+    length: input.boardLength.trim(),
+    width,
+    height,
+  }
 }

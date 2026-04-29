@@ -292,6 +292,24 @@ export function formatBoardLengthInputFromParts(feetStr: string, inchesStr: stri
   return `${fd}'${ir}`
 }
 
+/**
+ * Surfboard overall length in inches from the combined length field (`6'1`, `611` → 6′11″ semantics, etc.).
+ * Matches sell validation rules (feet 1–15, fractional inches allowed, under 12 in the inch segment).
+ */
+export function totalBoardLengthInchesFromCombinedInput(boardLength: string): number | null {
+  const { feetStr, inchesStr } = parseBoardLengthParts(boardLength)
+  const ft = parseLengthFeet(feetStr)
+  if (ft == null) return null
+  const inRaw = inchesStr.trim() === "" ? "0" : inchesStr.trim()
+  const inchesNum = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
+  if (!Number.isFinite(inchesNum) || inchesNum < 0 || inchesNum >= 12) {
+    return null
+  }
+  const totalLengthIn = ft * 12 + inchesNum
+  if (!Number.isFinite(totalLengthIn) || totalLengthIn <= 0) return null
+  return totalLengthIn
+}
+
 /** Title / display: `6'2"` style from a combined length field. */
 export function formatBoardLengthForTitle(boardLength: string): string {
   const { feetStr, inchesStr } = parseBoardLengthParts(boardLength)
