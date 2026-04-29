@@ -29,31 +29,63 @@ const SELLER_STEPS = [
   },
 ] as const
 
-const BUYER_STEPS = [
+export type HomeHowItWorksBuyerHighlightImages = {
+  shortboard: string
+  hybrid: string
+  longboard: string
+}
+
+type Step = (typeof SELLER_STEPS)[number]
+
+/** Copy under live listing photos (left: shortboard, middle: hybrid, right: longboard). */
+const BUYER_STEPS_COPY = [
   {
-    imageSrc: "/images/home/hero-slide-5.png",
-    imageAlt: "Browsing boards on a phone",
     title: "Find your next board",
     body:
       "Browse shortboards, longboards, grovelers, and more from locals and shops. Prices you won’t see off the rack.",
+    imageAlt: "Latest shortboard listing photo from the Reswell marketplace",
   },
   {
-    imageSrc: "/images/home/hero-slide-6.png",
-    imageAlt: "Saving favorite surfboards and sellers",
     title: "Save & follow",
     body:
       "Save listings for later and follow sellers or shops. When they post new boards, you’ve got a quick way back.",
+    imageAlt: "Latest hybrid surfboard listing photo from the Reswell marketplace",
   },
   {
-    imageSrc: "/images/home/hero-slide-4.png",
-    imageAlt: "Picking up a board from a local seller",
     title: "Buy the way you want",
     body:
       "Message sellers, check out securely in the app, and meet in person or get it shipped. Whatever works for the session ahead.",
+    imageAlt: "Latest longboard listing photo from the Reswell marketplace",
   },
 ] as const
 
-type Step = (typeof SELLER_STEPS)[number]
+function BuyerHowItWorksGrid({ images }: { images: HomeHowItWorksBuyerHighlightImages }) {
+  const srcs = [images.shortboard, images.hybrid, images.longboard] as const
+
+  return (
+    <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+      {BUYER_STEPS_COPY.map((copy, i) => (
+        <div key={copy.title} className="flex flex-col items-center text-center">
+          <div className="relative mb-5 w-full max-w-xs overflow-hidden rounded-2xl border border-border/60 bg-muted/30 aspect-[3/4] sm:max-w-none">
+            <Image
+              src={srcs[i]}
+              alt={copy.imageAlt}
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 50vw, 33vw"
+              placeholder="blur"
+              blurDataURL={portraitShimmer}
+            />
+          </div>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-foreground">{copy.title}</h3>
+          <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground text-pretty max-w-sm mx-auto">
+            {copy.body}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function HowItWorksGrid({ steps }: { steps: readonly Step[] }) {
   return (
@@ -81,7 +113,11 @@ function HowItWorksGrid({ steps }: { steps: readonly Step[] }) {
   )
 }
 
-export function HomeHowItWorksSection() {
+type HomeHowItWorksSectionProps = {
+  buyerHighlightImages: HomeHowItWorksBuyerHighlightImages
+}
+
+export function HomeHowItWorksSection({ buyerHighlightImages }: HomeHowItWorksSectionProps) {
   return (
     <section className="py-16" aria-labelledby="how-it-works-heading">
       <div className="container mx-auto">
@@ -127,7 +163,7 @@ export function HomeHowItWorksSection() {
               <HowItWorksGrid steps={SELLER_STEPS} />
             </TabsContent>
             <TabsContent value="buyer" className="mt-0 focus-visible:outline-none">
-              <HowItWorksGrid steps={BUYER_STEPS} />
+              <BuyerHowItWorksGrid images={buyerHighlightImages} />
             </TabsContent>
           </div>
         </Tabs>

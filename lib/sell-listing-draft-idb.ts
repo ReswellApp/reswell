@@ -43,7 +43,32 @@ function str(formData: SellListingDraftFormSnapshot, key: string): string {
   return typeof v === "string" ? v.trim() : ""
 }
 
-/** True when the user has entered enough that we should persist (IDB + server draft). */
+/** User picked a map location (profile/address prefill does not set coordinates). */
+function draftFormHasMapCoordinates(formData: SellListingDraftFormSnapshot): boolean {
+  const rawLat = formData.locationLat
+  const rawLng = formData.locationLng
+  const lat =
+    typeof rawLat === "number"
+      ? rawLat
+      : typeof rawLat === "string"
+        ? parseFloat(rawLat.replace(/,/g, ""))
+        : NaN
+  const lng =
+    typeof rawLng === "number"
+      ? rawLng
+      : typeof rawLng === "string"
+        ? parseFloat(rawLng.replace(/,/g, ""))
+        : NaN
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+  return !(lat === 0 && lng === 0)
+}
+
+/**
+ * True when the user has entered enough that we should persist (IDB, server draft on exit/save).
+ *
+ * Does **not** treat profile/address-prefilled city or display text alone as “filled” — that
+ * was creating empty drafts on `/sell`. Map coordinates (non-zero lat/lng) count as user input.
+ */
 export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot): boolean {
   if (str(formData, "title") || str(formData, "price") || str(formData, "description")) {
     return true
@@ -52,6 +77,7 @@ export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot)
   if (str(formData, "category")) return true
   if (str(formData, "condition")) return true
   if (str(formData, "brand")) return true
+  if (str(formData, "boardBrandId")) return true
   if (str(formData, "boardType")) return true
   if (
     str(formData, "boardWidthInches") ||
@@ -61,7 +87,7 @@ export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot)
     return true
   }
   if (str(formData, "boardFins") || str(formData, "boardTail")) return true
-  if (str(formData, "locationDisplay") || str(formData, "locationCity")) return true
+  if (draftFormHasMapCoordinates(formData)) return true
   if (formData.boardSkipOptionalDimensions === true) return true
   if (formData.autoPriceDrop === true) return true
   return false

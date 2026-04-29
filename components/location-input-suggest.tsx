@@ -48,6 +48,11 @@ interface LocationInputSuggestProps {
   disabled?: boolean
   /** Passed to the underlying input (accessibility). */
   "aria-label"?: string
+  /**
+   * When the suggestion dropdown is closed and the user presses Enter, optional handler
+   * (e.g. geocode the current input as a free-text confirm).
+   */
+  onEnterWhenPanelClosed?: () => void
 }
 
 const HAS_GOOGLE_KEY = Boolean(
@@ -191,6 +196,7 @@ export function LocationInputSuggest({
   debounceMs = 180,
   disabled = false,
   "aria-label": ariaLabel,
+  onEnterWhenPanelClosed,
 }: LocationInputSuggestProps) {
   const [open, setOpen] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
@@ -598,6 +604,10 @@ export function LocationInputSuggest({
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!panelOpen) {
       if (e.key === "Escape") setOpen(false)
+      if (e.key === "Enter" && onEnterWhenPanelClosed) {
+        e.preventDefault()
+        onEnterWhenPanelClosed()
+      }
       return
     }
 

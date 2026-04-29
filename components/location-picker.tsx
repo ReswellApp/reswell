@@ -1,11 +1,26 @@
 "use client"
 
-import React, { useState, useCallback, useEffect, useRef } from "react"
+import React, { useState, useCallback, useLayoutEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { LocationInputSuggest, type LocationSuggestion } from "@/components/location-input-suggest"
-import { MapPin, Search, Crosshair, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
+import {
+  MapPin,
+  Search,
+  Crosshair,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  X,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
+
+export type LocationPrefillSuggested = {
+  city: string
+  state: string
+  /** Shown in the search field until the user confirms (does not count as a saved listing location). */
+  displayLabel: string
+}
 
 interface LocationPickerProps {
   onLocationSelect: (location: {
@@ -15,6 +30,13 @@ interface LocationPickerProps {
     state: string
     displayName: string
   }) => void
+  /** Called when the user clears the location (parent should clear stored listing location fields). */
+  onLocationClear?: () => void
+  /**
+   * Profile / last-area hint: pre-fills the search field only. Parent must keep listing location
+   * fields empty until the user confirms (button, Enter, suggestion row, or “Use my area”).
+   */
+  prefillSuggested?: LocationPrefillSuggested | null
   initialLat?: number
   initialLng?: number
   initialCity?: string
@@ -41,18 +63,31 @@ function cityStateFromSuggestion(s: LocationSuggestion): { city: string; state: 
 
 const LISTBOX_ID = "listing-location-suggestions"
 
+async function forwardGeocodeSearch(q: string): Promise<{ lat: number; lng: number } | null> {
+  const query = q.trim()
+  if (!query) return null
+  try {
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`)
+    if (!res.ok) return null
+    const data = (await res.json()) as { lat?: number; lng?: number; error?: string }
+    if (data.error || data.lat == null || data.lng == null) return null
+    if (!Number.isFinite(data.lat) || !Number.isFinite(data.lng)) return null
+    return { lat: data.lat, lng: data.lng }
+  } catch {
+    return null
+  }
+}
+
 export function LocationPicker({
   onLocationSelect,
+  onLocationClear,
+  prefillSuggested = null,
   initialLat,
   initialLng,
   initialCity,
   initialState,
   initialDisplay,
 }: LocationPickerProps) {
-  const seeded =
-    (initialLat != null && initialLng != null && hasCoords(initialLat, initialLng)) ||
-    Boolean(initialDisplay?.trim())
-
   const [lat, setLat] = useState(() =>
     initialLat != null && initialLng != null && hasCoords(initialLat, initialLng) ? initialLat : 0,
   )
@@ -66,6 +101,7 @@ export function LocationPicker({
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [locating, setLocating] = useState(false)
+  const [confirmingTextLocation, setConfirmingTextLocation] = useState(false)
 
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const userTypingRef = useRef(true)
@@ -120,20 +156,113 @@ export function LocationPicker({
     }
   }, [])
 
-  /** Keep local state in sync when editing an existing listing or restoring a draft. */
-  useEffect(() => {
-    if (initialLat != null && initialLng != null && hasCoords(initialLat, initialLng)) {
+  const commitCoordinates = useCallback(
+    async (
+      nextLat: number,
+      nextLng: number,
+      cityFallback: string,
+      stateFallback: string,
+    ) => {
+      setLat(nextLat)
+      setLng(nextLng)
+      const resolved = await reverseGeocode(nextLat, nextLng)
+      userTypingRef.current = false
+      setSearchQuery(resolved.displayName)
+      pushToListing({
+        lat: nextLat,
+        lng: nextLng,
+        city: resolved.city.trim() ? resolved.city : cityFallback,
+        state: resolved.state.trim() ? resolved.state : stateFallback,
+        displayName: resolved.displayName,
+      })
+    },
+    [pushToListing, reverseGeocode],
+  )
+
+  const resolveQueryAndCommit = useCallback(
+    async (rawQuery: string) => {
+      const q = rawQuery.trim()
+      if (!q) {
+        setSearchError("Enter an area first, or pick from the suggestions list.")
+        return
+      }
+      setSearchError(null)
+      setConfirmingTextLocation(true)
+      try {
+        const coords = await forwardGeocodeSearch(q)
+        if (!coords) {
+          setSearchError(
+            "We couldn’t place that area. Try choosing a suggestion from the list or adjust what you typed.",
+          )
+          return
+        }
+        const fallbackCity = prefillSuggested?.city.trim() ?? ""
+        const fallbackState = prefillSuggested?.state.trim() ?? ""
+        await commitCoordinates(coords.lat, coords.lng, fallbackCity, fallbackState)
+      } finally {
+        setConfirmingTextLocation(false)
+      }
+    },
+    [commitCoordinates, prefillSuggested],
+  )
+
+  /** Keep local state in sync when editing/restoring draft, clearing, or switching saved-area hint. */
+  useLayoutEffect(() => {
+    const hasParentCommittedCoords =
+      initialLat != null && initialLng != null && hasCoords(initialLat, initialLng)
+
+    if (hasParentCommittedCoords) {
       setLat(initialLat)
       setLng(initialLng)
+      setCity(initialCity ?? "")
+      setState(initialState ?? "")
+      const display = initialDisplay ?? ""
+      setDisplayName(display)
+      setSearchQuery(display)
+      userTypingRef.current = display.trim().length === 0
+      return
     }
-    if (initialCity != null) setCity(initialCity)
-    if (initialState != null) setState(initialState)
-    if (initialDisplay != null) {
-      setDisplayName(initialDisplay)
-      setSearchQuery(initialDisplay)
+
+    setLat(0)
+    setLng(0)
+    setCity("")
+    setState("")
+    setDisplayName("")
+
+    if (prefillSuggested?.displayLabel?.trim()) {
+      setSearchQuery(prefillSuggested.displayLabel.trim())
       userTypingRef.current = false
+      return
     }
-  }, [initialLat, initialLng, initialCity, initialState, initialDisplay])
+
+    const display = initialDisplay ?? ""
+    setSearchQuery(display)
+    userTypingRef.current = display.trim().length === 0
+  }, [
+    initialLat,
+    initialLng,
+    initialCity,
+    initialState,
+    initialDisplay,
+    prefillSuggested?.city,
+    prefillSuggested?.state,
+    prefillSuggested?.displayLabel,
+  ])
+
+  const handleClearLocation = useCallback(() => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+    highlightTimerRef.current = null
+    setHighlightSaved(false)
+    setLat(0)
+    setLng(0)
+    setCity("")
+    setState("")
+    setDisplayName("")
+    setSearchQuery("")
+    setSearchError(null)
+    userTypingRef.current = true
+    onLocationClear?.()
+  }, [onLocationClear])
 
   function handleUseMyLocation() {
     if (!navigator.geolocation) {
@@ -167,14 +296,23 @@ export function LocationPicker({
     )
   }
 
-  const showListingFrom = seeded || hasCoords(lat, lng)
+  const parentHasCommittedCoords =
+    initialLat != null && initialLng != null && hasCoords(initialLat, initialLng)
+
+  const showSavedLocationCard = hasCoords(lat, lng) && displayName.trim().length > 0
+
+  /** Shown once there is text or a deferred profile hint — avoids an extra control on a totally blank brand-new row. */
+  const showConfirmLocationButton =
+    !parentHasCommittedCoords &&
+    !showSavedLocationCard &&
+    (Boolean(prefillSuggested) || searchQuery.trim().length > 0)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 [contain:layout]">
       <Label className="text-base font-medium">Where are you listing from?</Label>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-        <div className="relative w-full min-w-0 sm:flex-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2">
+        <div className="relative min-h-11 w-full min-w-0 flex-1">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-muted-foreground/45"
             aria-hidden
@@ -207,29 +345,63 @@ export function LocationPicker({
                 displayName: s.label,
               })
             }}
+            onEnterWhenPanelClosed={() => {
+              void resolveQueryAndCommit(searchQuery)
+            }}
             debounceMs={280}
             placeholder="Start typing a city, ZIP, or beach…"
             inputClassName="h-11 pl-10 pr-10 placeholder:text-muted-foreground/45"
             aria-label="Where you’re listing from"
+            disabled={confirmingTextLocation}
           />
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 shrink-0 gap-2 sm:min-w-[10rem]"
-          onClick={handleUseMyLocation}
-          disabled={locating}
-          title="Use my current area"
-          aria-label="Use my current area"
-        >
-          {locating ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Crosshair className="h-4 w-4 shrink-0" aria-hidden />
+        <div
+          className={cn(
+            "flex min-h-11 w-full shrink-0 gap-2 sm:w-auto",
+            !showConfirmLocationButton && "sm:justify-end",
           )}
-          Use my area
-        </Button>
+        >
+          {showConfirmLocationButton ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-11 min-w-0 flex-1 sm:min-w-[9.5rem] sm:flex-initial"
+              disabled={confirmingTextLocation || !searchQuery.trim()}
+              title="Set this search text as your listing area. You can also press Enter."
+              aria-label="Confirm listing location"
+              onClick={() => void resolveQueryAndCommit(searchQuery)}
+            >
+              {confirmingTextLocation ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                  Applying…
+                </>
+              ) : (
+                "Confirm location"
+              )}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "h-11 min-w-0 shrink-0 gap-2 sm:min-w-[10rem]",
+              showConfirmLocationButton ? "flex-1 sm:flex-initial" : "w-full sm:ml-auto sm:w-auto",
+            )}
+            onClick={handleUseMyLocation}
+            disabled={locating || confirmingTextLocation}
+            title="Use my current area"
+            aria-label="Use my current area"
+          >
+            {locating ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Crosshair className="h-4 w-4 shrink-0" aria-hidden />
+            )}
+            Use my area
+          </Button>
+        </div>
       </div>
 
       {searchError && (
@@ -242,7 +414,7 @@ export function LocationPicker({
         </div>
       )}
 
-      {showListingFrom && displayName.trim() && hasCoords(lat, lng) ? (
+      {showSavedLocationCard ? (
         <div
           className={cn(
             "rounded-xl border px-4 py-3 transition-all duration-300",
@@ -267,9 +439,22 @@ export function LocationPicker({
               )}
             </div>
             <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/45">
-                {highlightSaved ? "Saved to your listing" : "You’re listing from"}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/45">
+                  {highlightSaved ? "Saved to your listing" : "You’re listing from"}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="-mr-2 -mt-1 h-8 shrink-0 gap-1 text-muted-foreground hover:text-foreground"
+                  onClick={handleClearLocation}
+                  aria-label="Clear listing location"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                  Clear
+                </Button>
+              </div>
               <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
               <p className="text-xs text-muted-foreground/45 leading-relaxed">
                 Type in the box above to change — we never show your exact street.

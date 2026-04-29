@@ -176,6 +176,20 @@ import {
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
+import {
+  readSellListingAreaPrefillFromSession,
+  writeSellListingAreaPrefillToSession,
+} from "@/lib/utils/sell-listing-area-prefill-session"
+import type { LocationPrefillSuggested } from "@/components/location-picker"
+
+/** True once the seller has pinned the board (coordinates used for drafts + validation). */
+function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
+  const lat = fd.locationLat
+  const lng = fd.locationLng
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+  if (lat === 0 && lng === 0) return false
+  return true
+}
 
 function submitErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message
@@ -560,6 +574,19 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const listingIsDraft = editListingStatus === "draft"
+  /**
+   * Published (or non-draft) listing edit: stepper may reflect saved data without forcing
+   * “scroll + confirm location” — that rule applies to new listings and drafts only.
+   */
+  const skipPickupShippingStepperInteractionUx = Boolean(
+    editId && typeof editListingStatus === "string" && editListingStatus !== "draft",
+  )
+  /** Stepper UX: require seeing the delivery section, then an explicit location pick (fires from LocationPicker only; prefills do not). */
+  const [pickupShippingSectionEnteredOnce, setPickupShippingSectionEnteredOnce] = useState(false)
+  const [pickupShippingLocationUserCommits, setPickupShippingLocationUserCommits] = useState(0)
+  /** Profile/address suggestion only — search field UX; cleared when the user confirms or has map coords on the listing. */
+  const [listingLocationPrefillHint, setListingLocationPrefillHint] =
+    useState<LocationPrefillSuggested | null>(null)
   /** Server draft row id while staying on `/sell` (no ?edit=) — source of truth with IDB. */
   const [localServerDraftId, setLocalServerDraftId] = useState<string | null>(null)
   /** Recent drafts owned by the viewer, newest first — rendered in the DraftsPicker dropdown. */
@@ -590,6 +617,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [editId])
 
   useEffect(() => {
+    setPickupShippingSectionEnteredOnce(false)
+    setPickupShippingLocationUserCommits(0)
+    setListingLocationPrefillHint(null)
+  }, [editId, localServerDraftId])
+
+  useEffect(() => {
     if (!loading) return
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault()
@@ -612,6 +645,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+
+  useEffect(() => {
+    if (sellFormHasCommittedMapPins(formData)) setListingLocationPrefillHint(null)
+  }, [formData.locationLat, formData.locationLng])
 
   const openListingCatalogRequestFromBrand = useCallback(() => {
     setListingCatalogRequestVariant("full")
@@ -747,7 +784,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     [images],
   )
 
-  const sellSectionCompletion = useMemo(
+  const sellSectionCompletionBase = useMemo(
     () =>
       computeSellSectionCompletion(sellValidationForm, {
         imageCount: images.length,
@@ -755,6 +792,66 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }),
     [sellValidationForm, images.length, imagesUploadReady],
   )
+
+  const pickupShippingStepperUxSatisfied =
+    skipPickupShippingStepperInteractionUx ||
+    (pickupShippingSectionEnteredOnce && pickupShippingLocationUserCommits > 0)
+
+  const sellSectionCompletion = useMemo(() => {
+    const deliveryDataComplete = sellSectionCompletionBase["sell-section-delivery"] === true
+    return {
+      ...sellSectionCompletionBase,
+      "sell-section-delivery": deliveryDataComplete && pickupShippingStepperUxSatisfied,
+    }
+  }, [pickupShippingStepperUxSatisfied, sellSectionCompletionBase])
+
+  useEffect(() => {
+    if (skipPickupShippingStepperInteractionUx || editLoading) return
+
+    let cancelled = false
+    let raf = 0
+    let attempts = 0
+    let detach: (() => void) | undefined
+
+    const attach = () => {
+      if (cancelled) return
+      const el = document.getElementById("sell-section-delivery")
+      if (!el) {
+        attempts += 1
+        if (attempts > 150) return
+        raf = window.requestAnimationFrame(attach)
+        return
+      }
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting && e.intersectionRatio >= 0.1) {
+              setPickupShippingSectionEnteredOnce(true)
+              return
+            }
+          }
+        },
+        { threshold: [0, 0.1, 0.2], rootMargin: "0px 0px -6% 0px" },
+      )
+      io.observe(el)
+      const onFocusIn = () => {
+        setPickupShippingSectionEnteredOnce(true)
+      }
+      el.addEventListener("focusin", onFocusIn, true)
+      detach = () => {
+        io.disconnect()
+        el.removeEventListener("focusin", onFocusIn, true)
+      }
+    }
+
+    attach()
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(raf)
+      detach?.()
+    }
+  }, [editLoading, skipPickupShippingStepperInteractionUx])
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
     [sellValidationForm],
@@ -912,55 +1009,80 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const applySellLocationPrefillIfEmpty = useCallback(async () => {
     if (editId) return
     if (getImpersonation()) return
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-    if (sellLocationPrefillUserIdRef.current !== user.id) {
-      sellLocationPrefillUserIdRef.current = user.id
+    const { data: sess } = await supabase.auth.getSession()
+    let userId = sess.session?.user?.id ?? null
+    if (!userId) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      userId = user?.id ?? null
+    }
+    if (!userId) return
+
+    if (sellLocationPrefillUserIdRef.current !== userId) {
+      sellLocationPrefillUserIdRef.current = userId
       sellLocationPrefillCacheRef.current = undefined
     }
+
     if (sellLocationPrefillCacheRef.current === undefined) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("default_listing_city, default_listing_state")
-        .eq("id", user.id)
-        .maybeSingle()
-      const row = profile as {
-        default_listing_city?: string | null
-        default_listing_state?: string | null
-      } | null
-      let city = row?.default_listing_city?.trim() ?? ""
-      let state = row?.default_listing_state?.trim() ?? ""
-      if (!city) {
-        const { data: addr } = await supabase
-          .from("addresses")
-          .select("city, state")
-          .eq("profile_id", user.id)
-          .order("is_default", { ascending: false })
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle()
-        if (addr?.city?.trim()) {
-          city = addr.city.trim()
-          state = addr.state?.trim() ?? ""
+      const warmed = readSellListingAreaPrefillFromSession(userId)
+      if (warmed?.city) {
+        sellLocationPrefillCacheRef.current = warmed
+      } else {
+        const [{ data: profile }, { data: addr }] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("default_listing_city, default_listing_state")
+            .eq("id", userId)
+            .maybeSingle(),
+          supabase
+            .from("addresses")
+            .select("city, state")
+            .eq("profile_id", userId)
+            .order("is_default", { ascending: false })
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle(),
+        ])
+        const row = profile as {
+          default_listing_city?: string | null
+          default_listing_state?: string | null
+        } | null
+        let city = row?.default_listing_city?.trim() ?? ""
+        let state = row?.default_listing_state?.trim() ?? ""
+        const a = addr as { city?: string | null; state?: string | null } | null
+        if (!city && a?.city?.trim()) {
+          city = a.city.trim()
+          state = a.state?.trim() ?? ""
         }
+        const hinted = city ? { city, state: state || "" } : null
+        sellLocationPrefillCacheRef.current = hinted
+        writeSellListingAreaPrefillToSession(userId, hinted)
       }
-      sellLocationPrefillCacheRef.current = city
-        ? { city, state: state || "" }
-        : null
     }
     const hint = sellLocationPrefillCacheRef.current
-    if (!hint?.city) return
-    setFormData((fd) => {
-      if (fd.locationCity.trim() || fd.locationDisplay.trim()) return fd
-      const display = [hint.city, hint.state].filter(Boolean).join(", ")
-      return {
-        ...fd,
-        locationCity: hint.city,
-        locationState: hint.state,
-        locationDisplay: display,
-      }
+    if (!hint?.city) {
+      setListingLocationPrefillHint(null)
+      return
+    }
+    const snapshot = sellDraftLatestRef.current.formData as ReturnType<
+      typeof createInitialSellFormData
+    >
+    if (sellFormHasCommittedMapPins(snapshot)) {
+      setListingLocationPrefillHint(null)
+      return
+    }
+    if (
+      String(snapshot.locationCity ?? "").trim() ||
+      String(snapshot.locationDisplay ?? "").trim()
+    ) {
+      setListingLocationPrefillHint(null)
+      return
+    }
+    setListingLocationPrefillHint({
+      city: hint.city,
+      state: hint.state,
+      displayLabel: [hint.city, hint.state].filter(Boolean).join(", "),
     })
   }, [editId, supabase])
 
@@ -1109,6 +1231,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       (Boolean(localServerDraftId) && !editId))
 
   const handleSaveDraft = useCallback(async () => {
+    const hasDraftableContent =
+      imagesRef.current.length > 0 ||
+      sellDraftFormLooksFilled(formData as SellListingDraftFormSnapshot)
+    if (!hasDraftableContent) {
+      toast.message("Add at least one detail or photo before saving a draft.")
+      return
+    }
     const result = await persistServerDraft()
     if (!result.ok) {
       toast.error("Failed to save draft — please try again")
@@ -1131,7 +1260,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
     }
     toast.success("Draft saved")
-  }, [persistServerDraft])
+  }, [formData, persistServerDraft])
 
   const handleStartNewListing = useCallback(async () => {
     setStartNewListingBusy(true)
@@ -1334,13 +1463,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }
   }, [editId, reloadDeferredDraftHints, startFresh, supabase])
 
-  /** New listing (no ?edit=): prefill city/region from profile or a saved address when the field is empty. */
+  /** New listing (no ?edit=): prefill city/region from profile or saved session when empty. Runs right after hydrate (microtask ≪ setTimeout). */
   useEffect(() => {
     if (editId || !draftHydrated) return
-    const t = window.setTimeout(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
       void applySellLocationPrefillIfEmpty()
-    }, 0)
-    return () => window.clearTimeout(t)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [editId, draftHydrated, applySellLocationPrefillIfEmpty])
 
   /** Clear session draft hints when the account changes; reload /sell draft availability for the new user. */
@@ -1351,6 +1484,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const uid = session?.user?.id ?? null
       const prev = authUserIdRef.current
       if (prev !== null && uid !== null && prev !== uid) {
+        writeSellListingAreaPrefillToSession(prev, null)
         clearSellServerDraftListingId()
         clearRemoteResumeDraftIdStorage()
         setLocalServerDraftId(null)
@@ -1361,6 +1495,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         }
       }
       if (uid === null) {
+        if (prev) writeSellListingAreaPrefillToSession(prev, null)
         clearSellServerDraftListingId()
         clearRemoteResumeDraftIdStorage()
         setLocalServerDraftId(null)
@@ -3474,21 +3609,39 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   <div className="space-y-8">
                     <div className="space-y-6">
                       <LocationPicker
+                        prefillSuggested={listingLocationPrefillHint}
                         onLocationSelect={(loc) => {
-                          setFormData({
-                            ...formData,
+                          setPickupShippingLocationUserCommits((c) => c + 1)
+                          setListingLocationPrefillHint(null)
+                          setFormData((f) => ({
+                            ...f,
                             locationLat: loc.lat,
                             locationLng: loc.lng,
                             locationCity: loc.city,
                             locationState: loc.state,
                             locationDisplay: loc.displayName,
-                          })
+                          }))
+                        }}
+                        onLocationClear={() => {
+                          setPickupShippingLocationUserCommits(0)
+                          setListingLocationPrefillHint(null)
+                          setFormData((f) => ({
+                            ...f,
+                            locationLat: 0,
+                            locationLng: 0,
+                            locationCity: "",
+                            locationState: "",
+                            locationDisplay: "",
+                          }))
+                          window.setTimeout(() => {
+                            void applySellLocationPrefillIfEmpty()
+                          }, 0)
                         }}
                         initialLat={formData.locationLat || undefined}
                         initialLng={formData.locationLng || undefined}
-                        initialCity={formData.locationCity || undefined}
-                        initialState={formData.locationState || undefined}
-                        initialDisplay={formData.locationDisplay || undefined}
+                        initialCity={formData.locationCity}
+                        initialState={formData.locationState}
+                        initialDisplay={formData.locationDisplay}
                       />
 
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4 shadow-sm">

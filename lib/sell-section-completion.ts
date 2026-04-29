@@ -140,6 +140,9 @@ function descriptionSectionComplete(form: SellFormValidationInput): boolean {
 /**
  * Per-section completion for the `/sell` desktop stepper. Rules mirror
  * {@link validateSellListingForm} field groups so checkmarks match what’s left to publish.
+ *
+ * Delivery (`sell-section-delivery`): the `/sell` page may additionally require scroll + explicit
+ * `LocationPicker` confirmation before marking that step complete in the rail (prefill alone cannot).
  */
 export function computeSellSectionCompletion(
   form: SellFormValidationInput,

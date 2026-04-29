@@ -5,6 +5,7 @@ import { FALLBACK_HOME_HERO_SLIDE_PATHS, HeroSlideshow } from "@/components/hero
 import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
 import { normalizeHeroSlideUrl } from "@/lib/home-hero-slide-urls"
 import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
+import { listHowItWorksBuyerListingImageUrls } from "@/lib/db/home-how-it-works-buyer-images"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -71,6 +72,7 @@ export default async function HomePage() {
     shortBoardsRes,
     newGearRes,
     authRes,
+    howItWorksBuyerImageUrls,
   ] = await Promise.all([
     listHomeHeroCuratedSlideUrls(supabase),
     listHomeTrendingBrandsForPublicService(supabase),
@@ -108,7 +110,14 @@ export default async function HomePage() {
       .order("created_at", { ascending: false })
       .limit(12),
     supabase.auth.getUser(),
+    listHowItWorksBuyerListingImageUrls(supabase),
   ])
+
+  const howItWorksBuyerHighlightImages = {
+    shortboard: howItWorksBuyerImageUrls.shortboard ?? "/images/home/hero-slide-5.png",
+    hybrid: howItWorksBuyerImageUrls.hybrid ?? "/images/home/hero-slide-6.png",
+    longboard: howItWorksBuyerImageUrls.longboard ?? "/images/home/hero-slide-4.png",
+  }
 
   const useCuratedHeroOnly = curatedHeroUrls.length > 0
   const heroListingsRes = useCuratedHeroOnly
@@ -350,7 +359,7 @@ export default async function HomePage() {
         )}
 
         <FadeInSection>
-          <HomeHowItWorksSection />
+          <HomeHowItWorksSection buyerHighlightImages={howItWorksBuyerHighlightImages} />
         </FadeInSection>
 
         {/* CTA below How it works */}
