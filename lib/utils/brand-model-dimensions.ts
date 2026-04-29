@@ -50,6 +50,8 @@ export function finBoxesDisplayName(boxes: FinBoxesType): string {
       return "Single fin"
     case "two_plus_one":
       return "2+1"
+    case "twin":
+      return "Twin"
     case "twinzer":
       return "Twinzer"
     default:
@@ -67,6 +69,7 @@ export const FIN_BOXES_ADMIN_OPTIONS: readonly { value: FinBoxesType; label: str
   { value: "quad", label: "Quad" },
   { value: "single_fin", label: "Single fin" },
   { value: "two_plus_one", label: "2+1" },
+  { value: "twin", label: "Twin" },
   { value: "twinzer", label: "Twinzer" },
 ] as const
 

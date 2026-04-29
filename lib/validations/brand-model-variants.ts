@@ -15,6 +15,7 @@ export const finBoxesSchema = z.enum([
   "quad",
   "single_fin",
   "two_plus_one",
+  "twin",
   "twinzer",
 ])
 
