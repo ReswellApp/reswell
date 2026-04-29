@@ -405,10 +405,6 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
         </form>
       </div>
       {dropdownPanel}
-      <p className="mt-2 text-center text-xs text-muted-foreground">
-        Matches use the same Elasticsearch-backed directory as the header and Sell flow when the cluster is
-        configured. Search always uses your text for marketplace results — same as Brand / shaper on Sell.
-      </p>
     </div>
   )
 }
