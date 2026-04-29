@@ -22,6 +22,7 @@ import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import {
   boardTypeForDbFromBrowseParam,
   boardsBrowseBoardTypeLabel,
+  boardsBrowseHeroSubtext,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
@@ -381,8 +382,8 @@ export async function BoardsBrowsePage(props: {
             </Breadcrumb>
           </div>
           <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
-          <p className="text-center text-muted-foreground mt-2">
-            Find boards with shipping to your door, or local pickup when sellers offer it
+          <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
+            {boardsBrowseHeroSubtext(searchParams.type)}
           </p>
         </div>
       </section>

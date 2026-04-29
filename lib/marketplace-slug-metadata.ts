@@ -81,6 +81,29 @@ export function normalizedBoardsBrowseTypeFromParam(type: string | undefined | n
   return type.trim()
 }
 
+/** Short descriptive line under the H1 on `/boards`, tailored to board category. */
+export function boardsBrowseHeroSubtext(type: string | undefined | null): string {
+  const canonical = normalizedBoardsBrowseTypeFromParam(type)
+  if (!canonical) {
+    return "Shortboards, mids, logs, and everything in between. Sellers ship when they can, and plenty are happy to meet up locally."
+  }
+  const lines: Record<string, string> = {
+    shortboard:
+      "Made for punchy waves and quick turns. Think lively boards that love steep faces and tight arcs.",
+    longboard:
+      "Built for glide and easy trimming. Perfect when you want long mellow rides and maybe a cheeky nose ride.",
+    hybrid:
+      "Extra paddle without feeling like a tank. A sweet spot when you want volume but still want to turn.",
+    groveler:
+      "Wide and forgiving for mushy beach breaks. Makes weak swell feel fun when you just want to surf.",
+    "step-up-gun":
+      "Stepped up outlines for bigger days when you want drive and a steady feeling under your feet.",
+    other:
+      "Weird boards, customs, and shapes that do not fit a neat box. Worth a browse if you want something different.",
+  }
+  return lines[canonical] ?? "Used surfboards from sellers who ship or welcome local pickup."
+}
+
 export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Promise<Metadata> {
   const browseType = normalizedBoardsBrowseTypeFromParam(sp.type)
   const typeLabel =
