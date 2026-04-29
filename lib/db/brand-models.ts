@@ -86,6 +86,39 @@ export async function getBrandModelsCatalogOptionsForSell(
   return { ok: true, brandSlug: brand.slug.trim(), models }
 }
 
+/** Every `brand_models` row with its directory brand — public RLS; used by `/sell` model search. */
+export async function listBrandModelsWithBrandsForSellCatalog(
+  supabase: SupabaseClient,
+): Promise<
+  { id: string; name: string; brandId: string; brandName: string; brandSlug: string }[]
+> {
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select(LIST_SELECT)
+    .order("name", { ascending: true })
+
+  if (error) {
+    console.error("listBrandModelsWithBrandsForSellCatalog:", error.message)
+    return []
+  }
+
+  const rows = (data ?? []) as RawBrandModelRow[]
+  const out: { id: string; name: string; brandId: string; brandName: string; brandSlug: string }[] =
+    []
+  for (const row of rows) {
+    const b = pickJoinedBrand(row.brands)
+    if (!b?.id || !b.slug?.trim()) continue
+    out.push({
+      id: row.id,
+      name: row.name.trim(),
+      brandId: b.id,
+      brandName: b.name.trim(),
+      brandSlug: b.slug.trim(),
+    })
+  }
+  return out
+}
+
 export async function listBrandModelsForAdmin(
   supabase: SupabaseClient,
   brandId?: string,

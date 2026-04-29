@@ -2,7 +2,7 @@
 
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
-import { getBrandModelsCatalogOptionsForSell } from "@/lib/db/brand-models"
+import { listBrandModelsWithBrandsForSellCatalog } from "@/lib/db/brand-models"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-index"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
@@ -73,36 +73,39 @@ export async function getBoardModelsCatalogItems() {
   return { items }
 }
 
-const sellCatalogBrandIdSchema = z.string().uuid()
-
 export type SellBrandModelCatalogRow = {
   id: string
   name: string
   catalogSlug: string
+  brandId: string
+  brandName: string
+  brandSlug: string
 }
 
 /**
- * Surfboard models from `brand_models` for the selected directory brand (excludes variants).
+ * All surfboard models in `brand_models` with directory brands (excludes variants) for `/sell` model search.
  */
-export async function getBrandModelsCatalogForSellForm(brandId: string): Promise<
-  | { ok: true; brandSlug: string; models: SellBrandModelCatalogRow[] }
+export async function getBrandModelsCatalogForSellForm(): Promise<
+  | { ok: true; models: SellBrandModelCatalogRow[] }
   | { ok: false; error: string }
 > {
-  const parsed = sellCatalogBrandIdSchema.safeParse(brandId.trim())
-  if (!parsed.success) {
-    return { ok: false, error: "Choose a brand from the directory first." }
-  }
-  const supabase = await createClient()
-  const result = await getBrandModelsCatalogOptionsForSell(supabase, parsed.data)
-  if (!result.ok) return result
-  return {
-    ok: true,
-    brandSlug: result.brandSlug,
-    models: result.models.map((m) => ({
-      id: m.id,
-      name: m.name,
-      catalogSlug: slugify(m.name),
-    })),
+  try {
+    const supabase = await createClient()
+    const rows = await listBrandModelsWithBrandsForSellCatalog(supabase)
+    return {
+      ok: true,
+      models: rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        catalogSlug: slugify(r.name),
+        brandId: r.brandId,
+        brandName: r.brandName,
+        brandSlug: r.brandSlug,
+      })),
+    }
+  } catch (e) {
+    console.error("getBrandModelsCatalogForSellForm:", e)
+    return { ok: false, error: "Could not load model catalog." }
   }
 }
 

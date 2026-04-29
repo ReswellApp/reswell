@@ -50,11 +50,29 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  type DragEndEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import {
   Upload,
   Loader2,
   X,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   CheckCircle2,
   AlertCircle,
@@ -128,7 +146,6 @@ import {
   validateSellListingForm,
   buildResolvedListingTitle,
   LISTING_TITLE_MAX_LENGTH,
-  LISTING_MIN_PHOTOS,
   type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
@@ -295,6 +312,13 @@ type ListingPhotoSlot = {
   prepared?: PreparedListingImagePair
 }
 
+/**
+ * Remembers decoded thumbnails per slot across reorder/remount (dnd-kit). Without this,
+ * `thumbLoaded` resets while Next/Image often skips `onLoadingComplete` for cached assets,
+ * so tiles stay on the skeleton indefinitely after drag.
+ */
+const sellListingThumbLoadedSrcByClientId = new Map<string, string>()
+
 /** Photos can be written to `listing_images` for a server draft row. */
 function listingPhotosReadyForDraftSync(slots: ListingPhotoSlot[]): boolean {
   return (
@@ -303,27 +327,70 @@ function listingPhotosReadyForDraftSync(slots: ListingPhotoSlot[]): boolean {
   )
 }
 
-function SellListingPhotoTile({
+function SellListingPhotoSortableTile({
   image,
   index,
-  totalCount,
   onRemove,
-  onMove,
   onRetry,
 }: {
   image: ListingPhotoSlot
   index: number
-  totalCount: number
   onRemove: () => void
-  onMove: (delta: number) => void
   onRetry: () => void
 }) {
-  const [thumbLoaded, setThumbLoaded] = useState(false)
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: image.clientId,
+    /** Avoid FLIP transitions fighting layout measurement with `next/image` in the tile. */
+    transition: null,
+  })
 
-  useEffect(() => {
-    setThumbLoaded(false)
-  }, [image.clientId, image.thumbnailUrl, image.url])
+  return (
+    <SellListingPhotoTile
+      image={image}
+      index={index}
+      onRemove={onRemove}
+      onRetry={onRetry}
+      sortable={{
+        setNodeRef,
+        style: {
+          transform: CSS.Transform.toString(transform),
+          transition,
+        },
+        attributes,
+        listeners,
+        isDragging,
+      }}
+    />
+  )
+}
 
+function SellListingPhotoTile({
+  image,
+  index,
+  onRemove,
+  onRetry,
+  sortable,
+}: {
+  image: ListingPhotoSlot
+  index: number
+  onRemove: () => void
+  onRetry: () => void
+  /** Pointer + touch drag-to-reorder (@dnd-kit). */
+  sortable: {
+    setNodeRef: (node: HTMLElement | null) => void
+    style: React.CSSProperties
+    attributes: DraggableAttributes
+    listeners: DraggableSyntheticListeners | undefined
+    isDragging: boolean
+  }
+}) {
   const isFailure =
     image.optimizePhase === "error" || image.uploadPhase === "error"
 
@@ -333,17 +400,38 @@ function SellListingPhotoTile({
       : ""
   const photoReady = Boolean(remote)
 
+  const thumbSrc = remote ? proxiedListingImageSrc(remote) : ""
+
+  const persistedThumbMatches =
+    thumbSrc !== "" &&
+    sellListingThumbLoadedSrcByClientId.get(image.clientId) === thumbSrc
+
+  const [thumbLoaded, setThumbLoaded] = useState(persistedThumbMatches)
+
+  useEffect(() => {
+    const matched =
+      thumbSrc !== "" &&
+      sellListingThumbLoadedSrcByClientId.get(image.clientId) === thumbSrc
+    setThumbLoaded(matched)
+  }, [image.clientId, thumbSrc])
+
   const skeletonVisible =
     !isFailure &&
     (!photoReady || !thumbLoaded)
 
-  const thumbSrc = remote ? proxiedListingImageSrc(remote) : ""
-
   return (
     <div
-      className="relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col border border-transparent"
+      ref={sortable.setNodeRef}
+      style={sortable.style}
+      className={cn(
+        "relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col border border-transparent touch-none",
+        sortable.isDragging && "z-[60] opacity-70 shadow-lg ring-2 ring-primary/40 scale-[1.02]",
+        !isFailure && !skeletonVisible && "cursor-grab active:cursor-grabbing",
+      )}
       aria-busy={!isFailure && (!photoReady || !thumbLoaded) ? true : undefined}
       aria-live="polite"
+      {...sortable.attributes}
+      {...sortable.listeners}
     >
       <div className="relative flex-1 min-h-0">
         {thumbSrc ? (
@@ -356,7 +444,10 @@ function SellListingPhotoTile({
               thumbLoaded ? "opacity-100" : "opacity-0",
             )}
             unoptimized
-            onLoadingComplete={() => setThumbLoaded(true)}
+            onLoadingComplete={() => {
+              sellListingThumbLoadedSrcByClientId.set(image.clientId, thumbSrc)
+              setThumbLoaded(true)
+            }}
           />
         ) : null}
         {!isFailure ? (
@@ -372,6 +463,7 @@ function SellListingPhotoTile({
           <>
             <button
               type="button"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={onRemove}
               className={cn(
                 "absolute top-1 right-1 p-1 rounded-full hover:bg-background z-[5]",
@@ -389,33 +481,11 @@ function SellListingPhotoTile({
               </span>
             ) : (
               <>
-                <div className="absolute bottom-6 left-1 flex items-center gap-1 z-[5]">
+                <div className="absolute bottom-6 left-1 flex items-center gap-1 z-[5] pointer-events-none">
                   {index === 0 ? (
                     <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
                       Main
                     </span>
-                  ) : null}
-                </div>
-                <div className="absolute bottom-6 right-1 flex gap-1 z-[5]">
-                  {index > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => onMove(-1)}
-                      className="p-1 rounded-full bg-background/80 hover:bg-background"
-                      aria-label="Move photo left"
-                    >
-                      <ChevronLeft className="h-3 w-3" />
-                    </button>
-                  ) : null}
-                  {index < totalCount - 1 ? (
-                    <button
-                      type="button"
-                      onClick={() => onMove(1)}
-                      className="p-1 rounded-full bg-background/80 hover:bg-background"
-                      aria-label="Move photo right"
-                    >
-                      <ChevronRight className="h-3 w-3" />
-                    </button>
                   ) : null}
                 </div>
               </>
@@ -433,6 +503,7 @@ function SellListingPhotoTile({
             variant="outline"
             size="sm"
             className="h-6 w-full text-[10px] px-1"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={onRetry}
           >
             <RefreshCw className="h-3 w-3 mr-0.5" />
@@ -933,38 +1004,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     formData.boardVolumeL,
   ])
 
-  // Count completed “board” fields for progress (10: photos, title, brand, category, length, width, thick, condition, price, description).
-  const boardFieldsCompleted = useMemo(() => {
-    const widthOk =
-      formData.boardSkipOptionalDimensions || formData.boardWidthInches.trim()
-    const thickOk =
-      formData.boardSkipOptionalDimensions || formData.boardThicknessInches.trim()
-    return [
-      images.length >= LISTING_MIN_PHOTOS,
-      formData.title.trim(),
-      formData.brand.trim(),
-      formData.category.trim(),
-      formData.boardLength.trim(),
-      widthOk,
-      thickOk,
-      formData.condition,
-      formData.price.trim(),
-      formData.description.trim(),
-    ].filter(Boolean).length
-  }, [
-    images.length,
-    formData.title,
-    formData.brand,
-    formData.category,
-    formData.boardLength,
-    formData.boardWidthInches,
-    formData.boardThicknessInches,
-    formData.boardSkipOptionalDimensions,
-    formData.condition,
-    formData.price,
-    formData.description,
-  ])
-
   const reloadDeferredDraftHints = useCallback(async () => {
     const {
       data: { user },
@@ -1080,6 +1119,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
+    sellListingThumbLoadedSrcByClientId.clear()
     setImages([])
     setRemovedImageIds([])
     setPublishPreview(null)
@@ -1255,6 +1295,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
       draftPhotosPendingRef.current = null
       setFormData(createInitialSellFormData())
+      sellListingThumbLoadedSrcByClientId.clear()
       setImages([])
       setRemovedImageIds([])
       setLocalServerDraftId(null)
@@ -1337,6 +1378,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           clearSellServerDraftListingId()
           clearRemoteResumeDraftIdStorage()
           setFormData(createInitialSellFormData())
+          sellListingThumbLoadedSrcByClientId.clear()
           setImages([])
           setRemovedImageIds([])
           setPublishPreview(null)
@@ -1819,6 +1861,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             progressThumb: 100,
           }
         })
+      sellListingThumbLoadedSrcByClientId.clear()
       setImages(existingImages)
       setRemovedImageIds([])
       setEditLoading(false)
@@ -2071,6 +2114,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (toRemove?.previewUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(toRemove.previewUrl)
       }
+      if (toRemove?.clientId) {
+        sellListingThumbLoadedSrcByClientId.delete(toRemove.clientId)
+      }
       if (toRemove?.id) {
         setRemovedImageIds((ids) => [...ids, toRemove.id!])
       }
@@ -2078,16 +2124,25 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     })
   }
 
-  function moveImage(index: number, delta: number) {
+  const photoDragSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const handlePhotosDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
     setImages((prev) => {
-      const newIndex = index + delta
-      if (newIndex < 0 || newIndex >= prev.length) return prev
-      const copy = [...prev]
-      const [item] = copy.splice(index, 1)
-      copy.splice(newIndex, 0, item)
-      return copy
+      const oldIndex = prev.findIndex((i) => i.clientId === active.id)
+      const newIndex = prev.findIndex((i) => i.clientId === over.id)
+      if (oldIndex < 0 || newIndex < 0) return prev
+      return arrayMove(prev, oldIndex, newIndex)
     })
-  }
+  }, [])
 
   function listingImagesPayloadForApi(): { url: string; thumbnail_url: string | null }[] {
     return images.map((im) => ({
@@ -2930,19 +2985,30 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Photos</h3>
+                    <p className="text-xs text-muted-foreground/45">
+                      Drag photos to reorder — the first is your main image.
+                    </p>
                   <Label className="sr-only">Listing photos</Label>
+                  <DndContext
+                    sensors={photoDragSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handlePhotosDragEnd}
+                  >
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                    <SortableContext
+                      items={images.map((im) => im.clientId)}
+                      strategy={rectSortingStrategy}
+                    >
                     {images.map((image, index) => (
-                      <SellListingPhotoTile
+                      <SellListingPhotoSortableTile
                         key={image.clientId}
                         image={image}
                         index={index}
-                        totalCount={images.length}
                         onRemove={() => removeImage(index)}
-                        onMove={(delta) => moveImage(index, delta)}
                         onRetry={() => retryListingPhotoUpload(image.clientId)}
                       />
                     ))}
+                    </SortableContext>
                     {images.length < 12 && (
                       <div className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden">
                         <label
@@ -2966,6 +3032,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                       </div>
                     )}
                   </div>
+                  </DndContext>
                   <p className="text-xs text-muted-foreground/45 space-y-1">
                     <span className="block">Thank you for listing on Reswell.</span>
                     <span className="inline-flex flex-wrap items-center gap-1">
@@ -3035,15 +3102,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             )}
                           </SelectContent>
                         </Select>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground/45 pb-1 pt-1">
-                          <span>{boardFieldsCompleted} of 10 fields complete</span>
-                          <div className="flex-1 mx-3 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-primary transition-all duration-300"
-                              style={{ width: `${(boardFieldsCompleted / 10) * 100}%` }}
-                            />
-                          </div>
-                        </div>
                       </div>
 
                       <div className="max-w-md space-y-2">
@@ -3079,6 +3137,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               id="listing-brand"
                               placeholder="e.g., Channel Islands"
                               value={formData.brand}
+                              committedDirectoryBrandLabel={
+                                formData.boardBrandId
+                                  ? formData.boardLinkedBrandName.trim() ||
+                                    formData.brand.trim() ||
+                                    null
+                                  : null
+                              }
                               onChange={(v) => {
                                 setFormData((f) => {
                                   const clear =
@@ -3151,7 +3216,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
                           <div className="min-w-0 space-y-2">
                             <SellBoardModelField
-                              catalogBrandId={formData.boardBrandId}
                               linkedBrandDisplayName={
                                 formData.boardLinkedBrandName.trim() || formData.brand.trim()
                               }

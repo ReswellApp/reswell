@@ -58,6 +58,11 @@ type SurfboardTitleIndexInputProps = {
   onChange: (value: string) => void
   boardLength: string
   onSelectModel: (opt: IndexBoardModelSelection) => void
+  /**
+   * When the sell form links a directory brand (`boardBrandId`), pass the canonical label.
+   * Keeps brand suggest closed as if the user picked from the list (e.g. after choosing a catalog model).
+   */
+  committedDirectoryBrandLabel?: string | null
   /** When search returns no rows, optional CTA opens the global “request a brand” flow (caller owns the dialog). */
   onRequestBrand?: () => void
 }
@@ -72,6 +77,7 @@ export function SurfboardTitleIndexInput({
   onChange,
   boardLength: _boardLength,
   onSelectModel,
+  committedDirectoryBrandLabel = null,
   onRequestBrand,
 }: SurfboardTitleIndexInputProps) {
   const [items, setItems] = React.useState<IndexBoardModelSelection[]>([])
@@ -127,6 +133,26 @@ export function SurfboardTitleIndexInput({
     },
     [onSelectModel, value],
   )
+
+  React.useEffect(() => {
+    const lock = committedDirectoryBrandLabel?.trim()
+    if (!lock) {
+      pickedCatalogTitleRef.current = null
+      return
+    }
+    if (value.trim() !== lock) return
+    pickedCatalogTitleRef.current = lock.slice(0, LISTING_TITLE_MAX_LENGTH)
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+      debounceRef.current = null
+    }
+    brandSearchEpoch.current += 1
+    setLoading(false)
+    setBrandRows([])
+    setSearchSettled(false)
+    setOpen(false)
+    setDropdownRect(null)
+  }, [committedDirectoryBrandLabel, value])
 
   React.useEffect(() => {
     let cancelled = false

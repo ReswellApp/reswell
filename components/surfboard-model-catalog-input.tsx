@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { createPortal } from "react-dom"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { SellBrandModelCatalogRow } from "@/app/actions/marketplace"
@@ -10,7 +11,14 @@ import { LISTING_BOARD_MODEL_MAX_LENGTH } from "@/lib/sell-form-validation"
 function filterCatalogModels(rows: SellBrandModelCatalogRow[], query: string): SellBrandModelCatalogRow[] {
   const q = query.trim().toLowerCase()
   if (!q) return rows.slice(0, 120)
-  return rows.filter((m) => m.name.toLowerCase().includes(q))
+  return rows
+    .filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.brandName.toLowerCase().includes(q) ||
+        `${m.brandName} ${m.name}`.toLowerCase().includes(q),
+    )
+    .slice(0, 120)
 }
 
 export type SurfboardModelCatalogInputProps = {
@@ -18,10 +26,14 @@ export type SurfboardModelCatalogInputProps = {
   className?: string
   placeholder?: string
   disabled?: boolean
+  /** After catalog fetch finished successfully (may be zero rows). */
+  catalogReady: boolean
   value: string
   onFreeTextChange: (next: string) => void
   onPickCatalogRow: (row: SellBrandModelCatalogRow) => void
   models: SellBrandModelCatalogRow[]
+  /** Shown inside the dropdown when there is no catalog match or the catalog is empty. */
+  onRequestCatalogAdd?: () => void
 }
 
 /**
@@ -33,10 +45,12 @@ export function SurfboardModelCatalogInput({
   className,
   placeholder,
   disabled,
+  catalogReady,
   value,
   onFreeTextChange,
   onPickCatalogRow,
   models,
+  onRequestCatalogAdd,
 }: SurfboardModelCatalogInputProps) {
   const [open, setOpen] = React.useState(false)
   const [highlight, setHighlight] = React.useState(0)
@@ -50,12 +64,13 @@ export function SurfboardModelCatalogInput({
   const dropdownRef = React.useRef<HTMLDivElement>(null)
   const listId = React.useId()
 
-  const catalogActive = Boolean(models.length && !disabled)
+  const catalogHasRows = models.length > 0
+  const canUseSuggest = Boolean(catalogReady && !disabled)
 
   const q = value.trim()
   const filtered = React.useMemo(
-    () => (catalogActive ? filterCatalogModels(models, value) : []),
-    [catalogActive, models, value],
+    () => (catalogHasRows ? filterCatalogModels(models, value) : []),
+    [catalogHasRows, models, value],
   )
 
   const commitPick = React.useCallback(
@@ -71,7 +86,7 @@ export function SurfboardModelCatalogInput({
     setHighlight((h) => Math.min(h, Math.max(filtered.length - 1, 0)))
   }, [filtered.length])
 
-  const portalVisible = open && catalogActive && q.length >= 1
+  const portalVisible = open && canUseSuggest && q.length >= 1
 
   React.useEffect(() => {
     if (!portalVisible || !containerRef.current || typeof document === "undefined") {
@@ -124,14 +139,14 @@ export function SurfboardModelCatalogInput({
   const dropdownPortal =
     portalVisible &&
     dropdownRect &&
-    catalogActive &&
+    canUseSuggest &&
     typeof document !== "undefined"
       ? createPortal(
           <div
             ref={dropdownRef}
             id={listId}
             role="listbox"
-            aria-label="Catalog models for this brand"
+            aria-label="Catalog models"
             className="fixed z-[200] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md"
             style={{
               top: dropdownRect.top,
@@ -162,15 +177,34 @@ export function SurfboardModelCatalogInput({
                         commitPick(row)
                       }}
                     >
-                      <span className="font-medium">{row.name}</span>
+                      <span className="flex flex-col gap-0.5 text-left">
+                        <span className="font-medium leading-tight">{row.name}</span>
+                        <span className="text-xs font-normal text-muted-foreground leading-tight">
+                          {row.brandName}
+                        </span>
+                      </span>
                     </button>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div className="px-3 py-4 text-sm text-muted-foreground">
-                No catalog model matches &quot;{q}&quot;. Keep typing — your text stays on the listing; or choose
-                Request below.
+              <div className="space-y-3 px-3 py-4 text-sm text-muted-foreground">
+                {catalogHasRows ? <p>No catalog match — your text is still used for the listing.</p> : null}
+                {onRequestCatalogAdd ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full min-h-touch"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      setOpen(false)
+                      setDropdownRect(null)
+                      onRequestCatalogAdd()
+                    }}
+                  >
+                    Request we add this model
+                  </Button>
+                ) : null}
               </div>
             )}
           </div>,
@@ -193,13 +227,13 @@ export function SurfboardModelCatalogInput({
         autoComplete="off"
         onChange={(e) => {
           onFreeTextChange(e.target.value)
-          if (catalogActive) setOpen(true)
+          if (canUseSuggest) setOpen(true)
         }}
         onFocus={() => {
-          if (catalogActive && value.trim().length >= 1) setOpen(true)
+          if (canUseSuggest && value.trim().length >= 1) setOpen(true)
         }}
         onKeyDown={(e) => {
-          if (!catalogActive) {
+          if (!canUseSuggest) {
             if (e.key === "Escape") setOpen(false)
             return
           }

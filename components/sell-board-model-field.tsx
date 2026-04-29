@@ -16,13 +16,12 @@ export type SellBoardModelCatalogPatch = {
   boardIndexModelSlug: string
   boardIndexBrandSlug: string
   boardIndexLabel: string
+  boardBrandId?: string
+  brand?: string
+  boardLinkedBrandName?: string
 }
 
-const UNSELECTED_VALUE = "__sell_board_model_none__"
-
 type SellBoardModelFieldProps = {
-  /** Directory brand id when the seller matched a row in `public.brands` — used to fetch optional catalog models only. Model entry is never blocked without this. */
-  catalogBrandId: string
   linkedBrandDisplayName: string
   modelName: string
   modelCatalogSlug: string
@@ -35,7 +34,6 @@ type SellBoardModelFieldProps = {
 }
 
 export function SellBoardModelField({
-  catalogBrandId,
   linkedBrandDisplayName,
   modelName,
   modelCatalogSlug,
@@ -45,70 +43,39 @@ export function SellBoardModelField({
   disabled,
 }: SellBoardModelFieldProps) {
   const [models, setModels] = React.useState<SellBrandModelCatalogRow[]>([])
-  const [resolvedBrandSlug, setResolvedBrandSlug] = React.useState("")
-  const [loading, setLoading] = React.useState(false)
+  const [loading, setLoading] = React.useState(true)
   const [loadError, setLoadError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    if (!catalogBrandId.trim()) {
-      setModels([])
-      setResolvedBrandSlug("")
-      setLoadError(null)
-      setLoading(false)
-      return
-    }
     let cancelled = false
     setLoading(true)
     setLoadError(null)
-    void getBrandModelsCatalogForSellForm(catalogBrandId.trim()).then((res) => {
+    void getBrandModelsCatalogForSellForm().then((res) => {
       if (cancelled) return
       setLoading(false)
       if (!res.ok) {
         setModels([])
-        setResolvedBrandSlug("")
         setLoadError(res.error)
         return
       }
       setModels(res.models)
-      setResolvedBrandSlug(res.brandSlug)
       setLoadError(null)
     })
     return () => {
       cancelled = true
     }
-  }, [catalogBrandId])
+  }, [])
 
   const brandForLabel = linkedBrandDisplayName.trim()
 
-  /** Slug for index/snapshot: directory pick > API-resolved brand > slugified display name (free-typed brand). */
+  /** Slug for index/snapshot: directory pick > slugified display name (free-typed brand). */
   const effectiveBrandSlug =
-    boardIndexBrandSlug.trim() || resolvedBrandSlug || (brandForLabel ? slugify(brandForLabel) : "")
-
-  const selectedModelId = React.useMemo(() => {
-    const name = modelName.trim()
-    const slug = modelCatalogSlug.trim()
-    if (!name && !slug) return UNSELECTED_VALUE
-    const bySlug = models.find((m) => m.catalogSlug === slug)
-    if (bySlug) return bySlug.id
-    const bySlugifiedName = slug && models.find((m) => slugify(m.name) === slug)
-    if (bySlugifiedName) return bySlugifiedName.id
-    const byName = models.find((m) => m.name.trim().toLowerCase() === name.toLowerCase())
-    if (byName) return byName.id
-    return UNSELECTED_VALUE
-  }, [modelCatalogSlug, modelName, models])
-
-  const showLegacyMismatch =
-    Boolean(modelName.trim()) &&
-    selectedModelId === UNSELECTED_VALUE &&
-    models.length > 0 &&
-    !loading
-
-  const brandForRequest = linkedBrandDisplayName.trim()
+    boardIndexBrandSlug.trim() || (brandForLabel ? slugify(brandForLabel) : "")
 
   function applyFreeformModelValue(raw: string) {
     const v = raw
     const slugOut = effectiveBrandSlug.trim()
-    const brandLabel = brandForRequest
+    const brandLabel = brandForLabel
     onCatalogModelChange({
       boardModelName: v,
       boardIndexModelSlug: v.trim() ? slugify(v) : "",
@@ -119,25 +86,23 @@ export function SellBoardModelField({
   }
 
   function applyCatalogRow(row: SellBrandModelCatalogRow) {
-    const slugOut = effectiveBrandSlug.trim()
-    const brandLabel = linkedBrandDisplayName.trim()
     onCatalogModelChange({
       boardModelName: row.name,
       boardIndexModelSlug: row.catalogSlug,
-      boardIndexBrandSlug: slugOut,
-      boardIndexLabel: `${brandLabel} ${row.name}`.trim(),
+      boardIndexBrandSlug: row.brandSlug,
+      boardIndexLabel: `${row.brandName} ${row.name}`.trim(),
+      boardBrandId: row.brandId,
+      brand: row.brandName,
+      boardLinkedBrandName: row.brandName,
     })
   }
 
-  const modelPlaceholder =
-    catalogBrandId.trim() && loading
-      ? "Loading catalog models…"
-      : catalogBrandId.trim() && models.length > 0
-        ? "Type your model — matches appear as you type"
-        : "e.g., Step Deck Noserider — type the model as you know it"
+  const catalogReady = !loading && !loadError
 
-  const modelsForCombobox =
-    catalogBrandId.trim() && !loadError && !loading ? models : []
+  const modelPlaceholder =
+    !loading && models.length > 0
+      ? "Search models — brand fills in when you pick a match"
+      : "e.g., Step Deck Noserider — type the model as you know it"
 
   return (
     <div className="space-y-2">
@@ -156,47 +121,19 @@ export function SellBoardModelField({
         </span>
       </div>
 
-      {catalogBrandId.trim() && loadError ? (
-        <p className="text-sm text-destructive">{loadError}</p>
-      ) : null}
+      {loadError ? <p className="text-sm text-destructive">{loadError}</p> : null}
 
       <SurfboardModelCatalogInput
         id="listing-board-model-select"
         placeholder={modelPlaceholder}
         disabled={disabled}
+        catalogReady={catalogReady}
         value={modelName}
         onFreeTextChange={applyFreeformModelValue}
         onPickCatalogRow={applyCatalogRow}
-        models={modelsForCombobox}
+        models={catalogReady ? models : []}
+        onRequestCatalogAdd={onRequestCatalogAdd}
       />
-
-      {catalogBrandId.trim() && loading ? (
-        <p className="text-xs text-muted-foreground">Loading models for this brand…</p>
-      ) : null}
-
-      {catalogBrandId.trim() && !loading && models.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          No models in our catalog for this brand yet — your text above is what we&apos;ll use. You can ask us to add this model once it&apos;s in the directory.
-        </p>
-      ) : null}
-
-      {catalogBrandId.trim() &&
-      !loading &&
-      models.length > 0 &&
-      showLegacyMismatch ? (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          Your saved model isn&apos;t in our catalog yet — keep your text above, pick a match from suggestions, or request we add it.
-        </p>
-      ) : null}
-
-      <button
-        type="button"
-        className="text-left text-xs font-normal text-primary hover:text-primary/90 disabled:pointer-events-none disabled:opacity-50"
-        disabled={Boolean(disabled)}
-        onClick={() => onRequestCatalogAdd()}
-      >
-        Model not listed? Request we add it
-      </button>
     </div>
   )
 }
