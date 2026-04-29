@@ -32,7 +32,7 @@ import { pageSeoMetadata } from "@/lib/site-metadata"
 export const metadata = pageSeoMetadata({
   title: "Reswell — Buy & sell surfboards",
   description:
-    "Peer-to-peer surfboard marketplace: list your board, browse local shapes, and shop new items from verified sellers.",
+    "Peer-to-peer surfboard marketplace: list your board, browse local listings and sellers that offer shipping, and shop new items from verified sellers.",
   path: "/",
 })
 
@@ -237,7 +237,7 @@ export default async function HomePage() {
                 Buy and Sell Surfboards with the Community
               </h1>
               <p className="mt-5 text-base text-muted-foreground text-pretty sm:text-lg">
-                Find local surfboards, meet sellers in person, and list your own boards with photos and dimensions.
+                Find surfboards locally or from sellers that offer shipping, list your own boards with photos and dimensions, and buy straight from the surf community.
               </p>
               <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5 md:mt-8 md:gap-4">
                 <Button size="lg" asChild>
