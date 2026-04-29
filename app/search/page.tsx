@@ -6,6 +6,8 @@ interface SearchParams {
   q?: string
   category?: string
   view?: string
+  /** Directory brand (`public.brands.slug`) — browse all marketplace listings for that brand. */
+  brandSlug?: string
 }
 
 /** Search uses query params + auth; must not be statically prerendered. */
@@ -23,8 +25,9 @@ export default async function SearchPage(props: {
   const searchParams = await props.searchParams
   const rawQuery = (searchParams.q ?? "").trim()
   const categorySlugFromUrl = (searchParams.category ?? "").trim()
+  const brandSlugFromUrl = (searchParams.brandSlug ?? "").trim()
 
-  if (!rawQuery) {
+  if (!rawQuery && !brandSlugFromUrl) {
     const sp = new URLSearchParams()
     if (categorySlugFromUrl) sp.set("category", categorySlugFromUrl)
     permanentRedirect(`/search/recent${sp.size ? `?${sp}` : ""}`)
@@ -33,6 +36,7 @@ export default async function SearchPage(props: {
   return (
     <SearchPageView
       rawQuery={rawQuery}
+      brandSlugFromUrl={brandSlugFromUrl}
       categorySlugFromUrl={categorySlugFromUrl}
       showSeoBookmark={false}
     />

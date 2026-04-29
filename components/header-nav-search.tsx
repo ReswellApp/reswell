@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { navigateToMarketplaceBrandResults } from "@/lib/nav-marketplace-brand-search"
 
 const RECENT_SEARCHES_KEY = "reswell_recent_searches"
 
@@ -322,6 +323,16 @@ export function HeaderNavSearch() {
         <SearchInputWithSuggest
           value={query}
           onChange={setQuery}
+          onBrandStripPick={(brandName) => {
+            saveRecentSearch(brandName)
+            const category = isSearchResultsPath(pathname)
+              ? searchParams.get("category")
+              : null
+            void navigateToMarketplaceBrandResults(router, brandName, { categorySlug: category })
+            setQuery("")
+            clearNavSearchQuery()
+            setIdleOpen(false)
+          }}
           onSelect={(text) => {
             saveRecentSearch(text)
             runSearch(text)

@@ -139,6 +139,11 @@ interface SearchInputWithSuggestProps {
   suggestSource?: "marketplace" | "brands"
   /** When the user picks a row from `suggestSource="brands"`. */
   onCatalogBrandPicked?: (b: { id: string; name: string; slug: string }) => void
+  /**
+   * Marketplace source only: user chose a **brand name** from listing-derived suggestions
+   * (BRANDS row/strip or brand suggestion). Prefer over `onSelect` for catalog-scoped search.
+   */
+  onBrandStripPick?: (brandDisplayName: string) => void
   /** Fires when a `brands` search finishes (e.g. show “request brand” when count is 0). */
   onBrandsSearchSettled?: (query: string, resultCount: number) => void
   /** Where this typeahead lives — drives search analytics “dropdown pick” events. */
@@ -202,6 +207,7 @@ export function SearchInputWithSuggest({
   variant = "default",
   suggestSource = "marketplace",
   onCatalogBrandPicked,
+  onBrandStripPick,
   onBrandsSearchSettled,
   analyticsSurface = "other",
   inputType = "search",
@@ -545,6 +551,20 @@ export function SearchInputWithSuggest({
     setSuggestions(null)
   }
 
+  const pickMarketplaceBrandLabel = (brandName: string, pickKind: SearchSuggestPickKind) => {
+    if (onBrandStripPick && suggestSource === "marketplace") {
+      logSuggestAnalytics({ pickKind, selectionLabel: brandName, listingId: null })
+      invalidatePendingSuggest()
+      onBrandStripPick(brandName)
+      setOpen(false)
+      setSuggestions(null)
+      setLoading(false)
+      if (inputRef.current && document.activeElement === inputRef.current) inputRef.current.blur()
+      return
+    }
+    handleSelectText(brandName, pickKind)
+  }
+
   const handleBrandCatalogPick = (b: BrandCatalogSuggestRow) => {
     logSuggestAnalytics({
       pickKind: "brand_catalog",
@@ -845,7 +865,7 @@ export function SearchInputWithSuggest({
                       }
                       onMouseLeave={() => cancelSuggestHover(`brand-row:${brand}`)}
                       onClick={() =>
-                        handleSelectText(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
+                        pickMarketplaceBrandLabel(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
                       }
                     >
                       <span className="truncate font-medium text-foreground">{brand}</span>
@@ -870,7 +890,7 @@ export function SearchInputWithSuggest({
                     }
                     onMouseLeave={() => cancelSuggestHover(`brand-strip:${brand}`)}
                     onClick={() =>
-                      handleSelectText(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
+                      pickMarketplaceBrandLabel(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
                     }
                   >
                     <span className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-muted text-sm font-bold text-cerulean sm:h-12 sm:w-12 sm:text-base">
@@ -959,14 +979,14 @@ export function SearchInputWithSuggest({
                         cancelSuggestHover(`sg:${item.type}:${item.text}:${i}`)
                       }
                       onClick={() =>
-                        handleSelectText(
-                          item.text,
-                          item.type === "title"
-                            ? "suggestion_title"
-                            : item.type === "brand"
-                              ? "suggestion_brand"
-                              : "suggestion_category",
-                        )
+                        item.type === "brand"
+                          ? pickMarketplaceBrandLabel(item.text, "suggestion_brand")
+                          : handleSelectText(
+                              item.text,
+                              item.type === "title"
+                                ? "suggestion_title"
+                                : "suggestion_category",
+                            )
                       }
                     >
                       {showTypeLabels && item.type !== "title" ? (

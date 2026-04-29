@@ -21,6 +21,12 @@ interface SearchCategoryFiltersProps {
   categories: MarketplaceCategoryRow[]
   /** True when showing curated recents (no keyword search). */
   curated?: boolean
+  /** Active directory brand slug (`?brandSlug=`), if any. */
+  brandSlug?: string | null
+  /** Display label for directory brand browse. */
+  brandFilterName?: string | null
+  /** `brandSlug` was present but did not match `public.brands`. */
+  brandUnknown?: boolean
 }
 
 /** Marketplace search filter: `public.categories` rows with `board` set (surfboard types). */
@@ -29,6 +35,9 @@ export function SearchCategoryFilters({
   selectedSlug,
   categories,
   curated = false,
+  brandSlug = null,
+  brandFilterName = null,
+  brandUnknown = false,
 }: SearchCategoryFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -40,9 +49,20 @@ export function SearchCategoryFilters({
     if (!form) return
     const slug = (form.elements.namedItem("category") as HTMLSelectElement)?.value?.trim() ?? ""
     const q = (searchParams.get("q") ?? query).trim()
+    const brandFromUrl = searchParams.get("brandSlug")?.trim() ?? ""
+    const effectiveBrand = brandFromUrl || (brandSlug ?? "").trim()
+
     if (q) {
       const params = new URLSearchParams()
       params.set("q", q)
+      if (slug) params.set("category", slug)
+      if (effectiveBrand) params.set("brandSlug", effectiveBrand)
+      router.push(`/search?${params.toString()}`)
+      return
+    }
+    if (effectiveBrand) {
+      const params = new URLSearchParams()
+      params.set("brandSlug", effectiveBrand)
       if (slug) params.set("category", slug)
       router.push(`/search?${params.toString()}`)
       return
@@ -59,7 +79,21 @@ export function SearchCategoryFilters({
     <div className="border-b border-border bg-muted/20 py-3">
       <div className="container mx-auto flex flex-wrap items-center gap-3">
         <p className="text-sm text-muted-foreground">
-          {query ? (
+          {brandUnknown ? (
+            <>
+              That brand was not found in our directory.
+              <span className="hidden sm:inline"> Use the search bar above to try again.</span>
+            </>
+          ) : brandFilterName ? (
+            <>
+              Showing listings from{" "}
+              <span className="font-medium text-foreground">&ldquo;{brandFilterName}&rdquo;</span>
+              <span className="hidden sm:inline">
+                {" "}
+                — pick another brand from the search bar or change category below
+              </span>
+            </>
+          ) : query ? (
             <>
               Filtering results for <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>
               <span className="hidden sm:inline"> — change keywords in the search bar above</span>
@@ -72,7 +106,7 @@ export function SearchCategoryFilters({
         </p>
         <form
           ref={formRef}
-          key={selectedSlug ?? ""}
+          key={`${selectedSlug ?? ""}:${brandSlug ?? ""}`}
           onSubmit={handleApply}
           className="ml-auto flex flex-wrap items-center gap-2"
         >

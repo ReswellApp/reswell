@@ -44,6 +44,7 @@ import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
+import { navigateToMarketplaceBrandResults } from "@/lib/nav-marketplace-brand-search"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { surfboardBrowseLinks } from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
@@ -116,6 +117,10 @@ function navItemIsActive(pathname: string | null, searchParams: URLSearchParams,
     if (searchParams.get(key) !== required.get(key)) return false
   }
   return pathname === path
+}
+
+function isSearchResultsPath(p: string) {
+  return p === "/search" || p === "/search/recent"
 }
 
 const CATEGORY_BAR_GAP_PX = 32
@@ -693,6 +698,16 @@ export function Header() {
       <SearchInputWithSuggest
         value={searchQuery}
         onChange={setSearchQuery}
+        onBrandStripPick={(brandName) => {
+          void navigateToMarketplaceBrandResults(router, brandName, {
+            categorySlug: isSearchResultsPath(pathname ?? "")
+              ? headerSearchParams.get("category")
+              : null,
+          })
+          setSearchQuery("")
+          clearNavSearchQuery()
+          setSearchOpen(false)
+        }}
         onSelect={(text) => {
           router.push(`/search?q=${encodeURIComponent(text)}`)
           setSearchQuery("")
@@ -884,6 +899,15 @@ export function Header() {
                     <SearchInputWithSuggest
                       value={mobileNavSearchQuery}
                       onChange={setMobileNavSearchQuery}
+                      onBrandStripPick={(brandName) => {
+                        void navigateToMarketplaceBrandResults(router, brandName, {
+                          categorySlug: isSearchResultsPath(pathname ?? "")
+                            ? headerSearchParams.get("category")
+                            : null,
+                        })
+                        setMobileNavSearchQuery("")
+                        clearNavSearchQuery()
+                      }}
                       onSelect={(text) => {
                         router.push(`/search?q=${encodeURIComponent(text)}`)
                         setMobileNavSearchQuery("")

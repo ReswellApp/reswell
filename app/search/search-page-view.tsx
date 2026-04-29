@@ -36,18 +36,34 @@ function sortMarketplaceBrowseCategories<T extends { name: string; board?: boole
 
 export async function SearchPageView({
   rawQuery,
+  brandSlugFromUrl,
   categorySlugFromUrl,
   showSeoBookmark,
 }: {
   rawQuery: string
+  /** Raw `?brandSlug=` — must match `public.brands.slug` to apply. */
+  brandSlugFromUrl: string
   /** Raw `?category=` segment; must match `categories.slug` to apply. */
   categorySlugFromUrl: string
   /** Shown on the canonical recent-listings URL (`/search/recent`). */
   showSeoBookmark: boolean
 }) {
-  const curatedView = !rawQuery
+  const brandSlugRequested = brandSlugFromUrl.trim()
+  const curatedView = !rawQuery.trim() && !brandSlugRequested
 
   const supabase = await createClient()
+
+  let brandRow: { id: string; name: string; slug: string } | null = null
+  if (brandSlugRequested) {
+    const { data: b } = await supabase
+      .from("brands")
+      .select("id, name, slug")
+      .eq("slug", brandSlugRequested)
+      .maybeSingle()
+    if (b) {
+      brandRow = { id: b.id, name: b.name, slug: b.slug }
+    }
+  }
 
   const [{ data: { user } }, { data: categoryRows }] = await Promise.all([
     supabase.auth.getUser(),
@@ -62,10 +78,13 @@ export async function SearchPageView({
   const selectedSlug = matched?.slug ?? null
   const categorySlugForLog = matched?.slug ?? null
 
+  const brandUnknown = Boolean(brandSlugRequested && !brandRow)
+
   const { listings, searchMeta } = await resolveSearchListings(
     supabase,
     rawQuery,
     matched ? { id: matched.id, name: matched.name } : null,
+    brandUnknown ? null : brandRow,
   )
 
   if (rawQuery.trim() && searchMeta) {
@@ -94,14 +113,24 @@ export async function SearchPageView({
       <section className="border-b bg-background">
         <div className="container mx-auto py-6 md:py-8">
           <h1 className="text-xl font-bold text-foreground md:text-2xl">
-            {rawQuery ? (
+            {brandUnknown ? (
+              <>Brand not found</>
+            ) : brandRow ? (
+              <>
+                Surfboards — {brandRow.name}
+              </>
+            ) : rawQuery ? (
               <>Results for &ldquo;{rawQuery}&rdquo;</>
             ) : (
               <>Recently listed for you</>
             )}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {rawQuery ? (
+            {brandUnknown ? (
+              <>Check the spelling or search from the header — that slug is not in our brand directory.</>
+            ) : brandRow ? (
+              <>Active marketplace listings linked to this brand (including legacy title-only matches).</>
+            ) : rawQuery ? (
               <>
                 Use the search bar in the header to refine results.
                 {isElasticsearchConfigured() && (
@@ -132,6 +161,9 @@ export async function SearchPageView({
           selectedSlug={selectedSlug}
           categories={sortedCategories}
           curated={curatedView}
+          brandSlug={brandRow?.slug ?? (brandSlugRequested || null)}
+          brandFilterName={brandRow?.name ?? null}
+          brandUnknown={brandUnknown}
         />
       </Suspense>
 
@@ -142,9 +174,13 @@ export async function SearchPageView({
           isLoggedIn={!!user}
           viewerUserId={user?.id ?? null}
           emptyMessage={
-            rawQuery
-              ? "No listings match your search. Try different keywords or filters."
-              : "No listings to show yet. Check back soon or browse by category."
+            brandUnknown
+              ? "No brand matches that URL. Return to search and pick a brand from suggestions."
+              : brandRow
+                ? "No active listings for this brand yet. Try another category or check back soon."
+                : rawQuery
+                  ? "No listings match your search. Try different keywords or filters."
+                  : "No listings to show yet. Check back soon or browse by category."
           }
         />
       </section>
@@ -152,15 +188,70 @@ export async function SearchPageView({
   )
 }
 
+async function fetchListingsForBrand(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  brand: { id: string; name: string },
+  categoryId: string | null,
+  limit: number,
+): Promise<RecentListing[]> {
+  const escapeForOr = (s: string) => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+  const namePattern = `"%${escapeForOr(brand.name)}%"`
+
+  let q = supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      slug,
+      user_id,
+      title,
+      price,
+      condition,
+      section,
+      city,
+      state,
+      shipping_available,
+      board_type,
+      length_feet,
+      length_inches,
+      created_at,
+      listing_images (url, is_primary),
+      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
+      categories (name, slug)
+    `,
+    )
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+
+  if (categoryId) {
+    q = q.eq("category_id", categoryId)
+  } else {
+    q = q.eq("section", "surfboards")
+  }
+
+  q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
+  q = q.order("created_at", { ascending: false }).limit(limit)
+
+  const { data, error } = await q
+  if (error || !data?.length) return []
+  return (data as unknown[]).map((row) => rowToRecentListing(row))
+}
+
 async function resolveSearchListings(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
   category: { id: string; name: string } | null,
+  brand: { id: string; name: string } | null,
 ): Promise<{
   listings: RecentListing[]
   searchMeta: MarketplaceSearchResolutionMeta | null
 }> {
   const categoryId = category?.id ?? null
+
+  if (brand) {
+    const listings = await fetchListingsForBrand(supabase, brand, categoryId, LIMIT)
+    return { listings, searchMeta: null }
+  }
 
   if (!rawQuery.trim()) {
     const r = await fetchCuratedRecentListings(supabase, categoryId, LIMIT)

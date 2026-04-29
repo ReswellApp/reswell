@@ -23,6 +23,7 @@ export default async function SearchRecentPage(props: {
   return (
     <SearchPageView
       rawQuery=""
+      brandSlugFromUrl=""
       categorySlugFromUrl={categorySlugFromUrl}
       showSeoBookmark
     />
