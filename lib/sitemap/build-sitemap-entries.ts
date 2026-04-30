@@ -1,7 +1,22 @@
-import type { MetadataRoute } from "next"
+import { fetchSurfboardListingSitemapEntries } from "@/lib/db/sitemap-surfboard-listings"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
 const BASE = publicSiteOrigin()
+
+export type SitemapUrlEntry = {
+  url: string
+  lastModified: Date
+  changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never"
+  priority: number
+}
+
+async function supabaseForSitemapPublicRead() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return createServiceRoleClient()
+  }
+  return createClient()
+}
 
 /** Priority filter combos worth indexing for long-tail SEO. */
 const BOARD_TYPE_FILTERS = [
@@ -23,13 +38,25 @@ const TOP_LOCATIONS = [
   "hawaii",
 ]
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/**
+ * Canonical HTTP URLs for the public sitemap (unescaped `&` in query strings is correct here;
+ * XML serialization must escape them — see `app/sitemap.xml/route.ts`).
+ */
+export async function buildSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
   const now = new Date()
 
-  // ── Static top-level pages ──────────────────────────────────────────────────
-  const staticPages: MetadataRoute.Sitemap = [
+  const supabase = await supabaseForSitemapPublicRead()
+  const listingEntries = await fetchSurfboardListingSitemapEntries(supabase)
+
+  const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/boards`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
+    {
+      url: `${BASE}/what-is-reswell`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
     { url: `${BASE}/sold`, lastModified: now, changeFrequency: "hourly", priority: 0.75 },
     { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     { url: `${BASE}/shop`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
@@ -44,24 +71,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
   ]
 
-  // ── /boards?type=X — one page per board type ────────────────────────────────
-  const boardTypePages: MetadataRoute.Sitemap = BOARD_TYPE_FILTERS.map((type) => ({
+  const boardTypePages: SitemapUrlEntry[] = BOARD_TYPE_FILTERS.map((type) => ({
     url: `${BASE}/boards?type=${type}`,
     lastModified: now,
-    changeFrequency: "daily" as const,
+    changeFrequency: "daily",
     priority: 0.8,
   }))
 
-  // ── /boards?condition=X ─────────────────────────────────────────────────────
-  const boardConditionPages: MetadataRoute.Sitemap = BOARD_CONDITION_FILTERS.map((cond) => ({
+  const boardConditionPages: SitemapUrlEntry[] = BOARD_CONDITION_FILTERS.map((cond) => ({
     url: `${BASE}/boards?condition=${cond}`,
     lastModified: now,
-    changeFrequency: "daily" as const,
+    changeFrequency: "daily",
     priority: 0.7,
   }))
 
-  // ── /boards?type=X&condition=used — high-value combos ───────────────────────
-  const boardTypePlusCondition: MetadataRoute.Sitemap = BOARD_TYPE_FILTERS.flatMap((type) =>
+  const boardTypePlusCondition: SitemapUrlEntry[] = BOARD_TYPE_FILTERS.flatMap((type) =>
     ["excellent", "very_good", "good"].map((cond) => ({
       url: `${BASE}/boards?type=${type}&condition=${cond}`,
       lastModified: now,
@@ -70,23 +94,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   )
 
-  // ── /boards?location=X — top surf locations ──────────────────────────────────
-  const boardLocationPages: MetadataRoute.Sitemap = TOP_LOCATIONS.map((loc) => ({
+  const boardLocationPages: SitemapUrlEntry[] = TOP_LOCATIONS.map((loc) => ({
     url: `${BASE}/boards?location=${loc}`,
     lastModified: now,
-    changeFrequency: "daily" as const,
+    changeFrequency: "daily",
     priority: 0.7,
   }))
 
-  // ── /boards?type=X&location=Y — long-tail goldmine ──────────────────────────
-  const boardTypeLocationPages: MetadataRoute.Sitemap = BOARD_TYPE_FILTERS.flatMap((type) =>
+  const boardTypeLocationPages: SitemapUrlEntry[] = BOARD_TYPE_FILTERS.flatMap((type) =>
     TOP_LOCATIONS.map((loc) => ({
       url: `${BASE}/boards?type=${type}&location=${loc}`,
       lastModified: now,
-      changeFrequency: "weekly" as const,
+      changeFrequency: "weekly",
       priority: 0.6,
     })),
   )
+
+  const listingPages: SitemapUrlEntry[] = listingEntries.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: e.lastModified,
+    changeFrequency: "daily",
+    priority: 0.75,
+  }))
 
   return [
     ...staticPages,
@@ -95,5 +124,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...boardTypePlusCondition,
     ...boardLocationPages,
     ...boardTypeLocationPages,
+    ...listingPages,
   ]
 }

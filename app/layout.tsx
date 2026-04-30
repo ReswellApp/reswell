@@ -1,4 +1,4 @@
-import React from "react"
+import React, { Suspense } from "react"
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import { Inter, Caveat } from 'next/font/google'
@@ -11,6 +11,7 @@ import { LOCALE_COOKIE_NAME } from '@/lib/translations'
 import type { Locale } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
 import { GoogleAdsGtag } from '@/components/google-ads-gtag'
+import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 
 import './globals.css'
 
@@ -66,6 +67,9 @@ export default async function RootLayout({
       <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
         <GoogleAdsGtag />
         <LocaleProvider initialLocale={locale}>
+          <Suspense fallback={null}>
+            <KlaviyoPageViewTracker />
+          </Suspense>
           <PresenceHeartbeatLoader />
           <SiteChrome>{children}</SiteChrome>
           <Toaster />
