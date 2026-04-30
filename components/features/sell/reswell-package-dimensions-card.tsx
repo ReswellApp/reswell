@@ -135,8 +135,7 @@ export function ReswellPackageDimensionsCard({
           <span className="font-medium text-foreground/80">Width</span>, and{" "}
           <span className="font-medium text-foreground/80">Thickness</span> above — change them here only if
           your packed box differs. Length uses the same feet-and-inches style (such as 5&apos;4), or outer
-          inches. Width and height use the same inch values; packing cushion for carriers is applied when we
-          save.
+          inches. Width and height use the same inch values — we use what you save for carrier rates.
         </p>
       </div>
 

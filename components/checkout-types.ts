@@ -14,6 +14,9 @@ export type CheckoutListing = PayableListing & {
   title: string
   user_id: string
   section: string
+  /** From /sell location step — Reswell shipping rates prefer this with map pin as fallback */
+  city?: string | null
+  state?: string | null
   listing_images?: Array<{
     url: string
     thumbnail_url?: string | null

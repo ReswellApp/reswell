@@ -10,18 +10,59 @@ import {
   totalBoardLengthInchesFromCombinedInput,
 } from "@/lib/board-measurements"
 
-/**
- * Default padding around the board on **each side** of an axis (nose/tail, rail/rail, deck/bottom).
- * Carriers need outer box **L × W × H in inches**; we add 4″ + 4″ = **8″ per axis** to raw
- * length, width, and thickness from the sell form.
- */
-export const RESWELL_PACK_PADDING_PER_SIDE_IN = 4
-
-/** Total inches added per axis (two opposite sides). */
-export const RESWELL_PACK_PADDING_TOTAL_PER_AXIS_IN = RESWELL_PACK_PADDING_PER_SIDE_IN * 2
-
 /** Added to estimated bare-board weight for bag, bubble, tape, etc. */
 export const RESWELL_PACKAGING_WEIGHT_LB = 4
+
+/** Legacy parcel height when board thickness is unknown (6″ overstated dim weight and spiked carrier quotes). */
+export const RESWELL_HEURISTIC_FALLBACK_PACKED_HEIGHT_IN = 3.25
+
+/**
+ * Standard packing buffer (inches) added to length, width, AND height when handing
+ * a listing's board dimensions to ShipEngine. Applied identically in /checkout,
+ * /api/stripe/create-payment-intent, and the /admin/shipping listing-rate diagnostic
+ * so quotes never disagree across surfaces.
+ *
+ * The buffer accounts for end-cap foam, bubble wrap, and the thickness of the
+ * carton itself — all of which a seller types as bare board dims, not parcel dims.
+ */
+export const RESWELL_SHIPPING_AXIS_BUFFER_IN = 2
+
+/**
+ * Apply the standard packing buffer to one axis of a bare board dimension.
+ *
+ * Rule: drop the fractional part of the board value, then add the buffer.
+ * Surfboard board dims often come fractional (e.g. `5'10½"`, `2 5/8"`); flooring
+ * before adding gives a clean whole-inch parcel dim that carriers prefer:
+ *
+ *   • 70    → 72   (whole length)
+ *   • 70.5  → 72   (5'10½")
+ *   • 2.625 → 4    (2 5/8" thickness)
+ */
+export function applyReswellShippingAxisBuffer(boardValueInches: number): number {
+  if (!Number.isFinite(boardValueInches) || boardValueInches <= 0) return boardValueInches
+  return Math.floor(boardValueInches) + RESWELL_SHIPPING_AXIS_BUFFER_IN
+}
+
+/**
+ * Plain numeric parcel length (no `'`) above this triggers concatenated-ft/in parsing on sell save,
+ * e.g. mistaken `510` instead of total inches for 5′10″ bare length.
+ */
+export const RESWELL_PLAIN_PARCEL_LENGTH_REINTERPRET_MIN_IN = 300
+
+/**
+ * Sanity bounds on stored carrier-ready parcel inches (quotes fall back to board heuristics if outside).
+ */
+export const RESWELL_MIN_REASONABLE_STORED_PARCEL_LENGTH_IN = 28
+export const RESWELL_MAX_REASONABLE_STORED_PARCEL_LENGTH_IN = 210
+export const RESWELL_MIN_REASONABLE_STORED_PARCEL_WIDTH_IN = 10
+export const RESWELL_MAX_REASONABLE_STORED_PARCEL_WIDTH_IN = 56
+/** Real packed surfboards are often ~2½–6″ tall; rejecting thin boxes discarded sellers’ taped measurements at checkout and forced wrong heuristic packages. */
+export const RESWELL_MIN_REASONABLE_STORED_PARCEL_HEIGHT_IN = 2
+export const RESWELL_MAX_REASONABLE_STORED_PARCEL_HEIGHT_IN = 42
+/** ~56 lb packaged — generous for logs / SUP rails on standard parcel rating. */
+export const RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ = 56 * 16
+/** Below this, stored weight is likely missing or wrong (ounces). */
+export const RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ = 16
 
 const KG_PER_LITER_ROUGH = 0.45
 const MIN_SHIP_LB = 5
@@ -45,8 +86,8 @@ export function estimatedBareBoardWeightLbFromLengthFt(totalLengthFt: number): n
 }
 
 /**
- * Packed L×W×H (inches) for carrier rate APIs: board length / width / thickness each get
- * {@link RESWELL_PACK_PADDING_TOTAL_PER_AXIS_IN} (4″ per side).
+ * Packed L×W×H (inches) estimated from board dimensions for legacy/fallback quotes —
+ * same numeric values as the Dimensions section (no automatic extra padding).
  */
 export function reswellSuggestedPackageInchesFromBoard(input: {
   boardLength: string
@@ -67,17 +108,14 @@ export function reswellSuggestedPackageInchesFromBoard(input: {
       ? null
       : (parseBoardMeasurement(tRaw) ?? Number.parseFloat(tRaw))
 
-  const pad = RESWELL_PACK_PADDING_TOTAL_PER_AXIS_IN
-  const lenPacked = totalLengthIn + pad
-  const wPacked =
-    wParsed != null && Number.isFinite(wParsed) && wParsed > 0 ? wParsed + pad : null
-  const hPacked =
-    tParsed != null && Number.isFinite(tParsed) && tParsed > 0 ? tParsed + pad : null
+  const lenIn = totalLengthIn
+  const wIn = wParsed != null && Number.isFinite(wParsed) && wParsed > 0 ? wParsed : null
+  const hIn = tParsed != null && Number.isFinite(tParsed) && tParsed > 0 ? tParsed : null
 
   return {
-    lengthIn: formatDecimalDimension(lenPacked),
-    widthIn: wPacked != null ? formatDecimalDimension(wPacked) : "",
-    heightIn: hPacked != null ? formatDecimalDimension(hPacked) : "",
+    lengthIn: formatDecimalDimension(lenIn),
+    widthIn: wIn != null ? formatDecimalDimension(wIn) : "",
+    heightIn: hIn != null ? formatDecimalDimension(hIn) : "",
   }
 }
 
@@ -117,7 +155,7 @@ export function reswellSuggestedShipWeightLbOzFromBoard(input: {
 
 /**
  * Strings to pre-fill the Reswell packed parcel UI from the Dimensions section (“board” units).
- * Packing cushion for carriers is applied when parsing for DB / quotes (see `lib/reswell-parcel-fields.ts`).
+ * Saved values are passed to rating as entered (see `lib/reswell-parcel-fields.ts`).
  */
 export function reswellParcelAutofillStringsFromBoard(input: {
   boardLength: string

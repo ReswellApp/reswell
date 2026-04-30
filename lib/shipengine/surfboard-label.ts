@@ -5,6 +5,10 @@ import {
   buildShipEngineRateShipment,
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
+import {
+  extractRatesFromApiEnvelope,
+  rateMoneyTotal,
+} from "@/lib/shipping/shipengine-rate-helpers"
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v != null && typeof v === "object" && !Array.isArray(v)
@@ -20,35 +24,6 @@ async function parseJsonSafe(res: Response): Promise<unknown> {
   } catch {
     return t
   }
-}
-
-function extractRatesFromApiEnvelope(envelope: unknown): Record<string, unknown>[] {
-  const root = asRecord(envelope)
-  const inner = root?.data !== undefined && root?.data !== null ? root.data : envelope
-  const se = asRecord(inner)
-  const rr = asRecord(se?.rate_response) ?? asRecord(se)
-  const rates = rr?.rates
-  return Array.isArray(rates) ? (rates as Record<string, unknown>[]) : []
-}
-
-function rateMoneyTotal(r: Record<string, unknown>): { total: number; currency: string } {
-  const keys = [
-    "shipping_amount",
-    "shipment_amount",
-    "insurance_amount",
-    "confirmation_amount",
-    "other_amount",
-  ] as const
-  let total = 0
-  let currency = "usd"
-  for (const k of keys) {
-    const m = asRecord(r[k])
-    if (m && typeof m.amount === "number") {
-      total += m.amount
-      if (typeof m.currency === "string") currency = m.currency
-    }
-  }
-  return { total, currency }
 }
 
 export type ShipEngineRateOption = {

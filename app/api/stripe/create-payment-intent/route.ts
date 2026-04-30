@@ -3,36 +3,15 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
-import { computePeerCheckoutTotalsUsd } from "@/lib/services/peerListingShippingQuote"
+import {
+  computePeerCheckoutTotalsUsd,
+  PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
+} from "@/lib/services/peerListingShippingQuote"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 
-const LISTING_SELECT = `
-  id,
-  user_id,
-  title,
-  price,
-  section,
-  shipping_available,
-  local_pickup,
-  shipping_price,
-  board_shipping_cost_mode,
-  status,
-  latitude,
-  longitude,
-  shipping_packed_length_in,
-  shipping_packed_width_in,
-  shipping_packed_height_in,
-  shipping_packed_weight_oz,
-  length_feet,
-  length_inches,
-  length_inches_display,
-  width,
-  width_inches_display,
-  thickness,
-  thickness_inches_display,
-  volume,
-  volume_display
-`
+const JSON_NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+} as const
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
@@ -80,7 +59,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select(LISTING_SELECT)
+    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
     .eq("id", listingId)
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
@@ -90,16 +69,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
-  if (listing.user_id === user.id) {
+  /** Runtime select fragment loses Supabase's row inference; cast through `unknown` once. */
+  const listingRow = listing as unknown as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"] & {
+    id: string
+    user_id: string
+    section: string | null
+    local_pickup: boolean | null
+    shipping_available: boolean | null
+    title: string | null
+  }
+
+  if (listingRow.user_id === user.id) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
-  if (listing.section !== "surfboards") {
+  if (listingRow.section !== "surfboards") {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
   }
 
-  const lp = listing.local_pickup !== false
-  const sa = !!listing.shipping_available
+  const lp = listingRow.local_pickup !== false
+  const sa = !!listingRow.shipping_available
   if (!lp && !sa) {
     return NextResponse.json({ error: "Listing has no fulfillment options" }, { status: 400 })
   }
@@ -139,12 +128,13 @@ export async function POST(request: NextRequest) {
   }
 
   const totals = await computePeerCheckoutTotalsUsd({
-    listing: listing as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"],
+    listing: listingRow,
     fulfillment: impliedFulfillment,
     buyerAddress,
+    diagnosticTag: `payment-intent:${listingRow.id}`,
   })
   if (!totals.ok) {
-    return NextResponse.json({ error: totals.error }, { status: 422 })
+    return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
   }
 
   const amountCents = Math.round(totals.totalUsd * 100)
@@ -159,7 +149,7 @@ export async function POST(request: NextRequest) {
       currency: "usd",
       automatic_payment_methods: { enabled: true },
       metadata: {
-        listing_id: listing.id,
+        listing_id: listingRow.id,
         buyer_id: user.id,
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
@@ -168,12 +158,15 @@ export async function POST(request: NextRequest) {
           ? { reswell_shipping_cents: String(Math.round(totals.shippingUsd * 100)) }
           : {}),
       },
-      description: `Reswell — ${listing.title}`.slice(0, 1000),
+      description: `Reswell — ${listingRow.title ?? "listing"}`.slice(0, 1000),
     })
 
-    return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
-    })
+    return NextResponse.json(
+      {
+        clientSecret: paymentIntent.client_secret,
+      },
+      { headers: JSON_NO_STORE_HEADERS },
+    )
   } catch (err: unknown) {
     const logPayload =
       err instanceof Stripe.errors.StripeError

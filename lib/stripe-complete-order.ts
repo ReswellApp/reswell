@@ -4,7 +4,7 @@ import { getStripe } from "@/lib/stripe-server"
 import type Stripe from "stripe"
 import {
   computePeerCheckoutTotalsUsd,
-  effectiveBoardShippingMode,
+  PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
 } from "@/lib/services/peerListingShippingQuote"
 import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import {
@@ -238,35 +238,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const { data: listing, error: listingError } = await serviceSupabase
     .from("listings")
-    .select(
-      `
-      id,
-      user_id,
-      title,
-      price,
-      section,
-      shipping_available,
-      local_pickup,
-      shipping_price,
-      board_shipping_cost_mode,
-      status,
-      latitude,
-      longitude,
-      shipping_packed_length_in,
-      shipping_packed_width_in,
-      shipping_packed_height_in,
-      shipping_packed_weight_oz,
-      length_feet,
-      length_inches,
-      length_inches_display,
-      width,
-      width_inches_display,
-      thickness,
-      thickness_inches_display,
-      volume,
-      volume_display
-    `,
-    )
+    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
     .eq("id", listingId)
     .single()
 
@@ -323,22 +295,22 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
-  const metaReswell = pi.metadata.reswell_shipping_cents?.trim()
-  const itemCents = Math.round(parseFloat(String(listing.price)) * 100)
+  /** Must match `/api/stripe/create-payment-intent` (`Math.round(totalUsd * 100)`), not sums of independently rounded halves. */
+  const metaAmountCentsRaw = pi.metadata.amount_cents?.trim()
+  const hasMetaAmountCents =
+    typeof metaAmountCentsRaw === "string" &&
+    metaAmountCentsRaw.length > 0 &&
+    /^\d+$/.test(metaAmountCentsRaw)
 
   let expectedCents: number
-  if (
-    impliedFulfillment === "shipping" &&
-    effectiveBoardShippingMode(listing) === "reswell" &&
-    metaReswell &&
-    /^\d+$/.test(metaReswell)
-  ) {
-    expectedCents = itemCents + parseInt(metaReswell, 10)
+  if (hasMetaAmountCents) {
+    expectedCents = parseInt(metaAmountCentsRaw!, 10)
   } else {
     const totals = await computePeerCheckoutTotalsUsd({
       listing: listing as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"],
       fulfillment: impliedFulfillment,
       buyerAddress,
+      diagnosticTag: `finalize-order:${listing.id}`,
     })
     if (!totals.ok) {
       return { ok: false, error: totals.error, status: 400 }

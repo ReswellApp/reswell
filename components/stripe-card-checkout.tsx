@@ -234,6 +234,7 @@ export function StripeCardCheckout({
       try {
         const res = await fetch("/api/stripe/create-payment-intent", {
           method: "POST",
+          cache: "no-store",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({

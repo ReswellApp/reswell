@@ -103,6 +103,403 @@ function newCompareRow(partial?: Partial<CompareRow>): CompareRow {
 
 type SortKey = 'price' | 'delivery' | 'service'
 
+type ListingRateDiagnosticResult = {
+  ok: true
+  listing: { id: string; slug: string | null; title: string | null }
+  savedPackedFields: {
+    shipping_packed_length_in: number | string | null
+    shipping_packed_width_in: number | string | null
+    shipping_packed_height_in: number | string | null
+    shipping_packed_weight_oz: number | string | null
+  }
+  parcelSource: 'board+saved-weight' | 'board+heuristic-weight' | 'heuristic'
+  cheapest: {
+    totalAmount: number
+    currency: string
+    carrierName: string
+    serviceName: string
+    deliveryDays: number | null
+    attributes: string[]
+  }
+  topRates: ListingRateDiagnosticResult['cheapest'][]
+  payload: unknown
+}
+
+function formatSavedField(v: number | string | null): string {
+  if (v == null || v === '') return '— (not saved)'
+  return String(v)
+}
+
+type ListingRateExtracted = {
+  weightValue: number
+  weightUnit: 'ounce' | 'pound' | 'gram' | 'kilogram'
+  length: number
+  width: number
+  height: number
+  dimUnit: 'inch' | 'centimeter'
+  packageCode: string
+  shipFrom: AddressFields | null
+  shipTo: AddressFields | null
+}
+
+function extractListingRatePayload(payload: unknown): ListingRateExtracted | null {
+  const root = asRecord(payload)
+  const shipment = asRecord(root?.shipment)
+  if (!shipment) return null
+  const packages = Array.isArray(shipment.packages)
+    ? (shipment.packages as unknown[])
+    : []
+  const pkg = asRecord(packages[0])
+  if (!pkg) return null
+  const weight = asRecord(pkg.weight)
+  const dims = asRecord(pkg.dimensions)
+  if (!weight || !dims) return null
+  const wv = Number(weight.value)
+  const wu = String(weight.unit ?? 'ounce') as ListingRateExtracted['weightUnit']
+  const length = Number(dims.length)
+  const width = Number(dims.width)
+  const height = Number(dims.height)
+  const dimUnit = String(dims.unit ?? 'inch') as ListingRateExtracted['dimUnit']
+  const packageCode =
+    typeof pkg.package_code === 'string' && pkg.package_code.trim()
+      ? pkg.package_code
+      : 'package'
+  if (![wv, length, width, height].every((n) => Number.isFinite(n) && n > 0)) {
+    return null
+  }
+  return {
+    weightValue: wv,
+    weightUnit: wu,
+    length,
+    width,
+    height,
+    dimUnit,
+    packageCode,
+    shipFrom: shipEnginePayloadAddressToFields(shipment.ship_from),
+    shipTo: shipEnginePayloadAddressToFields(shipment.ship_to),
+  }
+}
+
+function shipEnginePayloadAddressToFields(raw: unknown): AddressFields | null {
+  const r = asRecord(raw)
+  if (!r) return null
+  return {
+    name: String(r.name ?? ''),
+    phone: String(r.phone ?? ''),
+    company_name: String(r.company_name ?? ''),
+    address_line1: String(r.address_line1 ?? ''),
+    address_line2: String(r.address_line2 ?? ''),
+    city_locality: String(r.city_locality ?? ''),
+    state_province: String(r.state_province ?? ''),
+    postal_code: String(r.postal_code ?? ''),
+    country_code: String(r.country_code ?? 'US'),
+    residential:
+      r.address_residential_indicator === 'yes'
+        ? 'yes'
+        : r.address_residential_indicator === 'no'
+          ? 'no'
+          : 'unknown',
+  }
+}
+
+function ListingRateDiagnostic({
+  onApplyToCalculator,
+}: {
+  onApplyToCalculator?: (extracted: ListingRateExtracted) => void
+}) {
+  const [listingRef, setListingRef] = useState('')
+  const [buyerLine1, setBuyerLine1] = useState('816 Alberta Avenue')
+  const [buyerCity, setBuyerCity] = useState('Santa Barbara')
+  const [buyerState, setBuyerState] = useState('CA')
+  const [buyerZip, setBuyerZip] = useState('93101')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<ListingRateDiagnosticResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const submit = async () => {
+    if (!listingRef.trim()) {
+      toast.error('Paste a listing slug, UUID, or URL')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    setResult(null)
+    try {
+      const res = await fetch('/api/admin/shipping/quote-listing', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listing_ref: listingRef.trim(),
+          buyer: {
+            address_line1: buyerLine1,
+            city_locality: buyerCity,
+            state_province: buyerState,
+            postal_code: buyerZip,
+            country_code: 'US',
+            residential: 'no',
+          },
+        }),
+      })
+      const data = (await res.json()) as
+        | ListingRateDiagnosticResult
+        | { ok: false; error: string }
+      if (!res.ok || data.ok !== true) {
+        setError('error' in data ? data.error : 'Could not rate listing')
+        return
+      }
+      setResult(data as ListingRateDiagnosticResult)
+      toast.success('Rated via shared checkout path')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Label htmlFor="listing-ref" className="text-[12px] font-medium">
+            Listing
+          </Label>
+          <Input
+            id="listing-ref"
+            value={listingRef}
+            onChange={(e) => setListingRef(e.target.value)}
+            placeholder="Slug (e.g. 510-hayden-shapes-hypto-krypto), UUID, or full /l/<slug> URL"
+            className="mt-1 h-10 text-[13px]"
+          />
+          <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+            Paste the slug from the public listing URL (everything after{' '}
+            <code className="rounded bg-muted/70 px-1 font-mono text-[10.5px]">/l/</code>), the
+            full URL, or the row id from{' '}
+            <code className="rounded bg-muted/70 px-1 font-mono text-[10.5px]">listings.id</code>.
+          </p>
+        </div>
+        <div>
+          <Label htmlFor="buyer-zip" className="text-[12px] font-medium">
+            Buyer ZIP
+          </Label>
+          <Input
+            id="buyer-zip"
+            value={buyerZip}
+            onChange={(e) => setBuyerZip(e.target.value)}
+            className="mt-1 h-10 text-[13px]"
+          />
+        </div>
+        <div>
+          <Label htmlFor="buyer-city" className="text-[12px] font-medium">
+            Buyer city
+          </Label>
+          <Input
+            id="buyer-city"
+            value={buyerCity}
+            onChange={(e) => setBuyerCity(e.target.value)}
+            className="mt-1 h-10 text-[13px]"
+          />
+        </div>
+        <div>
+          <Label htmlFor="buyer-state" className="text-[12px] font-medium">
+            Buyer state
+          </Label>
+          <Input
+            id="buyer-state"
+            value={buyerState}
+            onChange={(e) => setBuyerState(e.target.value)}
+            className="mt-1 h-10 text-[13px]"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="buyer-line1" className="text-[12px] font-medium">
+            Buyer street
+          </Label>
+          <Input
+            id="buyer-line1"
+            value={buyerLine1}
+            onChange={(e) => setBuyerLine1(e.target.value)}
+            className="mt-1 h-10 text-[13px]"
+          />
+        </div>
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        className="h-10 rounded-full px-5 text-[13px] font-medium shadow-sm"
+        onClick={() => void submit()}
+        disabled={busy}
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        <span className={busy ? 'ml-2' : ''}>Rate listing</span>
+      </Button>
+
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      {result ? (
+        (() => {
+          const extracted = extractListingRatePayload(result.payload)
+          return (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-border/40 bg-muted/15 p-4 text-[14px]">
+                {result.listing.title || result.listing.slug ? (
+                  <div className="mb-1 text-[12px] text-muted-foreground">
+                    Resolved:{' '}
+                    <span className="font-medium text-foreground/85">
+                      {result.listing.title ?? result.listing.slug}
+                    </span>{' '}
+                    <span className="font-mono text-[11px]">
+                      ({result.listing.id.slice(0, 8)}…)
+                    </span>
+                  </div>
+                ) : null}
+                <div className="font-semibold tracking-tight">
+                  Cheapest:{' '}
+                  <span className="font-mono">
+                    {result.cheapest.currency} {result.cheapest.totalAmount.toFixed(2)}
+                  </span>{' '}
+                  · {result.cheapest.carrierName} {result.cheapest.serviceName}
+                  {result.cheapest.deliveryDays != null
+                    ? ` · ${result.cheapest.deliveryDays}d`
+                    : ''}
+                </div>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  This is the exact same total `/checkout` will charge the buyer for Reswell shipping.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-300/50 bg-emerald-50/50 p-4 text-[13px] dark:border-emerald-400/30 dark:bg-emerald-500/[0.08]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">
+                  {result.parcelSource === 'board+saved-weight'
+                    ? 'Board L×W×Thickness (+2″ buffer) + seller-saved weight'
+                    : result.parcelSource === 'board+heuristic-weight'
+                      ? 'Board L×W×Thickness (+2″ buffer) + heuristic weight'
+                      : 'Legacy stored packed values'}
+                </div>
+                <p className="mt-1 leading-relaxed">
+                  {result.parcelSource === 'heuristic'
+                    ? 'Listing is missing board dimensions; falling back to stored packed columns.'
+                    : "L×W×H come from the listing's board fields, floored to the nearest whole inch and bumped +2″ on every axis (carton + foam buffer). Weight comes from " +
+                      (result.parcelSource === 'board+saved-weight'
+                        ? "the seller's saved Reswell weight."
+                        : 'a length/volume heuristic because no weight was saved.')}
+                </p>
+                <p className="mt-2 text-[12px] text-muted-foreground">
+                  Stored columns (for reference):{' '}
+                  <code className="font-mono text-[11px]">
+                    L={formatSavedField(result.savedPackedFields.shipping_packed_length_in)}
+                  </code>{' '}
+                  <code className="font-mono text-[11px]">
+                    W={formatSavedField(result.savedPackedFields.shipping_packed_width_in)}
+                  </code>{' '}
+                  <code className="font-mono text-[11px]">
+                    H={formatSavedField(result.savedPackedFields.shipping_packed_height_in)}
+                  </code>{' '}
+                  <code className="font-mono text-[11px]">
+                    oz={formatSavedField(result.savedPackedFields.shipping_packed_weight_oz)}
+                  </code>{' '}
+                  — these are no longer the source of truth; padding from a legacy commit may make
+                  them inflated.
+                </p>
+              </div>
+
+              {extracted ? (
+                <div className="rounded-2xl border border-amber-300/50 bg-amber-50/50 p-4 text-[13px] dark:border-amber-400/30 dark:bg-amber-500/[0.08]">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                    Parcel + lane sent to ShipEngine
+                  </div>
+                  <dl className="mt-2 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Weight</dt>
+                      <dd className="font-mono">
+                        {extracted.weightValue} {extracted.weightUnit}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Dimensions</dt>
+                      <dd className="font-mono">
+                        {extracted.length} × {extracted.width} × {extracted.height}{' '}
+                        {extracted.dimUnit}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Ship from</dt>
+                      <dd className="font-mono text-right">
+                        {extracted.shipFrom?.city_locality}, {extracted.shipFrom?.state_province}{' '}
+                        {extracted.shipFrom?.postal_code}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Ship to</dt>
+                      <dd className="font-mono text-right">
+                        {extracted.shipTo?.city_locality}, {extracted.shipTo?.state_province}{' '}
+                        {extracted.shipTo?.postal_code}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Package code</dt>
+                      <dd className="font-mono">{extracted.packageCode}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-muted-foreground">Residential</dt>
+                      <dd className="font-mono">{extracted.shipTo?.residential ?? 'unknown'}</dd>
+                    </div>
+                  </dl>
+                  <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+                    If these don't match the dims you typed into the calculator above, you've found
+                    the divergence — fix the listing's saved packed dimensions or origin.
+                  </p>
+                  {onApplyToCalculator ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 h-9 rounded-full border-amber-400/50 bg-background px-4 text-[13px] font-medium"
+                      onClick={() => onApplyToCalculator(extracted)}
+                    >
+                      Load these dims into the calculator above
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <details className="rounded-2xl border border-border/50 bg-muted/10">
+                <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-medium text-muted-foreground [&::-webkit-details-marker]:hidden">
+                  Top 5 rate options
+                </summary>
+                <ul className="space-y-1 px-4 pb-3 text-[13px]">
+                  {result.topRates.map((r, idx) => (
+                    <li
+                      key={`${r.carrierName}-${r.serviceName}-${idx}`}
+                      className="font-mono"
+                    >
+                      {r.currency} {r.totalAmount.toFixed(2)} — {r.carrierName} · {r.serviceName}
+                      {r.deliveryDays != null ? ` · ${r.deliveryDays}d` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+
+              <details
+                open
+                className="rounded-2xl border border-border/50 bg-muted/10"
+              >
+                <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-medium text-muted-foreground [&::-webkit-details-marker]:hidden">
+                  ShipEngine /rates payload (what checkout sent)
+                </summary>
+                <pre className="mx-3 mb-3 max-h-72 overflow-x-auto rounded-xl border border-border/40 bg-black/[0.03] p-4 font-mono text-[11px] leading-relaxed dark:bg-white/[0.04]">
+                  {JSON.stringify(result.payload, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )
+        })()
+      ) : null}
+    </div>
+  )
+}
+
 export function ShippingRateCalculator({
   carriers,
 }: {
@@ -941,6 +1338,38 @@ export function ShippingRateCalculator({
               })}
             </div>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card className={surfaceCard}>
+        <CardHeader className="space-y-2 pb-2">
+          <CardTitle className="text-base font-semibold tracking-tight">Rate a listing as the buyer would</CardTitle>
+          <CardDescription className="text-[14px] leading-relaxed">
+            Hits the same shared <code className="rounded bg-muted/80 px-1 font-mono text-[12px]">getCheapestReswellRateForListing</code>{' '}
+            function used by <code className="rounded bg-muted/80 px-1 font-mono text-[12px]">/checkout</code>. Use this
+            to confirm the listing-driven payload (saved packed dims, geocoded ship-from) matches what you build above.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <ListingRateDiagnostic
+            onApplyToCalculator={(extracted) => {
+              setShipFrom(extracted.shipFrom ?? defaultFrom)
+              setShipTo(extracted.shipTo ?? defaultTo)
+              setWeight(String(extracted.weightValue))
+              setWeightUnit(extracted.weightUnit)
+              setLength(String(extracted.length))
+              setWidth(String(extracted.width))
+              setHeight(String(extracted.height))
+              setDimUnit(extracted.dimUnit)
+              setPackageCode(extracted.packageCode)
+              toast.success(
+                'Loaded — scroll up and click Get rates to compare against the listing rate.',
+              )
+              if (typeof window !== 'undefined') {
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }
+            }}
+          />
         </CardContent>
       </Card>
 

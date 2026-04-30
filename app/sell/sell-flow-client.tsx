@@ -669,7 +669,11 @@ function SellPageContentInner({
   const skipPickupShippingStepperInteractionUx = Boolean(
     editId && typeof editListingStatus === "string" && editListingStatus !== "draft",
   )
-  /** Stepper UX: require seeing the delivery section, then an explicit location pick (fires from LocationPicker only; prefills do not). */
+  /**
+   * Stepper UX: require seeing the delivery section, then an explicit location pick in-session
+   * (LocationPicker fires onLocationSelect; profile prefill alone does not).
+   * Hydrated drafts / restores already carry map pins — those count as confirmed for the rail/publish UX.
+   */
   const [pickupShippingSectionEnteredOnce, setPickupShippingSectionEnteredOnce] = useState(false)
   const [pickupShippingLocationUserCommits, setPickupShippingLocationUserCommits] = useState(0)
   /** Profile/address suggestion only — search field UX; cleared when the user confirms or has map coords on the listing. */
@@ -906,6 +910,7 @@ function SellPageContentInner({
 
   const pickupShippingStepperUxSatisfied =
     skipPickupShippingStepperInteractionUx ||
+    sellFormHasCommittedMapPins(formData) ||
     (pickupShippingSectionEnteredOnce && pickupShippingLocationUserCommits > 0)
 
   const sellSectionCompletion = useMemo(() => {

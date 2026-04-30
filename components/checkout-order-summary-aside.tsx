@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { ImageOff, ShoppingBag } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { cn } from "@/lib/utils"
 import type { CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
@@ -29,6 +30,8 @@ export function CheckoutOrderSummaryAside({
   shippingSummaryRight: ReactNode
 }) {
   const backHref = listingDetailHref(listing)
+  const shipsFromLine =
+    needsShipping ? listingShipFromDisplayLine(listing.city, listing.state) : null
 
   return (
     <aside
@@ -79,6 +82,16 @@ export function CheckoutOrderSummaryAside({
             <p className="mt-1 text-[13px] text-neutral-500">
               Qty 1 · {needsShipping ? "Shipping" : "Local pickup"}
             </p>
+            {shipsFromLine ? (
+              <p className="mt-1 text-[12px] text-neutral-600">
+                <span className="text-neutral-500">Ships from </span>
+                {shipsFromLine}
+              </p>
+            ) : needsShipping ? (
+              <p className="mt-1 text-[12px] text-neutral-500">
+                Ships from seller&apos;s listing location
+              </p>
+            ) : null}
             {seller && (
               <p className="mt-2 text-[12px] text-neutral-500">
                 Sold by{" "}

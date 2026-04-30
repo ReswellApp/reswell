@@ -88,10 +88,13 @@ export function extractRatesFromApiEnvelope(envelope: unknown): Record<string, u
   return Array.isArray(rates) ? (rates as Record<string, unknown>[]) : []
 }
 
+/**
+ * Matches ShipEngine’s documented total: shipping + insurance + confirmation + other.
+ * Do not sum `shipment_amount` — in production responses it often mirrors freight and duplicates `shipping_amount`.
+ */
 export function rateMoneyTotal(r: Record<string, unknown>): { total: number; currency: string } {
   const keys = [
     "shipping_amount",
-    "shipment_amount",
     "insurance_amount",
     "confirmation_amount",
     "other_amount",

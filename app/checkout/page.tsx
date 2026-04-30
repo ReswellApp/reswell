@@ -52,7 +52,7 @@ export default async function CheckoutPage(props: { searchParams: Promise<{ list
 
   const { listing, redirectSlug } = await findListingByParam(supabase, id, {
     select:
-      "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price, listing_images ( url, thumbnail_url, is_primary )",
+      "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price, city, state, listing_images ( url, thumbnail_url, is_primary )",
     section: undefined,
   })
 

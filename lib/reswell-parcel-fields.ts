@@ -2,30 +2,62 @@ import {
   parseBoardMeasurement,
   totalBoardLengthInchesFromCombinedInput,
 } from "@/lib/board-measurements"
-import { RESWELL_PACK_PADDING_TOTAL_PER_AXIS_IN } from "@/lib/surfboard-shipping-estimates"
+import { RESWELL_PLAIN_PARCEL_LENGTH_REINTERPRET_MIN_IN } from "@/lib/surfboard-shipping-estimates"
 
 /**
- * Parcel length field on `/sell`:
- * - Contains `'` (feet'inches,same as board length) → treated as bare board/rail bag length → we add standard packing cushion for carriers.
- * - Plain number → treated as outer packed length in inches (already accounts for boxing) → stored as-is.
+ * Parcel length on `/sell`:
+ * - Contains `'` (feet'inches, same as board length) → total inches for rating/DB.
+ * - Plain number → outer packed length in inches (as entered).
  */
 export function parseReswellParcelLengthRawToCarrierInches(raw: string | undefined): number | null {
   const t = raw?.trim() ?? ""
   if (!t) return null
   const normalizedPrime = t.replace(/[\u2032\u2019＇]/g, "'")
   if (normalizedPrime.includes("'")) {
-    const board = totalBoardLengthInchesFromCombinedInput(t)
+    const board = totalBoardLengthInchesFromCombinedInput(normalizedPrime)
     if (board == null || board <= 0) return null
-    return board + RESWELL_PACK_PADDING_TOTAL_PER_AXIS_IN
+    return board
   }
-  const n = parseFloat(t.replace(/,/g, ""))
+  // Spaced ft/in without a prime (e.g. `5 10`) — `parseFloat("5 10")` would incorrectly yield 5.
+  const spaced = normalizedPrime.split(/\s+/).filter(Boolean)
+  if (spaced.length >= 2) {
+    const feetDigits = spaced[0].replace(/\D/g, "")
+    const ft = feetDigits ? Number.parseInt(feetDigits, 10) : NaN
+    const inchesCombined = spaced.slice(1).join(" ").trim()
+    if (
+      Number.isFinite(ft) &&
+      ft >= 1 &&
+      ft <= 15 &&
+      inchesCombined &&
+      !normalizedPrime.includes(",")
+    ) {
+      const board = totalBoardLengthInchesFromCombinedInput(`${ft}'${inchesCombined}`)
+      if (board != null && board > 0) {
+        return board
+      }
+    }
+  }
+  const n = parseFloat(normalizedPrime.replace(/,/g, ""))
   if (!Number.isFinite(n) || n <= 0) return null
+
+  const digitOnly = normalizedPrime.replace(/\s+/g, "").replace(/\D/g, "")
+  if (
+    n > RESWELL_PLAIN_PARCEL_LENGTH_REINTERPRET_MIN_IN &&
+    digitOnly.length >= 3 &&
+    /^\d+$/.test(digitOnly)
+  ) {
+    const reinterpretBare = totalBoardLengthInchesFromCombinedInput(digitOnly)
+    if (reinterpretBare != null && reinterpretBare > 0) {
+      return reinterpretBare
+    }
+    return null
+  }
+
   return n
 }
 
 /**
- * Packed width / height: values match how board width & thickness are entered on `/sell`;
- * we add the same cushion as length for carriers.
+ * Packed width / height: inch values (decimals or fractions); stored as entered for carriers.
  */
 export function parseReswellParcelWidthHeightRawToCarrierInches(
   raw: string | undefined,
@@ -36,5 +68,5 @@ export function parseReswellParcelWidthHeightRawToCarrierInches(
     parseBoardMeasurement(t) ??
     Number.parseFloat(t.replace(/\s+/g, "").replace(/,/g, ""))
   if (!Number.isFinite(v) || v <= 0) return null
-  return v + RESWELL_PACK_PADDING_TOTAL_PER_AXIS_IN
+  return v
 }

@@ -139,7 +139,8 @@ function descriptionSectionComplete(form: SellFormValidationInput): boolean {
  * {@link validateSellListingForm} field groups so checkmarks match what’s left to publish.
  *
  * Delivery (`sell-section-delivery`): the `/sell` page may additionally require scroll + explicit
- * `LocationPicker` confirmation before marking that step complete in the rail (prefill alone cannot).
+ * `LocationPicker` confirmation before marking that step complete in the rail (prefill alone cannot),
+ * unless the form already carries map coordinates from draft restore / hydrate.
  */
 export function computeSellSectionCompletion(
   form: SellFormValidationInput,

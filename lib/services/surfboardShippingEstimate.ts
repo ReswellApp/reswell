@@ -55,7 +55,7 @@ export async function getTopSurfboardShippingRates(
     return { ok: false, error: "Shipping quotes are temporarily unavailable." }
   }
 
-  const topN = Math.min(30, Math.max(1, opts?.topN ?? 20))
+  const topN = Math.min(500, Math.max(1, opts?.topN ?? 20))
 
   let carrierIds: string[]
   try {
@@ -113,14 +113,20 @@ export async function getTopSurfboardShippingRates(
     }
   }
 
-  const decorated = rates.map((r) => {
-    const { total, currency } = rateMoneyTotal(r)
-    return {
-      total,
-      currency,
-      r,
-    }
-  })
+  const decorated = rates
+    .map((r) => {
+      const { total, currency } = rateMoneyTotal(r)
+      return {
+        total,
+        currency,
+        r,
+      }
+    })
+    .filter((row) => Number.isFinite(row.total) && row.total >= 0)
+
+  if (decorated.length === 0) {
+    return { ok: false, error: "No carrier rates returned for this shipment." }
+  }
 
   decorated.sort((a, b) => a.total - b.total)
 
@@ -144,4 +150,18 @@ export async function getTopSurfboardShippingRates(
   })
 
   return { ok: true, rates: top }
+}
+
+/**
+ * Lowest-priced row from ShipEngine `/rates` (after {@link rateMoneyTotal}).
+ * Prefer this over indexing `[0]` so checkout stays correct if ordering changes.
+ */
+export function selectCheapestShippingRate(rows: PublicShippingRateRow[]): PublicShippingRateRow | undefined {
+  if (!rows.length) return undefined
+  return rows.reduce((best, r) => {
+    if (r.totalAmount < best.totalAmount) return r
+    if (r.totalAmount > best.totalAmount) return best
+    if (r.attributes.includes("cheapest") && !best.attributes.includes("cheapest")) return r
+    return best
+  })
 }

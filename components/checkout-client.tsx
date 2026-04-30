@@ -8,6 +8,7 @@ import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components
 import { PurchaseOptions } from "@/components/purchase-options"
 import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
@@ -98,6 +99,7 @@ export function CheckoutClient({
       try {
         const res = await fetch("/api/checkout/shipping-quote", {
           method: "POST",
+          cache: "no-store",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
@@ -140,6 +142,11 @@ export function CheckoutClient({
 
   const backHref = listingDetailHref(listing)
   const imageUrl = primaryListingImageUrl(listing.listing_images)
+
+  const shipFromLocalityLine = useMemo(
+    () => listingShipFromDisplayLine(listing.city, listing.state),
+    [listing.city, listing.state],
+  )
 
   if (!resolved.ok) {
     return (
@@ -253,6 +260,30 @@ export function CheckoutClient({
                 </RadioGroup>
               </div>
             )}
+
+            {needsShipping ? (
+              <div className="mb-10 rounded-[8px] border border-neutral-200 bg-white px-4 py-3.5 sm:px-4">
+                <p className="text-[12px] font-semibold uppercase tracking-wide text-neutral-500">Shipping from</p>
+                {shipFromLocalityLine ? (
+                  <>
+                    <p className="mt-2 flex items-start gap-2 text-[14px] font-medium text-foreground">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-600" aria-hidden />
+                      <span>{shipFromLocalityLine}</span>
+                    </p>
+                    <p className="mt-2 text-[12px] leading-relaxed text-neutral-500">
+                      Carrier quotes use this listing location first (the city and region the seller chose on{" "}
+                      <span className="text-neutral-600">/sell</span>
+                      ), then refine with their map pin only if needed.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-[13px] leading-relaxed text-neutral-600">
+                    Rates use the map location from when this board was listed. If this looks off, the seller can edit
+                    location on the listing.
+                  </p>
+                )}
+              </div>
+            ) : null}
 
             <CheckoutPurchaseDetails
               buyerEmail={buyerEmail ?? null}
