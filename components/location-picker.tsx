@@ -63,6 +63,17 @@ function cityStateFromSuggestion(s: LocationSuggestion): { city: string; state: 
 
 const LISTBOX_ID = "listing-location-suggestions"
 
+function initialListingSearchQuery(
+  initialDisplay: string | undefined,
+  prefillSuggested: LocationPrefillSuggested | null | undefined,
+): string {
+  const fromListing = initialDisplay?.trim()
+  if (fromListing) return fromListing
+  const fromPrefill = prefillSuggested?.displayLabel?.trim()
+  if (fromPrefill) return fromPrefill
+  return ""
+}
+
 async function forwardGeocodeSearch(q: string): Promise<{ lat: number; lng: number } | null> {
   const query = q.trim()
   if (!query) return null
@@ -97,14 +108,19 @@ export function LocationPicker({
   const [city, setCity] = useState(initialCity ?? "")
   const [state, setState] = useState(initialState ?? "")
   const [displayName, setDisplayName] = useState(initialDisplay ?? "")
-  const [searchQuery, setSearchQuery] = useState(initialDisplay ?? "")
+  const [searchQuery, setSearchQuery] = useState(
+    () => initialListingSearchQuery(initialDisplay, prefillSuggested),
+  )
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [locating, setLocating] = useState(false)
   const [confirmingTextLocation, setConfirmingTextLocation] = useState(false)
 
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const userTypingRef = useRef(true)
+  /** false when SSR/parent prefilled search text so first paint matches server HTML — avoids empty→filled layout shift */
+  const userTypingRef = useRef(
+    initialListingSearchQuery(initialDisplay, prefillSuggested) === "",
+  )
 
   const flashSaved = useCallback(() => {
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
