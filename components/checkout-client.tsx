@@ -271,9 +271,7 @@ export function CheckoutClient({
                       <span>{shipFromLocalityLine}</span>
                     </p>
                     <p className="mt-2 text-[12px] leading-relaxed text-neutral-500">
-                      Carrier quotes use this listing location first (the city and region the seller chose on{" "}
-                      <span className="text-neutral-600">/sell</span>
-                      ), then refine with their map pin only if needed.
+                      This is the area the seller chose when listing. We use it to estimate shipping for your order.
                     </p>
                   </>
                 ) : (
