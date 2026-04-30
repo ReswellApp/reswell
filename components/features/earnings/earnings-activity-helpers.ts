@@ -270,7 +270,7 @@ export function parseDescription(raw: string, type: string): { title: string; su
   const refundMatch = raw.match(/^Refund — "(.+?)"/)
   if (refundMatch) {
     const itemName = refundMatch[1]
-    const isWallet = /Reswell Bucks/i.test(raw)
+    const isWallet = /Reswell Bucks|wallet;/i.test(raw)
     const isPending = /pending earnings/i.test(raw)
     const subtitle = isWallet
       ? "Wallet order refunded—your earnings for this listing were reduced."

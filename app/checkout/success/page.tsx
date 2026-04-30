@@ -20,8 +20,8 @@ function StaticSuccess() {
             </div>
             <h1 className="text-xl font-bold mb-2">Thanks for using Reswell</h1>
             <p className="text-muted-foreground text-sm mb-6">
-              Your order history lives in your dashboard. You can also pay with Reswell Bucks on future
-              purchases.
+              Your order history lives in your dashboard. If you have a wallet balance, you can apply it
+              toward future purchases at checkout.
             </p>
             <div className="flex flex-col gap-3">
               <Button asChild>

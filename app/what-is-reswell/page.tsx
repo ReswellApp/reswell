@@ -74,8 +74,8 @@ export default function WhatIsReswellPage() {
               </p>
               <p>
                 Curious how any of that works day to day? Our{" "}
-                <Link href="/help" className="text-primary underline">
-                  Help Center
+                <Link href="/faq" className="text-primary underline">
+                  FAQ
                 </Link>{" "}
                 breaks it down.
               </p>

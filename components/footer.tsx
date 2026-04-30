@@ -14,7 +14,7 @@ const footerLinks = {
     { name: "What is Reswell", href: "/what-is-reswell" },
   ],
   support: [
-    { name: "Help Center", href: "/help" },
+    { name: "FAQ", href: "/faq" },
     { name: "Purchase Protection", href: "/protection-policy" },
     { name: "Safety Tips", href: "/safety" },
     { name: "Shipping Guide", href: "/shipping" },

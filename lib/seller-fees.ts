@@ -1,6 +1,6 @@
 /**
  * Standard fees for peer surfboard sales on the platform.
- * Applied consistently to Reswell Bucks and card (Stripe) purchases.
+ * Applied consistently to wallet and card (Stripe) purchases.
  *
  * Fee structure: Reswell takes 7% of the sale total as the marketplace fee; the seller receives 93%.
  * Card processing (Stripe) is not deducted from the seller — it is absorbed by Reswell as a cost of service.
@@ -38,7 +38,7 @@ export function getPaymentProcessingFee(price: number): number {
 
 /**
  * Platform fee (7%) and seller earnings (93%) for a sale total.
- * Same split for Reswell Bucks and card: the seller always receives sale total minus the marketplace fee only.
+ * Same split for wallet and card: the seller always receives sale total minus the marketplace fee only.
  */
 export function getSellerEarnings(price: number): {
   marketplaceFee: number

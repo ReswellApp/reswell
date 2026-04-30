@@ -3,7 +3,7 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 
 export const metadata = privatePageMetadata({
   title: "Wallet — Reswell",
-  description: "Wallet and Reswell Bucks activity now live under Earnings — you are being redirected.",
+  description: "Wallet activity now lives under Earnings — you are being redirected.",
   path: "/dashboard/wallet",
 })
 

@@ -58,7 +58,7 @@ function statusBadge(status: string) {
 
 function paymentLabel(method: string) {
   if (method === "stripe") return "Card"
-  if (method === "reswell_bucks") return "RB"
+  if (method === "reswell_bucks") return "Wallet"
   return method
 }
 

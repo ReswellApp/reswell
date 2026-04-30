@@ -102,12 +102,12 @@ export default function ContactPage() {
             <ul className="space-y-3 text-sm">
               <li>
                 <Link
-                  href="/help"
+                  href="/faq"
                   className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
                 >
-                  Help Center
+                  FAQ
                 </Link>
-                <span className="text-muted-foreground">, for FAQs and how Reswell works</span>
+                <span className="text-muted-foreground">, for answers and how Reswell works</span>
               </li>
               <li>
                 <Link

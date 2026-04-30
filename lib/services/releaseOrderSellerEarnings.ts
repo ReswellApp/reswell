@@ -3,7 +3,7 @@ import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
 
 /**
- * After buyer confirms delivery or seller verifies pickup: credit seller Reswell Bucks balance
+ * After buyer confirms delivery or seller verifies pickup: credit seller wallet balance
  * (funds were already captured at checkout — card charges settle on the platform Stripe account;
  * wallet purchases debited the buyer at purchase time). Idempotent per order.
  */

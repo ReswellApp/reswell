@@ -65,7 +65,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     id: 'customer-service',
     label: 'Customer service',
     items: [
-      { href: '/admin/order-support', label: 'Order support', icon: 'lifeBuoy' },
       { href: '/admin/contact-messages', label: 'Support inbox', icon: 'messageSquare' },
       { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: 'tag' },
     ],

@@ -179,7 +179,7 @@ export default function AdminUserDetailPage() {
   async function resetWalletEarnings() {
     if (
       !confirm(
-        'Reset this account’s Reswell Bucks earnings to $0.00?\n\nThis clears available and pending balances, zeros lifetime totals, and removes wallet activity and PayPal payout history for this user. Orders and listings are not changed.',
+        'Reset this account’s wallet earnings to $0.00?\n\nThis clears available and pending balances, zeros lifetime totals, and removes wallet activity and PayPal payout history for this user. Orders and listings are not changed.',
       )
     ) {
       return
@@ -326,7 +326,7 @@ export default function AdminUserDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            Earnings (Reswell Bucks)
+            Earnings (wallet)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

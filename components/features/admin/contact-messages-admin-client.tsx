@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type {
   ContactMessageRow,
@@ -40,7 +41,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { OrderSupportRequestsPanel } from "@/components/features/admin/order-support-requests-panel"
 import {
   ClipboardCopy,
   ExternalLink,
@@ -54,6 +56,11 @@ import {
 import { toast } from "sonner"
 import { format, formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
+
+const SUPPORT_INBOX_TAB_QUERY = "tab"
+const SUPPORT_INBOX_ORDER_TAB = "order-support"
+/** Deep link for the Order support tab (use for Links and redirects). */
+export const ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF = `/admin/contact-messages?${SUPPORT_INBOX_TAB_QUERY}=${SUPPORT_INBOX_ORDER_TAB}`
 
 const SELECT =
   "id, name, email, subject, message, created_at, support_status, ticket_url, internal_notes, updated_at, source, user_id, related_conversation_id"
@@ -111,10 +118,32 @@ function channelBadgeVariant(s: ContactMessageSource): "default" | "secondary" |
 }
 
 export function ContactMessagesAdminClient() {
+  const pathname = usePathname() ?? "/admin/contact-messages"
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const sectionTab =
+    searchParams.get(SUPPORT_INBOX_TAB_QUERY) === SUPPORT_INBOX_ORDER_TAB ? "order-support" : "inbox"
+
+  const setSectionTab = useCallback(
+    (value: string) => {
+      if (value !== "inbox" && value !== "order-support") return
+      const q = new URLSearchParams(searchParams.toString())
+      if (value === "inbox") {
+        q.delete(SUPPORT_INBOX_TAB_QUERY)
+      } else {
+        q.set(SUPPORT_INBOX_TAB_QUERY, SUPPORT_INBOX_ORDER_TAB)
+      }
+      const qs = q.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams],
+  )
+
   const [rows, setRows] = useState<ContactMessageRow[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [tab, setTab] = useState<"all" | ContactMessageSupportStatus>("all")
+  const [statusFilterTab, setStatusFilterTab] = useState<"all" | ContactMessageSupportStatus>("all")
   const [channelTab, setChannelTab] = useState<"all" | ContactMessageSource>("all")
   const [active, setActive] = useState<ContactMessageRow | null>(null)
   const [draftStatus, setDraftStatus] = useState<ContactMessageSupportStatus>("new")
@@ -155,7 +184,7 @@ export function ContactMessagesAdminClient() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return rows.filter((r) => {
-      if (tab !== "all" && r.support_status !== tab) return false
+      if (statusFilterTab !== "all" && r.support_status !== statusFilterTab) return false
       if (channelTab !== "all" && r.source !== channelTab) return false
       if (!q) return true
       const subj = (r.subject ?? "").toLowerCase()
@@ -168,7 +197,7 @@ export function ContactMessagesAdminClient() {
         (r.related_conversation_id?.toLowerCase().includes(q) ?? false)
       )
     })
-  }, [rows, search, tab, channelTab])
+  }, [rows, search, statusFilterTab, channelTab])
 
   const counts = useMemo(() => {
     const c = { new: 0, triaged: 0, ticket_created: 0, resolved: 0 }
@@ -237,24 +266,28 @@ export function ContactMessagesAdminClient() {
   }
 
   return (
-    <div className="space-y-8">
+    <Tabs value={sectionTab} onValueChange={setSectionTab} className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Support inbox</h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Website contact form and in-app Messages tickets land here. Triage status, paste a tracker link, and
-            keep notes in one place. For purchase threads, use{" "}
-            <Link
-              href="/admin/order-support"
-              className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
-            >
-              Order support
-            </Link>
-            .
+            Triage website contact and in-app Messages tickets in <strong>Inbox</strong>. Marketplace purchase
+            threads (questions, cancellations, refunds) live under <strong>Order support</strong>.
           </p>
         </div>
+        <TabsList className="h-auto w-full shrink-0 flex-wrap justify-start gap-1 p-1 sm:w-auto">
+          <TabsTrigger value="inbox" className="gap-1.5">
+            <Inbox className="h-4 w-4" aria-hidden />
+            Inbox
+          </TabsTrigger>
+          <TabsTrigger value="order-support" className="gap-1.5">
+            <LifeBuoy className="h-4 w-4" aria-hidden />
+            Order support
+          </TabsTrigger>
+        </TabsList>
       </div>
 
+      <TabsContent value="inbox" className="mt-0 space-y-8 outline-none">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-border/80">
           <CardHeader className="pb-2">
@@ -312,8 +345,8 @@ export function ContactMessagesAdminClient() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <Tabs
-                value={tab}
-                onValueChange={(v) => setTab(v as "all" | ContactMessageSupportStatus)}
+                value={statusFilterTab}
+                onValueChange={(v) => setStatusFilterTab(v as "all" | ContactMessageSupportStatus)}
                 className="w-full lg:w-auto"
               >
                 <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1.5 p-1 sm:inline-flex sm:h-10 sm:w-auto">
@@ -548,7 +581,7 @@ export function ContactMessagesAdminClient() {
                     </a>
                   </Button>
                   <Button type="button" variant="outline" size="sm" className="gap-1.5" asChild>
-                    <Link href="/admin/order-support">
+                    <Link href={ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF}>
                       <LifeBuoy className="h-4 w-4" />
                       Order support
                     </Link>
@@ -630,6 +663,11 @@ export function ContactMessagesAdminClient() {
           )}
         </SheetContent>
       </Sheet>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="order-support" className="mt-0 outline-none">
+        <OrderSupportRequestsPanel />
+      </TabsContent>
+    </Tabs>
   )
 }

@@ -1,14 +1,14 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { HelpCircle } from "lucide-react"
+import { CircleHelp } from "lucide-react"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 import { MARKETPLACE_FEE_PERCENT, SELLER_SHARE_PERCENT } from "@/lib/seller-fees"
 
 export const metadata = pageSeoMetadata({
-  title: "Help Center — Reswell",
+  title: "FAQ — Reswell",
   description:
-    "Answers to common questions about buying, selling, fees, shipping, messages, and Purchase Protection on Reswell.",
-  path: "/help",
+    "Frequently asked questions about buying, selling, fees, shipping, messages, and Purchase Protection on Reswell.",
+  path: "/faq",
 })
 
 type Faq = {
@@ -142,20 +142,18 @@ const sections: FaqSection[] = [
         answer: (
           <>
             Buyers pay by card in Reswell checkout. Our payment processor, Stripe, handles your
-            card details directly. If you have a Reswell Bucks balance from past sales, you can
-            also put that toward your purchase at checkout. We don&apos;t accept payments outside
-            of Reswell, and payments made outside the app aren&apos;t covered by Purchase
-            Protection.
+            card details directly. If you have a wallet balance from past sales, you can apply it
+            toward your purchase at checkout. We don&apos;t accept payments outside of Reswell,
+            and payments made outside the app aren&apos;t covered by Purchase Protection.
           </>
         ),
       },
       {
-        question: "What are Reswell Bucks?",
+        question: "What is my wallet balance?",
         answer: (
           <>
-            Reswell Bucks is your in app wallet balance. When one of your sales completes, your
-            earnings land in your wallet as Bucks. You can spend them on other listings at
-            checkout, or cash them out to your payout destination. You&apos;ll find it all under{" "}
+            Your wallet is where earnings from completed sales show up. You can spend that balance
+            on other listings at checkout, or cash out to your payout destination from{" "}
             <Link href="/dashboard/earnings" className="text-primary underline">
               Earnings
             </Link>
@@ -294,16 +292,16 @@ const sections: FaqSection[] = [
   },
 ]
 
-export default function HelpCenterPage() {
+export default function FaqPage() {
   return (
     <main className="flex-1 py-12">
       <div className="container mx-auto max-w-3xl">
         <div className="flex items-center gap-3 mb-8">
-          <HelpCircle className="h-10 w-10 text-primary" />
+          <CircleHelp className="h-10 w-10 text-primary" aria-hidden />
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Help Center</h1>
+            <h1 className="text-3xl font-bold text-foreground">Frequently asked questions</h1>
             <p className="text-muted-foreground mt-1">
-              Answers to common questions about buying and selling surfboards on Reswell
+              Common questions about buying and selling surfboards on Reswell
             </p>
           </div>
         </div>
@@ -322,7 +320,7 @@ export default function HelpCenterPage() {
 
         <div className="space-y-12">
           {sections.map((section) => (
-            <section key={section.id} aria-labelledby={`${section.id}-heading`}>
+            <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`}>
               <h2
                 id={`${section.id}-heading`}
                 className="text-xl font-semibold text-foreground mb-1"

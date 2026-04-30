@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   if (isAnonymousSupabaseUser(user)) {
     return NextResponse.json(
-      { error: "Create a Reswell account or sign in to purchase with Reswell Bucks." },
+      { error: "Create a Reswell account or sign in to pay with your wallet." },
       { status: 403 },
     )
   }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   if (!buyerWallet || parseFloat(buyerWallet.balance) < price) {
     return NextResponse.json(
-      { error: "Insufficient Reswell Bucks", balance: buyerWallet?.balance || 0 },
+      { error: "Insufficient wallet balance", balance: buyerWallet?.balance || 0 },
       { status: 400 }
     )
   }

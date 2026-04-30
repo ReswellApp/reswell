@@ -98,7 +98,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
         title: "Refund in progress",
         description: isCard
           ? `We’re processing a full refund of $${amount.toFixed(2)} to your card through Stripe. This screen will update to “Refunded” when the refund completes.`
-          : `We’re processing a full refund of $${amount.toFixed(2)} to your Reswell Bucks balance.`,
+          : `We’re processing a full refund of $${amount.toFixed(2)} to your wallet.`,
         state: "current",
       },
       {
@@ -119,7 +119,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
     const isCard = paymentMethod === "stripe"
     const fundsDesc = isCard
       ? "Your card refund has been submitted to Stripe. It typically takes 5-10 business days to appear on your statement."
-      : `$${amount.toFixed(2)} in Reswell Bucks has been credited back to your wallet balance.`
+      : `$${amount.toFixed(2)} has been credited back to your wallet.`
 
     return [
       {
@@ -136,7 +136,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
       },
       {
         key: "funds-returned",
-        title: isCard ? "Card refund in progress" : "Reswell Bucks returned",
+        title: isCard ? "Card refund in progress" : "Refund to wallet",
         description: fundsDesc,
         state: isCard ? "current" : "done",
       },
@@ -406,7 +406,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Payment</span>
-                <span className="text-right">{props.paidWithCard ? "Card (Stripe)" : "Reswell Bucks"}</span>
+                <span className="text-right">{props.paidWithCard ? "Card (Stripe)" : "Wallet"}</span>
               </div>
               <Separator />
               <div className="flex justify-between gap-4 text-base font-semibold">

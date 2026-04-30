@@ -21,7 +21,7 @@ type RefundResult =
   | { ok: false; error: string; status: number }
 
 /**
- * Full refund for a Reswell Bucks (wallet-paid) order.
+ * Full refund for a wallet-paid order.
  *
  * 1. Mark order as `refunded`, set `refunded_at`
  * 2. Cancel all payouts for the order
@@ -109,7 +109,7 @@ async function clawbackSellerEarnings(
     .maybeSingle()
 
   const title = typeof listing?.title === "string" ? listing.title : "Listing"
-  const desc = `Refund — "${title}" (full refund $${clawbackUsd.toFixed(2)}, Reswell Bucks; order ${order.id.slice(0, 8)})`
+  const desc = `Refund — "${title}" (full refund $${clawbackUsd.toFixed(2)}, wallet; order ${order.id.slice(0, 8)})`
 
   const rev = applySellerRefundClawback(
     { balance: prevBalance, pending: prevPending, lifetimeEarned: prevEarned },

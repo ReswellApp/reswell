@@ -48,8 +48,8 @@ export function ContactForm() {
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Thanks for reaching out. We’ve logged your note and will follow up within 1–2 business days when a
                 reply is needed. For quick answers, the{" "}
-                <Link href="/help" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
-                  Help Center
+                <Link href="/faq" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+                  FAQ
                 </Link>{" "}
                 is always open.
               </p>

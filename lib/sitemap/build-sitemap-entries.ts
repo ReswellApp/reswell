@@ -65,7 +65,7 @@ export async function buildSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
     { url: `${BASE}/brands`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/board-talk`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
-    { url: `${BASE}/help`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
     { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },

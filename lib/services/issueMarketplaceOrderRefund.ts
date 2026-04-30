@@ -42,7 +42,7 @@ function isStripeChargeAlreadyRefundedError(err: unknown): boolean {
 }
 
 /**
- * Full refund for a confirmed marketplace order (Stripe card or Reswell Bucks).
+ * Full refund for a confirmed marketplace order (Stripe card or wallet).
  *
  * Stripe card path:
  *   1. Create Stripe refund
@@ -52,7 +52,7 @@ function isStripeChargeAlreadyRefundedError(err: unknown): boolean {
  *   Idempotent via unique index on `(reference_type, reference_id) WHERE reference_type = 'stripe_refund'`.
  *   The later webhook (`refund.created`/`refund.updated`) detects the existing wallet tx and skips.
  *
- * Reswell Bucks path delegates to `applyWalletOrderRefund` which already claws back immediately.
+ * Wallet-paid path delegates to `applyWalletOrderRefund` which already claws back immediately.
  */
 export async function issueMarketplaceOrderRefund(
   serviceSupabase: SupabaseClient,

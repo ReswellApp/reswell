@@ -15,7 +15,7 @@ function formatThreadTime(dateStr: string) {
 }
 
 function paymentLabel(method: OrderPlacedMessagePayload["paymentMethod"]): string {
-  if (method === "reswell_bucks") return "Reswell Bucks"
+  if (method === "reswell_bucks") return "Wallet"
   return "Card"
 }
 

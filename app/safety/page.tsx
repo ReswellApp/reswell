@@ -25,7 +25,7 @@ const tips = [
   },
   {
     title: "Pay through Reswell",
-    body: "Paying through Reswell checkout (or using your Reswell Bucks wallet) keeps the sale on the platform and makes it easier for us to help if something goes sideways. Be careful with anyone who pushes you to pay outside the app.",
+    body: "Paying through Reswell checkout (including with your wallet balance) keeps the sale on the platform and makes it easier for us to help if something goes sideways. Be careful with anyone who pushes you to pay outside the app.",
   },
   {
     title: "Trust your gut on red flags",

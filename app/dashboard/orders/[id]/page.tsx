@@ -282,7 +282,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       <div className="flex flex-wrap gap-2">
         <Badge variant={orderStatusBadgeVariant(order.status)}>{orderStatusLabel(order.status)}</Badge>
         <Badge variant="outline" className="gap-1">
-          {paidWithCard ? "Card (Stripe)" : "Reswell Bucks"}
+          {paidWithCard ? "Card (Stripe)" : "Wallet"}
         </Badge>
         <Badge variant="outline" className="gap-1">
           {fulfill.includes("Ship") ? (

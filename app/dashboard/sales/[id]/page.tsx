@@ -307,7 +307,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               ) : (
                 <>
                   <DollarSign className="h-3.5 w-3.5" />
-                  Reswell Bucks
+                  Wallet
                 </>
               )}
             </span>
@@ -591,7 +591,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Payment</dt>
                   <dd className="text-foreground">
-                    {paidWithCard ? "Card (Stripe)" : "Reswell Bucks"}
+                    {paidWithCard ? "Card (Stripe)" : "Wallet"}
                   </dd>
                 </div>
                 <div className="flex justify-between">

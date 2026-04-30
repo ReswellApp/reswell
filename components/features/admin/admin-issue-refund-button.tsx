@@ -61,7 +61,7 @@ export function AdminIssueRefundButton({
 
   const isSyncOnly = orderStatus === "refunding"
   const isCard = paymentMethod === "stripe"
-  const refundTarget = isCard ? "the buyer's card" : "the buyer's Reswell Bucks balance"
+  const refundTarget = isCard ? "the buyer's card" : "the buyer's wallet balance"
 
   const submit = async () => {
     setBusy(true)

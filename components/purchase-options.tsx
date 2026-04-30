@@ -40,7 +40,7 @@ export function PurchaseOptions({
     return (
       <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
         Card checkout is not configured. Please try again later or{" "}
-        <Link href="/help" className="text-primary underline underline-offset-2">
+        <Link href="/faq" className="text-primary underline underline-offset-2">
           contact support
         </Link>
         .

@@ -22,7 +22,11 @@ export const messagesSupportTopicLabels: Record<MessagesSupportTopic, string> = 
 
 export const submitMessagesSupportTicketSchema = z.object({
   topic: messagesSupportTopicSchema,
-  details: z.string().trim().min(10, "Please add a bit more detail (at least 10 characters).").max(10000),
+  details: z
+    .string()
+    .trim()
+    .min(10, "Please add a bit more detail (at least 10 characters).")
+    .max(15000),
   related_conversation_id: z.string().uuid().optional().nullable(),
 })
 

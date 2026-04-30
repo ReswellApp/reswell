@@ -108,7 +108,7 @@ function fulfillmentLabel(method: string | null, hasShipAddr: boolean): string {
 }
 
 function paymentLabel(stripeSessionId: string | null): string {
-  return stripeSessionId ? "Card" : "Reswell Bucks"
+  return stripeSessionId ? "Card" : "Wallet"
 }
 
 export default async function OrdersPage() {
@@ -181,7 +181,7 @@ export default async function OrdersPage() {
           </Link>
           ; wallet activity is in{" "}
           <Link href="/dashboard/wallet" className="text-primary underline underline-offset-2">
-            Reswell Bucks
+            Wallet
           </Link>
           .
         </p>

@@ -172,6 +172,8 @@ const nextConfig = {
       { source: "/threads", destination: "/board-talk", permanent: true },
       { source: "/wax-room", destination: "/board-talk", permanent: true },
       { source: "/feed", destination: "/sold", permanent: true },
+      { source: "/help", destination: "/faq", permanent: true },
+      { source: "/FAQ", destination: "/faq", permanent: true },
     ]
   },
 }
