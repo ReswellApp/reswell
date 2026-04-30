@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MapPin, Users, TrendingUp, Heart } from "lucide-react"
-import { UnfollowButton } from "@/app/dashboard/followers/unfollow-button"
+import { UnfollowButton } from "@/components/features/dashboard/unfollow-button"
+import { CommunityDashboardTabs } from "@/components/features/dashboard/community-dashboard-tabs"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -45,7 +46,7 @@ function publicFollowerHref(f: { id: string; seller_slug: string | null }) {
 export async function FollowersDashboardPanels() {
   const { supabase, user } = await getCachedDashboardSession()
 
-  const loginRedirect = "/dashboard/followers"
+  const loginRedirect = "/dashboard/following"
   if (!user) redirect(`/auth/login?redirect=${encodeURIComponent(loginRedirect)}`)
 
   const [followsRes, profileRes, newThisMonthRes, myFollowersRes] = await Promise.all([
@@ -187,7 +188,7 @@ export async function FollowersDashboardPanels() {
   )
 
   const peopleFollowingYou = (
-    <section id="people-following-you" className="scroll-mt-8 space-y-3">
+    <section className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold text-foreground">People into your shop</h2>
@@ -294,7 +295,7 @@ export async function FollowersDashboardPanels() {
   )
 
   const shopsYouFollow = (
-    <section id="shops-you-follow" className="scroll-mt-8 space-y-3">
+    <section className="space-y-3">
       <div>
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Heart className="h-5 w-5 text-rose-500" aria-hidden />
@@ -430,15 +431,14 @@ export async function FollowersDashboardPanels() {
   return (
     <div className="space-y-8 sm:space-y-10 pb-10 sm:pb-12">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Your community</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Following</h1>
         <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-          One scroll: who’s watching your shop, who you’re watching, and a nudge to keep the stoke going.
+          Switch tabs to see sellers you follow and who follows your shop.
         </p>
       </header>
 
       {statStrip}
-      {peopleFollowingYou}
-      {shopsYouFollow}
+      <CommunityDashboardTabs followingPanel={shopsYouFollow} followersPanel={peopleFollowingYou} />
     </div>
   )
 }

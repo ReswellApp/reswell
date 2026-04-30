@@ -43,6 +43,16 @@ function signupMethodFromUser(user: User): string {
   return "email"
 }
 
+/** Stable segmentation value for Klaviyo (flows, liquid `event.signup_channel`). */
+export type KlaviyoSignupChannel = "google" | "email_password" | "oauth_other"
+
+export function signupChannelFromUser(user: User): KlaviyoSignupChannel {
+  const raw = signupMethodFromUser(user).toLowerCase()
+  if (raw === "google") return "google"
+  if (raw === "email") return "email_password"
+  return "oauth_other"
+}
+
 /**
  * OAuth (and similar) first session: `created_at` is fresh so we do not fire for returning users.
  */
@@ -54,6 +64,18 @@ export function shouldTrackKlaviyoNewAccountForOAuthSession(user: User): boolean
 /**
  * Klaviyo metric **"New Account Created"** — use in a flow to send a welcome email.
  * Deduped per user via `uniqueId` if multiple hooks run for the same account.
+ *
+ * **30‑day inactive re‑engagement (build in Klaviyo, no extra app code required):**
+ * 1. Flow trigger: Metric → **New Account Created**.
+ * 2. **Time delay** 30 days.
+ * 3. **Conditional split** — treat as “active” if they engaged while in the flow, e.g. they
+ *    performed **at least once** any of **Viewed Site Page**, **Viewed Sell Page**,
+ *    **Viewed Boards Page**, or commerce metrics (**Listing**, **Added to Cart**,
+ *    **Purchase Successful**, etc.), with timeframe **since starting this flow** (Klaviyo:
+ *    profile activity / conditional split wording varies by UI).
+ * 4. Send the recovery email only on the branch where they **have not** met that activity.
+ *
+ * Page views already post from `POST /api/integrations/klaviyo/page-view` for logged‑in users.
  *
  * Also calls Klaviyo **Subscribe Profiles** so the profile has email marketing consent
  * (`SUBSCRIBED`) where your Klaviyo list/account opt-in settings allow immediate consent.
@@ -120,6 +142,7 @@ export async function trackKlaviyoNewAccountCreated(
       phone: user.phone?.trim() ?? "",
       avatar_url: avatarUrl,
       signup_method: signupMethodFromUser(user),
+      signup_channel: signupChannelFromUser(user),
       account_created_at: user.created_at,
       email_confirmed_at: user.email_confirmed_at ?? null,
       last_sign_in_at: user.last_sign_in_at ?? null,

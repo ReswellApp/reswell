@@ -2,16 +2,22 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type ContactMessageSupportStatus = "new" | "triaged" | "ticket_created" | "resolved"
 
+export type ContactMessageSource = "contact_form" | "messages_support"
+
 export type ContactMessageRow = {
   id: string
   name: string
   email: string
+  subject: string | null
   message: string
   created_at: string
   support_status: ContactMessageSupportStatus
   ticket_url: string | null
   internal_notes: string | null
   updated_at: string
+  source: ContactMessageSource
+  user_id: string | null
+  related_conversation_id: string | null
 }
 
 export async function updateContactMessageRow(

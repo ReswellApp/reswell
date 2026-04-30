@@ -25,6 +25,7 @@ import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-comp
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
 import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
+import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 
 interface Message {
   id: string
@@ -314,7 +315,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 <ArrowLeft className="h-[22px] w-[22px]" strokeWidth={2} />
               </Button>
             </Link>
-            <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border/60">
                 {otherUser?.avatar_url ? (
                   <Image
@@ -353,7 +354,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
         </header>
 
-        {/* Listing Preview */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
         {conversation.listing && (
           <Link
             href={listingDetailPath(conversation.listing)}
@@ -402,7 +403,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 </p>
               </div>
             ) : (
-              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-3 pt-4 sm:px-4 sm:pb-4">
+              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] pt-4 sm:px-4 sm:pb-28">
                 {orderedMessages.map((message) => {
                   const isOwn = message.sender_id === currentUserId
                   const offer =
@@ -529,6 +530,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
+        <MessagesSupportDialog
+          relatedConversationId={id}
+          triggerMode="floating"
+          floatingTriggerClassName="pointer-events-auto absolute bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] right-1 z-20 sm:bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:right-2"
+        />
+
         {/* Composer */}
         <div className="mt-3 shrink-0">
           <form
@@ -559,6 +566,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               )}
             </Button>
           </form>
+        </div>
         </div>
       </div>
     </main>

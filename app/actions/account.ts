@@ -79,6 +79,8 @@ export async function submitContactMessage(input: { name: string; email: string;
     name,
     email,
     message,
+    source: "contact_form",
+    user_id: null,
   })
 
   if (error) {

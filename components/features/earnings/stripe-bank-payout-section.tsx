@@ -373,17 +373,6 @@ export function StripeBankPayoutSection({
                 <div className="flex flex-wrap items-center gap-2 justify-end">
                   <Button
                     type="button"
-                    variant="outline"
-                    className="rounded-full font-medium"
-                    onClick={() => {
-                      setSetupUseManagement(true)
-                      setSetupOpen(true)
-                    }}
-                  >
-                    Add another bank
-                  </Button>
-                  <Button
-                    type="button"
                     className={cn(
                       "rounded-full font-medium",
                       "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
@@ -395,8 +384,8 @@ export function StripeBankPayoutSection({
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-snug">
-                Reswell can’t store bank numbers — Add another bank or Manage opens Stripe’s secure form to link
-                additional accounts, change details, or remove one (removal usually needs two banks first).
+                Reswell can’t store bank numbers — Manage payout banks opens Stripe’s secure form if you need to update
+                your payout account.
               </p>
               <ul className="space-y-2">
                 {bankRows.map((row) => {

@@ -19,6 +19,7 @@ import {
   UserCircle,
   List,
   Plus,
+  TrendingUp,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
@@ -149,9 +150,18 @@ export default async function DashboardPage() {
     : profile?.avatar_url
 
   let walletBalance = 0
+  let allTimeEarned = 0
   if (walletRow) {
     const r = reconcileWalletAggregates(walletRow)
     walletBalance = r.totalBalance
+    const earnedRaw = walletRow.lifetime_earned
+    const earnedParsed =
+      earnedRaw === null || earnedRaw === undefined
+        ? 0
+        : typeof earnedRaw === "number"
+          ? earnedRaw
+          : parseFloat(String(earnedRaw))
+    allTimeEarned = Number.isFinite(earnedParsed) ? earnedParsed : 0
     if (r.needsPersist) {
       const s = walletAggregateStrings(r)
       await supabase
@@ -324,6 +334,31 @@ export default async function DashboardPage() {
       </div>
 
       <div>
+        <h2 className="mb-3 text-sm font-medium text-foreground">All-time earnings</h2>
+        <Link href="/dashboard/earnings" className="min-w-0 block">
+          <Card className="h-full overflow-hidden hover:shadow-md transition-shadow border-primary/15 bg-primary/[0.03]">
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <TrendingUp className="h-4 w-4 shrink-0" aria-hidden />
+                    <span>Lifetime earned on Reswell</span>
+                  </div>
+                  <p className="text-3xl font-bold tabular-nums tracking-tight text-primary sm:text-4xl">
+                    ${allTimeEarned.toFixed(2)}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
+                  View earnings
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      <div>
         <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
           {activityStats.map((stat) => (
@@ -354,7 +389,7 @@ export default async function DashboardPage() {
             Followers &amp; following
           </CardTitle>
           <Link
-            href="/dashboard/followers"
+            href="/dashboard/following"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
           >
             View all

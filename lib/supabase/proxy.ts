@@ -79,15 +79,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin route protection - check if user is admin
+  // Admin routes: same rule as app/admin/layout.tsx — staff only (not buyers/sellers).
   if (request.nextUrl.pathname.startsWith('/admin') && user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('is_admin, is_employee')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.is_admin) {
+    const isStaff =
+      profile?.is_admin === true || profile?.is_employee === true
+
+    if (!isStaff) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)

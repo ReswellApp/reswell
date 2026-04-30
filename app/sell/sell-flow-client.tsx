@@ -2988,7 +2988,7 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-photos-title"
                   title="Title & photos"
-                  description="Write a title in your own words — it’s what buyers see first and what we use in the link. Add clear photos of your board."
+                  description="Write a title in your own words. It's what buyers see first. Add clear photos of your board."
                 >
                 <div className="space-y-8">
                   <div className="space-y-2">

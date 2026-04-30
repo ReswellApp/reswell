@@ -24,5 +24,5 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Offers", href: "/dashboard/offers", icon: Handshake },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
-  { name: "Followers", href: "/dashboard/followers", icon: Users },
+  { name: "Following", href: "/dashboard/following", icon: Users },
 ]

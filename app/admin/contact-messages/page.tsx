@@ -2,8 +2,8 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { ContactMessagesAdminClient } from "@/components/features/admin/contact-messages-admin-client"
 
 export const metadata = privatePageMetadata({
-  title: "Contact messages — Admin — Reswell",
-  description: "Review inbound contact and support messages submitted through Reswell.",
+  title: "Support inbox — Admin — Reswell",
+  description: "Customer support tickets from the website and from in-app Messages.",
   path: "/admin/contact-messages",
 })
 

@@ -20,3 +20,20 @@ export async function getConversationForBuyerSeller(
   if (error || !data?.[0]) return null
   return data[0]
 }
+
+/** True if the user is the buyer or seller in this conversation (RLS-safe lookup). */
+export async function userParticipatesInConversation(
+  supabase: SupabaseClient,
+  userId: string,
+  conversationId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("id", conversationId)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .maybeSingle()
+
+  if (error || !data) return false
+  return true
+}
