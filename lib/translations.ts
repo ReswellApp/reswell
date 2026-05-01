@@ -45,6 +45,12 @@ type Translations = {
     account: {
       title: string
       description: string
+      resetPassword: string
+      resetPasswordDescription: string
+      resetPasswordButton: string
+      resetPasswordSending: string
+      resetPasswordToastSuccess: string
+      resetPasswordToastNoEmail: string
       signOut: string
       signOutDescription: string
     }
@@ -114,6 +120,15 @@ const en: Translations = {
     account: {
       title: 'Account',
       description: 'Manage your account settings',
+      resetPassword: 'Reset password',
+      resetPasswordDescription:
+        "We'll email you a secure link to choose a new password for this account.",
+      resetPasswordButton: 'Email reset link',
+      resetPasswordSending: 'Sending…',
+      resetPasswordToastSuccess:
+        'Check your email for a link to reset your password. You can close this tab after you finish.',
+      resetPasswordToastNoEmail:
+        'This account does not have an email on file. Change your password via the provider you signed up with.',
       signOut: 'Sign Out',
       signOutDescription: 'Sign out of your account on this device',
     },
@@ -183,6 +198,15 @@ const es: Translations = {
     account: {
       title: 'Cuenta',
       description: 'Administra la configuración de tu cuenta',
+      resetPassword: 'Restablecer contraseña',
+      resetPasswordDescription:
+        'Te enviaremos un enlace seguro por correo para elegir una nueva contraseña.',
+      resetPasswordButton: 'Enviar enlace',
+      resetPasswordSending: 'Enviando…',
+      resetPasswordToastSuccess:
+        'Revisa tu correo para el enlace de restablecimiento. Puedes cerrar esta pestaña cuando termines.',
+      resetPasswordToastNoEmail:
+        'Esta cuenta no tiene correo. Cambia tu contraseña desde el método con el que te registraste.',
       signOut: 'Cerrar sesión',
       signOutDescription: 'Cerrar sesión en este dispositivo',
     },

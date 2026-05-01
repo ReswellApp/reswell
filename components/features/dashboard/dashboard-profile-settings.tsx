@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ProfileAddressesManager } from "@/components/profile-addresses-manager"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Check, Loader2, Save, LogOut, Camera, User } from "lucide-react"
+import { Check, Loader2, Save, LogOut, Camera, User, KeyRound } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
@@ -22,6 +22,7 @@ import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { cn } from "@/lib/utils"
+import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
 
 interface Profile {
   id: string
@@ -45,6 +46,7 @@ export function DashboardProfileSettings() {
   const [avatarSavedFlash, setAvatarSavedFlash] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [removingAvatar, setRemovingAvatar] = useState(false)
+  const [resetPasswordSending, setResetPasswordSending] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -199,6 +201,37 @@ export function DashboardProfileSettings() {
       toast.error(message)
     } finally {
       setRemovingAvatar(false)
+    }
+  }
+
+  async function handleSendPasswordReset() {
+    const acctStrings = t("settings").account
+    if (!profile?.email) {
+      toast.error(acctStrings.resetPasswordToastNoEmail)
+      return
+    }
+    setResetPasswordSending(true)
+    try {
+      let siteOrigin = window.location.origin
+      const devOverride = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL?.trim()
+      if (devOverride && process.env.NODE_ENV === "development") {
+        try {
+          const u = new URL(devOverride.startsWith("http") ? devOverride : `https://${devOverride}`)
+          if (u.hostname === "localhost" || u.hostname === "127.0.0.1") {
+            siteOrigin = `${u.protocol}//${u.host}`
+          }
+        } catch {
+          /* keep window.location.origin */
+        }
+      }
+      const redirectTo = buildPasswordRecoveryCallbackUrl(siteOrigin)
+      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, { redirectTo })
+      if (error) throw error
+      toast.success(acctStrings.resetPasswordToastSuccess)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Could not send reset email")
+    } finally {
+      setResetPasswordSending(false)
     }
   }
 
@@ -395,15 +428,31 @@ export function DashboardProfileSettings() {
           <CardTitle>{a.title}</CardTitle>
           <CardDescription>{a.description}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Separator className="mb-4" />
-          <div className="flex items-center justify-between">
+        <CardContent className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium text-foreground">{a.resetPassword}</p>
+              <p className="text-sm text-muted-foreground">{a.resetPasswordDescription}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 self-start sm:self-auto"
+              onClick={() => void handleSendPasswordReset()}
+              disabled={resetPasswordSending || !profile.email}
+            >
+              <KeyRound className="mr-2 h-4 w-4" aria-hidden />
+              {resetPasswordSending ? a.resetPasswordSending : a.resetPasswordButton}
+            </Button>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-medium text-foreground">{a.signOut}</p>
               <p className="text-sm text-muted-foreground">{a.signOutDescription}</p>
             </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="shrink-0 self-start sm:self-auto" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" aria-hidden />
               {a.signOut}
             </Button>
           </div>
