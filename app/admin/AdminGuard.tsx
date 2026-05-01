@@ -20,6 +20,7 @@ export function AdminGuard({
     if (!isAdmin && isEmployee && pathname) {
       if (
         pathname === '/admin/users' ||
+        pathname === '/admin/wallets' ||
         pathname === '/admin/settings' ||
         pathname === '/admin/shipping'
       ) {

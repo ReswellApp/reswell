@@ -2,15 +2,22 @@
  * Standard fees for peer surfboard sales on the platform.
  * Applied consistently to wallet and card (Stripe) purchases.
  *
- * Fee structure: Reswell takes 7% of the sale total as the marketplace fee; the seller receives 93%.
- * Card processing (Stripe) is not deducted from the seller — it is absorbed by Reswell as a cost of service.
- * Buyer protection is funded from Reswell's platform fee — not charged to sellers.
+ * Fee structure: Reswell takes 7% of the **listing (item) price** as the marketplace fee; the
+ * seller receives 93% of the listing price. Shipping is collected separately from the buyer at
+ * checkout, is **not** part of the seller's earnings, and is **not** subject to the marketplace
+ * fee — Reswell uses it to cover the carrier label / fulfillment cost.
+ *
+ * Card processing (Stripe) is not deducted from the seller — Reswell absorbs it as a cost of
+ * service. Buyer protection is funded from Reswell's platform fee, not charged to sellers.
+ *
+ * IMPORTANT: every caller must pass the **item price only** (never `item + shipping`). Order
+ * totals (`orders.amount`) include shipping; subtract `orders.shipping_amount` first.
  */
 
-/** Marketplace fee: 7% of sale price (platform fee). Seller receives the remainder (93%). */
+/** Marketplace fee: 7% of the item (listing) price. Seller receives the remainder (93%). */
 export const MARKETPLACE_FEE_PERCENT = 7
 
-/** Seller share of the sale price before cash-out (100% − marketplace fee). */
+/** Seller share of the item price before cash-out (100% − marketplace fee). */
 export const SELLER_SHARE_PERCENT = 100 - MARKETPLACE_FEE_PERCENT
 
 /** Same fee as a decimal (e.g. admin math). */
@@ -22,10 +29,10 @@ export const PAYMENT_PROCESSING_PERCENT = 2.9
 export const PAYMENT_PROCESSING_FIXED = 0.3
 
 /**
- * Compute marketplace (platform) fee for a sale price.
+ * Marketplace (platform) fee for a given **item price** (excluding shipping).
  */
-export function getMarketplaceFee(price: number): number {
-  return Math.round(price * MARKETPLACE_FEE_PERCENT) / 100
+export function getMarketplaceFee(itemPriceUsd: number): number {
+  return Math.round(itemPriceUsd * MARKETPLACE_FEE_PERCENT) / 100
 }
 
 /**
@@ -37,14 +44,15 @@ export function getPaymentProcessingFee(price: number): number {
 }
 
 /**
- * Platform fee (7%) and seller earnings (93%) for a sale total.
- * Same split for wallet and card: the seller always receives sale total minus the marketplace fee only.
+ * Platform fee (7%) and seller earnings (93%) for a sale, computed from the **item price only**.
+ * Shipping must be excluded by the caller; it is paid through to the carrier and never reaches
+ * the seller.
  */
-export function getSellerEarnings(price: number): {
+export function getSellerEarnings(itemPriceUsd: number): {
   marketplaceFee: number
   sellerEarnings: number
 } {
-  const marketplaceFee = getMarketplaceFee(price)
-  const sellerEarnings = Math.round((price - marketplaceFee) * 100) / 100
+  const marketplaceFee = getMarketplaceFee(itemPriceUsd)
+  const sellerEarnings = Math.round((itemPriceUsd - marketplaceFee) * 100) / 100
   return { marketplaceFee, sellerEarnings }
 }

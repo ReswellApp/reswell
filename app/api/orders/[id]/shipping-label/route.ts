@@ -2,13 +2,16 @@ import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markOrderShippedWithTracking } from "@/lib/services/markOrderShipped"
+import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
 import {
   fetchRatesForSurfboardOrder,
   purchaseLabelWithRateId,
   resolveAddressesForLabel,
+  resolveOrderLabelParcelFromListing,
 } from "@/lib/services/orderShippingLabel"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
+import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 
 export const dynamic = "force-dynamic"
@@ -39,6 +42,7 @@ export async function GET(
       `
       id,
       order_num,
+      listing_id,
       fulfillment_method,
       delivery_status,
       shipping_address,
@@ -56,6 +60,7 @@ export async function GET(
   const row = order as {
     id: string
     order_num: string | null
+    listing_id: string
     fulfillment_method: string | null
     delivery_status: string
     shipping_address: unknown
@@ -68,6 +73,16 @@ export async function GET(
   const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
   const section = listing?.section ?? ""
   const listingTitle = listing?.title?.trim() ?? "Item"
+
+  const { data: listingForParcel } = await supabase
+    .from("listings")
+    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
+    .eq("id", row.listing_id)
+    .maybeSingle()
+
+  const autoLabelParcel = listingForParcel
+    ? resolveOrderLabelParcelFromListing(listingForParcel as ListingPackedParcelSource)
+    : { ok: false as const, error: "Could not load listing for this order." }
 
   const reasons: string[] = []
   if (section !== "surfboards") reasons.push("Labels are available for surfboard orders only.")
@@ -112,6 +127,17 @@ export async function GET(
         deliveryStatus: row.delivery_status,
       },
       sellerAddresses,
+      autoLabelParcel:
+        autoLabelParcel.ok === true
+          ? {
+              ok: true as const,
+              lengthIn: autoLabelParcel.parcel.lengthIn,
+              widthIn: autoLabelParcel.parcel.widthIn,
+              heightIn: autoLabelParcel.parcel.heightIn,
+              weightLb: autoLabelParcel.parcel.weightLb,
+              source: autoLabelParcel.parcel.source,
+            }
+          : { ok: false as const, error: autoLabelParcel.error },
     },
   })
 }
@@ -184,10 +210,28 @@ export async function POST(
   const body = parsed.data
 
   if (body.action === "rates") {
+    let sellerAddressId = body.seller_address_id?.trim() || null
+    if (!sellerAddressId) {
+      const { data: addrRows } = await supabase
+        .from("addresses")
+        .select("*")
+        .eq("profile_id", user.id)
+        .order("is_default", { ascending: false })
+      const rows = (addrRows ?? []) as ProfileAddressRow[]
+      const preferred = rows.find((r) => r.is_default) ?? rows[0]
+      if (!preferred) {
+        return NextResponse.json(
+          { error: "Save a ship-from address on your profile first." },
+          { status: 400 },
+        )
+      }
+      sellerAddressId = preferred.id
+    }
+
     const { data: addr, error: addrErr } = await supabase
       .from("addresses")
       .select("*")
-      .eq("id", body.seller_address_id)
+      .eq("id", sellerAddressId)
       .eq("profile_id", user.id)
       .maybeSingle()
 
@@ -203,15 +247,40 @@ export async function POST(
       return NextResponse.json({ error: resolved.error }, { status: 400 })
     }
 
-    const ratesResult = await fetchRatesForSurfboardOrder({
-      shipFrom: resolved.from,
-      shipTo: resolved.to,
-      parcel: {
+    let parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
+    if (body.parcel) {
+      parcel = {
         lengthIn: body.parcel.length_in,
         widthIn: body.parcel.width_in,
         heightIn: body.parcel.height_in,
         weightLb: body.parcel.weight_lb,
-      },
+      }
+    } else {
+      const { data: listingRow, error: listingErr } = await supabase
+        .from("listings")
+        .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
+        .eq("id", o.listing_id)
+        .maybeSingle()
+
+      if (listingErr || !listingRow) {
+        return NextResponse.json({ error: "Could not load listing for this order." }, { status: 500 })
+      }
+      const fromListing = resolveOrderLabelParcelFromListing(listingRow as ListingPackedParcelSource)
+      if (!fromListing.ok) {
+        return NextResponse.json({ error: fromListing.error }, { status: 400 })
+      }
+      parcel = {
+        lengthIn: fromListing.parcel.lengthIn,
+        widthIn: fromListing.parcel.widthIn,
+        heightIn: fromListing.parcel.heightIn,
+        weightLb: fromListing.parcel.weightLb,
+      }
+    }
+
+    const ratesResult = await fetchRatesForSurfboardOrder({
+      shipFrom: resolved.from,
+      shipTo: resolved.to,
+      parcel,
     })
 
     if (!ratesResult.ok) {

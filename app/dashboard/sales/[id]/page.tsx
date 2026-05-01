@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { privatePageMetadata } from "@/lib/site-metadata"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -36,6 +37,7 @@ import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import {
   SellerTrackingForm,
+  SellerConfirmShipmentButton,
   SellerPickupVerify,
   SellerRequestSupportButton,
   SellerRefundedBanner,
@@ -44,7 +46,8 @@ import {
   PayoutStatusBadge,
   TrackingInfo,
 } from "@/components/order-actions"
-import { privatePageMetadata } from "@/lib/site-metadata"
+import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabels"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
@@ -84,6 +87,8 @@ type SaleDetail = {
   id: string
   order_num: string | null
   amount: number | string
+  shipping_amount: number | string | null
+  platform_fee: number | string | null
   seller_earnings: number | string
   status: string
   created_at: string
@@ -176,6 +181,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       id,
       order_num,
       amount,
+      shipping_amount,
+      platform_fee,
       seller_earnings,
       status,
       created_at,
@@ -245,8 +252,31 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const isRefunded = orderStatusIsRefunded(sale.status)
   const isRefunding = orderStatusIsRefundInProgress(sale.status)
   const fulfillmentLocked = orderStatusLocksDuringRefund(sale.status)
-  const platformFee = Number(sale.amount) - Number(sale.seller_earnings)
+  const orderTotal = Number(sale.amount)
+  const shippingAmount = Math.max(0, Number(sale.shipping_amount ?? 0) || 0)
+  const sellerEarningsAmount = Number(sale.seller_earnings)
+  const itemPriceAmount = Math.max(
+    0,
+    Math.round((orderTotal - shippingAmount) * 100) / 100,
+  )
+  const platformFee = (() => {
+    const stored = Number(sale.platform_fee ?? NaN)
+    if (Number.isFinite(stored) && stored >= 0) return stored
+    return Math.max(0, Math.round((itemPriceAmount - sellerEarningsAmount) * 100) / 100)
+  })()
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
+
+  let adminPreparedLabelUrl: string | null = null
+  const latestLabel = await getLatestAdminLabelUrlsForOrder(createServiceRoleClient(), id)
+  if (latestLabel?.label_pdf_url) {
+    adminPreparedLabelUrl = latestLabel.label_pdf_url
+  } else if (latestLabel?.label_storage_path) {
+    const svc = createServiceRoleClient()
+    const { data: signed } = await svc.storage
+      .from("order-shipping-labels")
+      .createSignedUrl(latestLabel.label_storage_path, 60 * 60 * 24 * 7)
+    adminPreparedLabelUrl = signed?.signedUrl ?? null
+  }
 
   const convRow = await getConversationForBuyerSeller(supabase, sale.buyer_id, user.id)
   const conversationId = convRow?.id ?? null
@@ -390,12 +420,32 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                   <span
                     className={`tabular-nums font-medium ${isRefunded ? "line-through text-muted-foreground" : ""}`}
                   >
-                    ${Number(sale.amount).toFixed(2)}
+                    ${orderTotal.toFixed(2)}
                   </span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Item price</span>
+                  <span
+                    className={`tabular-nums ${isRefunded ? "line-through text-muted-foreground" : ""}`}
+                  >
+                    ${itemPriceAmount.toFixed(2)}
+                  </span>
+                </div>
+                {shippingAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Shipping (paid to carrier, not seller)
+                    </span>
+                    <span
+                      className={`tabular-nums text-muted-foreground ${isRefunded ? "line-through" : ""}`}
+                    >
+                      ${shippingAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 {platformFee > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Platform fee</span>
+                    <span className="text-muted-foreground">Platform fee (7% of item)</span>
                     <span
                       className={`tabular-nums text-muted-foreground ${isRefunded ? "line-through" : ""}`}
                     >
@@ -430,9 +480,16 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                   <span
                     className={`text-xl font-bold tabular-nums ${isRefunded ? "line-through text-muted-foreground" : isRefunding ? "text-muted-foreground" : ""}`}
                   >
-                    ${Number(sale.seller_earnings).toFixed(2)}
+                    ${sellerEarningsAmount.toFixed(2)}
                   </span>
                 </div>
+                {shippingAmount > 0 && !isRefunded && !isRefunding && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Shipping is paid by the buyer to cover the carrier label and is handled by
+                    Reswell — it is not part of your earnings, and the platform fee only applies
+                    to the listing price.
+                  </p>
+                )}
                 {isRefunded && (
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     The buyer is refunded the full order total. The earnings line is your net share
@@ -447,7 +504,38 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
           {/* Tracking form for shipping orders */}
           {!fulfillmentLocked && sale.fulfillment_method === "shipping" && (
-            <SellerTrackingForm orderId={sale.id} deliveryStatus={sale.delivery_status} />
+            <>
+              {adminPreparedLabelUrl && sale.delivery_status === "pending" ? (
+                <Card className="border-primary/30 bg-primary/[0.04]">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-primary" />
+                      Reswell prepared label
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Open or print this PDF, attach it to your package, then confirm shipment when you drop it off.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-2">
+                    <Button size="sm" asChild>
+                      <a href={adminPreparedLabelUrl} target="_blank" rel="noreferrer">
+                        Open label PDF
+                      </a>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : null}
+              <SellerTrackingForm
+                orderId={sale.id}
+                deliveryStatus={sale.delivery_status}
+                existingTrackingNumber={sale.tracking_number}
+              />
+              <SellerConfirmShipmentButton
+                orderId={sale.id}
+                deliveryStatus={sale.delivery_status}
+                trackingNumber={sale.tracking_number}
+              />
+            </>
           )}
 
           {/* Shipping label for surfboard orders */}

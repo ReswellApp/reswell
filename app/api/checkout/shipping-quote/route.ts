@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import {
   computePeerCheckoutTotalsUsd,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
@@ -91,11 +92,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Address not found" }, { status: 400, headers: JSON_NO_STORE_HEADERS })
   }
 
+  const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, listingRow.user_id)
+
   const totals = await computePeerCheckoutTotalsUsd({
     listing: listingRow,
     fulfillment: "shipping",
     buyerAddress: addr as ProfileAddressRow,
     diagnosticTag: `checkout-quote:${listingRow.id}`,
+    sellerShipFromName,
   })
 
   if (!totals.ok) {

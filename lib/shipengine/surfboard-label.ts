@@ -268,7 +268,7 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
     return {
       ok: false,
       error:
-        "The carrier is still creating this label. Wait a few seconds and click “Buy label & add tracking” again (or click “Get carrier rates” for a fresh quote if it keeps failing).",
+        "The carrier is still creating this label. Wait a few seconds and click Buy label again (or request a fresh checkout-lane quote if it keeps failing).",
       status: 409,
     }
   }

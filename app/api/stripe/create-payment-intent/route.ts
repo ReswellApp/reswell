@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import {
   computePeerCheckoutTotalsUsd,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
@@ -127,11 +128,17 @@ export async function POST(request: NextRequest) {
     buyerAddress = addr as ProfileAddressRow
   }
 
+  const sellerShipFromName =
+    impliedFulfillment === "shipping"
+      ? await fetchSellerShipFromLabelName(supabase, listingRow.user_id)
+      : "Seller"
+
   const totals = await computePeerCheckoutTotalsUsd({
     listing: listingRow,
     fulfillment: impliedFulfillment,
     buyerAddress,
     diagnosticTag: `payment-intent:${listingRow.id}`,
+    sellerShipFromName,
   })
   if (!totals.ok) {
     return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })

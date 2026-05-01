@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import type Stripe from "stripe"
+import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import {
   computePeerCheckoutTotalsUsd,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
@@ -302,32 +303,47 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     metaAmountCentsRaw.length > 0 &&
     /^\d+$/.test(metaAmountCentsRaw)
 
-  let expectedCents: number
-  if (hasMetaAmountCents) {
-    expectedCents = parseInt(metaAmountCentsRaw!, 10)
-  } else {
-    const totals = await computePeerCheckoutTotalsUsd({
-      listing: listing as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"],
-      fulfillment: impliedFulfillment,
-      buyerAddress,
-      diagnosticTag: `finalize-order:${listing.id}`,
-    })
-    if (!totals.ok) {
-      return { ok: false, error: totals.error, status: 400 }
-    }
-    expectedCents = Math.round(totals.totalUsd * 100)
+  /**
+   * Always recompute totals so we have the authoritative `itemPrice` / `shippingUsd` split — the
+   * PaymentIntent only stores the grand total. Shipping must NOT be included in seller earnings
+   * (Reswell uses it to cover the carrier label), and must NOT have the marketplace fee applied.
+   */
+  const sellerShipFromName =
+    impliedFulfillment === "shipping"
+      ? await fetchSellerShipFromLabelName(serviceSupabase, listing.user_id)
+      : "Seller"
+  const totals = await computePeerCheckoutTotalsUsd({
+    listing: listing as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"],
+    fulfillment: impliedFulfillment,
+    buyerAddress,
+    diagnosticTag: `finalize-order:${listing.id}`,
+    sellerShipFromName,
+  })
+  if (!totals.ok) {
+    return { ok: false, error: totals.error, status: 400 }
   }
+
+  const expectedCents = hasMetaAmountCents
+    ? parseInt(metaAmountCentsRaw!, 10)
+    : Math.round(totals.totalUsd * 100)
 
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
   }
 
   const chargedUsd = pi.amount / 100
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(chargedUsd)
+  const shippingUsd = Math.max(
+    0,
+    Math.round((chargedUsd - totals.itemPrice) * 100) / 100,
+  )
+  const itemPriceUsd = Math.round((chargedUsd - shippingUsd) * 100) / 100
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(itemPriceUsd)
 
   if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
     console.error("[stripe-complete-order] invalid seller_earnings", {
       chargedUsd,
+      itemPriceUsd,
+      shippingUsd,
       platformFee,
       sellerEarnings,
       listingId: listing.id,
@@ -383,6 +399,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       buyer_id: buyerId,
       seller_id: listing.user_id,
       amount: chargedUsd,
+      shipping_amount: shippingUsd,
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
       status: "confirmed",
@@ -427,6 +444,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       insertError?.code === "PGRST204" ||
       msg.includes("delivery_status") ||
       msg.includes("pickup_code") ||
+      msg.includes("shipping_amount") ||
       msg.includes("schema cache")
     if (schemaStale) {
       return {
@@ -523,7 +541,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
 
-  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, chargedUsd)
+  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, itemPriceUsd)
 
   if (buyerId) {
     void postPurchaseThreadNotification(serviceSupabase, {

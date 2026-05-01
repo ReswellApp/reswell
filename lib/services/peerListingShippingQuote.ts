@@ -65,6 +65,7 @@ export async function quoteReswellPeerShippingUsd(input: {
   listing: PeerListingForShippingQuote
   buyerAddress: ProfileAddressRow
   diagnosticTag?: string
+  sellerShipFromName: string
 }): Promise<{ ok: true; shippingUsd: number } | { ok: false; error: string }> {
   const shipTo = buyerProfileAddressToShipTo(input.buyerAddress)
   if (!shipTo.ok) {
@@ -75,6 +76,7 @@ export async function quoteReswellPeerShippingUsd(input: {
     listing: input.listing,
     shipTo: shipTo.address,
     diagnosticTag: input.diagnosticTag ?? "checkout",
+    sellerShipFromName: input.sellerShipFromName,
   })
   if (!result.ok) {
     return result
@@ -90,6 +92,8 @@ export async function computePeerCheckoutTotalsUsd(input: {
   fulfillment: "pickup" | "shipping"
   buyerAddress: ProfileAddressRow | null
   diagnosticTag?: string
+  /** Printed on carrier labels as ship-from contact; required when Reswell shipping quote is used. */
+  sellerShipFromName?: string
 }): Promise<
   | { ok: true; itemPrice: number; shippingUsd: number; totalUsd: number; usedReswellQuote: boolean }
   | { ok: false; error: string }
@@ -121,10 +125,12 @@ export async function computePeerCheckoutTotalsUsd(input: {
   if (!input.buyerAddress) {
     return { ok: false, error: "Shipping address is required" }
   }
+  const sellerLine = input.sellerShipFromName?.trim() || "Seller"
   const q = await quoteReswellPeerShippingUsd({
     listing: input.listing,
     buyerAddress: input.buyerAddress,
     diagnosticTag: input.diagnosticTag,
+    sellerShipFromName: sellerLine,
   })
   if (!q.ok) {
     return q

@@ -26,6 +26,8 @@ import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-
 import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
+import { OpenMarketplacePdfButton } from '@/components/features/messages/open-marketplace-pdf-button'
+import { parseMarketplaceMessagePdfAttachment } from '@/lib/validations/marketplace-message-attachment'
 
 interface Message {
   id: string
@@ -461,6 +463,51 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           createdAt={message.created_at}
                           viewerIsSeller={isSeller}
                         />
+                      </div>
+                    )
+                  }
+
+                  const pdfAtt = parseMarketplaceMessagePdfAttachment(message.metadata)
+                  if (pdfAtt) {
+                    const redundantCaption =
+                      message.content.trim() === `Attachment: ${pdfAtt.file_name}`
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <div
+                          className={cn(
+                            'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]',
+                            isOwn
+                              ? 'rounded-br-[6px] bg-foreground text-background shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+                              : 'rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm',
+                          )}
+                        >
+                          <OpenMarketplacePdfButton
+                            messageId={message.id}
+                            fileName={pdfAtt.file_name}
+                            variant="secondary"
+                            className={cn(
+                              'w-full justify-start',
+                              isOwn &&
+                                'border-background/35 bg-background/15 text-background hover:bg-background/25',
+                            )}
+                          />
+                          {!redundantCaption && message.content?.trim() ? (
+                            <p className="mt-2 whitespace-pre-wrap break-words text-[17px] leading-[1.35] tracking-[-0.01em]">
+                              {message.content}
+                            </p>
+                          ) : null}
+                          <p
+                            className={cn(
+                              'mt-1 text-[11px] tabular-nums leading-none',
+                              isOwn ? 'text-background/55' : 'text-muted-foreground',
+                            )}
+                          >
+                            {formatMessageDate(message.created_at)}
+                          </p>
+                        </div>
                       </div>
                     )
                   }

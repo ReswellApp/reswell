@@ -7,13 +7,16 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 import { reconcileWalletAggregates, spendableReswellBucks } from "./wallet-reconcile"
 
-export async function getSellerBalance(supabase: SupabaseClient, userId: string) {
-  const { data: wallet } = await supabase
-    .from("wallets")
-    .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
-    .eq("user_id", userId)
-    .single()
+export type WalletBalanceDbRow = {
+  id: string
+  balance: string | number | null
+  pending_balance: string | number | null
+  lifetime_earned: string | number | null
+  lifetime_spent: string | number | null
+  lifetime_cashed_out: string | number | null
+}
 
+export function summarizeWalletBalanceRow(wallet: WalletBalanceDbRow | null) {
   if (!wallet) {
     return {
       balance: 0,
@@ -26,7 +29,7 @@ export async function getSellerBalance(supabase: SupabaseClient, userId: string)
       spendableBucks: 0,
       /** Amount owed the platform in-wallet (refunds after cash-out, etc.); 0 if none. */
       inWalletOwed: 0,
-      walletId: null,
+      walletId: null as string | null,
     }
   }
 
@@ -44,4 +47,14 @@ export async function getSellerBalance(supabase: SupabaseClient, userId: string)
     inWalletOwed: Math.round(owed * 100) / 100,
     walletId: wallet.id,
   }
+}
+
+export async function getSellerBalance(supabase: SupabaseClient, userId: string) {
+  const { data: wallet } = await supabase
+    .from("wallets")
+    .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  return summarizeWalletBalanceRow(wallet ?? null)
 }

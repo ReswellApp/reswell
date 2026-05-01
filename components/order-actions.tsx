@@ -32,9 +32,11 @@ type PayoutInfo = { status: string; hold_reason?: string | null }
 export function SellerTrackingForm({
   orderId,
   deliveryStatus,
+  existingTrackingNumber,
 }: {
   orderId: string
   deliveryStatus: string
+  existingTrackingNumber?: string | null
 }) {
   const router = useRouter()
   const [trackingNumber, setTrackingNumber] = useState("")
@@ -42,6 +44,7 @@ export function SellerTrackingForm({
   const [busy, setBusy] = useState(false)
 
   if (deliveryStatus !== "pending") return null
+  if (existingTrackingNumber?.trim()) return null
 
   const submit = async () => {
     if (!trackingNumber.trim()) {
@@ -81,7 +84,8 @@ export function SellerTrackingForm({
           Add tracking
         </CardTitle>
         <CardDescription className="text-xs">
-          Ship the item and add the tracking number. Your payout is held until delivery is confirmed.
+          Add tracking after you ship. Payout stays on hold until the buyer confirms delivery on Reswell and a Reswell
+          admin approves your payout.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 pt-2">
@@ -98,6 +102,63 @@ export function SellerTrackingForm({
         <Button onClick={submit} disabled={busy} className="w-full gap-2">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
           Submit tracking
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** After Reswell or you added tracking while the order is still “pending”, confirm you handed the package to the carrier. */
+export function SellerConfirmShipmentButton({
+  orderId,
+  deliveryStatus,
+  trackingNumber,
+}: {
+  orderId: string
+  deliveryStatus: string
+  trackingNumber: string | null
+}) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+
+  if (deliveryStatus !== "pending" || !trackingNumber?.trim()) return null
+
+  const submit = async () => {
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/confirm-shipment`, {
+        method: "POST",
+      })
+      const data = (await res.json()) as { error?: string }
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update order")
+        return
+      }
+      toast.success("Marked as shipped — buyer can track delivery.")
+      router.refresh()
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="border-emerald-500/25 bg-emerald-500/[0.03]">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Truck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          Ready to ship?
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Tracking is on this sale. When you’ve handed the package to the carrier, confirm so the buyer sees it as
+          shipped and delivery protection can start.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button onClick={submit} disabled={busy} className="w-full gap-2">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          I’ve shipped this order
         </Button>
       </CardContent>
     </Card>
@@ -224,7 +285,8 @@ export function BuyerConfirmDelivery({
           Confirm delivery
         </CardTitle>
         <CardDescription>
-          Received your item? Confirming delivery releases the seller&apos;s payout.
+          Received your item? Confirm so we know it was delivered. A Reswell admin still must approve payout to the
+          seller after review — confirming here does not release funds by itself.
         </CardDescription>
       </CardHeader>
       <CardContent>

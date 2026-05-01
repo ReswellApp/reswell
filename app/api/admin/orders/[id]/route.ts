@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
-import { getOrderDetailForAdmin } from "@/lib/db/adminOrders"
+import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
 
 const orderIdSchema = z.string().uuid()
 
@@ -30,6 +30,16 @@ export async function GET(
   const { data, error } = await getOrderDetailForAdmin(serviceSupabase, parsed.data)
 
   if (error) {
+    if (isPostgrestSchemaStaleError(error)) {
+      console.error("[admin orders GET] schema/cache mismatch", error.code, error.message)
+      return NextResponse.json(
+        {
+          error:
+            "Database API schema is out of date (often after a migration). Confirm `orders.shipping_amount` exists, apply pending migrations, then in Supabase: Project Settings → API → Reload schema.",
+        },
+        { status: 503 },
+      )
+    }
     console.error("[admin orders GET]", error)
     return NextResponse.json({ error: "Could not load order" }, { status: 500 })
   }
@@ -39,6 +49,9 @@ export async function GET(
 
   return NextResponse.json({
     data,
-    capabilities: { canRefund: gate.ctx.isAdmin },
+    capabilities: {
+      canRefund: gate.ctx.isAdmin,
+      canReleaseShippingSellerEarnings: gate.ctx.isAdmin,
+    },
   })
 }

@@ -29,12 +29,20 @@ export function formatShipEngineApiError(data: unknown): string {
       else if (msg) parts.push(msg)
       else if (code) parts.push(code)
     }
-    if (parts.length) return parts.join(" ")
+    if (parts.length) return appendShipEngineFundsHint(parts.join(" "))
   }
 
   if (typeof r.message === "string" && r.message.trim()) {
-    return r.message.trim()
+    return appendShipEngineFundsHint(r.message.trim())
   }
 
   return ""
+}
+
+/** Carrier billing / account balance issues — surface a clear next step for admins. */
+function appendShipEngineFundsHint(message: string): string {
+  if (/insufficient funds|insufficient balance/i.test(message)) {
+    return `${message} Add funds to your ShipEngine or carrier account, or use ShipEngine sandbox API keys for testing.`
+  }
+  return message
 }

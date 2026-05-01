@@ -36,6 +36,7 @@ type OrderSuccessOrderRow = {
   id: string
   order_num: string | null
   amount: number | string
+  shipping_amount: number | string | null
   created_at: string
   fulfillment_method: string | null
   pickup_code: string | null
@@ -81,7 +82,19 @@ function mapOrderRowToCheckoutPayload(
 
   let itemPrice = total
   let shippingCost = 0
-  if (listing) {
+  /**
+   * Prefer the shipping the buyer actually paid (stored on the order) over reverse-engineering it
+   * from the listing — Reswell-quoted shipping is calculated at checkout and the listing's
+   * `shipping_price` may be 0 / stale.
+   */
+  const storedShipping = Math.max(
+    0,
+    Math.round((Number(order.shipping_amount ?? 0) || 0) * 100) / 100,
+  )
+  if (storedShipping > 0 && storedShipping <= total) {
+    shippingCost = storedShipping
+    itemPrice = Math.round((total - shippingCost) * 100) / 100
+  } else if (listing) {
     const resolved = resolvePayableAmount(
       {
         price: listing.price,
@@ -165,6 +178,7 @@ export async function fetchBuyerOrderSuccessPayload(
       id,
       order_num,
       amount,
+      shipping_amount,
       created_at,
       fulfillment_method,
       pickup_code,

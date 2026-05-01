@@ -40,7 +40,7 @@ function buildDetail(payload: ShipEngineTrackWebhookPayload): OrderTrackingDetai
 
 /**
  * Persists latest carrier tracking snapshot on matching orders (by tracking number).
- * Does not change delivery_status — buyer confirm-delivery remains authoritative for payouts.
+ * Does not settle payouts — admins release seller earnings manually after verifying delivery.
  */
 export async function applyShipEngineTrackWebhook(
   payload: ShipEngineTrackWebhookPayload,

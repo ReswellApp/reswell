@@ -106,7 +106,9 @@ export function payoutStatusLabel(status: string, holdReason?: string | null): s
       case "awaiting_shipment":
         return "Held — add tracking"
       case "awaiting_delivery":
-        return "Held — awaiting delivery"
+        return "Held until delivered to buyer"
+      case "awaiting_manual_release":
+        return "Held — pending admin payout approval"
       case "awaiting_pickup":
         return "Held — awaiting pickup"
       default:

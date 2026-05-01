@@ -19,6 +19,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { ExternalLink, Loader2, RefreshCw, Ship, Truck } from 'lucide-react'
 import { toast } from 'sonner'
+import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
+import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
 import { ShippingRateCalculator } from './rate-calculator'
 
 type ApiSlice = { ok: boolean; status: number; data: unknown }
@@ -45,22 +47,6 @@ const ADDRESS_VALIDATE_PLACEHOLDER = `[
     "country_code": "US"
   }
 ]`
-
-const CREATE_LABEL_PLACEHOLDER = `{
-  "shipment": {
-    "carrier_id": "YOUR_CARRIER_ACCOUNT_ID",
-    "service_code": "usps_priority_mail",
-    "ship_to": { },
-    "ship_from": { },
-    "packages": [ { "weight": { "value": 16, "unit": "ounce" } } ]
-  }
-}`
-
-const PURCHASE_RATE_PLACEHOLDER = `{
-  "rate_id": "se-xxxxxxxx",
-  "label_format": "pdf",
-  "label_download_type": "url"
-}`
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v != null && typeof v === 'object' && !Array.isArray(v)
@@ -123,16 +109,10 @@ export function AdminShippingClient() {
   const initialLoadDoneRef = useRef(false)
 
   const [addrJson, setAddrJson] = useState(ADDRESS_VALIDATE_PLACEHOLDER)
-  const [labelJson, setLabelJson] = useState(CREATE_LABEL_PLACEHOLDER)
-  const [purchaseJson, setPurchaseJson] = useState(PURCHASE_RATE_PLACEHOLDER)
 
   const [addrResult, setAddrResult] = useState<unknown>(null)
-  const [labelResult, setLabelResult] = useState<unknown>(null)
-  const [purchaseResult, setPurchaseResult] = useState<unknown>(null)
 
   const [addrBusy, setAddrBusy] = useState(false)
-  const [labelBusy, setLabelBusy] = useState(false)
-  const [purchaseBusy, setPurchaseBusy] = useState(false)
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
     const firstEver = !initialLoadDoneRef.current
@@ -165,7 +145,7 @@ export function AdminShippingClient() {
   }, [load])
 
   async function postAction(
-    action: 'validate_address' | 'create_label' | 'purchase_rate',
+    action: 'validate_address',
     rawJson: string,
     setBusy: (b: boolean) => void,
     setResult: (v: unknown) => void,
@@ -332,13 +312,13 @@ export function AdminShippingClient() {
               value="create"
               className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
             >
-              Label
+              Order label
             </TabsTrigger>
             <TabsTrigger
-              value="purchase"
+              value="labels-created"
               className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
             >
-              Purchase
+              Labels created
             </TabsTrigger>
           </TabsList>
 
@@ -520,65 +500,25 @@ export function AdminShippingClient() {
             <ShippingRateCalculator carriers={carriersList(overview.carriers.data)} />
           </TabsContent>
 
-          <TabsContent value="create" className="page-enter mt-8 space-y-5">
-            <div className="rounded-3xl border border-border/50 bg-muted/10 p-5 shadow-sm sm:p-6">
-              <p className="text-[15px] leading-relaxed text-muted-foreground">
-                Purchase a label with a full request body.{' '}
-                <Link
-                  href="https://www.shipengine.com/docs/labels/create-a-label/"
-                  className="font-medium text-foreground/80 underline decoration-border underline-offset-4 hover:text-foreground"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Create a label
-                </Link>
-              </p>
-              <Separator className="my-5 bg-border/60" />
-              <Textarea
-                value={labelJson}
-                onChange={(e) => setLabelJson(e.target.value)}
-                className="min-h-[300px] rounded-2xl border-border/60 bg-background/80 font-mono text-[12px] leading-relaxed shadow-inner"
-              />
-              <div className="mt-4">
-                <Button
-                  disabled={labelBusy}
-                  className="h-11 rounded-full px-6 font-medium shadow-sm"
-                  onClick={() => void postAction('create_label', labelJson, setLabelBusy, setLabelResult)}
-                >
-                  {labelBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  <span className={labelBusy ? 'ml-2' : ''}>Create label</span>
-                </Button>
-              </div>
-            </div>
-            {labelResult != null ? <JsonPreview value={labelResult} /> : null}
+          <TabsContent value="create" className="page-enter mt-8 space-y-6">
+            <p className="text-[15px] leading-relaxed text-muted-foreground px-0.5">
+              Uses the listing’s packed dimensions and seller locality from checkout, the buyer’s ship-to on the
+              order, and the same cheapest-carrier selection as peer checkout. Paste an admin order URL or search.
+              Buying a label does not mark the order shipped — the seller still ships the package.{' '}
+              <Link
+                href="https://www.shipengine.com/docs/labels/"
+                className="font-medium text-foreground/80 underline decoration-border underline-offset-4 hover:text-foreground"
+                target="_blank"
+                rel="noreferrer"
+              >
+                ShipEngine labels
+              </Link>
+            </p>
+            <AdminOrderLabelPurchase />
           </TabsContent>
 
-          <TabsContent value="purchase" className="page-enter mt-8 space-y-5">
-            <div className="rounded-3xl border border-border/50 bg-muted/10 p-5 shadow-sm sm:p-6">
-              <p className="text-[15px] leading-relaxed text-muted-foreground">
-                Buy a label using a <code className="rounded-md bg-muted/80 px-1.5 py-0.5 text-[12px] font-mono">rate_id</code>{' '}
-                from Rates. Optional label options go in the JSON body.
-              </p>
-              <Separator className="my-5 bg-border/60" />
-              <Textarea
-                value={purchaseJson}
-                onChange={(e) => setPurchaseJson(e.target.value)}
-                className="min-h-[180px] rounded-2xl border-border/60 bg-background/80 font-mono text-[12px] leading-relaxed shadow-inner"
-              />
-              <div className="mt-4">
-                <Button
-                  disabled={purchaseBusy}
-                  className="h-11 rounded-full px-6 font-medium shadow-sm"
-                  onClick={() =>
-                    void postAction('purchase_rate', purchaseJson, setPurchaseBusy, setPurchaseResult)
-                  }
-                >
-                  {purchaseBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  <span className={purchaseBusy ? 'ml-2' : ''}>Purchase label</span>
-                </Button>
-              </div>
-            </div>
-            {purchaseResult != null ? <JsonPreview value={purchaseResult} /> : null}
+          <TabsContent value="labels-created" className="page-enter mt-8">
+            <AdminLabelsCreatedTab />
           </TabsContent>
         </Tabs>
       ) : null}

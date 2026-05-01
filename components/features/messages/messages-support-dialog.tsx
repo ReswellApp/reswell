@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from "react"
 import Link from "next/link"
-import { LifeBuoy, Loader2, ArrowLeft, ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { LifeBuoy, Loader2, ArrowLeft, ChevronRight, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
 import { submitMessagesSupportTicketAction } from "@/lib/actions/messagesSupportTicket"
+import { openMessagesDirectSupportConversationAction } from "@/lib/actions/openMessagesDirectSupportConversation"
 import {
   messagesSupportTopicLabels,
   type MessagesSupportTopic,
@@ -73,6 +75,7 @@ export function MessagesSupportDialog({
   size = "default",
   triggerLabel = "Need help?",
 }: MessagesSupportDialogProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [stack, setStack] = useState<JourneyStackFrame[]>([{ kind: "topics" }])
   const [pathTitles, setPathTitles] = useState<string[]>([])
@@ -81,6 +84,7 @@ export function MessagesSupportDialog({
   const [topic, setTopic] = useState<MessagesSupportTopic>("general")
   const [details, setDetails] = useState("")
   const [pending, startTransition] = useTransition()
+  const [directPending, startDirectTransition] = useTransition()
 
   function resetJourney() {
     setStack([{ kind: "topics" }])
@@ -169,6 +173,24 @@ export function MessagesSupportDialog({
       if ("success" in res && res.success) {
         toast.success("Thanks — we received your message and will get back to you soon.")
         handleOpenChange(false)
+      }
+    })
+  }
+
+  function openDirectSupportChat() {
+    startDirectTransition(async () => {
+      const res = await openMessagesDirectSupportConversationAction()
+      if ("error" in res && res.error) {
+        if (res.error === "Unauthorized") {
+          toast.error("Sign in to message someone on our team.")
+          return
+        }
+        toast.error(res.error)
+        return
+      }
+      if ("success" in res && res.success) {
+        handleOpenChange(false)
+        router.push(`/messages/${res.conversation_id}`)
       }
     })
   }
@@ -394,9 +416,29 @@ export function MessagesSupportDialog({
                 Close
               </Button>
             ) : (
-              <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
-                Cancel
-              </Button>
+              <>
+                <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)} disabled={directPending}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="gap-2 rounded-full"
+                  onClick={openDirectSupportChat}
+                  disabled={directPending}
+                >
+                  {directPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                      Opening…
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
+                      Ask someone now
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </DialogFooter>
         </DialogContent>

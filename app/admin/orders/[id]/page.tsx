@@ -3,22 +3,23 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Loader2, Package, LifeBuoy } from "lucide-react"
+import { ArrowLeft, Loader2, Package, LifeBuoy, CircleDollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
-import { orderStatusBadgeVariant, orderStatusLabel } from "@/lib/order-status"
+import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import { createClient } from "@/lib/supabase/client"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { toast } from "sonner"
 
 type OrderApiResponse =
   | {
       data: AdminOrderDetail
-      capabilities: { canRefund: boolean }
+      capabilities: { canRefund: boolean; canReleaseShippingSellerEarnings: boolean }
     }
   | { error: string }
 
@@ -56,7 +57,7 @@ export default function AdminOrderDetailPage() {
   const [payload, setPayload] = useState<OrderApiResponse | null>(null)
   const [refetchKey, setRefetchKey] = useState(0)
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([])
-
+  const [releaseBusy, setReleaseBusy] = useState(false)
   const bumpRefetch = useCallback(() => {
     setRefetchKey((k) => k + 1)
   }, [])
@@ -69,8 +70,15 @@ export default function AdminOrderDetailPage() {
       const body = (await res.json()) as OrderApiResponse & { error?: string }
       if (!res.ok && "error" in body) {
         setPayload({ error: body.error ?? "Could not load order" })
-      } else if ("data" in body && body.data) {
-        setPayload(body)
+      } else if ("data" in body && body.data && "capabilities" in body && body.capabilities) {
+        setPayload({
+          data: body.data,
+          capabilities: {
+            canRefund: body.capabilities.canRefund === true,
+            canReleaseShippingSellerEarnings:
+              body.capabilities.canReleaseShippingSellerEarnings === true,
+          },
+        })
       } else {
         setPayload({ error: "Unexpected response" })
       }
@@ -136,7 +144,31 @@ export default function AdminOrderDetailPage() {
 
   const o = payload.data
   const canRefund = payload.capabilities.canRefund
+  const canReleaseShippingSellerEarnings =
+    payload.capabilities.canReleaseShippingSellerEarnings
   const displayNum = formatOrderNumForCustomer(o.order_num, o.id)
+
+  async function releaseShippingSellerEarnings() {
+    if (!id) return
+    setReleaseBusy(true)
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${encodeURIComponent(id)}/release-shipping-seller-earnings`,
+        { method: "POST" },
+      )
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(typeof body.error === "string" ? body.error : "Could not release earnings")
+        return
+      }
+      toast.success("Payout approved — seller earnings are now available per your rules.")
+      bumpRefetch()
+    } catch {
+      toast.error("Could not release earnings")
+    } finally {
+      setReleaseBusy(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -179,7 +211,17 @@ export default function AdminOrderDetailPage() {
               <p className="font-medium">{paymentLabel(o.payment_method)}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Platform fee</p>
+              <p className="text-muted-foreground">Item price</p>
+              <p className="font-medium tabular-nums">${o.item_price.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">
+                Shipping{o.shipping_amount > 0 ? " (paid to carrier)" : ""}
+              </p>
+              <p className="font-medium tabular-nums">${o.shipping_amount.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Platform fee (7% of item)</p>
               <p className="font-medium tabular-nums">-${o.platform_fee.toFixed(2)}</p>
             </div>
             <div>
@@ -199,6 +241,13 @@ export default function AdminOrderDetailPage() {
               </div>
             )}
           </div>
+          {o.shipping_amount > 0 && (
+            <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/30 px-3 py-2 leading-relaxed">
+              Shipping is collected from the buyer separately from the listing price. It is not
+              part of the seller's earnings and the marketplace fee does not apply to it — Reswell
+              uses it to cover the carrier label.
+            </p>
+          )}
 
           <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
             <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Buyer</p>
@@ -211,11 +260,89 @@ export default function AdminOrderDetailPage() {
             {o.seller_email && <p className="text-muted-foreground text-xs">{o.seller_email}</p>}
           </div>
 
+          {o.fulfillment_method === "shipping" && o.status === "confirmed" && (
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                Shipping & seller payout
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Delivery status</p>
+                  <p className="font-medium">
+                    {o.delivery_status ? deliveryStatusLabel(o.delivery_status) : "—"}
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-muted-foreground">Tracking</p>
+                  <p className="font-mono text-xs break-all">{o.tracking_number ?? "—"}</p>
+                </div>
+                {o.payout && (
+                  <div className="sm:col-span-2 space-y-3">
+                    <div>
+                      <p className="text-muted-foreground">Payout ledger</p>
+                      <p className="font-medium">
+                        {payoutStatusLabel(o.payout.status, o.payout.hold_reason)}
+                      </p>
+                    </div>
+                    {o.payout.status === "pending" && o.payout.released_at && (
+                      <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                        <span className="font-medium text-foreground">Admin payout was approved </span>
+                        ({format(new Date(o.payout.released_at), "MMM d, yyyy HH:mm")}). The ledger is cleared for
+                        cash-out; net earnings should be in the seller&apos;s Reswell wallet as{" "}
+                        <span className="font-medium text-foreground">available balance</span> (unless the payment
+                        pipeline failed — check wallet activity for this order).
+                      </p>
+                    )}
+                    {o.payout.status === "pending" && !o.payout.released_at && (
+                      <p className="text-xs text-amber-950 dark:text-amber-100 leading-relaxed rounded-md border border-amber-500/30 bg-amber-500/[0.08] px-3 py-2">
+                        Payout row looks inconsistent (pending without a release timestamp). Apply the latest
+                        database migrations or ask engineering to repair this order&apos;s{" "}
+                        <span className="font-mono">payouts</span> row — funds should stay on hold until an admin
+                        approves.
+                      </p>
+                    )}
+                    {o.payout.status === "held" && canReleaseShippingSellerEarnings && (
+                      <div className="rounded-md border border-primary/25 bg-primary/[0.04] px-3 py-3 space-y-2">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          <span className="font-medium text-foreground">Release funds to the seller: </span>
+                          after you verify delivery, use the button below. This credits the seller&apos;s Reswell wallet
+                          (moves net earnings from <span className="font-medium text-foreground">hold</span> to{" "}
+                          <span className="font-medium text-foreground">available</span>).{" "}
+                          Buyer confirmation alone does not do this.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          className="gap-2 w-fit"
+                          disabled={releaseBusy}
+                          onClick={() => void releaseShippingSellerEarnings()}
+                        >
+                          {releaseBusy ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <CircleDollarSign className="h-4 w-4" />
+                          )}
+                          Approve payout to seller
+                        </Button>
+                      </div>
+                    )}
+                    {o.payout.status === "held" && !canReleaseShippingSellerEarnings && (
+                      <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/60 pt-3">
+                        Only a full admin can use &quot;Approve payout to seller&quot; after delivery is verified.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Admin actions */}
           {(o.status === "confirmed" || o.status === "refunding") && canRefund && (
             <div className="flex flex-col gap-3 border-t border-border/60 pt-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Admin actions</p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap items-start gap-3">
                 <AdminIssueRefundButton
                   orderId={o.id}
                   orderStatus={o.status}
@@ -227,7 +354,9 @@ export default function AdminOrderDetailPage() {
             </div>
           )}
 
-          {(o.status === "confirmed" || o.status === "refunding") && !canRefund && (
+          {(o.status === "confirmed" || o.status === "refunding") &&
+            !canRefund &&
+            !(o.fulfillment_method === "shipping" && canReleaseShippingSellerEarnings && o.payout?.status === "held") && (
             <div className="border-t border-border/60 pt-4">
               <p className="text-muted-foreground text-sm">
                 Only a full admin can issue refunds. Employees can review this order and escalate.

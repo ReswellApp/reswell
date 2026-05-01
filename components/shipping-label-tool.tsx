@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -23,8 +24,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Loader2, Printer, Truck } from "lucide-react"
+import { ChevronDown, Loader2, Printer, Truck } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
 
@@ -35,6 +37,17 @@ type RateRow = {
   amount: number
   currency: string
 }
+
+type AutoLabelParcelOk = {
+  ok: true
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+  weightLb: number
+  source: string
+}
+
+type AutoLabelParcelErr = { ok: false; error: string }
 
 type OverviewResponse = {
   data: {
@@ -51,10 +64,11 @@ type OverviewResponse = {
       deliveryStatus: string
     }
     sellerAddresses: SellerAddr[]
+    autoLabelParcel: AutoLabelParcelOk | AutoLabelParcelErr
   }
 }
 
-const DEFAULT_PARCEL = {
+const FALLBACK_MANUAL_PARCEL = {
   length_in: "72",
   width_in: "20",
   height_in: "6",
@@ -71,7 +85,8 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
   const [selectedRateId, setSelectedRateId] = useState<string>("")
 
   const [sellerAddressId, setSellerAddressId] = useState<string>("")
-  const [parcel, setParcel] = useState(DEFAULT_PARCEL)
+  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [manualParcel, setManualParcel] = useState(FALLBACK_MANUAL_PARCEL)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -89,6 +104,22 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
       const addrs = body.data.sellerAddresses
       const preferred = addrs.find((a) => a.isDefault)?.id ?? addrs[0]?.id ?? ""
       setSellerAddressId(preferred)
+
+      if (body.data.autoLabelParcel.ok) {
+        const p = body.data.autoLabelParcel
+        setManualParcel({
+          length_in: String(p.lengthIn),
+          width_in: String(p.widthIn),
+          height_in: String(p.heightIn),
+          weight_lb: String(p.weightLb),
+        })
+        setAdjustOpen(false)
+      } else {
+        setManualParcel(FALLBACK_MANUAL_PARCEL)
+        setAdjustOpen(true)
+      }
+      setRates(null)
+      setSelectedRateId("")
     } catch {
       toast.error("Could not load order")
       setOverview(null)
@@ -107,8 +138,8 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     return overview.sellerAddresses.length > 0
   }, [overview])
 
-  const getRates = async () => {
-    if (!sellerAddressId) {
+  const requestRates = async (opts: { useManualParcel?: boolean }) => {
+    if (!sellerAddressId && overview && overview.sellerAddresses.length > 1) {
       toast.error("Choose your ship-from address")
       return
     }
@@ -116,20 +147,24 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     setRates(null)
     setSelectedRateId("")
     try {
+      const payload: Record<string, unknown> = { action: "rates" }
+      if (sellerAddressId) {
+        payload.seller_address_id = sellerAddressId
+      }
+      if (opts.useManualParcel) {
+        payload.parcel = {
+          length_in: Number(manualParcel.length_in),
+          width_in: Number(manualParcel.width_in),
+          height_in: Number(manualParcel.height_in),
+          weight_lb: Number(manualParcel.weight_lb),
+        }
+      }
+
       const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/shipping-label`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "rates",
-          seller_address_id: sellerAddressId,
-          parcel: {
-            length_in: Number(parcel.length_in),
-            width_in: Number(parcel.width_in),
-            height_in: Number(parcel.height_in),
-            weight_lb: Number(parcel.weight_lb),
-          },
-        }),
+        body: JSON.stringify(payload),
       })
       const data = (await res.json()) as {
         data?: { rates: RateRow[] }
@@ -149,6 +184,23 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
       setRatesBusy(false)
     }
   }
+
+  useEffect(() => {
+    if (loading || !overview) return
+    if (!canUseTool) return
+    if (!overview.autoLabelParcel.ok) return
+    if (!sellerAddressId && overview.sellerAddresses.length > 0) return
+    void requestRates({ useManualParcel: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-fetch only when order/address/eligibility change, not when parcel fields are edited
+  }, [
+    loading,
+    canUseTool,
+    overview?.order.id,
+    overview?.autoLabelParcel.ok,
+    overview?.sellerAddresses.length,
+    sellerAddressId,
+    orderId,
+  ])
 
   const buyLabel = async () => {
     if (!selectedRateId) {
@@ -207,6 +259,10 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     return null
   }
 
+  const autoOk = overview.autoLabelParcel.ok
+  const singleAddr = overview.sellerAddresses.length === 1
+  const preferredAddr = overview.sellerAddresses.find((a) => a.id === sellerAddressId)
+
   return (
     <Card className="border-primary/25">
       <CardHeader>
@@ -261,65 +317,138 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
 
         {canUseTool && (
           <>
-            <div className="space-y-2">
-              <Label htmlFor="ship-from">Ship from (your address)</Label>
-              <Select value={sellerAddressId} onValueChange={setSellerAddressId}>
-                <SelectTrigger id="ship-from">
-                  <SelectValue placeholder="Select address" />
-                </SelectTrigger>
-                <SelectContent>
-                  {overview.sellerAddresses.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.label} — {a.oneLine}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {autoOk ? (
+              <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+                <p className="font-medium text-foreground">Using this order&apos;s listing &amp; buyer address</p>
+                <p className="text-muted-foreground mt-1">
+                  Package (from your listing):{" "}
+                  <span className="text-foreground tabular-nums">
+                    {overview.autoLabelParcel.lengthIn} × {overview.autoLabelParcel.widthIn} ×{" "}
+                    {overview.autoLabelParcel.heightIn} in
+                  </span>{" "}
+                  ·{" "}
+                  <span className="text-foreground tabular-nums">
+                    {overview.autoLabelParcel.weightLb} lb
+                  </span>
+                </p>
+                {singleAddr && preferredAddr ? (
+                  <p className="text-muted-foreground mt-1">
+                    Ship from:{" "}
+                    <span className="text-foreground">
+                      {preferredAddr.label} — {preferredAddr.oneLine}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <Alert variant="destructive" className="border-destructive/40">
+                <AlertTitle>We couldn&apos;t read package details from the listing</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>{overview.autoLabelParcel.error}</p>
+                  <p className="text-sm">
+                    Enter packed dimensions below, or update the listing and refresh this page.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            {!singleAddr && (
               <div className="space-y-2">
-                <Label htmlFor="L">Length (in)</Label>
-                <Input
-                  id="L"
-                  inputMode="decimal"
-                  value={parcel.length_in}
-                  onChange={(e) => setParcel((p) => ({ ...p, length_in: e.target.value }))}
-                />
+                <Label htmlFor="ship-from">Ship from (your address)</Label>
+                <Select
+                  value={sellerAddressId}
+                  onValueChange={(id) => {
+                    setSellerAddressId(id)
+                    setRates(null)
+                    setSelectedRateId("")
+                  }}
+                >
+                  <SelectTrigger id="ship-from">
+                    <SelectValue placeholder="Select address" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {overview.sellerAddresses.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.label} — {a.oneLine}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="W">Width (in)</Label>
-                <Input
-                  id="W"
-                  inputMode="decimal"
-                  value={parcel.width_in}
-                  onChange={(e) => setParcel((p) => ({ ...p, width_in: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="H">Height (in)</Label>
-                <Input
-                  id="H"
-                  inputMode="decimal"
-                  value={parcel.height_in}
-                  onChange={(e) => setParcel((p) => ({ ...p, height_in: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="Wt">Weight (lb)</Label>
-                <Input
-                  id="Wt"
-                  inputMode="decimal"
-                  value={parcel.weight_lb}
-                  onChange={(e) => setParcel((p) => ({ ...p, weight_lb: e.target.value }))}
-                />
-              </div>
-            </div>
+            )}
 
-            <Button type="button" variant="secondary" onClick={() => void getRates()} disabled={ratesBusy}>
-              {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Get carrier rates
-            </Button>
+            <Collapsible open={adjustOpen} onOpenChange={setAdjustOpen}>
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="gap-1 px-0 text-muted-foreground">
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", adjustOpen && "rotate-180")} />
+                  Different box or weight? Adjust and recalculate
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 pt-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="L">Length (in)</Label>
+                    <Input
+                      id="L"
+                      inputMode="decimal"
+                      value={manualParcel.length_in}
+                      onChange={(e) => setManualParcel((p) => ({ ...p, length_in: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="W">Width (in)</Label>
+                    <Input
+                      id="W"
+                      inputMode="decimal"
+                      value={manualParcel.width_in}
+                      onChange={(e) => setManualParcel((p) => ({ ...p, width_in: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="H">Height (in)</Label>
+                    <Input
+                      id="H"
+                      inputMode="decimal"
+                      value={manualParcel.height_in}
+                      onChange={(e) => setManualParcel((p) => ({ ...p, height_in: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="Wt">Weight (lb)</Label>
+                    <Input
+                      id="Wt"
+                      inputMode="decimal"
+                      value={manualParcel.weight_lb}
+                      onChange={(e) => setManualParcel((p) => ({ ...p, weight_lb: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={ratesBusy}
+                  onClick={() => void requestRates({ useManualParcel: true })}
+                >
+                  {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Recalculate rates
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {!autoOk && (
+              <Button type="button" variant="secondary" onClick={() => void requestRates({ useManualParcel: true })} disabled={ratesBusy}>
+                {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Get carrier rates
+              </Button>
+            )}
+
+            {ratesBusy && !rates && (
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Fetching rates from carriers…
+              </p>
+            )}
 
             {rates && rates.length > 0 && (
               <div className="space-y-3">

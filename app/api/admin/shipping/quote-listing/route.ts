@@ -6,6 +6,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
+import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import {
   getCheapestReswellRateForListing,
   type ReswellRateableListing,
@@ -122,6 +123,7 @@ export async function POST(request: Request) {
   const listingRow = listing as unknown as PeerListingForShippingQuote &
     ReswellRateableListing & {
       id: string
+      user_id: string
       slug?: string | null
       title?: string | null
       shipping_packed_length_in?: number | string | null
@@ -130,10 +132,13 @@ export async function POST(request: Request) {
       shipping_packed_weight_oz?: number | string | null
     }
 
+  const sellerShipFromName = await fetchSellerShipFromLabelName(serviceSupabase, listingRow.user_id)
+
   const result = await getCheapestReswellRateForListing({
     listing: listingRow,
     shipTo,
     diagnosticTag: `admin:${listingRow.id}`,
+    sellerShipFromName,
   })
 
   if (!result.ok) {

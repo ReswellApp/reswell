@@ -55,7 +55,13 @@ export async function POST(request: NextRequest) {
   }
 
   const price = resolved.total
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(price)
+  /**
+   * Shipping is paid by the buyer separately from the listing price; it is NOT seller revenue
+   * and the marketplace fee does NOT apply to it. Compute fee + earnings on the item price only.
+   */
+  const itemPriceUsd = resolved.itemPrice
+  const shippingUsd = resolved.shipping
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(itemPriceUsd)
 
   const { data: buyerWallet } = await supabase
     .from("wallets")
@@ -107,6 +113,7 @@ export async function POST(request: NextRequest) {
       buyer_id: user.id,
       seller_id: listing.user_id,
       amount: price,
+      shipping_amount: shippingUsd,
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
       status: "confirmed",
@@ -206,7 +213,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
   }
 
-  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, price)
+  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, itemPriceUsd)
 
   void postPurchaseThreadNotification(supabase, {
     buyerId: user.id,

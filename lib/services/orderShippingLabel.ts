@@ -4,13 +4,63 @@ import {
   type ShipEngineRateOption,
 } from "@/lib/shipengine/surfboard-label"
 import {
+  resolvePackedParcelFromListing,
+  type ListingPackedParcelSource,
+  type ResolvedPackedParcelSource,
+} from "@/lib/reswell-packed-parcel-from-listing"
+import {
   orderShippingJsonToRateQuoteAddress,
   profileRowToRateQuoteAddress,
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { shippingLabelParcelSchema } from "@/lib/validations/order-shipping-label"
 
 export type { ShipEngineRateOption }
+
+export type ResolvedOrderLabelParcel = {
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+  weightLb: number
+  source: ResolvedPackedParcelSource
+}
+
+/**
+ * Parcel for ShipEngine labels from the sold listing (same resolution as checkout quotes).
+ */
+export function resolveOrderLabelParcelFromListing(
+  listing: ListingPackedParcelSource,
+): { ok: true; parcel: ResolvedOrderLabelParcel } | { ok: false; error: string } {
+  const r = resolvePackedParcelFromListing(listing)
+  if (!r.ok) {
+    return { ok: false, error: r.error }
+  }
+  const weightLb = Math.max(1, r.weightOz / 16)
+  const checked = shippingLabelParcelSchema.safeParse({
+    length_in: r.lengthIn,
+    width_in: r.widthIn,
+    height_in: r.heightIn,
+    weight_lb: weightLb,
+  })
+  if (!checked.success) {
+    return {
+      ok: false,
+      error:
+        "Package details from this listing don’t meet carrier limits. Update shipping dimensions on the listing, or adjust the package below.",
+    }
+  }
+  return {
+    ok: true,
+    parcel: {
+      lengthIn: r.lengthIn,
+      widthIn: r.widthIn,
+      heightIn: r.heightIn,
+      weightLb,
+      source: r.source,
+    },
+  }
+}
 
 export async function fetchRatesForSurfboardOrder(params: {
   shipFrom: RateQuoteAddressFields

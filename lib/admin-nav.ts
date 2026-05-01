@@ -12,6 +12,7 @@ export type AdminNavIconKey =
   | 'folderTree'
   | 'tag'
   | 'users'
+  | 'wallet'
   | 'shoppingBag'
   | 'lifeBuoy'
   | 'messageSquare'
@@ -33,6 +34,7 @@ export interface AdminNavGroupConfig {
 /** Hrefs hidden for is_employee-only users (not full admin). */
 const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/users',
+  '/admin/wallets',
   '/admin/settings',
   '/admin/shipping',
   '/admin/listings/brand-requests',
@@ -47,6 +49,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin', label: 'Overview', icon: 'layoutDashboard' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
+      { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
       { href: '/admin/settings', label: 'Settings', icon: 'settings' },
     ],
   },
@@ -66,6 +69,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Customer service',
     items: [
       { href: '/admin/contact-messages', label: 'Support inbox', icon: 'messageSquare' },
+      { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
       { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: 'tag' },
     ],
   },

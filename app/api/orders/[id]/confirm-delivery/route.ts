@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
-import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
 import { NextRequest, NextResponse } from "next/server"
 
+/**
+ * Buyer marks the shipment received. Does not credit the seller wallet — a full admin must
+ * release earnings from the admin order page after verifying delivery.
+ */
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -41,31 +44,23 @@ export async function POST(
 
   const now = new Date().toISOString()
 
-  const { error: updateErr } = await supabase
+  const { error: orderErr } = await supabase
     .from("orders")
     .update({ delivery_status: "delivered", updated_at: now })
     .eq("id", orderId)
 
-  if (updateErr) {
+  if (orderErr) {
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 })
   }
 
   await supabase
     .from("payouts")
     .update({
-      status: "pending",
-      hold_reason: null,
-      released_at: now,
+      hold_reason: "awaiting_manual_release",
       updated_at: now,
     })
     .eq("order_id", orderId)
     .eq("status", "held")
-
-  const release = await releaseOrderSellerEarningsAfterFulfillment(orderId)
-  if (!release.ok) {
-    console.error("[confirm-delivery] release seller earnings:", release.error)
-    return NextResponse.json({ error: release.error }, { status: 500 })
-  }
 
   const { data: listing } = await supabase
     .from("listings")
@@ -79,7 +74,7 @@ export async function POST(
     await supabase.from("messages").insert({
       conversation_id: conv.id,
       sender_id: user.id,
-      content: `I confirmed delivery of "${listing?.title ?? "the item"}". Your payout is now available.`,
+      content: `I confirmed I received "${listing?.title ?? "the item"}". Reswell will review and an admin can approve your payout after verifying delivery.`,
     })
     await supabase
       .from("conversations")

@@ -26,6 +26,8 @@ export type ReswellRateableListing = ListingPackedParcelSource & {
 }
 
 export type ReswellListingRateRow = {
+  /** Present when ShipEngine returned a label-purchasable rate. */
+  rate_id: string | null
   totalAmount: number
   currency: string
   carrierName: string
@@ -95,6 +97,7 @@ async function fetchAllConnectedCarrierIds(): Promise<{ ok: true; ids: string[] 
  */
 async function resolveListingShipFromAddress(
   listing: ReswellRateableListing,
+  sellerShipFromName: string,
 ): Promise<{ ok: true; address: ShippingAddressInput } | { ok: false; error: string }> {
   const parts = await resolveListingShipFromForRating({
     city: listing.city,
@@ -109,10 +112,11 @@ async function resolveListingShipFromAddress(
     }
   }
   const postal = parts.postal_code.length >= 5 ? parts.postal_code.slice(0, 5) : parts.postal_code
+  const nameLine = sellerShipFromName.trim().length > 0 ? sellerShipFromName.trim() : "Seller"
   return {
     ok: true,
     address: {
-      name: "Seller",
+      name: nameLine,
       phone: "",
       company_name: "",
       address_line1: parts.address_line1,
@@ -162,12 +166,14 @@ export function buyerProfileAddressToShipTo(
 
 function rowFromRate(r: Record<string, unknown>): ReswellListingRateRow {
   const { total, currency } = rateMoneyTotal(r)
+  const rateId = typeof r.rate_id === "string" && r.rate_id.trim() ? r.rate_id.trim() : null
   const attrs = Array.isArray(r.rate_attributes)
     ? (r.rate_attributes as string[]).filter((x): x is string => typeof x === "string")
     : []
   const carrierCode = typeof r.carrier_code === "string" && r.carrier_code.trim() ? r.carrier_code.trim() : null
   const serviceCode = typeof r.service_code === "string" && r.service_code.trim() ? r.service_code.trim() : null
   return {
+    rate_id: rateId,
     totalAmount: total,
     currency: currency.toUpperCase(),
     carrierName: String(r.carrier_friendly_name ?? r.carrier_code ?? "Carrier"),
@@ -201,6 +207,11 @@ export async function getCheapestReswellRateForListing(input: {
   carrierIds?: string[]
   /** When set, propagated to `RESWELL_SHIPPING_DEBUG` log for traceability. */
   diagnosticTag?: string
+  /**
+   * Ship-from contact name on carrier labels (printed under “Seller” / shipper on the label).
+   * Use {@link fetchSellerShipFromLabelName} from the seller’s profile when available.
+   */
+  sellerShipFromName: string
 }): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
     return { ok: false, error: "Shipping quotes are temporarily unavailable." }
@@ -211,7 +222,7 @@ export async function getCheapestReswellRateForListing(input: {
     return { ok: false, error: parcel.error }
   }
 
-  const shipFrom = await resolveListingShipFromAddress(input.listing)
+  const shipFrom = await resolveListingShipFromAddress(input.listing, input.sellerShipFromName)
   if (!shipFrom.ok) {
     return { ok: false, error: shipFrom.error }
   }
@@ -281,7 +292,13 @@ export async function getCheapestReswellRateForListing(input: {
   }
 
   decorated.sort((a, b) => a.totalAmount - b.totalAmount)
-  const cheapest = decorated[0]
+  const cheapest = decorated.find((row) => row.rate_id != null) ?? null
+  if (!cheapest?.rate_id) {
+    return {
+      ok: false,
+      error: "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
+    }
+  }
 
   if (isDebugEnabled()) {
     console.info(

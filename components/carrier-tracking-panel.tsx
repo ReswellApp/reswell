@@ -34,7 +34,8 @@ export function CarrierTrackingPanel(props: {
               {marketplaceDeliveryStatus !== "delivered" ? (
                 variant === "seller" ? (
                   <>
-                    The buyer still confirms delivery on Reswell to complete the order and release your payout.
+                    The buyer confirms delivery on Reswell to complete the order. A Reswell admin then approves your
+                    payout — it is not released automatically.
                   </>
                 ) : (
                   <>
@@ -65,8 +66,8 @@ export function CarrierTrackingPanel(props: {
           <p className="text-xs text-muted-foreground rounded-lg border border-border/80 bg-muted/30 px-3 py-2 leading-relaxed">
             {variant === "seller" ? (
               <>
-                The carrier may show delivered. The buyer still confirms on Reswell before the order completes and your
-                payout releases.
+                The carrier may show delivered. The buyer still confirms on Reswell before the order completes; then a
+                Reswell admin approves your payout.
               </>
             ) : (
               <>

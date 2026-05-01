@@ -17,6 +17,7 @@ import {
   Layers,
   FolderTree,
   Waves,
+  Wallet,
   ChevronDown,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -42,6 +43,7 @@ const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   folderTree: FolderTree,
   tag: Tag,
   users: Users,
+  wallet: Wallet,
   shoppingBag: ShoppingBag,
   lifeBuoy: LifeBuoy,
   messageSquare: MessageSquare,

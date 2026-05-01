@@ -172,7 +172,8 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
       {
         key: "confirm",
         title: "Confirm delivery",
-        description: "When your board arrives, confirm delivery to complete the order.",
+        description:
+          "When your board arrives, confirm here so we know it was delivered. Reswell will review and a team member can approve payout to the seller — it is not released automatically.",
         state: delivered ? "done" : shipped ? "current" : "upcoming",
       },
     ]

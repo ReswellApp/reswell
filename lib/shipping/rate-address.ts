@@ -1,6 +1,7 @@
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { SHIPENGINE_PLACEHOLDER_US_PHONE } from "@/lib/shipping/shipengine-rate-helpers"
+import type { ShippingAddressInput } from "@/lib/shipping/shipengine-rate-helpers"
 
 /** Same shape as admin `AddressFields` — ShipEngine rate/label APIs expect this structure. */
 export type RateQuoteAddressFields = {
@@ -63,6 +64,22 @@ export function orderShippingJsonToRateQuoteAddress(ship: unknown): RateQuoteAdd
     postal_code: postal,
     country_code: country.toUpperCase(),
     residential: "yes",
+  }
+}
+
+/** Bridge checkout / order JSON rate fields to ShipEngine listing-quote helpers. */
+export function rateQuoteFieldsToShippingInput(a: RateQuoteAddressFields): ShippingAddressInput {
+  return {
+    name: a.name,
+    phone: a.phone,
+    company_name: a.company_name,
+    address_line1: a.address_line1,
+    address_line2: a.address_line2,
+    city_locality: a.city_locality,
+    state_province: a.state_province,
+    postal_code: a.postal_code,
+    country_code: a.country_code,
+    residential: a.residential,
   }
 }
 

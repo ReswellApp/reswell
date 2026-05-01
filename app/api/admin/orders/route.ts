@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
 import { z } from "zod"
 
 const querySchema = z.object({
@@ -14,7 +15,7 @@ const querySchema = z.object({
  * GET /api/admin/orders
  *
  * Paginated order list for admin / support staff. Supports status filter and text search
- * (order_num or order id prefix).
+ * (order_num or full order id as UUID).
  */
 export async function GET(request: NextRequest) {
   const gate = await requireAdminOrEmployee()
@@ -46,9 +47,9 @@ export async function GET(request: NextRequest) {
 
   if (q?.trim()) {
     const term = q.trim()
-    const isUuid = /^[0-9a-f]{8}-/i.test(term)
-    if (isUuid) {
-      query = query.eq("id", term)
+    const uuidParsed = z.string().uuid().safeParse(term)
+    if (uuidParsed.success) {
+      query = query.eq("id", uuidParsed.data)
     } else {
       query = query.ilike("order_num", `%${term}%`)
     }
@@ -57,6 +58,16 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query
 
   if (error) {
+    if (isPostgrestSchemaStaleError(error)) {
+      console.error("[admin orders list] schema/cache mismatch", error.code, error.message)
+      return NextResponse.json(
+        {
+          error:
+            "Database API schema is out of date (often after a migration). Apply pending migrations, then in Supabase: Project Settings → API → Reload schema.",
+        },
+        { status: 503 },
+      )
+    }
     console.error("[admin orders list]", error)
     return NextResponse.json({ error: "Could not load orders" }, { status: 500 })
   }
