@@ -1,13 +1,20 @@
 import { createClient } from "@/lib/supabase/server"
-import { userParticipatesInConversation } from "@/lib/db/conversations"
+import { userParticipatesInConversation, ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
 import {
   submitMessagesSupportTicketSchema,
   messagesSupportTopicLabels,
 } from "@/lib/validations/messagesSupportTicket"
+import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
+import {
+  formatSupportTicketOpeningMessage,
+  insertMemberMessageInConversation,
+} from "@/lib/services/supportTicketThreadNotifications"
 
 export async function submitMessagesSupportTicketService(
   raw: unknown,
-): Promise<{ success: true; id: string } | { error: string }> {
+): Promise<
+  { success: true; id: string; support_conversation_id: string | null } | { error: string }
+> {
   const parsed = submitMessagesSupportTicketSchema.safeParse(raw)
   if (!parsed.success) {
     const first = parsed.error.flatten().fieldErrors
@@ -51,6 +58,15 @@ export async function submitMessagesSupportTicketService(
 
   const subject = messagesSupportTopicLabels[parsed.data.topic]
 
+  let supportConversationId: string | null = null
+  const resolvedSupport = await resolveSupportRecipientUserId()
+  if (resolvedSupport.ok && resolvedSupport.userId !== user.id) {
+    const conv = await ensureConversationBetweenBuyerAndSeller(supabase, user.id, resolvedSupport.userId)
+    if (conv) {
+      supportConversationId = conv.id
+    }
+  }
+
   const { data: row, error } = await supabase
     .from("contact_messages")
     .insert({
@@ -61,6 +77,7 @@ export async function submitMessagesSupportTicketService(
       source: "messages_support",
       user_id: user.id,
       related_conversation_id: relatedId,
+      support_conversation_id: supportConversationId,
     })
     .select("id")
     .single()
@@ -70,5 +87,23 @@ export async function submitMessagesSupportTicketService(
     return { error: "Could not send your request. Try again in a moment." }
   }
 
-  return { success: true, id: row.id as string }
+  const ticketId = row.id as string
+
+  if (supportConversationId) {
+    const content = formatSupportTicketOpeningMessage({
+      ticketId,
+      topicLabel: subject,
+      body: parsed.data.details.trim(),
+    })
+    const posted = await insertMemberMessageInConversation(supabase, {
+      conversationId: supportConversationId,
+      senderId: user.id,
+      content,
+    })
+    if (!posted) {
+      console.error("submitMessagesSupportTicketService: failed to post opening thread message")
+    }
+  }
+
+  return { success: true, id: ticketId, support_conversation_id: supportConversationId }
 }

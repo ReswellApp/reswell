@@ -171,8 +171,14 @@ export function MessagesSupportDialog({
         return
       }
       if ("success" in res && res.success) {
-        toast.success("Thanks — we received your message and will get back to you soon.")
-        handleOpenChange(false)
+        if (res.support_conversation_id) {
+          toast.success("Ticket sent — opening your support chat.")
+          handleOpenChange(false)
+          router.push(`/messages/${res.support_conversation_id}`)
+        } else {
+          toast.success("Thanks — we received your message and will get back to you soon.")
+          handleOpenChange(false)
+        }
       }
     })
   }
@@ -260,7 +266,7 @@ export function MessagesSupportDialog({
               {onTopicPick
                 ? "Choose a topic to see quick answers tailored to your question. You can still message our team anytime at the end."
                 : phase === "freeform"
-                  ? "Tell us what’s going on and we’ll follow up by email."
+                  ? "Tell us what’s going on. We’ll open a support chat for you and follow up there."
                   : phase === "resolution"
                     ? "Here’s something that helps most people with this."
                     : "Pick the option that best matches what you need."}

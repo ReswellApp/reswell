@@ -37,3 +37,30 @@ export async function userParticipatesInConversation(
   if (error || !data) return false
   return true
 }
+
+/** Creates buyer↔seller thread if missing. Caller must be authenticated as `buyerId` (insert RLS). */
+export async function ensureConversationBetweenBuyerAndSeller(
+  supabase: SupabaseClient,
+  buyerId: string,
+  sellerId: string,
+): Promise<{ id: string } | null> {
+  const existing = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
+  if (existing) {
+    return { id: existing.id }
+  }
+
+  const { data, error } = await supabase
+    .from("conversations")
+    .insert({
+      buyer_id: buyerId,
+      seller_id: sellerId,
+      listing_id: null,
+    })
+    .select("id")
+    .single()
+
+  if (error || !data?.id) {
+    return null
+  }
+  return { id: data.id as string }
+}

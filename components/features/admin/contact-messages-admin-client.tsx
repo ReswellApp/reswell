@@ -4,13 +4,15 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import type {
-  ContactMessageRow,
-  ContactMessageSource,
-  ContactMessageSupportStatus,
+import {
+  CONTACT_MESSAGE_ADMIN_SELECT,
+  normalizeContactMessageRow,
+  type ContactMessageRow,
+  type ContactMessageSource,
+  type ContactMessageSupportStatus,
 } from "@/lib/db/contactMessages"
 import { updateContactMessageAdminAction } from "@/lib/actions/contactMessagesAdmin"
-import { buildContactReplyMailto, buildContactTicketDraft } from "@/lib/utils/contactMessageTicket"
+import { buildContactTicketDraft } from "@/lib/utils/contactMessageTicket"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -49,7 +51,6 @@ import {
   Inbox,
   LifeBuoy,
   Loader2,
-  Mail,
   MessageCircle,
   Search,
 } from "lucide-react"
@@ -62,40 +63,18 @@ const SUPPORT_INBOX_ORDER_TAB = "order-support"
 /** Deep link for the Order support tab (use for Links and redirects). */
 export const ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF = `/admin/contact-messages?${SUPPORT_INBOX_TAB_QUERY}=${SUPPORT_INBOX_ORDER_TAB}`
 
-const SELECT =
-  "id, name, email, subject, message, created_at, support_status, ticket_url, internal_notes, updated_at, source, user_id, related_conversation_id"
+const SELECT = CONTACT_MESSAGE_ADMIN_SELECT
 
 const STATUS_LABEL: Record<ContactMessageSupportStatus, string> = {
   new: "New",
   triaged: "Triaged",
-  ticket_created: "Ticket linked",
+  ticket_created: "In progress",
   resolved: "Resolved",
 }
 
 const CHANNEL_LABEL: Record<ContactMessageSource, string> = {
   contact_form: "Website",
   messages_support: "Messages",
-}
-
-function normalizeRow(raw: Record<string, unknown>): ContactMessageRow {
-  const source =
-    raw.source === "messages_support" ? "messages_support" : "contact_form"
-  return {
-    id: String(raw.id),
-    name: String(raw.name ?? ""),
-    email: String(raw.email ?? ""),
-    subject: raw.subject == null || raw.subject === "" ? null : String(raw.subject),
-    message: String(raw.message ?? ""),
-    created_at: String(raw.created_at ?? ""),
-    support_status: (raw.support_status as ContactMessageSupportStatus) ?? "new",
-    ticket_url: raw.ticket_url == null ? null : String(raw.ticket_url),
-    internal_notes: raw.internal_notes == null ? null : String(raw.internal_notes),
-    updated_at: String(raw.updated_at ?? raw.created_at ?? ""),
-    source,
-    user_id: raw.user_id == null ? null : String(raw.user_id),
-    related_conversation_id:
-      raw.related_conversation_id == null ? null : String(raw.related_conversation_id),
-  }
 }
 
 function statusBadgeVariant(s: ContactMessageSupportStatus): "default" | "secondary" | "outline" {
@@ -147,7 +126,6 @@ export function ContactMessagesAdminClient() {
   const [channelTab, setChannelTab] = useState<"all" | ContactMessageSource>("all")
   const [active, setActive] = useState<ContactMessageRow | null>(null)
   const [draftStatus, setDraftStatus] = useState<ContactMessageSupportStatus>("new")
-  const [draftTicketUrl, setDraftTicketUrl] = useState("")
   const [draftNotes, setDraftNotes] = useState("")
   const [pending, startTransition] = useTransition()
   const supabase = createClient()
@@ -165,7 +143,7 @@ export function ContactMessagesAdminClient() {
       toast.error("Could not load tickets. If this persists, run the latest database migration.")
       setRows([])
     } else {
-      setRows((data ?? []).map((r) => normalizeRow(r as Record<string, unknown>)))
+      setRows((data ?? []).map((r) => normalizeContactMessageRow(r as Record<string, unknown>)))
     }
     setLoading(false)
   }, [supabase])
@@ -177,7 +155,6 @@ export function ContactMessagesAdminClient() {
   useEffect(() => {
     if (!active) return
     setDraftStatus(active.support_status)
-    setDraftTicketUrl(active.ticket_url ?? "")
     setDraftNotes(active.internal_notes ?? "")
   }, [active])
 
@@ -194,7 +171,8 @@ export function ContactMessagesAdminClient() {
         r.message.toLowerCase().includes(q) ||
         subj.includes(q) ||
         (r.user_id?.toLowerCase().includes(q) ?? false) ||
-        (r.related_conversation_id?.toLowerCase().includes(q) ?? false)
+        (r.related_conversation_id?.toLowerCase().includes(q) ?? false) ||
+        (r.support_conversation_id?.toLowerCase().includes(q) ?? false)
       )
     })
   }, [rows, search, statusFilterTab, channelTab])
@@ -230,7 +208,6 @@ export function ContactMessagesAdminClient() {
       const res = await updateContactMessageAdminAction({
         id: active.id,
         support_status: draftStatus,
-        ticket_url: draftTicketUrl,
         internal_notes: draftNotes,
       })
       if ("error" in res && res.error) {
@@ -244,7 +221,6 @@ export function ContactMessagesAdminClient() {
             ? {
                 ...r,
                 support_status: draftStatus,
-                ticket_url: draftTicketUrl.trim() === "" ? null : draftTicketUrl.trim(),
                 internal_notes: draftNotes,
                 updated_at: new Date().toISOString(),
               }
@@ -256,7 +232,6 @@ export function ContactMessagesAdminClient() {
           ? {
               ...cur,
               support_status: draftStatus,
-              ticket_url: draftTicketUrl.trim() === "" ? null : draftTicketUrl.trim(),
               internal_notes: draftNotes,
               updated_at: new Date().toISOString(),
             }
@@ -271,8 +246,9 @@ export function ContactMessagesAdminClient() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Support inbox</h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Triage website contact and in-app Messages tickets in <strong>Inbox</strong>. Marketplace purchase
-            threads (questions, cancellations, refunds) live under <strong>Order support</strong>.
+            Triage website contact and in-app Messages tickets. In-app tickets open a <strong>support DM</strong> for
+            the member — reply there from your support account. Marketplace purchase threads live under{" "}
+            <strong>Order support</strong>.
           </p>
         </div>
         <TabsList className="h-auto w-full shrink-0 flex-wrap justify-start gap-1 p-1 sm:w-auto">
@@ -303,7 +279,7 @@ export function ContactMessagesAdminClient() {
         </Card>
         <Card className="border-border/80">
           <CardHeader className="pb-2">
-            <CardDescription>Ticket linked</CardDescription>
+            <CardDescription>In progress</CardDescription>
             <CardTitle className="text-3xl tabular-nums">{counts.ticket_created}</CardTitle>
           </CardHeader>
         </Card>
@@ -488,43 +464,43 @@ export function ContactMessagesAdminClient() {
       </Card>
 
       <Sheet open={active !== null} onOpenChange={(o) => !o && setActive(null)}>
-        <SheetContent className="flex w-full flex-col overflow-y-auto sm:max-w-xl">
+        <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto border-l border-border/80 bg-background p-0 shadow-2xl sm:max-w-lg">
           {active && (
             <>
-              <SheetHeader className="space-y-2 text-left">
+              <SheetHeader className="space-y-3 border-b border-border/60 bg-muted/20 px-6 py-5 text-left">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={channelBadgeVariant(active.source)} className="font-normal">
+                  <Badge variant={channelBadgeVariant(active.source)} className="font-medium">
                     {CHANNEL_LABEL[active.source]}
                   </Badge>
-                  <Badge variant={statusBadgeVariant(active.support_status)} className="font-normal">
+                  <Badge variant={statusBadgeVariant(active.support_status)} className="font-medium">
                     {STATUS_LABEL[active.support_status]}
                   </Badge>
                 </div>
-                <SheetTitle className="pr-8 text-xl">Ticket</SheetTitle>
-                <SheetDescription>
-                  {format(new Date(active.created_at), "PPpp")} ·{" "}
-                  {formatDistanceToNow(new Date(active.created_at), { addSuffix: true })}
-                </SheetDescription>
+                <div>
+                  <SheetTitle className="pr-6 text-2xl font-semibold tracking-tight">Support ticket</SheetTitle>
+                  <SheetDescription className="mt-1.5 text-[13px]">
+                    {format(new Date(active.created_at), "PPpp")}
+                    <span className="text-muted-foreground"> · </span>
+                    {formatDistanceToNow(new Date(active.created_at), { addSuffix: true })}
+                  </SheetDescription>
+                </div>
               </SheetHeader>
 
-              <div className="mt-4 space-y-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">{active.name}</p>
-                  <a href={`mailto:${active.email}`} className="text-sm text-primary hover:underline">
-                    {active.email}
-                  </a>
+              <div className="flex-1 space-y-6 px-6 py-6">
+                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+                  <p className="text-sm font-semibold text-foreground">{active.name}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{active.email}</p>
+                  {active.subject ? (
+                    <div className="mt-3 border-t border-border/50 pt-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Topic</p>
+                      <p className="mt-1 text-sm font-medium text-foreground">{active.subject}</p>
+                    </div>
+                  ) : null}
                 </div>
 
-                {active.subject ? (
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Topic</p>
-                    <p className="text-sm font-medium text-foreground">{active.subject}</p>
-                  </div>
-                ) : null}
-
                 {active.user_id ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="secondary" size="sm" className="gap-1.5" asChild>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" size="sm" className="gap-1.5 rounded-full" asChild>
                       <Link href={`/admin/users/${active.user_id}`}>
                         <ExternalLink className="h-4 w-4" />
                         User in admin
@@ -534,7 +510,7 @@ export function ContactMessagesAdminClient() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="gap-1.5"
+                      className="gap-1.5 rounded-full"
                       onClick={() => copyText("User ID", active.user_id!)}
                     >
                       <ClipboardCopy className="h-4 w-4" />
@@ -543,9 +519,41 @@ export function ContactMessagesAdminClient() {
                   </div>
                 ) : null}
 
+                {active.support_conversation_id ? (
+                  <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Support thread</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Reply in Messages — the member sees updates here when you change workflow status.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" className="gap-1.5 rounded-full" asChild>
+                        <Link href={`/messages/${active.support_conversation_id}`}>
+                          <MessageCircle className="h-4 w-4" />
+                          Open in Messages
+                        </Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => copyText("Conversation ID", active.support_conversation_id!)}
+                      >
+                        Copy thread ID
+                      </Button>
+                    </div>
+                  </div>
+                ) : active.source === "messages_support" ? (
+                  <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3 text-sm text-foreground/90">
+                    No support DM linked (support routing may be unset). The ticket is still on file.
+                  </div>
+                ) : null}
+
                 {active.related_conversation_id ? (
-                  <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
-                    <p className="text-xs font-medium text-muted-foreground">Related chat (customer thread)</p>
+                  <div className="rounded-2xl border border-border/70 bg-muted/25 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Related marketplace chat
+                    </p>
                     <p className="mt-1 font-mono text-xs text-foreground">{active.related_conversation_id}</p>
                     <Button
                       type="button"
@@ -559,8 +567,13 @@ export function ContactMessagesAdminClient() {
                   </div>
                 ) : null}
 
-                <div className="rounded-lg border border-border/80 bg-muted/20 p-4">
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{active.message}</p>
+                <div>
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Ticket body
+                  </p>
+                  <div className="rounded-2xl border border-border/80 bg-muted/15 p-4">
+                    <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{active.message}</p>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -568,19 +581,13 @@ export function ContactMessagesAdminClient() {
                     type="button"
                     variant="secondary"
                     size="sm"
-                    className="gap-1.5"
+                    className="gap-1.5 rounded-full"
                     onClick={() => copyText("Ticket draft", buildContactTicketDraft(active))}
                   >
                     <ClipboardCopy className="h-4 w-4" />
-                    Copy ticket draft
+                    Copy summary
                   </Button>
-                  <Button type="button" variant="secondary" size="sm" className="gap-1.5" asChild>
-                    <a href={buildContactReplyMailto(active)}>
-                      <Mail className="h-4 w-4" />
-                      Reply by email
-                    </a>
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" className="gap-1.5" asChild>
+                  <Button type="button" variant="outline" size="sm" className="gap-1.5 rounded-full" asChild>
                     <Link href={ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF}>
                       <LifeBuoy className="h-4 w-4" />
                       Order support
@@ -588,16 +595,21 @@ export function ContactMessagesAdminClient() {
                   </Button>
                 </div>
 
-                <Separator />
+                <Separator className="bg-border/60" />
 
-                <div className="space-y-4">
+                <div className="space-y-5 rounded-2xl border border-border/70 bg-muted/10 p-4">
                   <div className="space-y-2">
-                    <Label htmlFor="cm-status">Workflow</Label>
+                    <Label htmlFor="cm-status" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Workflow
+                    </Label>
+                    <p className="text-[13px] text-muted-foreground">
+                      Members with a linked thread get an automatic message when this changes.
+                    </p>
                     <Select
                       value={draftStatus}
                       onValueChange={(v) => setDraftStatus(v as ContactMessageSupportStatus)}
                     >
-                      <SelectTrigger id="cm-status">
+                      <SelectTrigger id="cm-status" className="rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -611,51 +623,34 @@ export function ContactMessagesAdminClient() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cm-ticket">External ticket URL</Label>
-                    <Input
-                      id="cm-ticket"
-                      value={draftTicketUrl}
-                      onChange={(e) => setDraftTicketUrl(e.target.value)}
-                      placeholder="https://linear.app/… or your tracker link"
-                      inputMode="url"
-                      autoComplete="off"
-                    />
-                    {draftTicketUrl.trim() !== "" && (
-                      <Button variant="link" size="sm" className="h-auto px-0 text-primary" asChild>
-                        <a href={draftTicketUrl.trim()} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="mr-1 inline h-3.5 w-3.5" />
-                          Open ticket
-                        </a>
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cm-notes">Internal notes</Label>
+                    <Label htmlFor="cm-notes" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Internal notes
+                    </Label>
                     <Textarea
                       id="cm-notes"
                       value={draftNotes}
                       onChange={(e) => setDraftNotes(e.target.value)}
-                      placeholder="Context for the team — not visible to the customer."
-                      rows={4}
-                      className="min-h-[100px] resize-y"
+                      placeholder="Team-only context — never shown to the customer."
+                      rows={5}
+                      className="min-h-[120px] resize-y rounded-xl text-[15px]"
                     />
                   </div>
                 </div>
               </div>
 
-              <SheetFooter className="mt-auto gap-2 border-t border-border/60 pt-4 sm:flex-row sm:justify-between">
-                <p className="text-[11px] text-muted-foreground sm:max-w-[55%]">
-                  ID <span className="font-mono">{active.id}</span>
+              <SheetFooter className="mt-0 gap-3 border-t border-border/60 bg-muted/10 px-6 py-4 sm:flex-row sm:justify-between">
+                <p className="font-mono text-[11px] leading-relaxed text-muted-foreground">
+                  <span className="font-sans text-foreground/70">Ticket · </span>
+                  {active.id}
                 </p>
-                <Button type="button" onClick={saveDetail} disabled={pending}>
+                <Button type="button" className="rounded-full px-6" onClick={saveDetail} disabled={pending}>
                   {pending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                       Saving…
                     </>
                   ) : (
-                    "Save"
+                    "Save changes"
                   )}
                 </Button>
               </SheetFooter>

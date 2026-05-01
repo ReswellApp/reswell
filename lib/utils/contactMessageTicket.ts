@@ -10,6 +10,10 @@ export function buildContactTicketDraft(msg: ContactMessageRow): string {
     msg.related_conversation_id != null && msg.related_conversation_id.trim() !== ""
       ? `- **Related thread:** \`${msg.related_conversation_id}\``
       : null
+  const supportThreadLine =
+    msg.support_conversation_id != null && msg.support_conversation_id.trim() !== ""
+      ? `- **Support DM:** \`${msg.support_conversation_id}\` (reply in /messages)`
+      : null
 
   return [
     "## Support — Reswell",
@@ -22,28 +26,13 @@ export function buildContactTicketDraft(msg: ContactMessageRow): string {
     `- **Email:** ${msg.email}`,
     ...(userLine ? [userLine] : []),
     ...(threadLine ? [threadLine] : []),
+    ...(supportThreadLine ? [supportThreadLine] : []),
     "",
     "### Message",
     "",
     msg.message.trim(),
     "",
     "---",
-    "_Paste into your tracker (Linear, Jira, etc.), then link the ticket below in admin._",
+    "_Use **Open in Messages** in admin when a support thread is linked._",
   ].join("\n")
-}
-
-export function buildContactReplyMailto(msg: ContactMessageRow): string {
-  const subject = encodeURIComponent(`Re: Your message to Reswell support`)
-  const body = encodeURIComponent(
-    [
-      `Hi ${msg.name.split(/\s+/)[0] ?? "there"},`,
-      "",
-      "Thanks for contacting us.",
-      "",
-      "",
-      "",
-      "— Reswell Support",
-    ].join("\n"),
-  )
-  return `mailto:${msg.email}?subject=${subject}&body=${body}`
 }
