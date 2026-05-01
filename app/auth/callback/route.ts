@@ -33,9 +33,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Handle email OTP / magic link flow (token_hash)
+  // Handle email OTP / magic link flow (token_hash). Recovery emails must land on
+  // `/auth/update-password` so users can call `updateUser({ password })` with cookies set.
   if (token_hash && type) {
-    const redirectResponse = NextResponse.redirect(`${origin}${next}`);
+    const otpNext =
+      type === "recovery"
+        ? "/auth/update-password"
+        : safeRedirectPath(searchParams.get("next"));
+    const redirectResponse = NextResponse.redirect(`${origin}${otpNext}`);
     const supabase = createRouteHandlerSupabaseClient(
       request,
       redirectResponse,

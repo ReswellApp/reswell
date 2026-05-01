@@ -101,7 +101,12 @@ export function LoginFormPanel({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="login-password">Password</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="login-password">Password</Label>
+                <Link href="/auth/forgot-password" className="text-sm underline underline-offset-4">
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="login-password"
                 type="password"

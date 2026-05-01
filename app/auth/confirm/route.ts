@@ -15,10 +15,12 @@ export async function GET(request: NextRequest) {
     | "recovery"
     | "invite"
     | null
-  const next = safeRedirectPath(searchParams.get("next"))
-
   if (token_hash && type) {
-    const redirectResponse = NextResponse.redirect(`${origin}${next}`)
+    const redirectPath =
+      type === "recovery"
+        ? "/auth/update-password"
+        : safeRedirectPath(searchParams.get("next"))
+    const redirectResponse = NextResponse.redirect(`${origin}${redirectPath}`)
     const supabase = createRouteHandlerSupabaseClient(
       request,
       redirectResponse,
