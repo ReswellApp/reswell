@@ -194,25 +194,8 @@ function MessagesContent() {
 
   const searchLower = searchQuery.trim().toLowerCase()
 
-  const filteredConversations = conversations.filter((conv) => {
-    const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
-    if (!searchLower) return true
-    return (
-      otherUser?.display_name?.toLowerCase().includes(searchLower) ||
-      conv.listing?.title?.toLowerCase().includes(searchLower)
-    )
-  })
-
-  const filteredNotifications = notifications.filter((n) => {
-    if (!searchLower) return true
-    const listing = n.listing ?? n.listings
-    const text = (n.message || '').toLowerCase()
-    const title = listing?.title?.toLowerCase() ?? ''
-    return text.includes(searchLower) || title.includes(searchLower)
-  })
-
   const getUnreadCount = (conv: Conversation) => {
-    return conv.messages.filter(m => !m.is_read && m.sender_id !== currentUserId).length
+    return conv.messages.filter((m) => !m.is_read && m.sender_id !== currentUserId).length
   }
 
   const totalUnreadChats = conversations.reduce((acc, conv) => acc + getUnreadCount(conv), 0)
@@ -223,6 +206,37 @@ function MessagesContent() {
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     ).at(-1)
   }
+
+  /** Latest activity: MAX(last_message_at, every loaded message.created_at). */
+  function getConversationLastActivityMs(conv: Conversation): number {
+    let maxMs = 0
+    const fromConv = new Date(conv.last_message_at).getTime()
+    if (Number.isFinite(fromConv)) maxMs = fromConv
+    for (const m of conv.messages ?? []) {
+      const t = new Date(m.created_at).getTime()
+      if (Number.isFinite(t) && t > maxMs) maxMs = t
+    }
+    return maxMs
+  }
+
+  const filteredConversations = [...conversations]
+    .filter((conv) => {
+      const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
+      if (!searchLower) return true
+      return (
+        otherUser?.display_name?.toLowerCase().includes(searchLower) ||
+        conv.listing?.title?.toLowerCase().includes(searchLower)
+      )
+    })
+    .sort((a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a))
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (!searchLower) return true
+    const listing = n.listing ?? n.listings
+    const text = (n.message || '').toLowerCase()
+    const title = listing?.title?.toLowerCase() ?? ''
+    return text.includes(searchLower) || title.includes(searchLower)
+  })
 
   function formatChatPreviewText(
     lastMessage: Conversation['messages'][number] | undefined,
@@ -410,6 +424,7 @@ function MessagesContent() {
                   {filteredConversations.map((conv) => {
                     const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
                     const lastMessage = getLatestMessage(conv)
+                    const lastActivityMs = getConversationLastActivityMs(conv)
                     const unreadCount = getUnreadCount(conv)
                     const initial = (otherUser?.display_name?.trim()?.[0] || '?').toUpperCase()
                     const listingTitle = conv.listing?.title
@@ -456,14 +471,16 @@ function MessagesContent() {
                                 </span>
                               )}
                             </div>
-                            <time
-                              className="shrink-0 text-[13px] tabular-nums text-muted-foreground"
-                              dateTime={conv.last_message_at}
-                            >
-                              {formatDistanceToNow(new Date(conv.last_message_at), {
-                                addSuffix: true,
-                              })}
-                            </time>
+                            {lastActivityMs > 0 ? (
+                              <time
+                                className="shrink-0 text-[13px] tabular-nums text-muted-foreground"
+                                dateTime={new Date(lastActivityMs).toISOString()}
+                              >
+                                {formatDistanceToNow(new Date(lastActivityMs), {
+                                  addSuffix: true,
+                                })}
+                              </time>
+                            ) : null}
                           </div>
                           <div className="mt-1 flex items-start justify-between gap-2">
                             <p
