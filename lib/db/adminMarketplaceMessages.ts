@@ -44,6 +44,50 @@ const LIST_SELECT = `
   sender:profiles!messages_sender_id_fkey (display_name)
 `
 
+/** Row for admin marketplace conversation (thread) inbox list. */
+export type AdminMarketplaceConversationListRow = {
+  id: string
+  last_message_at: string | null
+  created_at: string
+  listing_id: string | null
+  buyer_id: string
+  seller_id: string
+  listing: { title: string | null; listing_images: { url: string }[] | null } | null
+  buyer: {
+    id: string
+    display_name: string | null
+    avatar_url: string | null
+    shop_verified: boolean | null
+  } | null
+  seller: {
+    id: string
+    display_name: string | null
+    avatar_url: string | null
+    shop_verified: boolean | null
+  } | null
+  messages: { content: string; created_at: string; sender_id: string }[]
+}
+
+const CONVERSATION_LIST_SELECT = `
+  id,
+  last_message_at,
+  created_at,
+  listing_id,
+  buyer_id,
+  seller_id,
+  listing:listings (title, listing_images(url)),
+  buyer:profiles!conversations_buyer_id_fkey (id, display_name, avatar_url, shop_verified),
+  seller:profiles!conversations_seller_id_fkey (id, display_name, avatar_url, shop_verified),
+  messages (content, created_at, sender_id)
+`
+
+export type ListAdminMarketplaceConversationsArgs = {
+  limit: number
+  offset: number
+  /** Plain-text substring; wildcards stripped. */
+  search: string | undefined
+}
+
 export type ListAdminMarketplaceMessagesArgs = {
   limit: number
   offset: number
@@ -55,6 +99,76 @@ export type ListAdminMarketplaceMessagesArgs = {
 
 function sanitizeIlikeTerm(raw: string): string {
   return raw.trim().replace(/[%_\\]/g, "").slice(0, 200)
+}
+
+function formatInList(ids: string[]): string {
+  return ids.join(",")
+}
+
+/**
+ * Paginated conversation threads for admin inbox (newest activity first).
+ * When `search` is set, matches buyer/seller display name, listing title, or any message body in the thread.
+ */
+export async function listAdminMarketplaceConversations(
+  supabase: SupabaseClient,
+  args: ListAdminMarketplaceConversationsArgs,
+): Promise<{ rows: AdminMarketplaceConversationListRow[]; count: number | null; error: PostgrestError | null }> {
+  const term = args.search ? sanitizeIlikeTerm(args.search) : ""
+
+  let convQuery = supabase.from("conversations").select(CONVERSATION_LIST_SELECT, { count: "exact" })
+
+  if (term.length > 0) {
+    const pattern = `%${term}%`
+    const [msgRes, profRes, listRes] = await Promise.all([
+      supabase.from("messages").select("conversation_id").ilike("content", pattern).limit(500),
+      supabase.from("profiles").select("id").ilike("display_name", pattern).limit(100),
+      supabase.from("listings").select("id").ilike("title", pattern).limit(100),
+    ])
+
+    const convIdsFromMessages = new Set<string>()
+    for (const row of msgRes.data ?? []) {
+      if (row.conversation_id) convIdsFromMessages.add(row.conversation_id)
+    }
+    const fromMessages = Array.from(convIdsFromMessages).slice(0, 150)
+    const profileIds = (profRes.data ?? []).map((r) => r.id).filter(Boolean)
+    const listingIds = (listRes.data ?? []).map((r) => r.id).filter(Boolean)
+
+    const orParts: string[] = []
+    if (fromMessages.length > 0) {
+      orParts.push(`id.in.(${formatInList(fromMessages)})`)
+    }
+    if (profileIds.length > 0) {
+      const p = formatInList(profileIds)
+      orParts.push(`buyer_id.in.(${p})`, `seller_id.in.(${p})`)
+    }
+    if (listingIds.length > 0) {
+      orParts.push(`listing_id.in.(${formatInList(listingIds)})`)
+    }
+
+    if (orParts.length === 0) {
+      return { rows: [], count: 0, error: null }
+    }
+
+    convQuery = convQuery.or(orParts.join(","))
+  }
+
+  convQuery = convQuery
+    .order("last_message_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false, referencedTable: "messages" })
+    .limit(1, { referencedTable: "messages" })
+    .range(args.offset, args.offset + args.limit - 1)
+
+  const { data, error, count } = await convQuery
+
+  if (error) {
+    return { rows: [], count: null, error }
+  }
+
+  return {
+    rows: (data ?? []) as unknown as AdminMarketplaceConversationListRow[],
+    count,
+    error: null,
+  }
 }
 
 /**
