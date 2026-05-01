@@ -183,3 +183,50 @@ export async function fetchLabelDownloadsForShipment(shipmentId: string): Promis
   if (!detail.ok) return detail
   return { ok: true, label: detail.label, listCount: listed.labels.length }
 }
+
+/** GET /v1/labels?tracking_number=… — newest first (ShipEngine default sort). */
+export async function fetchLabelsByTrackingNumber(trackingNumber: string): Promise<
+  | { ok: true; labels: ShipEngineLabelDetail[] }
+  | { ok: false; error: string; status: number }
+> {
+  if (!isShipEngineConfigured()) {
+    return { ok: false, error: "SHIPENGINE_API_KEY is not configured.", status: 503 }
+  }
+  const track = trackingNumber.trim()
+  if (!track) {
+    return { ok: false, error: "Missing tracking number.", status: 400 }
+  }
+
+  const q = new URLSearchParams({
+    tracking_number: track,
+    page_size: "25",
+    sort_dir: "desc",
+    sort_by: "created_at",
+  })
+  const res = await shipEngineRequest(`/labels?${q.toString()}`)
+  const data = await parseJsonSafe(res)
+  const apiErr = formatShipEngineApiError(data)
+  if (apiErr) {
+    return { ok: false, error: apiErr, status: res.ok ? 422 : res.status >= 400 ? res.status : 502 }
+  }
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: typeof data === "string" ? data : JSON.stringify(data).slice(0, 400),
+      status: res.status >= 400 ? res.status : 502,
+    }
+  }
+
+  const root = asRecord(data)
+  const raw = root?.labels
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: "Unexpected ShipEngine response (no labels array).", status: 502 }
+  }
+
+  const labels: ShipEngineLabelDetail[] = []
+  for (const item of raw) {
+    const row = asRecord(item)
+    if (row) labels.push(normalizeLabelRow(row))
+  }
+  return { ok: true, labels }
+}

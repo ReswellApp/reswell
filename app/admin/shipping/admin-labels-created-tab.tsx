@@ -94,6 +94,10 @@ export function AdminLabelsCreatedTab() {
   const [seSendOrderRaw, setSeSendOrderRaw] = useState("")
   const [seSendBusy, setSeSendBusy] = useState(false)
 
+  const [voidOrderRaw, setVoidOrderRaw] = useState("")
+  const [voidLabelRaw, setVoidLabelRaw] = useState("")
+  const [voidBusy, setVoidBusy] = useState(false)
+
   const load = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true)
     else setRefreshing(true)
@@ -128,6 +132,9 @@ export function AdminLabelsCreatedTab() {
 
   const seLookupId = extractShipEngineId(seLookupRaw)
   const seSendOrderId = extractOrderIdFromPaste(seSendOrderRaw)
+
+  const voidOrderId = extractOrderIdFromPaste(voidOrderRaw)
+  const voidLabelId = extractShipEngineId(voidLabelRaw)
 
   const fetchShipengineLabel = async () => {
     if (!seLookupId) {
@@ -207,6 +214,51 @@ export function AdminLabelsCreatedTab() {
       toast.error("Could not send label")
     } finally {
       setSeSendBusy(false)
+    }
+  }
+
+  const submitVoidShipEngineLabel = async () => {
+    if (!voidOrderId) {
+      toast.error("Paste the Reswell order UUID.")
+      return
+    }
+    const msg =
+      "Void this ShipEngine label? The carrier may credit your ShipEngine balance if the label is unused. This cannot be undone."
+    if (typeof window !== "undefined" && !window.confirm(msg)) return
+
+    setVoidBusy(true)
+    try {
+      const body: { order_id: string; label_id?: string } = { order_id: voidOrderId }
+      if (voidLabelId) body.label_id = voidLabelId
+      const res = await fetch("/api/admin/shipping/shipengine-label/void", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const parsed = (await res.json()) as {
+        data?: { approved: boolean; message: string; clearedOrderTracking: boolean; labelId: string }
+        error?: string
+      }
+      if (!res.ok || !parsed.data) {
+        toast.error(parsed.error?.trim() || "Could not void label", { duration: 14_000 })
+        return
+      }
+      toast.success(
+        parsed.data.approved
+          ? `Void approved — ${parsed.data.message}`
+          : `Carrier response: ${parsed.data.message}`,
+        { duration: 12_000 },
+      )
+      if (parsed.data.clearedOrderTracking) {
+        toast.message("Order tracking cleared on Reswell to match the voided label.")
+      }
+      void load({ silent: true })
+      setVoidLabelRaw("")
+    } catch {
+      toast.error("Void request failed")
+    } finally {
+      setVoidBusy(false)
     }
   }
 
@@ -458,6 +510,52 @@ export function AdminLabelsCreatedTab() {
               ) : null}
             </div>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-3xl border-border/50 border-destructive/20">
+        <CardHeader>
+          <CardTitle className="text-base">Void label / refund (ShipEngine)</CardTitle>
+          <CardDescription>
+            Calls ShipEngine{" "}
+            <span className="font-mono text-xs">PUT /v1/labels/&#123;label_id&#125;/void</span>. Unused labels
+            may be refunded to your ShipEngine balance per carrier rules. Requires admin. If you omit label id,
+            the newest non-voided label for the order&apos;s saved tracking is voided.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="void-order">Order UUID</Label>
+            <Input
+              id="void-order"
+              placeholder="Paste order id or /admin/orders/… URL"
+              value={voidOrderRaw}
+              onChange={(e) => setVoidOrderRaw(e.target.value)}
+              className="rounded-xl font-mono text-sm max-w-xl"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="void-label" className="font-normal text-muted-foreground">
+              ShipEngine label id (optional — leave blank to use order tracking)
+            </Label>
+            <Input
+              id="void-label"
+              placeholder="se-…"
+              value={voidLabelRaw}
+              onChange={(e) => setVoidLabelRaw(e.target.value)}
+              className="rounded-xl font-mono text-sm max-w-xl"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="destructive"
+            className="rounded-full gap-2"
+            onClick={() => void submitVoidShipEngineLabel()}
+            disabled={voidBusy || !voidOrderId}
+          >
+            {voidBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Void label &amp; request refund
+          </Button>
         </CardContent>
       </Card>
 
