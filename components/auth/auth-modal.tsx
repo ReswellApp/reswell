@@ -3,9 +3,10 @@
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { LoginFormPanel } from "@/components/auth/login-form-panel"
 import { SignUpFormPanel } from "@/components/auth/sign-up-form-panel"
+import { ForgotPasswordFormPanel } from "@/components/auth/forgot-password-form-panel"
 import { Button } from "@/components/ui/button"
 
-type Mode = "login" | "sign-up"
+type Mode = "login" | "sign-up" | "forgot-password"
 
 export function AuthModal({
   open,
@@ -22,20 +23,26 @@ export function AuthModal({
   redirectTo: string
   onClose: () => void
 }) {
+  const title =
+    mode === "login"
+      ? "Sign in to Reswell"
+      : mode === "sign-up"
+        ? "Create a Reswell account"
+        : "Reset your password"
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
         className="z-[100] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 sm:p-8"
       >
-        <DialogTitle className="sr-only">
-          {mode === "login" ? "Sign in to Reswell" : "Create a Reswell account"}
-        </DialogTitle>
+        <DialogTitle className="sr-only">{title}</DialogTitle>
         {mode === "login" ? (
           <LoginFormPanel
             variant="modal"
             redirectTo={redirectTo}
             onLoggedIn={onClose}
+            onForgotPassword={() => onModeChange("forgot-password")}
             footerSignUp={
               <Button
                 type="button"
@@ -47,7 +54,7 @@ export function AuthModal({
               </Button>
             }
           />
-        ) : (
+        ) : mode === "sign-up" ? (
           <SignUpFormPanel
             variant="modal"
             redirectTo={redirectTo}
@@ -62,6 +69,11 @@ export function AuthModal({
                 Login
               </Button>
             }
+          />
+        ) : (
+          <ForgotPasswordFormPanel
+            variant="modal"
+            onBackToLogin={() => onModeChange("login")}
           />
         )}
       </DialogContent>

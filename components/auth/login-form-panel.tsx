@@ -23,6 +23,7 @@ export function LoginFormPanel({
   onLoggedIn,
   variant = "page",
   footerSignUp,
+  onForgotPassword,
 }: {
   redirectTo: string
   /** Called after a successful email/password login (e.g. close modal). Navigation still runs. */
@@ -30,6 +31,8 @@ export function LoginFormPanel({
   variant?: "page" | "modal"
   /** Override “Sign up” link (e.g. switch to sign-up in modal). */
   footerSignUp?: ReactNode
+  /** When set (e.g. auth modal), “Forgot password?” stays in-flow instead of a full-page navigation. */
+  onForgotPassword?: () => void
 }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -103,9 +106,19 @@ export function LoginFormPanel({
             <div className="grid gap-2">
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="login-password">Password</Label>
-                <Link href="/auth/forgot-password" className="text-sm underline underline-offset-4">
-                  Forgot password?
-                </Link>
+                {onForgotPassword ? (
+                  <button
+                    type="button"
+                    className="text-sm underline underline-offset-4"
+                    onClick={onForgotPassword}
+                  >
+                    Forgot password?
+                  </button>
+                ) : (
+                  <Link href="/auth/forgot-password" className="text-sm underline underline-offset-4">
+                    Forgot password?
+                  </Link>
+                )}
               </div>
               <Input
                 id="login-password"

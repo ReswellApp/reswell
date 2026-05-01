@@ -1,3 +1,4 @@
+import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
@@ -17,9 +18,7 @@ export async function GET(request: NextRequest) {
     | null
   if (token_hash && type) {
     const redirectPath =
-      type === "recovery"
-        ? "/auth/update-password"
-        : safeRedirectPath(searchParams.get("next"))
+      type === "recovery" ? passwordResetLandingPath() : safeRedirectPath(searchParams.get("next"))
     const redirectResponse = NextResponse.redirect(`${origin}${redirectPath}`)
     const supabase = createRouteHandlerSupabaseClient(
       request,

@@ -11,11 +11,12 @@ import {
 import { AuthModal } from "@/components/auth/auth-modal"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
-type Mode = "login" | "sign-up"
+type Mode = "login" | "sign-up" | "forgot-password"
 
 export type AuthModalContextValue = {
   openLogin: (redirect?: string | null) => void
   openSignUp: (redirect?: string | null) => void
+  openForgotPassword: (redirect?: string | null) => void
   close: () => void
 }
 
@@ -38,11 +39,17 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
     setOpen(true)
   }, [])
 
+  const openForgotPassword = useCallback((redirect?: string | null) => {
+    setMode("forgot-password")
+    setRedirectTo(safeRedirectPath(redirect ?? null))
+    setOpen(true)
+  }, [])
+
   const close = useCallback(() => setOpen(false), [])
 
   const value = useMemo(
-    () => ({ openLogin, openSignUp, close }),
-    [openLogin, openSignUp, close],
+    () => ({ openLogin, openSignUp, openForgotPassword, close }),
+    [openLogin, openSignUp, openForgotPassword, close],
   )
 
   return (

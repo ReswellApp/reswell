@@ -1,3 +1,4 @@
+import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import {
   shouldTrackKlaviyoNewAccountForOAuthSession,
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const otpNext =
       type === "recovery"
-        ? "/auth/update-password"
+        ? passwordResetLandingPath()
         : safeRedirectPath(searchParams.get("next"));
     const redirectResponse = NextResponse.redirect(`${origin}${otpNext}`);
     const supabase = createRouteHandlerSupabaseClient(
