@@ -23,6 +23,7 @@ import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { cn } from "@/lib/utils"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
+import { ProfileChangePasswordSection } from "@/components/features/dashboard/profile-change-password-section"
 
 interface Profile {
   id: string
@@ -429,6 +430,8 @@ export function DashboardProfileSettings() {
           <CardDescription>{a.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <ProfileChangePasswordSection email={profile.email} copy={a} />
+          <Separator />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-medium text-foreground">{a.resetPassword}</p>

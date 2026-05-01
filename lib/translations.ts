@@ -51,6 +51,20 @@ type Translations = {
       resetPasswordSending: string
       resetPasswordToastSuccess: string
       resetPasswordToastNoEmail: string
+      changePassword: string
+      changePasswordDescription: string
+      changePasswordUnavailable: string
+      changePasswordExpand: string
+      changePasswordCollapse: string
+      changePasswordCurrent: string
+      changePasswordNew: string
+      changePasswordConfirm: string
+      changePasswordButton: string
+      changePasswordSaving: string
+      changePasswordSuccess: string
+      changePasswordWrongCurrent: string
+      changePasswordTooShort: string
+      changePasswordMismatch: string
       signOut: string
       signOutDescription: string
     }
@@ -129,6 +143,22 @@ const en: Translations = {
         'Check your email for a link to reset your password. You can close this tab after you finish.',
       resetPasswordToastNoEmail:
         'This account does not have an email on file. Change your password via the provider you signed up with.',
+      changePassword: 'Change password',
+      changePasswordDescription:
+        'Enter your current password and choose a new one — no email link required.',
+      changePasswordUnavailable:
+        'You sign in with Google or another provider on this account. Use “Email reset link” below if you want to add or reset an email-and-password login.',
+      changePasswordExpand: 'Enter new password',
+      changePasswordCollapse: 'Close',
+      changePasswordCurrent: 'Current password',
+      changePasswordNew: 'New password',
+      changePasswordConfirm: 'Confirm new password',
+      changePasswordButton: 'Save new password',
+      changePasswordSaving: 'Saving…',
+      changePasswordSuccess: 'Your password was updated.',
+      changePasswordWrongCurrent: 'Current password is incorrect.',
+      changePasswordTooShort: 'Password must be at least 6 characters.',
+      changePasswordMismatch: 'New passwords do not match.',
       signOut: 'Sign Out',
       signOutDescription: 'Sign out of your account on this device',
     },
@@ -207,6 +237,22 @@ const es: Translations = {
         'Revisa tu correo para el enlace de restablecimiento. Puedes cerrar esta pestaña cuando termines.',
       resetPasswordToastNoEmail:
         'Esta cuenta no tiene correo. Cambia tu contraseña desde el método con el que te registraste.',
+      changePassword: 'Cambiar contraseña',
+      changePasswordDescription:
+        'Introduce tu contraseña actual y elige una nueva — sin enlace por correo.',
+      changePasswordUnavailable:
+        'En esta cuenta inicias sesión con Google u otro proveedor. Usa “Enviar enlace” abajo si quieres añadir o restablecer acceso con correo y contraseña.',
+      changePasswordExpand: 'Introducir nueva contraseña',
+      changePasswordCollapse: 'Cerrar',
+      changePasswordCurrent: 'Contraseña actual',
+      changePasswordNew: 'Nueva contraseña',
+      changePasswordConfirm: 'Confirmar contraseña',
+      changePasswordButton: 'Guardar contraseña',
+      changePasswordSaving: 'Guardando…',
+      changePasswordSuccess: 'Tu contraseña se actualizó.',
+      changePasswordWrongCurrent: 'La contraseña actual no es correcta.',
+      changePasswordTooShort: 'La contraseña debe tener al menos 6 caracteres.',
+      changePasswordMismatch: 'Las contraseñas nuevas no coinciden.',
       signOut: 'Cerrar sesión',
       signOutDescription: 'Cerrar sesión en este dispositivo',
     },
