@@ -74,7 +74,10 @@ export async function openMessagesDirectSupportConversationService(): Promise<
 
   const supportUserId = resolved.userId
   if (supportUserId === user.id) {
-    return { error: "Support chat isn’t available from this account." }
+    return {
+      error:
+        "You’re signed in as the configured support user, so you can’t DM yourself. Test with another account, or set MESSAGES_DIRECT_SUPPORT_USER_ID / MESSAGES_DIRECT_SUPPORT_EMAIL to a dedicated inbox.",
+    }
   }
 
   const existing = await getConversationForBuyerSeller(supabase, user.id, supportUserId)
