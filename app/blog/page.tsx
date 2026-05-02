@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic"
 export const metadata = pageSeoMetadata({
   title: "Blog — Reswell",
   description:
-    "Field notes from Reswell—practical guides on gear, culture, and the marketplace, for anyone who buys, sells, or lives out of a board bag.",
+    "Stories and practical guides from Reswell on gear, culture, and the marketplace, for buyers and sellers.",
   path: "/blog",
 })
 
@@ -24,7 +24,7 @@ export default async function BlogPage() {
       {canManageBlogCms ? <BlogCmsFloatingPanel /> : null}
       <ReadingHub
         title="Blog"
-        description="Field notes from Reswell—practical guides on gear, culture, and the marketplace, for anyone who buys, sells, or lives out of a board bag."
+        description="Stories and practical guides from Reswell on gear, culture, and the marketplace, for buyers and sellers."
         articles={articles}
       />
     </>
