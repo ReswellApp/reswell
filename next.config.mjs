@@ -78,9 +78,10 @@ const nextConfig = {
         hostname: 'cms-web.seamuseum.net',
         pathname: '/**',
       },
+      // Blog / editorial covers
       {
         protocol: 'https',
-        hostname: 'www.sea.museum',
+        hostname: 'images.unsplash.com',
         pathname: '/**',
       },
     ],

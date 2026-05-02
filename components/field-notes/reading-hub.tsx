@@ -1,8 +1,10 @@
 import Link from "next/link"
+import Image from "next/image"
 import { format } from "date-fns"
-import { ArrowUpRight } from "lucide-react"
+import { Clock } from "lucide-react"
 import type { FieldNoteArticle } from "@/lib/field-notes-articles"
-import { cn } from "@/lib/utils"
+import { getFieldNoteCoverSrc } from "@/lib/field-notes-articles"
+import { MostRecentHeading } from "@/components/field-notes/most-recent-heading"
 
 type Props = {
   title: string
@@ -12,107 +14,110 @@ type Props = {
   wrapper?: "main" | "div"
 }
 
-function ArticleMeta({ article, className }: { article: FieldNoteArticle; className?: string }) {
-  const dateLabel = format(new Date(article.publishedAt), "MMM d, yyyy")
+export function BlogListingRow({ article }: { article: FieldNoteArticle }) {
+  const coverSrc = getFieldNoteCoverSrc(article)
+  const dateCaps = format(new Date(article.publishedAt), "MMM d, yyyy").toUpperCase()
+  const byline = `BY ${article.author.toUpperCase()} / ${article.tag.toUpperCase()}`
+
   return (
-    <div className={cn("flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground", className)}>
-      <span className="font-medium uppercase tracking-wider text-foreground/80">{article.tag}</span>
-      <span aria-hidden className="text-border">
-        ·
-      </span>
-      <time dateTime={article.publishedAt}>{dateLabel}</time>
-      <span aria-hidden className="text-border">
-        ·
-      </span>
-      <span>{article.readMinutes} min</span>
-    </div>
+    <li className="border-t border-border py-10 first:border-t-0 first:pt-0 sm:py-12">
+      <Link
+        href={`/blog/${article.slug}`}
+        className="group grid gap-8 no-underline md:grid-cols-12 md:gap-10 lg:gap-12"
+      >
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted md:col-span-5">
+          {coverSrc ? (
+            <Image
+              src={coverSrc}
+              alt={article.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 42vw"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="h-full w-full bg-muted" aria-hidden />
+          )}
+          <div className="absolute left-3 top-3 sm:left-4 sm:top-4">
+            <span className="inline-flex items-center gap-2 bg-foreground px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground shadow-sm sm:text-[11px]">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400" aria-hidden />
+              Reswell
+            </span>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-col justify-center md:col-span-7">
+          <h3 className="text-2xl font-bold leading-tight tracking-tight text-foreground group-hover:underline sm:text-[1.65rem] sm:leading-snug lg:text-3xl text-balance">
+            {article.title}
+          </h3>
+          <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:text-xs">
+            {byline}
+          </p>
+          <p className="mt-5 text-base leading-relaxed text-foreground/90 sm:text-[17px] sm:leading-[1.65]">
+            {article.excerpt}
+          </p>
+          <div className="mt-8 flex items-center justify-between gap-4 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground sm:text-xs">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 opacity-70" aria-hidden />
+              <span>{article.readMinutes} min read</span>
+            </span>
+            <time dateTime={article.publishedAt}>{dateCaps}</time>
+          </div>
+        </div>
+      </Link>
+    </li>
   )
 }
 
 export function ReadingHub({ title, description, articles, wrapper = "main" }: Props) {
-  const [featured, ...rest] = articles
-
   const inner = (
     <>
-      <div className="border-b border-border/80 bg-muted/20">
-        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20 lg:py-24">
+      <div className="border-b border-border bg-background">
+        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:max-w-6xl lg:py-20">
           {wrapper === "div" ? (
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">{title}</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{title}</h2>
           ) : (
-            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">{title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{title}</h1>
           )}
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">{description}</p>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            {description}
+          </p>
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-        {featured ? (
-          <section aria-labelledby="featured-heading">
-            <h2 id="featured-heading" className="sr-only">
-              Featured article
-            </h2>
-            <Link
-              href={`/blog/${featured.slug}`}
-              className="group block rounded-lg border border-border/80 bg-card p-6 shadow-soft transition-all hover:border-foreground/20 hover:shadow-soft-hover sm:p-8"
-            >
-              <ArticleMeta article={featured} className="mb-4" />
-              <h3 className="text-xl font-semibold tracking-tight text-foreground group-hover:underline sm:text-2xl text-balance">
-                {featured.title}
-              </h3>
-              <p className="mt-3 text-base leading-relaxed text-muted-foreground">{featured.excerpt}</p>
-              <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-foreground">
-                Read article
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </span>
-            </Link>
-          </section>
-        ) : null}
-
-        {rest.length > 0 ? (
-          <section className={cn(featured ? "mt-16" : "", "border-t border-border/60 pt-12")} aria-labelledby="more-heading">
-            <h2 id="more-heading" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              More to read
-            </h2>
-            <ul className="mt-8 divide-y divide-border/80 border-y border-border/80">
-              {rest.map((article) => (
-                <li key={article.slug}>
-                  <Link
-                    href={`/blog/${article.slug}`}
-                    className="group flex flex-col gap-3 py-8 first:pt-6 last:pb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-8"
-                  >
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <ArticleMeta article={article} />
-                      <h3 className="text-lg font-semibold tracking-tight text-foreground group-hover:underline sm:text-xl text-balance">
-                        {article.title}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{article.excerpt}</p>
-                    </div>
-                    <ArrowUpRight
-                      className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground sm:mt-1"
-                      aria-hidden
-                    />
-                  </Link>
-                </li>
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:max-w-6xl lg:py-20">
+        <section aria-labelledby="recent-heading">
+          <MostRecentHeading id="recent-heading" />
+          {articles.length > 0 ? (
+            <ul>
+              {articles.map((article) => (
+                <BlogListingRow key={article.slug} article={article} />
               ))}
             </ul>
-          </section>
-        ) : null}
+          ) : (
+            <p className="py-16 text-center text-muted-foreground">
+              Stories are on the way—check back after the next swell.
+            </p>
+          )}
+        </section>
 
-        {!featured && rest.length === 0 ? (
-          <p className="text-center text-muted-foreground">Articles will appear here soon.</p>
-        ) : null}
-
-        <footer className="mt-16 border-t border-border/60 pt-10">
-          <p className="text-sm text-muted-foreground">
-            Looking for gear?{" "}
-            <Link href="/gear" className="font-medium text-foreground underline-offset-4 hover:underline">
-              Browse used
-            </Link>
-            {" · "}
-            <Link href="/board-talk" className="font-medium text-foreground underline-offset-4 hover:underline">
-              Board Talk
-            </Link>
-          </p>
+        <footer className="mt-20 border-t border-border pt-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">Ready to browse the marketplace?</p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/boards"
+                className="inline-flex min-h-touch items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+              >
+                Browse boards
+              </Link>
+              <Link
+                href="/board-talk"
+                className="inline-flex min-h-touch items-center justify-center rounded-full border border-transparent bg-foreground px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+              >
+                Board Talk
+              </Link>
+            </div>
+          </div>
         </footer>
       </div>
     </>

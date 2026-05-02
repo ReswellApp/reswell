@@ -12,6 +12,7 @@ const footerLinks = {
     { name: "Sell your board", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
     { name: "What is Reswell", href: "/what-is-reswell" },
+    { name: "Blog", href: "/blog" },
   ],
   support: [
     { name: "FAQ", href: "/faq" },
