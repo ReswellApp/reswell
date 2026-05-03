@@ -89,9 +89,9 @@ export function ArticlePageView({ article, relatedArticles }: Props) {
       <div className="border-t border-border bg-muted/25">
         <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-14">
           <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Shop peer-to-peer boards and gear with checkout, messaging, and Purchase Protection.
+            Explore surfboards from other surfers on Reswell.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 sm:shrink-0">
             <Link
               href={BRANDS_BASE}
               className="inline-flex min-h-touch items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
