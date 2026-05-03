@@ -85,7 +85,7 @@ export function ArticleBody({ blocks }: { blocks: ArticleBlock[] }) {
           return (
             <p
               key={i}
-              className="text-[17px] leading-[1.85] text-foreground/90 sm:text-lg sm:leading-[1.9]"
+              className="whitespace-pre-wrap text-[17px] leading-[1.85] text-foreground/90 sm:text-lg sm:leading-[1.9]"
             >
               {block.text}
             </p>
