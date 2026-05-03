@@ -63,9 +63,9 @@ export default async function BlogArticlePage(props: { params: Promise<{ slug: s
   const { canManageBlogCms } = await resolveBlogAdminAccess()
 
   return (
-    <>
+    <div className="relative flex min-h-0 flex-1 flex-col">
       {canManageBlogCms ? <BlogCmsFloatingPanel /> : null}
       <ArticlePageView article={article} relatedArticles={relatedArticles} />
-    </>
+    </div>
   )
 }

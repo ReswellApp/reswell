@@ -604,9 +604,10 @@ export function BlogCmsFloatingPanel() {
     setBlockRows((rows) => arrayMove(rows, oldIndex, newIndex))
   }
 
-  // FAB above sticky header (`z-50`). When the sheet opens, fade the trigger so it does not sit above the sheet overlay (`z-50`).
+  // Page-anchored FAB (parent must be `relative`): stays in the blog content column and under the global sticky nav (`z-50`).
+  // When the sheet opens, fade the trigger so it does not sit above the sheet overlay (`z-50`).
   return (
-    <div className="pointer-events-none fixed right-4 top-[calc(env(safe-area-inset-top,0px)+5.5rem)] z-[51] sm:right-5 md:right-8 md:top-[calc(env(safe-area-inset-top,0px)+6.5rem)]">
+    <div className="pointer-events-none absolute right-4 top-4 z-10 sm:right-5 sm:top-5 md:right-8 md:top-6">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button

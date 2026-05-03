@@ -20,13 +20,13 @@ export default async function BlogPage() {
   const { canManageBlogCms } = await resolveBlogAdminAccess()
 
   return (
-    <>
+    <div className="relative flex min-h-0 flex-1 flex-col">
       {canManageBlogCms ? <BlogCmsFloatingPanel /> : null}
       <ReadingHub
         title="Blog"
         description="Stories and practical guides from Reswell on gear, culture, and the marketplace, for buyers and sellers."
         articles={articles}
       />
-    </>
+    </div>
   )
 }
