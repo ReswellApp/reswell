@@ -654,7 +654,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 <div className="space-y-2 border-t border-border/60 pt-3">
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     {reviewRequestAlreadySent
-                      ? "Your review request is in Messages with this buyer—they can tap it anytime to leave stars."
+                      ? "Your review request is in Messages with this buyer. They can tap it anytime to leave stars."
                       : "The buyer can leave a public review now that delivery is complete. We’ll place a friendly card in your message thread with them."}
                   </p>
                   <AskBuyerReviewButton

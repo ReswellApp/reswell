@@ -68,7 +68,7 @@ export function AskBuyerReviewButton({
       }
       setThreadId(result.conversation_id)
       setSent(true)
-      toast.success("Done — your buyer will see this in Messages.", {
+      toast.success("Done. Your buyer will see this in Messages.", {
         description: "We’ve dropped a review card in your thread with them.",
         duration: 4500,
       })
@@ -93,7 +93,7 @@ export function AskBuyerReviewButton({
               <div>
                 <p className="text-sm font-semibold text-foreground">Message sent to buyer</p>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                  They’ll get your review request in this sale’s message thread—same as any other chat from you.
+                  They’ll get your review request in this sale’s message thread. It is the same as any other chat from you.
                 </p>
               </div>
               <AmberStarsRow showPop />
