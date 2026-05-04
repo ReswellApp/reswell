@@ -56,7 +56,7 @@ export function SellPriceFields({
             value={listingPrice}
             onChange={(e) => onListingPriceChange(e.target.value)}
             className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
-            required
+            aria-required="true"
           />
         </div>
       </div>

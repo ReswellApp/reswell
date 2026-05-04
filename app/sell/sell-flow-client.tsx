@@ -16,6 +16,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -167,6 +169,81 @@ import {
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
+
+function scrollSellFormSectionIntoView(sectionId: string) {
+  const el = document.getElementById(sectionId)
+  if (!el) return
+  el.scrollIntoView({ behavior: "smooth", block: "start" })
+}
+
+function SellFlowPublishingOverlay({
+  uploadPhaseLabels,
+  submitStepIndex,
+  listingSubmitProgressValue,
+  editId,
+}: {
+  uploadPhaseLabels: string[]
+  submitStepIndex: number
+  listingSubmitProgressValue: number
+  editId: string | null
+}) {
+  return (
+    <div
+      className="absolute inset-0 z-50 overflow-y-auto rounded-xl border border-border bg-background/88 p-5 shadow-sm backdrop-blur-md sm:p-6 md:p-8"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Publishing your listing"
+    >
+      <div className="mx-auto mb-8 max-w-6xl border-b border-border/60 pb-8">
+        <Skeleton className="h-4 w-56 max-w-[80%] sm:w-72" />
+      </div>
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-14">
+        <div className="hidden w-52 shrink-0 space-y-7 lg:block xl:w-56">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded-lg" />
+          ))}
+        </div>
+        <div className="min-w-0 w-full max-w-2xl flex-1 space-y-8 lg:max-w-3xl">
+          <div className="md:mb-8 lg:hidden">
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-7 w-2/3 max-w-sm" />
+            <Skeleton className="h-4 w-full max-w-md" />
+          </div>
+          <Skeleton className="h-52 w-full rounded-xl sm:h-60" />
+          <Skeleton className="h-44 w-full rounded-xl" />
+          <Skeleton className="min-h-[12rem] w-full rounded-xl" />
+        </div>
+      </div>
+      <div className="mx-auto mt-10 max-w-2xl space-y-4 rounded-xl border border-primary/20 bg-muted/40 p-5 shadow-sm lg:max-w-3xl">
+        <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+          {uploadPhaseLabels[submitStepIndex] ?? "Working..."}
+        </p>
+        <Progress value={listingSubmitProgressValue} className="h-2" />
+        <div className="flex gap-1.5">
+          {uploadPhaseLabels.map((label, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-1.5 flex-1 rounded-full transition-colors",
+                i <= submitStepIndex ? "bg-primary" : "bg-muted-foreground/20",
+              )}
+              title={label}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground/45">
+          {editId
+            ? "Save in progress — please keep this tab open."
+            : "Upload in progress — please keep this tab open."}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 /** True once the seller has pinned the board (coordinates used for drafts + validation). */
 function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
   const lat = fd.locationLat
@@ -575,7 +652,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       } catch {
         /* quota / private mode */
       }
-      router.replace("/sell")
+      router.replace("/sell", { scroll: false })
     }
   }, [startFresh, router])
 
@@ -587,6 +664,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [])
 
   const [loading, setLoading] = useState(false)
+  const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
   const [submitStepIndex, setSubmitStepIndex] = useState(0)
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [descriptionGenerated, setDescriptionGenerated] = useState(false)
@@ -793,13 +871,27 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     sellFormHasCommittedMapPins(formData) ||
     (pickupShippingSectionEnteredOnce && pickupShippingLocationUserCommits > 0)
 
-  const sellSectionCompletion = useMemo(() => {
+  const sellSectionCompletion = useMemo((): Record<string, boolean> => {
     const deliveryDataComplete = sellSectionCompletionBase["sell-section-delivery"] === true
     return {
       ...sellSectionCompletionBase,
       "sell-section-delivery": deliveryDataComplete && pickupShippingStepperUxSatisfied,
     }
   }, [pickupShippingStepperUxSatisfied, sellSectionCompletionBase])
+
+  const firstIncompleteSellSectionId = useMemo(() => {
+    for (const item of SELL_FORM_SECTION_NAV_ITEMS) {
+      if (sellSectionCompletion[item.id] !== true) return item.id
+    }
+    return null
+  }, [sellSectionCompletion])
+
+  const firstIncompleteSellSectionLabel = useMemo(() => {
+    if (!firstIncompleteSellSectionId) return null
+    return (
+      SELL_FORM_SECTION_NAV_ITEMS.find((i) => i.id === firstIncompleteSellSectionId)?.label ?? null
+    )
+  }, [firstIncompleteSellSectionId])
 
   useEffect(() => {
     if (skipPickupShippingStepperInteractionUx || editLoading) return
@@ -1141,7 +1233,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (!mounted) return
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
-        router.replace("/sell")
+        router.replace("/sell", { scroll: false })
         setEditLoading(false)
         return
       }
@@ -1159,7 +1251,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
       if ((listing as { section?: string }).section !== "surfboards") {
         toast.error("Only surfboard listings can be edited here.")
-        router.replace("/sell")
+        router.replace("/sell", { scroll: false })
         setEditLoading(false)
         return
       }
@@ -1727,9 +1819,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       submitStepIndexRef.current = n
       setSubmitStepIndex(n)
     }
-    setLoading(true)
     goSubmitStep(0)
     uploadToastIdRef.current = null
+    setPublishValidationBanner(null)
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -1788,8 +1880,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         sellerPurchaseRaw &&
         sellerPurchasePriceToDb(submitForm.sellerPurchasePrice) === null
       ) {
-        toast.error("What you paid: enter a valid dollar amount or leave it blank.")
-        setLoading(false)
+        setPublishValidationBanner(
+          "What you paid: enter a valid dollar amount or leave it blank.",
+        )
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("sell-publish-validation-banner")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        })
         return
       }
 
@@ -1802,10 +1900,16 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         },
       )
       if (validationMessage) {
-        toast.error(validationMessage)
-        setLoading(false)
+        setPublishValidationBanner(validationMessage)
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("sell-publish-validation-banner")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        })
         return
       }
+
+      setLoading(true)
 
       const fd = submitForm
 
@@ -2314,7 +2418,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
   return (
       <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
-        <div className="container mx-auto max-w-2xl lg:max-w-6xl">
+        <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
+          {loading && !editLoading ? (
+            <SellFlowPublishingOverlay
+              uploadPhaseLabels={uploadPhaseLabels}
+              submitStepIndex={submitStepIndex}
+              listingSubmitProgressValue={listingSubmitProgressValue}
+              editId={editId}
+            />
+          ) : null}
           <h1 className="sr-only">
             {editId ? "Edit listing" : "Create a Listing"}
           </h1>
@@ -2360,6 +2472,43 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               </div>
             </div>
           </div>
+
+          {!editLoading && publishValidationBanner ? (
+            <Alert
+              id="sell-publish-validation-banner"
+              variant="destructive"
+              className="mb-6"
+            >
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Before you publish</AlertTitle>
+              <AlertDescription>
+                <p className="mb-3">{publishValidationBanner}</p>
+                <div className="flex flex-wrap gap-2">
+                  {firstIncompleteSellSectionId ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        scrollSellFormSectionIntoView(firstIncompleteSellSectionId)
+                      }
+                    >
+                      Go to {firstIncompleteSellSectionLabel ?? "section"}
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive/40 bg-background text-destructive hover:bg-destructive/5 hover:text-destructive"
+                    onClick={() => setPublishValidationBanner(null)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
           {editLoading ? (
             <div className="flex items-center justify-center py-16 rounded-xl border border-border bg-card shadow-sm">
@@ -3555,44 +3704,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   </div>
                 )}
 
-                {loading ? (
-                  <div
-                    className={cn(
-                      "relative w-full overflow-hidden rounded-xl border border-primary/20 bg-muted/40 p-5 space-y-4 shadow-sm",
-                      "motion-safe:animate-pulse",
-                    )}
-                  >
-                    <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
-                      {uploadPhaseLabels[submitStepIndex] ?? "Working..."}
-                    </p>
-                    <Progress value={listingSubmitProgressValue} className="h-2" />
-                    <div className="flex gap-1.5">
-                      {uploadPhaseLabels.map((label, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "h-1.5 flex-1 rounded-full transition-colors",
-                            i <= submitStepIndex ? "bg-primary" : "bg-muted-foreground/20",
-                          )}
-                          title={label}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground/45">
-                      {editId ? "Save in progress — please keep this tab open." : "Upload in progress — please keep this tab open."}
-                    </p>
-                  </div>
-                ) : (
+                {!loading ? (
                   <Button
                     type="submit"
                     size="lg"
                     className="w-full relative transition-shadow"
-                    disabled={loading}
                   >
                     {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
                   </Button>
-                )}
+                ) : null}
                 </div>
                 </SellFormSection>
                 </form>

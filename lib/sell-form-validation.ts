@@ -85,8 +85,14 @@ export function validateSellListingForm(
 ): string | null {
   const relaxed = opts.adminImpersonationEdit === true
 
-  if (!form.title?.trim() || !form.price?.trim() || !form.condition) {
-    return "Please fill in all required fields."
+  if (!form.title?.trim()) {
+    return "Please enter a listing title."
+  }
+  if (!form.price?.trim()) {
+    return "Enter a listing price."
+  }
+  if (!form.condition) {
+    return "Please select a condition."
   }
 
   if (
