@@ -171,7 +171,7 @@ export type DashboardViewingScope = {
 
 export type DashboardFilterOptions = {
   brands: { id: string; name: string; slug: string | null }[]
-  /** Populated only when `brandId` is set (cascading). */
+  /** Populated when `brandId` is set — `brand_models` for that brand (slug = slugify(name)); count = snapshot rows. */
   models: { slug: string; name: string; count: number }[]
   /** Populated only when `modelSlug` is set (cascading). */
   variants: { id: string; label: string; count: number }[]

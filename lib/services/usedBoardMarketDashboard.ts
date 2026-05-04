@@ -27,6 +27,7 @@ import {
   type UsedBoardMarketDashboard,
 } from "@/lib/services/usedBoardMarketDashboard.shared"
 import type { BrandModelVariantMaterial, FinBoxesType } from "@/lib/validations/brand-model-variants"
+import { slugify } from "@/lib/slugify"
 
 /**
  * Used surfboard market analytics — aggregates from `listings`, `orders`,
@@ -1354,31 +1355,67 @@ async function buildFilterOptions(args: {
     count: conditionMap.get(value) ?? 0,
   }))
 
-  // models — only when brand is set; from snapshots scoped to brand (live data).
+  // models — when brand is set: full `brand_models` catalog for that brand (same slug rule as
+  // `/sell`: slugify(name) → `user_listing_board_model_data.catalog_model_slug`), plus snapshot
+  // rows for counts and any snapshot-only slugs not yet in catalog.
   let models: { slug: string; name: string; count: number }[] = []
-  if (selectedBrand) {
-    const modelMap = new Map<string, { name: string; count: number }>()
+  if (selectedBrand && filters.brandId) {
+    const snapshotCountBySlug = new Map<string, { name: string; count: number }>()
     let modelQuery = args.db
       .from("user_listing_board_model_data")
       .select("catalog_model_slug, model_name")
       .not("catalog_model_slug", "is", null)
     if (selectedBrand.slug) {
       modelQuery = modelQuery.eq("catalog_brand_slug", selectedBrand.slug)
-    } else if (filters.brandId) {
+    } else {
       modelQuery = modelQuery.eq("brand_id", filters.brandId)
     }
     const { data: modelRows } = await modelQuery.limit(ABSOLUTE_FETCH_CAP)
     for (const r of (modelRows ?? []) as { catalog_model_slug: string; model_name: string | null }[]) {
       const slug = r.catalog_model_slug
       if (!slug) continue
-      const cur = modelMap.get(slug) ?? { name: r.model_name?.trim() || slug, count: 0 }
+      const cur = snapshotCountBySlug.get(slug) ?? {
+        name: r.model_name?.trim() || slug,
+        count: 0,
+      }
       cur.count += 1
       if (!cur.name && r.model_name?.trim()) cur.name = r.model_name.trim()
-      modelMap.set(slug, cur)
+      snapshotCountBySlug.set(slug, cur)
     }
-    models = Array.from(modelMap.entries())
-      .map(([slug, v]) => ({ slug, name: v.name, count: v.count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+
+    const { data: catalogModelRows } = await args.db
+      .from("brand_models")
+      .select("name")
+      .eq("brand_id", filters.brandId)
+      .order("name", { ascending: true })
+
+    const catalogNamesBySlug = new Map<string, Set<string>>()
+    for (const row of (catalogModelRows ?? []) as { name: string }[]) {
+      const rawName = row.name?.trim()
+      if (!rawName) continue
+      const slug = slugify(rawName)
+      if (!slug) continue
+      let nameSet = catalogNamesBySlug.get(slug)
+      if (!nameSet) {
+        nameSet = new Set()
+        catalogNamesBySlug.set(slug, nameSet)
+      }
+      nameSet.add(rawName)
+    }
+
+    const catalogSlugs = new Set(catalogNamesBySlug.keys())
+    models = Array.from(catalogNamesBySlug.entries()).map(([slug, names]) => ({
+      slug,
+      name: Array.from(names).sort((a, b) => a.localeCompare(b)).join(" · "),
+      count: snapshotCountBySlug.get(slug)?.count ?? 0,
+    }))
+
+    for (const [slug, v] of snapshotCountBySlug) {
+      if (catalogSlugs.has(slug)) continue
+      models.push({ slug, name: v.name, count: v.count })
+    }
+
+    models.sort((a, b) => a.name.localeCompare(b.name))
   }
 
   // variants — only when brand+model set; from converted snapshots in scope.

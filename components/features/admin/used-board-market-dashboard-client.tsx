@@ -726,7 +726,7 @@ function DashboardHeader(props: {
                   <SelectItem value={ALL_VALUE}>All models</SelectItem>
                   {data.filterOptions.models.length === 0 ? (
                     <div className="px-2 py-1.5 text-xs text-slate-500">
-                      No catalog snapshots for this brand yet
+                      No models in catalog for this brand
                     </div>
                   ) : (
                     data.filterOptions.models.map((m) => (
