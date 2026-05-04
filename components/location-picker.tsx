@@ -334,7 +334,12 @@ export function LocationPicker({
 
   return (
     <div className="space-y-4 [contain:layout]">
-      <Label className="text-base font-medium">Where are you listing from?</Label>
+      <Label className="text-base font-medium">
+        Where are you listing from?{" "}
+        <span className="text-destructive" aria-hidden="true">
+          *
+        </span>
+      </Label>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2">
         <div className="relative min-h-11 w-full min-w-0 flex-1">
