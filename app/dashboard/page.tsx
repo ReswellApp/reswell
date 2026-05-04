@@ -77,7 +77,7 @@ export default async function DashboardPage() {
       .from("listings")
       .select("*, listing_images (url, is_primary)")
       .eq("user_id", user.id)
-      .in("status", ["active", "sold"])
+      .eq("status", "active")
       .is("archived_at", null)
       .order("updated_at", { ascending: false })
       .limit(4),
@@ -436,7 +436,7 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Published listings (active, sold, etc. — not drafts) */}
+      {/* Active listings only — sold/archived appear elsewhere */}
       <Card>
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
           <CardTitle className="text-lg">Your listings</CardTitle>
@@ -491,7 +491,7 @@ export default async function DashboardPage() {
             <div className="text-center py-8">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground mb-4">
-                No published listings yet{draftListings && draftListings.length > 0 ? " — finish a draft below" : ""}
+                No active listings yet{draftListings && draftListings.length > 0 ? " — finish a draft below" : ""}
               </p>
               <Button asChild>
                 <Link href="/sell?new=1">Create a listing</Link>

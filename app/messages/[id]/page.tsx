@@ -23,8 +23,10 @@ import type { OfferRowLite } from '@/components/features/messages/seller-offer-r
 import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiation-message'
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
+import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
+import { ReviewRequestMessageCard } from '@/components/features/messages/review-request-message-card'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { OpenMarketplacePdfButton } from '@/components/features/messages/open-marketplace-pdf-button'
 import { parseMarketplaceMessagePdfAttachment } from '@/lib/validations/marketplace-message-attachment'
@@ -462,6 +464,27 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           payload={orderCompleted}
                           createdAt={message.created_at}
                           viewerIsSeller={isSeller}
+                        />
+                      </div>
+                    )
+                  }
+
+                  const reviewRequested = parseReviewRequestMessageMetadata(message.metadata)
+                  if (reviewRequested) {
+                    const viewerIsBuyer = currentUserId === conversation.buyer_id
+                    const sellerDisplayName =
+                      conversation.seller.display_name?.trim() || 'Seller'
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <ReviewRequestMessageCard
+                          payload={reviewRequested}
+                          createdAt={message.created_at}
+                          viewerIsBuyer={viewerIsBuyer}
+                          sellerDisplayName={sellerDisplayName}
+                          onAfterReviewSubmitted={loadThread}
                         />
                       </div>
                     )

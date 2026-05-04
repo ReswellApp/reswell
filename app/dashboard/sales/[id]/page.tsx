@@ -54,6 +54,10 @@ import {
 } from "@/lib/shipping/order-tracking-detail"
 import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { getSellerReviewByOrderId } from "@/lib/db/order-reviews"
+import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
+import { sellerReviewRequestAlreadySentForOrder } from "@/lib/services/sellerReviewRequest"
+import { AskBuyerReviewButton } from "@/components/features/sales/ask-buyer-review-button"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -320,6 +324,17 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   }
 
   const orderNumber = formatOrderNumForCustomer(sale.order_num, sale.id)
+
+  const { data: buyerReviewForOrder } = await getSellerReviewByOrderId(supabase, id)
+  const buyerReviewGate = validateSellerReviewForOrder({
+    status: sale.status,
+    delivery_status: sale.delivery_status,
+  })
+  const canAskBuyerForReview =
+    buyerReviewGate.ok && !buyerReviewForOrder && Boolean(sale.buyer_id)
+  const reviewRequestAlreadySent = canAskBuyerForReview
+    ? await sellerReviewRequestAlreadySentForOrder(supabase, sale.buyer_id, user.id, id)
+    : false
 
   return (
     <div className="space-y-6 pb-12">
@@ -630,11 +645,25 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 Buyer
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-0 space-y-3">
               <p className="font-semibold text-foreground">{buyerName}</p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground">
                 Completed checkout for this order.
               </p>
+              {canAskBuyerForReview ? (
+                <div className="space-y-2 border-t border-border/60 pt-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {reviewRequestAlreadySent
+                      ? "Your review request is in Messages with this buyer—they can tap it anytime to leave stars."
+                      : "The buyer can leave a public review now that delivery is complete. We’ll place a friendly card in your message thread with them."}
+                  </p>
+                  <AskBuyerReviewButton
+                    orderId={sale.id}
+                    conversationId={conversationId}
+                    initialAlreadySent={reviewRequestAlreadySent}
+                  />
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

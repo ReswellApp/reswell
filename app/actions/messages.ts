@@ -1,8 +1,14 @@
 "use server"
 
+import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
+import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
+
+const sendSellerReviewRequestSchema = z.object({
+  order_id: z.string().uuid(),
+})
 
 export async function sendListingMessage(input: {
   listing_id?: string | null
@@ -170,4 +176,30 @@ export async function sendConversationReply(input: {
   })
 
   return { success: true as const, message: inserted }
+}
+
+export async function sendSellerReviewRequest(input: unknown) {
+  const parsed = sendSellerReviewRequestSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: "Invalid request" as const }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" as const }
+  }
+
+  const result = await sendSellerReviewRequestForOrder(supabase, user.id, parsed.data.order_id, {
+    email: user.email ?? null,
+  })
+
+  if (!result.ok) {
+    return { error: result.error }
+  }
+
+  return { success: true as const, conversation_id: result.conversationId }
 }

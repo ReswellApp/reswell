@@ -132,10 +132,16 @@ const config: Config = {
             height: '0',
           },
         },
+        'review-stars-pop': {
+          '0%': { transform: 'scale(0.72)', opacity: '0.5', filter: 'brightness(0.92)' },
+          '55%': { transform: 'scale(1.1)', opacity: '1', filter: 'brightness(1.12)' },
+          '100%': { transform: 'scale(1)', opacity: '1', filter: 'brightness(1)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'review-stars-pop': 'review-stars-pop 0.55s ease-out both',
       },
     },
   },

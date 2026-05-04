@@ -15,6 +15,7 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { cn } from '@/lib/utils'
 import { getConversationForBuyerSeller } from '@/lib/db/conversations'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
+import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 
 interface Notification {
   id: string
@@ -63,6 +64,7 @@ interface Conversation {
     is_read: boolean
     sender_id: string
     created_at: string
+    metadata?: unknown | null
   }[]
 }
 
@@ -152,7 +154,7 @@ function MessagesContent() {
             listing:listings(id, title, listing_images(url)),
             buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
             seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
-            messages(content, is_read, sender_id, created_at)
+            messages(content, is_read, sender_id, created_at, metadata)
           `)
           .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
           .order('last_message_at', { ascending: false })
@@ -244,6 +246,13 @@ function MessagesContent() {
     currentId: string | null,
   ): string {
     const listing = listingTitle?.trim() ? capitalizeWords(listingTitle.trim()) : ''
+    const reviewReq = parseReviewRequestMessageMetadata(lastMessage?.metadata)
+    if (reviewReq && lastMessage) {
+      const you = lastMessage.sender_id === currentId
+      const hint = you ? 'You asked for a review' : 'Asked you for a review'
+      if (listing) return `${listing} · ${hint}`
+      return hint
+    }
     if (!lastMessage?.content?.trim()) {
       return listing || 'No messages yet'
     }
