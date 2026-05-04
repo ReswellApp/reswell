@@ -24,12 +24,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
@@ -71,7 +65,6 @@ import {
   Upload,
   Loader2,
   X,
-  ChevronDown,
   ChevronRight,
   CheckCircle2,
   AlertCircle,
@@ -549,7 +542,6 @@ function createInitialSellFormData() {
     boardWidthInches: "",
     boardThicknessInches: "",
     boardVolumeL: "",
-    boardSkipOptionalDimensions: false,
     boardFins: "",
     boardTail: "",
     boardBrandId: "",
@@ -871,7 +863,6 @@ function SellPageContentInner({
       boardWidthInches: formData.boardWidthInches,
       boardThicknessInches: formData.boardThicknessInches,
       boardVolumeL: formData.boardVolumeL,
-      boardSkipOptionalDimensions: formData.boardSkipOptionalDimensions,
       boardFins: formData.boardFins,
       boardTail: formData.boardTail,
       boardFulfillment: formData.boardFulfillment,
@@ -988,7 +979,6 @@ function SellPageContentInner({
       boardLength: formData.boardLength,
       boardWidthInches: formData.boardWidthInches,
       boardThicknessInches: formData.boardThicknessInches,
-      boardSkipOptionalDimensions: formData.boardSkipOptionalDimensions,
     })
     if (!parcelFill) return
 
@@ -1012,7 +1002,6 @@ function SellPageContentInner({
   }, [
     deliveryFlags.shipping_available,
     formData.boardShippingCostMode,
-    formData.boardSkipOptionalDimensions,
     formData.boardLength,
     formData.boardWidthInches,
     formData.boardThicknessInches,
@@ -1228,7 +1217,6 @@ function SellPageContentInner({
         boardWidthInches: formData.boardWidthInches,
         boardThicknessInches: formData.boardThicknessInches,
         boardVolumeL: formData.boardVolumeL,
-        boardSkipOptionalDimensions: formData.boardSkipOptionalDimensions,
         boardFins: formData.boardFins,
         boardTail: formData.boardTail,
         boardBrandId: formData.boardBrandId,
@@ -1856,11 +1844,6 @@ function SellPageContentInner({
           ((listing as { volume?: number | null }).volume != null
             ? String((listing as { volume?: number | null }).volume)
             : ""),
-        boardSkipOptionalDimensions: (() => {
-          const w = (listing as { width?: number | null }).width
-          const t = (listing as { thickness?: number | null }).thickness
-          return w == null && t == null
-        })(),
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
@@ -3297,7 +3280,7 @@ function SellPageContentInner({
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground/45">Length *</Label>
+                          <Label className="text-xs text-muted-foreground/45">Length</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
@@ -3317,7 +3300,6 @@ function SellPageContentInner({
                                   setFormData((fd) => ({ ...fd, boardLength: next }))
                                 }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                required
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board length in feet and inches"
@@ -3351,7 +3333,6 @@ function SellPageContentInner({
                               className={cn(
                                 "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
                                 "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                                formData.boardSkipOptionalDimensions && "opacity-60",
                               )}
                             >
                               <Input
@@ -3360,7 +3341,6 @@ function SellPageContentInner({
                                 inputMode="text"
                                 placeholder="19 1/4"
                                 value={formData.boardWidthInches}
-                                disabled={formData.boardSkipOptionalDimensions}
                                 onChange={(e) => {
                                   const next = normalizeTapeStyleInchesInput(e.target.value)
                                   prevBoardWidthRef.current = next
@@ -3386,7 +3366,6 @@ function SellPageContentInner({
                               className={cn(
                                 "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
                                 "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                                formData.boardSkipOptionalDimensions && "opacity-60",
                               )}
                             >
                               <Input
@@ -3395,7 +3374,6 @@ function SellPageContentInner({
                                 inputMode="text"
                                 placeholder="2 3/8"
                                 value={formData.boardThicknessInches}
-                                disabled={formData.boardSkipOptionalDimensions}
                                 onChange={(e) => {
                                   const next = normalizeTapeStyleInchesInput(e.target.value)
                                   prevBoardThicknessRef.current = next
@@ -3421,7 +3399,6 @@ function SellPageContentInner({
                               className={cn(
                                 "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
                                 "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                                formData.boardSkipOptionalDimensions && "opacity-60",
                               )}
                             >
                               <Input
@@ -3430,7 +3407,6 @@ function SellPageContentInner({
                                 inputMode="text"
                                 placeholder="30.4"
                                 value={formData.boardVolumeL}
-                                disabled={formData.boardSkipOptionalDimensions}
                                 onChange={(e) =>
                                   setFormData((fd) => ({
                                     ...fd,
@@ -3450,76 +3426,10 @@ function SellPageContentInner({
                         </div>
                       </div>
 
-                      <div className="flex justify-end pt-0.5">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 shrink-0 gap-0.5 whitespace-nowrap px-1.5 text-[10px] font-normal text-muted-foreground/45 hover:text-foreground"
-                              aria-label={
-                                formData.boardSkipOptionalDimensions
-                                  ? "Open optional dimensions: add width, thickness, or liters"
-                                  : "Open optional dimensions: why they matter and skip if needed"
-                              }
-                            >
-                              <span>Optional</span>
-                              <ChevronDown className="h-2.5 w-2.5 shrink-0 opacity-75" aria-hidden />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            sideOffset={6}
-                            className="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden p-0"
-                          >
-                            <div className="border-b border-border bg-muted/30 px-3.5 py-3.5">
-                              <p className="text-sm leading-relaxed text-muted-foreground/45">
-                                Listings with length, width, thickness, and volume filled in tend to
-                                sell better—buyers know exactly what they&apos;re comparing.
-                              </p>
-                              {formData.boardSkipOptionalDimensions ? (
-                                <p className="mt-3 text-sm leading-relaxed text-foreground/90">
-                                  You&apos;re listing without width, thickness, or liters. Add them
-                                  anytime before you publish.
-                                </p>
-                              ) : null}
-                            </div>
-                            <div className="p-1.5">
-                              {formData.boardSkipOptionalDimensions ? (
-                                <DropdownMenuItem
-                                  className="py-2.5 text-sm"
-                                  onSelect={() => {
-                                    setFormData((fd) => ({
-                                      ...fd,
-                                      boardSkipOptionalDimensions: false,
-                                    }))
-                                  }}
-                                >
-                                  Add width, thickness & liters
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  className="py-2.5 text-sm"
-                                  onSelect={() => {
-                                    prevBoardWidthRef.current = ""
-                                    prevBoardThicknessRef.current = ""
-                                    setFormData((fd) => ({
-                                      ...fd,
-                                      boardSkipOptionalDimensions: true,
-                                      boardWidthInches: "",
-                                      boardThicknessInches: "",
-                                      boardVolumeL: "",
-                                    }))
-                                  }}
-                                >
-                                  Don&apos;t have width, thickness, or liters
-                                </DropdownMenuItem>
-                              )}
-                            </div>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      <p className="text-xs text-muted-foreground/45 pt-0.5">
+                        Dimensions are optional. When you fill them in, surfers can compare your board more
+                        confidently—often that helps listings move faster.
+                      </p>
                     </div>
                       </div>
 

@@ -38,41 +38,28 @@ function shapeSectionComplete(form: SellFormValidationInput): boolean {
 
 function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
   const lenRaw = form.boardLength?.trim() ?? ""
-  const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
-  if (!lenRaw || !feetStr) return false
-  const ft = parseLengthFeet(feetStr)
-  if (ft == null || ft < 1 || ft > 15) return false
+  if (lenRaw) {
+    const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
+    if (!feetStr) return false
+    const ft = parseLengthFeet(feetStr)
+    if (ft == null || ft < 1 || ft > 15) return false
 
-  const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
-  const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
-  if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
+    const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
+    const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
+    if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
+  }
 
-  const skipDims = form.boardSkipOptionalDimensions === true
-  if (!skipDims) {
-    if (!form.boardWidthInches?.trim()) return false
+  if (form.boardWidthInches?.trim()) {
     const width =
       parseBoardMeasurement(form.boardWidthInches.trim()) ??
       Number.parseFloat(form.boardWidthInches.trim())
     if (!Number.isFinite(width) || width <= 0) return false
-
-    if (!form.boardThicknessInches?.trim()) return false
+  }
+  if (form.boardThicknessInches?.trim()) {
     const thick =
       parseBoardMeasurement(form.boardThicknessInches.trim()) ??
       Number.parseFloat(form.boardThicknessInches.trim())
     if (!Number.isFinite(thick) || thick <= 0) return false
-  } else {
-    if (form.boardWidthInches?.trim()) {
-      const width =
-        parseBoardMeasurement(form.boardWidthInches.trim()) ??
-        Number.parseFloat(form.boardWidthInches.trim())
-      if (!Number.isFinite(width) || width <= 0) return false
-    }
-    if (form.boardThicknessInches?.trim()) {
-      const thick =
-        parseBoardMeasurement(form.boardThicknessInches.trim()) ??
-        Number.parseFloat(form.boardThicknessInches.trim())
-      if (!Number.isFinite(thick) || thick <= 0) return false
-    }
   }
 
   if (form.boardVolumeL?.trim()) {

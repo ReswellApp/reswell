@@ -161,22 +161,21 @@ export function reswellParcelAutofillStringsFromBoard(input: {
   boardLength: string
   boardWidthInches: string
   boardThicknessInches: string
-  boardSkipOptionalDimensions?: boolean
 }): { length: string; width: string; height: string } | null {
   if (totalBoardLengthInchesFromCombinedInput(input.boardLength) == null) return null
 
   const width = input.boardWidthInches.trim()
   const height = input.boardThicknessInches.trim()
-  const skip = input.boardSkipOptionalDimensions === true
-  if (!skip) {
-    if (!width || !height) return null
+
+  if (width) {
     const wParsed =
       parseBoardMeasurement(width) ?? Number.parseFloat(width.replace(/\s+/g, "").replace(/,/g, ""))
+    if (!Number.isFinite(wParsed) || wParsed <= 0) return null
+  }
+  if (height) {
     const hParsed =
       parseBoardMeasurement(height) ?? Number.parseFloat(height.replace(/\s+/g, "").replace(/,/g, ""))
-    if (!Number.isFinite(wParsed) || wParsed <= 0 || !Number.isFinite(hParsed) || hParsed <= 0) {
-      return null
-    }
+    if (!Number.isFinite(hParsed) || hParsed <= 0) return null
   }
 
   return {

@@ -49,11 +49,6 @@ export type SellFormValidationInput = {
   boardWidthInches: string
   boardThicknessInches: string
   boardVolumeL: string
-  /**
-   * When true, width/thickness/volume are not required (length still required).
-   * Used by the sell UI when the seller opts out of full dimensions.
-   */
-  boardSkipOptionalDimensions?: boolean
   boardFins: string
   boardTail: string
   boardFulfillment: BoardFulfillmentChoice
@@ -130,74 +125,28 @@ export function validateSellListingForm(
 
   const lenRaw = form.boardLength?.trim() ?? ""
   const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
-  if (!relaxed) {
+  const validateFilledLength = (): string | null => {
     if (!lenRaw || !feetStr) {
-      return "Board length is required."
+      return "Board length: enter feet and inches (e.g. 6'2), or leave blank."
     }
     const ft = parseLengthFeet(feetStr)
     if (ft == null || ft < 1 || ft > 15) {
       return "Board length: enter whole feet (1–15)."
     }
-
     const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
     const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
     if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
       return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
     }
-
-    const skipDims = form.boardSkipOptionalDimensions === true
-    if (!skipDims) {
-      if (!form.boardWidthInches?.trim()) {
-        return "Enter board width (inches)."
-      }
-      const width =
-        parseBoardMeasurement(form.boardWidthInches.trim()) ??
-        Number.parseFloat(form.boardWidthInches.trim())
-      if (!Number.isFinite(width) || width <= 0) {
-        return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
-      }
-
-      if (!form.boardThicknessInches?.trim()) {
-        return "Enter board thickness (inches)."
-      }
-      const thick =
-        parseBoardMeasurement(form.boardThicknessInches.trim()) ??
-        Number.parseFloat(form.boardThicknessInches.trim())
-      if (!Number.isFinite(thick) || thick <= 0) {
-        return "Board thickness: enter a number (decimals or fractions are OK)."
-      }
-    } else {
-      if (form.boardWidthInches?.trim()) {
-        const width =
-          parseBoardMeasurement(form.boardWidthInches.trim()) ??
-          Number.parseFloat(form.boardWidthInches.trim())
-        if (!Number.isFinite(width) || width <= 0) {
-          return "Board width: enter a number (decimals or fractions like 19 1/2 are OK)."
-        }
-      }
-      if (form.boardThicknessInches?.trim()) {
-        const thick =
-          parseBoardMeasurement(form.boardThicknessInches.trim()) ??
-          Number.parseFloat(form.boardThicknessInches.trim())
-        if (!Number.isFinite(thick) || thick <= 0) {
-          return "Board thickness: enter a number (decimals or fractions are OK)."
-        }
-      }
-    }
-  } else if (lenRaw && feetStr) {
-    const ft = parseLengthFeet(feetStr)
-    if (ft == null || ft < 1 || ft > 15) {
-      return "Board length: enter whole feet (1–15)."
-    }
-
-    const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
-    const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
-    if (!Number.isFinite(inches) || inches < 0 || inches >= 12) {
-      return "Board length: inches must be under 12 (e.g. 0, 2, 2.5, or 2 1/2), or leave blank for 0."
-    }
+    return null
   }
 
-  if (relaxed) {
+  if (lenRaw) {
+    const lenErr = validateFilledLength()
+    if (lenErr) return lenErr
+  }
+
+  const validateWidthThicknessIfFilled = (): string | null => {
     if (form.boardWidthInches?.trim()) {
       const width =
         parseBoardMeasurement(form.boardWidthInches.trim()) ??
@@ -214,7 +163,11 @@ export function validateSellListingForm(
         return "Board thickness: enter a number (decimals or fractions are OK)."
       }
     }
+    return null
   }
+
+  const wtErr = validateWidthThicknessIfFilled()
+  if (wtErr) return wtErr
 
   if (form.boardVolumeL?.trim()) {
     const vol = parseVolumeLiters(form.boardVolumeL.trim())
