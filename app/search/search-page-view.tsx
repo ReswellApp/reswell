@@ -39,6 +39,7 @@ export async function SearchPageView({
   brandSlugFromUrl,
   categorySlugFromUrl,
   showSeoBookmark,
+  analyticsOriginHeaderNav = false,
 }: {
   rawQuery: string
   /** Raw `?brandSlug=` — must match `public.brands.slug` to apply. */
@@ -47,6 +48,10 @@ export async function SearchPageView({
   categorySlugFromUrl: string
   /** Shown on the canonical recent-listings URL (`/search/recent`). */
   showSeoBookmark: boolean
+  /**
+   * True when `/search` was opened from the header nav bar (`nq=1`), used for analytics attribution only.
+   */
+  analyticsOriginHeaderNav?: boolean
 }) {
   const brandSlugRequested = brandSlugFromUrl.trim()
   const curatedView = !rawQuery.trim() && !brandSlugRequested
@@ -96,6 +101,7 @@ export async function SearchPageView({
       resultCount: searchMeta.resultCount,
       backend: searchMeta.backend,
       categorySlug: categorySlugForLog,
+      ...(analyticsOriginHeaderNav ? { originSurface: "header_nav" as const } : {}),
     })
   }
 

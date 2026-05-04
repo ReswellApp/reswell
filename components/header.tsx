@@ -123,6 +123,20 @@ function isSearchResultsPath(p: string) {
   return p === "/search" || p === "/search/recent"
 }
 
+/** `/search` opened from header overlay / compact nav — drives analytics `nq=1` + category carry-over. */
+function marketplaceNavSearchHref(
+  rawQuery: string,
+  pathname: string | null,
+  categorySource: Pick<URLSearchParams, "get">,
+): string {
+  const params = new URLSearchParams()
+  params.set("q", rawQuery.trim())
+  params.set("nq", "1")
+  const cat = isSearchResultsPath(pathname ?? "") ? categorySource.get("category") : null
+  if (cat?.trim()) params.set("category", cat.trim())
+  return `/search?${params.toString()}`
+}
+
 const CATEGORY_BAR_GAP_PX = 32
 
 /**
@@ -688,7 +702,7 @@ export function Header() {
           await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
           return
         }
-        router.push(`/search?q=${encodeURIComponent(q)}`)
+        router.push(marketplaceNavSearchHref(q, pathname, headerSearchParams))
         setSearchQuery("")
         clearNavSearchQuery()
         setSearchOpen(false)
@@ -703,13 +717,14 @@ export function Header() {
             categorySlug: isSearchResultsPath(pathname ?? "")
               ? headerSearchParams.get("category")
               : null,
+            navSubmitted: true,
           })
           setSearchQuery("")
           clearNavSearchQuery()
           setSearchOpen(false)
         }}
         onSelect={(text) => {
-          router.push(`/search?q=${encodeURIComponent(text)}`)
+          router.push(marketplaceNavSearchHref(text, pathname, headerSearchParams))
           setSearchQuery("")
           clearNavSearchQuery()
           setSearchOpen(false)
@@ -890,7 +905,7 @@ export function Header() {
                       await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
                       return
                     }
-                    router.push(`/search?q=${encodeURIComponent(q)}`)
+                    router.push(marketplaceNavSearchHref(q, pathname, headerSearchParams))
                     setMobileNavSearchQuery("")
                     clearNavSearchQuery()
                   }}
@@ -904,12 +919,13 @@ export function Header() {
                           categorySlug: isSearchResultsPath(pathname ?? "")
                             ? headerSearchParams.get("category")
                             : null,
+                          navSubmitted: true,
                         })
                         setMobileNavSearchQuery("")
                         clearNavSearchQuery()
                       }}
                       onSelect={(text) => {
-                        router.push(`/search?q=${encodeURIComponent(text)}`)
+                        router.push(marketplaceNavSearchHref(text, pathname, headerSearchParams))
                         setMobileNavSearchQuery("")
                         clearNavSearchQuery()
                       }}

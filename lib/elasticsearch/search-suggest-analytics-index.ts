@@ -284,3 +284,74 @@ export async function aggregateSearchSuggestPicks(
     return null
   }
 }
+
+export type HeaderNavSuggestClickAgg = {
+  volumeByDay: { date: string; count: number }[]
+  totalClicks: number
+}
+
+/** Dropdown clicks (`interaction: pick` / legacy missing) on `surface: header_nav` only. */
+export async function aggregateHeaderNavSuggestClickAnalytics(
+  fromIso: string,
+  toIso: string,
+): Promise<HeaderNavSuggestClickAgg | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  try {
+    const dateHistogram = {
+      date_histogram: {
+        field: "occurred_at",
+        calendar_interval: "day" as const,
+        min_doc_count: 0,
+        extended_bounds: { min: fromIso, max: toIso },
+      },
+    }
+
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: true,
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lte: toIso } } },
+            { term: { surface: "header_nav" } },
+            CLICK_INTERACTION_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+      aggs: {
+        by_day: dateHistogram,
+      },
+    })
+
+    const aggs = res.aggregations as
+      | { by_day?: { buckets?: Array<{ key_as_string?: string; doc_count: number }> } }
+      | undefined
+
+    const hitsTotal = res.hits?.total
+    const total =
+      typeof hitsTotal === "number"
+        ? hitsTotal
+        : typeof hitsTotal === "object" && hitsTotal && "value" in hitsTotal
+          ? hitsTotal.value
+          : 0
+
+    return {
+      volumeByDay: (aggs?.by_day?.buckets ?? []).map((b) => ({
+        date: (b.key_as_string ?? "").slice(0, 10),
+        count: b.doc_count,
+      })),
+      totalClicks: total,
+    }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) {
+      return { volumeByDay: [], totalClicks: 0 }
+    }
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] aggregateHeaderNavSuggestClickAnalytics failed:", msg)
+    return null
+  }
+}

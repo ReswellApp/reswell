@@ -1,12 +1,15 @@
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import {
   aggregateSearchAnalytics,
+  aggregateNavBarMarketplaceKeywordAnalytics,
+  getMarketplaceOccurredAtBounds,
   indexSearchAnalyticsDocument,
   topQueriesInRange,
   type SearchAnalyticsDoc,
 } from "@/lib/elasticsearch/search-analytics-index"
 import {
   aggregateSearchSuggestPicks,
+  aggregateHeaderNavSuggestClickAnalytics,
   indexSearchSuggestPickDocument,
   type SearchSuggestPickDoc,
   type SearchSuggestPickKind,
@@ -21,6 +24,8 @@ export type MarketplaceSearchAnalyticsPayload = {
   resultCount: number
   backend: "elasticsearch" | "supabase"
   categorySlug: string | null
+  /** When `/search` opened from header nav (`nq=1` query marker). */
+  originSurface?: "header_nav"
 }
 
 /** Lowercase, single spaces, capped length — used for aggregations. */
@@ -49,6 +54,7 @@ export async function recordMarketplaceSearchAnalyticsEvent(
     result_count: payload.resultCount,
     backend: payload.backend,
     search_surface: "marketplace",
+    ...(payload.originSurface ? { origin_surface: payload.originSurface } : {}),
     category_slug: payload.categorySlug,
     has_category_filter: Boolean(payload.categorySlug),
   }
@@ -166,6 +172,17 @@ export type SearchAnalyticsDashboard = {
     zeroResultQueries: { query: string; count: number }[]
     byBackend: { backend: string; count: number }[]
   }
+  /** Header nav bar only — typed `/search` submits (`nq=1`) vs dropdown row clicks (`surface: header_nav`). */
+  navSearchBar: {
+    volumeByDay: {
+      date: string
+      freeFormSubmits: number
+      dropdownSelections: number
+    }[]
+    totalFreeFormSubmits: number
+    totalDropdownSelections: number
+    topFreeFormQueries: { query: string; count: number }[]
+  }
   fetchedAt: string
 }
 
@@ -180,8 +197,227 @@ const EMPTY_BRAND_DIRECTORY_DASH: SearchAnalyticsDashboard["brandDirectory"] = {
   byBackend: [],
 }
 
+const EMPTY_NAV_SEARCH_BAR: SearchAnalyticsDashboard["navSearchBar"] = {
+  volumeByDay: [],
+  totalFreeFormSubmits: 0,
+  totalDropdownSelections: 0,
+  topFreeFormQueries: [],
+}
+
+function mergeNavSearchBarDaily(
+  freeForm: { date: string; count: number }[],
+  dropdown: { date: string; count: number }[],
+): SearchAnalyticsDashboard["navSearchBar"]["volumeByDay"] {
+  const keys = new Set<string>()
+  const fm = new Map<string, number>()
+  const dm = new Map<string, number>()
+  for (const r of freeForm) {
+    keys.add(r.date)
+    fm.set(r.date, r.count)
+  }
+  for (const r of dropdown) {
+    keys.add(r.date)
+    dm.set(r.date, r.count)
+  }
+  return [...keys].sort().map((date) => ({
+    date,
+    freeFormSubmits: fm.get(date) ?? 0,
+    dropdownSelections: dm.get(date) ?? 0,
+  }))
+}
+
+function buildNavSearchBarSlice(
+  navMp: Awaited<ReturnType<typeof aggregateNavBarMarketplaceKeywordAnalytics>>,
+  navSuggest: Awaited<ReturnType<typeof aggregateHeaderNavSuggestClickAnalytics>>,
+): SearchAnalyticsDashboard["navSearchBar"] {
+  const mp = navMp ?? { volumeByDay: [], topQueries: [], totalSubmits: 0 }
+  const sg = navSuggest ?? { volumeByDay: [], totalClicks: 0 }
+  return {
+    volumeByDay: mergeNavSearchBarDaily(mp.volumeByDay, sg.volumeByDay),
+    totalFreeFormSubmits: mp.totalSubmits,
+    totalDropdownSelections: sg.totalClicks,
+    topFreeFormQueries: mp.topQueries,
+  }
+}
+
+/** Same momentum rules as the 2-day “Trending” card (growth vs trailing window). */
+function computeTrendingFromMaps(
+  recentMap: Map<string, number>,
+  prevMap: Map<string, number>,
+): SearchAnalyticsTrendingRow[] {
+  const out: SearchAnalyticsTrendingRow[] = []
+  for (const [query, recentCount] of recentMap) {
+    if (recentCount < 2) continue
+    const previousCount = prevMap.get(query) ?? 0
+    const velocity = recentCount / (previousCount + 1)
+    if (velocity >= 1.25 || (recentCount >= 5 && previousCount === 0)) {
+      out.push({ query, recentCount, previousCount, velocity })
+    }
+  }
+  out.sort((a, b) => b.velocity - a.velocity)
+  return out
+}
+
+function utcInclusiveMonthBounds(yearMonth: string): {
+  recentFrom: string
+  recentTo: string
+} {
+  const m = /^(\d{4})-(\d{2})$/.exec(yearMonth.trim())
+  if (!m) throw new Error("Invalid yearMonth")
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  if (!Number.isInteger(mo) || mo < 1 || mo > 12) throw new Error("Invalid yearMonth")
+  const start = new Date(Date.UTC(y, mo - 1, 1, 0, 0, 0, 0))
+  const end = new Date(Date.UTC(y, mo, 0, 23, 59, 59, 999))
+  return { recentFrom: start.toISOString(), recentTo: end.toISOString() }
+}
+
+/** Previous calendar month as yyyy-MM (UTC). */
+function priorYearMonthUtc(yearMonth: string): string {
+  const { recentFrom } = utcInclusiveMonthBounds(yearMonth)
+  const d = new Date(recentFrom)
+  d.setUTCMonth(d.getUTCMonth() - 1)
+  const py = d.getUTCFullYear()
+  const pm = d.getUTCMonth() + 1
+  return `${py}-${String(pm).padStart(2, "0")}`
+}
+
 const TREND_RECENT_MS = 2 * 24 * 60 * 60 * 1000
 const TREND_PREV_MS = 2 * 24 * 60 * 60 * 1000
+
+export type SearchTrendPeriodDetailPayload = {
+  configured: boolean
+  mode: "all" | "month"
+  yearMonth?: string
+  recentLabel: string
+  priorLabel: string
+  trendingQueries: SearchAnalyticsTrendingRow[]
+}
+
+export async function getSearchTrendPeriodDetailService(
+  mode: "all" | "month",
+  yearMonth: string | undefined,
+): Promise<SearchTrendPeriodDetailPayload> {
+  if (!isElasticsearchConfigured()) {
+    return {
+      configured: false,
+      mode,
+      yearMonth,
+      recentLabel: "—",
+      priorLabel: "—",
+      trendingQueries: [],
+    }
+  }
+
+  if (mode === "month") {
+    if (!yearMonth) {
+      return {
+        configured: true,
+        mode,
+        recentLabel: "—",
+        priorLabel: "—",
+        trendingQueries: [],
+      }
+    }
+
+    try {
+      const prevYm = priorYearMonthUtc(yearMonth)
+      const recentBm = utcInclusiveMonthBounds(yearMonth)
+      const priorBm = utcInclusiveMonthBounds(prevYm)
+
+      const [recentMap, prevMap] = await Promise.all([
+        topQueriesInRange(recentBm.recentFrom, recentBm.recentTo, 120),
+        topQueriesInRange(priorBm.recentFrom, priorBm.recentTo, 120),
+      ])
+
+      const monthLabelFormat = new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      })
+      const recentLabel = monthLabelFormat.format(new Date(recentBm.recentFrom))
+      const priorLabel = monthLabelFormat.format(new Date(priorBm.recentFrom))
+
+      return {
+        configured: true,
+        mode,
+        yearMonth,
+        recentLabel,
+        priorLabel,
+        trendingQueries: computeTrendingFromMaps(recentMap, prevMap).slice(0, 40),
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error("getSearchTrendPeriodDetailService (month):", msg)
+      return {
+        configured: true,
+        mode,
+        yearMonth,
+        recentLabel: "—",
+        priorLabel: "—",
+        trendingQueries: [],
+      }
+    }
+  }
+
+  const bounds = await getMarketplaceOccurredAtBounds()
+  if (!bounds) {
+    return {
+      configured: true,
+      mode,
+      recentLabel: "—",
+      priorLabel: "—",
+      trendingQueries: [],
+    }
+  }
+
+  const minMs = Date.parse(bounds.minIso)
+  const maxMs = Date.parse(bounds.maxIso)
+  if (!Number.isFinite(minMs) || !Number.isFinite(maxMs) || maxMs <= minMs) {
+    return {
+      configured: true,
+      mode,
+      recentLabel: "—",
+      priorLabel: "—",
+      trendingQueries: [],
+    }
+  }
+
+  const midIso = new Date(Math.floor(minMs + (maxMs - minMs) / 2)).toISOString()
+  const dfShort = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+  const priorLabel = `${dfShort.format(new Date(bounds.minIso))} – ${dfShort.format(new Date(midIso))}`
+  const recentLabel = `${dfShort.format(new Date(midIso))} – ${dfShort.format(new Date(bounds.maxIso))}`
+
+  try {
+    const [recentMap, prevMap] = await Promise.all([
+      topQueriesInRange(midIso, bounds.maxIso, 120),
+      topQueriesInRange(bounds.minIso, midIso, 120, { endInclusive: false }),
+    ])
+
+    return {
+      configured: true,
+      mode,
+      recentLabel,
+      priorLabel,
+      trendingQueries: computeTrendingFromMaps(recentMap, prevMap).slice(0, 40),
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("getSearchTrendPeriodDetailService (all):", msg)
+    return {
+      configured: true,
+      mode,
+      recentLabel,
+      priorLabel,
+      trendingQueries: [],
+    }
+  }
+}
 
 export async function getSearchAnalyticsDashboardService(
   rangeDays: number,
@@ -217,6 +453,7 @@ export async function getSearchAnalyticsDashboardService(
       suggestTopQueryPrefixesHover: [],
       suggestTopListingClicks: [],
       brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
+      navSearchBar: EMPTY_NAV_SEARCH_BAR,
       fetchedAt,
     }
   }
@@ -226,10 +463,14 @@ export async function getSearchAnalyticsDashboardService(
   const from = start.toISOString()
   const to = end.toISOString()
 
-  const [main, suggestPicks] = await Promise.all([
+  const [main, suggestPicks, navMp, navSuggest] = await Promise.all([
     aggregateSearchAnalytics(from, to),
     aggregateSearchSuggestPicks(from, to),
+    aggregateNavBarMarketplaceKeywordAnalytics(from, to),
+    aggregateHeaderNavSuggestClickAnalytics(from, to),
   ])
+
+  const navSearchBar = buildNavSearchBarSlice(navMp, navSuggest)
 
   if (!main) {
     return {
@@ -260,6 +501,7 @@ export async function getSearchAnalyticsDashboardService(
       suggestTopQueryPrefixesHover: suggestPicks?.topQueryPrefixesHovers ?? [],
       suggestTopListingClicks: suggestPicks?.topListingClicks ?? [],
       brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
+      navSearchBar,
       fetchedAt,
     }
   }
@@ -283,17 +525,7 @@ export async function getSearchAnalyticsDashboardService(
     topQueriesInRange(prevStart.toISOString(), prevEnd.toISOString(), 80),
   ])
 
-  const trendingQueries: SearchAnalyticsTrendingRow[] = []
-  for (const [query, recentCount] of recentMap) {
-    if (recentCount < 2) continue
-    const previousCount = prevMap.get(query) ?? 0
-    const velocity = recentCount / (previousCount + 1)
-    if (velocity >= 1.25 || (recentCount >= 5 && previousCount === 0)) {
-      trendingQueries.push({ query, recentCount, previousCount, velocity })
-    }
-  }
-  trendingQueries.sort((a, b) => b.velocity - a.velocity)
-  const trendingTop = trendingQueries.slice(0, 20)
+  const trendingTop = computeTrendingFromMaps(recentMap, prevMap).slice(0, 20)
 
   const bd = main.brandDirectory
   const bdZeroShare =
@@ -336,6 +568,7 @@ export async function getSearchAnalyticsDashboardService(
       zeroResultQueries: bd.zeroResultQueries,
       byBackend: bd.byBackend,
     },
+    navSearchBar,
     fetchedAt,
   }
 }

@@ -16,6 +16,8 @@ const INDEX_MAPPINGS = {
     backend: { type: "keyword" as const },
     /** `marketplace` = /search listing search; `brand_directory` = /brands catalog typeahead. */
     search_surface: { type: "keyword" as const },
+    /** Keyword search submitted from header nav (`nq=1` on first paint — stripped client-side). */
+    origin_surface: { type: "keyword" as const },
     category_slug: { type: "keyword" as const },
     has_category_filter: { type: "boolean" as const },
   },
@@ -30,6 +32,8 @@ export type SearchAnalyticsDoc = {
   result_count: number
   backend: "elasticsearch" | "supabase"
   search_surface: SearchAnalyticsSurface
+  /** When set, keyword `/search` load was attributed to header nav (`nq=1`). */
+  origin_surface?: "header_nav"
   category_slug: string | null
   has_category_filter: boolean
 }
@@ -60,7 +64,10 @@ export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
       try {
         await es.indices.putMapping({
           index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
-          properties: { search_surface: { type: "keyword" } },
+          properties: {
+            search_surface: { type: "keyword" },
+            origin_surface: { type: "keyword" },
+          },
         })
       } catch {
         // Field may already exist.
@@ -410,13 +417,72 @@ export async function aggregateSearchAnalytics(
   }
 }
 
+export type MarketplaceOccurredAtBounds = {
+  minIso: string
+  maxIso: string
+}
+
+/** Min / max `occurred_at` for marketplace searches (documents missing surface count as marketplace). */
+export async function getMarketplaceOccurredAtBounds(): Promise<MarketplaceOccurredAtBounds | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: false,
+      query: MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+      aggs: {
+        min_t: { min: { field: "occurred_at" } },
+        max_t: { max: { field: "occurred_at" } },
+      },
+    })
+    const aggs = res.aggregations as
+      | {
+          min_t?: { value?: number | null; value_as_string?: string | null }
+          max_t?: { value?: number | null; value_as_string?: string | null }
+        }
+      | undefined
+    const minRaw = aggs?.min_t?.value_as_string ?? aggs?.min_t?.value
+    const maxRaw = aggs?.max_t?.value_as_string ?? aggs?.max_t?.value
+
+    let minIso: string | undefined
+    let maxIso: string | undefined
+
+    if (typeof minRaw === "string") minIso = minRaw
+    else if (typeof minRaw === "number" && Number.isFinite(minRaw)) {
+      minIso = new Date(minRaw).toISOString()
+    }
+    if (typeof maxRaw === "string") maxIso = maxRaw
+    else if (typeof maxRaw === "number" && Number.isFinite(maxRaw)) {
+      maxIso = new Date(maxRaw).toISOString()
+    }
+
+    if (!minIso || !maxIso) return null
+    return { minIso, maxIso }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return null
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] getMarketplaceOccurredAtBounds failed:", msg)
+    return null
+  }
+}
+
 export async function topQueriesInRange(
   fromIso: string,
   toIso: string,
   size: number,
+  opts?: { endInclusive?: boolean },
 ): Promise<Map<string, number>> {
   const es = getElasticsearchClient()
   if (!es) return new Map()
+
+  const occurredRange =
+    opts?.endInclusive === false
+      ? { gte: fromIso, lt: toIso }
+      : { gte: fromIso, lte: toIso }
 
   try {
     const res = await es.search({
@@ -424,10 +490,7 @@ export async function topQueriesInRange(
       size: 0,
       query: {
         bool: {
-          filter: [
-            { range: { occurred_at: { gte: fromIso, lte: toIso } } },
-            MARKETPLACE_SURFACE_FILTER,
-          ],
+          filter: [{ range: { occurred_at: occurredRange } }, MARKETPLACE_SURFACE_FILTER],
         },
       },
       aggs: {
@@ -448,5 +511,88 @@ export async function topQueriesInRange(
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[elasticsearch] topQueriesInRange failed:", msg)
     return new Map()
+  }
+}
+
+export type NavBarMarketplaceKeywordAgg = {
+  volumeByDay: { date: string; count: number }[]
+  topQueries: { query: string; count: number }[]
+  totalSubmits: number
+}
+
+/** Marketplace keyword `/search` loads attributed to header nav (`origin_surface: header_nav`). */
+export async function aggregateNavBarMarketplaceKeywordAnalytics(
+  fromIso: string,
+  toIso: string,
+): Promise<NavBarMarketplaceKeywordAgg | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  try {
+    const dateHistogram = {
+      date_histogram: {
+        field: "occurred_at",
+        calendar_interval: "day" as const,
+        min_doc_count: 0,
+        extended_bounds: { min: fromIso, max: toIso },
+      },
+    }
+
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: true,
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lte: toIso } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+            { term: { origin_surface: "header_nav" } },
+          ],
+        },
+      },
+      aggs: {
+        by_day: dateHistogram,
+        top_queries: {
+          terms: { field: "query_normalized", size: 40, order: { _count: "desc" } },
+        },
+      },
+    })
+
+    const aggs = res.aggregations as
+      | {
+          by_day?: { buckets?: Array<{ key_as_string?: string; doc_count: number }> }
+          top_queries?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+        }
+      | undefined
+
+    const hitsTotal = res.hits?.total
+    const total =
+      typeof hitsTotal === "number"
+        ? hitsTotal
+        : typeof hitsTotal === "object" && hitsTotal && "value" in hitsTotal
+          ? hitsTotal.value
+          : 0
+
+    return {
+      volumeByDay: (aggs?.by_day?.buckets ?? []).map((b) => ({
+        date: (b.key_as_string ?? "").slice(0, 10),
+        count: b.doc_count,
+      })),
+      topQueries: bucketTerms(aggs?.top_queries?.buckets),
+      totalSubmits: total,
+    }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) {
+      return {
+        volumeByDay: [],
+        topQueries: [],
+        totalSubmits: 0,
+      }
+    }
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] aggregateNavBarMarketplaceKeywordAnalytics failed:", msg)
+    return null
   }
 }

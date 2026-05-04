@@ -177,6 +177,7 @@ export function HeaderNavSearch() {
       const params = new URLSearchParams()
       params.set("q", term)
       if (category?.trim()) params.set("category", category.trim())
+      params.set("nq", "1")
       router.push(`/search?${params.toString()}`)
       setQuery("")
       clearNavSearchQuery()
@@ -328,7 +329,10 @@ export function HeaderNavSearch() {
             const category = isSearchResultsPath(pathname)
               ? searchParams.get("category")
               : null
-            void navigateToMarketplaceBrandResults(router, brandName, { categorySlug: category })
+            void navigateToMarketplaceBrandResults(router, brandName, {
+              categorySlug: category,
+              navSubmitted: true,
+            })
             setQuery("")
             clearNavSearchQuery()
             setIdleOpen(false)

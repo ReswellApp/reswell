@@ -13,7 +13,7 @@ type AppRouterLike = {
 export async function navigateToMarketplaceBrandResults(
   router: AppRouterLike,
   brandDisplayName: string,
-  options?: { categorySlug?: string | null },
+  options?: { categorySlug?: string | null; navSubmitted?: boolean },
 ): Promise<void> {
   const name = brandDisplayName.trim()
   if (!name) return
@@ -27,6 +27,7 @@ export async function navigateToMarketplaceBrandResults(
       params.set("brandSlug", exact.slug)
       const cat = options?.categorySlug?.trim()
       if (cat) params.set("category", cat)
+      if (options?.navSubmitted) params.set("nq", "1")
       router.push(`/search?${params.toString()}`)
       return
     }
@@ -38,5 +39,6 @@ export async function navigateToMarketplaceBrandResults(
   params.set("q", name)
   const cat = options?.categorySlug?.trim()
   if (cat) params.set("category", cat)
+  if (options?.navSubmitted) params.set("nq", "1")
   router.push(`/search?${params.toString()}`)
 }
