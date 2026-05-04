@@ -1148,6 +1148,10 @@ function MarketTrendsCard({
               <RechartsTooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null
+                  // Area + Line both use grossVolume — Recharts emits two payload rows per point.
+                  const tooltipRows = payload.filter(
+                    (p, i, arr) => arr.findIndex((q) => q.dataKey === p.dataKey) === i,
+                  )
                   let labelStr = ""
                   if (label != null && label !== "") {
                     try {
@@ -1163,7 +1167,7 @@ function MarketTrendsCard({
                           {labelStr}
                         </div>
                       ) : null}
-                      {payload.map((p) => {
+                      {tooltipRows.map((p) => {
                         const isVolume = p.dataKey === "grossVolume"
                         const value =
                           typeof p.value === "number"
@@ -1836,9 +1840,9 @@ function ConditionPricingCard({
                     <div className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white shadow-xl">
                       <p className="font-medium">{String(label ?? "")}</p>
                       <div className="mt-1 space-y-0.5">
-                        {payload.map((p) => (
+                        {payload.map((p, i) => (
                           <p
-                            key={String(p.dataKey)}
+                            key={`${String(p.dataKey)}-${i}`}
                             className="flex items-center justify-between gap-3 tabular-nums text-slate-300"
                           >
                             <span className="flex items-center gap-1.5">
