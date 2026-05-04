@@ -1,21 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useRef, useState } from "react"
 import { formatDistanceToNowStrict } from "date-fns"
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { ListingTile } from "@/components/listing-tile"
 import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { Package } from "lucide-react"
 import { listingDetailHref } from "@/lib/listing-href"
-
-export type SoldTickerItem = {
-  id: string
-  title: string
-  price: number
-  city: string | null
-  state: string | null
-}
 
 export type SoldFeedListing = {
   id: string
@@ -45,7 +36,6 @@ export type SoldFeedListing = {
 export interface RecentlySoldPageClientProps {
   soldListings: SoldFeedListing[]
   soldStats: { count: number; gmvFormatted: string }
-  initialTickerItems: SoldTickerItem[]
 }
 
 function soldRelativeLabel(iso: string): string {
@@ -130,64 +120,12 @@ function SoldFeedGrid({ listings }: { listings: SoldFeedListing[] }) {
   )
 }
 
-function SoldTicker({
-  items,
-  show,
-}: {
-  items: SoldTickerItem[]
-  show: boolean
-}) {
-  const trackRef = useRef<HTMLDivElement>(null)
-  const doubled = useMemo(() => [...items, ...items], [items])
-
-  if (!show || items.length === 0) return null
-
-  return (
-    <div className="border-b border-border bg-muted/40 overflow-hidden py-2 text-sm text-foreground/90">
-      <div ref={trackRef} className="feed-ticker-marquee-track flex w-max gap-10 whitespace-nowrap px-4">
-        {doubled.map((item, i) => {
-          const loc =
-            item.city && item.state ? `${item.city} · ${item.state}` : "Reswell"
-          return (
-            <span key={`${item.id}-${i}`} className="inline-flex shrink-0 items-center gap-1">
-              <span className="text-muted-foreground">Just sold:</span>{" "}
-              <span className="font-medium">{capitalizeWords(item.title)}</span>{" "}
-              <span className="text-muted-foreground">· {loc}</span>{" "}
-              <span className="tabular-nums text-foreground">${item.price.toFixed(0)}</span>
-            </span>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 export function RecentlySoldPageClient({
   soldListings,
   soldStats,
-  initialTickerItems,
 }: RecentlySoldPageClientProps) {
-  const [tickerItems, setTickerItems] = useState<SoldTickerItem[]>(initialTickerItems)
-  const showTicker = soldStats.count >= 5
-
-  useEffect(() => {
-    const id = window.setInterval(async () => {
-      try {
-        const res = await fetch("/api/feed/sold-ticker")
-        if (!res.ok) return
-        const data = (await res.json()) as { items?: SoldTickerItem[] }
-        if (data.items?.length) setTickerItems(data.items)
-      } catch {
-        /* ignore */
-      }
-    }, 60_000)
-    return () => clearInterval(id)
-  }, [])
-
   return (
     <>
-      <SoldTicker items={tickerItems} show={showTicker} />
-
       <section className="border-b border-border bg-background">
         <div className="container mx-auto py-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">

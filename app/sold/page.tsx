@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
 import { formatDecimalDimension } from "@/lib/board-measurements"
-import { RecentlySoldPageClient, type SoldFeedListing, type SoldTickerItem } from "./sold-page-client"
+import { RecentlySoldPageClient, type SoldFeedListing } from "./sold-page-client"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 const SOLD_LIMIT = 40
@@ -92,21 +92,12 @@ async function SoldPageData() {
     mapSoldRow,
   )
 
-  const tickerItems: SoldTickerItem[] = soldListings.slice(0, 10).map((l) => ({
-    id: l.id,
-    title: l.title,
-    price: l.soldPrice,
-    city: l.city ?? null,
-    state: l.state ?? null,
-  }))
-
   const gmvFormatted = formatGmv(stats.gmvTotal)
 
   return (
     <RecentlySoldPageClient
       soldListings={soldListings}
       soldStats={{ count: stats.soldCount, gmvFormatted }}
-      initialTickerItems={tickerItems}
     />
   )
 }

@@ -353,30 +353,6 @@
   }
 }
 
-/* Feed page — sold activity ticker (marquee) */
-@keyframes feed-ticker-marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.feed-ticker-marquee-track {
-  animation: feed-ticker-marquee 45s linear infinite;
-}
-
-.feed-ticker-marquee-track:hover {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .feed-ticker-marquee-track {
-    animation: none;
-  }
-}
-
 /* Radix Dialog / Sheet / AlertDialog use react-remove-scroll (body[data-scroll-locked]).
    In some browsers the document scrolls on `html`; locking only `body` leaves background
    scroll. Mirror the lock on `html` while any modal scroll lock is active. */

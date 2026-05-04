@@ -1,4 +1,8 @@
+import path from 'path'
+import { fileURLToPath } from 'url'
 import bundleAnalyzer from '@next/bundle-analyzer'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -30,6 +34,7 @@ const brandCatalogImageHosts = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: path.join(__dirname),
   typescript: {
     ignoreBuildErrors: true,
   },
