@@ -28,13 +28,7 @@ function photosTitleSectionComplete(form: SellFormValidationInput): boolean {
 
 function brandModelComplete(form: SellFormValidationInput): boolean {
   const model = form.boardModelName?.trim() ?? ""
-  if (
-    !form.brand?.trim() ||
-    !model ||
-    model.length > LISTING_BOARD_MODEL_MAX_LENGTH
-  ) {
-    return false
-  }
+  if (model.length > LISTING_BOARD_MODEL_MAX_LENGTH) return false
   return true
 }
 

@@ -23,6 +23,11 @@ export type SellBoardModelCatalogPatch = {
 
 type SellBoardModelFieldProps = {
   linkedBrandDisplayName: string
+  /**
+   * When the seller picked a row from the brand directory (`public.brands`), only catalog models
+   * for that brand are shown in the model picker. Free-typed brand (no id) keeps the full list.
+   */
+  directoryBrandId?: string
   modelName: string
   modelCatalogSlug: string
   /** Existing slug from the sell form; overwritten when a catalog row is picked. */
@@ -35,6 +40,7 @@ type SellBoardModelFieldProps = {
 
 export function SellBoardModelField({
   linkedBrandDisplayName,
+  directoryBrandId,
   modelName,
   modelCatalogSlug,
   boardIndexBrandSlug,
@@ -67,6 +73,12 @@ export function SellBoardModelField({
   }, [])
 
   const brandForLabel = linkedBrandDisplayName.trim()
+  const directoryId = directoryBrandId?.trim() ?? ""
+
+  const modelsForPicker = React.useMemo(() => {
+    if (!directoryId) return models
+    return models.filter((m) => m.brandId === directoryId)
+  }, [models, directoryId])
 
   /** Slug for index/snapshot: directory pick > slugified display name (free-typed brand). */
   const effectiveBrandSlug =
@@ -99,15 +111,27 @@ export function SellBoardModelField({
 
   const catalogReady = !loading && !loadError
 
-  const modelPlaceholder =
-    !loading && models.length > 0
-      ? "Search models — brand fills in when you pick a match"
-      : "e.g., Step Deck Noserider — type the model as you know it"
+  const modelPlaceholder = (() => {
+    if (loading) return "e.g., Step Deck Noserider — type the model as you know it"
+    if (directoryId) {
+      return modelsForPicker.length > 0
+        ? brandForLabel
+          ? `Search ${brandForLabel} models`
+          : "Search models for this brand"
+        : brandForLabel
+          ? `No ${brandForLabel} models in catalog yet — type yours`
+          : "No models for this brand in catalog yet — type yours"
+    }
+    if (models.length > 0) {
+      return "Search models — pick a brand above to narrow the list"
+    }
+    return "e.g., Step Deck Noserider — type the model as you know it"
+  })()
 
   return (
     <div className="space-y-2">
       <div className="flex items-end justify-between gap-2">
-        <Label htmlFor="listing-board-model-select">Model *</Label>
+        <Label htmlFor="listing-board-model-select">Model</Label>
         <span
           className={cn(
             "text-xs tabular-nums",
@@ -131,7 +155,7 @@ export function SellBoardModelField({
         value={modelName}
         onFreeTextChange={applyFreeformModelValue}
         onPickCatalogRow={applyCatalogRow}
-        models={catalogReady ? models : []}
+        models={catalogReady ? modelsForPicker : []}
         onRequestCatalogAdd={onRequestCatalogAdd}
       />
     </div>

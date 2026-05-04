@@ -3175,7 +3175,7 @@ function SellPageContentInner({
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
                           <div className="min-w-0 space-y-2">
                             <div className="flex items-end justify-between gap-2">
-                              <Label htmlFor="listing-brand">Brand *</Label>
+                              <Label htmlFor="listing-brand">Brand</Label>
                             </div>
                             <SurfboardTitleIndexInput
                               id="listing-brand"
@@ -3224,7 +3224,6 @@ function SellPageContentInner({
                                 }))
                               }}
                               onRequestBrand={openListingCatalogRequestFromBrand}
-                              required
                             />
                             <div className="space-y-1.5">
                               <button
@@ -3239,6 +3238,7 @@ function SellPageContentInner({
 
                           <div className="min-w-0 space-y-2">
                             <SellBoardModelField
+                              directoryBrandId={formData.boardBrandId}
                               linkedBrandDisplayName={
                                 formData.boardLinkedBrandName.trim() || formData.brand.trim()
                               }
@@ -3288,7 +3288,7 @@ function SellPageContentInner({
                         />
                         <p className="text-xs text-muted-foreground/45">
                           {
-                            "Brand and model don't appear on your listing. We use them to match your board to search and filters so surfers can find it."
+                            "Brand and model are optional and don't appear on your listing. We use them to match your board to search and filters so surfers can find it."
                           }
                         </p>
                       </div>

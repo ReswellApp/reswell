@@ -93,9 +93,6 @@ export function validateSellListingForm(
   if (!form.title?.trim() || !form.price?.trim() || !form.condition) {
     return "Please fill in all required fields."
   }
-  if (!relaxed && (!form.brand?.trim() || !form.boardModelName?.trim())) {
-    return "Please fill in all required fields."
-  }
 
   if (
     !relaxed &&
