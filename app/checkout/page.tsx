@@ -93,6 +93,15 @@ export default async function CheckoutPage(props: {
 
     const checkoutListings = bundle.listings.map(rowToCheckoutListing)
 
+    const bundleSellerUid = checkoutListings[0]?.user_id?.trim()
+    if (
+      !bundleSellerUid ||
+      bundleSellerUid !== sellerId ||
+      checkoutListings.some((l) => (l.user_id ?? "").trim() !== bundleSellerUid)
+    ) {
+      redirect("/cart")
+    }
+
     if (checkoutListings.some((l) => l.user_id === user.id)) {
       redirect("/cart")
     }

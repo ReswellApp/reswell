@@ -25,6 +25,19 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ id: 
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
+  /** Same fields as `orderLines[0]` when present; use `orderLines` for every purchased listing (legacy single-line consumers). */
+  const primaryLine = payload.orderLines[0] ?? null
+  const listing =
+    primaryLine != null
+      ? {
+          listingId: primaryLine.listingId,
+          title: primaryLine.title,
+          imageUrl: primaryLine.imageUrl,
+          subtitle: primaryLine.subtitle,
+          categoryLabel: primaryLine.categoryLabel ?? null,
+        }
+      : null
+
   return NextResponse.json({
     buyerEmail: payload.buyerEmail,
     order: {
@@ -38,6 +51,7 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ id: 
       sellerId: payload.sellerId,
       listingId: payload.listingId,
       orderLines: payload.orderLines,
+      listing,
       shipping: payload.shipping,
     },
   })

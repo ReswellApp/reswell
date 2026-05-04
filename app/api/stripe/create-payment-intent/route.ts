@@ -109,6 +109,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
   }
 
+  /** Multi-board payment intents must pull every listing from this buyer's cart (same seller checked below). */
+  if (listingIdsOrdered.length > 1) {
+    const { data: cartRows, error: cartVerifyErr } = await supabase
+      .from("cart_items")
+      .select("listing_id")
+      .eq("profile_id", user.id)
+      .in("listing_id", listingIdsOrdered)
+
+    if (cartVerifyErr) {
+      return NextResponse.json({ error: "Could not verify cart" }, { status: 500 })
+    }
+
+    const inBuyerCart = new Set(
+      (cartRows ?? []).map((r) => String((r as { listing_id?: string }).listing_id ?? "").trim()),
+    )
+    for (const id of listingIdsOrdered) {
+      if (!inBuyerCart.has(id)) {
+        return NextResponse.json(
+          {
+            error:
+              "Checking out multiple boards together only works when every board is in your cart from the same seller.",
+          },
+          { status: 400 },
+        )
+      }
+    }
+  }
+
   const bundleSellerId = listingsOrdered[0]!.user_id
   if (!listingsOrdered.every((l) => l.user_id === bundleSellerId)) {
     return NextResponse.json({ error: "All items must be from the same seller" }, { status: 400 })
