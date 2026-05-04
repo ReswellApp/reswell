@@ -4,15 +4,7 @@ import React, { useState, useCallback, useLayoutEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { LocationInputSuggest, type LocationSuggestion } from "@/components/location-input-suggest"
-import {
-  MapPin,
-  Search,
-  Crosshair,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  X,
-} from "lucide-react"
+import { Search, Crosshair, Loader2, AlertCircle, CheckCircle2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export type LocationPrefillSuggested = {
@@ -222,6 +214,23 @@ export function LocationPicker({
     [commitCoordinates, prefillSuggested],
   )
 
+  /** Same applying state + reverse-geocode commit as free-text Enter — dropdown picks use this too. */
+  const pickSuggestionAndCommit = useCallback(
+    async (s: LocationSuggestion) => {
+      userTypingRef.current = false
+      setSearchError(null)
+      if (!hasCoords(s.lat, s.lng)) return
+      const { city: c, state: st } = cityStateFromSuggestion(s)
+      setConfirmingTextLocation(true)
+      try {
+        await commitCoordinates(s.lat, s.lng, c, st)
+      } finally {
+        setConfirmingTextLocation(false)
+      }
+    },
+    [commitCoordinates],
+  )
+
   /** Keep local state in sync when editing/restoring draft, clearing, or switching saved-area hint. */
   useLayoutEffect(() => {
     const hasParentCommittedCoords =
@@ -343,33 +352,44 @@ export function LocationPicker({
               setSearchError(null)
             }}
             onPickSuggestion={(s: LocationSuggestion) => {
-              userTypingRef.current = false
-              setSearchError(null)
-              if (!hasCoords(s.lat, s.lng)) return
-              const { city: c, state: st } = cityStateFromSuggestion(s)
-              setLat(s.lat)
-              setLng(s.lng)
-              setCity(c)
-              setState(st)
-              setDisplayName(s.label)
-              setSearchQuery(s.label)
-              pushToListing({
-                lat: s.lat,
-                lng: s.lng,
-                city: c,
-                state: st,
-                displayName: s.label,
-              })
+              void pickSuggestionAndCommit(s)
             }}
             onEnterWhenPanelClosed={() => {
               void resolveQueryAndCommit(searchQuery)
             }}
             debounceMs={280}
             placeholder="Start typing a city, ZIP, or beach…"
-            inputClassName="h-11 pl-10 pr-10 placeholder:text-muted-foreground/45"
+            inputClassName={cn(
+              "h-11 pl-10 placeholder:text-muted-foreground/45",
+              showSavedLocationCard ? "pr-[4.75rem]" : "pr-10",
+            )}
             aria-label="Where you’re listing from"
             disabled={confirmingTextLocation}
           />
+          {showSavedLocationCard ? (
+            <div className="absolute right-1.5 top-1/2 z-[2] flex -translate-y-1/2 items-center gap-0.5">
+              <span className="pointer-events-none flex items-center px-0.5" title="Listing area saved">
+                <CheckCircle2
+                  className={cn(
+                    "h-4 w-4 shrink-0 text-emerald-600 transition-transform duration-300 dark:text-emerald-500",
+                    highlightSaved && "scale-110",
+                  )}
+                  aria-hidden
+                />
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={handleClearLocation}
+                title="Clear listing area"
+                aria-label="Clear listing area"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </Button>
+            </div>
+          ) : null}
         </div>
 
         <div
@@ -429,56 +449,6 @@ export function LocationPicker({
           <span>{searchError}</span>
         </div>
       )}
-
-      {showSavedLocationCard ? (
-        <div
-          className={cn(
-            "rounded-xl border px-4 py-3 transition-all duration-300",
-            highlightSaved
-              ? "border-emerald-500/35 bg-emerald-500/[0.08]"
-              : "border-border/80 bg-muted/30",
-          )}
-        >
-          <div className="flex gap-3">
-            <div
-              className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-                highlightSaved
-                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                  : "bg-primary/10 text-primary",
-              )}
-            >
-              {highlightSaved ? (
-                <CheckCircle2 className="h-4 w-4" aria-hidden />
-              ) : (
-                <MapPin className="h-4 w-4" aria-hidden />
-              )}
-            </div>
-            <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/45">
-                  {highlightSaved ? "Saved to your listing" : "You’re listing from"}
-                </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="-mr-2 -mt-1 h-8 shrink-0 gap-1 text-muted-foreground hover:text-foreground"
-                  onClick={handleClearLocation}
-                  aria-label="Clear listing location"
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                  Clear
-                </Button>
-              </div>
-              <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-              <p className="text-xs text-muted-foreground/45 leading-relaxed">
-                Type in the box above to change — we never show your exact street.
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }
