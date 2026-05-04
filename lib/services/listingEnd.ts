@@ -20,6 +20,10 @@ export type EndSellerListingResult =
   | { ok: true; mode: "delete" }
   | { ok: false; status: number; error: string }
 
+export type DeleteSellerDraftListingResult =
+  | { ok: true }
+  | { ok: false; status: number; error: string }
+
 const ORDER_HISTORY_DELETE_FALLBACK_MESSAGE =
   "Because this listing is linked to an order or payment, it could not be permanently deleted. We removed it from the public site and moved it to your archived listings."
 
@@ -73,6 +77,54 @@ async function loadListingForEnd(
 
   if (error || !data) return null
   return data as ListingEndRow
+}
+
+/**
+ * Permanently removes a surfboard listing that is still in `draft` status (seller-only).
+ * Cleans Elasticsearch and storage like a full delete.
+ */
+export async function deleteSellerDraftListing(
+  supabase: SupabaseClient,
+  params: { listingId: string; sellerUserId: string },
+): Promise<DeleteSellerDraftListingResult> {
+  const { listingId, sellerUserId } = params
+
+  const row = await loadListingForEnd(supabase, listingId)
+  if (!row) {
+    return { ok: false, status: 404, error: "Not found" }
+  }
+  if (row.user_id !== sellerUserId) {
+    return { ok: false, status: 403, error: "Forbidden" }
+  }
+  if (row.status !== "draft") {
+    return { ok: false, status: 400, error: "Not a draft" }
+  }
+
+  const imageUrls = await fetchListingImageUrlsForListingIds(supabase, [listingId])
+
+  const { error } = await supabase
+    .from("listings")
+    .delete()
+    .eq("id", listingId)
+    .eq("user_id", sellerUserId)
+
+  if (error) {
+    return { ok: false, status: 500, error: "Failed to delete draft" }
+  }
+
+  try {
+    await deleteListingDocument(listingId)
+  } catch {
+    // ES optional
+  }
+
+  try {
+    await removeListingImageFilesFromStorage(supabase, imageUrls)
+  } catch {
+    // best-effort
+  }
+
+  return { ok: true }
 }
 
 /**

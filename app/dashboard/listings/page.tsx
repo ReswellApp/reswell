@@ -32,12 +32,6 @@ import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
 import { listingProductCardClassName } from '@/lib/listing-card-styles'
-import {
-  clearRemoteResumeDraftIdStorage,
-  clearSellServerDraftListingId,
-  getRemoteResumeDraftIdFromStorage,
-  getSellServerDraftListingId,
-} from "@/lib/sell-draft-local-meta"
 import { postEndListing } from "@/lib/listing-end-request"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
@@ -102,19 +96,13 @@ export default function MyListingsPage() {
   }
 
   async function handleDiscardDraft(id: string) {
-    const res = await fetch(`/api/listings/draft?id=${encodeURIComponent(id)}`, {
+    const res = await fetch(`/api/listings/discard-draft?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
       credentials: 'include',
     })
     if (!res.ok) {
       toast.error('Could not discard draft')
       return
-    }
-    if (getSellServerDraftListingId() === id) {
-      clearSellServerDraftListingId()
-    }
-    if (getRemoteResumeDraftIdFromStorage() === id) {
-      clearRemoteResumeDraftIdStorage()
     }
     setListings((prev) => prev.filter((l) => l.id !== id))
   }

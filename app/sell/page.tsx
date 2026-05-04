@@ -1,7 +1,5 @@
-import type { SellDraftItem } from "@/components/features/sell/drafts-picker"
 import { createClient } from "@/lib/supabase/server"
 import { getSellListingAreaPrefillForUser } from "@/lib/db/sell-listing-area-prefill"
-import { listSurfboardListingDrafts } from "@/lib/services/listingDraftAutosave"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -30,21 +28,17 @@ export default async function SellPage({
   let initialSellListingAreaPrefill: Awaited<
     ReturnType<typeof getSellListingAreaPrefillForUser>
   > = null
-  let initialSellDrafts: SellDraftItem[] = []
 
   if (user?.id) {
-    const [pref, draftsRow] = await Promise.all([
-      getSellListingAreaPrefillForUser(supabase, user.id),
-      listSurfboardListingDrafts(supabase, user.id).catch(() => []),
-    ])
-    initialSellListingAreaPrefill = pref
-    initialSellDrafts = draftsRow as SellDraftItem[]
+    initialSellListingAreaPrefill = await getSellListingAreaPrefillForUser(
+      supabase,
+      user.id,
+    )
   }
 
   return (
     <SellFlowShell
       initialSellListingAreaPrefill={initialSellListingAreaPrefill}
-      initialSellDrafts={initialSellDrafts}
       urlEditListingId={parseEditListingId(qs.edit)}
     />
   )
