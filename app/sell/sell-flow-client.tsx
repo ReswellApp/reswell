@@ -167,13 +167,6 @@ import {
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
-import {
-  readSellListingAreaPrefillFromSession,
-  writeSellListingAreaPrefillToSession,
-} from "@/lib/utils/sell-listing-area-prefill-session"
-import type { LocationPrefillSuggested } from "@/components/location-picker"
-import type { SellListingAreaPrefillCityState } from "@/lib/db/sell-listing-area-prefill"
-
 /** True once the seller has pinned the board (coordinates used for drafts + validation). */
 function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
   const lat = fd.locationLat
@@ -566,30 +559,9 @@ const SELL_SUPPRESS_IDB_RESTORE_KEY = "reswell.sell.suppressIdbRestoreOnce"
 type SellPageContentProps = {
   editId: string | null
   startFresh: boolean
-  /** Resolved on the server for signed-in users to avoid CLS from client-fetch prefill */
-  initialSellListingAreaPrefill: SellListingAreaPrefillCityState
 }
 
-function listingLocationPrefillHintFromSellAreaPrefill(
-  editIdProp: string | null,
-  prefill: SellListingAreaPrefillCityState,
-): LocationPrefillSuggested | null {
-  if (editIdProp) return null
-  if (!prefill?.city?.trim()) return null
-  const city = prefill.city.trim()
-  const state = prefill.state?.trim() ?? ""
-  return {
-    city,
-    state,
-    displayLabel: [city, state].filter(Boolean).join(", "),
-  }
-}
-
-function SellPageContentInner({
-  editId,
-  startFresh,
-  initialSellListingAreaPrefill,
-}: SellPageContentProps) {
+function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const listingPhotosInputId = useId()
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -639,20 +611,11 @@ function SellPageContentInner({
   )
   /**
    * Stepper UX: require seeing the delivery section, then an explicit location pick in-session
-   * (LocationPicker fires onLocationSelect; profile prefill alone does not).
+   * (LocationPicker fires onLocationSelect).
    * Hydrated drafts / restores already carry map pins — those count as confirmed for the rail/publish UX.
    */
   const [pickupShippingSectionEnteredOnce, setPickupShippingSectionEnteredOnce] = useState(false)
   const [pickupShippingLocationUserCommits, setPickupShippingLocationUserCommits] = useState(0)
-  /** Profile/address suggestion only — search field UX; cleared when the user confirms or has map coords on the listing. */
-  const [listingLocationPrefillHint, setListingLocationPrefillHint] =
-    useState<LocationPrefillSuggested | null>(() =>
-      listingLocationPrefillHintFromSellAreaPrefill(
-        editId,
-        initialSellListingAreaPrefill,
-      ),
-    )
-  const authUserIdRef = useRef<string | null>(null)
   const sellDraftUserIdRef = useRef<string | null>(null)
   const editIdRef = useRef<string | null>(editId)
 
@@ -663,19 +626,9 @@ function SellPageContentInner({
     editIdRef.current = editId
   }, [editId])
 
-  const prevSellEditUrlIdRef = useRef(editId)
-
   useEffect(() => {
     setPickupShippingSectionEnteredOnce(false)
     setPickupShippingLocationUserCommits(0)
-  }, [editId])
-
-  /** Only react to real navigations (?edit=), not the commit after first paint — avoids wiping SSR locality prefill before the user sees it. */
-  useEffect(() => {
-    if (prevSellEditUrlIdRef.current !== editId) {
-      prevSellEditUrlIdRef.current = editId
-      setListingLocationPrefillHint(null)
-    }
   }, [editId])
 
   useEffect(() => {
@@ -702,10 +655,6 @@ function SellPageContentInner({
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
 
-  useEffect(() => {
-    if (sellFormHasCommittedMapPins(formData)) setListingLocationPrefillHint(null)
-  }, [formData.locationLat, formData.locationLng])
-
   const openListingCatalogRequestFromBrand = useCallback(() => {
     setListingCatalogRequestVariant("full")
   }, [])
@@ -725,23 +674,6 @@ function SellPageContentInner({
   const prevBoardWidthRef = useRef<string | undefined>(undefined)
   const prevBoardThicknessRef = useRef<string | undefined>(undefined)
   const reswellWeightManualRef = useRef(false)
-  /**
-   * Locality prefill for /sell: `undefined` = not loaded, `null` = no profile/address hint.
-   * City/region only (never street) — matches what we store after a successful publish.
-   * SSR may seed this so the first paint matches DB without a Supabase round trip.
-   */
-  const sellLocationPrefillCacheRef = useRef<{ city: string; state: string } | null | undefined>(
-    initialSellListingAreaPrefill,
-  )
-  const sellLocationPrefillUserIdRef = useRef<string | null>(null)
-
-  /** SSR seeded the signed-in user's locale hint; impersonation skips location prefill altogether. */
-  useLayoutEffect(() => {
-    if (editId) return
-    if (!getImpersonation()) return
-    setListingLocationPrefillHint(null)
-    sellLocationPrefillCacheRef.current = null
-  }, [editId])
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
     { value: string; label: string; board: boolean; slug?: string | null }[]
@@ -996,86 +928,6 @@ function SellPageContentInner({
     formData.boardVolumeL,
   ])
 
-  const applySellLocationPrefillIfEmpty = useCallback(async () => {
-    if (editId) return
-    if (getImpersonation()) return
-    const { data: sess } = await supabase.auth.getSession()
-    let userId = sess.session?.user?.id ?? null
-    if (!userId) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      userId = user?.id ?? null
-    }
-    if (!userId) return
-
-    if (sellLocationPrefillUserIdRef.current !== userId) {
-      sellLocationPrefillUserIdRef.current = userId
-      sellLocationPrefillCacheRef.current = undefined
-    }
-
-    if (sellLocationPrefillCacheRef.current === undefined) {
-      const warmed = readSellListingAreaPrefillFromSession(userId)
-      if (warmed?.city) {
-        sellLocationPrefillCacheRef.current = warmed
-      } else {
-        const [{ data: profile }, { data: addr }] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("default_listing_city, default_listing_state")
-            .eq("id", userId)
-            .maybeSingle(),
-          supabase
-            .from("addresses")
-            .select("city, state")
-            .eq("profile_id", userId)
-            .order("is_default", { ascending: false })
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .maybeSingle(),
-        ])
-        const row = profile as {
-          default_listing_city?: string | null
-          default_listing_state?: string | null
-        } | null
-        let city = row?.default_listing_city?.trim() ?? ""
-        let state = row?.default_listing_state?.trim() ?? ""
-        const a = addr as { city?: string | null; state?: string | null } | null
-        if (!city && a?.city?.trim()) {
-          city = a.city.trim()
-          state = a.state?.trim() ?? ""
-        }
-        const hinted = city ? { city, state: state || "" } : null
-        sellLocationPrefillCacheRef.current = hinted
-        writeSellListingAreaPrefillToSession(userId, hinted)
-      }
-    }
-    const hint = sellLocationPrefillCacheRef.current
-    if (!hint?.city) {
-      setListingLocationPrefillHint(null)
-      return
-    }
-    const snapshot = sellDraftLatestRef.current.formData as ReturnType<
-      typeof createInitialSellFormData
-    >
-    if (sellFormHasCommittedMapPins(snapshot)) {
-      setListingLocationPrefillHint(null)
-      return
-    }
-    if (
-      String(snapshot.locationCity ?? "").trim() ||
-      String(snapshot.locationDisplay ?? "").trim()
-    ) {
-      setListingLocationPrefillHint(null)
-      return
-    }
-    setListingLocationPrefillHint({
-      city: hint.city,
-      state: hint.state,
-      displayLabel: [hint.city, hint.state].filter(Boolean).join(", "),
-    })
-  }, [editId, supabase])
-
   /**
    * `/sell?new=1` — blank form and local snapshot.
    * Depends on `startFresh` (boolean), not the `searchParams` object identity — unstable
@@ -1190,38 +1042,11 @@ function SellPageContentInner({
     }
   }, [editId, startFresh, supabase])
 
-  /** New listing (no ?edit=): prefill city/region from profile or saved session when empty. Runs right after hydrate (microtask ≪ setTimeout). */
-  useEffect(() => {
-    if (editId || !draftHydrated) return
-    let cancelled = false
-    queueMicrotask(() => {
-      if (cancelled) return
-      void applySellLocationPrefillIfEmpty()
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [editId, draftHydrated, applySellLocationPrefillIfEmpty])
-
-  /** Reset local sell snapshot hints when the authenticated account changes. */
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      const uid = session?.user?.id ?? null
-      const prev = authUserIdRef.current
-      if (prev !== null && uid !== null && prev !== uid) {
-        writeSellListingAreaPrefillToSession(prev, null)
-        sellLocationPrefillCacheRef.current = undefined
-        sellLocationPrefillUserIdRef.current = uid
-      }
-      if (uid === null) {
-        if (prev) writeSellListingAreaPrefillToSession(prev, null)
-        sellLocationPrefillCacheRef.current = undefined
-        sellLocationPrefillUserIdRef.current = null
-      }
-      authUserIdRef.current = uid
-      sellDraftUserIdRef.current = uid
+      sellDraftUserIdRef.current = session?.user?.id ?? null
     })
     return () => subscription.unsubscribe()
   }, [supabase])
@@ -3209,10 +3034,8 @@ function SellPageContentInner({
                   <div className="space-y-8">
                     <div className="space-y-6">
                       <LocationPicker
-                        prefillSuggested={listingLocationPrefillHint}
                         onLocationSelect={(loc) => {
                           setPickupShippingLocationUserCommits((c) => c + 1)
-                          setListingLocationPrefillHint(null)
                           setFormData((f) => ({
                             ...f,
                             locationLat: loc.lat,
@@ -3224,7 +3047,6 @@ function SellPageContentInner({
                         }}
                         onLocationClear={() => {
                           setPickupShippingLocationUserCommits(0)
-                          setListingLocationPrefillHint(null)
                           setFormData((f) => ({
                             ...f,
                             locationLat: 0,
@@ -3233,9 +3055,6 @@ function SellPageContentInner({
                             locationState: "",
                             locationDisplay: "",
                           }))
-                          window.setTimeout(() => {
-                            void applySellLocationPrefillIfEmpty()
-                          }, 0)
                         }}
                         initialLat={formData.locationLat || undefined}
                         initialLng={formData.locationLng || undefined}
@@ -3798,16 +3617,14 @@ function SellPageContentInner({
 const SellPageContent = React.memo(SellPageContentInner)
 
 export default function SellFlowShell(props: {
-  initialSellListingAreaPrefill: SellListingAreaPrefillCityState
   /** From the incoming request URL (RSC); merged with live `useSearchParams` client-side */
   urlEditListingId: string | null
 }) {
   return <SellSearchParamsBridge {...props} />
 }
 
-/** Reads URL params — avoids wrapping the shell in Suspense so stored locality prefill renders immediately */
+/** Reads URL params — avoids wrapping the shell in Suspense */
 function SellSearchParamsBridge(props: {
-  initialSellListingAreaPrefill: SellListingAreaPrefillCityState
   urlEditListingId: string | null
 }) {
   const searchParams = useSearchParams()
@@ -3824,7 +3641,6 @@ function SellSearchParamsBridge(props: {
     <SellPageContent
       editId={editId}
       startFresh={startFresh}
-      initialSellListingAreaPrefill={props.initialSellListingAreaPrefill}
     />
   )
 }

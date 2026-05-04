@@ -1,5 +1,3 @@
-import { createClient } from "@/lib/supabase/server"
-import { getSellListingAreaPrefillForUser } from "@/lib/db/sell-listing-area-prefill"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -20,26 +18,5 @@ export default async function SellPage({
 }) {
   const qs = await searchParams
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  let initialSellListingAreaPrefill: Awaited<
-    ReturnType<typeof getSellListingAreaPrefillForUser>
-  > = null
-
-  if (user?.id) {
-    initialSellListingAreaPrefill = await getSellListingAreaPrefillForUser(
-      supabase,
-      user.id,
-    )
-  }
-
-  return (
-    <SellFlowShell
-      initialSellListingAreaPrefill={initialSellListingAreaPrefill}
-      urlEditListingId={parseEditListingId(qs.edit)}
-    />
-  )
+  return <SellFlowShell urlEditListingId={parseEditListingId(qs.edit)} />
 }
