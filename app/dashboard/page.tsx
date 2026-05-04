@@ -27,6 +27,7 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ORDER_STATUS_LIST } from "@/lib/order-status"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
+import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 
 export const metadata = privatePageMetadata({
   title: "Dashboard — Reswell",
@@ -56,6 +57,7 @@ export default async function DashboardPage() {
     buyerOrdersRes,
     sellerOrdersRes,
     followingRes,
+    sellerEarningsTotalsRes,
   ] = await Promise.all([
     supabase
       .from("listings")
@@ -117,6 +119,7 @@ export default async function DashboardPage() {
       .from("seller_follows")
       .select("id", { count: "exact", head: true })
       .eq("follower_id", user.id),
+    getMySellerEarningsTotals(supabase),
   ])
 
   const listings = listingsAgg.data
@@ -136,6 +139,7 @@ export default async function DashboardPage() {
   const buyerOrderCount = buyerOrdersRes.count ?? 0
   const sellerOrderCount = sellerOrdersRes.count ?? 0
   const followingCount = followingRes.count ?? 0
+  const sellerEarningsTotals = sellerEarningsTotalsRes
 
   const welcomeName =
     (profile?.is_shop && profile?.shop_name?.trim()) ||
@@ -174,6 +178,10 @@ export default async function DashboardPage() {
         })
         .eq("id", walletRow.id)
     }
+  }
+
+  if (sellerEarningsTotals !== null) {
+    allTimeEarned = sellerEarningsTotals.lifetimeSoldUsd
   }
 
   const coreStats: Array<{

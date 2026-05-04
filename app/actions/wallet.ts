@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { resolveReversedSellerOrderIds } from "@/lib/services/earningsReversedOrders"
+import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 
 const EARNINGS_ACTIVITY_MAX_PAGE = 50
 
@@ -26,6 +27,7 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
       transactions: [] as unknown[],
       reversedOrderIds: [] as string[],
       activityHasMore: false,
+      sellerEarningsTotals: null,
     }
   }
 
@@ -44,6 +46,7 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
         transactions: [],
         reversedOrderIds: [],
         activityHasMore: false,
+        sellerEarningsTotals: null,
       }
     }
     wallet = newWallet
@@ -69,25 +72,32 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
     }
   }
 
-  const pageSize = clampActivityLimit(opts?.activityLimit ?? EARNINGS_ACTIVITY_PAGE_SIZE)
-  const fetchThrough = pageSize // range(0, pageSize) inclusive → pageSize + 1 rows
-  const { data: rawTx } = await supabase
-    .from("wallet_transactions")
-    .select("*")
-    .eq("wallet_id", wallet.id)
-    .order("created_at", { ascending: false })
-    .range(0, fetchThrough)
+  const [sellerEarningsTotals, pageFetch] = await Promise.all([
+    getMySellerEarningsTotals(supabase),
+    (async () => {
+      const pageSize = clampActivityLimit(opts?.activityLimit ?? EARNINGS_ACTIVITY_PAGE_SIZE)
+      const fetchThrough = pageSize // range(0, pageSize) inclusive → pageSize + 1 rows
+      const { data: rawTx } = await supabase
+        .from("wallet_transactions")
+        .select("*")
+        .eq("wallet_id", wallet.id)
+        .order("created_at", { ascending: false })
+        .range(0, fetchThrough)
 
-  const batch = rawTx ?? []
-  const activityHasMore = batch.length > pageSize
-  const rows = activityHasMore ? batch.slice(0, pageSize) : batch
-  const reversedOrderIds = await resolveReversedSellerOrderIds(supabase, user.id, rows)
+      const batch = rawTx ?? []
+      const activityHasMore = batch.length > pageSize
+      const rows = activityHasMore ? batch.slice(0, pageSize) : batch
+      const reversedOrderIds = await resolveReversedSellerOrderIds(supabase, user.id, rows)
+      return { rows, activityHasMore, reversedOrderIds }
+    })(),
+  ])
 
   return {
     wallet,
-    transactions: rows,
-    reversedOrderIds,
-    activityHasMore,
+    transactions: pageFetch.rows,
+    reversedOrderIds: pageFetch.reversedOrderIds,
+    activityHasMore: pageFetch.activityHasMore,
+    sellerEarningsTotals,
     paymentMethods: [] as unknown[],
     error: null,
   }
@@ -108,6 +118,7 @@ export async function loadMoreEarningsActivity(params: { offset: number; limit?:
       hasMore: false,
     }
   }
+
 
   const { data: wallet } = await supabase.from("wallets").select("id").eq("user_id", user.id).single()
   if (!wallet?.id) {

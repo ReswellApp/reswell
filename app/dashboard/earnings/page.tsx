@@ -12,6 +12,7 @@ import { EarningsStripePayoutCard } from "@/components/features/earnings/earning
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
 import type { StripeConnectStatusPayload } from "@/components/features/earnings/stripe-bank-payout-section"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
+import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 
 interface StripeTransferHistoryItem {
   id: string
@@ -44,6 +45,8 @@ export default function EarningsPage() {
   const [stripeHistoryLoading, setStripeHistoryLoading] = useState(true)
   const [stripeStatusFailed, setStripeStatusFailed] = useState(false)
   const [stripeHistoryFailed, setStripeHistoryFailed] = useState(false)
+
+  const [sellerEarningsTotals, setSellerEarningsTotals] = useState<SellerEarningsDashboardTotals | null>(null)
 
   const stripeCashOutWalletTrustRef = useRef<{
     balance: string
@@ -94,6 +97,7 @@ export default function EarningsPage() {
         setTransactions(earningsData.transactions as EarningsTransaction[])
         setReversedOrderIds(new Set(earningsData.reversedOrderIds ?? []))
         setActivityHasMore(Boolean(earningsData.activityHasMore))
+        setSellerEarningsTotals(earningsData.sellerEarningsTotals ?? null)
       } else {
         setWallet(null)
         setWalletError(
@@ -104,6 +108,7 @@ export default function EarningsPage() {
         setTransactions([])
         setReversedOrderIds(new Set())
         setActivityHasMore(false)
+        setSellerEarningsTotals(null)
       }
     } catch {
       if (gen !== fetchGenerationRef.current) return
@@ -111,6 +116,7 @@ export default function EarningsPage() {
       setWallet(null)
       setTransactions([])
       setActivityHasMore(false)
+      setSellerEarningsTotals(null)
     } finally {
       if (gen === fetchGenerationRef.current && showSkeleton) {
         setWalletLoading(false)
@@ -336,6 +342,7 @@ export default function EarningsPage() {
           <EarningsPaymentsOverview
             wallet={wallet}
             transactions={transactions}
+            sellerOrderTotals={sellerEarningsTotals}
             isLoading={walletLoading}
             errorMessage={walletError}
             stripePayoutsEnabled={stripePayoutsEnabled}
@@ -347,7 +354,11 @@ export default function EarningsPage() {
           />
         </section>
 
-        <EarningsLifetimeStats wallet={wallet} isLoading={walletLoading} />
+        <EarningsLifetimeStats
+          wallet={wallet}
+          sellerOrderTotals={sellerEarningsTotals}
+          isLoading={walletLoading}
+        />
 
         {stripePayoutsEnabled ? (
           <section id="earnings-bank-payout" className="scroll-mt-28 space-y-3">

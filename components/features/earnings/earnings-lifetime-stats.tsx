@@ -3,6 +3,7 @@
 import { Banknote, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 import type { EarningsWalletSnapshot } from "./earnings-types"
 
 export function EarningsLifetimeStatsSkeleton() {
@@ -26,9 +27,12 @@ export function EarningsLifetimeStatsSkeleton() {
 
 export function EarningsLifetimeStats({
   wallet,
+  sellerOrderTotals,
   isLoading,
 }: {
   wallet: EarningsWalletSnapshot | null
+  /** When present, reflects sum of seller earnings from all non-refunded orders. */
+  sellerOrderTotals: SellerEarningsDashboardTotals | null
   isLoading: boolean
 }) {
   if (isLoading) {
@@ -39,7 +43,9 @@ export function EarningsLifetimeStats({
     return null
   }
 
-  const lifetimeEarned = parseFloat(wallet.lifetime_earned)
+  const lifetimeEarned = sellerOrderTotals
+    ? sellerOrderTotals.lifetimeSoldUsd
+    : parseFloat(wallet.lifetime_earned)
   const lifetimeCashedOut = parseFloat(wallet.lifetime_cashed_out)
 
   return (

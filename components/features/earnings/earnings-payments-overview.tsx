@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "./earnings-types"
 import type { StripeConnectStatusPayload } from "./stripe-bank-payout-section"
 
@@ -68,6 +69,7 @@ export function EarningsPaymentsOverviewSkeleton() {
 export function EarningsPaymentsOverview({
   wallet,
   transactions,
+  sellerOrderTotals,
   isLoading,
   errorMessage,
   stripePayoutsEnabled,
@@ -79,6 +81,8 @@ export function EarningsPaymentsOverview({
 }: {
   wallet: EarningsWalletSnapshot | null
   transactions: EarningsTransaction[]
+  /** When set, period earnings sum all qualifying orders (not paginated wallet activity). */
+  sellerOrderTotals: SellerEarningsDashboardTotals | null
   isLoading: boolean
   errorMessage: string | null
   stripePayoutsEnabled: boolean
@@ -94,10 +98,16 @@ export function EarningsPaymentsOverview({
   const periodLabel =
     PERIOD_OPTIONS.find((p) => p.value === periodValue)?.label ?? PERIOD_OPTIONS[0].label
 
-  const earned = useMemo(
-    () => earnedInPeriodUsd(transactions, periodDays),
-    [transactions, periodDays],
-  )
+  const earned = useMemo(() => {
+    if (sellerOrderTotals) {
+      if (periodDays === 30) return sellerOrderTotals.earnedLast30dUsd
+      if (periodDays === 90) return sellerOrderTotals.earnedLast90dUsd
+      if (periodDays === 365) return sellerOrderTotals.earnedLast365dUsd
+    }
+    return earnedInPeriodUsd(transactions, periodDays)
+  }, [sellerOrderTotals, periodDays, transactions])
+
+  const overviewFromOrders = Boolean(sellerOrderTotals)
 
   if (isLoading) {
     return <EarningsPaymentsOverviewSkeleton />
@@ -158,12 +168,20 @@ export function EarningsPaymentsOverview({
                   align="end"
                   className="max-w-[19rem] text-xs leading-relaxed space-y-2 px-3 py-2.5"
                 >
-                  <p>
-                    This number sums <span className="font-semibold">sale</span> and{" "}
-                    <span className="font-semibold">deposit</span> credits in the window you picked, using wallet history
-                    already loaded in this session—not payouts, purchases, or refunds.
-                  </p>
-                  {activityHasMore ? (
+                  {overviewFromOrders ? (
+                    <p>
+                      This total is your <span className="font-semibold">seller share</span> (after Reswell&apos;s fee)
+                      from every marketplace order in the window, using your full order history. Fully refunded orders
+                      are excluded.
+                    </p>
+                  ) : (
+                    <p>
+                      This number sums <span className="font-semibold">sale</span> and{" "}
+                      <span className="font-semibold">deposit</span> credits in the window you picked, using wallet history
+                      already loaded in this session—not payouts, purchases, or refunds.
+                    </p>
+                  )}
+                  {!overviewFromOrders && activityHasMore ? (
                     <p>
                       Totals use loaded history only. Under <span className="font-semibold">Payout history</span> below,
                       use <span className="font-semibold">Load more</span> if this period might include older sales.
