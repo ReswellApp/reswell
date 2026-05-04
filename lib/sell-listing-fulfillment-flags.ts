@@ -33,8 +33,9 @@ function normalizeBoardFulfillmentMode(m: unknown): BoardFulfillmentChoice {
 
 
 /**
- * Persists packed box + weight for Reswell-calculated shipping. Returns `null` when not applicable
- * or when Reswell package fields are incomplete (caller should rely on form validation for UX).
+ * Persists packed box + optional weight for Reswell-calculated shipping. Weight may be omitted;
+ * rates and labels then use board-based heuristics (`resolvePackedParcelFromListing`).
+ * Returns all `null` when L×W×H are invalid (caller should rely on form validation for UX).
  */
 export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   shipping_packed_length_in: number | null
@@ -58,13 +59,15 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   const ozRaw = fd.reswellPackageWeightOz?.trim() ?? ""
   const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
   const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
+  if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
+    return {
+      shipping_packed_length_in: null,
+      shipping_packed_width_in: null,
+      shipping_packed_height_in: null,
+      shipping_packed_weight_oz: null,
+    }
+  }
   if (
-    L == null ||
-    L <= 0 ||
-    W == null ||
-    W <= 0 ||
-    H == null ||
-    H <= 0 ||
     !Number.isFinite(lb) ||
     lb < 0 ||
     !Number.isFinite(oz) ||
@@ -81,9 +84,9 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   const totalOz = lb * 16 + oz
   if (!Number.isFinite(totalOz) || totalOz <= 0) {
     return {
-      shipping_packed_length_in: null,
-      shipping_packed_width_in: null,
-      shipping_packed_height_in: null,
+      shipping_packed_length_in: L,
+      shipping_packed_width_in: W,
+      shipping_packed_height_in: H,
       shipping_packed_weight_oz: null,
     }
   }
@@ -119,15 +122,33 @@ export function reswellPackageFormFromDbRow(row: {
   const W = row.shipping_packed_width_in
   const H = row.shipping_packed_height_in
   const ozTotal = row.shipping_packed_weight_oz
-  if (L == null || L === "" || W == null || W === "" || H == null || H === "" || ozTotal == null || ozTotal === "") {
+  if (L == null || L === "" || W == null || W === "" || H == null || H === "") {
     return empty
   }
   const nL = typeof L === "number" ? L : parseFloat(String(L).replace(/,/g, ""))
   const nW = typeof W === "number" ? W : parseFloat(String(W).replace(/,/g, ""))
   const nH = typeof H === "number" ? H : parseFloat(String(H).replace(/,/g, ""))
-  const totalOz = typeof ozTotal === "number" ? ozTotal : parseFloat(String(ozTotal).replace(/,/g, ""))
-  if (!Number.isFinite(nL) || !Number.isFinite(nW) || !Number.isFinite(nH) || !Number.isFinite(totalOz)) {
+  if (!Number.isFinite(nL) || !Number.isFinite(nW) || !Number.isFinite(nH)) {
     return empty
+  }
+  if (ozTotal == null || ozTotal === "") {
+    return {
+      reswellPackageLengthIn: String(nL),
+      reswellPackageWidthIn: String(nW),
+      reswellPackageHeightIn: String(nH),
+      reswellPackageWeightLb: "",
+      reswellPackageWeightOz: "",
+    }
+  }
+  const totalOz = typeof ozTotal === "number" ? ozTotal : parseFloat(String(ozTotal).replace(/,/g, ""))
+  if (!Number.isFinite(totalOz) || totalOz <= 0) {
+    return {
+      reswellPackageLengthIn: String(nL),
+      reswellPackageWidthIn: String(nW),
+      reswellPackageHeightIn: String(nH),
+      reswellPackageWeightLb: "",
+      reswellPackageWeightOz: "",
+    }
   }
   const lb = Math.floor(totalOz / 16)
   const ozRem = Math.round((totalOz - lb * 16) * 100) / 100
@@ -165,6 +186,7 @@ export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput)
   const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
   const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
   if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0 || oz >= 16) return false
+  if (lbRaw === "" && ozRaw === "") return true
   const totalOz = lb * 16 + oz
   return Number.isFinite(totalOz) && totalOz > 0
 }

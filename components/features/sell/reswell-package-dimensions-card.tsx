@@ -94,10 +94,7 @@ export function ReswellPackageDimensionsCard({
       {showHeading ? (
         <div>
           <h3 className="text-sm font-semibold text-foreground">
-            Packed size &amp; weight{" "}
-            <span className="text-destructive" aria-hidden="true">
-              *
-            </span>
+            Packed size &amp; weight
           </h3>
           <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
             Carriers bill by the box you ship in, not the board specs alone. Underestimating size or
@@ -135,7 +132,9 @@ export function ReswellPackageDimensionsCard({
           <span className="font-medium text-foreground/80">Width</span>, and{" "}
           <span className="font-medium text-foreground/80">Thickness</span> above — change them here only if
           your packed box differs. Length uses the same feet-and-inches style (such as 5&apos;4), or outer
-          inches. Width and height use the same inch values — we use what you save for carrier rates.
+          inches. Width and height use the same inch values — we use what you save for carrier rates. If you
+          don&apos;t know the packed weight yet, leave lb and oz blank — we&apos;ll estimate from your board
+          for quotes and labels.
         </p>
       </div>
 
@@ -191,15 +190,7 @@ export function ReswellPackageDimensionsCard({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SuffixInput
           id="reswell-pkg-weight-lb"
-          label={
-            <>
-              Weight{" "}
-              <span className="text-destructive" aria-hidden="true">
-                *
-              </span>{" "}
-              (lb)
-            </>
-          }
+          label={<>Weight (lb) — optional</>}
           suffix="lb"
           value={weightLb}
           onChange={onWeightLbChange}
@@ -207,15 +198,7 @@ export function ReswellPackageDimensionsCard({
         />
         <SuffixInput
           id="reswell-pkg-weight-oz"
-          label={
-            <>
-              Weight{" "}
-              <span className="text-destructive" aria-hidden="true">
-                *
-              </span>{" "}
-              (oz)
-            </>
-          }
+          label={<>Weight (oz) — optional</>}
           suffix="oz"
           value={weightOz}
           onChange={onWeightOzChange}

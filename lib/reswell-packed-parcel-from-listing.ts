@@ -89,8 +89,8 @@ export type ResolvedPackedParcelSource =
  * outer parcel handed to ShipEngine reflects realistic carton dims (end-cap foam,
  * bubble wrap, carton thickness) — not the bare board.
  *
- * Weight is still read from `shipping_packed_weight_oz` because there is no equivalent
- * auto-derivation for weight in the form — sellers always enter it explicitly.
+ * When `shipping_packed_weight_oz` is set, it is preferred; otherwise weight is estimated from
+ * board length/volume (same heuristics as the sell flow when lb/oz are left blank).
  */
 export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
   | {

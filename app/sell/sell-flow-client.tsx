@@ -141,10 +141,7 @@ import {
   normalizeVolumeLitersInput,
   shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
-import {
-  reswellParcelAutofillStringsFromBoard,
-  reswellSuggestedShipWeightLbOzFromBoard,
-} from "@/lib/surfboard-shipping-estimates"
+import { reswellParcelAutofillStringsFromBoard } from "@/lib/surfboard-shipping-estimates"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -751,7 +748,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const prevBoardLengthRef = useRef<string | undefined>(undefined)
   const prevBoardWidthRef = useRef<string | undefined>(undefined)
   const prevBoardThicknessRef = useRef<string | undefined>(undefined)
-  const reswellWeightManualRef = useRef(false)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<
     { value: string; label: string; board: boolean; slug?: string | null }[]
@@ -986,38 +982,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     formData.boardLength,
     formData.boardWidthInches,
     formData.boardThicknessInches,
-  ])
-
-  useEffect(() => {
-    if (!deliveryFlags.shipping_available || formData.boardShippingCostMode !== "reswell") {
-      reswellWeightManualRef.current = false
-      return
-    }
-
-    const weightSugg = reswellSuggestedShipWeightLbOzFromBoard({
-      boardLength: formData.boardLength,
-      boardVolumeL: formData.boardVolumeL,
-    })
-
-    if (!weightSugg || reswellWeightManualRef.current) return
-
-    setFormData((fd) => {
-      if (!flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available) return fd
-      if (fd.boardShippingCostMode !== "reswell") return fd
-      const curLb = fd.reswellPackageWeightLb.trim()
-      const curOz = fd.reswellPackageWeightOz.trim()
-      if (curLb === weightSugg.lb && curOz === weightSugg.oz) return fd
-      return {
-        ...fd,
-        reswellPackageWeightLb: weightSugg.lb,
-        reswellPackageWeightOz: weightSugg.oz,
-      }
-    })
-  }, [
-    deliveryFlags.shipping_available,
-    formData.boardShippingCostMode,
-    formData.boardLength,
-    formData.boardVolumeL,
   ])
 
   /**
@@ -1328,12 +1292,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         loadedReswellPackage.reswellPackageHeightIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightLb.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightOz.trim() !== ""
-      if (hasReswellPackageFromDb) {
-        reswellWeightManualRef.current = true
-      } else {
-        reswellWeightManualRef.current = false
-      }
-
       setFormData({
         title: listing.title ?? "",
         description: listing.description ?? "",
@@ -3307,9 +3265,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             value={formData.boardShippingCostMode}
                             onValueChange={(value) => {
                               const mode = value as BoardShippingCostMode
-                              if (mode === "reswell") {
-                                reswellWeightManualRef.current = false
-                              }
                               setFormData({
                                 ...formData,
                                 boardShippingCostMode: mode,
@@ -3494,14 +3449,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                           reswellPackageHeightIn: normalizeTapeStyleInchesInput(v),
                         })
                       }
-                      onWeightLbChange={(v) => {
-                        reswellWeightManualRef.current = true
+                      onWeightLbChange={(v) =>
                         setFormData({ ...formData, reswellPackageWeightLb: v })
-                      }}
-                      onWeightOzChange={(v) => {
-                        reswellWeightManualRef.current = true
+                      }
+                      onWeightOzChange={(v) =>
                         setFormData({ ...formData, reswellPackageWeightOz: v })
-                      }}
+                      }
                     />
                   </SellFormSection>
                 ) : null}

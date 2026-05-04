@@ -28,7 +28,13 @@ function photosTitleSectionComplete(form: SellFormValidationInput): boolean {
 
 function brandModelComplete(form: SellFormValidationInput): boolean {
   const model = form.boardModelName?.trim() ?? ""
-  if (model.length > LISTING_BOARD_MODEL_MAX_LENGTH) return false
+  if (
+    !form.brand?.trim() ||
+    !model ||
+    model.length > LISTING_BOARD_MODEL_MAX_LENGTH
+  ) {
+    return false
+  }
   return true
 }
 
@@ -38,28 +44,41 @@ function shapeSectionComplete(form: SellFormValidationInput): boolean {
 
 function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
   const lenRaw = form.boardLength?.trim() ?? ""
-  if (lenRaw) {
-    const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
-    if (!feetStr) return false
-    const ft = parseLengthFeet(feetStr)
-    if (ft == null || ft < 1 || ft > 15) return false
+  const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
+  if (!lenRaw || !feetStr) return false
+  const ft = parseLengthFeet(feetStr)
+  if (ft == null || ft < 1 || ft > 15) return false
 
-    const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
-    const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
-    if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
-  }
+  const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
+  const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
+  if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
 
-  if (form.boardWidthInches?.trim()) {
+  const skipDims = form.boardSkipOptionalDimensions === true
+  if (!skipDims) {
+    if (!form.boardWidthInches?.trim()) return false
     const width =
       parseBoardMeasurement(form.boardWidthInches.trim()) ??
       Number.parseFloat(form.boardWidthInches.trim())
     if (!Number.isFinite(width) || width <= 0) return false
-  }
-  if (form.boardThicknessInches?.trim()) {
+
+    if (!form.boardThicknessInches?.trim()) return false
     const thick =
       parseBoardMeasurement(form.boardThicknessInches.trim()) ??
       Number.parseFloat(form.boardThicknessInches.trim())
     if (!Number.isFinite(thick) || thick <= 0) return false
+  } else {
+    if (form.boardWidthInches?.trim()) {
+      const width =
+        parseBoardMeasurement(form.boardWidthInches.trim()) ??
+        Number.parseFloat(form.boardWidthInches.trim())
+      if (!Number.isFinite(width) || width <= 0) return false
+    }
+    if (form.boardThicknessInches?.trim()) {
+      const thick =
+        parseBoardMeasurement(form.boardThicknessInches.trim()) ??
+        Number.parseFloat(form.boardThicknessInches.trim())
+      if (!Number.isFinite(thick) || thick <= 0) return false
+    }
   }
 
   if (form.boardVolumeL?.trim()) {
@@ -94,8 +113,10 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
       if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0) return false
       if (oz >= 16) return false
-      const totalOz = lb * 16 + oz
-      if (!Number.isFinite(totalOz) || totalOz <= 0) return false
+      if (lbRaw !== "" || ozRaw !== "") {
+        const totalOz = lb * 16 + oz
+        if (!Number.isFinite(totalOz) || totalOz <= 0) return false
+      }
     }
   }
 

@@ -229,14 +229,17 @@ export function validateSellListingForm(
       const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
       const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
       if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0) {
-        return "Enter a valid packed weight (pounds and ounces)."
+        return "Enter a valid packed weight (pounds and ounces), or leave both fields blank."
       }
       if (oz >= 16) {
         return "Ounces must be under 16 — add whole pounds in the pounds field instead."
       }
-      const totalOz = lb * 16 + oz
-      if (!Number.isFinite(totalOz) || totalOz <= 0) {
-        return "Enter the packed weight so we can quote shipping (pounds and/or ounces)."
+      const hasAnyWeight = lbRaw !== "" || ozRaw !== ""
+      if (hasAnyWeight) {
+        const totalOz = lb * 16 + oz
+        if (!Number.isFinite(totalOz) || totalOz <= 0) {
+          return "Enter a positive packed weight, or leave both fields blank if you do not know it yet."
+        }
       }
     }
   }
