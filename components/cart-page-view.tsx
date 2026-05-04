@@ -13,7 +13,7 @@ import {
   type CartPageItem,
 } from "@/app/actions/cart"
 import { toggleFavoriteListing } from "@/app/actions/favorites"
-import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
+import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { formatBoardType, formatCondition, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
@@ -26,11 +26,6 @@ import {
 } from "@/components/features/cart/cart-favorites-carousel"
 import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
 import { cn } from "@/lib/utils"
-
-function checkoutHrefForListing(listing: CartPageItem["listing"]): string {
-  const param = listing.slug?.trim() || listing.id
-  return peerListingCheckoutHref(listing.section, param)
-}
 
 function listingAvailable(listing: CartPageItem["listing"]) {
   return listing.status === "active" || listing.status === "pending_sale"
@@ -105,25 +100,24 @@ export function CartPageView({
     availableTotal,
     availableCount,
     unavailableCount,
-    firstAvailableItem,
+    checkoutActions,
     deliveryLabel,
     deliveryNote,
   } = useMemo(() => {
     let total = 0
     let unavail = 0
-    let first: (typeof initialItems)[0] | null = null
     for (const row of initialItems) {
       if (listingAvailable(row.listing)) {
         total += Number(row.listing.price)
-        if (!first) first = row
       } else {
         unavail += 1
       }
     }
     const avail = initialItems.length - unavail
 
-    let shipLabel = "Calculated at checkout"
     const availRows = initialItems.filter(({ listing }) => listingAvailable(listing))
+
+    let shipLabel = "Calculated at checkout"
     if (availRows.length > 0) {
       const withShip = availRows.filter(({ listing }) => listing.shipping_available)
       if (withShip.length > 0) {
@@ -136,22 +130,47 @@ export function CartPageView({
       }
     }
 
+    const sellerGroups = new Map<string, CartPageItem[]>()
+    for (const row of availRows) {
+      const sid = row.listing.user_id
+      const g = sellerGroups.get(sid) ?? []
+      g.push(row)
+      sellerGroups.set(sid, g)
+    }
+
+    const checkoutActionsInner: { href: string; label: string }[] = []
+    for (const [sellerId, rows] of sellerGroups) {
+      const sellerName = getPublicSellerDisplayName(rows[0]!.listing.profiles)
+      const n = rows.length
+      const label =
+        sellerGroups.size > 1
+          ? `Checkout ${n} ${n === 1 ? "item" : "items"} — ${sellerName}`
+          : `Checkout ${n === 1 ? "1 item" : `${n} items`}`
+      const q = new URLSearchParams()
+      q.set("from_cart", "1")
+      q.set("seller_id", sellerId)
+      checkoutActionsInner.push({ href: `/checkout?${q}`, label })
+    }
+    checkoutActionsInner.sort((a, b) => a.href.localeCompare(b.href))
+
+    const sellerGroupCount = sellerGroups.size
+
     const note =
-      availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-        ? "Shipping cost and delivery timing are finalized with the seller at checkout."
-        : "Pickup or shipping details are confirmed with the seller when you check out."
+      sellerGroupCount > 1
+        ? "Multiple sellers — checkout each group separately. Boards from one seller can be purchased together in one order when pickup is available."
+        : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
+          ? "Shipping cost and delivery timing are finalized with the seller at checkout."
+          : "Pickup or shipping details are confirmed with the seller when you check out."
 
     return {
       availableTotal: total,
       availableCount: avail,
       unavailableCount: unavail,
-      firstAvailableItem: first,
+      checkoutActions: checkoutActionsInner,
       deliveryLabel: shipLabel,
       deliveryNote: note,
     }
   }, [initialItems])
-
-  const firstCheckoutHref = firstAvailableItem ? checkoutHrefForListing(firstAvailableItem.listing) : null
 
   function remove(listingId: string) {
     startTransition(async () => {
@@ -375,7 +394,7 @@ export function CartPageView({
               taxLabel="Calculated at checkout"
               discountAmount={0}
               total={availableTotal}
-              firstCheckoutHref={firstCheckoutHref}
+              checkoutActions={checkoutActions}
               checkoutPending={pending}
               deliveryNote={deliveryNote}
             />

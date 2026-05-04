@@ -177,7 +177,7 @@ function CheckoutForm({
 }
 
 export function StripeCardCheckout({
-  listingId,
+  listingIds,
   listingTitle,
   price,
   fulfillment,
@@ -187,7 +187,7 @@ export function StripeCardCheckout({
   submitButtonLabel,
   submitButtonClassName,
 }: {
-  listingId: string
+  listingIds: string[]
   listingTitle: string
   price: number
   fulfillment?: "pickup" | "shipping" | null
@@ -205,6 +205,8 @@ export function StripeCardCheckout({
 
   const stripePromise = getStripeBrowser()
 
+  const listingIdsKey = [...listingIds].sort().join("|")
+
   useEffect(() => {
     if (!stripePromise) {
       setLoading(false)
@@ -212,6 +214,13 @@ export function StripeCardCheckout({
     }
 
     if (!purchaseDetailsReady) {
+      setClientSecret(null)
+      setError(null)
+      setLoading(false)
+      return
+    }
+
+    if (!listingIds.length) {
       setClientSecret(null)
       setError(null)
       setLoading(false)
@@ -238,7 +247,7 @@ export function StripeCardCheckout({
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            listing_id: listingId,
+            listing_ids: listingIds,
             ...(fulfillment ? { fulfillment } : {}),
             ...(needsShipping && shippingAddressId ? { address_id: shippingAddressId } : {}),
           }),
@@ -270,7 +279,7 @@ export function StripeCardCheckout({
       cancelled = true
     }
   }, [
-    listingId,
+    listingIdsKey,
     fulfillment,
     price,
     shippingAddressId,

@@ -34,7 +34,10 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ id: 
       itemPrice: payload.itemPrice,
       shippingCost: payload.shippingCost,
       fulfillmentMethod: payload.fulfillmentMethod,
-      listing: payload.listing,
+      pickupCode: payload.pickupCode,
+      sellerId: payload.sellerId,
+      listingId: payload.listingId,
+      orderLines: payload.orderLines,
       shipping: payload.shipping,
     },
   })

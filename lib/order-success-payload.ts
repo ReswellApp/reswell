@@ -32,6 +32,19 @@ function formatAddressLines(addr: NonNullable<ShippingAddressJson>["address"]) {
   return parts.length ? parts : null
 }
 
+type SuccessListingEmbed = {
+  id: string
+  title: string | null
+  slug?: string | null
+  section: string
+  condition?: string | null
+  price: string | number
+  shipping_available: boolean | null
+  local_pickup: boolean | null
+  shipping_price: string | number | null
+  listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+}
+
 type OrderSuccessOrderRow = {
   id: string
   order_num: string | null
@@ -43,38 +56,66 @@ type OrderSuccessOrderRow = {
   seller_id: string | null
   shipping_address: ShippingAddressJson
   listings:
-    | {
-        id: string
-        title: string | null
-        slug?: string | null
-        section: string
-        condition?: string | null
-        price: string | number
-        shipping_available: boolean | null
-        local_pickup: boolean | null
-        shipping_price: string | number | null
-        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
-      }
+    | SuccessListingEmbed
+    | SuccessListingEmbed[]
+    | null
+  order_items?:
     | Array<{
-        id: string
-        title: string | null
-        slug?: string | null
-        section: string
-        condition?: string | null
-        price: string | number
-        shipping_available: boolean | null
-        local_pickup: boolean | null
-        shipping_price: string | number | null
-        listing_images: Array<{ url: string; is_primary: boolean | null }> | null
+        sort_order: number | null
+        listings: SuccessListingEmbed | SuccessListingEmbed[] | null
       }>
     | null
+}
+
+function listingFromRelation(raw: SuccessListingEmbed | SuccessListingEmbed[] | null | undefined): SuccessListingEmbed | null {
+  if (!raw) return null
+  return Array.isArray(raw) ? raw[0] ?? null : raw
 }
 
 function mapOrderRowToCheckoutPayload(
   order: OrderSuccessOrderRow,
   buyerEmail: string | null | undefined,
 ): CheckoutOrderSuccessPayload {
-  const listing = Array.isArray(order.listings) ? order.listings[0] : order.listings
+  const rawItems = order.order_items
+  const itemRows = Array.isArray(rawItems)
+    ? [...rawItems].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    : []
+
+  const linesFromItems: CheckoutOrderSuccessPayload["orderLines"] = []
+  for (const row of itemRows) {
+    const listing = listingFromRelation(row.listings)
+    if (!listing) continue
+    const title = listing.title ? capitalizeWords(listing.title) : "Item"
+    const conditionLabel = listing.condition ? formatCondition(listing.condition) : null
+    linesFromItems.push({
+      listingId: listing.id,
+      title,
+      imageUrl: primaryImage(listing.listing_images),
+      subtitle: conditionLabel,
+      categoryLabel: formatCategory(listing.section)?.trim() || null,
+    })
+  }
+
+  const fallbackListing = listingFromRelation(order.listings)
+
+  const orderLines: CheckoutOrderSuccessPayload["orderLines"] =
+    linesFromItems.length > 0
+      ? linesFromItems
+      : fallbackListing
+        ? [
+            {
+              listingId: fallbackListing.id,
+              title: fallbackListing.title ? capitalizeWords(fallbackListing.title) : "Item",
+              imageUrl: primaryImage(fallbackListing.listing_images),
+              subtitle: fallbackListing.condition ? formatCondition(fallbackListing.condition) : null,
+              categoryLabel: formatCategory(fallbackListing.section)?.trim() || null,
+            },
+          ]
+        : []
+
+  const primaryListing =
+    fallbackListing ?? (itemRows.length > 0 ? listingFromRelation(itemRows[0]?.listings) : null)
+
   const total = Number(order.amount)
   const fulfillment = order.fulfillment_method === "shipping" || order.fulfillment_method === "pickup"
     ? order.fulfillment_method
@@ -82,11 +123,6 @@ function mapOrderRowToCheckoutPayload(
 
   let itemPrice = total
   let shippingCost = 0
-  /**
-   * Prefer the shipping the buyer actually paid (stored on the order) over reverse-engineering it
-   * from the listing — Reswell-quoted shipping is calculated at checkout and the listing's
-   * `shipping_price` may be 0 / stale.
-   */
   const storedShipping = Math.max(
     0,
     Math.round((Number(order.shipping_amount ?? 0) || 0) * 100) / 100,
@@ -94,14 +130,14 @@ function mapOrderRowToCheckoutPayload(
   if (storedShipping > 0 && storedShipping <= total) {
     shippingCost = storedShipping
     itemPrice = Math.round((total - shippingCost) * 100) / 100
-  } else if (listing) {
+  } else if (primaryListing) {
     const resolved = resolvePayableAmount(
       {
-        price: listing.price,
-        section: listing.section,
-        shipping_available: listing.shipping_available,
-        local_pickup: listing.local_pickup,
-        shipping_price: listing.shipping_price,
+        price: primaryListing.price,
+        section: primaryListing.section,
+        shipping_available: primaryListing.shipping_available,
+        local_pickup: primaryListing.local_pickup,
+        shipping_price: primaryListing.shipping_price,
       },
       fulfillment,
     )
@@ -120,13 +156,12 @@ function mapOrderRowToCheckoutPayload(
     ? [ship?.name, addressLines.join(", ")].filter(Boolean).join(", ")
     : null
 
-  const title = listing?.title ? capitalizeWords(listing.title) : "Item"
-  const conditionLabel = listing?.condition ? formatCondition(listing.condition) : null
-
   const pickupCode =
     fulfillment === "pickup" && typeof order.pickup_code === "string" && order.pickup_code.trim()
       ? order.pickup_code.trim()
       : null
+
+  const listingIdForLinks = orderLines[0]?.listingId ?? fallbackListing?.id ?? null
 
   return {
     orderId: order.id,
@@ -138,15 +173,8 @@ function mapOrderRowToCheckoutPayload(
     fulfillmentMethod: fulfillment,
     pickupCode,
     sellerId: order.seller_id?.trim() ? order.seller_id : null,
-    listingId: listing?.id ?? null,
-    listing: listing
-      ? {
-          title,
-          imageUrl: primaryImage(listing.listing_images),
-          subtitle: conditionLabel,
-          categoryLabel: formatCategory(listing.section)?.trim() || null,
-        }
-      : null,
+    listingId: listingIdForLinks,
+    orderLines,
     shipping: ship
       ? {
           oneLine: shippingOneLine,
@@ -195,6 +223,21 @@ export async function fetchBuyerOrderSuccessPayload(
         local_pickup,
         shipping_price,
         listing_images ( url, is_primary )
+      ),
+      order_items (
+        sort_order,
+        listings (
+          id,
+          title,
+          slug,
+          section,
+          condition,
+          price,
+          shipping_available,
+          local_pickup,
+          shipping_price,
+          listing_images ( url, is_primary )
+        )
       )
     `,
     )
@@ -206,6 +249,5 @@ export async function fetchBuyerOrderSuccessPayload(
     return null
   }
 
-  return mapOrderRowToCheckoutPayload(row as OrderSuccessOrderRow, buyerEmail)
+  return mapOrderRowToCheckoutPayload(row as unknown as OrderSuccessOrderRow, buyerEmail)
 }
-

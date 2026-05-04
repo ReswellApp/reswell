@@ -36,16 +36,20 @@ function paymentPhrase(method: OrderPlacedMessagePayload["paymentMethod"]): stri
 
 function buildPurchaseThreadPlainText(params: {
   orderNum: string
-  listingTitle: string
+  listingTitles: string[]
   total: number
   fulfillment: "pickup" | "shipping"
   shippingAddress: Record<string, unknown> | null
   paymentMethod: OrderPlacedMessagePayload["paymentMethod"]
 }): string {
-  const { orderNum, listingTitle, total, fulfillment, shippingAddress, paymentMethod } = params
+  const { orderNum, listingTitles, total, fulfillment, shippingAddress, paymentMethod } = params
 
   const header = `Order #${orderNum} — $${total.toFixed(2)} total`
-  const itemLine = `Item: "${listingTitle}"`
+  const cleanedTitles = listingTitles.map((t) => t.trim()).filter(Boolean)
+  const itemBlock =
+    cleanedTitles.length <= 1
+      ? [`Item: "${cleanedTitles[0] ?? "Purchase"}"`]
+      : ["Items:", ...cleanedTitles.map((t) => `• "${t}"`)]
   const payLine = `Paid with ${paymentPhrase(paymentMethod)}`
 
   const fulfillmentLine =
@@ -55,7 +59,7 @@ function buildPurchaseThreadPlainText(params: {
 
   const shipBlock = fulfillment === "shipping" ? shippingLines(shippingAddress).join("\n") : ""
 
-  return [header, "", itemLine, payLine, "", fulfillmentLine, shipBlock].filter(Boolean).join("\n").trim()
+  return [header, "", ...itemBlock, payLine, "", fulfillmentLine, shipBlock].filter(Boolean).join("\n").trim()
 }
 
 export async function postPurchaseThreadNotification(
@@ -63,8 +67,12 @@ export async function postPurchaseThreadNotification(
   params: {
     buyerId: string
     sellerId: string
-    listingId: string
-    listingTitle: string
+    /** Conversation anchor listing (first line item). */
+    primaryListingId: string
+    listingIds: string[]
+    listingTitles: string[]
+    /** Short summary for structured metadata / compact UI (e.g. multi-item). */
+    listingTitleSummary: string
     /** `orders.id` — used for dashboard links in the thread UI. */
     orderId: string
     /** `orders.order_num` (customer-facing reference). */
@@ -73,13 +81,15 @@ export async function postPurchaseThreadNotification(
     fulfillment: "pickup" | "shipping"
     shippingAddress: Record<string, unknown> | null
     paymentMethod: OrderPlacedMessagePayload["paymentMethod"]
-  }
+  },
 ): Promise<void> {
   const {
     buyerId,
     sellerId,
-    listingId,
-    listingTitle,
+    primaryListingId,
+    listingIds,
+    listingTitles,
+    listingTitleSummary,
     orderId,
     orderNum,
     total,
@@ -96,7 +106,7 @@ export async function postPurchaseThreadNotification(
       .insert({
         buyer_id: buyerId,
         seller_id: sellerId,
-        listing_id: listingId,
+        listing_id: primaryListingId,
       })
       .select("id")
       .single()
@@ -105,14 +115,14 @@ export async function postPurchaseThreadNotification(
       console.error("[purchase notification] conversation insert failed:", convError)
       return
     }
-    conversation = { id: created.id, listing_id: listingId }
+    conversation = { id: created.id, listing_id: primaryListingId }
   } else {
-    await supabase.from("conversations").update({ listing_id: listingId }).eq("id", conversation.id)
+    await supabase.from("conversations").update({ listing_id: primaryListingId }).eq("id", conversation.id)
   }
 
   const content = buildPurchaseThreadPlainText({
     orderNum,
-    listingTitle,
+    listingTitles,
     total,
     fulfillment,
     shippingAddress,
@@ -123,7 +133,10 @@ export async function postPurchaseThreadNotification(
     kind: "order_placed",
     orderId,
     orderNum,
-    listingTitle,
+    listingTitle: listingTitleSummary,
+    ...(listingTitles.length > 1
+      ? { listingTitles, listingIds }
+      : {}),
     total,
     fulfillment,
     paymentMethod,
@@ -150,7 +163,7 @@ export async function postPurchaseThreadNotification(
     receiverUserId: sellerId,
     message: content,
     conversationId: conversation.id,
-    listingId,
+    listingId: primaryListingId,
     messageId: inserted.id,
     sentAt: inserted.created_at,
   })

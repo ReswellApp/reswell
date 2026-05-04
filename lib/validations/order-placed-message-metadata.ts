@@ -5,6 +5,8 @@ export const orderPlacedMessageMetadataSchema = z.object({
   orderId: z.string().uuid(),
   orderNum: z.string().min(1),
   listingTitle: z.string(),
+  listingTitles: z.array(z.string()).optional(),
+  listingIds: z.array(z.string().uuid()).optional(),
   total: z.number(),
   fulfillment: z.enum(["pickup", "shipping"]),
   paymentMethod: z.enum(["card", "reswell_bucks"]),

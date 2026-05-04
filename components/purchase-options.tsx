@@ -4,7 +4,7 @@ import Link from "next/link"
 import { StripeCardCheckout, stripeCardCheckoutEnabled } from "@/components/stripe-card-checkout"
 
 interface PurchaseOptionsProps {
-  listingId: string
+  listingIds: string[]
   listingTitle: string
   /** Total charged (item + shipping when applicable). */
   price: number
@@ -23,7 +23,7 @@ interface PurchaseOptionsProps {
 }
 
 export function PurchaseOptions({
-  listingId,
+  listingIds,
   listingTitle,
   price,
   fulfillment,
@@ -51,7 +51,7 @@ export function PurchaseOptions({
   return (
     <div className="space-y-3">
       <StripeCardCheckout
-        listingId={listingId}
+        listingIds={listingIds}
         listingTitle={listingTitle}
         price={price}
         fulfillment={fulfillment ?? null}

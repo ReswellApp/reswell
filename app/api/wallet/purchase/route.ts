@@ -218,8 +218,10 @@ export async function POST(request: NextRequest) {
   void postPurchaseThreadNotification(supabase, {
     buyerId: user.id,
     sellerId: listing.user_id,
-    listingId: listing.id,
-    listingTitle: listing.title,
+    primaryListingId: listing.id,
+    listingIds: [listing.id],
+    listingTitles: [String(listing.title ?? "")],
+    listingTitleSummary: String(listing.title ?? ""),
     orderId: purchase.id,
     orderNum: formatOrderNumForCustomer(
       (purchase as { order_num?: string | null }).order_num,

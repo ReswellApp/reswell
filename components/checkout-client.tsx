@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
-import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { capitalizeWords } from "@/lib/listing-labels"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -24,13 +24,8 @@ const SURFBOARD_COPY = {
   priceContextNoun: "board",
 } as const
 
-function primaryListingImageUrl(images: CheckoutListing["listing_images"]): string | null {
-  const s = listingTitleThumbnailSrc(images ?? null)
-  return s || null
-}
-
 interface CheckoutClientProps {
-  listing: CheckoutListing
+  listings: CheckoutListing[]
   copy?: CheckoutCopy
   buyerEmail?: string | null
   initialAddresses: ProfileAddressRow[]
@@ -38,31 +33,63 @@ interface CheckoutClientProps {
 }
 
 export function CheckoutClient({
-  listing,
+  listings,
   copy = SURFBOARD_COPY,
   buyerEmail,
   initialAddresses,
   seller,
 }: CheckoutClientProps) {
-  const canPick = listing.local_pickup !== false
-  const canShip = !!listing.shipping_available
+  const bundlePickupOnly = listings.length > 1
+
+  const primaryListing = listings[0]
+  if (!primaryListing) {
+    return (
+      <p className="text-sm text-destructive">
+        Nothing to check out.{" "}
+        <Link href="/cart" className="underline">
+          Back to cart
+        </Link>
+      </p>
+    )
+  }
+
+  const canPick = bundlePickupOnly
+    ? listings.every((l) => l.local_pickup !== false)
+    : primaryListing.local_pickup !== false
+
+  const canShip = bundlePickupOnly ? false : !!primaryListing.shipping_available
 
   const [method, setMethod] = useState<"pickup" | "shipping">(() => {
+    if (bundlePickupOnly) return "pickup"
     if (canPick && !canShip) return "pickup"
     if (!canPick && canShip) return "shipping"
     return "pickup"
   })
 
-  const fulfillmentForApi = canPick && canShip ? method : undefined
+  const fulfillmentForApi = bundlePickupOnly ? "pickup" : canPick && canShip ? method : undefined
 
-  const impliedFulfillment: "pickup" | "shipping" =
-    canPick && canShip ? method : !canPick && canShip ? "shipping" : "pickup"
+  const impliedFulfillment: "pickup" | "shipping" = bundlePickupOnly
+    ? "pickup"
+    : canPick && canShip
+      ? method
+      : !canPick && canShip
+        ? "shipping"
+        : "pickup"
 
   const needsShipping = impliedFulfillment === "shipping"
 
   const resolved = useMemo(() => {
-    return resolvePayableAmount(listing, impliedFulfillment)
-  }, [listing, impliedFulfillment])
+    if (bundlePickupOnly) {
+      let itemSum = 0
+      for (const l of listings) {
+        const r = resolvePayableAmount(l, "pickup")
+        if (!r.ok) return r
+        itemSum += r.itemPrice
+      }
+      return { ok: true as const, itemPrice: itemSum, shipping: 0, total: itemSum }
+    }
+    return resolvePayableAmount(primaryListing, impliedFulfillment)
+  }, [bundlePickupOnly, listings, primaryListing, impliedFulfillment])
 
   const [purchaseDetails, setPurchaseDetails] = useState<PurchaseDetailsState>({
     readyToPay: false,
@@ -103,7 +130,7 @@ export function CheckoutClient({
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            listing_id: listing.id,
+            listing_id: primaryListing.id,
             address_id: purchaseDetails.shippingAddressId,
           }),
         })
@@ -134,24 +161,33 @@ export function CheckoutClient({
     return () => {
       cancelled = true
     }
-  }, [needsShipping, listing.id, purchaseDetails.shippingAddressId])
+  }, [needsShipping, primaryListing.id, purchaseDetails.shippingAddressId])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
   }, [])
 
-  const backHref = listingDetailHref(listing)
-  const imageUrl = primaryListingImageUrl(listing.listing_images)
+  const backHref = listingDetailHref(primaryListing)
 
   const shipFromLocalityLine = useMemo(
-    () => listingShipFromDisplayLine(listing.city, listing.state),
-    [listing.city, listing.state],
+    () => listingShipFromDisplayLine(primaryListing.city, primaryListing.state),
+    [primaryListing.city, primaryListing.state],
   )
+
+  const inspectNounPhrase =
+    listings.length > 1 ? `${listings.length} boards` : copy.inspectNoun
+
+  const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
+
+  const listingSummaryTitle =
+    listings.length === 1
+      ? capitalizeWords(primaryListing.title)
+      : `${listings.length} surfboards`
 
   if (!resolved.ok) {
     return (
       <p className="text-sm text-destructive">
-        This listing cannot be checked out ({resolved.error}).{" "}
+        This order cannot be checked out ({resolved.error}).{" "}
         <Link href={backHref} className="underline">
           Back to listing
         </Link>
@@ -205,6 +241,15 @@ export function CheckoutClient({
         {/* Left — forms */}
         <div className="order-2 flex-1 bg-white px-4 py-8 sm:px-8 lg:order-1 lg:max-w-[640px] lg:shrink-0 lg:px-10 lg:py-10 xl:px-14">
           <div className="mx-auto max-w-[520px] lg:mx-0">
+            {bundlePickupOnly ? (
+              <div className="mb-10 rounded-[8px] border border-[#3b63e3]/25 bg-[#3b63e3]/[0.06] px-4 py-3.5 text-[13px] leading-relaxed text-neutral-700">
+                You&apos;re buying <span className="font-semibold text-foreground">{listings.length} boards</span>{" "}
+                from one seller in a single payment. This combined checkout uses{" "}
+                <span className="font-medium text-foreground">local pickup</span> — you&apos;ll get one pickup code that
+                covers every board in this order.
+              </div>
+            ) : null}
+
             {canPick && canShip && (
               <div className="mb-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
@@ -228,7 +273,7 @@ export function CheckoutClient({
                         Local pickup
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                        Meet the seller and inspect the {copy.inspectNoun} in person.
+                        Meet the seller and inspect {inspectNounPhrase} in person.
                       </p>
                     </div>
                   </label>
@@ -321,10 +366,10 @@ export function CheckoutClient({
               </div>
               <div className="rounded-[8px] border border-neutral-200 bg-white p-4 sm:p-5">
                 <PurchaseOptions
-                  listingId={listing.id}
-                  listingTitle={listing.title}
+                  listingIds={listingIds}
+                  listingTitle={listingSummaryTitle}
                   price={displayTotals.total}
-                  fulfillment={fulfillmentForApi}
+                  fulfillment={fulfillmentForApi ?? null}
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
                   needsShipping={needsShipping}
@@ -366,9 +411,8 @@ export function CheckoutClient({
         </div>
 
         <CheckoutOrderSummaryAside
-          listing={listing}
+          listings={listings}
           seller={seller}
-          imageUrl={imageUrl}
           needsShipping={needsShipping}
           displayTotals={displayTotals}
           shippingSummaryRight={shippingSummaryRight}

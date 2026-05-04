@@ -42,7 +42,7 @@ export function CartOrderSummary({
   taxLabel,
   discountAmount,
   total,
-  firstCheckoutHref,
+  checkoutActions,
   checkoutPending,
   deliveryNote,
 }: {
@@ -53,14 +53,14 @@ export function CartOrderSummary({
   /** Absolute dollars; 0 means no discount to show as savings */
   discountAmount: number
   total: number
-  firstCheckoutHref: string | null
+  checkoutActions: { href: string; label: string }[]
   checkoutPending: boolean
   /** Short line for the truck callout under checkout */
   deliveryNote: string
 }) {
   const [promo, setPromo] = useState("")
   const [promoHint, setPromoHint] = useState<string | null>(null)
-  const hasCheckout = Boolean(firstCheckoutHref) && itemCount > 0 && !checkoutPending
+  const hasCheckout = checkoutActions.length > 0 && itemCount > 0 && !checkoutPending
 
   function applyPromo() {
     const t = promo.trim()
@@ -127,12 +127,16 @@ export function CartOrderSummary({
       </div>
 
       {hasCheckout ? (
-        <Button asChild className={cn("mt-6 gap-2 rounded-lg", primaryCta)}>
-          <Link href={firstCheckoutHref!} prefetch={false}>
-            Checkout
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </Button>
+        <div className={cn("mt-6 flex flex-col gap-2", checkoutActions.length > 1 ? "gap-2.5" : "")}>
+          {checkoutActions.map((action) => (
+            <Button key={action.href} asChild className={cn("gap-2 rounded-lg", primaryCta)}>
+              <Link href={action.href} prefetch={false}>
+                {action.label}
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </Button>
+          ))}
+        </div>
       ) : (
         <Button disabled className={cn("mt-6 gap-2 rounded-lg opacity-50", primaryCta)}>
           Checkout

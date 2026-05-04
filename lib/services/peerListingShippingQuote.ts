@@ -46,6 +46,18 @@ export type PeerListingForShippingQuote = ListingPackedParcelSource &
     shipping_price?: string | number | null
   }
 
+/** Row from `listings` + {@link PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}. Assert after runtime filters — Supabase client typings widen rows. */
+export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
+  id: string
+  user_id: string
+  price: string | number
+  title: string | null
+  section: string | null
+  status: string | null
+  local_pickup: boolean | null
+  shipping_available: boolean | null
+}
+
 export function effectiveBoardShippingMode(
   listing: PeerListingForShippingQuote,
 ): "free" | "flat" | "reswell" {

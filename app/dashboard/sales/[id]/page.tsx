@@ -83,6 +83,18 @@ type ShippingAddressJson = {
 
 type PayoutRow = { status: string; hold_reason?: string | null }
 
+type OrderListingRow = {
+  id: string
+  title: string
+  slug?: string | null
+  section: string
+  listing_images: Array<{
+    url: string
+    thumbnail_url?: string | null
+    is_primary: boolean | null
+  }> | null
+}
+
 type SaleDetail = {
   id: string
   order_num: string | null
@@ -102,30 +114,13 @@ type SaleDetail = {
   listing_id: string
   payment_method: string | null
   stripe_checkout_session_id: string | null
-  listings:
-    | {
-        id: string
-        title: string
-        slug?: string | null
-        section: string
-        listing_images: Array<{
-          url: string
-          thumbnail_url?: string | null
-          is_primary: boolean | null
-        }> | null
-      }
-    | {
-        id: string
-        title: string
-        slug?: string | null
-        section: string
-        listing_images: Array<{
-          url: string
-          thumbnail_url?: string | null
-          is_primary: boolean | null
-        }> | null
-      }[]
-    | null
+  listings: OrderListingRow | OrderListingRow[] | null
+  order_items?: Array<{ sort_order: number | null; listings: OrderListingRow | OrderListingRow[] | null }> | null
+}
+
+function unwrapListing<R>(raw: R | R[] | null | undefined): R | null {
+  if (raw == null) return null
+  return Array.isArray(raw) ? raw[0] ?? null : raw
 }
 
 function primaryImage(
@@ -202,6 +197,16 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         slug,
         section,
         listing_images ( url, thumbnail_url, is_primary )
+      ),
+      order_items (
+        sort_order,
+        listings (
+          id,
+          title,
+          slug,
+          section,
+          listing_images ( url, thumbnail_url, is_primary )
+        )
       )
     `,
     )
@@ -228,10 +233,25 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     .maybeSingle()
 
   const payoutRow: PayoutRow | null = payoutFromDb ?? null
-  const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
-  const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
-  const img = primaryImage(listing?.listing_images ?? null)
-  const listingHref = listing ? listingDetailHref(listing) : null
+  const sortedPack = [...(sale.order_items ?? [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  )
+  const linesFromPack: OrderListingRow[] = []
+  for (const it of sortedPack) {
+    const L = unwrapListing(it.listings as OrderListingRow | OrderListingRow[] | null)
+    if (L) linesFromPack.push(L)
+  }
+
+  const fallbackListing = unwrapListing(sale.listings)
+  const displayListings =
+    linesFromPack.length > 0 ? linesFromPack : fallbackListing ? [fallbackListing] : []
+
+  const title =
+    displayListings.length > 1
+      ? displayListings.map((l) => capitalizeWords(l.title ?? "")).join(" · ")
+      : displayListings[0]?.title
+        ? capitalizeWords(displayListings[0].title)
+        : "Item (listing removed)"
 
   const { data: buyerProfile } = await supabase
     .from("profiles")
@@ -376,39 +396,44 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           {/* Order summary card */}
           <Card>
             <CardContent className="p-0">
-              {/* Item row */}
-              <div className="flex gap-4 p-6">
-                <div className="relative h-20 w-20 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
-                  {img ? (
-                    <Image src={img} alt={title} fill className="object-cover" sizes="80px" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Package className="h-6 w-6 text-muted-foreground" />
+              {/* Item row(s) */}
+              <div className="divide-y divide-border">
+                {displayListings.map((lineListing) => {
+                  const rowTitle = lineListing.title ? capitalizeWords(lineListing.title) : "Item (listing removed)"
+                  const rowImg = primaryImage(lineListing.listing_images ?? null)
+                  const rowHref = listingDetailHref(lineListing)
+                  return (
+                    <div key={lineListing.id} className="flex gap-4 p-6">
+                      <div className="relative h-20 w-20 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
+                        {rowImg ? (
+                          <Image src={rowImg} alt={rowTitle} fill className="object-cover" sizes="80px" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <Link
+                              href={rowHref}
+                              className="font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5"
+                            >
+                              {rowTitle}
+                              <ExternalLink className="h-3.5 w-3.5 opacity-50" />
+                            </Link>
+                            {lineListing.section ? (
+                              <p className="text-sm text-muted-foreground mt-0.5">
+                                {capitalizeWords(lineListing.section)}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      {listingHref ? (
-                        <Link
-                          href={listingHref}
-                          className="font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5"
-                        >
-                          {title}
-                          <ExternalLink className="h-3.5 w-3.5 opacity-50" />
-                        </Link>
-                      ) : (
-                        <p className="font-semibold text-foreground">{title}</p>
-                      )}
-                      {listing?.section && (
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {capitalizeWords(listing.section)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  )
+                })}
               </div>
 
               <Separator />
@@ -541,7 +566,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           {/* Shipping label for surfboard orders */}
           {!fulfillmentLocked &&
             sale.fulfillment_method === "shipping" &&
-            listing?.section === "surfboards" &&
+            displayListings.some((l) => l.section === "surfboards") &&
             sale.delivery_status === "pending" && (
               <Card>
                 <CardContent className="flex items-center justify-between gap-4 p-5">

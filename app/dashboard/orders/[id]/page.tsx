@@ -64,6 +64,18 @@ type ShippingAddressJson = {
   } | null
 } | null
 
+type OrderListingRow = {
+  id: string
+  title: string
+  slug?: string | null
+  section: string
+  listing_images: Array<{
+    url: string
+    thumbnail_url?: string | null
+    is_primary: boolean | null
+  }> | null
+}
+
 type OrderDetail = {
   id: string
   order_num: string | null
@@ -81,30 +93,13 @@ type OrderDetail = {
   stripe_checkout_session_id: string | null
   seller_id: string
   listing_id: string
-  listings:
-    | {
-        id: string
-        title: string
-        slug?: string | null
-        section: string
-        listing_images: Array<{
-          url: string
-          thumbnail_url?: string | null
-          is_primary: boolean | null
-        }> | null
-      }
-    | {
-        id: string
-        title: string
-        slug?: string | null
-        section: string
-        listing_images: Array<{
-          url: string
-          thumbnail_url?: string | null
-          is_primary: boolean | null
-        }> | null
-      }[]
-    | null
+  listings: OrderListingRow | OrderListingRow[] | null
+  order_items?: Array<{ sort_order: number | null; listings: OrderListingRow | OrderListingRow[] | null }> | null
+}
+
+function unwrapListing<R>(raw: R | R[] | null | undefined): R | null {
+  if (raw == null) return null
+  return Array.isArray(raw) ? raw[0] ?? null : raw
 }
 
 function primaryImage(
@@ -174,6 +169,16 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         slug,
         section,
         listing_images ( url, thumbnail_url, is_primary )
+      ),
+      order_items (
+        sort_order,
+        listings (
+          id,
+          title,
+          slug,
+          section,
+          listing_images ( url, thumbnail_url, is_primary )
+        )
       )
     `
     )
@@ -191,10 +196,25 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
     role: "buyer",
     buyerId: user.id,
   })
-  const listing = Array.isArray(order.listings) ? order.listings[0] : order.listings
-  const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
-  const img = primaryImage(listing?.listing_images ?? null)
-  const listingHref = listing ? listingDetailHref(listing) : null
+  const sortedPack = [...(order.order_items ?? [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  )
+  const linesFromPack: OrderListingRow[] = []
+  for (const it of sortedPack) {
+    const L = unwrapListing(it.listings as OrderListingRow | OrderListingRow[] | null)
+    if (L) linesFromPack.push(L)
+  }
+
+  const fallbackListing = unwrapListing(order.listings)
+  const displayListings =
+    linesFromPack.length > 0 ? linesFromPack : fallbackListing ? [fallbackListing] : []
+
+  const title =
+    displayListings.length > 1
+      ? displayListings.map((l) => capitalizeWords(l.title ?? "")).join(" · ")
+      : displayListings[0]?.title
+        ? capitalizeWords(displayListings[0].title)
+        : "Item (listing removed)"
 
   const { data: sellerProfile } = await supabase
     .from("profiles")
@@ -343,29 +363,34 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Item</CardTitle>
+          <CardTitle className="text-lg">{displayListings.length > 1 ? "Items" : "Item"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="relative h-24 w-24 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
-              {img ? (
-                <Image src={img} alt="" fill className="object-cover" sizes="96px" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <Package className="h-8 w-8 text-muted-foreground" />
+          <div className="space-y-6">
+            {displayListings.map((lineListing) => {
+              const rowTitle = lineListing.title ? capitalizeWords(lineListing.title) : "Item (listing removed)"
+              const rowImg = primaryImage(lineListing.listing_images ?? null)
+              const rowHref = listingDetailHref(lineListing)
+              return (
+                <div key={lineListing.id} className="flex gap-4">
+                  <div className="relative h-24 w-24 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
+                    {rowImg ? (
+                      <Image src={rowImg} alt="" fill className="object-cover" sizes="96px" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <Link href={rowHref} className="font-semibold text-foreground hover:text-primary">
+                      {rowTitle}
+                    </Link>
+                    <p className="text-sm text-muted-foreground mt-1">Sold by {sellerName}</p>
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              {listingHref ? (
-                <Link href={listingHref} className="font-semibold text-foreground hover:text-primary">
-                  {title}
-                </Link>
-              ) : (
-                <p className="font-semibold text-foreground">{title}</p>
-              )}
-              <p className="text-sm text-muted-foreground mt-1">Sold by {sellerName}</p>
-            </div>
+              )
+            })}
           </div>
           <div className="border-t pt-4 space-y-3">
             <div className="flex justify-between text-lg font-semibold">

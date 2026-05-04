@@ -3,16 +3,19 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
-import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import {
-  computePeerCheckoutTotalsUsd,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
+  type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
+import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
 } as const
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
@@ -50,65 +53,102 @@ export async function POST(request: NextRequest) {
 
   const body = rawBody as {
     listing_id?: string
+    listing_ids?: unknown
     fulfillment?: string | null
     address_id?: string | null
   }
-  const listingId = body.listing_id?.trim()
-  if (!listingId) {
-    return NextResponse.json({ error: "Missing listing_id" }, { status: 400 })
+
+  const fromArray = Array.isArray(body.listing_ids)
+    ? dedupeIdsPreserveOrder(
+        body.listing_ids.map((x) => (typeof x === "string" ? x.trim() : "")).filter((x) => UUID_RE.test(x)),
+      )
+    : []
+
+  const listingIdsOrdered =
+    fromArray.length > 0
+      ? fromArray
+      : body.listing_id?.trim() && UUID_RE.test(body.listing_id.trim())
+        ? [body.listing_id.trim()]
+        : []
+
+  if (listingIdsOrdered.length === 0) {
+    return NextResponse.json({ error: "Missing listing_id or listing_ids" }, { status: 400 })
   }
 
-  const { data: listing, error: listingError } = await supabase
+  const { data: listingsRows, error: listingsErr } = await supabase
     .from("listings")
     .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
-    .eq("id", listingId)
+    .in("id", listingIdsOrdered)
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
-    .single()
 
-  if (listingError || !listing) {
+  if (listingsErr || !listingsRows?.length) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
-  /** Runtime select fragment loses Supabase's row inference; cast through `unknown` once. */
-  const listingRow = listing as unknown as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"] & {
-    id: string
-    user_id: string
-    section: string | null
-    local_pickup: boolean | null
-    shipping_available: boolean | null
-    title: string | null
+  const listingMap = new Map<string, PeerSurfboardCheckoutListingRow>(
+    listingsRows.map((row) => {
+      const r = row as unknown as PeerSurfboardCheckoutListingRow
+      return [r.id, r]
+    }),
+  )
+
+  const listingsOrdered = listingIdsOrdered
+    .map((id) => listingMap.get(id))
+    .filter((row): row is PeerSurfboardCheckoutListingRow => row != null)
+
+  if (listingsOrdered.length !== listingIdsOrdered.length) {
+    return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
-  if (listingRow.user_id === user.id) {
+  if (listingsOrdered.some((l) => l.user_id === user.id)) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
-  if (listingRow.section !== "surfboards") {
+  if (listingsOrdered.some((l) => l.section !== "surfboards")) {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
   }
 
-  const lp = listingRow.local_pickup !== false
-  const sa = !!listingRow.shipping_available
-  if (!lp && !sa) {
+  const bundleSellerId = listingsOrdered[0]!.user_id
+  if (!listingsOrdered.every((l) => l.user_id === bundleSellerId)) {
+    return NextResponse.json({ error: "All items must be from the same seller" }, { status: 400 })
+  }
+
+  if (listingsOrdered.some((l) => l.local_pickup === false && !l.shipping_available)) {
     return NextResponse.json({ error: "Listing has no fulfillment options" }, { status: 400 })
   }
 
-  const fulfillment =
-    lp && sa ? (body.fulfillment === "shipping" || body.fulfillment === "pickup" ? body.fulfillment : null) : undefined
+  let impliedFulfillment: "pickup" | "shipping"
 
-  if (lp && sa && !fulfillment) {
-    return NextResponse.json({ error: "Choose pickup or shipping for this listing" }, { status: 400 })
+  if (listingsOrdered.length > 1) {
+    if (body.fulfillment !== "pickup") {
+      return NextResponse.json(
+        {
+          error:
+            "Cart checkout with multiple boards uses local pickup only. Check out shipped boards one at a time.",
+        },
+        { status: 400 },
+      )
+    }
+    impliedFulfillment = "pickup"
+  } else {
+    const listingRow = listingsOrdered[0]!
+    const lp = listingRow.local_pickup !== false
+    const sa = !!listingRow.shipping_available
+    if (!lp && !sa) {
+      return NextResponse.json({ error: "Listing has no fulfillment options" }, { status: 400 })
+    }
+
+    const fulfillment =
+      lp && sa ? (body.fulfillment === "shipping" || body.fulfillment === "pickup" ? body.fulfillment : null) : undefined
+
+    if (lp && sa && !fulfillment) {
+      return NextResponse.json({ error: "Choose pickup or shipping for this listing" }, { status: 400 })
+    }
+
+    impliedFulfillment =
+      lp && sa ? (fulfillment === "shipping" ? "shipping" : "pickup") : !lp && sa ? "shipping" : "pickup"
   }
-
-  const impliedFulfillment: "pickup" | "shipping" =
-    lp && sa
-      ? fulfillment === "shipping"
-        ? "shipping"
-        : "pickup"
-      : !lp && sa
-        ? "shipping"
-        : "pickup"
 
   const addressId = body.address_id?.trim() || null
   let buyerAddress: ProfileAddressRow | null = null
@@ -128,26 +168,28 @@ export async function POST(request: NextRequest) {
     buyerAddress = addr as ProfileAddressRow
   }
 
-  const sellerShipFromName =
-    impliedFulfillment === "shipping"
-      ? await fetchSellerShipFromLabelName(supabase, listingRow.user_id)
-      : "Seller"
-
-  const totals = await computePeerCheckoutTotalsUsd({
-    listing: listingRow,
+  const bundle = await computePeerMultiCheckoutUsd({
+    supabase,
+    listingsOrdered,
     fulfillment: impliedFulfillment,
     buyerAddress,
-    diagnosticTag: `payment-intent:${listingRow.id}`,
-    sellerShipFromName,
+    diagnosticTagPrefix: "payment-intent",
   })
-  if (!totals.ok) {
-    return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
+
+  if (!bundle.ok) {
+    return NextResponse.json({ error: bundle.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
   }
 
-  const amountCents = Math.round(totals.totalUsd * 100)
+  const amountCents = Math.round(bundle.totalUsd * 100)
   if (amountCents < 50) {
     return NextResponse.json({ error: "Amount is below the minimum charge" }, { status: 400 })
   }
+
+  const primaryTitle = listingsOrdered[0]?.title ?? "listing"
+  const stripeDescription =
+    listingsOrdered.length > 1
+      ? `Reswell — ${listingsOrdered.length} boards (${primaryTitle})`
+      : `Reswell — ${primaryTitle}`
 
   try {
     const stripe = getStripe()
@@ -156,16 +198,24 @@ export async function POST(request: NextRequest) {
       currency: "usd",
       automatic_payment_methods: { enabled: true },
       metadata: {
-        listing_id: listingRow.id,
+        listing_ids: listingIdsOrdered.join(","),
+        listing_id: listingIdsOrdered[0]!,
         buyer_id: user.id,
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
+        bundle_line_count: String(listingIdsOrdered.length),
         ...(addressId ? { address_id: addressId } : {}),
-        ...(totals.usedReswellQuote
-          ? { reswell_shipping_cents: String(Math.round(totals.shippingUsd * 100)) }
+        ...(bundle.anyUsedReswellQuote
+          ? {
+              reswell_shipping_cents: String(
+                Math.round(
+                  bundle.lines.filter((l) => l.usedReswellQuote).reduce((s, l) => s + l.shippingUsd, 0) * 100,
+                ),
+              ),
+            }
           : {}),
       },
-      description: `Reswell — ${listingRow.title ?? "listing"}`.slice(0, 1000),
+      description: stripeDescription.slice(0, 1000),
     })
 
     return NextResponse.json(

@@ -17,18 +17,20 @@ export type CheckoutOrderSuccessPayload = {
   itemPrice: number
   shippingCost: number
   fulfillmentMethod: "shipping" | "pickup" | null
-  /** Pickup handoff code — only set on `fulfillment_method = 'pickup'` orders. */
+  /** Pickup handoff code — only set on `fulfillment_method = 'pickup'` orders (one code per order). */
   pickupCode: string | null
   /** Seller user id — used to deep-link to Messages for pickup coordination. */
   sellerId: string | null
-  /** Listing id — pairs with `sellerId` for Messages deep-links. */
+  /** Primary listing id for Messages deep-links (`order_lines[0]`). */
   listingId: string | null
-  listing: {
+  /** One entry per purchased listing (multi-board checkout). */
+  orderLines: Array<{
+    listingId: string | null
     title: string
     imageUrl: string | null
     subtitle: string | null
     categoryLabel?: string | null
-  } | null
+  }>
   shipping: {
     oneLine: string | null
     name: string | null
@@ -105,7 +107,9 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
         ? "Bring your pickup code when you meet the seller."
         : null
 
-  const category = data.listing?.categoryLabel?.trim() || "Order"
+  const lines = data.orderLines
+  const head = lines[0]
+  const category = head?.categoryLabel?.trim() || "Order"
 
   return (
     <main className="relative flex-1 overflow-hidden bg-gradient-to-b from-muted/50 to-background">
@@ -149,19 +153,52 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
           className="mb-8 overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm"
         >
           <div className="grid gap-8 p-6 md:grid-cols-2 md:p-8">
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-              {data.listing?.imageUrl ? (
-                <Image
-                  src={data.listing.imageUrl}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
-                />
+            <div className="space-y-4">
+              {lines.length <= 1 ? (
+                <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+                  {head?.imageUrl ? (
+                    <Image
+                      src={head.imageUrl}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      priority
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                      <Package className="h-20 w-20 opacity-40" />
+                    </div>
+                  )}
+                </div>
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                  <Package className="h-20 w-20 opacity-40" />
+                <div>
+                  <p className="mb-3 text-sm font-medium text-muted-foreground">Items in this order</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {lines.map((line) => (
+                      <div
+                        key={line.listingId ?? line.title}
+                        className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3"
+                      >
+                        <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
+                          {line.imageUrl ? (
+                            <Image
+                              src={line.imageUrl}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 45vw, 25vw"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                              <Package className="h-10 w-10 opacity-40" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[13px] font-semibold leading-snug line-clamp-3">{line.title}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -171,12 +208,21 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
                 <div className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
                   {category}
                 </div>
-                <h2 className="mb-2 text-3xl font-semibold tracking-tight">
-                  {data.listing?.title ?? "Your item"}
-                </h2>
-                {data.listing?.subtitle ? (
-                  <div className="mb-4 text-muted-foreground">{data.listing.subtitle}</div>
-                ) : null}
+                {lines.length <= 1 ? (
+                  <>
+                    <h2 className="mb-2 text-3xl font-semibold tracking-tight">{head?.title ?? "Your item"}</h2>
+                    {head?.subtitle ? <div className="mb-4 text-muted-foreground">{head.subtitle}</div> : null}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="mb-3 text-2xl font-semibold tracking-tight">{lines.length} boards</h2>
+                    <ul className="mb-4 space-y-1.5 text-[15px] leading-snug text-muted-foreground">
+                      {lines.map((line) => (
+                        <li key={line.listingId ?? line.title}>• {line.title}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
                 <div className="text-2xl font-medium tabular-nums">{money(data.total)}</div>
               </div>
 

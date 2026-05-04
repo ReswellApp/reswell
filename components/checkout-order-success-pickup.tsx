@@ -57,7 +57,9 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
     return () => clearInterval(interval)
   }, [])
 
-  const category = data.listing?.categoryLabel?.trim() || "Order"
+  const lines = data.orderLines
+  const head = lines[0]
+  const category = head?.categoryLabel?.trim() || "Order"
 
   const messagesHref =
     data.sellerId && data.listingId
@@ -116,8 +118,9 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
                 {data.pickupCode}
               </p>
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-                Share this code with the seller when you meet. They enter it to confirm the handoff
-                and release their payout.
+                One code for this whole order — share it when you pick up{" "}
+                {lines.length > 1 ? `all ${lines.length} boards` : "your board"}. The seller enters it to confirm the
+                handoff and release their payout.
               </p>
             </div>
           </motion.div>
@@ -130,19 +133,52 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
           className="mb-8 overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm"
         >
           <div className="grid gap-8 p-6 md:grid-cols-2 md:p-8">
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-              {data.listing?.imageUrl ? (
-                <Image
-                  src={data.listing.imageUrl}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
-                />
+            <div className="space-y-4">
+              {lines.length <= 1 ? (
+                <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+                  {head?.imageUrl ? (
+                    <Image
+                      src={head.imageUrl}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      priority
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                      <Package className="h-20 w-20 opacity-40" />
+                    </div>
+                  )}
+                </div>
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                  <Package className="h-20 w-20 opacity-40" />
+                <div>
+                  <p className="mb-3 text-sm font-medium text-muted-foreground">Included in this pickup</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+                    {lines.map((line) => (
+                      <div
+                        key={line.listingId ?? line.title}
+                        className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3"
+                      >
+                        <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
+                          {line.imageUrl ? (
+                            <Image
+                              src={line.imageUrl}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 45vw, 25vw"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                              <Package className="h-10 w-10 opacity-40" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[13px] font-semibold leading-snug line-clamp-3">{line.title}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -152,12 +188,21 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
                 <div className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
                   {category}
                 </div>
-                <h2 className="mb-2 text-3xl font-semibold tracking-tight">
-                  {data.listing?.title ?? "Your item"}
-                </h2>
-                {data.listing?.subtitle ? (
-                  <div className="mb-4 text-muted-foreground">{data.listing.subtitle}</div>
-                ) : null}
+                {lines.length <= 1 ? (
+                  <>
+                    <h2 className="mb-2 text-3xl font-semibold tracking-tight">{head?.title ?? "Your item"}</h2>
+                    {head?.subtitle ? <div className="mb-4 text-muted-foreground">{head.subtitle}</div> : null}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="mb-3 text-2xl font-semibold tracking-tight">{lines.length} boards</h2>
+                    <ul className="mb-4 space-y-1.5 text-[15px] leading-snug text-muted-foreground">
+                      {lines.map((line) => (
+                        <li key={line.listingId ?? line.title}>• {line.title}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
                 <div className="text-2xl font-medium tabular-nums">{money(data.total)}</div>
               </div>
 

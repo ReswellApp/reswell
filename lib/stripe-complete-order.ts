@@ -2,12 +2,14 @@ import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import type Stripe from "stripe"
-import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
 import {
-  computePeerCheckoutTotalsUsd,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
+  type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
-import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
+import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
+import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
 import {
   profileAddressToOrderShippingJson,
   type ProfileAddressRow,
@@ -230,28 +232,47 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
-  const listingId = pi.metadata.listing_id?.trim()
-  if (!listingId) {
+  const listingIdsOrdered = marketplaceListingIdsFromPaymentIntent(pi)
+  if (listingIdsOrdered.length === 0) {
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
   const buyerEmail: string | null = await getAuthEmailForUserId(buyerId)
 
-  const { data: listing, error: listingError } = await serviceSupabase
+  const { data: listingRows, error: listingsFetchErr } = await serviceSupabase
     .from("listings")
     .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
-    .eq("id", listingId)
-    .single()
+    .in("id", listingIdsOrdered)
 
-  if (listingError || !listing) {
+  if (listingsFetchErr || !listingRows?.length) {
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  if (listing.user_id === buyerId) {
+  const listingMap = new Map<string, PeerSurfboardCheckoutListingRow>(
+    listingRows.map((row) => {
+      const r = row as unknown as PeerSurfboardCheckoutListingRow
+      return [r.id, r]
+    }),
+  )
+
+  const listingsOrdered = listingIdsOrdered
+    .map((id) => listingMap.get(id))
+    .filter((row): row is PeerSurfboardCheckoutListingRow => row != null)
+
+  if (listingsOrdered.length !== listingIdsOrdered.length) {
+    return { ok: false, error: "Listing not found", status: 404 }
+  }
+
+  if (listingsOrdered.some((l) => l.user_id === buyerId)) {
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
-  if (listing.status !== "active") {
+  const bundleSellerId = listingsOrdered[0]!.user_id
+  if (!listingsOrdered.every((l) => l.user_id === bundleSellerId)) {
+    return { ok: false, error: "Invalid purchase", status: 400 }
+  }
+
+  if (listingsOrdered.some((l) => l.status !== "active")) {
     return {
       ok: false,
       error: "This listing is no longer available. Contact support if you were charged.",
@@ -259,28 +280,45 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
-  const lp = listing.local_pickup !== false
-  const sa = !!listing.shipping_available
   const fulfillmentMeta = pi.metadata.fulfillment
-  const fulfillmentParam =
-    lp && sa
-      ? fulfillmentMeta === "shipping" || fulfillmentMeta === "pickup"
-        ? fulfillmentMeta
-        : null
-      : undefined
+  let impliedFulfillment: "pickup" | "shipping"
 
-  if (lp && sa && !fulfillmentParam) {
-    return { ok: false, error: "Invalid payment metadata", status: 400 }
+  if (listingsOrdered.length > 1) {
+    if (fulfillmentMeta !== "pickup") {
+      return { ok: false, error: "Invalid payment metadata", status: 400 }
+    }
+    if (!listingsOrdered.every((l) => l.local_pickup !== false)) {
+      return {
+        ok: false,
+        error: "Every board in this order must offer local pickup.",
+        status: 400,
+      }
+    }
+    impliedFulfillment = "pickup"
+  } else {
+    const listingOne = listingsOrdered[0]!
+    const lp = listingOne.local_pickup !== false
+    const sa = !!listingOne.shipping_available
+    const fulfillmentParam =
+      lp && sa
+        ? fulfillmentMeta === "shipping" || fulfillmentMeta === "pickup"
+          ? fulfillmentMeta
+          : null
+        : undefined
+
+    if (lp && sa && !fulfillmentParam) {
+      return { ok: false, error: "Invalid payment metadata", status: 400 }
+    }
+
+    impliedFulfillment =
+      lp && sa
+        ? fulfillmentParam === "shipping"
+          ? "shipping"
+          : "pickup"
+        : !lp && sa
+          ? "shipping"
+          : "pickup"
   }
-
-  const impliedFulfillment: "pickup" | "shipping" =
-    lp && sa
-      ? fulfillmentParam === "shipping"
-        ? "shipping"
-        : "pickup"
-      : !lp && sa
-        ? "shipping"
-        : "pickup"
 
   const addressIdMeta = pi.metadata.address_id?.trim()
   let buyerAddress: ProfileAddressRow | null = null
@@ -296,57 +334,42 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
-  /** Must match `/api/stripe/create-payment-intent` (`Math.round(totalUsd * 100)`), not sums of independently rounded halves. */
+  /** Must match `/api/stripe/create-payment-intent` (`Math.round(totalUsd * 100)`). */
   const metaAmountCentsRaw = pi.metadata.amount_cents?.trim()
   const hasMetaAmountCents =
     typeof metaAmountCentsRaw === "string" &&
     metaAmountCentsRaw.length > 0 &&
     /^\d+$/.test(metaAmountCentsRaw)
 
-  /**
-   * Always recompute totals so we have the authoritative `itemPrice` / `shippingUsd` split — the
-   * PaymentIntent only stores the grand total. Shipping must NOT be included in seller earnings
-   * (Reswell uses it to cover the carrier label), and must NOT have the marketplace fee applied.
-   */
-  const sellerShipFromName =
-    impliedFulfillment === "shipping"
-      ? await fetchSellerShipFromLabelName(serviceSupabase, listing.user_id)
-      : "Seller"
-  const totals = await computePeerCheckoutTotalsUsd({
-    listing: listing as Parameters<typeof computePeerCheckoutTotalsUsd>[0]["listing"],
+  const bundle = await computePeerMultiCheckoutUsd({
+    supabase: serviceSupabase,
+    listingsOrdered,
     fulfillment: impliedFulfillment,
     buyerAddress,
-    diagnosticTag: `finalize-order:${listing.id}`,
-    sellerShipFromName,
+    diagnosticTagPrefix: "finalize-order",
   })
-  if (!totals.ok) {
-    return { ok: false, error: totals.error, status: 400 }
+  if (!bundle.ok) {
+    return { ok: false, error: bundle.error, status: 400 }
   }
 
   const expectedCents = hasMetaAmountCents
     ? parseInt(metaAmountCentsRaw!, 10)
-    : Math.round(totals.totalUsd * 100)
+    : Math.round(bundle.totalUsd * 100)
 
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
   }
 
   const chargedUsd = pi.amount / 100
-  const shippingUsd = Math.max(
-    0,
-    Math.round((chargedUsd - totals.itemPrice) * 100) / 100,
-  )
-  const itemPriceUsd = Math.round((chargedUsd - shippingUsd) * 100) / 100
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(itemPriceUsd)
+  const shippingUsd = bundle.totalShippingUsd
+  const platformFee = bundle.totalPlatformFee
+  const sellerEarnings = bundle.totalSellerEarnings
 
   if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
     console.error("[stripe-complete-order] invalid seller_earnings", {
       chargedUsd,
-      itemPriceUsd,
-      shippingUsd,
-      platformFee,
       sellerEarnings,
-      listingId: listing.id,
+      listingIds: listingIdsOrdered,
     })
     return {
       ok: false,
@@ -355,14 +378,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
-  const fulfillmentMethod =
-    lp && sa
-      ? fulfillmentMeta === "shipping" || fulfillmentMeta === "pickup"
-        ? fulfillmentMeta
-        : null
-      : !lp && sa
-        ? "shipping"
-        : "pickup"
+  const fulfillmentMethod = impliedFulfillment
 
   let shippingAddressJson: Record<string, unknown> | null = null
   if (fulfillmentMethod === "shipping" && buyerAddress) {
@@ -389,15 +405,17 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const deliveryStatus = isPickup ? "pickup_ready" : "pending"
   const pickupCode = isPickup ? generatePickupCode() : null
 
+  const primaryListingId = listingsOrdered[0]!.id
+
   const orderId = randomUUID()
 
   const { data: purchase, error: insertError } = await serviceSupabase
     .from("orders")
     .insert({
       id: orderId,
-      listing_id: listing.id,
+      listing_id: primaryListingId,
       buyer_id: buyerId,
-      seller_id: listing.user_id,
+      seller_id: bundleSellerId,
       amount: chargedUsd,
       shipping_amount: shippingUsd,
       platform_fee: platformFee,
@@ -445,6 +463,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       msg.includes("delivery_status") ||
       msg.includes("pickup_code") ||
       msg.includes("shipping_amount") ||
+      msg.includes("order_items") ||
       msg.includes("schema cache")
     if (schemaStale) {
       return {
@@ -457,16 +476,44 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not create order", status: 500 }
   }
 
+  const orderItemsPayload = bundle.lines.map((line, idx) => ({
+    order_id: purchase.id,
+    listing_id: line.listingId,
+    sort_order: idx,
+    item_price: line.itemPrice,
+    shipping_amount: line.shippingUsd,
+    platform_fee: line.platformFee,
+    seller_earnings: line.sellerEarnings,
+  }))
+
+  const { error: orderItemsErr } = await serviceSupabase.from("order_items").insert(orderItemsPayload)
+
+  if (orderItemsErr) {
+    console.error("[stripe-complete-order] order_items insert:", orderItemsErr)
+    const msg = orderItemsErr.message ?? ""
+    const schemaStale =
+      orderItemsErr.code === "PGRST204" || msg.includes("order_items") || msg.includes("schema cache")
+    if (schemaStale) {
+      return {
+        ok: false,
+        error:
+          "Database is missing required order_items table. Apply pending Supabase migrations (see supabase/migrations), then reload the schema in the Supabase dashboard if needed.",
+        status: 503,
+      }
+    }
+    return { ok: false, error: "Could not create order lines", status: 500 }
+  }
+
   let { data: sellerWallet } = await serviceSupabase
     .from("wallets")
     .select("*")
-    .eq("user_id", listing.user_id)
+    .eq("user_id", bundleSellerId)
     .maybeSingle()
 
   if (!sellerWallet) {
     const { data: newWallet, error: walletInsertErr } = await serviceSupabase
       .from("wallets")
-      .insert({ user_id: listing.user_id })
+      .insert({ user_id: bundleSellerId })
       .select()
       .single()
     if (walletInsertErr) {
@@ -500,13 +547,18 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not record pending seller earnings", status: 500 }
   }
 
+  const walletTitleSummary =
+    listingsOrdered.length === 1
+      ? String(listingsOrdered[0]!.title ?? "")
+      : `${listingsOrdered.length} boards`
+
   const { error: pendingTxErr } = await serviceSupabase.from("wallet_transactions").insert({
     wallet_id: sellerWallet.id,
-    user_id: listing.user_id,
+    user_id: bundleSellerId,
     type: "sale",
     amount: sellerEarnings,
     balance_after: prevAvailable.toFixed(2),
-    description: walletPendingSaleDescription(String(listing.title ?? ""), platformFee),
+    description: walletPendingSaleDescription(walletTitleSummary, platformFee),
     reference_id: String(purchase.id),
     reference_type: "order_pending_earnings",
   })
@@ -534,21 +586,35 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const { error: listingErr } = await serviceSupabase
     .from("listings")
     .update({ status: "sold" })
-    .eq("id", listing.id)
+    .in(
+      "id",
+      listingsOrdered.map((l) => l.id),
+    )
 
   if (listingErr) {
     console.error("[stripe-complete-order] listing update:", listingErr)
     return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
 
-  void markUserListingBoardModelDataSold(serviceSupabase, listing.id, itemPriceUsd)
+  for (const line of bundle.lines) {
+    void markUserListingBoardModelDataSold(serviceSupabase, line.listingId, line.itemPrice)
+  }
+
+  void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)
+
+  const listingTitles = listingsOrdered.map((l) => String(l.title ?? ""))
 
   if (buyerId) {
     void postPurchaseThreadNotification(serviceSupabase, {
       buyerId,
-      sellerId: listing.user_id,
-      listingId: listing.id,
-      listingTitle: listing.title,
+      sellerId: bundleSellerId,
+      primaryListingId,
+      listingIds: listingIdsOrdered,
+      listingTitles,
+      listingTitleSummary:
+        listingTitles.length === 1
+          ? listingTitles[0]!
+          : `${listingTitles.length} items — ${listingTitles.map((t) => `"${t}"`).join(", ")}`,
       orderId: purchase.id,
       orderNum: formatOrderNumForCustomer(
         (purchase as { order_num?: string | null }).order_num,
@@ -561,14 +627,19 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     })
   }
 
+  const klListingTitle =
+    listingsOrdered.length === 1
+      ? String(listingsOrdered[0]!.title ?? "")
+      : `${listingsOrdered.length} boards (${listingTitles.slice(0, 3).join(" · ")}${listingTitles.length > 3 ? "…" : ""})`
+
   await trackKlaviyoBuyerOrderConfirmed({
     buyerUserId: buyerId ?? undefined,
     buyerEmail,
     orderId: purchase.id,
     orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
-    listingId: listing.id,
-    listingTitle: listing.title,
-    listingSection: listing.section,
+    listingId: primaryListingId,
+    listingTitle: klListingTitle.slice(0, 500),
+    listingSection: String(listingsOrdered[0]!.section ?? ""),
     listingSlug: null,
     amount: chargedUsd,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",

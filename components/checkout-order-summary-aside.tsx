@@ -5,6 +5,8 @@ import { ImageOff, ShoppingBag } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { cn } from "@/lib/utils"
 import type { CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
@@ -15,23 +17,24 @@ function sellerDisplayName(s: CheckoutSeller) {
 }
 
 export function CheckoutOrderSummaryAside({
-  listing,
+  listings,
   seller,
-  imageUrl,
   needsShipping,
   displayTotals,
   shippingSummaryRight,
 }: {
-  listing: CheckoutListing
+  listings: CheckoutListing[]
   seller?: CheckoutSeller | null
-  imageUrl: string | null
   needsShipping: boolean
   displayTotals: { itemPrice: number; shipping: number; total: number }
   shippingSummaryRight: ReactNode
 }) {
-  const backHref = listingDetailHref(listing)
+  const fulfillmentLabel: "pickup" | "shipping" = needsShipping ? "shipping" : "pickup"
+
   const shipsFromLine =
-    needsShipping ? listingShipFromDisplayLine(listing.city, listing.state) : null
+    needsShipping && listings[0]
+      ? listingShipFromDisplayLine(listings[0].city, listings[0].state)
+      : null
 
   return (
     <aside
@@ -52,58 +55,72 @@ export function CheckoutOrderSummaryAside({
           </Link>
         </div>
 
-        <div className="flex gap-4">
-          <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[8px] border border-neutral-200/80 bg-white shadow-sm">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={capitalizeWords(listing.title)}
-                fill
-                className="object-cover"
-                sizes="72px"
-                priority
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-neutral-100">
-                <ImageOff className="h-7 w-7 text-neutral-300" aria-hidden />
+        <div className="space-y-6">
+          {listings.map((listing, idx) => {
+            const imageUrl = listingTitleThumbnailSrc(listing.listing_images ?? null)
+            const resolved = resolvePayableAmount(listing, fulfillmentLabel)
+            const linePrice = resolved.ok ? resolved.itemPrice : 0
+            const backHref = listingDetailHref(listing)
+
+            return (
+              <div
+                key={listing.id}
+                className={cn("flex gap-4", idx > 0 && "border-t border-neutral-200/90 pt-6")}
+              >
+                <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[8px] border border-neutral-200/80 bg-white shadow-sm">
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={capitalizeWords(listing.title)}
+                      fill
+                      className="object-cover"
+                      sizes="72px"
+                      priority={idx === 0}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-neutral-100">
+                      <ImageOff className="h-7 w-7 text-neutral-300" aria-hidden />
+                    </div>
+                  )}
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1 text-[11px] font-semibold text-white shadow-sm">
+                    1
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <Link
+                    href={backHref}
+                    className="text-[15px] font-semibold leading-snug text-foreground underline-offset-2 hover:underline"
+                  >
+                    {capitalizeWords(listing.title)}
+                  </Link>
+                  <p className="mt-1 text-[13px] text-neutral-500">
+                    Qty 1 · {needsShipping ? "Shipping" : "Local pickup"}
+                  </p>
+                  {shipsFromLine && idx === 0 ? (
+                    <p className="mt-1 text-[12px] text-neutral-600">
+                      <span className="text-neutral-500">Ships from </span>
+                      {shipsFromLine}
+                    </p>
+                  ) : needsShipping && idx === 0 ? (
+                    <p className="mt-1 text-[12px] text-neutral-500">
+                      Ships from seller&apos;s listing location
+                    </p>
+                  ) : null}
+                  {seller && idx === listings.length - 1 ? (
+                    <p className="mt-2 text-[12px] text-neutral-500">
+                      Sold by{" "}
+                      <Link href={sellerProfileHref(seller)} className="font-medium text-[#3b63e3] hover:underline">
+                        {sellerDisplayName(seller)}
+                      </Link>
+                    </p>
+                  ) : null}
+                </div>
+                <p className="shrink-0 pt-0.5 text-[15px] font-semibold tabular-nums text-foreground">
+                  ${linePrice.toFixed(2)}
+                </p>
               </div>
-            )}
-            <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1 text-[11px] font-semibold text-white shadow-sm">
-              1
-            </span>
-          </div>
-          <div className="min-w-0 flex-1 pt-0.5">
-            <Link
-              href={backHref}
-              className="text-[15px] font-semibold leading-snug text-foreground underline-offset-2 hover:underline"
-            >
-              {capitalizeWords(listing.title)}
-            </Link>
-            <p className="mt-1 text-[13px] text-neutral-500">
-              Qty 1 · {needsShipping ? "Shipping" : "Local pickup"}
-            </p>
-            {shipsFromLine ? (
-              <p className="mt-1 text-[12px] text-neutral-600">
-                <span className="text-neutral-500">Ships from </span>
-                {shipsFromLine}
-              </p>
-            ) : needsShipping ? (
-              <p className="mt-1 text-[12px] text-neutral-500">
-                Ships from seller&apos;s listing location
-              </p>
-            ) : null}
-            {seller && (
-              <p className="mt-2 text-[12px] text-neutral-500">
-                Sold by{" "}
-                <Link href={sellerProfileHref(seller)} className="font-medium text-[#3b63e3] hover:underline">
-                  {sellerDisplayName(seller)}
-                </Link>
-              </p>
-            )}
-          </div>
-          <p className="shrink-0 pt-0.5 text-[15px] font-semibold tabular-nums text-foreground">
-            ${displayTotals.itemPrice.toFixed(2)}
-          </p>
+            )
+          })}
         </div>
 
         <div className="mt-6">

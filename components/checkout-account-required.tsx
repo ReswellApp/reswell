@@ -5,22 +5,16 @@ import Link from "next/link"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
 import { CheckoutOrderSummaryAside } from "@/components/checkout-order-summary-aside"
 import type { CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
-import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
-
-function primaryListingImageUrl(images: CheckoutListing["listing_images"]): string | null {
-  const s = listingTitleThumbnailSrc(images ?? null)
-  return s || null
-}
 
 export function CheckoutAccountRequired({
-  listing,
+  listings,
   seller,
   checkoutReturnPath,
   previewTotals,
   shippingSummaryRight,
   needsShipping,
 }: {
-  listing: CheckoutListing
+  listings: CheckoutListing[]
   seller: CheckoutSeller | null
   /** Path only (e.g. `/checkout?listing=…`) for auth redirects. */
   checkoutReturnPath: string
@@ -28,7 +22,6 @@ export function CheckoutAccountRequired({
   shippingSummaryRight: ReactNode
   needsShipping: boolean
 }) {
-  const imageUrl = primaryListingImageUrl(listing.listing_images)
   const redirectParam = encodeURIComponent(checkoutReturnPath)
 
   return (
@@ -73,9 +66,8 @@ export function CheckoutAccountRequired({
         </div>
 
         <CheckoutOrderSummaryAside
-          listing={listing}
+          listings={listings}
           seller={seller}
-          imageUrl={imageUrl}
           needsShipping={needsShipping}
           displayTotals={previewTotals}
           shippingSummaryRight={shippingSummaryRight}

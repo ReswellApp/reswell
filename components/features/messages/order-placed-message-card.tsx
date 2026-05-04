@@ -53,7 +53,8 @@ export function OrderPlacedMessageCard({
   createdAt: string
   viewerIsSeller: boolean
 }) {
-  const { orderId, orderNum, listingTitle, total, fulfillment, paymentMethod } = payload
+  const { orderId, orderNum, listingTitle, listingTitles, total, fulfillment, paymentMethod } = payload
+  const titles = listingTitles?.length ? listingTitles : [listingTitle]
   const { label: fulfillLabel, hint: fulfillHint, Icon: FulfillIcon } = fulfillmentSummary(
     fulfillment,
     viewerIsSeller,
@@ -85,9 +86,17 @@ export function OrderPlacedMessageCard({
         </div>
       </div>
 
-      <p className="mt-3 line-clamp-3 text-[15px] leading-snug text-foreground/90">
-        {listingTitle}
-      </p>
+      <div className="mt-3 text-[13px] leading-snug text-foreground/90">
+        {titles.length <= 1 ? (
+          <p className="line-clamp-4">{titles[0]}</p>
+        ) : (
+          <ul className="space-y-1">
+            {titles.map((t, idx) => (
+              <li key={`${orderNum}-${idx}`}>• {t}</li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <p className="mt-2 text-[20px] font-semibold tabular-nums tracking-tight text-foreground">
         ${total.toFixed(2)}
