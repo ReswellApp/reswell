@@ -23,7 +23,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Users, Shield, ShieldOff, UserCog, CheckCircle2, XCircle, UserCheck } from 'lucide-react'
+import {
+  MoreVertical,
+  Users,
+  Shield,
+  ShieldOff,
+  UserCog,
+  CheckCircle2,
+  XCircle,
+  Mail,
+  RefreshCw,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { format, formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
@@ -48,6 +58,8 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [pushingKlaviyoUserId, setPushingKlaviyoUserId] = useState<string | null>(null)
+  const [runningInactiveSync, setRunningInactiveSync] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -131,6 +143,99 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function runInactiveSyncForEveryone() {
+    setRunningInactiveSync(true)
+    try {
+      const res = await fetch('/api/admin/klaviyo/inactive-milestones/run', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(typeof payload?.error === 'string' ? payload.error : 'Inactive sync failed')
+        return
+      }
+      const s = payload?.summaries as
+        | { milestoneDays: number; eligible: number; emitted: number; failed: number }[]
+        | undefined
+      if (Array.isArray(s)) {
+        const parts = s.map(
+          (row) => `${row.milestoneDays}d: ${row.emitted}/${row.eligible} sent`,
+        )
+        toast.success(`Inactive Klaviyo sync complete — ${parts.join(' · ')}`)
+      } else {
+        toast.success('Inactive Klaviyo sync finished')
+      }
+    } catch {
+      toast.error('Inactive sync failed')
+    } finally {
+      setRunningInactiveSync(false)
+    }
+  }
+
+  async function pushInactiveKlaviyoToUser(
+    userId: string,
+    strategy: 'highest_pending' | 'all_pending',
+  ) {
+    setPushingKlaviyoUserId(userId)
+    try {
+      const res = await fetch('/api/admin/klaviyo/inactive-milestones/push', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, strategy, force: false }),
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(
+          typeof payload?.error === 'string'
+            ? payload.error
+            : 'Klaviyo push failed — check KLAVIYO_API_KEY & DB migration',
+        )
+        return
+      }
+      const reason =
+        typeof payload.skipped_reason === 'string' ? payload.skipped_reason : ''
+      const attempted = payload.milestones_attempted as unknown
+      const sentArr = payload.sent as
+        | { milestone_days?: number; klaviyo_ok?: boolean }[]
+        | undefined
+
+      if (reason === 'no_last_active_at') {
+        toast.message('No last active time — presence never recorded for this profile')
+        return
+      }
+      if (reason === 'no_eligible_milestone_or_all_recorded') {
+        toast.message('Not inactive long enough vs 3 / 15 / 30-day tiers, or already recorded')
+        return
+      }
+      if (reason) {
+        toast.message(reason)
+      }
+
+      if (Array.isArray(attempted) && attempted.length === 0 && !reason.includes('klaviyo_inactivity')) {
+        return
+      }
+
+      const okCount = Array.isArray(sentArr)
+        ? sentArr.filter((s) => s.klaviyo_ok).length
+        : 0
+      if (okCount > 0) {
+        const names = sentArr
+          ?.filter((s) => s.klaviyo_ok)
+          .map((s) => `${s.milestone_days}d`)
+          .join(', ')
+        toast.success(`Klaviyo inactive event(s) sent (${names ?? 'ok'})`)
+      } else if (Array.isArray(sentArr) && sentArr.length > 0) {
+        toast.error('Klaviyo rejected the event — check server logs / API key')
+      }
+    } catch {
+      toast.error('Klaviyo push failed')
+    } finally {
+      setPushingKlaviyoUserId(null)
+    }
+  }
+
   async function actAsUser(user: User) {
     const res = await fetch('/api/admin/impersonate', {
       method: 'POST',
@@ -167,19 +272,39 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Search */}
-      <SiteSearchBar
-        className="max-w-md"
-        onSubmit={(e) => {
-          e.preventDefault()
-        }}
-      >
-        <Input
-          placeholder="Search by name or email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={siteSearchInputClassName()}
-        />
-      </SiteSearchBar>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <SiteSearchBar
+          className="max-w-md"
+          onSubmit={(e) => {
+            e.preventDefault()
+          }}
+        >
+          <Input
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={siteSearchInputClassName()}
+          />
+        </SiteSearchBar>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={runningInactiveSync}
+          onClick={() => void runInactiveSyncForEveryone()}
+          className="shrink-0"
+        >
+          {runningInactiveSync ? (
+            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          Run inactive Klaviyo sync
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground -mt-2">
+        Uses the same rules as the nightly cron (last active &gt; 3 / 15 / 30 days). Per-user actions
+        use the table below.
+      </p>
 
       {/* Users Table */}
       <Card>
@@ -312,6 +437,30 @@ export default function AdminUsersPage() {
                                 <CheckCircle2 className="h-4 w-4 mr-2" /> Grant Verified Badge
                               </>
                             )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={pushingKlaviyoUserId === user.id}
+                            onClick={() => void pushInactiveKlaviyoToUser(user.id, 'highest_pending')}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Klaviyo: push inactive milestone
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={pushingKlaviyoUserId === user.id}
+                            onClick={() => {
+                              if (
+                                typeof window !== 'undefined' &&
+                                !window.confirm(
+                                  'Send every inactive tier they qualify for that is not recorded yet (can be multiple emails)?',
+                                )
+                              ) {
+                                return
+                              }
+                              void pushInactiveKlaviyoToUser(user.id, 'all_pending')
+                            }}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Klaviyo: push all pending tiers
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

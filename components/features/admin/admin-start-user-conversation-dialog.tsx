@@ -18,11 +18,14 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 
 export function AdminStartUserConversationDialog() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [dialogSurfaceEl, setDialogSurfaceEl] = useState<HTMLElement | null>(null)
+  const [memberPickerOpen, setMemberPickerOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [debounced, setDebounced] = useState("")
   const [results, setResults] = useState<AdminMarketplaceProfilePickerRow[]>([])
@@ -82,7 +85,16 @@ export function AdminStartUserConversationDialog() {
     setResults([])
     setSelected(null)
     setInitialMessage("")
+    setMemberPickerOpen(false)
   }, [])
+
+  useEffect(() => {
+    if (!open) setMemberPickerOpen(false)
+  }, [open])
+
+  useEffect(() => {
+    if (selected) setMemberPickerOpen(false)
+  }, [selected])
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next)
@@ -133,7 +145,22 @@ export function AdminStartUserConversationDialog() {
           Message a user
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        ref={setDialogSurfaceEl}
+        className="sm:max-w-md"
+        onPointerDownOutside={(e) => {
+          const t = e.target as HTMLElement | null
+          if (t?.closest("[data-admin-member-picker]")) {
+            e.preventDefault()
+          }
+        }}
+        onFocusOutside={(e) => {
+          const t = e.target as HTMLElement | null
+          if (t?.closest("[data-admin-member-picker]")) {
+            e.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Start a conversation</DialogTitle>
           <DialogDescription>
@@ -145,20 +172,91 @@ export function AdminStartUserConversationDialog() {
         <div className="space-y-4 py-1">
           <div className="space-y-2">
             <Label htmlFor="admin-msg-user-search">Find member</Label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="admin-msg-user-search"
-                placeholder="Name or email (min. 2 characters)"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setSelected(null)
-                }}
-                className="pl-9"
-                autoComplete="off"
-              />
-            </div>
+            <Popover
+              open={open && !selected && memberPickerOpen}
+              onOpenChange={(next) => {
+                if (!selected) setMemberPickerOpen(next)
+              }}
+              modal={false}
+            >
+              <PopoverAnchor asChild>
+                <div className="relative w-full">
+                  <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="admin-msg-user-search"
+                    role="combobox"
+                    aria-expanded={open && !selected && memberPickerOpen}
+                    aria-autocomplete="list"
+                    placeholder="Name or email (min. 2 characters)"
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value)
+                      setSelected(null)
+                      setMemberPickerOpen(true)
+                    }}
+                    onFocus={() => setMemberPickerOpen(true)}
+                    className="pl-9"
+                    autoComplete="off"
+                    disabled={submitting}
+                  />
+                </div>
+              </PopoverAnchor>
+              <PopoverContent
+                data-admin-member-picker
+                portalContainer={dialogSurfaceEl}
+                align="start"
+                sideOffset={6}
+                className="z-[100] w-[var(--radix-popover-trigger-width)] p-0 shadow-md"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <div className="max-h-[min(280px,50vh)] overflow-y-auto overscroll-contain outline-none [touch-action:pan-y]">
+                  {searching ? (
+                    <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      Searching…
+                    </div>
+                  ) : debounced.length >= 2 && results.length === 0 ? (
+                    <p className="p-3 text-sm text-muted-foreground">No members match.</p>
+                  ) : debounced.length > 0 && debounced.length < 2 ? (
+                    <p className="p-3 text-sm text-muted-foreground">Type at least 2 characters.</p>
+                  ) : debounced.length < 2 ? (
+                    <p className="p-3 text-sm text-muted-foreground">
+                      Start typing a name or email to search.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border/50" role="listbox">
+                      {results.map((row) => (
+                        <li key={row.id} role="option">
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                            onClick={() => {
+                              setSelected(row)
+                              setMemberPickerOpen(false)
+                            }}
+                          >
+                            <Avatar className="h-8 w-8 shrink-0">
+                              {row.avatar_url ? <AvatarImage src={row.avatar_url} alt="" /> : null}
+                              <AvatarFallback className="text-xs">
+                                {(row.display_name ?? row.email ?? "?")[0]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium text-foreground">
+                                {row.display_name?.trim() || "Unnamed member"}
+                              </p>
+                              {row.email ? (
+                                <p className="truncate text-xs text-muted-foreground">{row.email}</p>
+                              ) : null}
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
             {selected ? (
               <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/25 px-3 py-2">
                 <Avatar className="h-8 w-8 shrink-0">
@@ -182,56 +280,15 @@ export function AdminStartUserConversationDialog() {
                   variant="ghost"
                   size="sm"
                   className="h-8 shrink-0"
-                  onClick={() => setSelected(null)}
+                  onClick={() => {
+                    setSelected(null)
+                    setMemberPickerOpen(true)
+                  }}
                 >
                   Change
                 </Button>
               </div>
-            ) : (
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-border/60">
-                {searching ? (
-                  <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Searching…
-                  </div>
-                ) : debounced.length >= 2 && results.length === 0 ? (
-                  <p className="p-3 text-sm text-muted-foreground">No members match.</p>
-                ) : debounced.length > 0 && debounced.length < 2 ? (
-                  <p className="p-3 text-sm text-muted-foreground">Type at least 2 characters.</p>
-                ) : debounced.length < 2 ? (
-                  <p className="p-3 text-sm text-muted-foreground">
-                    Start typing a name or email to search.
-                  </p>
-                ) : (
-                  <ul className="divide-y divide-border/50">
-                    {results.map((row) => (
-                      <li key={row.id}>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
-                          onClick={() => setSelected(row)}
-                        >
-                          <Avatar className="h-8 w-8 shrink-0">
-                            {row.avatar_url ? <AvatarImage src={row.avatar_url} alt="" /> : null}
-                            <AvatarFallback className="text-xs">
-                              {(row.display_name ?? row.email ?? "?")[0]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-foreground">
-                              {row.display_name?.trim() || "Unnamed member"}
-                            </p>
-                            {row.email ? (
-                              <p className="truncate text-xs text-muted-foreground">{row.email}</p>
-                            ) : null}
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="admin-msg-initial">First message (optional)</Label>
