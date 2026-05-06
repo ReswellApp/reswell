@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { AdminStartUserConversationDialog } from "@/components/features/admin/admin-start-user-conversation-dialog"
 import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 50
@@ -100,8 +101,10 @@ export function AdminMarketplaceMessagesClient() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Marketplace messages</h1>
         <p className="text-muted-foreground">
-          One row per buyer↔seller thread, newest first. Open a thread to read the full conversation
-          (read-only).
+          One row per buyer↔seller thread, newest first. Open a thread to read messages, send PDFs,
+          or use{" "}
+          <span className="font-medium text-foreground">Message a user</span> to start a chat with
+          any member.
         </p>
       </div>
 
@@ -120,6 +123,7 @@ export function AdminMarketplaceMessagesClient() {
             Search
           </Button>
         </form>
+        <AdminStartUserConversationDialog />
       </div>
 
       <Card>

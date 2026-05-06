@@ -21,6 +21,19 @@ export async function getConversationForBuyerSeller(
   return data[0]
 }
 
+/** Either buyer/seller orientation (unique per ordered pair). RLS: visible when caller participates. */
+export async function getAnyConversationBetweenUsers(
+  supabase: SupabaseClient,
+  userIdA: string,
+  userIdB: string,
+): Promise<{ id: string } | null> {
+  const ab = await getConversationForBuyerSeller(supabase, userIdA, userIdB)
+  if (ab) return { id: ab.id }
+  const ba = await getConversationForBuyerSeller(supabase, userIdB, userIdA)
+  if (ba) return { id: ba.id }
+  return null
+}
+
 /** True if the user is the buyer or seller in this conversation (RLS-safe lookup). */
 export async function userParticipatesInConversation(
   supabase: SupabaseClient,
