@@ -177,16 +177,14 @@ function SellFlowPublishingOverlay({
   uploadPhaseLabels,
   submitStepIndex,
   listingSubmitProgressValue,
-  editId,
 }: {
   uploadPhaseLabels: string[]
   submitStepIndex: number
   listingSubmitProgressValue: number
-  editId: string | null
 }) {
   return (
     <div
-      className="absolute inset-0 z-50 overflow-y-auto rounded-xl border border-border bg-background/88 p-5 shadow-sm backdrop-blur-md sm:p-6 md:p-8"
+      className="fixed inset-0 z-[100] overflow-y-auto bg-background/92 p-5 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/85 sm:p-6 md:p-8"
       aria-busy="true"
       aria-live="polite"
       aria-label="Publishing your listing"
@@ -213,28 +211,14 @@ function SellFlowPublishingOverlay({
           <Skeleton className="min-h-[12rem] w-full rounded-xl" />
         </div>
       </div>
-      <div className="mx-auto mt-10 max-w-2xl space-y-4 rounded-xl border border-primary/20 bg-muted/40 p-5 shadow-sm lg:max-w-3xl">
+      <div className="mx-auto mt-10 max-w-2xl space-y-3 rounded-xl border border-border/60 bg-muted/30 p-5 shadow-sm lg:max-w-3xl">
         <p className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
           {uploadPhaseLabels[submitStepIndex] ?? "Working..."}
         </p>
-        <Progress value={listingSubmitProgressValue} className="h-2" />
-        <div className="flex gap-1.5">
-          {uploadPhaseLabels.map((label, i) => (
-            <div
-              key={i}
-              className={cn(
-                "h-1.5 flex-1 rounded-full transition-colors",
-                i <= submitStepIndex ? "bg-primary" : "bg-muted-foreground/20",
-              )}
-              title={label}
-            />
-          ))}
-        </div>
+        <Progress value={listingSubmitProgressValue} className="h-1.5" />
         <p className="text-xs text-muted-foreground/45">
-          {editId
-            ? "Save in progress — please keep this tab open."
-            : "Upload in progress — please keep this tab open."}
+          Hang tight — we&apos;ll take you to the listing when it&apos;s ready.
         </p>
       </div>
     </div>
@@ -1781,6 +1765,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     uploadToastIdRef.current = null
     setPublishValidationBanner(null)
 
+    let retainPublishOverlayUntilNavigation = false
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -1967,7 +1953,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       let listingId: string | null = editId
       let listingSlug: string | null = null
       let usedImpersonationListingApi = false
-      let impersonationSellerLabel: string | null = null
 
       // Generate a unique slug from the title
       async function generateUniqueSlug(title: string): Promise<string> {
@@ -2137,9 +2122,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           if (!res.ok) throw new Error(data.error || "Failed to update listing")
           listingSlug = data.slug
           goSubmitStep(2)
-          if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
-            impersonationSellerLabel = data.seller_display_name.trim()
-          }
         } else {
           toast.error(
             "This listing belongs to another account. From admin, open the seller and use impersonation for that shop, or sign in as the listing owner.",
@@ -2208,9 +2190,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           listingId = data.listing_id
           listingSlug = data.slug
           goSubmitStep(2)
-          if (typeof data.seller_display_name === "string" && data.seller_display_name.trim()) {
-            impersonationSellerLabel = data.seller_display_name.trim()
-          }
         } else {
           const newSlug = await generateUniqueSlug(resolvedListingTitle)
           const insertPayload = {
@@ -2281,18 +2260,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       if (listingId) {
         if (!editId && !listingImpersonation) {
-          setPublishPreview((p) =>
-            p ? { ...p, status: "live", detailHref: detailPath } : null,
-          )
-          const tid = uploadToastIdRef.current
-          if (tid != null) {
-            toast.success("Your listing is live! 🎉", { id: tid, duration: 4000 })
-          } else {
-            toast.success("Your listing is live! 🎉", { duration: 4000 })
-          }
           void clearSellListingDraft(user.id)
           persistDefaultListingLocalityForProfile()
           await revalidateListingDetailAfterListingMutation()
+          const tid = uploadToastIdRef.current
+          uploadToastIdRef.current = null
+          if (tid != null) toast.dismiss(tid)
+          retainPublishOverlayUntilNavigation = true
           router.push(detailPath)
           return
         }
@@ -2305,26 +2279,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
 
       goSubmitStep(2)
-      setPublishPreview((p) => (p ? { ...p, status: "live", detailHref: detailPath } : null))
-
-      const tidDone = uploadToastIdRef.current
-      if (impersonationSellerLabel) {
-        const msg = editId
-          ? `Listing updated for ${impersonationSellerLabel}`
-          : `Listing created for ${impersonationSellerLabel}`
-        if (tidDone != null) toast.success(`${msg} 🎉`, { id: tidDone, duration: 4000 })
-        else toast.success(msg, { duration: 4000 })
-      } else {
-        const msg = editId ? "Listing updated!" : "Your listing is live! 🎉"
-        if (tidDone != null) toast.success(msg, { id: tidDone, duration: 4000 })
-        else
-          toast.success(editId ? "Listing updated!" : "Your listing is live! 🎉", {
-            duration: 4000,
-          })
-      }
       void clearSellListingDraft(user.id)
       persistDefaultListingLocalityForProfile()
       await revalidateListingDetailAfterListingMutation()
+      const tidDone = uploadToastIdRef.current
+      uploadToastIdRef.current = null
+      if (tidDone != null) toast.dismiss(tidDone)
+      retainPublishOverlayUntilNavigation = true
       router.push(detailPath)
     } catch (error: unknown) {
       const msg = submitErrorMessage(error, "Failed to create listing")
@@ -2362,7 +2323,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         })
       }
     } finally {
-      setLoading(false)
+      if (!retainPublishOverlayUntilNavigation) {
+        setLoading(false)
+      }
     }
   }
 
@@ -2382,7 +2345,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               uploadPhaseLabels={uploadPhaseLabels}
               submitStepIndex={submitStepIndex}
               listingSubmitProgressValue={listingSubmitProgressValue}
-              editId={editId}
             />
           ) : null}
           <h1 className="sr-only">
@@ -3574,7 +3536,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     }
                   />
                   <Separator />
-                {publishPreview && (
+                {publishPreview && !loading && (
                   <div
                     className={cn(
                       "rounded-xl border p-4 flex gap-4 transition-colors",

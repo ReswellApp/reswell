@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
 import { cn } from "@/lib/utils"
 
@@ -53,6 +54,9 @@ export function RootRouteLoading() {
   const pathname = usePathname()
   if (pathname === "/") {
     return <HomeLoadingSkeleton />
+  }
+  if (pathname?.startsWith("/l/")) {
+    return <ListingDetailRouteSkeleton />
   }
   return <RouteTransitionMark variant="overlay" />
 }

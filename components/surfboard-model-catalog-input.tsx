@@ -35,6 +35,11 @@ export type SurfboardModelCatalogInputProps = {
   models: SellBrandModelCatalogRow[]
   /** Shown inside the dropdown when there is no catalog match or the catalog is empty. */
   onRequestCatalogAdd?: () => void
+  /**
+   * When false, no catalog overlay (free-typed brand — global model list is not relevant).
+   * Defaults to true.
+   */
+  catalogSuggestionsEnabled?: boolean
 }
 
 /**
@@ -52,6 +57,7 @@ export function SurfboardModelCatalogInput({
   onPickCatalogRow,
   models,
   onRequestCatalogAdd,
+  catalogSuggestionsEnabled = true,
 }: SurfboardModelCatalogInputProps) {
   const [open, setOpen] = React.useState(false)
   const [highlight, setHighlight] = React.useState(0)
@@ -64,7 +70,7 @@ export function SurfboardModelCatalogInput({
   const listId = React.useId()
 
   const catalogHasRows = models.length > 0
-  const canUseSuggest = Boolean(catalogReady && !disabled)
+  const canUseSuggest = Boolean(catalogReady && !disabled && catalogSuggestionsEnabled)
 
   const q = value.trim()
   const filtered = React.useMemo(

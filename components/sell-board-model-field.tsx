@@ -157,6 +157,7 @@ export function SellBoardModelField({
         onPickCatalogRow={applyCatalogRow}
         models={catalogReady ? modelsForPicker : []}
         onRequestCatalogAdd={onRequestCatalogAdd}
+        catalogSuggestionsEnabled={Boolean(directoryId)}
       />
     </div>
   )
