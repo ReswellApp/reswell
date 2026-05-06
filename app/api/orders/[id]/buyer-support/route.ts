@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
+import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { validateBuyerSupportForOrder } from "@/lib/services/orderBuyerSupport"
 import { orderBuyerSupportRequestSchema } from "@/lib/validations/order-buyer-support"
@@ -70,6 +71,14 @@ export async function POST(
     console.error("[buyer-support] insert:", error)
     return NextResponse.json({ error: "Could not submit request" }, { status: 500 })
   }
+
+  await trackKlaviyoSupportTicketCreated({
+    supportTicketId: data.id,
+    email: user.email ?? "",
+    externalId: user.id,
+    source: "order_buyer_support",
+    orderRef: orderRef,
+  })
 
   return NextResponse.json({ success: true, id: data.id })
 }

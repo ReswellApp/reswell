@@ -8,6 +8,7 @@ import {
   updateContactMessageAdminSchema,
   type UpdateContactMessageAdminInput,
 } from "@/lib/validations/contactMessagesAdmin"
+import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import { insertSupportStatusMessageAsSupportUser } from "@/lib/services/supportTicketThreadNotifications"
 
@@ -82,12 +83,29 @@ export async function updateContactMessageAdminService(
   ) {
     const resolved = await resolveSupportRecipientUserId()
     if (resolved.ok) {
-      await insertSupportStatusMessageAsSupportUser({
+      const posted = await insertSupportStatusMessageAsSupportUser({
         conversationId: existing.support_conversation_id,
         supportUserId: resolved.userId,
         status: payload.support_status!,
         ticketId: existing.id,
       })
+      if (!posted.ok) {
+        console.error("updateContactMessageAdminService: failed to post ticket status message")
+      } else if (
+        posted.messageId &&
+        posted.customerVisibleContent &&
+        existing.email.trim()
+      ) {
+        await trackKlaviyoSupportTicketResponse({
+          supportTicketId: existing.id,
+          email: existing.email.trim(),
+          externalId: existing.user_id,
+          response: posted.customerVisibleContent,
+          responseType: "status_update",
+          supportStatus: payload.support_status!,
+          uniqueId: `support-ticket-response-${posted.messageId}`,
+        })
+      }
     }
   }
 

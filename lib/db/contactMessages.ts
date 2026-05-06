@@ -62,6 +62,28 @@ export async function getContactMessageRowById(
   return normalizeContactMessageRow(data as Record<string, unknown>)
 }
 
+/** Admin or service-role client — not selectable by members under RLS. */
+export async function findMessagesSupportTicketMetaByConversationId(
+  supabase: SupabaseClient,
+  supportConversationId: string,
+): Promise<{ id: string; email: string; user_id: string | null } | null> {
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select("id, email, user_id")
+    .eq("support_conversation_id", supportConversationId)
+    .eq("source", "messages_support")
+    .maybeSingle()
+
+  if (error || !data) {
+    return null
+  }
+  return {
+    id: String(data.id),
+    email: String(data.email ?? "").trim(),
+    user_id: data.user_id == null ? null : String(data.user_id),
+  }
+}
+
 export async function updateContactMessageRow(
   supabase: SupabaseClient,
   args: {

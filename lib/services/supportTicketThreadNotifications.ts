@@ -53,19 +53,36 @@ export async function insertSupportStatusMessageAsSupportUser(args: {
   supportUserId: string
   status: ContactMessageSupportStatus
   ticketId: string
-}): Promise<boolean> {
+}): Promise<{
+  ok: boolean
+  messageId?: string
+  customerVisibleContent?: string
+}> {
   const line = STATUS_TO_MEMBER_LINE[args.status]
   const content = ["Reswell — ticket update", "", line, "", `Ticket ID: ${args.ticketId}`].join("\n")
 
   const svc = createServiceRoleClient()
-  const { error } = await svc.from("messages").insert({
-    conversation_id: args.conversationId,
-    sender_id: args.supportUserId,
-    content,
-  })
+  const { data, error } = await svc
+    .from("messages")
+    .insert({
+      conversation_id: args.conversationId,
+      sender_id: args.supportUserId,
+      content,
+    })
+    .select("id")
+    .maybeSingle()
+
   if (error) {
     console.error("insertSupportStatusMessageAsSupportUser", error)
-    return false
+    return { ok: false }
   }
-  return true
+  const id = data?.id != null ? String(data.id) : undefined
+  if (!id) {
+    return { ok: false }
+  }
+  return {
+    ok: true,
+    messageId: id,
+    customerVisibleContent: content,
+  }
 }

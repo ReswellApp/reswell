@@ -1,8 +1,10 @@
 "use server"
 
 import { z } from "zod"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
 
@@ -174,6 +176,26 @@ export async function sendConversationReply(input: {
       profile: senderProfile,
     },
   })
+
+  try {
+    const service = createServiceRoleClient()
+    const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
+    /** Support teammate is always `seller_id` in member↔support threads opened from Messages. */
+    const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
+
+    if (supportStaffReply) {
+      void trackKlaviyoSupportTicketResponse({
+        supportTicketId: ticketMeta.id,
+        email: ticketMeta.email.trim(),
+        externalId: ticketMeta.user_id,
+        response: body,
+        responseType: "support_dm_reply",
+        uniqueId: `support-ticket-response-dm-${inserted.id}`,
+      })
+    }
+  } catch {
+    // Missing service role locally — Response metric skipped for support DM attribution.
+  }
 
   return { success: true as const, message: inserted }
 }

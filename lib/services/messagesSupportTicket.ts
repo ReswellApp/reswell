@@ -9,6 +9,7 @@ import {
   formatSupportTicketOpeningMessage,
   insertMemberMessageInConversation,
 } from "@/lib/services/supportTicketThreadNotifications"
+import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 
 export async function submitMessagesSupportTicketService(
   raw: unknown,
@@ -104,6 +105,14 @@ export async function submitMessagesSupportTicketService(
       console.error("submitMessagesSupportTicketService: failed to post opening thread message")
     }
   }
+
+  await trackKlaviyoSupportTicketCreated({
+    supportTicketId: ticketId,
+    email,
+    externalId: user.id,
+    source: "messages_support",
+    subject,
+  })
 
   return { success: true, id: ticketId, support_conversation_id: supportConversationId }
 }

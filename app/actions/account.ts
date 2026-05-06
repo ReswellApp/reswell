@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 
 export async function getAdminSession() {
   const supabase = await createClient()
@@ -75,18 +76,29 @@ export async function submitContactMessage(input: { name: string; email: string;
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.from("contact_messages").insert({
-    name,
-    email,
-    message,
-    source: "contact_form",
-    user_id: null,
-  })
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .insert({
+      name,
+      email,
+      message,
+      source: "contact_form",
+      user_id: null,
+    })
+    .select("id")
+    .single()
 
-  if (error) {
+  if (error || !data?.id) {
     console.error("Contact form insert error:", error)
     return { error: "Failed to send message" as const }
   }
+
+  await trackKlaviyoSupportTicketCreated({
+    supportTicketId: String(data.id),
+    email,
+    source: "contact_form",
+    subject: "Website contact",
+  })
 
   return { success: true as const }
 }
