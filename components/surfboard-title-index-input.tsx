@@ -16,6 +16,7 @@ import {
 } from "@/app/actions/marketplace"
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const BRAND_SUGGEST_DEBOUNCE_MS = 200
 
@@ -81,6 +82,7 @@ export function SurfboardTitleIndexInput({
   committedDirectoryBrandLabel = null,
   onRequestBrand,
 }: SurfboardTitleIndexInputProps) {
+  const isMobile = useIsMobile()
   const [items, setItems] = React.useState<IndexBoardModelSelection[]>([])
   const [loadError, setLoadError] = React.useState<string | null>(null)
   const [brandRows, setBrandRows] = React.useState<BrandCatalogSuggestRow[]>([])
@@ -257,13 +259,24 @@ export function SurfboardTitleIndexInput({
   const showNoMatches =
     searchSettled && !loading && brandRows.length === 0
 
-  /** Position the portaled menu strictly below the input; sync with visual viewport (mobile keyboard). */
+  /**
+   * On narrow viewports, `position:fixed` to `document.body` drifts vs the field when the on-screen
+   * keyboard / visual viewport changes. Inline `absolute top-full` matches {@link SurfboardModelCatalogInput}.
+   */
+  const anchoredBelowInputMobile = showDropdown && isMobile
+  const portaledDesktopDropdown = showDropdown && !isMobile
+
+  /** Desktop: portaled menu strictly below the input; sync with visual viewport. */
   React.useLayoutEffect(() => {
-    if (!showDropdown || !containerRef.current || typeof document === "undefined") {
+    if (!portaledDesktopDropdown || typeof document === "undefined") {
       setDropdownRect(null)
       return
     }
-    const el = containerRef.current
+    const el = inputRef.current ?? containerRef.current
+    if (!el) {
+      setDropdownRect(null)
+      return
+    }
     const update = () => {
       setDropdownRect(computeBelowFieldDropdownLayout(el))
     }
@@ -283,7 +296,7 @@ export function SurfboardTitleIndexInput({
         vv.removeEventListener("scroll", update)
       }
     }
-  }, [showDropdown, value, brandRows.length, loading])
+  }, [portaledDesktopDropdown, value, brandRows.length, loading])
 
   React.useEffect(() => {
     if (!open) return
@@ -298,111 +311,129 @@ export function SurfboardTitleIndexInput({
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open])
 
-  const dropdownPortal =
-    showDropdown && dropdownRect && typeof document !== "undefined"
-      ? createPortal(
-      <div
-        ref={dropdownRef}
-        id={listId}
-        role="listbox"
-        aria-label="Brand directory matches"
-        className="fixed z-[200] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md"
-        style={{
-          top: dropdownRect.top,
-          left: dropdownRect.left,
-          width: dropdownRect.width,
-          maxHeight: dropdownRect.maxHeight,
-        }}
-      >
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
-          <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">
-            Brands
-          </span>
+  const suggestListClassName = cn(
+    "overscroll-contain py-1",
+    anchoredBelowInputMobile
+      ? "min-h-0 flex-1 overflow-y-auto"
+      : "max-h-[min(45dvh,320px)] overflow-y-auto",
+  )
+
+  const dropdownShellClassName = cn(
+    "overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md",
+    anchoredBelowInputMobile
+      ? "absolute left-0 right-0 top-full z-[200] mt-2 flex max-h-[min(42dvh,280px)] w-full flex-col"
+      : "fixed z-[200]",
+  )
+
+  const dropdownPanel = (
+    <div
+      ref={dropdownRef}
+      id={listId}
+      role="listbox"
+      aria-label="Brand directory matches"
+      className={dropdownShellClassName}
+      style={
+        portaledDesktopDropdown && dropdownRect
+          ? {
+              top: dropdownRect.top,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              maxHeight: dropdownRect.maxHeight,
+            }
+          : undefined
+      }
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
+        <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">Brands</span>
+      </div>
+      {showSearching ? (
+        <div className="px-3 py-8 text-center text-sm text-muted-foreground">Searching brands…</div>
+      ) : showNoMatches && !showResultsList ? (
+        <div className="px-3 py-4 text-sm">
+          <p className="text-muted-foreground">
+            No brand profile in the directory matches that search. You can still type a brand name above —
+            it doesn’t have to be in the list.
+          </p>
+          {onRequestBrand ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-3 w-full min-h-touch"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setOpen(false)
+                setDropdownRect(null)
+                onRequestBrand()
+              }}
+            >
+              Request we add this brand
+            </Button>
+          ) : null}
         </div>
-        {showSearching ? (
-          <div className="px-3 py-8 text-center text-sm text-muted-foreground">Searching brands…</div>
-        ) : showNoMatches && !showResultsList ? (
-          <div className="px-3 py-4 text-sm">
-            <p className="text-muted-foreground">
-              No brand profile in the directory matches that search. You can still type a brand name
-              above — it doesn’t have to be in the list.
-            </p>
-            {onRequestBrand ? (
-              <Button
-                type="button"
-                variant="secondary"
-                className="mt-3 w-full min-h-touch"
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  setOpen(false)
-                  setDropdownRect(null)
-                  onRequestBrand()
-                }}
-              >
-                Request we add this brand
-              </Button>
-            ) : null}
-          </div>
-        ) : (
-          <ul className="max-h-[min(45dvh,320px)] overflow-y-auto overscroll-contain py-1">
-            {brandRows.map((item, i) => {
-              const lineMeta = [item.location_label, item.lead_shaper_name]
-                .map((s) => (typeof s === "string" ? s.trim() : ""))
-                .filter(Boolean)
-                .join(" · ")
-              const desc = item.short_description?.trim()
-              const meta =
-                lineMeta ||
-                (desc ? (desc.length > 120 ? `${desc.slice(0, 117)}…` : desc) : "Brand profile")
-              return (
-                <li key={item.id} role="option">
-                  <button
-                    type="button"
-                    className={cn(
-                      "mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-left text-sm outline-none min-h-touch transition-colors sm:gap-3 sm:rounded-xl sm:py-2.5",
-                      i === highlight ? "bg-muted/90" : "hover:bg-muted/80",
+      ) : (
+        <ul className={suggestListClassName}>
+          {brandRows.map((item, i) => {
+            const lineMeta = [item.location_label, item.lead_shaper_name]
+              .map((s) => (typeof s === "string" ? s.trim() : ""))
+              .filter(Boolean)
+              .join(" · ")
+            const desc = item.short_description?.trim()
+            const meta =
+              lineMeta ||
+              (desc ? (desc.length > 120 ? `${desc.slice(0, 117)}…` : desc) : "Brand profile")
+            return (
+              <li key={item.id} role="option">
+                <button
+                  type="button"
+                  className={cn(
+                    "mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-left text-sm outline-none min-h-touch transition-colors sm:gap-3 sm:rounded-xl sm:py-2.5",
+                    i === highlight ? "bg-muted/90" : "hover:bg-muted/80",
+                  )}
+                  aria-selected={i === highlight}
+                  onMouseEnter={() => setHighlight(i)}
+                  onMouseDown={(ev) => {
+                    ev.preventDefault()
+                    commitCatalogPick(item)
+                  }}
+                >
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted sm:h-12 sm:w-12 sm:rounded-lg">
+                    {item.logo_url ? (
+                      <Image
+                        src={item.logo_url}
+                        alt=""
+                        fill
+                        className="object-contain p-1"
+                        sizes="(max-width:640px) 40px, 48px"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-bold text-cerulean sm:text-sm">
+                        {item.name.slice(0, 1).toUpperCase()}
+                      </div>
                     )}
-                    aria-selected={i === highlight}
-                    onMouseEnter={() => setHighlight(i)}
-                    onMouseDown={(ev) => {
-                      ev.preventDefault()
-                      commitCatalogPick(item)
-                    }}
-                  >
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted sm:h-12 sm:w-12 sm:rounded-lg">
-                      {item.logo_url ? (
-                        <Image
-                          src={item.logo_url}
-                          alt=""
-                          fill
-                          className="object-contain p-1"
-                          sizes="(max-width:640px) 40px, 48px"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs font-bold text-cerulean sm:text-sm">
-                          {item.name.slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
-                        {item.name}
-                      </p>
-                      <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">
-                        {meta}
-                      </p>
-                    </div>
-                    <SlidersHorizontal className="h-4 w-4 shrink-0 self-center text-muted-foreground/80" aria-hidden />
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>,
-          document.body,
-        )
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
+                      {item.name}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">{meta}</p>
+                  </div>
+                  <SlidersHorizontal
+                    className="h-4 w-4 shrink-0 self-center text-muted-foreground/80"
+                    aria-hidden
+                  />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+
+  const dropdownPortal =
+    portaledDesktopDropdown && dropdownRect && typeof document !== "undefined"
+      ? createPortal(dropdownPanel, document.body)
       : null
 
   return (
@@ -489,6 +520,7 @@ export function SurfboardTitleIndexInput({
           …
         </span>
       ) : null}
+      {anchoredBelowInputMobile ? dropdownPanel : null}
       {dropdownPortal}
       {loadError && items.length === 0 ? (
         <p className="text-xs text-muted-foreground/45 mt-1.5" role="status">

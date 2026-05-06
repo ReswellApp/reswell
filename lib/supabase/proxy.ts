@@ -1,3 +1,4 @@
+import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -49,25 +50,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes that require authentication.
-  // Important: do not use pathname.startsWith("/sell") — that matches "/sellers".
-  //
-  // `/sell` (listing flow) requires a session. Next.js serves `opengraph-image` /
-  // `twitter-image` under `/sell/...`; those paths must not redirect or social previews
-  // lose images — exclude them below.
   const pathname = request.nextUrl.pathname
-  const isPublicSellOgAsset =
-    pathname === '/sell/opengraph-image' || pathname === '/sell/twitter-image'
   /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
-  const isProtectedRoute =
-    pathname === '/sell' ||
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/messages') ||
-    pathname.startsWith('/admin') ||
-    (pathname.startsWith('/sell/') && !isPublicSellOgAsset)
-
-  const requiresAuth = isProtectedRoute || isOffersShortcut
+  const requiresAuth = pathnameRequiresAuthSession(pathname)
 
   if (requiresAuth && !user) {
     const url = request.nextUrl.clone()

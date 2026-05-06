@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 export function LoginFormPanel({
   redirectTo,
@@ -42,8 +44,9 @@ export function LoginFormPanel({
 
   useEffect(() => {
     const supabase = createClient()
+    const dest = safeRedirectPath(redirectTo)
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) router.push(redirectTo)
+      if (user) navigateAfterClientAuth(dest, router)
     })
   }, [router, redirectTo])
 
@@ -64,8 +67,7 @@ export function LoginFormPanel({
         window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       }
       onLoggedIn?.()
-      router.push(redirectTo)
-      router.refresh()
+      navigateAfterClientAuth(redirectTo, router)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {

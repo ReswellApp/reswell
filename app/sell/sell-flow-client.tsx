@@ -71,6 +71,7 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  RotateCw,
   Sparkles,
   Heart,
   Zap,
@@ -336,6 +337,10 @@ type ListingPhotoSlot = {
   errorMessage?: string
   sourceFile?: File
   prepared?: PreparedListingImagePair
+  /** True = apply 180° after automatic landscape→portrait step (toggle). */
+  userRotate180?: boolean
+  /** Bumps when re-processing the same slot so stale async work does not apply. */
+  prepareSeq?: number
 }
 
 /**
@@ -350,11 +355,13 @@ function SellListingPhotoSortableTile({
   index,
   onRemove,
   onRetry,
+  onRotate180,
 }: {
   image: ListingPhotoSlot
   index: number
   onRemove: () => void
   onRetry: () => void
+  onRotate180: () => void
 }) {
   const {
     attributes,
@@ -375,6 +382,7 @@ function SellListingPhotoSortableTile({
       index={index}
       onRemove={onRemove}
       onRetry={onRetry}
+      onRotate180={onRotate180}
       sortable={{
         setNodeRef,
         style: {
@@ -394,12 +402,14 @@ function SellListingPhotoTile({
   index,
   onRemove,
   onRetry,
+  onRotate180,
   sortable,
 }: {
   image: ListingPhotoSlot
   index: number
   onRemove: () => void
   onRetry: () => void
+  onRotate180: () => void
   /** Pointer + touch drag-to-reorder (@dnd-kit). */
   sortable: {
     setNodeRef: (node: HTMLElement | null) => void
@@ -436,6 +446,8 @@ function SellListingPhotoTile({
   const skeletonVisible =
     !isFailure &&
     (!photoReady || !thumbLoaded)
+
+  const canRotate180 = Boolean(image.sourceFile) && !isFailure
 
   return (
     <div
@@ -493,6 +505,23 @@ function SellListingPhotoTile({
             >
               <X className="h-3 w-3" />
             </button>
+            {canRotate180 ? (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={onRotate180}
+                className={cn(
+                  "absolute top-1 left-1 p-1 rounded-full hover:bg-background z-[5]",
+                  skeletonVisible
+                    ? "bg-background/90 shadow-sm ring-1 ring-black/5"
+                    : "bg-background/80",
+                )}
+                aria-label={`Rotate photo ${index + 1} 180 degrees`}
+                title="Rotate 180°"
+              >
+                <RotateCw className="h-3 w-3" aria-hidden />
+              </button>
+            ) : null}
             {skeletonVisible ? (
               <span className="sr-only">
                 {photoReady ? "Loading thumbnail preview" : "Processing photo"}
@@ -701,6 +730,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [loading])
   const [images, setImages] = useState<ListingPhotoSlot[]>([])
   const imagesRef = useRef<ListingPhotoSlot[]>([])
+  /** Authoritative prepare generation per slot — `imagesRef` can lag behind `setState` during re-runs. */
+  const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
   useEffect(() => {
     imagesRef.current = images
   }, [images])
@@ -981,6 +1012,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
     sellListingThumbLoadedSrcByClientId.clear()
+    latestListingPhotoPrepareSeqRef.current.clear()
     setImages([])
     setRemovedImageIds([])
     setPublishPreview(null)
@@ -1068,6 +1100,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               }
               if (slots.length > 0) {
                 idbRestoreOptimizeQueueRef.current = slots
+                latestListingPhotoPrepareSeqRef.current.clear()
                 setImages(slots)
               }
             }
@@ -1382,6 +1415,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           }
         })
       sellListingThumbLoadedSrcByClientId.clear()
+      latestListingPhotoPrepareSeqRef.current.clear()
       setImages(existingImages)
       setRemovedImageIds([])
       setEditLoading(false)
@@ -1419,6 +1453,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }
   }, [treatAsDraftForSync, draftRowForImages, editLoading, images])
 
+  function listingPhotoPrepareSeqInSync(clientId: string, prepareSeq: number): boolean {
+    return (latestListingPhotoPrepareSeqRef.current.get(clientId) ?? 0) === prepareSeq
+  }
+
   async function convertViaServer(file: File): Promise<File> {
     const form = new FormData()
     form.append("file", file)
@@ -1453,6 +1491,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   async function optimizeAndUploadSlot(slot: ListingPhotoSlot) {
     const clientId = slot.clientId
     const previewUrl = slot.previewUrl
+    const prepareSeq = slot.prepareSeq ?? 0
+    latestListingPhotoPrepareSeqRef.current.set(clientId, prepareSeq)
     let prepared = slot.prepared
 
     try {
@@ -1460,7 +1500,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         const src = slot.sourceFile
         if (!src) return
         const file = await toJpegIfUnsupported(src)
-        prepared = await prepareListingImagePairFromFile(file)
+        prepared = await prepareListingImagePairFromFile(file, {
+          rotate180: Boolean(slot.userRotate180),
+        })
+        if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         let nextPreviewUrl = previewUrl
         if (previewUrl.startsWith("blob:")) {
           URL.revokeObjectURL(previewUrl)
@@ -1474,7 +1517,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   previewUrl: nextPreviewUrl,
                   optimizePhase: "done",
                   prepared,
-                  sourceFile: undefined,
                 }
               : s,
           ),
@@ -1483,8 +1525,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       if (!prepared) return
 
+      if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
+        if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
@@ -1500,6 +1545,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
+        if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
@@ -1509,6 +1555,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         )
         return
       }
+
+      if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
 
       setImages((prev) =>
         prev.map((s) =>
@@ -1532,18 +1580,22 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         clientId,
         prepared,
         onProgressFull: (loaded, total) => {
+          if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
           const pct = total ? Math.round((100 * loaded) / total) : 0
           setImages((prev) =>
             prev.map((s) => (s.clientId === clientId ? { ...s, progressFull: pct } : s)),
           )
         },
         onProgressThumb: (loaded, total) => {
+          if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
           const pct = total ? Math.round((100 * loaded) / total) : 0
           setImages((prev) =>
             prev.map((s) => (s.clientId === clientId ? { ...s, progressThumb: pct } : s)),
           )
         },
       })
+
+      if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
 
       setImages((prev) =>
         prev.map((s) =>
@@ -1562,6 +1614,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       )
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Photo processing failed"
+      if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
       setImages((prev) =>
         prev.map((s) => {
           if (s.clientId !== clientId) return s
@@ -1590,10 +1643,47 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   function retryListingPhotoUpload(clientId: string) {
     const live = imagesRef.current.find((s) => s.clientId === clientId)
     if (!live) return
-    void optimizeAndUploadSlot({
+    const nextSeq = (live.prepareSeq ?? 0) + 1
+    latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+    const next: ListingPhotoSlot = {
       ...live,
+      prepareSeq: nextSeq,
       errorMessage: undefined,
-    })
+    }
+    setImages((prev) =>
+      prev.map((s) => (s.clientId === clientId ? next : s)),
+    )
+    void optimizeAndUploadSlot(next)
+  }
+
+  function rotateListingPhoto180(clientId: string) {
+    let nextSlot: ListingPhotoSlot | null = null
+    setImages((prev) =>
+      prev.map((s) => {
+        if (s.clientId !== clientId) return s
+        if (!s.sourceFile) return s
+        if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl)
+        sellListingThumbLoadedSrcByClientId.delete(s.clientId)
+        const nextSeq = (s.prepareSeq ?? 0) + 1
+        latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+        nextSlot = {
+          ...s,
+          userRotate180: !s.userRotate180,
+          prepareSeq: nextSeq,
+          prepared: undefined,
+          optimizePhase: "running",
+          uploadPhase: "idle",
+          url: undefined,
+          thumbnailUrl: undefined,
+          progressFull: 0,
+          progressThumb: 0,
+          previewUrl: URL.createObjectURL(s.sourceFile),
+          errorMessage: undefined,
+        }
+        return nextSlot
+      }),
+    )
+    if (nextSlot) void optimizeAndUploadSlot(nextSlot)
   }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1636,6 +1726,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
       if (toRemove?.clientId) {
         sellListingThumbLoadedSrcByClientId.delete(toRemove.clientId)
+        latestListingPhotoPrepareSeqRef.current.delete(toRemove.clientId)
       }
       if (toRemove?.id) {
         setRemovedImageIds((ids) => [...ids, toRemove.id!])
@@ -2514,6 +2605,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         index={index}
                         onRemove={() => removeImage(index)}
                         onRetry={() => retryListingPhotoUpload(image.clientId)}
+                        onRotate180={() => rotateListingPhoto180(image.clientId)}
                       />
                     ))}
                     </SortableContext>

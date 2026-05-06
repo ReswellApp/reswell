@@ -118,6 +118,32 @@ async function rotateLandscapeToPortraitIfNeeded(bitmap: ImageBitmap): Promise<I
   return rotated
 }
 
+/** Replaces `bitmap` with an upside-down version (closed after use). */
+async function rotateBitmap180(bitmap: ImageBitmap): Promise<ImageBitmap> {
+  const w = bitmap.width
+  const h = bitmap.height
+  const canvas = document.createElement("canvas")
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext("2d")
+  if (!ctx) {
+    throw new Error("Canvas not available")
+  }
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+  ctx.translate(w, h)
+  ctx.rotate(Math.PI)
+  ctx.drawImage(bitmap, 0, 0)
+  const rotated = await createImageBitmap(canvas)
+  bitmap.close()
+  return rotated
+}
+
+export type PrepareListingImagePairOptions = {
+  /** Applied after landscape→portrait normalization so listing geometry rules stay the same. */
+  rotate180?: boolean
+}
+
 async function renderResizedToBlob(
   bitmap: ImageBitmap,
   maxLongEdge: number,
@@ -139,10 +165,16 @@ async function renderResizedToBlob(
 /**
  * Single decode; produces full (≤2000px long edge) + thumb (≤640px) in one pipeline step.
  */
-export async function prepareListingImagePairFromFile(file: File): Promise<PreparedListingImagePair> {
+export async function prepareListingImagePairFromFile(
+  file: File,
+  options?: PrepareListingImagePairOptions,
+): Promise<PreparedListingImagePair> {
   let bitmap = await createImageBitmap(file)
   try {
     bitmap = await rotateLandscapeToPortraitIfNeeded(bitmap)
+    if (options?.rotate180) {
+      bitmap = await rotateBitmap180(bitmap)
+    }
     const useWebp = await canvasSupportsWebp()
     const [fullPack, thumbPack] = await Promise.all([
       renderResizedToBlob(bitmap, LISTING_FULL_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_FULL, useWebp),
