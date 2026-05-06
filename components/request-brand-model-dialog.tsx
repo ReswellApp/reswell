@@ -176,65 +176,77 @@ export function RequestBrandModelDialog({
   const modelOnly = isModelOnly(variant)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,520px)] overflow-y-auto sm:max-w-md">
-        <form onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle>{modelOnly ? "Request a model" : "Request brand & model"}</DialogTitle>
-            <DialogDescription>
-              {modelOnly ?
-                <>
-                  Ask us to add this surfboard model to our catalog for the brand you linked above. You can still
-                  publish your listing anytime.
-                </>
-              : <>
-                  Tell us the maker and model to add — one submit sends both requests. You can publish your listing
-                  anytime.
-                </>
-              }
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog modal open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton
+        overlayClassName="overscroll-none"
+        className="z-[100] flex w-[calc(100%-2rem)] max-h-[min(92vh,560px)] max-w-md flex-col gap-0 overflow-hidden overscroll-none rounded-xl p-0"
+      >
+        <DialogHeader className="shrink-0 space-y-2 border-b border-border px-6 pb-4 pt-6 text-left sm:pr-12">
+          <DialogTitle>{modelOnly ? "Request a model" : "Request brand & model"}</DialogTitle>
+          <DialogDescription>
+            {modelOnly ?
+              <>
+                Ask us to add this surfboard model to our catalog for the brand you linked above. You can still
+                publish your listing anytime.
+              </>
+            : <>
+                Tell us the maker and model to add — one submit sends both requests. You can publish your listing
+                anytime.
+              </>
+            }
+          </DialogDescription>
+        </DialogHeader>
 
-          <div className="grid gap-4 py-2">
-            {!modelOnly ?
+        <form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6">
+            <div className="grid gap-4 py-4">
+              {!modelOnly ?
+                <div className="space-y-1.5">
+                  <Label htmlFor="rbm-brand">
+                    Brand name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="rbm-brand"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    required
+                    maxLength={200}
+                    autoComplete="organization"
+                    autoFocus
+                    className="h-11"
+                  />
+                </div>
+              : (
+                <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Brand in directory
+                  </p>
+                  <p className="mt-1 text-sm font-medium leading-snug text-foreground">
+                    {defaultBrandName.trim() || "—"}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-1.5">
-                <Label htmlFor="rbm-brand">
-                  Brand name <span className="text-destructive">*</span>
+                <Label htmlFor="rbm-model">
+                  Model name <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="rbm-brand"
-                  value={brandName}
-                  onChange={(e) => setBrandName(e.target.value)}
+                  id="rbm-model"
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
                   required
-                  maxLength={200}
-                  autoComplete="organization"
-                  autoFocus
+                  maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
+                  autoComplete="off"
+                  autoFocus={modelOnly}
+                  className="h-11"
                 />
               </div>
-            : (
-              <p className="text-sm text-muted-foreground">
-                Brand in directory:{" "}
-                <span className="font-medium text-foreground">{defaultBrandName.trim() || "—"}</span>
-              </p>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="rbm-model">
-                Model name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="rbm-model"
-                value={modelName}
-                onChange={(e) => setModelName(e.target.value)}
-                required
-                maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
-                autoComplete="off"
-                autoFocus={modelOnly}
-              />
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="shrink-0 gap-2 border-t border-border bg-muted/20 px-6 py-4 sm:flex-row sm:justify-end sm:gap-2 sm:space-x-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
               Cancel
             </Button>

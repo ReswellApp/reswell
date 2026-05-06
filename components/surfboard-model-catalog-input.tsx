@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { computeBelowFieldDropdownLayout } from "@/lib/utils/below-field-dropdown-layout"
 import type { SellBrandModelCatalogRow } from "@/app/actions/marketplace"
 import { LISTING_BOARD_MODEL_MAX_LENGTH } from "@/lib/sell-form-validation"
 
@@ -54,11 +55,9 @@ export function SurfboardModelCatalogInput({
 }: SurfboardModelCatalogInputProps) {
   const [open, setOpen] = React.useState(false)
   const [highlight, setHighlight] = React.useState(0)
-  const [dropdownRect, setDropdownRect] = React.useState<{
-    top: number
-    left: number
-    width: number
-  } | null>(null)
+  const [dropdownRect, setDropdownRect] = React.useState<ReturnType<
+    typeof computeBelowFieldDropdownLayout
+  > | null>(null)
 
   const containerRef = React.useRef<HTMLDivElement>(null)
   const dropdownRef = React.useRef<HTMLDivElement>(null)
@@ -88,26 +87,30 @@ export function SurfboardModelCatalogInput({
 
   const portalVisible = open && canUseSuggest && q.length >= 1
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (!portalVisible || !containerRef.current || typeof document === "undefined") {
       setDropdownRect(null)
       return
     }
     const el = containerRef.current
     const update = () => {
-      const rect = el.getBoundingClientRect()
-      setDropdownRect({
-        top: rect.bottom + 6,
-        left: rect.left,
-        width: rect.width,
-      })
+      setDropdownRect(computeBelowFieldDropdownLayout(el))
     }
     update()
     window.addEventListener("scroll", update, true)
     window.addEventListener("resize", update)
+    const vv = window.visualViewport
+    if (vv) {
+      vv.addEventListener("resize", update)
+      vv.addEventListener("scroll", update)
+    }
     return () => {
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
+      if (vv) {
+        vv.removeEventListener("resize", update)
+        vv.removeEventListener("scroll", update)
+      }
     }
   }, [portalVisible, value, filtered.length])
 
@@ -123,16 +126,6 @@ export function SurfboardModelCatalogInput({
     document.addEventListener("mousedown", onDoc)
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open])
-
-  const panelWidth = dropdownRect
-    ? Math.min(Math.max(dropdownRect.width, 280), 520)
-    : 360
-  const panelLeft = dropdownRect
-    ? Math.min(
-        dropdownRect.left,
-        typeof window !== "undefined" ? window.innerWidth - panelWidth - 16 : dropdownRect.left,
-      )
-    : 0
 
   const showResultsList = filtered.length > 0
 
@@ -150,9 +143,9 @@ export function SurfboardModelCatalogInput({
             className="fixed z-[200] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md"
             style={{
               top: dropdownRect.top,
-              left: panelLeft,
-              width: panelWidth,
-              maxHeight: "min(50vh, 360px)",
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              maxHeight: dropdownRect.maxHeight,
             }}
           >
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
