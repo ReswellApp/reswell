@@ -918,7 +918,6 @@ function AttachCatalogBrandDialog({
   const [newBrandLeadShaperName, setNewBrandLeadShaperName] = useState("")
   const [newBrandLocationLabel, setNewBrandLocationLabel] = useState("")
   const [newBrandModelCount, setNewBrandModelCount] = useState("0")
-  const [newBrandAboutText, setNewBrandAboutText] = useState("")
   const logoFileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -970,7 +969,6 @@ function AttachCatalogBrandDialog({
     setNewBrandLeadShaperName("")
     setNewBrandLocationLabel("")
     setNewBrandModelCount("0")
-    setNewBrandAboutText("")
     if (logoFileInputRef.current) logoFileInputRef.current.value = ""
   }, [open, row.id, row.listings?.brand, row.brands?.name])
 
@@ -1042,10 +1040,6 @@ function AttachCatalogBrandDialog({
         finalLogoUrl = uploaded
       }
 
-      const about_paragraphs = newBrandAboutText
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean)
       const mc = Math.max(0, Math.floor(Number(newBrandModelCount) || 0))
 
       const res = await fetch("/api/admin/brands", {
@@ -1062,7 +1056,7 @@ function AttachCatalogBrandDialog({
           lead_shaper_name: newBrandLeadShaperName.trim() || null,
           location_label: newBrandLocationLabel.trim() || null,
           model_count: mc,
-          about_paragraphs,
+          about_paragraphs: [],
         }),
       })
       const j = (await res.json().catch(() => ({}))) as {
@@ -1196,8 +1190,6 @@ function AttachCatalogBrandDialog({
             onLocationLabelChange={setNewBrandLocationLabel}
             modelCount={newBrandModelCount}
             onModelCountChange={setNewBrandModelCount}
-            aboutText={newBrandAboutText}
-            onAboutTextChange={setNewBrandAboutText}
             slugExtraHint="Filled automatically from the name until you edit the slug."
           />
         )}

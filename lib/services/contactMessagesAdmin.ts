@@ -1,16 +1,24 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import {
   getContactMessageRowById,
   updateContactMessageRow,
   type ContactMessageSupportStatus,
 } from "@/lib/db/contactMessages"
+import { ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
 import {
   updateContactMessageAdminSchema,
   type UpdateContactMessageAdminInput,
 } from "@/lib/validations/contactMessagesAdmin"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
-import { insertSupportStatusMessageAsSupportUser } from "@/lib/services/supportTicketThreadNotifications"
+import {
+  insertSupportStaffThreadMessage,
+  insertSupportStatusMessageAsSupportUser,
+} from "@/lib/services/supportTicketThreadNotifications"
+import {
+  ensureSupportTicketThreadSchema,
+  supportTicketReplyFromAdminSchema,
+} from "@/lib/validations/contactMessageAdminReply"
 
 function normalizeUpdatePayload(
   parsed: UpdateContactMessageAdminInput,
@@ -78,8 +86,7 @@ export async function updateContactMessageAdminService(
 
   if (
     statusChanged &&
-    existing.support_conversation_id &&
-    existing.source === "messages_support"
+    existing.support_conversation_id
   ) {
     const resolved = await resolveSupportRecipientUserId()
     if (resolved.ok) {
@@ -110,4 +117,210 @@ export async function updateContactMessageAdminService(
   }
 
   return { success: true }
+}
+
+function formatLinkedSupportThreadIntro(args: { ticketId: string; topic: string | null }): string {
+  const topicLabel = args.topic?.trim() || "Support request"
+  return [
+    "Reswell support ticket",
+    "",
+    `Topic: ${topicLabel}`,
+    "",
+    "This chat is linked to your support request — our team can reply here anytime.",
+    "",
+    `Ticket ID: ${args.ticketId}`,
+  ].join("\n")
+}
+
+async function loadTicketForSupportInboxStaff(
+  supabaseUser: Awaited<ReturnType<typeof createClient>>,
+  ticketId: string,
+): Promise<
+  | { ok: false; error: string }
+  | {
+      ok: true
+      supabaseUser: Awaited<ReturnType<typeof createClient>>
+      row: NonNullable<Awaited<ReturnType<typeof getContactMessageRowById>>>
+    }
+> {
+  const {
+    data: { user },
+  } = await supabaseUser.auth.getUser()
+  if (!user) {
+    return { ok: false, error: "Unauthorized" }
+  }
+
+  const { data: profile } = await supabaseUser
+    .from("profiles")
+    .select("is_admin, is_employee")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+    return { ok: false, error: "Forbidden" }
+  }
+
+  const row = await getContactMessageRowById(supabaseUser, ticketId)
+  if (!row) {
+    return { ok: false, error: "Not found" }
+  }
+
+  return { ok: true, supabaseUser, row }
+}
+
+/**
+ * Ensures member ↔ support teammate conversation exists for this ticket and saves `support_conversation_id`.
+ */
+export async function ensureSupportTicketThreadAdminService(
+  raw: unknown,
+): Promise<{ success: true; support_conversation_id: string } | { error: string }> {
+  const parsed = ensureSupportTicketThreadSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { error: "Invalid input" }
+  }
+
+  const supabaseUser = await createClient()
+  const loaded = await loadTicketForSupportInboxStaff(supabaseUser, parsed.data.ticket_id)
+  if (!loaded.ok) {
+    return { error: loaded.error }
+  }
+
+  const { row, supabaseUser: sb } = loaded
+
+  if (!row.user_id) {
+    return { error: "This ticket has no member account linked — inbox replies are unavailable." }
+  }
+
+  let serviceRole
+  try {
+    serviceRole = createServiceRoleClient()
+  } catch {
+    return { error: "Messaging is not available in this environment." }
+  }
+
+  const resolvedSupport = await resolveSupportRecipientUserId()
+  if (!resolvedSupport.ok) {
+    return { error: "Support teammate routing isn’t configured (support user id/email)." }
+  }
+
+  const memberId = row.user_id
+  const supportUserId = resolvedSupport.userId
+  if (memberId === supportUserId) {
+    return { error: "Routing conflict for this ticket." }
+  }
+
+  if (row.support_conversation_id) {
+    return { success: true, support_conversation_id: row.support_conversation_id }
+  }
+
+  const conv = await ensureConversationBetweenBuyerAndSeller(serviceRole, memberId, supportUserId)
+  if (!conv?.id) {
+    return { error: "Could not create the support conversation." }
+  }
+
+  const conversationId = conv.id
+
+  const { error } = await updateContactMessageRow(sb, {
+    id: row.id,
+    support_conversation_id: conversationId,
+  })
+
+  if (error) {
+    console.error("ensureSupportTicketThreadAdminService patch", error)
+    return { error: "Could not save the linked thread." }
+  }
+
+  const posted = await insertSupportStaffThreadMessage({
+    conversationId,
+    supportUserId,
+    content: formatLinkedSupportThreadIntro({ ticketId: row.id, topic: row.subject }),
+  })
+
+  if (!posted.ok) {
+    console.error("ensureSupportTicketThreadAdminService: intro message insert failed")
+  }
+
+  return { success: true, support_conversation_id: conversationId }
+}
+
+export async function sendSupportTicketAdminReplyService(
+  raw: unknown,
+): Promise<{ success: true; support_conversation_id: string } | { error: string }> {
+  const parsed = supportTicketReplyFromAdminSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { error: "Invalid input" }
+  }
+
+  const supabaseUser = await createClient()
+  const loaded = await loadTicketForSupportInboxStaff(supabaseUser, parsed.data.ticket_id)
+  if (!loaded.ok) {
+    return { error: loaded.error }
+  }
+
+  const { row, supabaseUser: sb } = loaded
+
+  if (!row.user_id) {
+    return { error: "This ticket has no member account linked — inbox replies are unavailable." }
+  }
+
+  let serviceRole
+  try {
+    serviceRole = createServiceRoleClient()
+  } catch {
+    return { error: "Messaging is not available in this environment." }
+  }
+
+  const resolvedSupport = await resolveSupportRecipientUserId()
+  if (!resolvedSupport.ok) {
+    return { error: "Support teammate routing isn’t configured (support user id/email)." }
+  }
+
+  const memberId = row.user_id
+  const supportUserId = resolvedSupport.userId
+  if (memberId === supportUserId) {
+    return { error: "Routing conflict for this ticket." }
+  }
+
+  let conversationId = row.support_conversation_id
+  if (!conversationId) {
+    const conv = await ensureConversationBetweenBuyerAndSeller(serviceRole, memberId, supportUserId)
+    if (!conv?.id) {
+      return { error: "Could not create the support conversation." }
+    }
+    conversationId = conv.id
+
+    const { error: patchErr } = await updateContactMessageRow(sb, {
+      id: row.id,
+      support_conversation_id: conversationId,
+    })
+
+    if (patchErr) {
+      console.error("sendSupportTicketAdminReplyService patch", patchErr)
+      return { error: "Could not link the reply to this ticket." }
+    }
+  }
+
+  const trimmed = parsed.data.content.trim()
+  const posted = await insertSupportStaffThreadMessage({
+    conversationId,
+    supportUserId,
+    content: trimmed,
+  })
+
+  if (!posted.ok) {
+    return { error: "Could not send the message." }
+  }
+
+  if (row.email.trim()) {
+    void trackKlaviyoSupportTicketResponse({
+      supportTicketId: row.id,
+      email: row.email.trim(),
+      externalId: row.user_id,
+      response: trimmed,
+      responseType: "admin_inbox_reply",
+      uniqueId: `support-ticket-admin-inbox-${posted.messageId}`,
+    })
+  }
+
+  return { success: true, support_conversation_id: conversationId }
 }

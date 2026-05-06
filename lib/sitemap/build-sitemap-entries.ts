@@ -50,7 +50,7 @@ export async function buildSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-    { url: `${BASE}/boards`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
+    { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     {
       url: `${BASE}/what-is-reswell`,
       lastModified: now,
@@ -60,8 +60,9 @@ export async function buildSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
     { url: `${BASE}/sold`, lastModified: now, changeFrequency: "hourly", priority: 0.75 },
     { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     { url: `${BASE}/shop`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
-    { url: `${BASE}/sell`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE}/search`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    // `/sell` requires auth (middleware) — omit from sitemap to avoid “indexed URL redirects” noise.
+    // Bare `/search` 308s to `/search/recent` when `q` / `brandSlug` are empty — use the final URL.
+    { url: `${BASE}/search/recent`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/brands`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/board-talk`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },

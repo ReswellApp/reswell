@@ -14,7 +14,7 @@ import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 const RESPONSE_PROP_MAX = 4000
 
-export type KlaviyoSupportTicketResponseType = "status_update" | "support_dm_reply"
+export type KlaviyoSupportTicketResponseType = "status_update" | "support_dm_reply" | "admin_inbox_reply"
 
 export type KlaviyoSupportTicketResponsePayload = {
   supportTicketId: string

@@ -86,3 +86,46 @@ export async function insertSupportStatusMessageAsSupportUser(args: {
     customerVisibleContent: content,
   }
 }
+
+/** Inserts a customer-visible reply as the support teammate (service role). */
+export async function insertSupportStaffThreadMessage(args: {
+  conversationId: string
+  supportUserId: string
+  content: string
+}): Promise<{ ok: true; messageId: string } | { ok: false }> {
+  const body = args.content.trim()
+  if (!body) {
+    return { ok: false }
+  }
+
+  const svc = createServiceRoleClient()
+  const { data, error } = await svc
+    .from("messages")
+    .insert({
+      conversation_id: args.conversationId,
+      sender_id: args.supportUserId,
+      content: body,
+    })
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    console.error("insertSupportStaffThreadMessage messages insert", error)
+    return { ok: false }
+  }
+  const id = data?.id != null ? String(data.id) : null
+  if (!id) {
+    return { ok: false }
+  }
+
+  const { error: convErr } = await svc
+    .from("conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", args.conversationId)
+
+  if (convErr) {
+    console.error("insertSupportStaffThreadMessage conversations update", convErr)
+  }
+
+  return { ok: true, messageId: id }
+}

@@ -9,6 +9,7 @@ import {
   searchListingIdsFromElasticsearch,
 } from "@/lib/elasticsearch/listings-index"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
+import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
 import { formatDecimalDimension } from "@/lib/board-measurements"
 import {
   displayMarketplaceSearchQueryForAnalytics,
@@ -123,7 +124,7 @@ export async function SearchPageView({
               <>Brand not found</>
             ) : brandRow ? (
               <>
-                Surfboards — {brandRow.name}
+                Listings — {brandRow.name}
               </>
             ) : rawQuery ? (
               <>Results for &ldquo;{rawQuery}&rdquo;</>
@@ -194,55 +195,6 @@ export async function SearchPageView({
   )
 }
 
-async function fetchListingsForBrand(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  brand: { id: string; name: string },
-  categoryId: string | null,
-  limit: number,
-): Promise<RecentListing[]> {
-  const escapeForOr = (s: string) => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-  const namePattern = `"%${escapeForOr(brand.name)}%"`
-
-  let q = supabase
-    .from("listings")
-    .select(
-      `
-      id,
-      slug,
-      user_id,
-      title,
-      price,
-      condition,
-      section,
-      city,
-      state,
-      shipping_available,
-      board_type,
-      length_feet,
-      length_inches,
-      created_at,
-      listing_images (url, is_primary),
-      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
-      categories (name, slug)
-    `,
-    )
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-
-  if (categoryId) {
-    q = q.eq("category_id", categoryId)
-  } else {
-    q = q.eq("section", "surfboards")
-  }
-
-  q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
-  q = q.order("created_at", { ascending: false }).limit(limit)
-
-  const { data, error } = await q
-  if (error || !data?.length) return []
-  return (data as unknown[]).map((row) => rowToRecentListing(row))
-}
-
 async function resolveSearchListings(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
@@ -255,7 +207,10 @@ async function resolveSearchListings(
   const categoryId = category?.id ?? null
 
   if (brand) {
-    const listings = await fetchListingsForBrand(supabase, brand, categoryId, LIMIT)
+    const listings = await listActiveListingsForBrand(supabase, brand, {
+      limit: LIMIT,
+      categoryId,
+    })
     return { listings, searchMeta: null }
   }
 

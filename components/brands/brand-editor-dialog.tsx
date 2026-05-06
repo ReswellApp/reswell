@@ -32,7 +32,6 @@ export type BrandCreatePrefillFromRequest = {
   founder_name: string | null
   lead_shaper_name: string | null
   location_label: string | null
-  about_paragraphs: string[]
   model_count: number
 }
 
@@ -63,7 +62,6 @@ export function BrandEditorDialog({
   const [leadShaperName, setLeadShaperName] = React.useState("")
   const [locationLabel, setLocationLabel] = React.useState("")
   const [modelCount, setModelCount] = React.useState("0")
-  const [aboutText, setAboutText] = React.useState("")
   const [sourceBrandRequestId, setSourceBrandRequestId] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -80,7 +78,6 @@ export function BrandEditorDialog({
       setLeadShaperName(brand.lead_shaper_name ?? "")
       setLocationLabel(brand.location_label ?? "")
       setModelCount(String(brand.model_count ?? 0))
-      setAboutText((brand.about_paragraphs ?? []).join("\n\n"))
     } else if (mode === "create" && createPrefill) {
       setSourceBrandRequestId(createPrefill.brand_request_id)
       setSlug(createPrefill.slug)
@@ -92,7 +89,6 @@ export function BrandEditorDialog({
       setLeadShaperName(createPrefill.lead_shaper_name ?? "")
       setLocationLabel(createPrefill.location_label ?? "")
       setModelCount(String(Math.max(0, createPrefill.model_count ?? 0)))
-      setAboutText((createPrefill.about_paragraphs ?? []).join("\n\n"))
       if (fileInputRef.current) fileInputRef.current.value = ""
     } else if (mode === "create") {
       setSourceBrandRequestId(null)
@@ -105,7 +101,6 @@ export function BrandEditorDialog({
       setLeadShaperName("")
       setLocationLabel("")
       setModelCount("0")
-      setAboutText("")
       if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }, [open, mode, brand, createPrefill])
@@ -125,12 +120,10 @@ export function BrandEditorDialog({
         finalLogoUrl = uploaded
       }
 
-      const about_paragraphs = aboutText
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean)
-
       const mc = Math.max(0, Math.floor(Number(modelCount) || 0))
+
+      /** Long-form `about_paragraphs` is retired; clear on save so the brand page stays short-description only. */
+      const about_paragraphs: string[] = []
 
       if (mode === "create") {
         const res = await fetch("/api/admin/brands", {
@@ -237,8 +230,6 @@ export function BrandEditorDialog({
             onLocationLabelChange={setLocationLabel}
             modelCount={modelCount}
             onModelCountChange={setModelCount}
-            aboutText={aboutText}
-            onAboutTextChange={setAboutText}
           />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

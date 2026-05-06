@@ -10,5 +10,6 @@ export type BrandRow = {
   lead_shaper_name: string | null
   location_label: string | null
   model_count: number
-  about_paragraphs: string[]
+  /** Legacy DB column; no longer shown or edited — kept optional for typed selects. */
+  about_paragraphs?: string[]
 }

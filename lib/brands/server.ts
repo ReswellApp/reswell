@@ -7,7 +7,7 @@ export async function listBrands(
   const { data, error } = await supabase
     .from("brands")
     .select(
-      "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count, about_paragraphs",
+      "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count",
     )
     .order("name", { ascending: true })
 
@@ -25,7 +25,7 @@ export async function getBrandBySlug(
   const { data, error } = await supabase
     .from("brands")
     .select(
-      "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count, about_paragraphs",
+      "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count",
     )
     .eq("slug", slug)
     .maybeSingle()
@@ -44,7 +44,7 @@ export async function getBrandById(
   const { data, error } = await supabase
     .from("brands")
     .select(
-      "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count, about_paragraphs",
+      "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count",
     )
     .eq("id", id)
     .maybeSingle()

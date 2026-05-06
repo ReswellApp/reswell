@@ -104,7 +104,12 @@ export function boardsBrowseHeroSubtext(type: string | undefined | null): string
   return lines[canonical] ?? "Used surfboards from sellers who ship or welcome local pickup."
 }
 
-export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Promise<Metadata> {
+/** Title, description, and canonical URL for `/boards` (keep in sync with JSON-LD and metadata). */
+export function boardsBrowseIndexableSnapshot(sp: BoardsBrowseSearchParams): {
+  title: string
+  description: string
+  canonicalUrl: string
+} {
   const browseType = normalizedBoardsBrowseTypeFromParam(sp.type)
   const typeLabel =
     browseType ? BOARD_TYPE_LABELS[browseType] ?? "Surfboards" : "Surfboards"
@@ -127,6 +132,15 @@ export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Pro
   if (sp.location) canonical.searchParams.set("location", sp.location)
   if (sp.sort && sp.sort !== "newest") canonical.searchParams.set("sort", sp.sort)
 
+  return { title, description, canonicalUrl: canonical.toString() }
+}
+
+export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Promise<Metadata> {
+  const { title, description, canonicalUrl } = boardsBrowseIndexableSnapshot(sp)
+  const browseType = normalizedBoardsBrowseTypeFromParam(sp.type)
+  const typeLabel =
+    browseType ? BOARD_TYPE_LABELS[browseType] ?? "Surfboards" : "Surfboards"
+
   const ogImageParams = new URLSearchParams()
   if (browseType) ogImageParams.set("type", browseType)
   const ogImagePath = `/api/og/boards${ogImageParams.size ? `?${ogImageParams.toString()}` : ""}`
@@ -142,12 +156,17 @@ export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Pro
   return {
     title,
     description,
-    alternates: { canonical: canonical.toString() },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true },
+    },
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title,
       description,
       type: "website",
-      url: canonical.toString(),
+      url: canonicalUrl,
       images: [
         {
           url: shareImageUrl,

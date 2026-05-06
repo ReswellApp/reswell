@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { BrandProfileView } from "@/components/brands/brand-profile-view"
-import { createAnonSupabaseClient } from "@/lib/supabase/server"
+import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
+import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 export const revalidate = 3600
@@ -52,10 +53,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BrandPage({ params }: Props) {
   const { slug } = await params
-  const supabase = createAnonSupabaseClient()
+  const supabase = await createClient()
   const brand = await getBrandBySlug(supabase, slug)
   if (!brand) {
     notFound()
   }
-  return <BrandProfileView brand={brand} />
+
+  const brandListingsPreview = await listActiveListingsForBrand(
+    supabase,
+    { id: brand.id, name: brand.name },
+    { limit: 6 },
+  )
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  let favoritedListingIds: string[] = []
+  if (user && brandListingsPreview.length > 0) {
+    const ids = brandListingsPreview.map((l) => l.id)
+    const { data: favs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", ids)
+    favoritedListingIds = (favs ?? []).map((f) => f.listing_id)
+  }
+
+  return (
+    <BrandProfileView
+      brand={brand}
+      brandListingsPreview={brandListingsPreview}
+      favoritedListingIds={favoritedListingIds}
+      isLoggedIn={!!user}
+      viewerUserId={user?.id ?? null}
+    />
+  )
 }

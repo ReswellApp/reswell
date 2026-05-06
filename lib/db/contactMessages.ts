@@ -71,7 +71,8 @@ export async function findMessagesSupportTicketMetaByConversationId(
     .from("contact_messages")
     .select("id, email, user_id")
     .eq("support_conversation_id", supportConversationId)
-    .eq("source", "messages_support")
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   if (error || !data) {
@@ -90,11 +91,15 @@ export async function updateContactMessageRow(
     id: string
     support_status?: ContactMessageSupportStatus
     internal_notes?: string | null
+    support_conversation_id?: string | null
   },
 ): Promise<{ error: Error | null }> {
   const patch: Record<string, unknown> = {}
   if (args.support_status !== undefined) patch.support_status = args.support_status
   if (args.internal_notes !== undefined) patch.internal_notes = args.internal_notes
+  if (args.support_conversation_id !== undefined) {
+    patch.support_conversation_id = args.support_conversation_id
+  }
 
   const { error } = await supabase.from("contact_messages").update(patch).eq("id", args.id)
 

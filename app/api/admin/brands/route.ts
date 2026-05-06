@@ -6,7 +6,7 @@ import { listBrands } from "@/lib/brands/server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 
-const MAX_PARAGRAPH = 20000
+const MAX_SHORT_DESCRIPTION = 2000
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -57,32 +57,24 @@ function parseBody(body: unknown): {
   if (!Number.isFinite(modelCount) || modelCount < 0 || modelCount > 1_000_000) {
     return { error: "Invalid model count" }
   }
-  let about_paragraphs: string[] = []
-  if (Array.isArray(o.about_paragraphs)) {
-    about_paragraphs = o.about_paragraphs
-      .filter((p): p is string => typeof p === "string")
-      .map((p) => p.trim())
-      .filter(Boolean)
-  } else if (typeof o.about_text === "string") {
-    about_paragraphs = o.about_text
-      .split(/\n{2,}/)
-      .map((p) => p.trim())
-      .filter(Boolean)
+  const shortRaw =
+    typeof o.short_description === "string" ? o.short_description.trim() : ""
+  if (shortRaw.length > MAX_SHORT_DESCRIPTION) {
+    return { error: "Short description is too long" }
   }
-  const totalLen = about_paragraphs.join("").length
-  if (totalLen > MAX_PARAGRAPH) return { error: "About text is too long" }
 
   return {
     slug,
     name,
-    short_description: typeof o.short_description === "string" ? o.short_description.trim() || null : null,
+    short_description: shortRaw || null,
     website_url: typeof o.website_url === "string" ? o.website_url.trim() || null : null,
     logo_url: typeof o.logo_url === "string" ? o.logo_url.trim() || null : null,
     founder_name: typeof o.founder_name === "string" ? o.founder_name.trim() || null : null,
     lead_shaper_name: typeof o.lead_shaper_name === "string" ? o.lead_shaper_name.trim() || null : null,
     location_label: typeof o.location_label === "string" ? o.location_label.trim() || null : null,
     model_count: Math.floor(modelCount),
-    about_paragraphs,
+    /** Long-form about is retired; column stays empty for new brands. */
+    about_paragraphs: [] as string[],
     brand_request_id,
   }
 }

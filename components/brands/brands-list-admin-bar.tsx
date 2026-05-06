@@ -89,6 +89,9 @@ export function BrandsListAdminBar({
       const about = Array.isArray(r.about_paragraphs)
         ? r.about_paragraphs.filter((x): x is string => typeof x === "string")
         : []
+      const mergedShort =
+        (typeof r.short_description === "string" ? r.short_description.trim() : "") ||
+        (about.length > 0 ? about.map((p) => p.trim()).filter(Boolean).join("\n\n") : "")
       const name = typeof r.requested_name === "string" ? r.requested_name.trim() : ""
       if (!name) {
         handledImportIds.current.delete(brandRequestImportId)
@@ -101,13 +104,12 @@ export function BrandsListAdminBar({
         brand_request_id: r.id,
         slug: slugifyBrandName(name),
         name,
-        short_description: typeof r.short_description === "string" ? r.short_description : "",
+        short_description: mergedShort,
         website_url: typeof r.website_url === "string" ? r.website_url : null,
         logo_url: typeof r.logo_url === "string" ? r.logo_url : null,
         founder_name: typeof r.founder_name === "string" ? r.founder_name : null,
         lead_shaper_name: typeof r.lead_shaper_name === "string" ? r.lead_shaper_name : null,
         location_label: typeof r.location_label === "string" ? r.location_label : null,
-        about_paragraphs: about,
         model_count: 0,
       })
       setOpen(true)

@@ -5,13 +5,26 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { Button } from "@/components/ui/button"
+import type { RecentListing } from "@/components/recent-feed-client"
+import { RecentFeedClient } from "@/components/recent-feed-client"
 
 /**
- * Brand detail — all fields come from `public.brands` (Supabase).
+ * Brand detail — directory fields from `public.brands`; marketplace strip uses the same listing
+ * query as `/search?brandSlug=`.
  */
-export function BrandProfileView({ brand }: { brand: BrandRow }) {
-  const paragraphs = brand.about_paragraphs ?? []
-
+export function BrandProfileView({
+  brand,
+  brandListingsPreview,
+  favoritedListingIds,
+  isLoggedIn,
+  viewerUserId,
+}: {
+  brand: BrandRow
+  brandListingsPreview: RecentListing[]
+  favoritedListingIds: string[]
+  isLoggedIn: boolean
+  viewerUserId: string | null
+}) {
   return (
     <main className="flex-1">
       <div className="border-b border-border/80 bg-muted/15">
@@ -89,43 +102,34 @@ export function BrandProfileView({ brand }: { brand: BrandRow }) {
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="rounded-full px-6">
-                <Link href={`/search?q=${encodeURIComponent(brand.name)}`}>Search listings</Link>
+                <Link href={`/search?brandSlug=${encodeURIComponent(brand.slug)}`}>Search listings</Link>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <nav
-        className="sticky top-14 z-30 border-b border-border/80 bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:top-16 md:top-20"
-        aria-label="Brand sections"
-      >
-        <div className="container mx-auto max-w-6xl px-4 sm:px-6">
-          <a
-            href="#about"
-            className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            About
-          </a>
-        </div>
-      </nav>
-
-      <section id="about" className="scroll-mt-28 border-b border-border/60 bg-background sm:scroll-mt-32">
-        <div className="container mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">About</h2>
-          {paragraphs.length > 0 ? (
-            <div className="mt-6 space-y-5">
-              {paragraphs.map((para, i) => (
-                <p key={i} className="text-[17px] leading-relaxed text-muted-foreground sm:text-lg sm:leading-relaxed">
-                  {para}
-                </p>
-              ))}
+      {brandListingsPreview.length > 0 ? (
+        <section
+          id="listings"
+          className="scroll-mt-28 border-b border-border/80 bg-background sm:scroll-mt-32"
+          aria-label="Listings"
+        >
+          <div className="container mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
+            <RecentFeedClient
+              listings={brandListingsPreview}
+              favoritedListingIds={favoritedListingIds}
+              isLoggedIn={isLoggedIn}
+              viewerUserId={viewerUserId}
+            />
+            <div className="mt-8 flex justify-center sm:justify-end">
+              <Button asChild variant="outline" className="rounded-full px-6">
+                <Link href={`/search?brandSlug=${encodeURIComponent(brand.slug)}`}>View all listings</Link>
+              </Button>
             </div>
-          ) : (
-            <p className="mt-6 text-muted-foreground">No extended description for this brand yet.</p>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      ) : null}
 
       <footer className="border-t border-border/80 py-10">
         <div className="container mx-auto max-w-6xl px-4 sm:px-6">

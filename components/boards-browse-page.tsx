@@ -14,6 +14,7 @@ import {
 import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
+import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { Users } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
@@ -348,6 +349,7 @@ export async function BoardsBrowsePage(props: {
 
   return (
     <main className="flex-1">
+      <BoardsBrowseJsonLd searchParams={searchParams} />
       <section className="bg-offwhite pt-6 pb-4 sm:pt-8 sm:pb-5">
         <div className="container mx-auto">
           <div className="border-t border-neutral-200 mb-4 pt-4">

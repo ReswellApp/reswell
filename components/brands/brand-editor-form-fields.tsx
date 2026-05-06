@@ -28,8 +28,6 @@ export type BrandEditorFormFieldsProps = {
   onLocationLabelChange: (next: string) => void
   modelCount: string
   onModelCountChange: (next: string) => void
-  aboutText: string
-  onAboutTextChange: (next: string) => void
   /** Extra hint under slug (e.g. attach flow auto-fill note). */
   slugExtraHint?: React.ReactNode
 }
@@ -56,8 +54,6 @@ export function BrandEditorFormFields({
   onLocationLabelChange,
   modelCount,
   onModelCountChange,
-  aboutText,
-  onAboutTextChange,
   slugExtraHint,
 }: BrandEditorFormFieldsProps) {
   return (
@@ -95,6 +91,10 @@ export function BrandEditorFormFields({
           rows={2}
           placeholder="One-line summary"
         />
+        <p className="text-xs text-muted-foreground">
+          This is the only story blurb on the public brand page (below the logo). Long multi-paragraph bios are not
+          used.
+        </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor={`${idPrefix}-web`}>Website URL</Label>
@@ -161,17 +161,6 @@ export function BrandEditorFormFields({
           inputMode="numeric"
           value={modelCount}
           onChange={(e) => onModelCountChange(e.target.value.replace(/\D/g, ""))}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-about`}>About (paragraphs separated by a blank line)</Label>
-        <Textarea
-          id={`${idPrefix}-about`}
-          value={aboutText}
-          onChange={(e) => onAboutTextChange(e.target.value)}
-          rows={8}
-          className="min-h-[160px] font-mono text-sm"
-          placeholder={"First paragraph…\n\nSecond paragraph…"}
         />
       </div>
     </div>

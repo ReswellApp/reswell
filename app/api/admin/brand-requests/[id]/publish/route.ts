@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
   const { data: row, error: fetchErr } = await supabase
     .from("brand_requests")
     .select(
-      "id, requested_name, website_url, short_description, founder_name, lead_shaper_name, location_label, about_paragraphs, logo_url, status",
+      "id, requested_name, website_url, short_description, founder_name, lead_shaper_name, location_label, logo_url, status",
     )
     .eq("id", id)
     .maybeSingle()
@@ -63,11 +63,6 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "A brand with this slug already exists" }, { status: 409 })
   }
 
-  const about =
-    Array.isArray(row.about_paragraphs) && row.about_paragraphs.length > 0
-      ? row.about_paragraphs.filter((p: unknown): p is string => typeof p === "string" && p.trim().length > 0)
-      : []
-
   const now = new Date().toISOString()
   const { data: inserted, error: insertErr } = await supabase
     .from("brands")
@@ -81,7 +76,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       lead_shaper_name: row.lead_shaper_name ?? null,
       location_label: row.location_label ?? null,
       model_count: 0,
-      about_paragraphs: about,
+      about_paragraphs: [],
       brand_request_id: row.id,
       updated_at: now,
     })

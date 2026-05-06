@@ -11,7 +11,7 @@ import {
   type ContactMessageSource,
   type ContactMessageSupportStatus,
 } from "@/lib/db/contactMessages"
-import { updateContactMessageAdminAction } from "@/lib/actions/contactMessagesAdmin"
+import { updateContactMessageAdminAction, ensureSupportTicketThreadAdminAction, sendSupportTicketAdminReplyAction } from "@/lib/actions/contactMessagesAdmin"
 import { buildContactTicketDraft } from "@/lib/utils/contactMessageTicket"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -127,7 +127,10 @@ export function ContactMessagesAdminClient() {
   const [active, setActive] = useState<ContactMessageRow | null>(null)
   const [draftStatus, setDraftStatus] = useState<ContactMessageSupportStatus>("new")
   const [draftNotes, setDraftNotes] = useState("")
-  const [pending, startTransition] = useTransition()
+  const [draftReply, setDraftReply] = useState("")
+  const [savePending, startSaveTransition] = useTransition()
+  const [replyPending, startReplyTransition] = useTransition()
+  const [threadPending, startThreadTransition] = useTransition()
   const supabase = createClient()
 
   const load = useCallback(async () => {
@@ -156,6 +159,7 @@ export function ContactMessagesAdminClient() {
     if (!active) return
     setDraftStatus(active.support_status)
     setDraftNotes(active.internal_notes ?? "")
+    setDraftReply("")
   }, [active])
 
   const filtered = useMemo(() => {
@@ -202,9 +206,66 @@ export function ContactMessagesAdminClient() {
     )
   }
 
+  function mergeConversationIntoRows(
+    ticketId: string,
+    conversationId: string | null | undefined,
+    updatedIso: string,
+  ) {
+    if (!conversationId) return
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === ticketId
+          ? { ...r, support_conversation_id: conversationId, updated_at: updatedIso }
+          : r,
+      ),
+    )
+    setActive((cur) =>
+      cur && cur.id === ticketId
+        ? { ...cur, support_conversation_id: conversationId, updated_at: updatedIso }
+        : cur,
+    )
+  }
+
+  function sendMemberReply() {
+    if (!active) return
+    const body = draftReply.trim()
+    if (!body) {
+      toast.error("Write a message first.")
+      return
+    }
+    startReplyTransition(async () => {
+      const res = await sendSupportTicketAdminReplyAction({
+        ticket_id: active.id,
+        content: body,
+      })
+      if ("error" in res && res.error) {
+        toast.error(res.error)
+        return
+      }
+      toast.success("Message sent — member sees it in Messages.")
+      const now = new Date().toISOString()
+      mergeConversationIntoRows(active.id, res.support_conversation_id, now)
+      setDraftReply("")
+    })
+  }
+
+  function openSupportThread() {
+    if (!active) return
+    startThreadTransition(async () => {
+      const res = await ensureSupportTicketThreadAdminAction({ ticket_id: active.id })
+      if ("error" in res && res.error) {
+        toast.error(res.error)
+        return
+      }
+      toast.success("Support thread linked.")
+      const now = new Date().toISOString()
+      mergeConversationIntoRows(active.id, res.support_conversation_id, now)
+    })
+  }
+
   function saveDetail() {
     if (!active) return
-    startTransition(async () => {
+    startSaveTransition(async () => {
       const res = await updateContactMessageAdminAction({
         id: active.id,
         support_status: draftStatus,
@@ -246,9 +307,9 @@ export function ContactMessagesAdminClient() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Support inbox</h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Triage website contact and in-app Messages tickets. In-app tickets open a <strong>support DM</strong> for
-            the member — reply there from your support account. Marketplace purchase threads live under{" "}
-            <strong>Order support</strong>.
+            Triage website contact and in-app Messages tickets. Replies in this drawer are posted to the member’s{" "}
+            <strong>Messages</strong> thread from your configured support teammate; workflow changes still notify them
+            automatically when a thread is linked.
           </p>
         </div>
         <TabsList className="h-auto w-full shrink-0 flex-wrap justify-start gap-1 p-1 sm:w-auto">
@@ -499,6 +560,7 @@ export function ContactMessagesAdminClient() {
                 </div>
 
                 {active.user_id ? (
+                  <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
                     <Button variant="secondary" size="sm" className="gap-1.5 rounded-full" asChild>
                       <Link href={`/admin/users/${active.user_id}`}>
@@ -517,37 +579,100 @@ export function ContactMessagesAdminClient() {
                       Copy user ID
                     </Button>
                   </div>
-                ) : null}
 
-                {active.support_conversation_id ? (
-                  <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Support thread</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Reply in Messages — the member sees updates here when you change workflow status.
+                  <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Reply to member
                     </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Sends from your configured support teammate — the member reads it under{" "}
+                      <strong>Messages</strong> like any other DM. Sending also links a thread if this ticket did not
+                      have one yet.
+                    </p>
+                    {!active.support_conversation_id ? (
+                      <p className="mt-2 text-sm text-amber-700 dark:text-amber-500/90">
+                        No support thread linked yet. Send a reply below, or use &quot;Open support thread&quot; to link
+                        the chat and post an intro.
+                      </p>
+                    ) : null}
+                    <div className="mt-4 space-y-2">
+                      <Label htmlFor="cm-reply" className="sr-only">
+                        Message to member
+                      </Label>
+                      <Textarea
+                        id="cm-reply"
+                        value={draftReply}
+                        onChange={(e) => setDraftReply(e.target.value)}
+                        placeholder="Write the message the member will see in Messages…"
+                        rows={4}
+                        className="min-h-[100px] resize-y rounded-xl text-[15px]"
+                      />
+                    </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Button size="sm" className="gap-1.5 rounded-full" asChild>
-                        <Link href={`/messages/${active.support_conversation_id}`}>
-                          <MessageCircle className="h-4 w-4" />
-                          Open in Messages
-                        </Link>
-                      </Button>
                       <Button
                         type="button"
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full"
-                        onClick={() => copyText("Conversation ID", active.support_conversation_id!)}
+                        className="gap-1.5 rounded-full"
+                        onClick={sendMemberReply}
+                        disabled={replyPending || threadPending || !draftReply.trim()}
                       >
-                        Copy thread ID
+                        {replyPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                            Sending…
+                          </>
+                        ) : (
+                          <>
+                            <MessageCircle className="h-4 w-4" aria-hidden />
+                            Send to Messages
+                          </>
+                        )}
                       </Button>
+                      {!active.support_conversation_id ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-full"
+                          onClick={openSupportThread}
+                          disabled={threadPending || replyPending}
+                        >
+                          {threadPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                              Linking…
+                            </>
+                          ) : (
+                            "Open support thread"
+                          )}
+                        </Button>
+                      ) : null}
+                      {active.support_conversation_id ? (
+                        <Button type="button" variant="secondary" size="sm" className="gap-1.5 rounded-full" asChild>
+                          <Link href={`/messages/${active.support_conversation_id}`}>
+                            <ExternalLink className="h-4 w-4" aria-hidden />
+                            Open thread
+                          </Link>
+                        </Button>
+                      ) : null}
+                      {active.support_conversation_id ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-full text-muted-foreground"
+                          onClick={() => copyText("Conversation ID", active.support_conversation_id!)}
+                        >
+                          Copy thread ID
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
-                ) : active.source === "messages_support" ? (
-                  <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3 text-sm text-foreground/90">
-                    No support DM linked (support routing may be unset). The ticket is still on file.
                   </div>
-                ) : null}
+                ) : (
+                  <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                    This visitor did not submit the form while logged in. There is no in-app Messages thread — continue
+                    by email ({active.email}) or escalate manually.
+                  </div>
+                )}
 
                 {active.related_conversation_id ? (
                   <div className="rounded-2xl border border-border/70 bg-muted/25 p-4">
@@ -643,8 +768,8 @@ export function ContactMessagesAdminClient() {
                   <span className="font-sans text-foreground/70">Ticket · </span>
                   {active.id}
                 </p>
-                <Button type="button" className="rounded-full px-6" onClick={saveDetail} disabled={pending}>
-                  {pending ? (
+                <Button type="button" className="rounded-full px-6" onClick={saveDetail} disabled={savePending}>
+                  {savePending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                       Saving…
