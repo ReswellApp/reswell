@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { computeBelowFieldDropdownLayout } from "@/lib/utils/below-field-dropdown-layout"
 import type { SellBrandModelCatalogRow } from "@/app/actions/marketplace"
 import { LISTING_BOARD_MODEL_MAX_LENGTH } from "@/lib/sell-form-validation"
@@ -59,6 +60,7 @@ export function SurfboardModelCatalogInput({
   onRequestCatalogAdd,
   catalogSuggestionsEnabled = true,
 }: SurfboardModelCatalogInputProps) {
+  const isMobile = useIsMobile()
   const [open, setOpen] = React.useState(false)
   const [highlight, setHighlight] = React.useState(0)
   const [dropdownRect, setDropdownRect] = React.useState<ReturnType<
@@ -92,9 +94,12 @@ export function SurfboardModelCatalogInput({
   }, [filtered.length])
 
   const portalVisible = open && canUseSuggest && q.length >= 1
+  /** Fixed portals mis-track the field when the mobile keyboard/visual viewport shifts — anchor in-flow below the input instead. */
+  const anchoredBelowInputMobile = portalVisible && isMobile
+  const portaledDesktopDropdown = portalVisible && !isMobile
 
   React.useLayoutEffect(() => {
-    if (!portalVisible || !containerRef.current || typeof document === "undefined") {
+    if (!portaledDesktopDropdown || !containerRef.current || typeof document === "undefined") {
       setDropdownRect(null)
       return
     }
@@ -118,7 +123,7 @@ export function SurfboardModelCatalogInput({
         vv.removeEventListener("scroll", update)
       }
     }
-  }, [portalVisible, value, filtered.length])
+  }, [portaledDesktopDropdown, value, filtered.length])
 
   React.useEffect(() => {
     if (!open) return
@@ -135,80 +140,92 @@ export function SurfboardModelCatalogInput({
 
   const showResultsList = filtered.length > 0
 
-  const dropdownPortal =
-    portalVisible &&
-    dropdownRect &&
-    canUseSuggest &&
-    typeof document !== "undefined"
-      ? createPortal(
-          <div
-            ref={dropdownRef}
-            id={listId}
-            role="listbox"
-            aria-label="Catalog models"
-            className="fixed z-[200] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md"
-            style={{
+  const listAreaClassName = cn(
+    "overscroll-contain py-1",
+    anchoredBelowInputMobile
+      ? "min-h-0 flex-1 overflow-y-auto"
+      : "max-h-[min(45dvh,320px)] overflow-y-auto",
+  )
+
+  const dropdownShellClassName = cn(
+    "overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md",
+    anchoredBelowInputMobile
+      ? "absolute left-0 right-0 top-full z-[200] mt-1 flex max-h-[min(42dvh,280px)] w-full flex-col"
+      : "fixed z-[200]",
+  )
+
+  const dropdownPanel = (
+    <div
+      ref={dropdownRef}
+      id={listId}
+      role="listbox"
+      aria-label="Catalog models"
+      className={dropdownShellClassName}
+      style={
+        portaledDesktopDropdown && dropdownRect
+          ? {
               top: dropdownRect.top,
               left: dropdownRect.left,
               width: dropdownRect.width,
               maxHeight: dropdownRect.maxHeight,
-            }}
-          >
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
-              <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">
-                Models
-              </span>
-            </div>
-            {showResultsList ? (
-              <ul className="max-h-[min(45dvh,320px)] overflow-y-auto overscroll-contain py-1">
-                {filtered.map((row, i) => (
-                  <li key={row.id} role="option">
-                    <button
-                      type="button"
-                      className={cn(
-                        "mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center rounded-lg px-2 py-2.5 text-left text-sm outline-none min-h-touch transition-colors",
-                        i === highlight ? "bg-muted/90" : "hover:bg-muted/80",
-                      )}
-                      aria-selected={i === highlight}
-                      onMouseEnter={() => setHighlight(i)}
-                      onMouseDown={(ev) => {
-                        ev.preventDefault()
-                        commitPick(row)
-                      }}
-                    >
-                      <span className="flex flex-col gap-0.5 text-left">
-                        <span className="font-medium leading-tight">{row.name}</span>
-                        <span className="text-xs font-normal text-muted-foreground leading-tight">
-                          {row.brandName}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="space-y-3 px-3 py-4 text-sm text-muted-foreground">
-                {catalogHasRows ? <p>No catalog match — your text is still used for the listing.</p> : null}
-                {onRequestCatalogAdd ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full min-h-touch"
-                    onMouseDown={(e) => {
-                      e.preventDefault()
-                      setOpen(false)
-                      setDropdownRect(null)
-                      onRequestCatalogAdd()
-                    }}
-                  >
-                    Request we add this model
-                  </Button>
-                ) : null}
-              </div>
-            )}
-          </div>,
-          document.body,
-        )
+            }
+          : undefined
+      }
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
+        <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">Models</span>
+      </div>
+      {showResultsList ? (
+        <ul className={listAreaClassName}>
+          {filtered.map((row, i) => (
+            <li key={row.id} role="option">
+              <button
+                type="button"
+                className={cn(
+                  "mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center rounded-lg px-2 py-2.5 text-left text-sm outline-none min-h-touch transition-colors",
+                  i === highlight ? "bg-muted/90" : "hover:bg-muted/80",
+                )}
+                aria-selected={i === highlight}
+                onMouseEnter={() => setHighlight(i)}
+                onMouseDown={(ev) => {
+                  ev.preventDefault()
+                  commitPick(row)
+                }}
+              >
+                <span className="flex flex-col gap-0.5 text-left">
+                  <span className="font-medium leading-tight">{row.name}</span>
+                  <span className="text-xs font-normal text-muted-foreground leading-tight">{row.brandName}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="space-y-3 px-3 py-4 text-sm text-muted-foreground">
+          {catalogHasRows ? <p>No catalog match — your text is still used for the listing.</p> : null}
+          {onRequestCatalogAdd ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full min-h-touch"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setOpen(false)
+                setDropdownRect(null)
+                onRequestCatalogAdd()
+              }}
+            >
+              Request we add this model
+            </Button>
+          ) : null}
+        </div>
+      )}
+    </div>
+  )
+
+  const dropdownPortal =
+    portaledDesktopDropdown && dropdownRect && canUseSuggest && typeof document !== "undefined"
+      ? createPortal(dropdownPanel, document.body)
       : null
 
   return (
@@ -221,8 +238,12 @@ export function SurfboardModelCatalogInput({
         value={value}
         maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
         aria-autocomplete="list"
-        aria-expanded={Boolean(portalVisible && dropdownRect)}
-        aria-controls={portalVisible && dropdownRect ? listId : undefined}
+        aria-expanded={Boolean(
+          (anchoredBelowInputMobile || (portaledDesktopDropdown && dropdownRect)) && canUseSuggest,
+        )}
+        aria-controls={
+          anchoredBelowInputMobile || (portaledDesktopDropdown && dropdownRect) ? listId : undefined
+        }
         autoComplete="off"
         onChange={(e) => {
           onFreeTextChange(e.target.value)
@@ -261,6 +282,7 @@ export function SurfboardModelCatalogInput({
           }
         }}
       />
+      {anchoredBelowInputMobile ? dropdownPanel : null}
       {dropdownPortal}
     </div>
   )
