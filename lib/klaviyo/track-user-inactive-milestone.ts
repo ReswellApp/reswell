@@ -13,9 +13,13 @@
  * Add a conditional split before email: suppress if someone has done X **since metric**
  * using page-view / commerce metrics (e.g. **Viewed Site Page**, **Listing**, **Purchase Successful**).
  *
- * **Template data:** `featured_listings` is an array of newest public listings (not the recipient’s own),
- * each with `title`, `url`, `image_url`, `price`, `price_display`, `section`, `location`, `listing_id`.
- * Use a **dynamic** block in Klaviyo to repeat over `event.featured_listings`.
+ * **Rendering in Klaviyo:** Email clients do **not** support iframes. Do not print `featured_listings`
+ * as a single variable (you get a raw object dump). Either:
+ * 1. Add a **custom HTML** block and use `{{ event.featured_listings_html }}` (pre-built table + images), or
+ * 2. Use **Liquid** in a custom HTML block, e.g.
+ *    `{% for item in event.featured_listings %} … <a href="{{ item.url }}"> … {% endfor %}`
+ *    (`item.url` is built for the Reswell production host — see `KLAVIYO_EMAIL_SITE_URL` / `publicSiteOriginForEmail`.)
+ * Also set **plain text** body from `{{ event.featured_listings_plain }}` if you want a text fallback.
  *
  * Cron: `GET /api/cron/klaviyo-inactivity-milestones` with `Authorization: Bearer $CRON_SECRET`
  * when `CRON_SECRET` is set · see `vercel.json`.
@@ -27,7 +31,10 @@
  */
 
 import type { KlaviyoInactiveFeaturedListing } from "@/lib/klaviyo/inactivity-featured-listings"
-import { publicSiteOrigin } from "@/lib/public-site-origin"
+import {
+  resolveListingUrlForEmail,
+  resolveMarketplaceBoardsUrlForEmail,
+} from "@/lib/klaviyo/email-listing-links"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 export type KlaviyoUserInactiveMilestoneDays = 3 | 15 | 30
@@ -65,6 +72,11 @@ export async function trackKlaviyoUserInactiveMilestone(
   const metricName = INACTIVE_MILESTONE_METRIC_NAMES[payload.milestoneDays]
 
   const featured = payload.featuredListings ?? []
+  const marketplace_url = resolveMarketplaceBoardsUrlForEmail()
+
+  const listings_html = buildInactiveFeaturedListingsEmailHtml(featured, marketplace_url)
+  const listings_plain = buildInactiveFeaturedListingsPlainText(featured, marketplace_url)
+
   const baseId = `user-inactive-${payload.milestoneDays}d-${payload.userId}`
   const suffix =
     typeof payload.uniqueIdSuffix === "string" && payload.uniqueIdSuffix.trim()
@@ -86,8 +98,10 @@ export async function trackKlaviyoUserInactiveMilestone(
       display_name: payload.displayName?.trim() ?? "",
       featured_listings: featured.map((l) => ({ ...l })),
       featured_listings_count: featured.length,
+      featured_listings_html: listings_html,
+      featured_listings_plain: listings_plain,
       /** Browse CTA — primary boards marketplace */
-      marketplace_url: `${publicSiteOrigin()}/boards`,
+      marketplace_url,
     },
   })
 }

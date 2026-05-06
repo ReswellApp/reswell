@@ -26,3 +26,29 @@ export function publicSiteOrigin(): string {
     return "https://reswell.app"
   }
 }
+
+/**
+ * Canonical origin for **email** links (Klaviyo inactive winback, etc.).
+ *
+ * Does **not** use `VERCEL_URL`, so cron/jobs from preview deploys won’t emit `*.vercel.app`
+ * listing URLs unless you set an explicit app URL below.
+ *
+ * Precedence: `KLAVIYO_EMAIL_SITE_URL` → `NEXT_PUBLIC_SITE_URL` → `NEXT_PUBLIC_APP_URL` → `https://reswell.app`.
+ */
+export function publicSiteOriginForEmail(): string {
+  const raw =
+    process.env.KLAVIYO_EMAIL_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    ""
+  if (!raw) return "https://reswell.app"
+  try {
+    const normalized = /^https?:\/\//i.test(raw)
+      ? raw
+      : `https://${raw.replace(/^\/+/, "")}`
+    const u = new URL(normalized)
+    return `${u.protocol}//${u.host}`
+  } catch {
+    return "https://reswell.app"
+  }
+}

@@ -4,8 +4,9 @@
 
 import type { RecentPublicListingRowForKlaviyo } from "@/lib/db/recentPublicListingsForKlaviyo"
 import { KLAVIYO_INACTIVITY_LISTINGS_CAP } from "@/lib/db/recentPublicListingsForKlaviyo"
+import { resolveListingUrlForEmail } from "@/lib/klaviyo/email-listing-links"
 import { listingDetailPath } from "@/lib/listing-query"
-import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 
 /** Scalar-friendly objects for Klaviyo (iterate `featured_listings` in dynamic email blocks). */
 export type KlaviyoInactiveFeaturedListing = {
@@ -64,7 +65,7 @@ export function pickFeaturedListingsForInactiveUser(
     ? pool.filter((r) => r.user_id.trim() !== trimmedRecipient)
     : [...pool]
 
-  const origin = publicSiteOrigin()
+  const origin = publicSiteOriginForEmail()
 
   const out: KlaviyoInactiveFeaturedListing[] = []
   for (const row of candidates) {
@@ -77,11 +78,13 @@ export function pickFeaturedListingsForInactiveUser(
     })
     const imageUrl = primaryImageUrl(row.listing_images) ?? ""
 
+    const relativeOrAbsolute = `${origin}${path}`
+
     out.push({
       listing_id: row.id,
       title:
         typeof row.title === "string" ? row.title.trim() || "Untitled listing" : "Untitled listing",
-      url: `${origin}${path}`,
+      url: resolveListingUrlForEmail({ url: relativeOrAbsolute, listing_id: row.id }),
       image_url: imageUrl,
       price: typeof row.price === "number" && Number.isFinite(row.price) ? row.price : null,
       price_display: formatPriceUsd(
