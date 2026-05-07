@@ -2,6 +2,7 @@
 
 import { type ReactNode, useTransition, Suspense } from "react"
 import { BoardsListingsFilters, boardTypes, boardConditions, boardSortOptions } from "@/components/boards-listings-filters"
+import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
 import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { cn } from "@/lib/utils"
 
@@ -34,7 +35,7 @@ export function BoardsBrowseClient({
   initialLocation = "",
   initialType = "all",
   initialCondition = "all",
-  initialSort = "newest",
+  initialSort = BOARDS_BROWSE_DEFAULT_SORT,
 }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
 

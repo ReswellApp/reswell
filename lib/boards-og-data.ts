@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
@@ -14,11 +14,11 @@ export type BoardsOgPayload =
     }
 
 /**
- * Latest active surfboard listing for OG share art (`/api/og/boards`, `opengraph-image` fallback).
- * Ordered by `created_at` descending to match “newest listing” intent.
+ * Featured active surfboard listing for OG share art (`/api/og/boards`, `opengraph-image` fallback).
+ * Matches default `/boards` sort: highest price first, then newest.
  */
 export async function getBoardsBrowseOgPayload(typeParam: string | undefined): Promise<BoardsOgPayload> {
-  const supabase = await createClient()
+  const supabase = createAnonSupabaseClient()
 
   let q = supabase
     .from("listings")
@@ -45,7 +45,11 @@ export async function getBoardsBrowseOgPayload(typeParam: string | undefined): P
     }
   }
 
-  const { data: row, error } = await q.order("created_at", { ascending: false }).limit(1).maybeSingle()
+  const { data: row, error } = await q
+    .order("price", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   if (error || !row) {
     return { ok: false }

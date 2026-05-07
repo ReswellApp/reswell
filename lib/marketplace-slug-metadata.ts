@@ -57,6 +57,12 @@ export function boardsBrowseBoardTypeLabel(type: string | undefined | null): str
 
 const BOARDS_CONDITION_LABELS = LISTING_CONDITION_LABELS
 
+/**
+ * Default surfboards browse sort: highest price first, then newest among equal prices
+ * (Query: `sort` omitted or `sort=price-newest`).
+ */
+export const BOARDS_BROWSE_DEFAULT_SORT = "price-newest" as const
+
 export type BoardsBrowseSearchParams = {
   type?: string
   condition?: string
@@ -130,7 +136,8 @@ export function boardsBrowseIndexableSnapshot(sp: BoardsBrowseSearchParams): {
   if (browseType) canonical.searchParams.set("type", browseType)
   if (sp.condition && sp.condition !== "all") canonical.searchParams.set("condition", sp.condition)
   if (sp.location) canonical.searchParams.set("location", sp.location)
-  if (sp.sort && sp.sort !== "newest") canonical.searchParams.set("sort", sp.sort)
+  if (sp.sort && sp.sort !== BOARDS_BROWSE_DEFAULT_SORT)
+    canonical.searchParams.set("sort", sp.sort)
 
   return { title, description, canonicalUrl: canonical.toString() }
 }

@@ -23,6 +23,7 @@ import {
 import { LocationInputSuggest } from "@/components/location-input-suggest"
 import { useToast } from "@/hooks/use-toast"
 import { listingConditionFilterRows } from "@/lib/listing-labels"
+import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
 
 export const boardTypes = [
   { value: "all", label: "All Board Types" },
@@ -40,6 +41,7 @@ export const boardConditions = [
 ]
 
 export const boardSortOptions = [
+  { value: BOARDS_BROWSE_DEFAULT_SORT, label: "All boards" },
   { value: "newest", label: "Newest" },
   { value: "price-low", label: "Price: Low → High" },
   { value: "price-high", label: "Price: High → Low" },
@@ -76,7 +78,7 @@ export function BoardsListingsFilters({
   initialLocation = "",
   initialType = "all",
   initialCondition = "all",
-  initialSort = "newest",
+  initialSort = BOARDS_BROWSE_DEFAULT_SORT,
   transitionStart: transitionStartProp,
 }: BoardsListingsFiltersProps) {
   const router = useRouter()
@@ -183,7 +185,7 @@ export function BoardsListingsFilters({
       if (liveLocation) params.set("location", liveLocation)
       if (live.type && live.type !== "all") params.set("type", live.type)
       if (live.condition && live.condition !== "all") params.set("condition", live.condition)
-      if (live.sort && live.sort !== "newest") params.set("sort", live.sort)
+      if (live.sort && live.sort !== BOARDS_BROWSE_DEFAULT_SORT) params.set("sort", live.sort)
       params.set("page", "1")
 
       if (
@@ -352,7 +354,7 @@ export function BoardsListingsFilters({
       <div className="w-full min-w-0 md:w-[140px] md:shrink-0">
         <Select name="sort" value={sort} onValueChange={setSort}>
           <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-            <SelectValue placeholder="Newest" />
+            <SelectValue placeholder="Sort order" />
           </SelectTrigger>
           <SelectContent>
             {boardSortOptions.map((s) => (

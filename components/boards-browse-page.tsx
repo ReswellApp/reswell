@@ -24,6 +24,7 @@ import {
   boardTypeForDbFromBrowseParam,
   boardsBrowseBoardTypeLabel,
   boardsBrowseHeroSubtext,
+  BOARDS_BROWSE_DEFAULT_SORT,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
@@ -53,7 +54,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
 
   const boardType = searchParams.type || "all"
   const condition = searchParams.condition || "all"
-  const sort = searchParams.sort || "newest"
+  const sort = searchParams.sort || BOARDS_BROWSE_DEFAULT_SORT
   const query = searchParams.q || ""
   const location = searchParams.location || ""
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
@@ -147,6 +148,10 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       withDistance.sort((a, b) => {
         if (sort === "price-low") return (a.price ?? 0) - (b.price ?? 0)
         if (sort === "price-high") return (b.price ?? 0) - (a.price ?? 0)
+        if (sort === "newest")
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        const priceDiff = (b.price ?? 0) - (a.price ?? 0)
+        if (priceDiff !== 0) return priceDiff
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
     }
@@ -158,10 +163,15 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
         dbQuery = dbQuery.order("price", { ascending: true })
         break
       case "price-high":
-        dbQuery = dbQuery.order("price", { ascending: false })
+        dbQuery = dbQuery.order("price", { ascending: false, nullsFirst: false })
+        break
+      case "newest":
+        dbQuery = dbQuery.order("created_at", { ascending: false })
         break
       default:
-        dbQuery = dbQuery.order("created_at", { ascending: false })
+        dbQuery = dbQuery
+          .order("price", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false })
     }
 
     const { data: rawBoards, count } = await dbQuery.range(offset, offset + limit - 1)
@@ -183,7 +193,8 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     if (searchParams.radius) params.set("radius", searchParams.radius)
     if (searchParams.lat) params.set("lat", searchParams.lat)
     if (searchParams.lng) params.set("lng", searchParams.lng)
-    if (searchParams.sort && searchParams.sort !== "newest") params.set("sort", searchParams.sort)
+    if (searchParams.sort && searchParams.sort !== BOARDS_BROWSE_DEFAULT_SORT)
+      params.set("sort", searchParams.sort)
     params.set("page", String(pageNum))
     return `/boards?${params.toString()}`
   }
@@ -397,7 +408,7 @@ export async function BoardsBrowsePage(props: {
             initialLocation={searchParams.location ?? ""}
             initialType={searchParams.type ?? "all"}
             initialCondition={searchParams.condition ?? "all"}
-            initialSort={searchParams.sort ?? "newest"}
+            initialSort={searchParams.sort ?? BOARDS_BROWSE_DEFAULT_SORT}
           >
             <Suspense
               fallback={
