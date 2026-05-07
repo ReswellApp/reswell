@@ -5,8 +5,8 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Maximize2 } from "lucide-react"
+import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingImageLightbox } from "@/components/features/listings/listing-image-lightbox"
 
 interface ImageGalleryProps {
@@ -205,30 +205,26 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
         {/* Navigation arrows */}
         {images.length > 1 && (
           <>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full opacity-80 hover:opacity-100 z-10"
+            <ListingImageCarouselNavButton
+              direction="prev"
+              variant="embed"
+              sideClassName="left-2"
+              srLabel="Previous image"
               onClick={(e) => {
                 e.stopPropagation()
                 goPrev()
               }}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous image</span>
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full opacity-80 hover:opacity-100 z-10"
+            />
+            <ListingImageCarouselNavButton
+              direction="next"
+              variant="embed"
+              sideClassName="right-2"
+              srLabel="Next image"
               onClick={(e) => {
                 e.stopPropagation()
                 goNext()
               }}
-            >
-              <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next image</span>
-            </Button>
+            />
           </>
         )}
 

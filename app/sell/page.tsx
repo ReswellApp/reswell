@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -11,6 +12,16 @@ function parseEditListingId(
   return null
 }
 
+function SellPageSuspenseFallback() {
+  return (
+    <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
+      <div className="container relative mx-auto flex max-w-2xl min-h-[40vh] items-center justify-center lg:max-w-6xl">
+        <p className="text-sm text-muted-foreground">Loading listing editor…</p>
+      </div>
+    </main>
+  )
+}
+
 export default async function SellPage({
   searchParams,
 }: {
@@ -18,5 +29,9 @@ export default async function SellPage({
 }) {
   const qs = await searchParams
 
-  return <SellFlowShell urlEditListingId={parseEditListingId(qs.edit)} />
+  return (
+    <Suspense fallback={<SellPageSuspenseFallback />}>
+      <SellFlowShell urlEditListingId={parseEditListingId(qs.edit)} />
+    </Suspense>
+  )
 }

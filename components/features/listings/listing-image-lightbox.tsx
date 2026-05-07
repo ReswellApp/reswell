@@ -3,17 +3,35 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import Image from "next/image"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw, X } from "lucide-react"
+import { Minus, Plus, RotateCcw, X } from "lucide-react"
 import {
   TransformComponent,
   TransformWrapper,
   type ReactZoomPanPinchContentRef,
 } from "react-zoom-pan-pinch"
 import { Dialog, DialogClose, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog"
+import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
+
+/** Phones / tablets: pinch-zoom anchors to viewport center instead of finger midpoint (library default). */
+function usePrefersCoarsePointer() {
+  const [coarse, setCoarse] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(pointer: coarse)").matches : false,
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)")
+    const sync = () => setCoarse(mq.matches)
+    sync()
+    mq.addEventListener("change", sync)
+    return () => mq.removeEventListener("change", sync)
+  }, [])
+
+  return coarse
+}
 
 interface ListingImageLightboxProps {
   open: boolean
@@ -38,6 +56,7 @@ export function ListingImageLightbox({
   const [scale, setScale] = useState(1)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const coarsePointer = usePrefersCoarsePointer()
 
   const count = proxiedUrls.length
   const src = proxiedUrls[index]
@@ -152,14 +171,37 @@ export function ListingImageLightbox({
                   minScale={1}
                   maxScale={5}
                   centerOnInit
+                  centerZoomedOut
                   limitToBounds
                   smooth
                   wheel={{ step: 0.12 }}
-                  panning={{ allowLeftClickPan: true, velocityDisabled: false }}
-                  pinch={{ step: 5 }}
+                  panning={{
+                    allowLeftClickPan: true,
+                    velocityDisabled: coarsePointer ? true : false,
+                  }}
+                  pinch={{
+                    step: 5,
+                    allowPanning: coarsePointer ? false : true,
+                  }}
                   doubleClick={{ mode: "toggle", step: 2.2 }}
-                  onTransform={(_ref, state) => {
+                  onPinchStop={(ctx) => {
+                    if (!coarsePointer) return
+                    queueMicrotask(() =>
+                      ctx.centerView(ctx.state.scale, 0, "linear"),
+                    )
+                  }}
+                  onTransform={(ctx, state) => {
                     setScale(state.scale)
+                    // Keep pinch-zoom visually centered on small screens (library pins to fingers otherwise).
+                    if (
+                      coarsePointer &&
+                      typeof window !== "undefined" &&
+                      ctx.instance.isPinching
+                    ) {
+                      requestAnimationFrame(() => {
+                        ctx.centerView(state.scale, 0, "linear")
+                      })
+                    }
                   }}
                 >
                   <TransformComponent
@@ -187,26 +229,20 @@ export function ListingImageLightbox({
 
             {count > 1 && (
               <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  className="absolute left-1 top-1/2 z-20 h-11 w-11 -translate-y-1/2 rounded-full border border-white/10 bg-white/12 text-white backdrop-blur-xl hover:bg-white/20 sm:left-3 [&_svg]:size-6"
+                <ListingImageCarouselNavButton
+                  direction="prev"
+                  variant="lightbox"
+                  sideClassName="left-1 sm:left-3"
+                  srLabel="Previous photo"
                   onClick={goPrev}
-                >
-                  <ChevronLeft />
-                  <span className="sr-only">Previous photo</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  className="absolute right-1 top-1/2 z-20 h-11 w-11 -translate-y-1/2 rounded-full border border-white/10 bg-white/12 text-white backdrop-blur-xl hover:bg-white/20 sm:right-3 [&_svg]:size-6"
+                />
+                <ListingImageCarouselNavButton
+                  direction="next"
+                  variant="lightbox"
+                  sideClassName="right-1 sm:right-3"
+                  srLabel="Next photo"
                   onClick={goNext}
-                >
-                  <ChevronRight />
-                  <span className="sr-only">Next photo</span>
-                </Button>
+                />
               </>
             )}
           </div>

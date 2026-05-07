@@ -339,6 +339,11 @@ type ListingPhotoSlot = {
   prepared?: PreparedListingImagePair
   /** True = apply 180° after automatic landscape→portrait step (toggle). */
   userRotate180?: boolean
+  /**
+   * After upload, drop `sourceFile` so the next rotation re-downloads from `url`.
+   * Server-hydrated rows and temporary fetches for editing use this; user-picked files do not.
+   */
+  dropSourceFileAfterUpload?: boolean
   /** Bumps when re-processing the same slot so stale async work does not apply. */
   prepareSeq?: number
 }
@@ -447,7 +452,10 @@ function SellListingPhotoTile({
     !isFailure &&
     (!photoReady || !thumbLoaded)
 
-  const canRotate180 = Boolean(image.sourceFile) && !isFailure
+  const canRotate180 =
+    !isFailure &&
+    (Boolean(image.sourceFile) ||
+      (image.uploadPhase === "done" && Boolean((image.url ?? "").trim())))
 
   return (
     <div
@@ -496,14 +504,14 @@ function SellListingPhotoTile({
               onPointerDown={(e) => e.stopPropagation()}
               onClick={onRemove}
               className={cn(
-                "absolute top-1 right-1 p-1 rounded-full hover:bg-background z-[5]",
+                "absolute top-1 right-1 flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-full touch-manipulation hover:bg-background z-[5]",
                 skeletonVisible
                   ? "bg-background/90 shadow-sm ring-1 ring-black/5"
                   : "bg-background/80",
               )}
               aria-label={`Remove photo ${index + 1}`}
             >
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
             </button>
             {canRotate180 ? (
               <button
@@ -511,7 +519,7 @@ function SellListingPhotoTile({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={onRotate180}
                 className={cn(
-                  "absolute top-1 left-1 p-1 rounded-full hover:bg-background z-[5]",
+                  "absolute top-1 left-1 flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-full touch-manipulation hover:bg-background z-[5]",
                   skeletonVisible
                     ? "bg-background/90 shadow-sm ring-1 ring-black/5"
                     : "bg-background/80",
@@ -519,7 +527,7 @@ function SellListingPhotoTile({
                 aria-label={`Rotate photo ${index + 1} 180 degrees`}
                 title="Rotate 180°"
               >
-                <RotateCw className="h-3 w-3" aria-hidden />
+                <RotateCw className="h-3.5 w-3.5 sm:h-3 sm:w-3" aria-hidden />
               </button>
             ) : null}
             {skeletonVisible ? (
@@ -1412,6 +1420,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             uploadPhase: "done" as const,
             progressFull: 100,
             progressThumb: 100,
+            dropSourceFileAfterUpload: true,
           }
         })
       sellListingThumbLoadedSrcByClientId.clear()
@@ -1608,6 +1617,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                 progressFull: 100,
                 progressThumb: 100,
                 prepared: undefined,
+                ...(s.dropSourceFileAfterUpload ? { sourceFile: undefined } : {}),
               }
             : s,
         ),
@@ -1657,33 +1667,104 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }
 
   function rotateListingPhoto180(clientId: string) {
-    let nextSlot: ListingPhotoSlot | null = null
+    const live = imagesRef.current.find((s) => s.clientId === clientId)
+    if (!live) return
+    if (live.optimizePhase === "error" || live.uploadPhase === "error") return
+    if (live.optimizePhase === "running") return
+
+    if (live.sourceFile) {
+      let nextSlot: ListingPhotoSlot | null = null
+      setImages((prev) =>
+        prev.map((s) => {
+          if (s.clientId !== clientId) return s
+          const src = s.sourceFile
+          if (!src) return s
+          if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl)
+          sellListingThumbLoadedSrcByClientId.delete(s.clientId)
+          const nextSeq = (s.prepareSeq ?? 0) + 1
+          latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+          nextSlot = {
+            ...s,
+            userRotate180: !s.userRotate180,
+            prepareSeq: nextSeq,
+            prepared: undefined,
+            optimizePhase: "running",
+            uploadPhase: "idle",
+            url: undefined,
+            thumbnailUrl: undefined,
+            progressFull: 0,
+            progressThumb: 0,
+            previewUrl: URL.createObjectURL(src),
+            errorMessage: undefined,
+          }
+          return nextSlot
+        }),
+      )
+      if (nextSlot) void optimizeAndUploadSlot(nextSlot)
+      return
+    }
+
+    const fullUrl = (live.url ?? "").trim()
+    if (!fullUrl || live.uploadPhase !== "done") return
+
+    const snapshot: ListingPhotoSlot = { ...live }
+
     setImages((prev) =>
-      prev.map((s) => {
-        if (s.clientId !== clientId) return s
-        if (!s.sourceFile) return s
-        if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl)
-        sellListingThumbLoadedSrcByClientId.delete(s.clientId)
-        const nextSeq = (s.prepareSeq ?? 0) + 1
-        latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
-        nextSlot = {
-          ...s,
-          userRotate180: !s.userRotate180,
-          prepareSeq: nextSeq,
-          prepared: undefined,
-          optimizePhase: "running",
-          uploadPhase: "idle",
-          url: undefined,
-          thumbnailUrl: undefined,
-          progressFull: 0,
-          progressThumb: 0,
-          previewUrl: URL.createObjectURL(s.sourceFile),
-          errorMessage: undefined,
-        }
-        return nextSlot
-      }),
+      prev.map((s) =>
+        s.clientId === clientId
+          ? { ...s, optimizePhase: "running", errorMessage: undefined }
+          : s,
+      ),
     )
-    if (nextSlot) void optimizeAndUploadSlot(nextSlot)
+
+    void (async () => {
+      try {
+        const res = await fetch(proxiedListingImageSrc(fullUrl))
+        if (!res.ok) {
+          throw new Error("Could not load this photo to rotate it.")
+        }
+        const blob = await res.blob()
+        const file = new File(
+          [blob],
+          "listing-photo.jpg",
+          { type: blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg" },
+        )
+
+        let nextSlot: ListingPhotoSlot | null = null
+        setImages((prev) =>
+          prev.map((s) => {
+            if (s.clientId !== clientId) return s
+            if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl)
+            sellListingThumbLoadedSrcByClientId.delete(s.clientId)
+            const nextSeq = (s.prepareSeq ?? 0) + 1
+            latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            nextSlot = {
+              ...s,
+              userRotate180: !s.userRotate180,
+              prepareSeq: nextSeq,
+              prepared: undefined,
+              optimizePhase: "running",
+              uploadPhase: "idle",
+              url: undefined,
+              thumbnailUrl: undefined,
+              progressFull: 0,
+              progressThumb: 0,
+              previewUrl: URL.createObjectURL(file),
+              sourceFile: file,
+              dropSourceFileAfterUpload: true,
+              errorMessage: undefined,
+            }
+            return nextSlot
+          }),
+        )
+        if (nextSlot) void optimizeAndUploadSlot(nextSlot)
+      } catch (e) {
+        const msg =
+          e instanceof Error ? e.message : "Could not rotate photo. Try again."
+        toast.error(msg)
+        setImages((prev) => prev.map((s) => (s.clientId === clientId ? snapshot : s)))
+      }
+    })()
   }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {

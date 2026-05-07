@@ -31,6 +31,7 @@ import { MessagesSupportDialog } from '@/components/features/messages/messages-s
 import { OpenMarketplacePdfButton } from '@/components/features/messages/open-marketplace-pdf-button'
 import { parseMarketplaceMessagePdfAttachment } from '@/lib/validations/marketplace-message-attachment'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
+import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
 
 interface Message {
   id: string
@@ -52,6 +53,7 @@ interface Conversation {
     title: string
     price: number
     section: string
+    slug?: string | null
     listing_images: { url: string }[]
     minimum_offer_pct?: number | null
   } | null
@@ -74,6 +76,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [offersById, setOffersById] = useState<Record<string, OfferRowLite>>({})
+  const [threadListingsById, setThreadListingsById] = useState<
+    Record<string, NonNullable<Conversation['listing']>>
+  >({})
   const [listingOfferMinPct, setListingOfferMinPct] = useState(70)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -90,18 +95,44 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     [messages],
   )
 
+  const threadPrimaryListingId = useMemo(
+    () =>
+      resolveThreadPrimaryListingId(
+        orderedMessages,
+        offersById,
+        conversation?.listing_id ?? null,
+      ),
+    [orderedMessages, offersById, conversation?.listing_id],
+  )
+
+  const displayListing = useMemo((): Conversation['listing'] | null => {
+    if (!conversation) return null
+    if (!threadPrimaryListingId) return conversation.listing ?? null
+    if (conversation.listing?.id === threadPrimaryListingId) return conversation.listing
+    return threadListingsById[threadPrimaryListingId] ?? null
+  }, [conversation, threadPrimaryListingId, threadListingsById])
+
   const listPriceNum = useMemo(() => {
-    const p = conversation?.listing?.price
+    const p = displayListing?.price
     if (p === undefined || p === null) return 0
     const n = typeof p === 'number' ? p : parseFloat(String(p))
     return Math.round(n * 100) / 100
-  }, [conversation?.listing?.price])
+  }, [displayListing?.price])
 
   const minOfferAmount = useMemo(() => {
     return Math.round(listPriceNum * (listingOfferMinPct / 100) * 100) / 100
   }, [listPriceNum, listingOfferMinPct])
 
-  const listingTitleForOffers = conversation?.listing?.title ?? ''
+  const listingTitleForOffers = displayListing?.title ?? ''
+
+  const listingChromeLoading = useMemo(
+    () =>
+      !!conversation &&
+      !!threadPrimaryListingId &&
+      displayListing == null &&
+      conversation.listing?.id !== threadPrimaryListingId,
+    [conversation, threadPrimaryListingId, displayListing],
+  )
 
   const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesScrollRef.current
@@ -111,6 +142,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     stickToBottomRef.current = true
+    setThreadListingsById({})
   }, [id])
 
   useEffect(() => {
@@ -133,6 +165,35 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     return () => cancelAnimationFrame(idFrame)
   }, [orderedMessages, scrollThreadToBottom])
 
+  useEffect(() => {
+    if (!displayListing) return
+    setListingOfferMinPct(effectiveMinimumOfferPct(displayListing))
+  }, [displayListing])
+
+  useEffect(() => {
+    if (!threadPrimaryListingId) return
+    if (conversation?.listing?.id === threadPrimaryListingId) return
+
+    let cancelled = false
+    ;(async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('id, title, price, section, slug, listing_images(url), minimum_offer_pct')
+        .eq('id', threadPrimaryListingId)
+        .maybeSingle()
+      if (cancelled || error || !data) return
+      const row = data as NonNullable<Conversation['listing']>
+      setThreadListingsById((prev) => {
+        if (prev[row.id]) return prev
+        return { ...prev, [row.id]: row }
+      })
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [threadPrimaryListingId, conversation?.listing?.id, supabase])
+
   const loadThread = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -151,15 +212,6 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
     if (convData) {
       setConversation(convData as Conversation)
-      if (convData.listing_id && convData.listing) {
-        setListingOfferMinPct(
-          effectiveMinimumOfferPct(
-            convData.listing as { minimum_offer_pct?: number | null },
-          ),
-        )
-      } else {
-        setListingOfferMinPct(70)
-      }
     }
 
     const { data: msgData } = await supabase
@@ -172,15 +224,17 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     setMessages(rows)
 
     const offerIds = [...new Set(rows.map((m) => m.offer_id).filter(Boolean))] as string[]
+    let offerRows: OfferRowLite[] = []
     if (offerIds.length > 0) {
-      const { data: offerRows } = await supabase
+      const { data: orows } = await supabase
         .from('offers')
         .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at')
         .in('id', offerIds)
-      if (offerRows?.length) {
+      offerRows = (orows ?? []) as OfferRowLite[]
+      if (offerRows.length) {
         const next: Record<string, OfferRowLite> = {}
         for (const o of offerRows) {
-          next[o.id as string] = o as OfferRowLite
+          next[o.id as string] = o
         }
         setOffersById(next)
       } else {
@@ -188,6 +242,25 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       }
     } else {
       setOffersById({})
+    }
+
+    const offerListingIds = [
+      ...new Set(
+        offerRows
+          .map((o) => o.listing_id)
+          .filter((lid): lid is string => typeof lid === 'string' && lid.length > 0),
+      ),
+    ]
+    if (offerListingIds.length > 0) {
+      const { data: listingRows } = await supabase
+        .from('listings')
+        .select('id, title, price, section, slug, listing_images(url), minimum_offer_pct')
+        .in('id', offerListingIds)
+      const next: Record<string, NonNullable<Conversation['listing']>> = {}
+      for (const row of (listingRows ?? []) as NonNullable<Conversation['listing']>[]) {
+        next[row.id] = row
+      }
+      setThreadListingsById((prev) => ({ ...prev, ...next }))
     }
 
     await supabase
@@ -238,7 +311,23 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               .maybeSingle()
               .then(({ data: o }) => {
                 if (o) {
-                  setOffersById((prev) => ({ ...prev, [o.id]: o as OfferRowLite }))
+                  const offer = o as OfferRowLite
+                  setOffersById((prev) => ({ ...prev, [offer.id]: offer }))
+                  const lid = offer.listing_id
+                  if (lid) {
+                    void supabase
+                      .from('listings')
+                      .select('id, title, price, section, slug, listing_images(url), minimum_offer_pct')
+                      .eq('id', lid)
+                      .maybeSingle()
+                      .then(({ data: row }) => {
+                        if (!row) return
+                        const L = row as NonNullable<Conversation['listing']>
+                        setThreadListingsById((prev) =>
+                          prev[L.id] ? prev : { ...prev, [L.id]: L },
+                        )
+                      })
+                  }
                 }
               })
           } else {
@@ -346,31 +435,39 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                     </span>
                   )}
                 </div>
-                {conversation.listing && (
+                {displayListing && (
                   <Link
-                    href={listingDetailPath(conversation.listing)}
+                    href={listingDetailPath(displayListing)}
                     className="mt-0.5 block truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    {capitalizeWords(conversation.listing?.title)}
+                    {capitalizeWords(displayListing.title)}
                   </Link>
                 )}
+                {listingChromeLoading ? (
+                  <p className="mt-0.5 truncate text-[15px] text-muted-foreground">Updating listing…</p>
+                ) : null}
               </div>
             </div>
           </div>
         </header>
 
         <div className="relative flex min-h-0 flex-1 flex-col">
-        {conversation.listing && (
+        {listingChromeLoading ? (
+          <div className="mb-4 flex min-h-[88px] items-center justify-center rounded-[18px] border border-border/70 bg-card">
+            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" aria-label="Loading listing" />
+          </div>
+        ) : null}
+        {displayListing ? (
           <Link
-            href={listingDetailPath(conversation.listing)}
+            href={listingDetailPath(displayListing)}
             className="mb-4 block overflow-hidden rounded-[18px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-colors hover:bg-muted/40 active:bg-muted/55 dark:shadow-none"
           >
             <div className="flex gap-3 p-3">
               <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-muted">
-                {conversation.listing.listing_images?.[0]?.url ? (
+                {displayListing.listing_images?.[0]?.url ? (
                   <Image
-                    src={proxiedListingImageSrc(conversation.listing.listing_images[0].url) || '/placeholder.svg'}
-                    alt={capitalizeWords(conversation.listing?.title)}
+                    src={proxiedListingImageSrc(displayListing.listing_images[0].url) || '/placeholder.svg'}
+                    alt={capitalizeWords(displayListing.title)}
                     fill
                     className="object-cover object-center"
                   />
@@ -378,15 +475,15 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               </div>
               <div className="min-w-0 flex flex-col justify-center">
                 <p className="text-[17px] font-semibold leading-snug text-foreground">
-                  {capitalizeWords(conversation.listing?.title)}
+                  {capitalizeWords(displayListing.title)}
                 </p>
                 <p className="mt-1 text-[20px] font-semibold tabular-nums tracking-tight text-foreground">
-                  ${conversation.listing.price}
+                  ${displayListing.price}
                 </p>
               </div>
             </div>
           </Link>
-        )}
+        ) : null}
 
         {/* Messages — bounded scroll window (thread does not grow with the page) */}
         <div
