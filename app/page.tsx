@@ -29,6 +29,7 @@ import type { HomePeerScrollListing } from "@/components/features/home/home-peer
 import { HomeRecentSectionListingCurator } from "@/components/home-recent-section-listing-curator"
 import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
 import { loadHomeFeaturedShortboardRows, loadHomeFeaturedSurfboardRows } from "@/lib/services/homeFeaturedPeerSections"
+import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
@@ -66,6 +67,7 @@ export default async function HomePage() {
     featuredShopsRes,
     surfboardFeaturedRows,
     shortboardFeaturedRows,
+    recentlySoldFeaturedRows,
     newGearRes,
     authRes,
     howItWorksBuyerImageUrls,
@@ -82,6 +84,7 @@ export default async function HomePage() {
       .limit(4),
     loadHomeFeaturedSurfboardRows(supabase),
     loadHomeFeaturedShortboardRows(supabase),
+    loadHomeRecentlySoldSurfboardRows(supabase),
     supabase
       .from("listings")
       .select(featuredNewSelect)
@@ -117,6 +120,7 @@ export default async function HomePage() {
   const { data: featuredShops } = featuredShopsRes
   const rawFeaturedBoards = surfboardFeaturedRows as HomePeerScrollListing[]
   const rawFeaturedShortboards = shortboardFeaturedRows as HomePeerScrollListing[]
+  const rawRecentlySoldSurfboards = recentlySoldFeaturedRows as HomePeerScrollListing[]
   const { data: rawFeaturedNew } = newGearRes
   const {
     data: { user },
@@ -152,6 +156,9 @@ export default async function HomePage() {
 
   const featuredShortboards = rawFeaturedShortboards.length > 0 ? rawFeaturedShortboards : null
 
+  const featuredRecentlySold =
+    rawRecentlySoldSurfboards.length > 0 ? rawRecentlySoldSurfboards : null
+
   const featuredNew =
     rawFeaturedNew
       ?.map((l) => {
@@ -167,6 +174,7 @@ export default async function HomePage() {
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
+    ...(featuredRecentlySold ?? []).map((b) => b.id),
     ...featuredNew.map(({ listing: l }) => l.id),
   ]
 
@@ -285,6 +293,36 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
+
+        {featuredRecentlySold && featuredRecentlySold.length > 0 && (
+          <FadeInSection>
+            <section className="py-16">
+              <div className="container mx-auto">
+                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="text-2xl font-bold">Recently sold surfboards</h2>
+                  </div>
+                  <Button variant="outline" asChild>
+                    <Link href="/sold">
+                      Find More
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+                <HomeListingScrollRow uniformCardHeights>
+                  {featuredRecentlySold.map((board) => (
+                    <HomePeerListingScrollTile
+                      key={board.id}
+                      listing={board}
+                      userId={user?.id ?? null}
+                      isFavorited={favoritedIds.includes(board.id)}
+                    />
+                  ))}
+                </HomeListingScrollRow>
+              </div>
+            </section>
+          </FadeInSection>
+        )}
 
         <TrendingBrandsSection rows={homeTrendingBrandRows} isAdmin={isHomeHeroAdmin} />
 
