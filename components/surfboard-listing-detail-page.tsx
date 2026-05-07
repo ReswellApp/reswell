@@ -582,7 +582,7 @@ export async function SurfboardListingDetailPage({
                     <p className="text-sm text-muted-foreground mb-2">This is your listing</p>
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <Button asChild>
-                        <Link href={`/dashboard/listings/${board.id}/edit`}>
+                        <Link prefetch={false} href={`/sell?edit=${board.id}`}>
                           Edit listing
                         </Link>
                       </Button>

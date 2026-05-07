@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
 import { cn } from "@/lib/utils"
@@ -57,6 +58,9 @@ export function RootRouteLoading() {
   }
   if (pathname?.startsWith("/l/")) {
     return <ListingDetailRouteSkeleton />
+  }
+  if (pathname?.startsWith("/sell")) {
+    return <SellFlowRouteSkeleton />
   }
   return <RouteTransitionMark variant="overlay" />
 }

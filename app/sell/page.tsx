@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -13,13 +14,7 @@ function parseEditListingId(
 }
 
 function SellPageSuspenseFallback() {
-  return (
-    <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
-      <div className="container relative mx-auto flex max-w-2xl min-h-[40vh] items-center justify-center lg:max-w-6xl">
-        <p className="text-sm text-muted-foreground">Loading listing editor…</p>
-      </div>
-    </main>
-  )
+  return <SellFlowRouteSkeleton />
 }
 
 export default async function SellPage({

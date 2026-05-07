@@ -457,7 +457,7 @@ export default async function DashboardPage() {
                 return (
                   <Link
                     key={listing.id}
-                    href={`/dashboard/listings/${listing.id}/edit`}
+                    href={`/sell?edit=${listing.id}`}
                     className="group min-w-0"
                   >
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
@@ -522,7 +522,7 @@ export default async function DashboardPage() {
                 return (
                   <Link
                     key={listing.id}
-                    href={`/dashboard/listings/${listing.id}/edit`}
+                    href={`/sell?edit=${listing.id}`}
                     className="group min-w-0"
                   >
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">

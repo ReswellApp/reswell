@@ -120,6 +120,7 @@ import {
   RequestBrandModelDialog,
   type ListingCatalogRequestVariant,
 } from "@/components/request-brand-model-dialog"
+import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
@@ -2603,8 +2604,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           ) : null}
 
           {editLoading ? (
-            <div className="flex items-center justify-center py-16 rounded-xl border border-border bg-card shadow-sm">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div
+              role="status"
+              aria-label="Loading listing editor"
+              className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8"
+            >
+              <SellFlowFormColumnSkeleton />
             </div>
           ) : (
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-14">

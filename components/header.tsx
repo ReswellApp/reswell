@@ -417,6 +417,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const router = useRouter()
   const headerSearchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
   const { openLogin, openSignUp } = useAuthModal()
   const isMobileViewport = useIsMobile()
 
