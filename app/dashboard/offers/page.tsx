@@ -6,6 +6,7 @@ import {
   fetchOffersMadeForDashboard,
   fetchOffersReceivedForDashboard,
 } from "@/lib/db/offers-dashboard"
+import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 
 export const metadata = privatePageMetadata({
   title: "Offers — Reswell",
@@ -40,15 +41,17 @@ export default async function DashboardOffersPage({
 
   const minPctByListingId: Record<string, number> = {}
   if (listingIds.length > 0) {
-    const { data: settings } = await supabase
-      .from("offer_settings")
-      .select("listing_id, minimum_offer_pct")
-      .in("listing_id", listingIds)
-    for (const row of settings ?? []) {
-      const lid = row.listing_id as string | undefined
+    const { data: listingRows } = await supabase
+      .from("listings")
+      .select("id, minimum_offer_pct")
+      .in("id", listingIds)
+
+    for (const row of listingRows ?? []) {
+      const lid = row.id as string | undefined
       if (lid) {
-        minPctByListingId[lid] =
-          typeof row.minimum_offer_pct === "number" ? row.minimum_offer_pct : 70
+        minPctByListingId[lid] = effectiveMinimumOfferPct(
+          row as { minimum_offer_pct?: number | null },
+        )
       }
     }
   }

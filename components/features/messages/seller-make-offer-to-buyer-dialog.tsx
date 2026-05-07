@@ -20,6 +20,7 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -64,13 +65,13 @@ export function SellerMakeOfferToBuyerDialog({
     [listPrice, minPct],
   )
 
-  const loadOfferSettings = useCallback(async () => {
+  const loadListingMinPct = useCallback(async () => {
     const { data } = await supabase
-      .from("offer_settings")
+      .from("listings")
       .select("minimum_offer_pct")
-      .eq("listing_id", listingId)
+      .eq("id", listingId)
       .maybeSingle()
-    setMinPct(typeof data?.minimum_offer_pct === "number" ? data.minimum_offer_pct : 70)
+    setMinPct(effectiveMinimumOfferPct(data ?? {}))
   }, [supabase, listingId])
 
   useEffect(() => {
@@ -78,8 +79,8 @@ export function SellerMakeOfferToBuyerDialog({
     setAmountInput("")
     setMessage("")
     setSubmitting(false)
-    void loadOfferSettings()
-  }, [open, loadOfferSettings])
+    void loadListingMinPct()
+  }, [open, loadListingMinPct])
 
   const offerAmount = useMemo(() => parseAmountInput(amountInput), [amountInput])
   const amountValid =

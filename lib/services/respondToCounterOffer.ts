@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
+import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
 
 function roundMoney(n: number): number {
@@ -108,17 +109,16 @@ export async function respondToCounterOfferService(
       return { ok: false, error: "Could not decline the counteroffer. Try again." }
     }
 
-    const { error: omErr } = await supabase.from("offer_messages").insert({
-      offer_id: offerId,
-      sender_id: buyerUserId,
-      sender_role: "BUYER",
+    const appended = await appendOfferTimelineEntry(offerId, {
+      senderId: buyerUserId,
+      senderRole: "BUYER",
       action: "DECLINE",
       amount: current,
       note: null,
     })
 
-    if (omErr) {
-      console.error("[respondToCounterOffer] decline offer_messages:", omErr)
+    if (!appended) {
+      console.error("[respondToCounterOffer] decline offer_timeline append failed")
     }
 
     await appendNegotiationLine(
@@ -158,17 +158,16 @@ export async function respondToCounterOfferService(
     return { ok: false, error: "Could not accept the counteroffer. Try again." }
   }
 
-  const { error: omErr } = await supabase.from("offer_messages").insert({
-    offer_id: offerId,
-    sender_id: buyerUserId,
-    sender_role: "BUYER",
+  const appended = await appendOfferTimelineEntry(offerId, {
+    senderId: buyerUserId,
+    senderRole: "BUYER",
     action: "ACCEPT",
     amount: current,
     note: null,
   })
 
-  if (omErr) {
-    console.error("[respondToCounterOffer] accept offer_messages:", omErr)
+  if (!appended) {
+    console.error("[respondToCounterOffer] accept offer_timeline append failed")
   }
 
   await appendNegotiationLine(

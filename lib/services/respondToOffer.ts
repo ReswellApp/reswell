@@ -2,8 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
-import { fetchOfferSettings } from "@/lib/db/offers"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
+import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
+import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import type { RespondToOfferInput } from "@/lib/validations/respond-to-offer"
 
 const MAX_COUNTERS = 3
@@ -65,7 +66,7 @@ export async function respondToOfferService(
 
   const { data: listing, error: listErr } = await supabase
     .from("listings")
-    .select("id, price, title, user_id, slug, section")
+    .select("id, price, title, user_id, slug, section, minimum_offer_pct")
     .eq("id", offer.listing_id)
     .maybeSingle()
 
@@ -78,8 +79,7 @@ export async function respondToOfferService(
     return { ok: false, error: "Invalid listing price." }
   }
 
-  const settings = await fetchOfferSettings(supabase, offer.listing_id)
-  const minPct = settings?.minimum_offer_pct ?? 70
+  const minPct = effectiveMinimumOfferPct(listing as { minimum_offer_pct?: number | null })
   const minOffer = roundMoney(listPrice * (minPct / 100))
 
   const current = roundMoney(parseFloat(String(offer.current_amount)))
@@ -108,17 +108,16 @@ export async function respondToOfferService(
       return { ok: false, error: "Could not decline the offer. Try again." }
     }
 
-    const { error: omErr } = await supabase.from("offer_messages").insert({
-      offer_id: offerId,
-      sender_id: sellerUserId,
-      sender_role: "SELLER",
+    const appended = await appendOfferTimelineEntry(offerId, {
+      senderId: sellerUserId,
+      senderRole: "SELLER",
       action: "DECLINE",
       amount: current,
       note: null,
     })
 
-    if (omErr) {
-      console.error("[respondToOffer] decline offer_messages:", omErr)
+    if (!appended) {
+      console.error("[respondToOffer] decline offer_timeline append failed")
     }
 
     await appendNegotiationLine(
@@ -158,17 +157,16 @@ export async function respondToOfferService(
       return { ok: false, error: "Could not accept the offer. Try again." }
     }
 
-    const { error: omErr } = await supabase.from("offer_messages").insert({
-      offer_id: offerId,
-      sender_id: sellerUserId,
-      sender_role: "SELLER",
+    const appended = await appendOfferTimelineEntry(offerId, {
+      senderId: sellerUserId,
+      senderRole: "SELLER",
       action: "ACCEPT",
       amount: current,
       note: null,
     })
 
-    if (omErr) {
-      console.error("[respondToOffer] accept offer_messages:", omErr)
+    if (!appended) {
+      console.error("[respondToOffer] accept offer_timeline append failed")
     }
 
     await appendNegotiationLine(
@@ -248,17 +246,16 @@ export async function respondToOfferService(
     return { ok: false, error: "Could not save your counter. Try again." }
   }
 
-  const { error: omErr } = await supabase.from("offer_messages").insert({
-    offer_id: offerId,
-    sender_id: sellerUserId,
-    sender_role: "SELLER",
+  const appended = await appendOfferTimelineEntry(offerId, {
+    senderId: sellerUserId,
+    senderRole: "SELLER",
     action: "COUNTER",
     amount: amt,
     note: noteTrim,
   })
 
-  if (omErr) {
-    console.error("[respondToOffer] counter offer_messages:", omErr)
+  if (!appended) {
+    console.error("[respondToOffer] counter offer_timeline append failed")
   }
 
   const counterText =

@@ -3,6 +3,7 @@ import type {
   DashboardOfferRow,
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
+import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
 
 function mapProfiles(
   profiles: DashboardProfileLite[] | null,
@@ -14,45 +15,16 @@ function mapProfiles(
   return map
 }
 
-/** Latest seller counter note per offer (for buyer “I made” cards when status is COUNTERED). */
-async function attachSellerCounterNotesForOffers(
-  supabase: SupabaseClient,
-  offers: DashboardOfferRow[],
-): Promise<DashboardOfferRow[]> {
-  const ids = offers.filter((o) => o.status === "COUNTERED").map((o) => o.id)
-  if (ids.length === 0) {
-    return offers
-  }
+type OfferDashboardRowRaw = Omit<DashboardOfferRow, "seller_counter_note"> & {
+  offer_timeline?: unknown
+}
 
-  const { data, error } = await supabase
-    .from("offer_messages")
-    .select("offer_id, note, created_at")
-    .in("offer_id", ids)
-    .eq("sender_role", "SELLER")
-    .eq("action", "COUNTER")
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("[attachSellerCounterNotesForOffers]", error)
-    return offers.map((o) =>
-      o.status === "COUNTERED" ? { ...o, seller_counter_note: null } : o,
-    )
-  }
-
-  const latestNoteByOffer = new Map<string, string | null>()
-  for (const row of data ?? []) {
-    const oid = row.offer_id as string
-    if (!latestNoteByOffer.has(oid)) {
-      const n = row.note
-      latestNoteByOffer.set(oid, typeof n === "string" && n.trim() !== "" ? n.trim() : null)
-    }
-  }
-
-  return offers.map((o) =>
-    o.status === "COUNTERED"
-      ? { ...o, seller_counter_note: latestNoteByOffer.get(o.id) ?? null }
-      : o,
-  )
+function withSellerCounterNotes(rows: OfferDashboardRowRaw[]): DashboardOfferRow[] {
+  return rows.map(({ offer_timeline, ...rest }) => ({
+    ...rest,
+    seller_counter_note:
+      rest.status === "COUNTERED" ? latestSellerCounterNoteFromTimeline(offer_timeline) : null,
+  }))
 }
 
 /**
@@ -83,6 +55,7 @@ export async function fetchOffersMadeForDashboard(
       buyer_id,
       seller_id,
       seller_initiated,
+      offer_timeline,
       listings (
         id,
         title,
@@ -107,8 +80,7 @@ export async function fetchOffersMadeForDashboard(
     }
   }
 
-  let offers = (data ?? []) as DashboardOfferRow[]
-  offers = await attachSellerCounterNotesForOffers(supabase, offers)
+  const offers = withSellerCounterNotes((data ?? []) as OfferDashboardRowRaw[])
 
   const sellerIds = [...new Set(offers.map((o) => o.seller_id))]
   if (sellerIds.length === 0) {
@@ -153,6 +125,7 @@ export async function fetchOffersReceivedForDashboard(
       buyer_id,
       seller_id,
       seller_initiated,
+      offer_timeline,
       listings (
         id,
         title,
@@ -177,7 +150,7 @@ export async function fetchOffersReceivedForDashboard(
     }
   }
 
-  const offers = (data ?? []) as DashboardOfferRow[]
+  const offers = withSellerCounterNotes((data ?? []) as OfferDashboardRowRaw[])
   const buyerIds = [...new Set(offers.map((o) => o.buyer_id))]
   if (buyerIds.length === 0) {
     return { offers, buyersById: {} }

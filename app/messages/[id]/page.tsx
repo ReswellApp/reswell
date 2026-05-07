@@ -30,6 +30,7 @@ import { ReviewRequestMessageCard } from '@/components/features/messages/review-
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { OpenMarketplacePdfButton } from '@/components/features/messages/open-marketplace-pdf-button'
 import { parseMarketplaceMessagePdfAttachment } from '@/lib/validations/marketplace-message-attachment'
+import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 
 interface Message {
   id: string
@@ -52,6 +53,7 @@ interface Conversation {
     price: number
     section: string
     listing_images: { url: string }[]
+    minimum_offer_pct?: number | null
   } | null
   buyer: {
     id: string
@@ -140,7 +142,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       .from('conversations')
       .select(`
           *,
-          listing:listings(id, title, price, section, slug, listing_images(url)),
+          listing:listings(id, title, price, section, slug, listing_images(url), minimum_offer_pct),
           buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
           seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
         `)
@@ -149,13 +151,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
     if (convData) {
       setConversation(convData as Conversation)
-      if (convData.listing_id) {
-        const { data: settings } = await supabase
-          .from('offer_settings')
-          .select('minimum_offer_pct')
-          .eq('listing_id', convData.listing_id)
-          .maybeSingle()
-        setListingOfferMinPct(settings?.minimum_offer_pct ?? 70)
+      if (convData.listing_id && convData.listing) {
+        setListingOfferMinPct(
+          effectiveMinimumOfferPct(
+            convData.listing as { minimum_offer_pct?: number | null },
+          ),
+        )
       } else {
         setListingOfferMinPct(70)
       }

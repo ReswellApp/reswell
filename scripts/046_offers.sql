@@ -1,5 +1,6 @@
 -- Offers & Negotiation System
--- Adds: offers, offer_messages, offer_settings
+-- Adds: offers (with embedded offer_timeline JSONB).
+-- Listing minimum-offer rules: public.listings.minimum_offer_pct — see ALTER below.
 -- Extends notifications to support offer event types
 
 -- ─────────────────────────────────────────────────────────────
@@ -47,6 +48,8 @@ CREATE TABLE IF NOT EXISTS public.offers (
   current_amount   DECIMAL(10, 2)   NOT NULL,
   -- tracks how many counters have been made (max 3 total)
   counter_count    INTEGER          NOT NULL DEFAULT 0,
+  -- append-only negotiation events (OFFER, COUNTER, ACCEPT, DECLINE, …)
+  offer_timeline   jsonb            NOT NULL DEFAULT '[]'::jsonb,
   expires_at       TIMESTAMPTZ      NOT NULL DEFAULT (NOW() + INTERVAL '48 hours'),
   completed_at     TIMESTAMPTZ,
   created_at       TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
@@ -84,101 +87,48 @@ CREATE POLICY "offers_buyer_insert" ON public.offers
 CREATE POLICY "offers_participant_update" ON public.offers
   FOR UPDATE USING (buyer_id = auth.uid() OR seller_id = auth.uid());
 
--- ─────────────────────────────────────────────────────────────
--- offer_messages  (full thread / audit trail)
--- ─────────────────────────────────────────────────────────────
+-- Server-only append for offer_timeline (see supabase migration + lib/services/appendOfferTimeline.ts)
+CREATE OR REPLACE FUNCTION public.append_offer_timeline(
+  p_offer_id uuid,
+  p_entry jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.offers
+  SET
+    offer_timeline = COALESCE(offer_timeline, '[]'::jsonb) || jsonb_build_array(p_entry),
+    updated_at = NOW()
+  WHERE id = p_offer_id;
 
-CREATE TABLE IF NOT EXISTS public.offer_messages (
-  id          UUID             PRIMARY KEY DEFAULT gen_random_uuid(),
-  offer_id    UUID             NOT NULL REFERENCES public.offers(id) ON DELETE CASCADE,
-  sender_id   UUID             NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  sender_role offer_role_enum  NOT NULL,
-  action      offer_action_enum NOT NULL,
-  amount      DECIMAL(10, 2),
-  note        TEXT             CHECK (LENGTH(note) <= 200),
-  created_at  TIMESTAMPTZ      NOT NULL DEFAULT NOW()
-);
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'offer % not found', p_offer_id;
+  END IF;
+END;
+$$;
 
-ALTER TABLE public.offer_messages ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON FUNCTION public.append_offer_timeline(uuid, jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.append_offer_timeline(uuid, jsonb) TO service_role;
 
-DROP POLICY IF EXISTS "offer_msgs_admin_all"          ON public.offer_messages;
-DROP POLICY IF EXISTS "offer_msgs_participant_read"   ON public.offer_messages;
-DROP POLICY IF EXISTS "offer_msgs_participant_insert" ON public.offer_messages;
+-- Per-listing minimum offer percentage (merged from deprecated offer_settings)
+ALTER TABLE public.listings
+  ADD COLUMN IF NOT EXISTS minimum_offer_pct integer;
 
-CREATE POLICY "offer_msgs_admin_all" ON public.offer_messages
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND (is_admin = true OR is_employee = true)
+ALTER TABLE public.listings
+  DROP CONSTRAINT IF EXISTS listings_minimum_offer_pct_check;
+
+ALTER TABLE public.listings
+  ADD CONSTRAINT listings_minimum_offer_pct_check CHECK (
+    minimum_offer_pct IS NULL OR (
+      minimum_offer_pct >= 50 AND minimum_offer_pct <= 90
     )
   );
 
-CREATE POLICY "offer_msgs_participant_read" ON public.offer_messages
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.offers o
-      WHERE o.id = offer_messages.offer_id
-        AND (o.buyer_id = auth.uid() OR o.seller_id = auth.uid())
-    )
-  );
-
-CREATE POLICY "offer_msgs_participant_insert" ON public.offer_messages
-  FOR INSERT WITH CHECK (
-    sender_id = auth.uid()
-    AND EXISTS (
-      SELECT 1 FROM public.offers o
-      WHERE o.id = offer_messages.offer_id
-        AND (o.buyer_id = auth.uid() OR o.seller_id = auth.uid())
-    )
-  );
-
--- ─────────────────────────────────────────────────────────────
--- offer_settings  (per-listing seller configuration)
--- ─────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS public.offer_settings (
-  id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-  listing_id         UUID          NOT NULL UNIQUE REFERENCES public.listings(id) ON DELETE CASCADE,
-  offers_enabled     BOOLEAN       NOT NULL DEFAULT true,
-  minimum_offer_pct  INTEGER       NOT NULL DEFAULT 70 CHECK (minimum_offer_pct BETWEEN 50 AND 90),
-  auto_decline_below DECIMAL(10, 2),
-  auto_accept_above  DECIMAL(10, 2),
-  created_at         TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-  updated_at         TIMESTAMPTZ   NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE public.offer_settings ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "offer_settings_admin_all"    ON public.offer_settings;
-DROP POLICY IF EXISTS "offer_settings_public_read"  ON public.offer_settings;
-DROP POLICY IF EXISTS "offer_settings_seller_write" ON public.offer_settings;
-
-CREATE POLICY "offer_settings_admin_all" ON public.offer_settings
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND (is_admin = true OR is_employee = true)
-    )
-  );
-
--- Anyone can read settings (needed to show/hide the offer button)
-CREATE POLICY "offer_settings_public_read" ON public.offer_settings
-  FOR SELECT USING (true);
-
--- Only the listing owner can upsert their settings
-CREATE POLICY "offer_settings_seller_write" ON public.offer_settings
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.listings l
-      WHERE l.id = offer_settings.listing_id AND l.user_id = auth.uid()
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.listings l
-      WHERE l.id = offer_settings.listing_id AND l.user_id = auth.uid()
-    )
-  );
+COMMENT ON COLUMN public.listings.minimum_offer_pct IS
+  'Minimum acceptable offer as % of list price (50–90). NULL = platform default (70%).';
 
 -- ─────────────────────────────────────────────────────────────
 -- Indexes
@@ -191,9 +141,6 @@ CREATE INDEX IF NOT EXISTS idx_offers_status       ON public.offers (status);
 CREATE INDEX IF NOT EXISTS idx_offers_expires_at   ON public.offers (expires_at);
 -- fast lookup: is there an active offer from this buyer on this listing?
 CREATE INDEX IF NOT EXISTS idx_offers_listing_buyer ON public.offers (listing_id, buyer_id, status);
-
-CREATE INDEX IF NOT EXISTS idx_offer_msgs_offer_id ON public.offer_messages (offer_id);
-CREATE INDEX IF NOT EXISTS idx_offer_settings_lid  ON public.offer_settings (listing_id);
 
 -- ─────────────────────────────────────────────────────────────
 -- Extend notifications to support offer event types
@@ -221,7 +168,7 @@ CREATE POLICY "notifications_service_insert" ON public.notifications
   FOR INSERT WITH CHECK (true);
 
 -- ─────────────────────────────────────────────────────────────
--- updated_at trigger for offers and offer_settings
+-- updated_at trigger for offers
 -- ─────────────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -235,9 +182,4 @@ $$;
 DROP TRIGGER IF EXISTS offers_set_updated_at ON public.offers;
 CREATE TRIGGER offers_set_updated_at
   BEFORE UPDATE ON public.offers
-  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-DROP TRIGGER IF EXISTS offer_settings_set_updated_at ON public.offer_settings;
-CREATE TRIGGER offer_settings_set_updated_at
-  BEFORE UPDATE ON public.offer_settings
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

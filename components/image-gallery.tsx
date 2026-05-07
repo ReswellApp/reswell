@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ListingImageLightbox } from "@/components/features/listings/listing-image-lightbox"
 
 interface ImageGalleryProps {
   images: Array<{
@@ -24,7 +25,17 @@ const SWIPE_MIN_PX = 48
 
 export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const suppressHeroClickRef = useRef(false)
+
+  /** One URL per gallery slide (same order as `images`) so lightbox index stays aligned. */
+  const proxiedUrls = useMemo(
+    () =>
+      images.map((img) => proxiedListingImageSrc(img.url) || "/placeholder.svg"),
+    [images],
+  )
 
   // Load full listing photos once idle so arrow / thumbnail switches hit HTTP cache.
   // Main + thumbnails use the same `/media/listings/...` URLs with `unoptimized`, so
@@ -84,8 +95,27 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
     setSelectedIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
+  function openLightbox() {
+    setLightboxIndex(selectedIndex)
+    setLightboxOpen(true)
+  }
+
   return (
     <div className="mx-auto w-full min-w-0 max-w-full space-y-4 lg:max-w-[450px]">
+      <ListingImageLightbox
+        open={lightboxOpen}
+        onOpenChange={(o) => {
+          setLightboxOpen(o)
+          if (o) return
+          setSelectedIndex(lightboxIndex)
+        }}
+        proxiedUrls={proxiedUrls}
+        title={title}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+        sold={sold}
+      />
+
       {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
       <div
         className="relative w-full rounded-lg overflow-hidden bg-muted select-none touch-pan-y"
@@ -106,6 +136,10 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
           const dy = t.clientY - start.y
           if (Math.abs(dx) < SWIPE_MIN_PX) return
           if (Math.abs(dx) <= Math.abs(dy)) return
+          suppressHeroClickRef.current = true
+          window.setTimeout(() => {
+            suppressHeroClickRef.current = false
+          }, 400)
           if (dx > 0) goPrev()
           else goNext()
         }}
@@ -113,6 +147,24 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
           touchStartRef.current = null
         }}
       >
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={lightboxOpen}
+          aria-label="View enlarged photos"
+          onClick={() => {
+            if (suppressHeroClickRef.current) return
+            openLightbox()
+          }}
+          className="absolute inset-0 z-[6] cursor-zoom-in border-0 bg-transparent p-0 outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <div className="pointer-events-none absolute bottom-2 left-2 z-[8] rounded-full bg-background/82 px-2 py-1 backdrop-blur-sm">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground tabular-nums">
+            <Maximize2 className="size-3.5 shrink-0 opacity-80" aria-hidden />
+            Enlarge
+          </span>
+        </div>
+
         <div className="absolute inset-0">
           {images.map((image, i) => {
             const isSelected = i === selectedIndex
@@ -142,7 +194,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
           <>
             <div className="pointer-events-none absolute inset-0 z-[5] bg-black/[0.08]" aria-hidden />
             <div
-              className="absolute left-3 top-3 z-20 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white"
+              className="pointer-events-none absolute left-3 top-3 z-20 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white"
               style={{ backgroundColor: "#111" }}
             >
               Sold
@@ -157,7 +209,10 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
               variant="secondary"
               size="icon"
               className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full opacity-80 hover:opacity-100 z-10"
-              onClick={goPrev}
+              onClick={(e) => {
+                e.stopPropagation()
+                goPrev()
+              }}
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="sr-only">Previous image</span>
@@ -166,7 +221,10 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
               variant="secondary"
               size="icon"
               className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full opacity-80 hover:opacity-100 z-10"
-              onClick={goNext}
+              onClick={(e) => {
+                e.stopPropagation()
+                goNext()
+              }}
             >
               <ChevronRight className="h-4 w-4" />
               <span className="sr-only">Next image</span>
@@ -176,7 +234,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
         {/* Image counter */}
         {images.length > 1 && (
-          <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-sm z-10">
+          <div className="absolute bottom-2 right-2 z-10 rounded bg-background/80 px-2 py-1 text-sm backdrop-blur-sm">
             {selectedIndex + 1} / {images.length}
           </div>
         )}
@@ -190,6 +248,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
               key={image.id}
               type="button"
               onClick={() => setSelectedIndex(index)}
+              aria-label={`Show photo ${index + 1} in gallery`}
               className={cn(
                 "flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors bg-muted",
                 index === selectedIndex

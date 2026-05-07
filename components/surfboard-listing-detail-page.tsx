@@ -43,6 +43,7 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
+import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { HomePeerListingScrollTile } from "@/components/features/home"
 import {
   boardsBrowseBoardTypeLabel,
@@ -160,12 +161,6 @@ export async function SurfboardListingDetailPage({
     (board.status === "active" || board.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const { data: offerSettingsRow } = await supabase
-    .from("offer_settings")
-    .select("minimum_offer_pct, offers_enabled")
-    .eq("listing_id", board.id)
-    .maybeSingle()
-
   const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
   const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
 
@@ -178,10 +173,11 @@ export async function SurfboardListingDetailPage({
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
   const buyerOffersOn =
     (board as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false
-  const offerPct = offerSettingsRow?.minimum_offer_pct ?? 70
+  const offerPct = effectiveMinimumOfferPct(
+    board as { minimum_offer_pct?: number | null },
+  )
   const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
-  const acceptOffers =
-    buyerOffersOn && (!offerSettingsRow || offerSettingsRow.offers_enabled !== false)
+  const acceptOffers = buyerOffersOn
 
   const primaryImageRaw =
     (images[0] as { thumbnail_url?: string | null; url?: string | null } | undefined)

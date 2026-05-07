@@ -1,8 +1,8 @@
+import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   fetchListingForOffer,
-  fetchOfferSettings,
   findPendingOfferForBuyer,
 } from "@/lib/db/offers"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
@@ -11,6 +11,7 @@ import { trackKlaviyoOfferMade } from "@/lib/klaviyo/track-offer-made"
 import { appendConversationMessage } from "@/lib/services/conversationThread"
 import { syncOfferThreadIfMissing } from "@/lib/services/syncOfferMessagesThread"
 import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
+import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -74,11 +75,6 @@ export async function createListingOffer(
     return { ok: false, status: 400, error: "The seller is not accepting offers on this item." }
   }
 
-  const settings = await fetchOfferSettings(supabase, listingId)
-  if (settings && settings.offers_enabled === false) {
-    return { ok: false, status: 400, error: "The seller is not accepting offers on this item." }
-  }
-
   const pickupOk = listing.local_pickup !== false
   const shipOk = !!listing.shipping_available
   if (body.fulfillment === "pickup" && !pickupOk) {
@@ -93,7 +89,7 @@ export async function createListingOffer(
     return { ok: false, status: 400, error: "This listing doesn’t have a valid price." }
   }
 
-  const minPct = settings?.minimum_offer_pct ?? 70
+  const minPct = effectiveMinimumOfferPct(listing)
   const minOffer = roundMoney(listPrice * (minPct / 100))
   const amount = roundMoney(body.amount)
   if (amount < minOffer) {
@@ -127,6 +123,16 @@ export async function createListingOffer(
 
   const note = composeOfferNote(body)
 
+  const timelineEntry = {
+    id: randomUUID(),
+    sender_id: buyerId,
+    sender_role: "BUYER" as const,
+    action: "OFFER",
+    amount,
+    note,
+    created_at: new Date().toISOString(),
+  }
+
   const { data: inserted, error: offerErr } = await supabase
     .from("offers")
     .insert({
@@ -136,6 +142,7 @@ export async function createListingOffer(
       status: "PENDING",
       initial_amount: amount,
       current_amount: amount,
+      offer_timeline: [timelineEntry],
     })
     .select("id")
     .single()
@@ -146,21 +153,6 @@ export async function createListingOffer(
   }
 
   const offerId = inserted.id as string
-
-  const { error: msgErr } = await supabase.from("offer_messages").insert({
-    offer_id: offerId,
-    sender_id: buyerId,
-    sender_role: "BUYER",
-    action: "OFFER",
-    amount,
-    note,
-  })
-
-  if (msgErr) {
-    console.error("[createListingOffer] insert offer_messages:", msgErr)
-    await supabase.from("offers").delete().eq("id", offerId)
-    return { ok: false, status: 500, error: "Could not submit your offer. Try again in a moment." }
-  }
 
   const threadContent = formatOfferThreadContent(amount, note)
 

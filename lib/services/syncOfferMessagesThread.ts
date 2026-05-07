@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
+import { firstBuyerOfferFromTimeline } from "@/lib/utils/offer-timeline"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -16,7 +17,7 @@ export type SyncOfferThreadResult =
   | { ok: false; reason: "offer_not_found" | "not_pending" | "sync_failed" }
 
 /**
- * Backfills the main `messages` thread from `offers` / `offer_messages` when missing
+ * Backfills the main `messages` thread from `offers.offer_timeline` when missing
  * (e.g. offers created before mirroring existed, or a failed insert). Uses the service
  * role so either buyer or seller can trigger repair via an authenticated API route.
  */
@@ -31,7 +32,7 @@ export async function syncOfferThreadIfMissing(offerId: string): Promise<SyncOff
 
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
-    .select("id, listing_id, buyer_id, seller_id, status, initial_amount, current_amount")
+    .select("id, listing_id, buyer_id, seller_id, status, initial_amount, current_amount, offer_timeline")
     .eq("id", offerId)
     .maybeSingle()
 
@@ -43,26 +44,14 @@ export async function syncOfferThreadIfMissing(offerId: string): Promise<SyncOff
     return { ok: false, reason: "not_pending" }
   }
 
-  const { data: omRows, error: omErr } = await supabase
-    .from("offer_messages")
-    .select("amount, note, action, created_at")
-    .eq("offer_id", offerId)
-    .eq("action", "OFFER")
-    .order("created_at", { ascending: true })
-    .limit(1)
+  const firstOffer = firstBuyerOfferFromTimeline((offer as { offer_timeline?: unknown }).offer_timeline)
 
-  if (omErr) {
-    console.error("[syncOfferThreadIfMissing] offer_messages:", omErr)
-    return { ok: false, reason: "sync_failed" }
-  }
-
-  const first = omRows?.[0]
   const amount =
-    first?.amount != null
-      ? parseAmount(first.amount)
+    firstOffer?.amount != null
+      ? parseAmount(firstOffer.amount)
       : parseAmount(offer.initial_amount ?? offer.current_amount)
 
-  const noteRaw = first?.note
+  const noteRaw = firstOffer?.note
   const note =
     typeof noteRaw === "string" && noteRaw.trim() !== "" ? noteRaw.trim() : null
 

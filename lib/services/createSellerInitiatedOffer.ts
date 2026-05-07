@@ -1,11 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import {
-  fetchListingForOffer,
-  fetchOfferSettings,
-} from "@/lib/db/offers"
+import { fetchListingForOffer } from "@/lib/db/offers"
+import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
+import { randomUUID } from "node:crypto"
 import type { SellerInitiatedOfferBody } from "@/lib/validations/seller-initiated-offer"
 
 function roundMoney(n: number): number {
@@ -76,17 +75,12 @@ export async function createSellerInitiatedOffer(
     return { ok: false, status: 400, error: "You are not accepting offers on this item." }
   }
 
-  const settings = await fetchOfferSettings(supabase, listingId)
-  if (settings && settings.offers_enabled === false) {
-    return { ok: false, status: 400, error: "You are not accepting offers on this item." }
-  }
-
   const listPrice = roundMoney(parseFloat(String(listing.price)))
   if (!Number.isFinite(listPrice) || listPrice <= 0) {
     return { ok: false, status: 400, error: "This listing does not have a valid price." }
   }
 
-  const minPct = settings?.minimum_offer_pct ?? 70
+  const minPct = effectiveMinimumOfferPct(listing)
   const minOffer = roundMoney(listPrice * (minPct / 100))
   const amount = roundMoney(rawAmount)
 
@@ -128,6 +122,16 @@ export async function createSellerInitiatedOffer(
 
   const offerExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
 
+  const timelineEntry = {
+    id: randomUUID(),
+    sender_id: sellerUserId,
+    sender_role: "SELLER" as const,
+    action: "COUNTER",
+    amount,
+    note,
+    created_at: new Date().toISOString(),
+  }
+
   const { data: inserted, error: offerErr } = await service
     .from("offers")
     .insert({
@@ -140,6 +144,7 @@ export async function createSellerInitiatedOffer(
       counter_count: 0,
       seller_initiated: true,
       expires_at: offerExpiresAt,
+      offer_timeline: [timelineEntry],
     })
     .select("id")
     .single()
@@ -150,21 +155,6 @@ export async function createSellerInitiatedOffer(
   }
 
   const offerId = inserted.id as string
-
-  const { error: omErr } = await service.from("offer_messages").insert({
-    offer_id: offerId,
-    sender_id: sellerUserId,
-    sender_role: "SELLER",
-    action: "COUNTER",
-    amount,
-    note,
-  })
-
-  if (omErr) {
-    console.error("[createSellerInitiatedOffer] offer_messages:", omErr)
-    await service.from("offers").delete().eq("id", offerId)
-    return { ok: false, status: 500, error: "Could not send your offer. Try again in a moment." }
-  }
 
   const counterText =
     note !== null ? `Counteroffer: $${amount.toFixed(2)} — ${note}` : `Counteroffer: $${amount.toFixed(2)}`
