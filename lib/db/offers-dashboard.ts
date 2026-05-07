@@ -82,6 +82,7 @@ export async function fetchOffersMadeForDashboard(
       listing_id,
       buyer_id,
       seller_id,
+      seller_initiated,
       listings (
         id,
         title,
@@ -151,6 +152,7 @@ export async function fetchOffersReceivedForDashboard(
       listing_id,
       buyer_id,
       seller_id,
+      seller_initiated,
       listings (
         id,
         title,

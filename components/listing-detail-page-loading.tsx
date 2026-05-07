@@ -69,7 +69,7 @@ export function SurfboardPageLoading({ withShell = true }: SurfboardPageLoadingP
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
+      <Header serverHeaderAuth={{ user: null, bootstrap: null }} />
       <RouteTransitionMark variant="inline" />
       <Footer />
     </div>

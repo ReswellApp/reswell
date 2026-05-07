@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { respondToCounterOfferAction } from "@/lib/actions/offerCounterRespond"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { formatDistanceToNow } from "date-fns"
 
 export type BuyerCounterOfferRow = {
   id: string
@@ -20,6 +21,9 @@ export type BuyerCounterOfferRow = {
   initial_amount: number | string
   current_amount: number | string
   seller_counter_note?: string | null
+  /** True when the seller opened negotiation (proactive offer); copy differs from a true counter. */
+  seller_initiated?: boolean | null
+  expires_at?: string | null
 }
 
 function parseMoney(v: unknown): number {
@@ -69,6 +73,7 @@ export function BuyerCounterOfferDialog({
   const yourOffer = parseMoney(offer.initial_amount)
   const counter = parseMoney(offer.current_amount)
   const note = offer.seller_counter_note?.trim()
+  const sellerOpened = !!offer.seller_initiated
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -77,26 +82,37 @@ export function BuyerCounterOfferDialog({
         className="max-h-[min(90vh,640px)] w-[calc(100%-1.5rem)] max-w-md overflow-y-auto p-5 sm:p-6"
       >
         <DialogHeader>
-          <DialogTitle className="text-left text-xl font-semibold">Seller counteroffer</DialogTitle>
+          <DialogTitle className="text-left text-xl font-semibold">
+            {sellerOpened ? "Offer from seller" : "Seller counteroffer"}
+          </DialogTitle>
           <p className="text-left text-[15px] leading-snug text-muted-foreground">
             {capitalizeWords(listingTitle.trim() || "Listing")}
           </p>
+          {offer.expires_at ? (
+            <p className="text-left text-[13px] leading-snug text-muted-foreground">
+              Respond {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
+            </p>
+          ) : null}
         </DialogHeader>
 
         <div className="space-y-4 py-1">
           <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Seller&apos;s counter
+              {sellerOpened ? "Their price" : "Seller&apos;s counter"}
             </p>
             <p className="mt-1 text-[28px] font-semibold tabular-nums tracking-tight text-foreground">
               ${counter.toFixed(2)}
             </p>
-            <p className="mt-2 text-[13px] text-muted-foreground">
-              Your offer was ${yourOffer.toFixed(2)}
-              {Number.isFinite(listPrice) && listPrice > 0
-                ? ` · List $${listPrice.toFixed(2)}`
-                : ""}
-            </p>
+            {!sellerOpened ? (
+              <p className="mt-2 text-[13px] text-muted-foreground">
+                Your offer was ${yourOffer.toFixed(2)}
+                {Number.isFinite(listPrice) && listPrice > 0
+                  ? ` · List $${listPrice.toFixed(2)}`
+                  : ""}
+              </p>
+            ) : Number.isFinite(listPrice) && listPrice > 0 ? (
+              <p className="mt-2 text-[13px] text-muted-foreground">List ${listPrice.toFixed(2)}</p>
+            ) : null}
           </div>
 
           {note ? (

@@ -51,6 +51,8 @@ import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
+import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -60,6 +62,52 @@ type ProfileAvatarFields = {
   avatar_url: string | null
   shop_logo_url: string | null
   is_shop: boolean | null
+}
+
+type HeaderDerivedNavState = {
+  user: SupabaseUser | null
+  profileAvatarUrl: string | null
+  profileDisplayName: string | null
+  isAdmin: boolean
+  unreadMessages: number
+  walletBalance: number | null
+  authLoaded: boolean
+}
+
+function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavState {
+  if (!payload.user) {
+    return {
+      user: null,
+      profileAvatarUrl: null,
+      profileDisplayName: null,
+      isAdmin: false,
+      unreadMessages: 0,
+      walletBalance: null,
+      authLoaded: true,
+    }
+  }
+  const b = payload.bootstrap
+  if (!b?.profile) {
+    return {
+      user: payload.user,
+      profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, null),
+      profileDisplayName: null,
+      isAdmin: false,
+      unreadMessages: 0,
+      walletBalance: null,
+      authLoaded: false,
+    }
+  }
+  const prof = b.profile
+  return {
+    user: payload.user,
+    profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, prof),
+    profileDisplayName: prof.display_name,
+    isAdmin: prof.is_admin === true,
+    unreadMessages: b.unreadMessages,
+    walletBalance: b.walletBalance,
+    authLoaded: true,
+  }
 }
 
 /**
@@ -344,13 +392,14 @@ function HeaderDesktopCategoryBar({
   )
 }
 
-export function Header() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
-  const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [unreadMessages, setUnreadMessages] = useState(0)
-  const [walletBalance, setWalletBalance] = useState<number | null>(null)
+export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthPayload }) {
+  const initNav = deriveHeaderNavState(serverHeaderAuth)
+  const [user, setUser] = useState<SupabaseUser | null>(initNav.user)
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(initNav.profileAvatarUrl)
+  const [profileDisplayName, setProfileDisplayName] = useState<string | null>(initNav.profileDisplayName)
+  const [isAdmin, setIsAdmin] = useState(initNav.isAdmin)
+  const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
+  const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -359,7 +408,7 @@ export function Header() {
   // CLS-FIX: track when auth check has resolved so we can reserve the
   // correct amount of space for auth-dependent action buttons before they
   // appear, preventing the search bar from shifting horizontally.
-  const [authLoaded, setAuthLoaded] = useState(false)
+  const [authLoaded, setAuthLoaded] = useState(initNav.authLoaded)
   /** When the image URL is set but fails to load (403, blocked, bad URL), hide img so fallback letter shows. */
   const [avatarImageFailed, setAvatarImageFailed] = useState(false)
   const headerMainRowRef = useRef<HTMLDivElement>(null)
@@ -391,51 +440,102 @@ export function Header() {
     }
   }, [searchOpen])
 
-  useEffect(() => {
-    async function loadHeaderAuth() {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        setUser(user)
+  const headerAuthDigest = useMemo(() => {
+    const u = serverHeaderAuth.user
+    const b = serverHeaderAuth.bootstrap
+    if (!u) return "guest"
+    return [
+      u.id,
+      typeof (u as { updated_at?: string }).updated_at === "string"
+        ? (u as { updated_at: string }).updated_at
+        : "",
+      b?.walletBalance ?? "",
+      b?.unreadMessages ?? "",
+      b?.profile?.display_name ?? "",
+      b?.profile?.avatar_url ?? "",
+      b?.profile?.shop_logo_url ?? "",
+      String(b?.profile?.is_admin ?? ""),
+    ].join("|")
+  }, [
+    serverHeaderAuth.user?.id,
+    (serverHeaderAuth.user as { updated_at?: string } | null | undefined)?.updated_at,
+    serverHeaderAuth.bootstrap?.walletBalance,
+    serverHeaderAuth.bootstrap?.unreadMessages,
+    serverHeaderAuth.bootstrap?.profile?.display_name,
+    serverHeaderAuth.bootstrap?.profile?.avatar_url,
+    serverHeaderAuth.bootstrap?.profile?.shop_logo_url,
+    serverHeaderAuth.bootstrap?.profile?.is_admin,
+  ])
 
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
-            .eq("id", user.id)
-            .single()
-          setIsAdmin(profile?.is_admin || false)
-          setProfileAvatarUrl(resolveHeaderAvatarUrl(user, profile))
-          setProfileDisplayName(profile?.display_name || null)
+  useLayoutEffect(() => {
+    const d = deriveHeaderNavState(serverHeaderAuth)
+    setUser(d.user)
+    setProfileAvatarUrl(d.profileAvatarUrl)
+    setProfileDisplayName(d.profileDisplayName)
+    setIsAdmin(d.isAdmin)
+    setUnreadMessages(d.unreadMessages)
+    setWalletBalance(d.walletBalance)
+    setAuthLoaded(d.authLoaded)
+    // headerAuthDigest is the meaningful identity of the server snapshot for this tree.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headerAuthDigest])
 
-          const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: user.id })
-          setUnreadMessages(Number(unreadMsgCount ?? 0))
-
-          const { data: wallet } = await supabase
-            .from("wallets")
-            .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
-            .eq("user_id", user.id)
-            .single()
-          setWalletBalance(wallet ? reconcileWalletAggregates(wallet).totalBalance : 0)
-        } else {
-          setIsAdmin(false)
-          setProfileAvatarUrl(null)
-          setProfileDisplayName(null)
-          setUnreadMessages(0)
-          setWalletBalance(null)
-        }
-      } finally {
-        // Always resolve auth so the header never stays on the loading skeleton forever
-        // if profile/wallet/RPC throws.
-        setAuthLoaded(true)
+  const refetchFromClient = useCallback(async () => {
+    try {
+      const userResult = await getAuthUserWithRetry(supabase)
+      if (!userResult.ok) {
+        console.warn(
+          "[header] client refetch getUser failed; keeping current UI:",
+          userResult.error,
+        )
+        return
       }
+      const resolvedUser = userResult.user
+      setUser(resolvedUser)
+      if (!resolvedUser) {
+        const guest = deriveHeaderNavState({ user: null, bootstrap: null })
+        setProfileAvatarUrl(guest.profileAvatarUrl)
+        setProfileDisplayName(guest.profileDisplayName)
+        setIsAdmin(guest.isAdmin)
+        setUnreadMessages(guest.unreadMessages)
+        setWalletBalance(guest.walletBalance)
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
+        .eq("id", resolvedUser.id)
+        .single()
+      setIsAdmin(profile?.is_admin || false)
+      setProfileAvatarUrl(resolveHeaderAvatarUrl(resolvedUser, profile))
+      setProfileDisplayName(profile?.display_name || null)
+
+      const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", {
+        uid: resolvedUser.id,
+      })
+      setUnreadMessages(Number(unreadMsgCount ?? 0))
+
+      const { data: wallet } = await supabase
+        .from("wallets")
+        .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+        .eq("user_id", resolvedUser.id)
+        .single()
+      setWalletBalance(wallet ? reconcileWalletAggregates(wallet).totalBalance : 0)
+    } finally {
+      setAuthLoaded(true)
     }
+  }, [supabase])
 
-    void loadHeaderAuth()
+  useEffect(() => {
+    if (authLoaded) return
+    if (!user) return
+    void refetchFromClient()
+  }, [authLoaded, user, refetchFromClient])
 
+  useEffect(() => {
     function onHeaderAuthRefresh() {
-      void loadHeaderAuth()
+      void refetchFromClient()
     }
     window.addEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
 
@@ -451,8 +551,27 @@ export function Header() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void loadHeaderAuth()
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        event !== "SIGNED_IN" &&
+        event !== "SIGNED_OUT" &&
+        event !== "USER_UPDATED"
+      ) {
+        return
+      }
+      if (event === "SIGNED_OUT") {
+        const guest = deriveHeaderNavState({ user: null, bootstrap: null })
+        setUser(guest.user)
+        setProfileAvatarUrl(guest.profileAvatarUrl)
+        setProfileDisplayName(guest.profileDisplayName)
+        setIsAdmin(guest.isAdmin)
+        setUnreadMessages(guest.unreadMessages)
+        setWalletBalance(guest.walletBalance)
+        setAuthLoaded(true)
+      } else if (session?.user) {
+        setUser(session.user)
+      }
+      router.refresh()
     })
 
     return () => {
@@ -460,7 +579,7 @@ export function Header() {
       window.removeEventListener("unreadCountRefresh", refreshUnreadCount)
       subscription.unsubscribe()
     }
-  }, [supabase])
+  }, [supabase, router, refetchFromClient])
 
   /** Keep dropdown earnings in sync when `wallets` changes (e.g. admin reset, sales, payouts). */
   useEffect(() => {

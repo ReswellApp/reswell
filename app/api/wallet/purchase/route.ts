@@ -9,6 +9,7 @@ import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notificati
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
+import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -49,7 +50,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
-  const resolved = resolvePayableAmount(listing, fulfillment)
+  const acceptedOffer = await fetchAcceptedOfferForBuyerListing(supabase, user.id, listing_id)
+  let listingForPay = listing as typeof listing & { price: string | number }
+  if (
+    acceptedOffer &&
+    acceptedOffer.seller_id === listing.user_id
+  ) {
+    const agreed = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+    if (Number.isFinite(agreed) && agreed > 0) {
+      listingForPay = { ...listing, price: agreed }
+    }
+  }
+
+  const resolved = resolvePayableAmount(listingForPay, fulfillment)
   if (!resolved.ok) {
     return NextResponse.json({ error: resolved.error }, { status: 400 })
   }

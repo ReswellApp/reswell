@@ -22,8 +22,12 @@ export type OfferRowLite = {
   id: string
   status: string
   current_amount: number | string
+  initial_amount?: number | string
   buyer_id: string
   seller_id: string
+  listing_id?: string
+  seller_initiated?: boolean | null
+  expires_at?: string | null
 }
 
 function parseMoney(v: unknown): number {

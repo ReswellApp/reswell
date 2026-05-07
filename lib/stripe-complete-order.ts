@@ -8,6 +8,7 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
 import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
 import {
@@ -267,8 +268,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
-  const bundleSellerId = listingsOrdered[0]!.user_id
-  if (!listingsOrdered.every((l) => l.user_id === bundleSellerId)) {
+  const listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(
+    serviceSupabase,
+    buyerId,
+    listingsOrdered,
+  )
+
+  const bundleSellerId = listingsForTotals[0]!.user_id
+  if (!listingsForTotals.every((l) => l.user_id === bundleSellerId)) {
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
@@ -343,7 +350,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const bundle = await computePeerMultiCheckoutUsd({
     supabase: serviceSupabase,
-    listingsOrdered,
+    listingsOrdered: listingsForTotals,
     fulfillment: impliedFulfillment,
     buyerAddress,
     diagnosticTagPrefix: "finalize-order",

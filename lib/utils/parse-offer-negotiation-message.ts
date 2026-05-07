@@ -11,3 +11,12 @@ export function parseOfferNegotiationMessage(content: string): OfferNegotiationK
   if (t.startsWith("Counteroffer:")) return "counter"
   return null
 }
+
+/** Note segment after an em dash on mirrored counteroffer lines (buyer thread cards). */
+export function parseCounterofferNoteFromThread(content: string): string | null {
+  const t = content.trim()
+  const m = /^Counteroffer:\s*\$[\d,]+(?:\.\d{2})?\s*[—–-]\s*(.+)$/i.exec(t)
+  if (!m?.[1]) return null
+  const note = m[1].trim()
+  return note !== "" ? note : null
+}

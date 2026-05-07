@@ -55,6 +55,18 @@ function statusLabel(status: string): string {
   }
 }
 
+/** Status pill on “I made” tiles — seller-opened negotiations read as “From seller”. */
+function buyerMadeOfferStatusLabel(offer: DashboardOfferRow): string {
+  if (offer.status === "COUNTERED" && offer.seller_initiated) return "From seller"
+  return statusLabel(offer.status)
+}
+
+function counterOfferResponseExpired(offer: DashboardOfferRow): boolean {
+  if (offer.status !== "COUNTERED") return false
+  const t = new Date(offer.expires_at).getTime()
+  return Number.isFinite(t) && t <= Date.now()
+}
+
 function displayName(p: DashboardProfileLite | undefined): string {
   if (!p) return "Member"
   if (p.is_shop && p.shop_name?.trim()) return p.shop_name.trim()
@@ -80,6 +92,14 @@ function offerTilePriceLines(
 
   if (role === "buyer") {
     if (offer.status === "COUNTERED") {
+      if (offer.seller_initiated) {
+        lines.push({
+          label: "Seller's offer",
+          value: `$${current}`,
+          emphasize: true,
+        })
+        return lines
+      }
       lines.push({ label: "Your offer", value: `$${initial}` })
       lines.push({ label: "Seller's counter", value: `$${current}`, emphasize: true })
       return lines
@@ -142,7 +162,10 @@ function OfferRow({
     role === "seller" && offer.status === "PENDING" && Number.isFinite(listPrice) && listPrice > 0
 
   const showViewCounter =
-    role === "buyer" && offer.status === "COUNTERED" && typeof onViewCounterOpen === "function"
+    role === "buyer" &&
+    offer.status === "COUNTERED" &&
+    typeof onViewCounterOpen === "function" &&
+    !counterOfferResponseExpired(offer)
 
   const listPriceKnown = !!listing && Number.isFinite(listPrice) && listPrice > 0
   const priceLines = offerTilePriceLines(role, offer, listPriceKnown, listPrice)
@@ -200,7 +223,7 @@ function OfferRow({
               </p>
             </div>
             <span className="shrink-0 text-[11px] font-medium tracking-tight text-muted-foreground">
-              {statusLabel(offer.status)}
+              {role === "buyer" ? buyerMadeOfferStatusLabel(offer) : statusLabel(offer.status)}
             </span>
           </div>
 
@@ -275,7 +298,7 @@ function OfferRow({
                 type="button"
                 onClick={() => onViewCounterOpen?.(offer)}
               >
-                View counteroffer
+                {offer.seller_initiated ? "Accept or decline" : "View counteroffer"}
               </Button>
             )}
             {showRespond && (
@@ -486,6 +509,8 @@ export function DashboardOffersView({
             initial_amount: buyerCounterOffer.initial_amount,
             current_amount: buyerCounterOffer.current_amount,
             seller_counter_note: buyerCounterOffer.seller_counter_note,
+            seller_initiated: buyerCounterOffer.seller_initiated ?? false,
+            expires_at: buyerCounterOffer.expires_at,
           }}
           listingTitle={titleBuyerCounter}
           listPrice={listPriceBuyerCounter}

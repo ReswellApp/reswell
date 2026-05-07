@@ -61,19 +61,19 @@ export function FavoriteButton({
 
   return (
     <Button
+      type="button"
       variant="ghost"
       size="icon"
       onClick={toggleFavorite}
       disabled={loading}
+      aria-label="Favorites button"
+      aria-pressed={favorited}
       className={cn(
         "transition-colors border-0 shadow-none",
         favorited && "text-red-500 hover:text-red-600"
       )}
     >
       <Heart className={cn("h-4 w-4", favorited && "fill-current")} />
-      <span className="sr-only">
-        {favorited ? "Remove from favorites" : "Add to favorites"}
-      </span>
     </Button>
   )
 }

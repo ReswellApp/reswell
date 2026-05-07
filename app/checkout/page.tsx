@@ -24,6 +24,7 @@ import {
   fetchCheckoutCartListingsForSeller,
   inferPeerCartSellerIdFromBuyerCart,
 } from "@/lib/db/checkout-cart-bundle"
+import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 
 export const dynamic = "force-dynamic"
 
@@ -236,7 +237,17 @@ export default async function CheckoutPage(props: {
 
   const listingTitle = capitalizeWords(listing.title)
 
-  const checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
+  let checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
+
+  if (user && !isAnonymousSupabaseUser(user) && listing.user_id !== user.id) {
+    const acceptedOffer = await fetchAcceptedOfferForBuyerListing(supabase, user.id, listing.id)
+    if (acceptedOffer && acceptedOffer.seller_id === listing.user_id) {
+      const agreed = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+      if (Number.isFinite(agreed) && agreed > 0) {
+        checkoutListing = { ...checkoutListing, price: agreed }
+      }
+    }
+  }
 
   const previewImpliedFulfillment: "pickup" | "shipping" = lp && sa ? "pickup" : !lp && sa ? "shipping" : "pickup"
   const previewNeedsShipping = previewImpliedFulfillment === "shipping"

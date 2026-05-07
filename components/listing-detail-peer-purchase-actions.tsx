@@ -32,6 +32,7 @@ export function ListingDetailPeerPurchaseActions({
   section,
   isLoggedIn,
   makeOffer,
+  agreedCheckoutItemUsd,
 }: {
   listingId: string
   /** Slug or id for `/checkout?listing=` */
@@ -39,6 +40,8 @@ export function ListingDetailPeerPurchaseActions({
   section: "surfboards"
   isLoggedIn: boolean
   makeOffer?: ListingMakeOfferConfig
+  /** When the buyer has an ACCEPTED offer, checkout uses this item price (listing stays at list price in the gallery). */
+  agreedCheckoutItemUsd?: number | null
 }) {
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
@@ -90,6 +93,14 @@ export function ListingDetailPeerPurchaseActions({
 
   return (
     <div className="flex flex-col gap-2">
+      {agreedCheckoutItemUsd != null &&
+      agreedCheckoutItemUsd > 0 &&
+      Number.isFinite(agreedCheckoutItemUsd) ? (
+        <p className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[13px] leading-snug text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-100">
+          You accepted <span className="font-semibold tabular-nums">${agreedCheckoutItemUsd.toFixed(2)}</span> for
+          this board. Buy now charges that price (plus shipping if you choose shipping).
+        </p>
+      ) : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
         {isLoggedIn ? (
           <Button

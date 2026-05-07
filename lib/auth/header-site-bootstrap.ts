@@ -1,0 +1,47 @@
+import type { SupabaseClient, User } from "@supabase/supabase-js"
+import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
+
+export type HeaderProfileBootstrap = {
+  is_admin: boolean | null
+  avatar_url: string | null
+  display_name: string | null
+  shop_logo_url: string | null
+  is_shop: boolean | null
+}
+
+export type HeaderSiteBootstrap = {
+  profile: HeaderProfileBootstrap | null
+  unreadMessages: number
+  walletBalance: number | null
+}
+
+/**
+ * Parallel header queries — one round-trip worth of latency for nav wallet/unread/profile.
+ * Server-only orchestration; uses the same RLS-bound client as `getCachedRequestSession`.
+ */
+export async function fetchHeaderSiteBootstrap(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<HeaderSiteBootstrap> {
+  const [profileRes, unreadRes, walletRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
+      .eq("id", user.id)
+      .single(),
+    supabase.rpc("get_unread_message_count", { uid: user.id }),
+    supabase
+      .from("wallets")
+      .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+      .eq("user_id", user.id)
+      .single(),
+  ])
+
+  const profile = profileRes.data ?? null
+  const wallet = walletRes.data
+  return {
+    profile,
+    unreadMessages: Number(unreadRes.data ?? 0),
+    walletBalance: wallet ? reconcileWalletAggregates(wallet).totalBalance : 0,
+  }
+}

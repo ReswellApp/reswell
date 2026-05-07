@@ -32,6 +32,8 @@ export type DashboardOfferRow = {
   listing_id: string
   buyer_id: string
   seller_id: string
+  /** Seller opened negotiation (e.g. proactive offer after a favorite). */
+  seller_initiated?: boolean | null
   listings: DashboardListingEmbed | DashboardListingEmbed[] | null
   /** Latest seller counter note when status is COUNTERED (offers you made). */
   seller_counter_note?: string | null

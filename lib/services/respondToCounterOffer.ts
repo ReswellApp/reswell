@@ -40,7 +40,7 @@ export async function respondToCounterOfferService(
 
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
-    .select("id, listing_id, buyer_id, seller_id, status, current_amount")
+    .select("id, listing_id, buyer_id, seller_id, status, current_amount, expires_at")
     .eq("id", offerId)
     .maybeSingle()
 
@@ -59,6 +59,17 @@ export async function respondToCounterOfferService(
         offer.status === "PENDING"
           ? "The seller hasn’t countered yet."
           : "This offer can no longer be updated from here.",
+    }
+  }
+
+  const expiresRaw = (offer as { expires_at?: string | null }).expires_at
+  if (expiresRaw) {
+    const expMs = new Date(expiresRaw).getTime()
+    if (Number.isFinite(expMs) && expMs <= Date.now()) {
+      return {
+        ok: false,
+        error: "This offer has expired. You can message the seller or wait for another offer.",
+      }
     }
   }
 

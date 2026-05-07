@@ -53,3 +53,33 @@ export async function updateListingCategoryRow(
   }
   return { ok: true }
 }
+
+/** Minimal listing row for Klaviyo when a buyer favorites a listing (seller notification). */
+export type ListingFavoriteNotificationRow = {
+  user_id: string
+  title: string
+  slug: string | null
+  section: string | null
+}
+
+export async function getListingRowForFavoriteNotification(
+  client: SupabaseClient,
+  listingId: string,
+): Promise<ListingFavoriteNotificationRow | null> {
+  const { data, error } = await client
+    .from("listings")
+    .select("user_id, title, slug, section")
+    .eq("id", listingId)
+    .maybeSingle()
+
+  if (error || !data) {
+    return null
+  }
+
+  return {
+    user_id: data.user_id,
+    title: data.title,
+    slug: data.slug,
+    section: data.section,
+  }
+}

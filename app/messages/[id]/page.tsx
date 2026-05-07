@@ -174,7 +174,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     if (offerIds.length > 0) {
       const { data: offerRows } = await supabase
         .from('offers')
-        .select('id, status, current_amount, buyer_id, seller_id, listing_id')
+        .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at')
         .in('id', offerIds)
       if (offerRows?.length) {
         const next: Record<string, OfferRowLite> = {}
@@ -232,7 +232,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           if (msg.offer_id) {
             void supabase
               .from('offers')
-              .select('id, status, current_amount, buyer_id, seller_id, listing_id')
+              .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at')
               .eq('id', msg.offer_id)
               .maybeSingle()
               .then(({ data: o }) => {

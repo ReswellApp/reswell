@@ -41,6 +41,7 @@ import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
+import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { HomePeerListingScrollTile } from "@/components/features/home"
 import {
@@ -203,6 +204,15 @@ export async function SurfboardListingDetailPage({
         }
       : undefined
 
+  let buyerAgreedPriceUsd: number | null = null
+  if (user && !isOwnListing && board.status === "active") {
+    const accepted = await fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
+    if (accepted && accepted.seller_id === board.user_id) {
+      const n = Math.round(parseFloat(String(accepted.current_amount)) * 100) / 100
+      if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
+    }
+  }
+
   const listingLocationLine =
     board.city && board.state
       ? `${board.city}, ${board.state}`
@@ -295,9 +305,16 @@ export async function SurfboardListingDetailPage({
                 Sold for ${board.price.toFixed(2)}
               </p>
             ) : (
-              <p className="text-2xl font-bold text-black dark:text-white">
-                ${board.price.toFixed(2)}
-              </p>
+              <>
+                <p className="text-2xl font-bold text-black dark:text-white">
+                  ${board.price.toFixed(2)}
+                </p>
+                {buyerAgreedPriceUsd != null ? (
+                  <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                    Your accepted price: ${buyerAgreedPriceUsd.toFixed(2)} at checkout
+                  </p>
+                ) : null}
+              </>
             )}
             <p className="mt-1 break-words text-sm text-muted-foreground">
               {[
@@ -329,6 +346,7 @@ export async function SurfboardListingDetailPage({
                     section="surfboards"
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
+                    agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   />
                 </div>
               )}
@@ -355,9 +373,16 @@ export async function SurfboardListingDetailPage({
                     Sold for ${board.price.toFixed(2)}
                   </p>
                 ) : (
-                  <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
-                    ${board.price.toFixed(2)}
-                  </p>
+                  <>
+                    <p className="hidden lg:block text-2xl sm:text-3xl font-bold text-black dark:text-white mt-2">
+                      ${board.price.toFixed(2)}
+                    </p>
+                    {buyerAgreedPriceUsd != null ? (
+                      <p className="mt-1 hidden lg:block text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                        Your accepted price: ${buyerAgreedPriceUsd.toFixed(2)} at checkout
+                      </p>
+                    ) : null}
+                  </>
                 )}
                 {canPeerPurchase && (
                   <div className="mt-4 hidden lg:block">
@@ -367,6 +392,7 @@ export async function SurfboardListingDetailPage({
                       section="surfboards"
                       isLoggedIn={!!user}
                       makeOffer={makeOfferConfig}
+                      agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     />
                   </div>
                 )}

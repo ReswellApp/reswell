@@ -5,10 +5,13 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { BuyerCounterOfferDialog, type BuyerCounterOfferRow } from "@/components/features/offers/buyer-counter-offer-dialog"
+import { parseCounterofferNoteFromThread } from "@/lib/utils/parse-offer-negotiation-message"
 import { SellerOfferResponseDialog, type OfferRowLite } from "./seller-offer-response-dialog"
-import { format, isToday, isYesterday } from "date-fns"
+import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
 
-function statusLabel(status: string): string {
+function statusLabel(status: string, sellerInitiated?: boolean | null): string {
+  if (status === "COUNTERED" && sellerInitiated) return "From seller"
   switch (status) {
     case "PENDING":
       return "Pending"
@@ -69,8 +72,29 @@ export function OfferMessageCard({
   onThreadRefresh: () => void | Promise<void>
 }) {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [buyerDialogOpen, setBuyerDialogOpen] = useState(false)
   const pending = offer.status === "PENDING"
+  const countered = offer.status === "COUNTERED"
+  const counterDeadlineMs = offer.expires_at ? new Date(offer.expires_at).getTime() : null
+  const counterExpired =
+    countered &&
+    counterDeadlineMs !== null &&
+    Number.isFinite(counterDeadlineMs) &&
+    counterDeadlineMs <= Date.now()
   const showSellerActions = isSeller && pending
+  const showBuyerCounterActions = !isSeller && countered && !counterExpired
+  const sellerInitiated = !!offer.seller_initiated
+  const buyerDialogOffer: BuyerCounterOfferRow | null = showBuyerCounterActions
+    ? {
+        id: offer.id,
+        status: offer.status,
+        initial_amount: offer.initial_amount ?? offer.current_amount,
+        current_amount: offer.current_amount,
+        seller_counter_note: parseCounterofferNoteFromThread(messageContent),
+        seller_initiated: sellerInitiated,
+        expires_at: offer.expires_at ?? null,
+      }
+    : null
 
   return (
     <>
@@ -98,7 +122,7 @@ export function OfferMessageCard({
             Offer
           </Badge>
           <Badge variant={statusVariant(offer.status)} className="rounded-lg text-[11px] font-medium">
-            {statusLabel(offer.status)}
+            {statusLabel(offer.status, offer.seller_initiated)}
           </Badge>
         </div>
         <p className="mt-2 whitespace-pre-wrap break-words text-[16px] font-medium leading-snug text-foreground">
@@ -119,12 +143,66 @@ export function OfferMessageCard({
         {!showSellerActions && isSeller && !pending && (
           <p className="mt-2 text-[12px] text-muted-foreground">
             {offer.status === "COUNTERED"
-              ? "Waiting for the buyer to reply to your counter."
+              ? sellerInitiated
+                ? "Waiting for the buyer to respond to your offer."
+                : "Waiting for the buyer to reply to your counter."
               : "This offer is closed."}
+          </p>
+        )}
+        {!isSeller && countered && counterExpired && (
+          <p className="mt-2 text-[12px] text-muted-foreground">This offer has expired.</p>
+        )}
+        {!isSeller && countered && !counterExpired && offer.expires_at ? (
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            Accept or decline {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
+          </p>
+        ) : null}
+        {!isSeller && offer.status === "ACCEPTED" && (
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            You accepted this price. Use Buy now on the listing to pay (shipping may apply).
           </p>
         )}
         {!isSeller && pending && (
           <p className="mt-2 text-[12px] text-muted-foreground">Waiting for the seller to respond.</p>
+        )}
+        {!isSeller && sellerInitiated && (
+          <div
+            className={cn(
+              "mt-3 flex flex-col gap-2",
+              showBuyerCounterActions && "sm:flex-row sm:flex-wrap sm:items-stretch",
+            )}
+          >
+            {showBuyerCounterActions ? (
+              <Button
+                type="button"
+                size="sm"
+                className="h-10 w-full rounded-xl text-[14px] font-semibold sm:min-w-[8rem] sm:flex-1"
+                onClick={() => setBuyerDialogOpen(true)}
+              >
+                Accept or decline
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 w-full shrink-0 rounded-xl text-[14px] font-semibold sm:w-auto sm:min-w-[10rem]"
+              asChild
+            >
+              <Link href="/dashboard/offers">View in Offers</Link>
+            </Button>
+          </div>
+        )}
+        {!isSeller && !sellerInitiated && showBuyerCounterActions && (
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              className="h-10 w-full rounded-xl text-[14px] font-semibold sm:min-w-[8rem]"
+              onClick={() => setBuyerDialogOpen(true)}
+            >
+              Review counteroffer
+            </Button>
+          </div>
         )}
         <p className="mt-2 text-[11px] tabular-nums leading-none text-muted-foreground">
           {formatThreadTime(createdAt)}
@@ -139,6 +217,15 @@ export function OfferMessageCard({
         listPrice={listPrice}
         minOfferAmount={minOfferAmount}
         minOfferPct={minOfferPct}
+        onCompleted={onThreadRefresh}
+      />
+
+      <BuyerCounterOfferDialog
+        open={buyerDialogOpen}
+        onOpenChange={setBuyerDialogOpen}
+        offer={buyerDialogOffer}
+        listingTitle={listingTitle}
+        listPrice={listPrice}
         onCompleted={onThreadRefresh}
       />
     </>

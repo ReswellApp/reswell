@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { fetchOfferSettings } from "@/lib/db/offers"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
@@ -64,7 +65,7 @@ export async function respondToOfferService(
 
   const { data: listing, error: listErr } = await supabase
     .from("listings")
-    .select("id, price, title, user_id")
+    .select("id, price, title, user_id, slug, section")
     .eq("id", offer.listing_id)
     .maybeSingle()
 
@@ -276,6 +277,20 @@ export async function respondToOfferService(
       message: `${title}: new counter of $${amt.toFixed(2)}.`,
     })
   }
+
+  void trackKlaviyoSellerMadeOfferToBuyer({
+    offerId: offerId,
+    counterRound: nextCount,
+    listingId: offer.listing_id as string,
+    listingTitle: title,
+    listingSlug: (listing.slug as string | null | undefined) ?? null,
+    listingSection: (listing.section as string) || "surfboards",
+    listPrice,
+    offerAmount: amt,
+    buyerUserId: offer.buyer_id as string,
+    sellerUserId,
+    counterNote: noteTrim,
+  })
 
   return { ok: true, conversationId: conv?.id ?? null }
 }

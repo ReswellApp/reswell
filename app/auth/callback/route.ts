@@ -5,7 +5,8 @@ import {
   trackKlaviyoNewAccountCreated,
 } from "@/lib/klaviyo/track-new-account-created";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
-import { type NextRequest, NextResponse } from "next/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import { type NextRequest, NextResponse, after } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -25,8 +26,21 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.session?.user;
       if (u && shouldTrackKlaviyoNewAccountForOAuthSession(u)) {
-        await trackKlaviyoNewAccountCreated(u, {
-          supabaseForProfile: supabase,
+        after(async () => {
+          try {
+            const hasServiceRole = Boolean(
+              process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+            );
+            if (hasServiceRole) {
+              await trackKlaviyoNewAccountCreated(u, {
+                supabaseForProfile: createServiceRoleClient(),
+              });
+            } else {
+              await trackKlaviyoNewAccountCreated(u);
+            }
+          } catch (e) {
+            console.error("[auth/callback] Klaviyo new-account (OAuth) failed:", e);
+          }
         });
       }
       redirectResponse.headers.set("Cache-Control", "private, no-store");
@@ -53,8 +67,21 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.user ?? data.session?.user;
       if (type === "signup" && u) {
-        await trackKlaviyoNewAccountCreated(u, {
-          supabaseForProfile: supabase,
+        after(async () => {
+          try {
+            const hasServiceRole = Boolean(
+              process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+            );
+            if (hasServiceRole) {
+              await trackKlaviyoNewAccountCreated(u, {
+                supabaseForProfile: createServiceRoleClient(),
+              });
+            } else {
+              await trackKlaviyoNewAccountCreated(u);
+            }
+          } catch (e) {
+            console.error("[auth/callback] Klaviyo new-account (OTP signup) failed:", e);
+          }
         });
       }
       redirectResponse.headers.set("Cache-Control", "private, no-store");

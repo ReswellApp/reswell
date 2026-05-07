@@ -8,6 +8,7 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 
@@ -105,6 +106,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
+  const listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(
+    supabase,
+    user.id,
+    listingsOrdered,
+  )
+
   if (listingsOrdered.some((l) => l.section !== "surfboards")) {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
   }
@@ -198,7 +205,7 @@ export async function POST(request: NextRequest) {
 
   const bundle = await computePeerMultiCheckoutUsd({
     supabase,
-    listingsOrdered,
+    listingsOrdered: listingsForTotals,
     fulfillment: impliedFulfillment,
     buyerAddress,
     diagnosticTagPrefix: "payment-intent",

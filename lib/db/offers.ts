@@ -67,3 +67,27 @@ export async function findPendingOfferForBuyer(
   if (error || !data) return null
   return { id: data.id }
 }
+
+/** Buyer–seller offer row where the buyer may check out at `current_amount` (listing stays `active`). */
+export type AcceptedOfferPricingRow = {
+  id: string
+  current_amount: string | number
+  seller_id: string
+}
+
+export async function fetchAcceptedOfferForBuyerListing(
+  supabase: SupabaseClient,
+  buyerId: string,
+  listingId: string,
+): Promise<AcceptedOfferPricingRow | null> {
+  const { data, error } = await supabase
+    .from("offers")
+    .select("id, current_amount, seller_id")
+    .eq("listing_id", listingId)
+    .eq("buyer_id", buyerId)
+    .eq("status", "ACCEPTED")
+    .maybeSingle()
+
+  if (error || !data) return null
+  return data as AcceptedOfferPricingRow
+}

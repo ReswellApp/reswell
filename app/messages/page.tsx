@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { MessageCircle, Heart, Search, Inbox } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
@@ -13,19 +14,38 @@ import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailHref } from '@/lib/listing-href'
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { cn } from '@/lib/utils'
-import { getConversationForBuyerSeller } from '@/lib/db/conversations'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
+import { SellerMakeOfferToBuyerDialog } from '@/components/features/messages/seller-make-offer-to-buyer-dialog'
+import { ensureMarketplaceThread } from '@/app/actions/messages'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 
 interface Notification {
   id: string
   type: string
   listing_id: string | null
+  actor_id: string | null
   message: string | null
   is_read: boolean
   created_at: string
-  listing?: { id: string; slug?: string | null; title: string; section: string; listing_images?: { url: string }[] } | null
-  listings?: { id: string; slug?: string | null; title: string; section: string; listing_images?: { url: string }[] } | null
+  listing?: ActivityListing | null
+  listings?: ActivityListing | null
+}
+
+type ActivityListing = {
+  id: string
+  slug?: string | null
+  title: string
+  section: string
+  price?: number | string | null
+  listing_images?: { url: string }[]
+}
+
+type SellerOfferDraft = {
+  listingId: string
+  buyerUserId: string
+  listingTitle: string
+  listPrice: number
+  primaryImageUrl: string | null
 }
 
 function activityKindLabel(type: string | undefined) {
@@ -34,6 +54,12 @@ function activityKindLabel(type: string | undefined) {
   if (t.includes('follow')) return 'Follow'
   if (t.startsWith('offer_')) return 'Offer'
   return 'Activity'
+}
+
+function isFavoriteActivityType(type: string | undefined) {
+  const t = (type || '').toLowerCase()
+  if (t.includes('follow')) return false
+  return t === 'listing_saved' || t.includes('favorite') || t.includes('save')
 }
 
 interface Conversation {
@@ -78,6 +104,7 @@ function MessagesContent() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [sellerOfferDraft, setSellerOfferDraft] = useState<SellerOfferDraft | null>(null)
   const supabase = createClient()
 
   const tabParam = searchParams.get('tab')
@@ -122,26 +149,14 @@ function MessagesContent() {
         // non-blocking
       }
 
-      // If we have user + listing params, open the single buyer↔seller thread (set listing context) and redirect
+      // Open or create buyer↔seller thread (works when current user is buyer or listing owner)
       if (userParam && listingParam && userParam !== user.id) {
-        let conv = await getConversationForBuyerSeller(supabase, user.id, userParam)
-
-        if (!conv) {
-          const { data: newConv, error: createErr } = await supabase
-            .from('conversations')
-            .insert({
-              buyer_id: user.id,
-              seller_id: userParam,
-              listing_id: listingParam,
-            })
-            .select('id')
-            .single()
-          if (!createErr && newConv) conv = { id: newConv.id, listing_id: listingParam }
-        } else if (conv.listing_id !== listingParam) {
-          await supabase.from('conversations').update({ listing_id: listingParam }).eq('id', conv.id)
-        }
-        if (conv) {
-          window.location.replace(`/messages/${conv.id}`)
+        const opened = await ensureMarketplaceThread({
+          listing_id: listingParam,
+          other_user_id: userParam,
+        })
+        if ('conversation_id' in opened && opened.conversation_id) {
+          window.location.replace(`/messages/${opened.conversation_id}`)
           return
         }
       }
@@ -165,10 +180,11 @@ function MessagesContent() {
             id,
             type,
             listing_id,
+            actor_id,
             message,
             is_read,
             created_at,
-            listings(id, slug, title, section, listing_images(url))
+            listings(id, slug, title, section, price, listing_images(url))
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -551,59 +567,103 @@ function MessagesContent() {
                         n.listing_id && listing?.section ? listingDetailHref(listing) : '/favorites'
                       const thumb = listing?.listing_images?.[0]?.url
                       const kind = activityKindLabel(n.type)
+                      const showSellerOfferCta =
+                        !!n.actor_id &&
+                        !!n.listing_id &&
+                        isFavoriteActivityType(n.type) &&
+                        n.actor_id !== currentUserId
+                      const listPriceRaw = listing?.price
+                      const listPriceNum =
+                        typeof listPriceRaw === 'number'
+                          ? listPriceRaw
+                          : parseFloat(String(listPriceRaw ?? ''))
+                      const canSellerOffer =
+                        showSellerOfferCta && Number.isFinite(listPriceNum) && listPriceNum > 0
 
                       return (
-                        <Link
+                        <article
                           key={n.id}
-                          href={href}
-                          className="group flex gap-3 rounded-2xl border border-border/50 bg-background/90 p-3 transition-all hover:border-border hover:shadow-[0_2px_12px_rgba(17,17,17,0.06)] active:scale-[0.99] dark:hover:shadow-none"
+                          className="group flex flex-col gap-2.5 rounded-2xl border border-border/50 bg-background/90 p-3 transition-all hover:border-border hover:shadow-[0_2px_12px_rgba(17,17,17,0.06)] dark:hover:shadow-none"
                         >
-                          <div className="relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border/35">
-                            {thumb ? (
-                              <>
-                                <Image
-                                  src={proxiedListingImageSrc(thumb)}
-                                  alt={listing?.title ? capitalizeWords(listing.title) : 'Listing'}
-                                  fill
-                                  className="object-cover"
-                                />
-                                <span className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/95 shadow-md ring-1 ring-border/40">
-                                  <Heart
-                                    className="h-3.5 w-3.5 fill-foreground/15 text-foreground"
-                                    aria-hidden
+                          <Link
+                            href={href}
+                            className="flex gap-3 rounded-xl outline-none ring-offset-background transition-[transform,box-shadow] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <div className="relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border/35">
+                              {thumb ? (
+                                <>
+                                  <Image
+                                    src={proxiedListingImageSrc(thumb)}
+                                    alt={listing?.title ? capitalizeWords(listing.title) : 'Listing'}
+                                    fill
+                                    className="object-cover"
                                   />
-                                </span>
-                              </>
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <Heart className="h-7 w-7 text-muted-foreground/70" strokeWidth={1.5} />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex min-w-0 flex-1 flex-col py-0.5">
-                            {listing?.title && (
-                              <p className="truncate text-[13px] font-medium text-muted-foreground">
-                                {capitalizeWords(listing.title)}
-                              </p>
-                            )}
-                            <div className="mt-1.5 flex min-w-0 items-end justify-between gap-3">
-                              <div className="flex min-w-0 items-baseline gap-2">
-                                <span className="shrink-0 rounded-full bg-muted/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground ring-1 ring-border/40">
-                                  {kind}
-                                </span>
-                                <p className="min-w-0 truncate text-[15px] font-medium leading-snug text-foreground">
-                                  {n.message || 'Someone saved your item'}
-                                </p>
-                              </div>
-                              <time
-                                className="shrink-0 text-[12px] tabular-nums text-muted-foreground"
-                                dateTime={n.created_at}
-                              >
-                                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                              </time>
+                                  <span className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/95 shadow-md ring-1 ring-border/40">
+                                    <Heart
+                                      className="h-3.5 w-3.5 fill-foreground/15 text-foreground"
+                                      aria-hidden
+                                    />
+                                  </span>
+                                </>
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <Heart className="h-7 w-7 text-muted-foreground/70" strokeWidth={1.5} />
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        </Link>
+                            <div className="flex min-w-0 flex-1 flex-col py-0.5">
+                              {listing?.title && (
+                                <p className="truncate text-[13px] font-medium text-muted-foreground">
+                                  {capitalizeWords(listing.title)}
+                                </p>
+                              )}
+                              <div className="mt-1.5 flex min-w-0 items-end justify-between gap-3">
+                                <div className="flex min-w-0 items-baseline gap-2">
+                                  <span className="shrink-0 rounded-full bg-muted/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground ring-1 ring-border/40">
+                                    {kind}
+                                  </span>
+                                  <p className="min-w-0 truncate text-[15px] font-medium leading-snug text-foreground">
+                                    {n.message || 'Someone saved your item'}
+                                  </p>
+                                </div>
+                                <time
+                                  className="shrink-0 text-[12px] tabular-nums text-muted-foreground"
+                                  dateTime={n.created_at}
+                                >
+                                  {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                                </time>
+                              </div>
+                            </div>
+                          </Link>
+                          {showSellerOfferCta ? (
+                            <div className="flex justify-end border-t border-border/40 pt-2.5 sm:justify-start sm:border-t-0 sm:pt-0 sm:pl-[72px]">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="h-9 shrink-0 rounded-full px-4 text-[13px] font-semibold"
+                                disabled={!canSellerOffer}
+                                title={
+                                  !canSellerOffer
+                                    ? 'Add a list price to this listing before sending an offer.'
+                                    : undefined
+                                }
+                                onClick={() => {
+                                  if (!canSellerOffer || !n.listing_id || !n.actor_id || !listing) return
+                                  setSellerOfferDraft({
+                                    listingId: n.listing_id,
+                                    buyerUserId: n.actor_id,
+                                    listingTitle: listing.title ?? '',
+                                    listPrice: listPriceNum,
+                                    primaryImageUrl: thumb ?? null,
+                                  })
+                                }}
+                              >
+                                Make them an offer
+                              </Button>
+                            </div>
+                          ) : null}
+                        </article>
                       )
                     })}
                   </div>
@@ -612,6 +672,20 @@ function MessagesContent() {
           </>
         )}
       </div>
+
+      {sellerOfferDraft ? (
+        <SellerMakeOfferToBuyerDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setSellerOfferDraft(null)
+          }}
+          listingId={sellerOfferDraft.listingId}
+          buyerUserId={sellerOfferDraft.buyerUserId}
+          listingTitle={sellerOfferDraft.listingTitle}
+          listPrice={sellerOfferDraft.listPrice}
+          primaryImageUrl={sellerOfferDraft.primaryImageUrl}
+        />
+      ) : null}
     </main>
   )
 }

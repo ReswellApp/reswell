@@ -1,6 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { getListingRowForFavoriteNotification } from "@/lib/db/listings"
+import { trackKlaviyoFavoritesButton } from "@/lib/klaviyo/track-favorites-button"
 
 export async function toggleFavoriteListing(listingId: string) {
   const supabase = await createClient()
@@ -36,6 +38,29 @@ export async function toggleFavoriteListing(listingId: string) {
 
   if (error || !inserted) {
     return { error: "Failed to add favorite" as const }
+  }
+
+  const listing = await getListingRowForFavoriteNotification(supabase, listingId)
+
+  if (listing && listing.user_id !== user.id) {
+    const { data: favoriterProfile } = await supabase
+      .from("profiles")
+      .select("display_name, shop_name, is_shop")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    void trackKlaviyoFavoritesButton({
+      listingOwnerId: listing.user_id,
+      listingId,
+      listingTitle: listing.title,
+      listingSlug: listing.slug,
+      listingSection: listing.section,
+      favoriterUserId: user.id,
+      favoriterEmail: user.email?.trim() ?? null,
+      favoriterProfile,
+      favoriteId: inserted.id,
+      favoritedAt: inserted.created_at,
+    })
   }
 
   return { success: true as const, favorited: true as const }
