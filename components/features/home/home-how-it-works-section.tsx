@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { HomeHowItWorksBuyerCurator } from "@/components/home-how-it-works-buyer-curator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { portraitShimmer } from "@/lib/image-shimmer"
@@ -115,18 +116,32 @@ function HowItWorksGrid({ steps }: { steps: readonly Step[] }) {
 
 type HomeHowItWorksSectionProps = {
   buyerHighlightImages: HomeHowItWorksBuyerHighlightImages
+  /** When true, shows admin-only controls on the homepage “How it works” buyer images */
+  isAdmin?: boolean
 }
 
-export function HomeHowItWorksSection({ buyerHighlightImages }: HomeHowItWorksSectionProps) {
+export function HomeHowItWorksSection({ buyerHighlightImages, isAdmin }: HomeHowItWorksSectionProps) {
   return (
     <section className="py-16" aria-labelledby="how-it-works-heading">
       <div className="container mx-auto">
-        <h2
-          id="how-it-works-heading"
-          className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
-        >
-          How it works
-        </h2>
+        <div className="relative flex justify-center px-12 sm:px-14 lg:px-16">
+          <h2
+            id="how-it-works-heading"
+            className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+          >
+            How it works
+          </h2>
+          {isAdmin ? (
+            <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 sm:block">
+              <HomeHowItWorksBuyerCurator isAdmin={Boolean(isAdmin)} />
+            </div>
+          ) : null}
+        </div>
+        {isAdmin ? (
+          <div className="mt-6 flex justify-center sm:hidden">
+            <HomeHowItWorksBuyerCurator isAdmin={Boolean(isAdmin)} />
+          </div>
+        ) : null}
         <Tabs defaultValue="seller" className="mt-8 w-full sm:mt-10">
           <div className="mx-auto max-w-2xl">
             <TabsList

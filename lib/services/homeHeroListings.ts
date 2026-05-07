@@ -27,7 +27,7 @@ export async function addHomeHeroListingService(
   // Guard: only allow adding real, visible, active listings.
   const { data: listing, error } = await svc
     .from("listings")
-    .select("id, status, hidden_from_site")
+    .select("id, status, hidden_from_site, hidden_from_homepage")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -38,8 +38,12 @@ export async function addHomeHeroListingService(
   if (!listing) {
     return { ok: false, error: "Listing not found", status: 404 }
   }
-  if (listing.status !== "active" || listing.hidden_from_site === true) {
-    return { ok: false, error: "Only active, visible listings can be added", status: 400 }
+  if (
+    listing.status !== "active" ||
+    listing.hidden_from_site === true ||
+    listing.hidden_from_homepage === true
+  ) {
+    return { ok: false, error: "Only active, homepage-visible listings can be added", status: 400 }
   }
 
   const result = await insertHomeHeroListing(svc, listingId)

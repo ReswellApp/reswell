@@ -15,6 +15,7 @@ export interface HomeHeroListingRow {
     title: string
     status: string | null
     hidden_from_site: boolean | null
+    hidden_from_homepage: boolean | null
     primary_image_url: string | null
   }
 }
@@ -25,6 +26,7 @@ type JoinedListing = {
   title: string
   status: string | null
   hidden_from_site: boolean | null
+  hidden_from_homepage: boolean | null
   listing_images: ListingImageForCard[] | null
 }
 
@@ -45,6 +47,7 @@ const CURATION_SELECT = `
     title,
     status,
     hidden_from_site,
+    hidden_from_homepage,
     listing_images (url, thumbnail_url, is_primary)
   )
 `
@@ -67,6 +70,7 @@ function hydrate(row: RawCurationRow): HomeHeroListingRow | null {
       title: listing.title,
       status: listing.status,
       hidden_from_site: listing.hidden_from_site,
+      hidden_from_homepage: listing.hidden_from_homepage,
       primary_image_url: listingHeroSlideSrc(listing.listing_images),
     },
   }
@@ -106,6 +110,7 @@ export async function listHomeHeroCuratedSlideUrls(
     const listing = row.listing
     if (listing.status && listing.status !== "active") continue
     if (listing.hidden_from_site === true) continue
+    if (listing.hidden_from_homepage === true) continue
     const url = listing.primary_image_url?.trim()
     if (!url || seen.has(url)) continue
     seen.add(url)
@@ -212,11 +217,12 @@ export async function searchListingsForHeroPicker(
   let builder = supabase
     .from("listings")
     .select(
-      `id, slug, title, status, hidden_from_site,
+      `id, slug, title, status, hidden_from_site, hidden_from_homepage,
        listing_images (url, thumbnail_url, is_primary)`,
     )
     .eq("status", "active")
     .eq("hidden_from_site", false)
+    .eq("hidden_from_homepage", false)
     .order("created_at", { ascending: false })
     .limit(Math.min(Math.max(limit, 1), 50))
 
@@ -237,6 +243,7 @@ export async function searchListingsForHeroPicker(
     title: string
     status: string | null
     hidden_from_site: boolean | null
+    hidden_from_homepage: boolean | null
     listing_images: ListingImageForCard[] | null
   }>
 
@@ -260,6 +267,7 @@ export async function searchListingsForHeroPicker(
     title: r.title,
     status: r.status,
     hidden_from_site: r.hidden_from_site,
+    hidden_from_homepage: r.hidden_from_homepage,
     primary_image_url: listingHeroSlideSrc(r.listing_images),
     already_curated: curatedIds.has(r.id),
   }))

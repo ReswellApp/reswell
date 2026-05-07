@@ -28,6 +28,7 @@ type CuratedHeroRow = {
     title: string
     status: string | null
     hidden_from_site: boolean | null
+    hidden_from_homepage: boolean | null
     primary_image_url: string | null
   }
 }
@@ -227,7 +228,9 @@ export function HomeHeroSlideshowAdminBar({ isAdmin }: { isAdmin: boolean }) {
                             ? "Listing is not active — hidden from hero until reactivated."
                             : row.listing.hidden_from_site === true
                               ? "Listing is hidden from the site — hidden from hero until unhidden."
-                              : null
+                              : row.listing.hidden_from_homepage === true
+                                ? "Hidden from homepage — not shown until unhidden."
+                                : null
                         }
                         action={
                           <Button

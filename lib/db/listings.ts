@@ -21,6 +21,27 @@ export async function updateListingHiddenFromSite(
   return { ok: true }
 }
 
+export async function updateListingHiddenFromHomepage(
+  client: SupabaseClient,
+  listingId: string,
+  hiddenFromHomepage: boolean,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data, error } = await client
+    .from("listings")
+    .update({ hidden_from_homepage: hiddenFromHomepage })
+    .eq("id", listingId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    return { ok: false, message: error.message }
+  }
+  if (!data) {
+    return { ok: false, message: "Listing not found" }
+  }
+  return { ok: true }
+}
+
 export async function updateListingCategoryRow(
   client: SupabaseClient,
   listingId: string,
