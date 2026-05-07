@@ -148,6 +148,8 @@ interface SearchInputWithSuggestProps {
   onBrandsSearchSettled?: (query: string, resultCount: number) => void
   /** Where this typeahead lives — drives search analytics “dropdown pick” events. */
   analyticsSurface?: SearchSuggestPickSurface
+  /** Marketplace only: user navigated to a listing via “Top listings”. Used for nav idle suggestions ranking. */
+  onMarketplaceTopListingNavigate?: (listingId: string) => void
   inputType?: "search" | "text"
   id?: string
   disabled?: boolean
@@ -210,6 +212,7 @@ export function SearchInputWithSuggest({
   onBrandStripPick,
   onBrandsSearchSettled,
   analyticsSurface = "other",
+  onMarketplaceTopListingNavigate,
   inputType = "search",
   id: inputId,
   disabled = false,
@@ -789,6 +792,7 @@ export function SearchInputWithSuggest({
                           selectionLabel: item.title,
                           listingId: item.id,
                         })
+                        onMarketplaceTopListingNavigate?.(item.id)
                         onNavigate?.()
                         router.push(listingHref(item))
                         dismissForNavigation()

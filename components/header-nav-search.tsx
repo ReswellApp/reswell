@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Clock, X, TrendingUp } from "lucide-react"
@@ -13,8 +13,13 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { navigateToMarketplaceBrandResults } from "@/lib/nav-marketplace-brand-search"
+import {
+  rankNavSuggestedSurfboardRows,
+  readNavSuggestedListingEngagement,
+  recordNavSuggestedListingEngagement,
+} from "@/lib/nav-suggested-listings-storage"
 
 const RECENT_SEARCHES_KEY = "reswell_recent_searches"
 
@@ -29,6 +34,35 @@ type SuggestedListing = {
   title: string
   price: number
   imageUrl: string | null
+}
+
+/** `popular` ranks by `listings.views` and boosts boards opened from this browser via nav suggestions / typeahead. */
+export type HeaderNavSuggestedSurfboardsMode = "popular" | "newest"
+
+type SuggestedListingPoolRow = {
+  id: string
+  slug: string | null
+  title: string
+  price: number
+  views: number | null
+  created_at: string
+  imageUrl: string | null
+}
+
+const SUGGESTED_POOL_SELECT =
+  "id, slug, title, price, views, created_at, listing_images (url, thumbnail_url, is_primary)"
+
+function listingRecordToSuggestedPoolRow(l: Record<string, unknown>): SuggestedListingPoolRow {
+  const imgs = (l.listing_images as ListingImageForCard[] | null) ?? []
+  return {
+    id: l.id as string,
+    slug: (l.slug as string | null) ?? null,
+    title: l.title as string,
+    price: Number(l.price),
+    views: l.views != null ? Number(l.views) : null,
+    created_at: l.created_at as string,
+    imageUrl: listingTitleThumbnailSrc(imgs) || null,
+  }
 }
 
 function getRecentSearches(): string[] {
@@ -58,7 +92,11 @@ function removeRecentSearch(term: string) {
   localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent))
 }
 
-export function HeaderNavSearch() {
+export function HeaderNavSearch({
+  suggestedSurfboardsMode = "popular",
+}: {
+  suggestedSurfboardsMode?: HeaderNavSuggestedSurfboardsMode
+} = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -68,8 +106,9 @@ export function HeaderNavSearch() {
 
   const [idleOpen, setIdleOpen] = useState(false)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
-  const [suggestedListings, setSuggestedListings] = useState<SuggestedListing[]>([])
+  const [suggestedPool, setSuggestedPool] = useState<SuggestedListingPoolRow[]>([])
   const [suggestedLoaded, setSuggestedLoaded] = useState(false)
+  const [suggestedRankTick, setSuggestedRankTick] = useState(0)
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const idleDropdownRef = useRef<HTMLDivElement>(null)
@@ -91,37 +130,125 @@ export function HeaderNavSearch() {
     }
   }, [pathname])
 
+  useEffect(() => {
+    setSuggestedLoaded(false)
+    setSuggestedPool([])
+  }, [suggestedSurfboardsMode])
+
+  const suggestedListings = useMemo((): SuggestedListing[] => {
+    if (!suggestedPool.length) return []
+    const rows =
+      suggestedSurfboardsMode === "popular"
+        ? rankNavSuggestedSurfboardRows(
+            suggestedPool,
+            readNavSuggestedListingEngagement(),
+            3,
+          )
+        : suggestedPool.slice(0, 3)
+    return rows.map(({ id, slug, title, price, imageUrl }) => ({
+      id,
+      slug,
+      title,
+      price,
+      imageUrl,
+    }))
+    // suggestedRankTick re-reads engagement from localStorage
+  }, [suggestedPool, suggestedSurfboardsMode, suggestedRankTick])
+
   const fetchSuggested = useCallback(async () => {
     if (suggestedLoaded) return
     try {
       const supabase = createClient()
-      const { data } = await supabase
+      const poolLimit = suggestedSurfboardsMode === "popular" ? 24 : 3
+
+      const engagedIdsSorted =
+        suggestedSurfboardsMode === "popular"
+          ? Object.entries(readNavSuggestedListingEngagement())
+              .filter(([, n]) => n > 0)
+              .sort((a, b) => b[1] - a[1])
+              .map(([id]) => id)
+              .slice(0, 12)
+          : []
+
+      let q = supabase
         .from("listings")
-        .select("id, slug, title, price, listing_images (url, thumbnail_url, is_primary)")
+        .select(SUGGESTED_POOL_SELECT)
         .eq("status", "active")
         .eq("section", "surfboards")
         .eq("hidden_from_site", false)
-        .order("created_at", { ascending: false })
-        .limit(3)
-      if (data) {
-        setSuggestedListings(
-          data.map((l: any) => {
-            const imgs = l.listing_images ?? []
-            return {
-              id: l.id,
-              slug: l.slug ?? null,
-              title: l.title,
-              price: l.price,
-              imageUrl: listingTitleThumbnailSrc(imgs) || null,
-            }
-          }),
-        )
+      if (suggestedSurfboardsMode === "popular") {
+        q = q
+          .order("views", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false })
+      } else {
+        q = q.order("created_at", { ascending: false })
       }
+      const { data } = await q.limit(poolLimit)
+      let merged: SuggestedListingPoolRow[] = (data ?? []).map((l) =>
+        listingRecordToSuggestedPoolRow(l as Record<string, unknown>),
+      )
+
+      if (suggestedSurfboardsMode === "popular" && engagedIdsSorted.length > 0) {
+        const poolIds = new Set(merged.map((r) => r.id))
+        const missingEngaged = engagedIdsSorted.filter((id) => !poolIds.has(id))
+        if (missingEngaged.length > 0) {
+          const { data: extra } = await supabase
+            .from("listings")
+            .select(SUGGESTED_POOL_SELECT)
+            .in("id", missingEngaged)
+            .eq("status", "active")
+            .eq("section", "surfboards")
+            .eq("hidden_from_site", false)
+          if (extra?.length) {
+            for (const raw of extra) {
+              const row = listingRecordToSuggestedPoolRow(raw as Record<string, unknown>)
+              if (!poolIds.has(row.id)) {
+                poolIds.add(row.id)
+                merged.push(row)
+              }
+            }
+          }
+        }
+      }
+
+      setSuggestedPool(merged)
       setSuggestedLoaded(true)
     } catch {
       setSuggestedLoaded(true)
     }
-  }, [suggestedLoaded])
+  }, [suggestedLoaded, suggestedSurfboardsMode])
+
+  const mergeFetchedListingIntoSuggestedPool = useCallback(async (listingId: string) => {
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("listings")
+        .select(SUGGESTED_POOL_SELECT)
+        .eq("id", listingId)
+        .eq("status", "active")
+        .eq("section", "surfboards")
+        .eq("hidden_from_site", false)
+        .maybeSingle()
+      if (!data) return
+      setSuggestedPool((prev) => {
+        if (prev.some((r) => r.id === listingId)) return prev
+        return [...prev, listingRecordToSuggestedPoolRow(data as Record<string, unknown>)]
+      })
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  const bumpNavSuggestedListingEngagement = useCallback(
+    (listingId: string) => {
+      recordNavSuggestedListingEngagement(listingId)
+      if (suggestedSurfboardsMode === "popular") {
+        void mergeFetchedListingIntoSuggestedPool(listingId)
+      }
+      setSuggestedRankTick((t) => t + 1)
+    },
+    [mergeFetchedListingIntoSuggestedPool, suggestedSurfboardsMode],
+  )
 
   const handleIdleFocus = useCallback(() => {
     if (query.trim().length > 0) return
@@ -282,7 +409,10 @@ export function HeaderNavSearch() {
                     })}
                     className="mx-1 flex gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/60"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setIdleOpen(false)}
+                    onClick={() => {
+                      bumpNavSuggestedListingEngagement(listing.id)
+                      setIdleOpen(false)
+                    }}
                   >
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                       {listing.imageUrl ? (
@@ -350,6 +480,7 @@ export function HeaderNavSearch() {
           className="w-full"
           minLength={2}
           analyticsSurface="header_nav"
+          onMarketplaceTopListingNavigate={bumpNavSuggestedListingEngagement}
         />
       </SiteSearchBar>
       {idleDropdown}
