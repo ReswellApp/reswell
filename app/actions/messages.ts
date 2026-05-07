@@ -4,8 +4,11 @@ import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
+import { messageAppearsToSharePhoneNumber } from "@/lib/utils/detect-message-phone-sharing"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
+import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
 
 const sendSellerReviewRequestSchema = z.object({
@@ -16,6 +19,27 @@ const ensureMarketplaceThreadSchema = z.object({
   listing_id: z.string().uuid(),
   other_user_id: z.string().uuid(),
 })
+
+async function capturePolicyBlockedDmContent(row: {
+  conversationId: string
+  senderId: string
+  recipientId: string
+  listingId: string | null
+  content: string
+}) {
+  try {
+    const service = createServiceRoleClient()
+    await insertFraudMessageCapturedContent(service, {
+      conversationId: row.conversationId,
+      senderId: row.senderId,
+      recipientId: row.recipientId,
+      listingId: row.listingId,
+      content: row.content,
+    })
+  } catch (e) {
+    console.error("[messages] Could not persist fraud_messages row:", e)
+  }
+}
 
 /**
  * Opens the single buyer↔seller thread for a listing, creating it if allowed.
@@ -169,6 +193,17 @@ export async function sendListingMessage(input: {
     conversation = newConv
   }
 
+  if (messageAppearsToSharePhoneNumber(body)) {
+    await capturePolicyBlockedDmContent({
+      conversationId: conversation.id,
+      senderId: user.id,
+      recipientId: seller_id,
+      listingId: listing_id ?? null,
+      content: body,
+    })
+    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+  }
+
   const { data: inserted, error: msgError } = await supabase
     .from("messages")
     .insert({
@@ -244,6 +279,17 @@ export async function sendConversationReply(input: {
   }
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+
+  if (messageAppearsToSharePhoneNumber(body)) {
+    await capturePolicyBlockedDmContent({
+      conversationId: conv.id,
+      senderId: user.id,
+      recipientId: receiverId,
+      listingId: conv.listing_id,
+      content: body,
+    })
+    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+  }
 
   const { data: inserted, error: msgError } = await supabase
     .from("messages")

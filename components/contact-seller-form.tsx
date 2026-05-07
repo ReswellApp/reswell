@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { sendListingMessage } from "@/app/actions/messages"
+import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
@@ -69,6 +70,9 @@ export function ContactSellerForm({
         if (result.error === "Unauthorized") {
           toast.error("Please sign in to send messages")
           router.push("/auth/login")
+          return
+        }
+        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
           return
         }
         throw new Error(result.error)

@@ -150,6 +150,8 @@ export async function addCartItem(listingId: string): Promise<{ ok: boolean; err
   }
 
   revalidatePath("/cart")
+  const pathSlug = listingRow?.slug?.trim()
+  revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
   return { ok: true, error: null }
 }
 
@@ -162,6 +164,12 @@ export async function removeCartItem(listingId: string): Promise<{ ok: boolean; 
     return { ok: false, error: "Unauthorized" }
   }
 
+  const { data: listingMeta } = await supabase
+    .from("listings")
+    .select("slug")
+    .eq("id", listingId)
+    .maybeSingle()
+
   const { error } = await supabase
     .from("cart_items")
     .delete()
@@ -173,6 +181,9 @@ export async function removeCartItem(listingId: string): Promise<{ ok: boolean; 
   }
 
   revalidatePath("/cart")
+  const pathSlug =
+    typeof listingMeta?.slug === "string" ? listingMeta.slug.trim() : ""
+  revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
   return { ok: true, error: null }
 }
 

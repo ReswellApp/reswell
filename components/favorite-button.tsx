@@ -15,6 +15,12 @@ interface FavoriteButtonProps {
   initialFavorited: boolean
   isLoggedIn: boolean
   onFavoritedChange?: (favorited: boolean) => void
+  /** Override or extend wrapper styling. Defaults to a borderless ghost-icon button. */
+  className?: string
+  /** Override the heart icon classes (handy when sizing for an outlined CTA-row button). */
+  iconClassName?: string
+  /** Render as an outlined icon button matching the CTA row instead of the borderless default. */
+  variant?: "ghost" | "outline"
 }
 
 export function FavoriteButton({
@@ -23,6 +29,9 @@ export function FavoriteButton({
   initialFavorited,
   isLoggedIn,
   onFavoritedChange,
+  className,
+  iconClassName,
+  variant = "ghost",
 }: FavoriteButtonProps) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
@@ -62,18 +71,20 @@ export function FavoriteButton({
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant={variant}
       size="icon"
       onClick={toggleFavorite}
       disabled={loading}
       aria-label="Favorites button"
       aria-pressed={favorited}
       className={cn(
-        "transition-colors border-0 shadow-none",
-        favorited && "text-red-500 hover:text-red-600"
+        "transition-colors",
+        variant === "ghost" && "border-0 shadow-none",
+        favorited && "text-red-500 hover:text-red-600",
+        className,
       )}
     >
-      <Heart className={cn("h-4 w-4", favorited && "fill-current")} />
+      <Heart className={cn("h-4 w-4", favorited && "fill-current", iconClassName)} />
     </Button>
   )
 }

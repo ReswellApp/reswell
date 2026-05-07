@@ -399,7 +399,7 @@ export function MakeOfferTriggerButton({
       type="button"
       variant="outline"
       size="lg"
-      className={cn("min-h-touch w-full gap-2 justify-center sm:w-auto", className)}
+      className={cn("min-h-touch w-full gap-2 justify-center font-medium sm:h-11 rounded-full", className)}
       disabled={disabled}
       onClick={onClick}
     >

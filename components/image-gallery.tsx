@@ -79,7 +79,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   if (images.length === 0) {
     return (
       <div
-        className="relative w-full bg-muted rounded-lg text-muted-foreground"
+        className="relative w-full rounded-xl bg-muted text-muted-foreground"
         style={{ paddingBottom: "133.33%" }}
       >
         <span className="absolute inset-0 flex items-center justify-center">No images available</span>
@@ -101,7 +101,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   }
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-full space-y-4 lg:max-w-[450px]">
+    <div className="mx-auto w-full min-w-0 max-w-full space-y-4 lg:max-w-[min(100%,32rem)]">
       <ListingImageLightbox
         open={lightboxOpen}
         onOpenChange={(o) => {
@@ -118,7 +118,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
       {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
       <div
-        className="relative w-full rounded-lg overflow-hidden bg-muted select-none touch-pan-y"
+        className="relative w-full overflow-hidden rounded-xl bg-muted ring-1 ring-black/[0.04] select-none touch-pan-y dark:ring-white/[0.06]"
         style={{ paddingBottom: "133.33%" }}
         onTouchStart={(e) => {
           if (images.length <= 1) return
@@ -246,10 +246,10 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
               onClick={() => setSelectedIndex(index)}
               aria-label={`Show photo ${index + 1} in gallery`}
               className={cn(
-                "flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors bg-muted",
+                "flex-shrink-0 overflow-hidden rounded-lg border-2 bg-muted transition-colors",
                 index === selectedIndex
-                  ? "border-primary ring-2 ring-primary/20"
-                  : "border-transparent hover:border-muted-foreground/50"
+                  ? "border-foreground/70 ring-2 ring-foreground/15"
+                  : "border-transparent hover:border-muted-foreground/40"
               )}
             >
               <span

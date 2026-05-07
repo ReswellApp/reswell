@@ -20,6 +20,8 @@ const SHOP_LISTING_SELECT = `
       price,
       status,
       user_id,
+      views,
+      created_at,
       listing_images (url, is_primary),
       inventory (quantity),
       categories (name)

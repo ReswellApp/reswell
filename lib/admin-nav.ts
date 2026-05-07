@@ -16,6 +16,7 @@ export type AdminNavIconKey =
   | 'shoppingBag'
   | 'lifeBuoy'
   | 'messageSquare'
+  | 'shield'
   | 'truck'
   | 'settings'
 
@@ -70,6 +71,11 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/contact-messages', label: 'Support inbox', icon: 'messageSquare' },
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
+      {
+        href: '/admin/fraud-messages',
+        label: 'Fraud messages',
+        icon: 'shield',
+      },
       { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: 'tag' },
     ],
   },

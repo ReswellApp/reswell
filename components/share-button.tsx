@@ -4,12 +4,15 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Share2, Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 interface ShareButtonProps {
   title: string
+  className?: string
+  iconClassName?: string
 }
 
-export function ShareButton({ title }: ShareButtonProps) {
+export function ShareButton({ title, className, iconClassName }: ShareButtonProps) {
   const [copying, setCopying] = useState(false)
   const [justCopied, setJustCopied] = useState(false)
 
@@ -48,13 +51,14 @@ export function ShareButton({ title }: ShareButtonProps) {
       size="icon"
       onClick={handleShare}
       aria-label={justCopied ? "Link copied" : copying ? "Copying link" : "Share listing"}
+      className={cn(className)}
     >
       {copying ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className={cn("h-4 w-4 animate-spin", iconClassName)} />
       ) : justCopied ? (
-        <Check className="h-4 w-4" />
+        <Check className={cn("h-4 w-4", iconClassName)} />
       ) : (
-        <Share2 className="h-4 w-4" />
+        <Share2 className={cn("h-4 w-4", iconClassName)} />
       )}
     </Button>
   )

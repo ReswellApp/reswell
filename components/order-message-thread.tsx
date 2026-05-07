@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { Check, Loader2, MessageCircle, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { sendConversationReply, sendListingMessage } from "@/app/actions/messages"
+import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
 
 export type OrderThreadMessage = {
   id: string
@@ -65,7 +66,12 @@ export function OrderMessageThread({
           seller_id: startConversation.sellerId,
           content: text,
         })
-        if ("error" in result) throw new Error(result.error)
+        if ("error" in result) {
+          if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+            return
+          }
+          throw new Error(result.error)
+        }
         setBody("")
         setSentFlash(true)
         window.setTimeout(() => setSentFlash(false), 2000)
@@ -92,7 +98,12 @@ export function OrderMessageThread({
         content: text,
       })
 
-      if ("error" in result) throw new Error(result.error)
+      if ("error" in result) {
+        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+          return
+        }
+        throw new Error(result.error)
+      }
 
       const inserted = result.message as OrderThreadMessage
       setMessages((prev) => [...prev, inserted])

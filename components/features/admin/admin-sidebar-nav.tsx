@@ -12,6 +12,7 @@ import {
   Tag,
   Truck,
   LifeBuoy,
+  Shield,
   ShoppingBag,
   LineChart,
   Layers,
@@ -47,6 +48,7 @@ const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   shoppingBag: ShoppingBag,
   lifeBuoy: LifeBuoy,
   messageSquare: MessageSquare,
+  shield: Shield,
   truck: Truck,
   settings: Settings,
 }

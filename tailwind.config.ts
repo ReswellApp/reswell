@@ -23,6 +23,14 @@ const config: Config = {
           'Arial',
           'sans-serif',
         ],
+        headline: [
+          'var(--font-headline)',
+          'var(--font-sans)',
+          'system-ui',
+          'Segoe UI',
+          'Arial',
+          'sans-serif',
+        ],
       },
       container: {
         center: true,

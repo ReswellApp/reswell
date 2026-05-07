@@ -10,10 +10,12 @@ import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { format, isToday, isYesterday } from 'date-fns'
+import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { sendConversationReply } from '@/app/actions/messages'
+import { MESSAGE_BLOCKED_PHONE_ERROR } from '@/lib/messages/policy-errors'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
 import {
   OfferLegacyMirrorCard,
@@ -367,6 +369,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
     if ('error' in result) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
+      setNewMessage(content)
+      if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
+        toast.error('Failed to send message')
+      }
     } else {
       const inserted = result.message as Message
       setMessages((prev) =>

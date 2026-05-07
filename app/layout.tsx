@@ -1,7 +1,8 @@
 import React, { Suspense } from "react"
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
-import { Inter, Caveat } from 'next/font/google'
+import localFont from 'next/font/local'
+import { Caveat } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
@@ -15,21 +16,31 @@ import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 
 import './globals.css'
 
-// Inter for UI — neutral, readable, standard for modern professional products.
-// CLS-FIX: next/font generates size-adjusted fallbacks for the display font below.
-const inter = Inter({
-  subsets: ['latin'],
+/** Stack Sans Text — body / UI (variable 200–700). Typography: Light+, 0% tracking, 130% leading. */
+const stackSansText = localFont({
+  src: '../fonts/stack-sans-text-latin.woff2',
   variable: '--font-sans',
   display: 'swap',
-  adjustFontFallback: true,
+  weight: '200 700',
+  adjustFontFallback: 'Arial',
   preload: true,
-  weight: ['400', '500', '600', '700'],
 })
+
 const caveat = Caveat({
   subsets: ['latin'],
   variable: '--font-caveat',
   display: 'swap',
   adjustFontFallback: true,
+  preload: true,
+})
+
+/** Stack Sans Headline — headings (variable 200–700). Typography: Bold, -5% tracking, 105% leading. */
+const stackSansHeadline = localFont({
+  src: '../fonts/stack-sans-headline-latin.woff2',
+  variable: '--font-headline',
+  display: 'swap',
+  weight: '200 700',
+  adjustFontFallback: 'Arial',
   preload: true,
 })
 
@@ -64,7 +75,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="overflow-x-hidden">
-      <body className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
+      <body className={`${stackSansText.variable} ${caveat.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
         <GoogleAdsGtag />
         <LocaleProvider initialLocale={locale}>
           <Suspense fallback={null}>

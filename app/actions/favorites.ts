@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { getListingRowForFavoriteNotification } from "@/lib/db/listings"
 import { trackKlaviyoFavoritesButton } from "@/lib/klaviyo/track-favorites-button"
@@ -27,6 +28,13 @@ export async function toggleFavoriteListing(listingId: string) {
 
   if (existing) {
     await supabase.from("favorites").delete().eq("id", existing.id)
+    const { data: meta } = await supabase
+      .from("listings")
+      .select("slug")
+      .eq("id", listingId)
+      .maybeSingle()
+    const pathSlug = typeof meta?.slug === "string" ? meta.slug.trim() : ""
+    revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
     return { success: true as const, favorited: false as const }
   }
 
@@ -62,6 +70,14 @@ export async function toggleFavoriteListing(listingId: string) {
       favoritedAt: inserted.created_at,
     })
   }
+
+  const { data: meta } = await supabase
+    .from("listings")
+    .select("slug")
+    .eq("id", listingId)
+    .maybeSingle()
+  const pathSlug = typeof meta?.slug === "string" ? meta.slug.trim() : ""
+  revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
 
   return { success: true as const, favorited: true as const }
 }
