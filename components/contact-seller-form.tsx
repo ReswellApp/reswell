@@ -21,6 +21,8 @@ interface ContactSellerFormProps {
   section?: "surfboards"
   /** Surfboards: seller offers shipping (shows shipping-related quick prompts). */
   shippingAvailable?: boolean
+  /** When true, no in-form section title is shown (parent already provides the label). */
+  hideSectionTitle?: boolean
 }
 
 export function ContactSellerForm({
@@ -31,6 +33,7 @@ export function ContactSellerForm({
   isLoggedIn,
   section = "surfboards",
   shippingAvailable = false,
+  hideSectionTitle = false,
 }: ContactSellerFormProps) {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
@@ -89,10 +92,10 @@ export function ContactSellerForm({
 
   if (!isLoggedIn) {
     return (
-      <div className="text-center py-4">
-        <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-        <p className="text-sm text-muted-foreground mb-3">Sign in to contact the seller</p>
-        <Button asChild>
+      <div className="py-6 text-center">
+        <MessageSquare className="mx-auto mb-3 h-8 w-8 text-foreground" aria-hidden />
+        <p className="mb-5 text-[15px] text-foreground">Sign in to contact the seller</p>
+        <Button asChild className="rounded-full px-8">
           <Link
             href={`/auth/login?redirect=${encodeURIComponent(
               listingDetailHref({ id: listingId, slug: listingSlug, section }),
@@ -106,9 +109,13 @@ export function ContactSellerForm({
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="font-medium">Contact Seller</h3>
-      
+    <div className="space-y-5">
+      {!hideSectionTitle ? (
+        <h3 className="font-headline text-xl font-semibold tracking-tight text-foreground">
+          Contact seller
+        </h3>
+      ) : null}
+
       {/* Quick Messages */}
       <div className="flex flex-wrap gap-2">
         {quickMessages.map((quick) => (
@@ -116,7 +123,7 @@ export function ContactSellerForm({
             key={quick}
             variant="outline"
             size="sm"
-            className="text-xs bg-transparent"
+            className="rounded-full border-border/60 bg-background text-[13px] font-normal text-foreground shadow-none hover:bg-muted/60"
             onClick={() => setMessage(quick)}
           >
             {quick}
@@ -125,13 +132,19 @@ export function ContactSellerForm({
       </div>
 
       <Textarea
-        placeholder={`Ask about "${listingTitle}"...`}
+        placeholder={`Ask about "${listingTitle}"…`}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={3}
+        className="rounded-2xl border-border/60 bg-background text-[15px] text-foreground shadow-none placeholder:text-foreground/75 transition-colors focus-visible:ring-[1.5px]"
       />
 
-      <Button onClick={handleSend} disabled={sending || !message.trim()} className="w-full">
+      <Button
+        variant="outline"
+        onClick={handleSend}
+        disabled={sending || !message.trim()}
+        className="w-full rounded-full border-foreground/25 text-foreground shadow-sm hover:bg-muted/50"
+      >
         {sending ? (
           "Sending..."
         ) : (

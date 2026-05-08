@@ -17,11 +17,13 @@ import { postEndListing } from "@/lib/listing-end-request"
 
 interface EndListingButtonProps {
   listingId: string
+  /** Applied to the primary trigger button only (dialog buttons unchanged). */
+  triggerClassName?: string
 }
 
 type EndChoice = "delete" | "archive" | null
 
-export function EndListingButton({ listingId }: EndListingButtonProps) {
+export function EndListingButton({ listingId, triggerClassName }: EndListingButtonProps) {
   const [open, setOpen] = useState(false)
   const [choice, setChoice] = useState<EndChoice>(null)
   const [loading, setLoading] = useState(false)
@@ -54,6 +56,7 @@ export function EndListingButton({ listingId }: EndListingButtonProps) {
     <>
       <Button
         variant="outline"
+        className={triggerClassName}
         onClick={() => setOpen(true)}
         disabled={loading}
       >

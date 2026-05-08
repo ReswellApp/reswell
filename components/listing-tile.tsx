@@ -151,7 +151,8 @@ export function ListingTile({
   favorites,
   showFavorites = true,
   titleSlot,
-  titleClassName = "text-sm font-medium line-clamp-2 min-h-[2.8em]",
+  titleClassName =
+    "font-sans text-sm font-normal tracking-normal leading-snug line-clamp-2 min-h-[2.8em]",
   subtitle,
   compareAtPrice,
   priceAction,

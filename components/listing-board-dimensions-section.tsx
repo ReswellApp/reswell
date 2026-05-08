@@ -30,24 +30,24 @@ export function ListingBoardDimensionsBlock({
     <section
       aria-labelledby={headingId}
       className={cn(
-        "rounded-lg border border-neutral-200 bg-card px-4 py-3 dark:border-border",
+        "rounded-3xl bg-muted/45 px-5 py-4 dark:bg-muted/25",
         className,
       )}
     >
       <div className="flex flex-col gap-1.5 min-[400px]:flex-row min-[400px]:items-baseline min-[400px]:justify-between min-[400px]:gap-3">
         <h2
           id={headingId}
-          className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+          className="shrink-0 font-sans text-[11px] font-normal uppercase tracking-wide text-foreground"
         >
           Board dimensions
         </h2>
-        <p className="min-w-0 text-[15px] font-semibold tabular-nums leading-snug tracking-tight text-foreground sm:text-base">
+        <p className="min-w-0 font-sans text-[15px] font-medium tabular-nums leading-snug text-foreground sm:text-base">
           {geometry ? (
             <>
               <span>{geometry}</span>
               {volume ? (
                 <>
-                  <span className="mx-1.5 font-normal text-muted-foreground" aria-hidden>
+                  <span className="mx-1.5 font-normal text-foreground" aria-hidden>
                     ·
                   </span>
                   <span>{volume}</span>

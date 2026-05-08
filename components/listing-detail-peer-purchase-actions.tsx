@@ -3,7 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Check, CreditCard, Loader2, ShoppingCart } from "lucide-react"
+import { Check, Loader2, ShoppingCart } from "lucide-react"
+import type * as React from "react"
+
 import { Button } from "@/components/ui/button"
 import { addCartItem } from "@/app/actions/cart"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
@@ -33,6 +35,7 @@ export function ListingDetailPeerPurchaseActions({
   isLoggedIn,
   makeOffer,
   agreedCheckoutItemUsd,
+  favoritesSlot,
 }: {
   listingId: string
   /** Slug or id for `/checkout?listing=` */
@@ -42,6 +45,8 @@ export function ListingDetailPeerPurchaseActions({
   makeOffer?: ListingMakeOfferConfig
   /** When the buyer has an ACCEPTED offer, checkout uses this item price (listing stays at list price in the gallery). */
   agreedCheckoutItemUsd?: number | null
+  /** Renders beside “Make an offer” (Reverb-style circular favorite). */
+  favoritesSlot?: React.ReactNode
 }) {
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
@@ -92,22 +97,31 @@ export function ListingDetailPeerPurchaseActions({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-[10px]">
       {agreedCheckoutItemUsd != null &&
       agreedCheckoutItemUsd > 0 &&
       Number.isFinite(agreedCheckoutItemUsd) ? (
-        <p className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[13px] leading-snug text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-100">
+        <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-[13px] leading-snug text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
           You accepted <span className="font-semibold tabular-nums">${agreedCheckoutItemUsd.toFixed(2)}</span> for
           this board. Buy now charges that price (plus shipping if you choose shipping).
         </p>
       ) : null}
-      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+      <div className="flex flex-col gap-[10px]">
+        <Button
+          size="lg"
+          className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-blue-600 px-6 text-[15px] font-semibold text-white shadow-none hover:bg-blue-700 hover:text-white dark:bg-blue-600 dark:hover:bg-blue-500"
+          asChild
+        >
+          <Link href={checkoutHref} prefetch={false}>
+            Buy it now
+          </Link>
+        </Button>
         {isLoggedIn ? (
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="lg"
-            className="min-h-touch flex-1 gap-2 justify-center"
+            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#f2f3f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
             disabled={loading}
             onClick={handleAddToCart}
           >
@@ -121,7 +135,12 @@ export function ListingDetailPeerPurchaseActions({
             {cartAdded ? "Added" : "Add to cart"}
           </Button>
         ) : (
-          <Button variant="outline" size="lg" className="min-h-touch flex-1 gap-2 justify-center" asChild>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#f2f3f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
+            asChild
+          >
             <Link
               href={`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(here))}`}
               prefetch={false}
@@ -137,18 +156,16 @@ export function ListingDetailPeerPurchaseActions({
             </Link>
           </Button>
         )}
-
-        <Button size="lg" className="min-h-touch flex-1 gap-2 justify-center" asChild>
-          <Link href={checkoutHref} prefetch={false}>
-            <CreditCard className="h-5 w-5 shrink-0" aria-hidden />
-            Buy now
-          </Link>
-        </Button>
       </div>
 
       {makeOffer ? (
         <>
-          <MakeOfferTriggerButton onClick={openMakeOffer} />
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1">
+              <MakeOfferTriggerButton onClick={openMakeOffer} />
+            </div>
+            {favoritesSlot ? <div className="shrink-0">{favoritesSlot}</div> : null}
+          </div>
           <MakeOfferDialog
             listingId={listingId}
             listingTitle={makeOffer.listingTitle}

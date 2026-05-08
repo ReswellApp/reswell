@@ -120,8 +120,8 @@
 /* ─── Tailwind utilities ───────────────────────────────────────────────────── */
 @layer utilities {
   /*
-   * Stack Sans style guide — Tailwind utilities vs semantic h1–h6.
-   * Headlines: Bold, -5% tracking, 105% leading. Body via body {} / inheritance.
+   * Stack Sans — semantic h1–h6 default to Stack Sans Text (see @layer base).
+   * Use .font-headline for display / marketing type (Headline cut, tight leading).
    */
   .font-sans {
     font-optical-sizing: auto;
@@ -132,10 +132,6 @@
     font-weight: 700;
     letter-spacing: -0.05em;
     line-height: 1.05;
-    font-optical-sizing: auto;
-    font-style: normal;
-  }
-  .text-balance {
     text-wrap: balance;
   }
   .badge-olive {
@@ -279,11 +275,11 @@
     position: relative;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-headline), var(--font-sans), system-ui, sans-serif;
-    /* Stack Sans Headline — Bold, -5% tracking, 105% leading */
-    font-weight: 700;
-    letter-spacing: -0.05em;
-    line-height: 1.05;
+    font-family: var(--font-sans), system-ui, sans-serif;
+    /* Default: Text + regular; add font-bold / font-semibold / .font-headline per component */
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.25;
     font-optical-sizing: auto;
     color: hsl(var(--foreground));
     font-style: normal;

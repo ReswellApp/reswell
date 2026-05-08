@@ -1,8 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,7 +9,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/server"
 import {
   getCachedPublicShopListing,
@@ -87,31 +84,31 @@ export async function ShopListingDetailPage({
       .slice(0, 4) ?? []
 
   return (
-    <main className="flex-1 w-full min-w-0 max-w-full overflow-x-clip py-8">
-      <div className="container mx-auto w-full min-w-0 max-w-full">
-        <div className="mb-6 min-w-0 max-w-full border-t border-neutral-200 pt-4">
+    <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
+      <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:max-w-[1120px]">
+        <div className="mb-5 min-w-0 max-w-full pt-0.5 lg:mb-8">
           <Breadcrumb>
-            <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+            <BreadcrumbList className="gap-1 text-xs font-normal tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[13px]">
               <BreadcrumbItem>
-                <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
                   <Link href="/">Home</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+              <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
               {listingCategoryLabel ? (
                 <>
                   <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                    <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
                       <Link href="/shop">Shop</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
-                    <span className="font-normal text-[#5c6b89]">{listingCategoryLabel}</span>
+                    <span className="font-normal text-muted-foreground">{listingCategoryLabel}</span>
                   </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
+                    <BreadcrumbPage className="max-w-[min(100%,28rem)] truncate font-normal text-muted-foreground">
                       {listing.title}
                     </BreadcrumbPage>
                   </BreadcrumbItem>
@@ -119,13 +116,13 @@ export async function ShopListingDetailPage({
               ) : (
                 <>
                   <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                    <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
                       <Link href="/shop">Shop</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
+                    <BreadcrumbPage className="max-w-[min(100%,28rem)] truncate font-normal text-muted-foreground">
                       {listing.title}
                     </BreadcrumbPage>
                   </BreadcrumbItem>
@@ -135,8 +132,8 @@ export async function ShopListingDetailPage({
           </Breadcrumb>
         </div>
 
-        <div className="mx-auto grid w-full min-w-0 max-w-5xl gap-8 lg:grid-cols-2">
-          <div className="relative aspect-square w-full min-w-0 overflow-hidden rounded-lg bg-muted">
+        <div className="mx-auto grid w-full min-w-0 max-w-6xl gap-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:items-start lg:gap-12 xl:gap-16">
+          <div className="relative aspect-square min-h-0 w-full min-w-0 overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -152,40 +149,45 @@ export async function ShopListingDetailPage({
             )}
           </div>
 
-          <div className="min-w-0 space-y-6">
+          <div className="min-w-0 space-y-8 lg:pt-2">
             <div className="min-w-0">
-              <h1 className="break-words text-2xl font-bold sm:text-3xl">{listing.title}</h1>
-              <p className="mt-3 text-2xl font-bold text-black dark:text-white sm:text-3xl">
+              <h1 className="font-headline text-balance break-words text-[2rem] font-semibold leading-[1.15] tracking-[-0.035em] text-foreground lg:text-[2.125rem] xl:text-[2.25rem]">
+                {listing.title}
+              </h1>
+              <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-foreground tabular-nums xl:text-[2.5rem]">
                 ${price.toFixed(2)}
               </p>
             </div>
 
             <div>
               {stockQuantity > 10 ? (
-                <Badge variant="secondary" className="bg-neutral-100 text-neutral-900">
-                  In Stock
-                </Badge>
+                <span className="inline-flex rounded-full bg-muted/70 px-3.5 py-1 text-[13px] font-medium text-muted-foreground dark:bg-muted/50">
+                  In stock
+                </span>
               ) : stockQuantity > 0 ? (
-                <Badge variant="secondary" className="bg-neutral-200 text-neutral-800">
+                <span className="inline-flex rounded-full bg-amber-500/12 px-3.5 py-1 text-[13px] font-medium text-amber-900 dark:bg-amber-400/15 dark:text-amber-100">
                   Only {stockQuantity} left
-                </Badge>
+                </span>
               ) : (
-                <Badge variant="destructive">Out of Stock</Badge>
+                <span className="inline-flex rounded-full bg-destructive/12 px-3.5 py-1 text-[13px] font-medium text-destructive">
+                  Out of stock
+                </span>
               )}
             </div>
 
-            <Separator />
+            <div className="h-px w-full bg-border/50" />
 
-            <div className="min-w-0">
-              <h2 className="mb-2 font-semibold">Description</h2>
-              <p className="break-words whitespace-pre-wrap text-muted-foreground">
+            <div className="min-w-0 space-y-4">
+              <h2 className="font-headline text-xl font-semibold tracking-tight text-foreground">
+                Description
+              </h2>
+              <p className="break-words text-[15px] leading-relaxed text-foreground/85 whitespace-pre-wrap">
                 {listing.description || "No description available."}
               </p>
             </div>
 
             {stockQuantity > 0 && (
-              <Card className="bg-offwhite">
-                <CardContent className="p-4 space-y-4">
+              <div className="rounded-3xl bg-muted/45 p-5 dark:bg-muted/20">
                   <QuantitySelector
                     productId={listing.id}
                     maxQuantity={stockQuantity}
@@ -196,45 +198,44 @@ export async function ShopListingDetailPage({
                       image_url: imageUrl,
                     }}
                   />
-                </CardContent>
-              </Card>
+              </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex min-w-0 items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="flex min-w-0 items-start gap-3.5 text-sm">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-foreground shadow-sm dark:bg-background/40">
                   <Truck className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="font-medium">Free Shipping</p>
-                  <p className="text-muted-foreground">On orders over $50</p>
+                <div className="min-w-0 pt-0.5">
+                  <p className="font-medium text-foreground">Free shipping</p>
+                  <p className="mt-0.5 text-muted-foreground">On orders over $50</p>
                 </div>
               </div>
-              <div className="flex min-w-0 items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex min-w-0 items-start gap-3.5 text-sm">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-foreground shadow-sm dark:bg-background/40">
                   <Package className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="font-medium">Fast Delivery</p>
-                  <p className="text-muted-foreground">2-5 business days</p>
+                <div className="min-w-0 pt-0.5">
+                  <p className="font-medium text-foreground">Fast delivery</p>
+                  <p className="mt-0.5 text-muted-foreground">2–5 business days</p>
                 </div>
               </div>
-              <div className="flex min-w-0 items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex min-w-0 items-start gap-3.5 text-sm">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-foreground shadow-sm dark:bg-background/40">
                   <RotateCcw className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="font-medium">Easy Returns</p>
-                  <p className="text-muted-foreground">30-day return policy</p>
+                <div className="min-w-0 pt-0.5">
+                  <p className="font-medium text-foreground">Easy returns</p>
+                  <p className="mt-0.5 text-muted-foreground">30-day return policy</p>
                 </div>
               </div>
-              <div className="flex min-w-0 items-center gap-3 text-sm">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex min-w-0 items-start gap-3.5 text-sm">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-foreground shadow-sm dark:bg-background/40">
                   <Shield className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="font-medium">Secure Payment</p>
-                  <p className="text-muted-foreground">SSL encrypted</p>
+                <div className="min-w-0 pt-0.5">
+                  <p className="font-medium text-foreground">Secure payment</p>
+                  <p className="mt-0.5 text-muted-foreground">SSL encrypted</p>
                 </div>
               </div>
             </div>
@@ -242,8 +243,10 @@ export async function ShopListingDetailPage({
         </div>
 
         {relatedItems.length > 0 && (
-          <section className="mt-16 min-w-0 max-w-full">
-            <h2 className="text-xl font-bold mb-6">You May Also Like</h2>
+          <section className="mt-20 min-w-0 max-w-full border-t border-border/40 pt-16">
+            <h2 className="font-headline mb-10 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+              You may also like
+            </h2>
             <MarketplaceNewGrid items={relatedItems} />
           </section>
         )}

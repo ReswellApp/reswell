@@ -26,7 +26,7 @@ export const homeListingScrollBodyClass = "min-w-0 p-3 flex flex-col flex-1 min-
 export const homeListingScrollTitleSlotClass =
   "flex min-h-0 flex-1 flex-col overflow-hidden"
 export const homeListingScrollHeadingClass =
-  "text-sm font-medium leading-snug line-clamp-4 break-words sm:line-clamp-3"
+  "font-sans text-sm font-normal tracking-normal leading-snug line-clamp-4 break-words sm:line-clamp-3"
 export const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
 
 /** Same peer tile as homepage scroll rows, for responsive grids (e.g. listing detail “more from seller”). */

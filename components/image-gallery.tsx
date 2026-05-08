@@ -79,7 +79,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   if (images.length === 0) {
     return (
       <div
-        className="relative w-full rounded-xl bg-muted text-muted-foreground"
+        className="relative w-full rounded-2xl bg-[#f5f5f7] text-muted-foreground shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]"
         style={{ paddingBottom: "133.33%" }}
       >
         <span className="absolute inset-0 flex items-center justify-center">No images available</span>
@@ -101,7 +101,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   }
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-full space-y-4 lg:max-w-[min(100%,32rem)]">
+    <div className="mx-auto w-full min-w-0 max-w-full space-y-5">
       <ListingImageLightbox
         open={lightboxOpen}
         onOpenChange={(o) => {
@@ -118,7 +118,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
       {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
       <div
-        className="relative w-full overflow-hidden rounded-xl bg-muted ring-1 ring-black/[0.04] select-none touch-pan-y dark:ring-white/[0.06]"
+        className="relative w-full overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] select-none touch-pan-y dark:bg-muted dark:ring-white/[0.06]"
         style={{ paddingBottom: "133.33%" }}
         onTouchStart={(e) => {
           if (images.length <= 1) return
@@ -158,9 +158,9 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
           }}
           className="absolute inset-0 z-[6] cursor-zoom-in border-0 bg-transparent p-0 outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring"
         />
-        <div className="pointer-events-none absolute bottom-2 left-2 z-[8] rounded-full bg-background/82 px-2 py-1 backdrop-blur-sm">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground tabular-nums">
-            <Maximize2 className="size-3.5 shrink-0 opacity-80" aria-hidden />
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[8] rounded-full bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-md tabular-nums">
+          <span className="inline-flex items-center gap-1.5">
+            <Maximize2 className="size-3.5 shrink-0 opacity-70" aria-hidden />
             Enlarge
           </span>
         </div>
@@ -193,10 +193,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
         {sold && (
           <>
             <div className="pointer-events-none absolute inset-0 z-[5] bg-black/[0.08]" aria-hidden />
-            <div
-              className="pointer-events-none absolute left-3 top-3 z-20 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white"
-              style={{ backgroundColor: "#111" }}
-            >
+            <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full bg-foreground px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-background">
               Sold
             </div>
           </>
@@ -208,7 +205,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
             <ListingImageCarouselNavButton
               direction="prev"
               variant="embed"
-              sideClassName="left-2"
+              sideClassName="left-3"
               srLabel="Previous image"
               onClick={(e) => {
                 e.stopPropagation()
@@ -218,7 +215,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
             <ListingImageCarouselNavButton
               direction="next"
               variant="embed"
-              sideClassName="right-2"
+              sideClassName="right-3"
               srLabel="Next image"
               onClick={(e) => {
                 e.stopPropagation()
@@ -230,7 +227,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
         {/* Image counter */}
         {images.length > 1 && (
-          <div className="absolute bottom-2 right-2 z-10 rounded bg-background/80 px-2 py-1 text-sm backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 z-10 rounded-full bg-background/75 px-2.5 py-1 text-xs font-medium tabular-nums text-foreground backdrop-blur-md">
             {selectedIndex + 1} / {images.length}
           </div>
         )}
@@ -238,7 +235,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
       {/* Thumbnails - explicit 3:4 box (padding-bottom) so fill Image has a defined size */}
       {images.length > 1 && (
-        <div className="flex max-w-full min-w-0 gap-2 overflow-x-auto overscroll-x-contain pb-2 [-webkit-overflow-scrolling:touch]">
+        <div className="flex max-w-full min-w-0 gap-2.5 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
           {images.map((image, index) => (
             <button
               key={image.id}
@@ -246,10 +243,10 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
               onClick={() => setSelectedIndex(index)}
               aria-label={`Show photo ${index + 1} in gallery`}
               className={cn(
-                "flex-shrink-0 overflow-hidden rounded-lg border-2 bg-muted transition-colors",
+                "flex-shrink-0 overflow-hidden rounded-2xl bg-muted transition-[box-shadow,ring-color] duration-200",
                 index === selectedIndex
-                  ? "border-foreground/70 ring-2 ring-foreground/15"
-                  : "border-transparent hover:border-muted-foreground/40"
+                  ? "ring-[1.5px] ring-offset-2 ring-offset-background ring-foreground/80"
+                  : "ring-[0.5px] ring-muted-foreground/25 hover:ring-muted-foreground/45"
               )}
             >
               <span
