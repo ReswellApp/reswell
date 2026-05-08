@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
-import { formatDecimalDimension } from "@/lib/board-measurements"
+import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 
 const SELECT = `
   id,
@@ -16,8 +16,7 @@ const SELECT = `
   shipping_available,
   local_pickup,
   board_type,
-  length_feet,
-  length_inches,
+  dimensions,
   listing_images (url, is_primary),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
@@ -47,16 +46,9 @@ export async function hydrateListingsByIds(
   for (const id of ids) {
     const row = map.get(id)
     if (!row) continue
-    const inchesNum =
-      row.length_inches != null && Number.isFinite(Number(row.length_inches))
-        ? Number(row.length_inches)
-        : null
     const boardLength =
-      row.length_feet != null && inchesNum != null
-        ? `${row.length_feet}'${formatDecimalDimension(inchesNum) || "0"}"`
-        : row.length_feet != null
-          ? `${row.length_feet}'`
-          : null
+      boardLengthLabelFromDimensionsColumn((row as { dimensions?: string | null }).dimensions) ??
+      null
     out.push({
       id: row.id,
       slug: row.slug ?? null,

@@ -123,32 +123,9 @@ function pickFirstJoined<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value
 }
 
-function formatDimensions(row: {
-  length_inches_display?: string | null
-  width_inches_display?: string | null
-  thickness_inches_display?: string | null
-  volume_display?: string | null
-  length_feet?: number | null
-  length_inches?: number | null
-  width?: number | null
-  thickness?: number | null
-  volume?: number | null
-}): string | null {
-  const lengthLabel = row.length_inches_display?.trim()
-    ? row.length_inches_display.trim()
-    : row.length_feet != null
-      ? `${row.length_feet}'${row.length_inches ?? 0}"`
-      : null
-  const widthLabel =
-    row.width_inches_display?.trim() || (row.width != null ? `${row.width}"` : null)
-  const thicknessLabel =
-    row.thickness_inches_display?.trim() || (row.thickness != null ? `${row.thickness}"` : null)
-  const volumeLabel = row.volume_display?.trim() || (row.volume != null ? `${row.volume}L` : null)
-
-  const parts = [lengthLabel, widthLabel, thicknessLabel].filter((p): p is string => Boolean(p))
-  if (parts.length === 0) return volumeLabel ?? null
-  const dims = parts.join(" × ")
-  return volumeLabel ? `${dims} · ${volumeLabel}` : dims
+function formatDimensions(row: { dimensions?: string | null }): string | null {
+  const stored = row.dimensions?.trim()
+  return stored || null
 }
 
 function boardTypeLabel(boardType: string | null | undefined): string {
@@ -235,15 +212,7 @@ type ListingRow = {
   views: number | null
   created_at: string
   updated_at: string | null
-  length_feet: number | null
-  length_inches: number | null
-  width: number | null
-  thickness: number | null
-  volume: number | null
-  length_inches_display: string | null
-  width_inches_display: string | null
-  thickness_inches_display: string | null
-  volume_display: string | null
+  dimensions: string | null
 }
 
 type OrderJoinedRow = {
@@ -302,7 +271,7 @@ type BrandLite = { id: string; name: string; slug: string | null; logo_url: stri
 // ---------------------------------------------------------------------------
 
 const LISTINGS_SELECT =
-  "id, user_id, slug, title, section, status, hidden_from_site, brand, brand_id, board_type, condition, city, state, price, views, created_at, updated_at, length_feet, length_inches, width, thickness, volume, length_inches_display, width_inches_display, thickness_inches_display, volume_display"
+  "id, user_id, slug, title, section, status, hidden_from_site, brand, brand_id, board_type, condition, city, state, price, views, created_at, updated_at, dimensions"
 
 const ORDERS_SELECT_WITH_LISTINGS = `
   id, order_num, amount, platform_fee, seller_earnings, status, delivery_status,

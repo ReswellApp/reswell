@@ -135,15 +135,16 @@ import {
 } from "@/lib/sell-form-validation"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import {
-  boardDimensionDisplayFields,
-  boardDimensionsToDbFields,
   formatBoardLengthForTitle,
-  formatBoardLengthInputFromParts,
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
   normalizeVolumeLitersInput,
   shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
+import {
+  listingDimensionsColumnFromSurfboardSellForm,
+  parseListingDimensionsColumn,
+} from "@/lib/listing-dimensions-storage"
 import { reswellParcelAutofillStringsFromBoard } from "@/lib/surfboard-shipping-estimates"
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -1219,8 +1220,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         return
       }
       const imp = getImpersonation()
-      // Use `*` so edit load works before/without dimension display columns; see
-      // supabase/migrations/20260407140000_listing_dimension_display_text.sql
+      // Use `*` so edit load picks up new listing columns without tight select coupling; see
+      // supabase/migrations/20260815120000_listings_dimensions_column.sql
       let query = supabase
         .from("listings")
         .select(
@@ -1268,7 +1269,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         clearImpersonation()
         setImpersonation(null)
       }
-      const lengthFeet = listing.length_feet != null ? String(listing.length_feet) : ""
       const loadedFulfillment = boardFulfillmentFromFlags(
         listing.local_pickup,
         listing.shipping_available
@@ -1353,6 +1353,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         loadedReswellPackage.reswellPackageHeightIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightLb.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightOz.trim() !== ""
+      const parsedDims =
+        (listing as { dimensions?: string | null }).dimensions?.trim()
+          ? parseListingDimensionsColumn((listing as { dimensions?: string | null }).dimensions)
+          : null
       setFormData({
         title: listing.title ?? "",
         description: listing.description ?? "",
@@ -1392,28 +1396,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
         boardType: listing.board_type ?? "",
-        boardLength: formatBoardLengthInputFromParts(
-          lengthFeet ? lengthFeet : "",
-          (listing as { length_inches_display?: string | null }).length_inches_display?.trim() ||
-            (listing.length_inches != null && Number(listing.length_inches) !== 0
-              ? String(listing.length_inches)
-              : ""),
-        ),
-        boardWidthInches:
-          (listing as { width_inches_display?: string | null }).width_inches_display?.trim() ||
-          ((listing as { width?: number | null }).width != null
-            ? String((listing as { width?: number | null }).width)
-            : ""),
-        boardThicknessInches:
-          (listing as { thickness_inches_display?: string | null }).thickness_inches_display?.trim() ||
-          ((listing as { thickness?: number | null }).thickness != null
-            ? String((listing as { thickness?: number | null }).thickness)
-            : ""),
-        boardVolumeL:
-          (listing as { volume_display?: string | null }).volume_display?.trim() ||
-          ((listing as { volume?: number | null }).volume != null
-            ? String((listing as { volume?: number | null }).volume)
-            : ""),
+        boardLength: parsedDims?.boardLength ?? "",
+        boardWidthInches: parsedDims?.boardWidthInches ?? "",
+        boardThicknessInches: parsedDims?.boardThicknessInches ?? "",
+        boardVolumeL: parsedDims?.boardVolumeL ?? "",
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
@@ -2202,8 +2188,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           listingImpersonation.userId === editListingOwnerId &&
           user.id !== editListingOwnerId
 
-        const dimDb = boardDimensionsToDbFields(fd)
-        const dimDisplay = boardDimensionDisplayFields(fd)
+        /** Persists surfboard dims on `listings.dimensions` (see migration `20260815120000_listings_dimensions_column.sql`). */
+        const dimensionsStored = listingDimensionsColumnFromSurfboardSellForm(fd)
         const packedRow = reswellPackageFieldsToDb(fd)
         const editListingFields = {
           title: resolvedListingTitle,
@@ -2212,12 +2198,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           condition: fd.condition,
           category_id: fd.category,
           board_type: fd.boardType,
-          length_feet: dimDb.length_feet,
-          length_inches: dimDb.length_inches,
-          width: dimDb.width,
-          thickness: dimDb.thickness,
-          volume: dimDb.volume,
-          ...dimDisplay,
+          dimensions: dimensionsStored,
           fins_setup: fd.boardFins ? fd.boardFins : null,
           tail_shape: fd.boardTail ? fd.boardTail : null,
           latitude: boardLocationLat,
@@ -2266,7 +2247,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
             if (process.env.NODE_ENV === "development") {
               console.warn(
-                "[sell] DB missing listing dimension display columns; saved without them. Run: supabase/migrations/20260407140000_listing_dimension_display_text.sql",
+                "[sell] DB rejected legacy listing dimension columns; saved without them. Ensure migrations are applied.",
               )
             }
             const retry = await supabase
@@ -2356,8 +2337,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           return
         }
       } else {
-        const dimDbNew = boardDimensionsToDbFields(fd)
-        const dimDisplayNew = boardDimensionDisplayFields(fd)
+        /** Persists surfboard dims on `listings.dimensions` (see migration `20260815120000_listings_dimensions_column.sql`). */
+        const dimensionsStoredNew = listingDimensionsColumnFromSurfboardSellForm(fd)
         const packedRowNew = reswellPackageFieldsToDb(fd)
         const listingFields = {
           title: resolvedListingTitle,
@@ -2367,12 +2348,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           section: "surfboards" as const,
           category_id: fd.category,
           board_type: fd.boardType,
-          length_feet: dimDbNew.length_feet,
-          length_inches: dimDbNew.length_inches,
-          width: dimDbNew.width,
-          thickness: dimDbNew.thickness,
-          volume: dimDbNew.volume,
-          ...dimDisplayNew,
+          dimensions: dimensionsStoredNew,
           fins_setup: fd.boardFins ? fd.boardFins : null,
           tail_shape: fd.boardTail ? fd.boardTail : null,
           latitude: boardLocationLat,
@@ -2434,7 +2410,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           if (listingError && isListingDimensionDisplaySchemaCacheError(listingError)) {
             if (process.env.NODE_ENV === "development") {
               console.warn(
-                "[sell] DB missing listing dimension display columns; saved without them. Run: supabase/migrations/20260407140000_listing_dimension_display_text.sql",
+                "[sell] DB rejected legacy listing dimension columns; saved without them. Ensure migrations are applied.",
               )
             }
             const retryPayload = {

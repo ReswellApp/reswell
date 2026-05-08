@@ -285,9 +285,7 @@ export function CartPageView({
                 const condition = formatCondition(listing.condition)
                 const boardType = formatBoardType(listing.board_type)
                 const lengthLine = formatListingBoardLengthSubtitle({
-                  length_feet: listing.length_feet,
-                  length_inches: listing.length_inches,
-                  length_inches_display: listing.length_inches_display,
+                  dimensions: listing.dimensions,
                 })
                 const favorited = favoritedListingIds.includes(listing.id)
 

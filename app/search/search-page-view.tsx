@@ -10,7 +10,7 @@ import {
 } from "@/lib/elasticsearch/listings-index"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
-import { formatDecimalDimension } from "@/lib/board-measurements"
+import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import {
   displayMarketplaceSearchQueryForAnalytics,
   normalizeMarketplaceSearchQueryForAnalytics,
@@ -269,8 +269,7 @@ async function fetchCuratedRecentListings(
       state,
       shipping_available,
       board_type,
-      length_feet,
-      length_inches,
+      dimensions,
       created_at,
       listing_images (url, is_primary),
       profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
@@ -324,16 +323,7 @@ async function buildSearchFromSupabase(
 }
 
 function rowToRecentListing(row: any): RecentListing {
-  const inchesNum =
-    row.length_inches != null && Number.isFinite(Number(row.length_inches))
-      ? Number(row.length_inches)
-      : null
-  const boardLength =
-    row.length_feet != null && inchesNum != null
-      ? `${row.length_feet}'${formatDecimalDimension(inchesNum) || "0"}"`
-      : row.length_feet != null
-        ? `${row.length_feet}'`
-        : null
+  const boardLength = boardLengthLabelFromDimensionsColumn(row.dimensions) ?? null
   return {
     id: row.id,
     slug: row.slug ?? null,
@@ -374,8 +364,7 @@ async function buildSearchQuery(
       state,
       shipping_available,
       board_type,
-      length_feet,
-      length_inches,
+      dimensions,
       listing_images (url, is_primary),
       profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name, slug)

@@ -51,20 +51,12 @@ export type UserListingBoardModelDataListingEmbed = {
   fins_setup: string | null
   description: string | null
   brand: string | null
-  length_feet: number | null
-  length_inches: number | null
-  length_inches_display: string | null
-  width: number | null
-  width_inches_display: string | null
-  thickness: number | null
-  thickness_inches_display: string | null
-  volume: number | null
-  volume_display: string | null
+  dimensions: string | null
   updated_at: string | null
   listing_images?: UserListingBoardModelDataListingImageEmbed[] | null
 }
 
-const LISTING_EMBED_FOR_ADMIN = `title, slug, status, board_type, price, condition, fins_setup, description, brand, length_feet, length_inches, length_inches_display, width, width_inches_display, thickness, thickness_inches_display, volume, volume_display, updated_at,
+const LISTING_EMBED_FOR_ADMIN = `title, slug, status, board_type, price, condition, fins_setup, description, brand, dimensions, updated_at,
   listing_images ( id, url, thumbnail_url, is_primary, sort_order )`
 
 function normalizeMoney(v: unknown): number | null {

@@ -27,7 +27,7 @@ export interface ListingTileImageMediaProps {
   imageClassName?: string
   imageGrayscale?: boolean
   overlayTopLeft?: ReactNode
-  /** e.g. favorite control — positioned bottom-right over the photo */
+  /** Corner overlay (e.g. favorites). Position comes from the overlay root (top-right on cards). */
   overlayBottomRight?: ReactNode
   overlayFull?: ReactNode
 }

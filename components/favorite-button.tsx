@@ -88,6 +88,9 @@ export function FavoriteButton({
           "relative h-11 w-11 min-h-[44px] min-w-[44px] rounded-full border border-transparent bg-transparent text-neutral-800 shadow-none hover:border-white/80 hover:bg-white/75 hover:text-neutral-950 hover:shadow-[0_2px_12px_rgba(0,0,0,0.1)] hover:backdrop-blur-md group-hover/favorite:border-white/80 group-hover/favorite:bg-white/75 group-hover/favorite:text-neutral-950 group-hover/favorite:shadow-[0_2px_12px_rgba(0,0,0,0.1)] group-hover/favorite:backdrop-blur-md focus-visible:border-white/80 focus-visible:bg-white/75 focus-visible:text-neutral-950 focus-visible:shadow-[0_2px_12px_rgba(0,0,0,0.1)] focus-visible:backdrop-blur-md dark:text-neutral-100 dark:hover:border-white/70 dark:hover:bg-white/75 dark:hover:text-neutral-900 dark:group-hover/favorite:border-white/70 dark:group-hover/favorite:bg-white/75 dark:group-hover/favorite:text-neutral-900 dark:focus-visible:border-white/70 dark:focus-visible:bg-white/75 dark:focus-visible:text-neutral-900 [&_svg]:pointer-events-auto",
         favorited &&
           "text-red-500 hover:text-red-600 group-hover/favorite:text-red-600 dark:text-red-500 dark:hover:text-red-600 dark:group-hover/favorite:text-red-600",
+        variant === "ghost" &&
+          !favorited &&
+          "hover:text-red-500 hover:[&_svg]:fill-current group-hover/favorite:text-red-500 group-hover/favorite:[&_svg]:fill-current focus-visible:text-red-500 focus-visible:[&_svg]:fill-current dark:hover:text-red-500 dark:group-hover/favorite:text-red-500 dark:focus-visible:text-red-500",
         className,
       )}
     >

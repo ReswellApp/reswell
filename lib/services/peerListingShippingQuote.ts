@@ -29,15 +29,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   shipping_packed_width_in,
   shipping_packed_height_in,
   shipping_packed_weight_oz,
-  length_feet,
-  length_inches,
-  length_inches_display,
-  width,
-  width_inches_display,
-  thickness,
-  thickness_inches_display,
-  volume,
-  volume_display
+  dimensions
 `.trim()
 
 export type PeerListingForShippingQuote = ListingPackedParcelSource &

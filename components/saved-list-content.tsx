@@ -26,8 +26,7 @@ export interface SavedFavorite {
     state: string | null
     condition?: string | null
     board_type?: string | null
-    length_feet?: number | null
-    length_inches?: number | null
+    dimensions?: string | null
     shipping_available?: boolean
     local_pickup?: boolean | null
     listing_images: { url: string; is_primary: boolean }[]
@@ -72,8 +71,7 @@ export function SavedListContent() {
           state,
           condition,
           board_type,
-          length_feet,
-          length_inches,
+          dimensions,
           shipping_available,
           local_pickup,
           listing_images(url, is_primary),

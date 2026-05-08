@@ -328,19 +328,7 @@ function mergedBoardCatalogDimensionLabelsForSnapshotRow(row: SnapshotAdminRowAp
 } {
   const lg = row.listings ?? undefined
   const fromListing =
-    lg != null
-      ? buildBoardCatalogDimensionLabelsFromListingRow({
-          length_feet: lg.length_feet,
-          length_inches: lg.length_inches,
-          length_inches_display: lg.length_inches_display,
-          width: lg.width,
-          width_inches_display: lg.width_inches_display,
-          thickness: lg.thickness,
-          thickness_inches_display: lg.thickness_inches_display,
-          volume: lg.volume,
-          volume_display: lg.volume_display,
-        })
-      : null
+    lg != null ? buildBoardCatalogDimensionLabelsFromListingRow({ dimensions: lg.dimensions ?? null }) : null
 
   return {
     length_label: coalesceSnapshotThenListing(row.length_label, fromListing?.length_label),

@@ -11,8 +11,7 @@ export type CartCarouselFavoriteListing = {
   section: string
   city: string | null
   state: string | null
-  length_feet: number | null
-  length_inches: number | null
+  dimensions: string | null
   board_type: string | null
   local_pickup: boolean | null
   shipping_available: boolean | null
@@ -45,8 +44,7 @@ export async function getFavoriteListingsForCartCarousel(
         user_id,
         city,
         state,
-        length_feet,
-        length_inches,
+        dimensions,
         board_type,
         local_pickup,
         shipping_available,
@@ -105,8 +103,7 @@ export async function getFavoriteListingsForCartCarousel(
       section: L.section,
       city: L.city,
       state: L.state,
-      length_feet: L.length_feet,
-      length_inches: L.length_inches,
+      dimensions: L.dimensions,
       board_type: L.board_type,
       local_pickup: L.local_pickup,
       shipping_available: L.shipping_available,

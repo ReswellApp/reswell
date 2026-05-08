@@ -5,15 +5,13 @@ import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
+  composeListingDimensionsFromSplitListingFields,
+  listingDimensionsColumnTrim,
+} from '@/lib/listing-dimensions-storage'
+import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from '@/lib/listing-dimensions-display'
-
-function listingDimensionDisplayTrim(v: unknown): string | null {
-  if (v == null) return null
-  const s = String(v).trim().slice(0, 80)
-  return s === '' ? null : s
-}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -53,6 +51,7 @@ export async function POST(request: NextRequest) {
     brand_model_id: bodyBrandModelId,
     model: listingModelText,
     images = [],
+    dimensions,
     length_inches_display,
     width_inches_display,
     thickness_inches_display,
@@ -134,18 +133,19 @@ export async function POST(request: NextRequest) {
     city,
     state,
     board_type,
-    length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
-    length_inches:
-      length_inches != null && length_inches !== ''
-        ? parseFloat(String(length_inches))
-        : null,
-    width: width ? parseFloat(width) : null,
-    thickness: thickness ? parseFloat(thickness) : null,
-    volume: volume ? parseFloat(volume) : null,
-    length_inches_display: listingDimensionDisplayTrim(length_inches_display),
-    width_inches_display: listingDimensionDisplayTrim(width_inches_display),
-    thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
-    volume_display: listingDimensionDisplayTrim(volume_display),
+    dimensions:
+      listingDimensionsColumnTrim(dimensions) ??
+      composeListingDimensionsFromSplitListingFields({
+        length_feet,
+        length_inches,
+        length_inches_display,
+        width,
+        width_inches_display,
+        thickness,
+        thickness_inches_display,
+        volume,
+        volume_display,
+      }),
     brand,
     shaper,
     brand_id: listingBrandId,
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
 
   if (listingError && isListingDimensionDisplaySchemaCacheError(listingError)) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[api/listings] Retrying insert without dimension display columns.')
+      console.warn('[api/listings] Retrying insert without legacy dimension payload keys.')
     }
     const retry = await supabase
       .from('listings')

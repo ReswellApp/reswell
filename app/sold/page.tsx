@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
-import { formatDecimalDimension } from "@/lib/board-measurements"
+import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { RecentlySoldPageClient, type SoldFeedListing } from "./sold-page-client"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
@@ -17,16 +17,8 @@ export const metadata: Metadata = pageSeoMetadata({
 })
 
 function mapSoldRow(row: Record<string, unknown>): SoldFeedListing {
-  const inchesNum =
-    row.length_inches != null && Number.isFinite(Number(row.length_inches))
-      ? Number(row.length_inches)
-      : null
-  const boardLength =
-    row.length_feet != null && inchesNum != null
-      ? `${row.length_feet}'${formatDecimalDimension(inchesNum) || "0"}"`
-      : row.length_feet != null
-        ? `${row.length_feet}'`
-        : null
+  const dimStr = row.dimensions != null ? String(row.dimensions) : ""
+  const boardLength = boardLengthLabelFromDimensionsColumn(dimStr) ?? null
   const soldAtRaw = row.sold_at ?? row.updated_at
   const soldAt = soldAtRaw ? String(soldAtRaw) : new Date().toISOString()
   const listPrice = Number(row.price ?? 0)
@@ -69,8 +61,7 @@ async function SoldPageData() {
     state,
     updated_at,
     board_type,
-    length_feet,
-    length_inches,
+    dimensions,
     listing_images (url, is_primary),
     profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count),
     categories (name, slug)

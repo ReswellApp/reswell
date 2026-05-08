@@ -1,4 +1,4 @@
-import { formatBoardLengthInputFromParts } from "@/lib/board-measurements"
+import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import {
   applyReswellShippingAxisBuffer,
   reswellSuggestedPackageInchesFromBoard,
@@ -19,15 +19,8 @@ export type ListingPackedParcelSource = {
   shipping_packed_width_in?: number | string | null
   shipping_packed_height_in?: number | string | null
   shipping_packed_weight_oz?: number | string | null
-  length_feet?: number | null
-  length_inches?: number | string | null
-  length_inches_display?: string | null
-  width?: number | null
-  width_inches_display?: string | null
-  thickness?: number | null
-  thickness_inches_display?: string | null
-  volume?: number | null
-  volume_display?: string | null
+  /** Canonical board L×W×T×vol string — sole source for parcel L/W/H + weight heuristics. */
+  dimensions?: string | null
 }
 
 function num(v: unknown): number | null {
@@ -52,20 +45,14 @@ function storedPackedSurfboardDimsLookUsable(lengthIn: number, widthIn: number, 
 }
 
 function boardLengthFormFromListing(row: ListingPackedParcelSource): string | null {
-  const ft = row.length_feet
-  if (ft == null || !Number.isFinite(Number(ft))) return null
-  const inchDisp =
-    row.length_inches_display?.trim() ||
-    (row.length_inches != null && Number(row.length_inches) !== 0
-      ? String(row.length_inches)
-      : "")
-  return formatBoardLengthInputFromParts(String(ft), inchDisp)
+  const parsed = row.dimensions?.trim() ? parseListingDimensionsColumn(row.dimensions) : null
+  if (parsed?.boardLength.trim()) return parsed.boardLength
+  return null
 }
 
 /**
  * Where a resolved parcel came from:
- *   • `board+saved-weight` — current contract: L×W×H from the board's `length / width / thickness`
- *     fields (mirrored by the sell form's Reswell card auto-sync) + saved `shipping_packed_weight_oz`.
+ *   • `board+saved-weight` — L×W×H from `listings.dimensions` + saved `shipping_packed_weight_oz`.
  *   • `board+heuristic-weight` — board dims + weight derived from length/volume when seller hasn't saved a weight.
  *   • `heuristic` — legacy / draft listings missing board dims (very rare).
  */
@@ -77,8 +64,8 @@ export type ResolvedPackedParcelSource =
 /**
  * Resolves L×W×H (in) and weight (oz) for ShipEngine.
  *
- * **Source of truth for L×W×H is the board itself** (`length_feet/length_inches`, `width`, `thickness`),
- * because the sell form's Reswell packed-dimensions card auto-mirrors these values on every edit
+ * **Source of truth for L×W×H is `listings.dimensions`** (length, width, thickness, volume),
+ * which the sell flow keeps in sync with the board fields on every edit
  * (see `useEffect` in `app/sell/sell-flow-client.tsx` — calls `reswellParcelAutofillStringsFromBoard`).
  * That makes `shipping_packed_length_in/width_in/height_in` columns redundant and risky:
  * legacy listings persisted +8″/axis padding (commit `d064b3a`'s `RESWELL_PACK_PADDING_TOTAL_PER_AXIS_IN`)
@@ -103,15 +90,10 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
     }
   | { ok: false; error: string } {
   const boardLength = boardLengthFormFromListing(row)
-  const widthStr =
-    row.width_inches_display?.trim() ||
-    (row.width != null && Number.isFinite(Number(row.width)) ? String(row.width) : "")
-  const thickStr =
-    row.thickness_inches_display?.trim() ||
-    (row.thickness != null && Number.isFinite(Number(row.thickness)) ? String(row.thickness) : "")
-  const volStr =
-    row.volume_display?.trim() ||
-    (row.volume != null && Number.isFinite(Number(row.volume)) ? String(row.volume) : "")
+  const parsedDims = row.dimensions?.trim() ? parseListingDimensionsColumn(row.dimensions) : null
+  const widthStr = parsedDims?.boardWidthInches?.trim() ?? ""
+  const thickStr = parsedDims?.boardThicknessInches?.trim() ?? ""
+  const volStr = parsedDims?.boardVolumeL?.trim() ?? ""
 
   const Woz = num(row.shipping_packed_weight_oz)
 

@@ -20,9 +20,7 @@ export type CartListingRow = {
   board_shipping_cost_mode?: string | null
   condition?: string | null
   board_type?: string | null
-  length_feet?: number | null
-  length_inches?: number | null
-  length_inches_display?: string | null
+  dimensions?: string | null
   listing_images: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
   profiles: {
     display_name: string | null
@@ -238,9 +236,7 @@ export async function getCartPageItems(): Promise<{
         board_shipping_cost_mode,
         condition,
         board_type,
-        length_feet,
-        length_inches,
-        length_inches_display,
+        dimensions,
         listing_images ( url, thumbnail_url, is_primary ),
         profiles!listings_user_id_fkey ( display_name, avatar_url, seller_slug, shop_verified, shop_name, is_shop )
       )

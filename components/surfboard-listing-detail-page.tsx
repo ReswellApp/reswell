@@ -687,18 +687,7 @@ export async function SurfboardListingDetailPage({
                       listingId={board.id}
                       className="!rounded-none !border-0 !bg-transparent !px-0 !py-0 shadow-none dark:!bg-transparent"
                       dimensions={{
-                        length_feet: board.length_feet,
-                        length_inches: board.length_inches,
-                        width: board.width,
-                        thickness: board.thickness,
-                        volume: board.volume,
-                        length_inches_display: (board as { length_inches_display?: string | null })
-                          .length_inches_display,
-                        width_inches_display: (board as { width_inches_display?: string | null })
-                          .width_inches_display,
-                        thickness_inches_display: (board as { thickness_inches_display?: string | null })
-                          .thickness_inches_display,
-                        volume_display: (board as { volume_display?: string | null }).volume_display,
+                        dimensions: (board as { dimensions?: string | null }).dimensions,
                       }}
                     />
                     {indexBrand ? (

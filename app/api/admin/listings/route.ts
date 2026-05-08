@@ -13,6 +13,10 @@ import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
 } from '@/lib/services/listingStorageCleanup'
+import {
+  composeListingDimensionsFromSplitListingFields,
+  listingDimensionsColumnTrim,
+} from '@/lib/listing-dimensions-storage'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -122,12 +126,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ listings })
 }
 
-function listingDimensionDisplayTrim(v: unknown): string | null {
-  if (v == null) return null
-  const s = String(v).trim().slice(0, 80)
-  return s === '' ? null : s
-}
-
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -172,6 +170,7 @@ export async function POST(request: NextRequest) {
     shaper,
     images = [],
     inventory_quantity,
+    dimensions,
     length_inches_display,
     width_inches_display,
     thickness_inches_display,
@@ -238,18 +237,19 @@ export async function POST(request: NextRequest) {
     city: city || null,
     state: state || null,
     board_type: board_type || null,
-    length_feet: length_feet ? parseInt(String(length_feet), 10) : null,
-    length_inches:
-      length_inches != null && length_inches !== ''
-        ? parseFloat(String(length_inches))
-        : null,
-    width: width ? parseFloat(width) : null,
-    thickness: thickness ? parseFloat(thickness) : null,
-    volume: volume ? parseFloat(volume) : null,
-    length_inches_display: listingDimensionDisplayTrim(length_inches_display),
-    width_inches_display: listingDimensionDisplayTrim(width_inches_display),
-    thickness_inches_display: listingDimensionDisplayTrim(thickness_inches_display),
-    volume_display: listingDimensionDisplayTrim(volume_display),
+    dimensions:
+      listingDimensionsColumnTrim(dimensions) ??
+      composeListingDimensionsFromSplitListingFields({
+        length_feet,
+        length_inches,
+        length_inches_display,
+        width,
+        width_inches_display,
+        thickness,
+        thickness_inches_display,
+        volume,
+        volume_display,
+      }),
     brand: brand || null,
     shaper: shaper || null,
     stock_quantity:
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
 
   if (listingError && isListingDimensionDisplaySchemaCacheError(listingError)) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[api/admin/listings] Retrying insert without dimension display columns.')
+      console.warn('[api/admin/listings] Retrying insert without legacy dimension payload keys.')
     }
     const retry = await supabase
       .from('listings')

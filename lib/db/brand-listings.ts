@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
-import { formatDecimalDimension } from "@/lib/board-measurements"
+import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 
 const BRAND_MARKETPLACE_LISTING_SELECT = `
   id,
@@ -16,8 +16,7 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   shipping_available,
   local_pickup,
   board_type,
-  length_feet,
-  length_inches,
+  dimensions,
   created_at,
   listing_images (url, is_primary),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
@@ -42,24 +41,14 @@ interface BrandMarketplaceListingRow {
   shipping_available?: boolean | null
   local_pickup?: boolean | null
   board_type?: string | null
-  length_feet?: number | null
-  length_inches?: number | string | null
+  dimensions?: string | null
   listing_images?: RecentListing["listing_images"]
   profiles?: RecentListing["profiles"]
   categories?: RecentListing["categories"]
 }
 
 function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
-  const inchesNum =
-    row.length_inches != null && Number.isFinite(Number(row.length_inches))
-      ? Number(row.length_inches)
-      : null
-  const boardLength =
-    row.length_feet != null && inchesNum != null
-      ? `${row.length_feet}'${formatDecimalDimension(inchesNum) || "0"}"`
-      : row.length_feet != null
-        ? `${row.length_feet}'`
-        : null
+  const boardLength = boardLengthLabelFromDimensionsColumn(row.dimensions) ?? null
   return {
     id: row.id,
     slug: row.slug ?? null,
