@@ -434,7 +434,7 @@ export async function SurfboardListingDetailPage({
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
               <div className="relative isolate">
-                <div className="absolute right-2 top-2 z-[15] flex gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
+                <div className="absolute right-2 top-2 z-[15] flex items-start gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
                   {showShareOnGalleryOverlay ? (
                     <ShareButton
                       title={listingTitle}
@@ -443,13 +443,15 @@ export async function SurfboardListingDetailPage({
                     />
                   ) : null}
                   {showFavoriteOnGalleryOverlay ? (
-                    <FavoriteButton
-                      listingId={board.id}
-                      redirectPath={listingDetailHref(board)}
-                      initialFavorited={isFavorited}
-                      isLoggedIn={!!user}
-                      refreshAfterToggle
-                    />
+                    <div className="group/favorite flex h-14 w-14 shrink-0 items-start justify-end">
+                      <FavoriteButton
+                        listingId={board.id}
+                        redirectPath={listingDetailHref(board)}
+                        initialFavorited={isFavorited}
+                        isLoggedIn={!!user}
+                        refreshAfterToggle
+                      />
+                    </div>
                   ) : null}
                 </div>
                 <ImageGallery images={images} title={capitalizeWords(board.title)} sold={isSold} />

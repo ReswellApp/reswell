@@ -18,7 +18,7 @@ export function FavoriteButtonCardOverlay({
 }: FavoriteButtonCardOverlayProps) {
   return (
     <div
-      className="absolute right-2 top-2 z-10"
+      className="group/favorite pointer-events-auto absolute right-2 top-2 z-[25] flex h-14 w-14 shrink-0 items-start justify-end"
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
