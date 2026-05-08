@@ -54,6 +54,7 @@ export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot)
   if (str(formData, "title") || str(formData, "description")) return true
   if (str(formData, "brand")) return true
   if (str(formData, "boardBrandId")) return true
+  if (str(formData, "boardBrandModelId")) return true
   if (str(formData, "boardModelName")) return true
   if (str(formData, "boardIndexModelSlug")) return true
   return false

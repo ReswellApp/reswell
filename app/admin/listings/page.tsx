@@ -62,6 +62,10 @@ interface Listing {
   views: number
   created_at: string
   category_id: string
+  brand?: string | null
+  model?: string | null
+  brand_id?: string | null
+  brand_model_id?: string | null
   categories: { name: string } | null
   hidden_from_site?: boolean | null
   profiles: { display_name: string; email: string }
@@ -310,10 +314,18 @@ export default function AdminListingsPage() {
     }
   }
 
-  const filteredListings = listings.filter(listing =>
-    listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    listing.profiles?.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredListings = listings.filter((listing) => {
+    const q = searchQuery.toLowerCase()
+    if (!q) return true
+    const brand = (listing.brand ?? "").toLowerCase()
+    const model = (listing.model ?? "").toLowerCase()
+    return (
+      listing.title.toLowerCase().includes(q) ||
+      listing.profiles?.display_name?.toLowerCase().includes(q) ||
+      brand.includes(q) ||
+      model.includes(q)
+    )
+  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -365,7 +377,7 @@ export default function AdminListingsPage() {
               }}
             >
               <Input
-                placeholder="Search by title or seller..."
+                placeholder="Search by title, seller, brand, or model..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={siteSearchInputClassName()}
@@ -483,6 +495,8 @@ export default function AdminListingsPage() {
                   <TableHead>Seller</TableHead>
                   <TableHead>Section</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Brand</TableHead>
+                  <TableHead>Model</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Views</TableHead>
@@ -533,6 +547,12 @@ export default function AdminListingsPage() {
                       <span className="line-clamp-2 text-sm">
                         {listing.categories?.name ?? '—'}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground max-w-[120px]">
+                      <span className="line-clamp-2 text-sm">{listing.brand?.trim() || '—'}</span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground max-w-[140px]">
+                      <span className="line-clamp-2 text-sm">{listing.model?.trim() || '—'}</span>
                     </TableCell>
                     <TableCell className="font-semibold text-black dark:text-white">${listing.price}</TableCell>
                     <TableCell>

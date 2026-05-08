@@ -23,7 +23,7 @@ const SHOP_LISTING_SELECT = `
       views,
       created_at,
       listing_images (url, is_primary),
-      inventory (quantity),
+      stock_quantity,
       categories (name)
     `
 
@@ -77,7 +77,7 @@ export async function getCachedShopRelatedListings(excludeListingId: string) {
       title,
       price,
       listing_images (url, is_primary),
-      inventory (quantity),
+      stock_quantity,
       categories (name)
     `)
     .eq("section", "new")

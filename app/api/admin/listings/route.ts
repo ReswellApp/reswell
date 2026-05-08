@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
   const selectWithHidden = `
     id, user_id, slug, title, price, status, section, views, created_at,
     category_id,
+    brand, model, brand_id, brand_model_id,
     hidden_from_site,
     profiles!listings_user_id_fkey(display_name, email),
     categories(name, slug),
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest) {
   const selectWithoutHidden = `
     id, user_id, slug, title, price, status, section, views, created_at,
     category_id,
+    brand, model, brand_id, brand_model_id,
     profiles!listings_user_id_fkey(display_name, email),
     categories(name, slug),
     listing_images(url)
@@ -250,6 +252,10 @@ export async function POST(request: NextRequest) {
     volume_display: listingDimensionDisplayTrim(volume_display),
     brand: brand || null,
     shaper: shaper || null,
+    stock_quantity:
+      section === "new" && inventory_quantity != null && Number(inventory_quantity) > 0
+        ? parseInt(String(inventory_quantity), 10)
+        : 0,
   }
   let { data: listing, error: listingError } = await supabase
     .from('listings')
@@ -274,6 +280,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })
   }
 
+  if (!listing?.id) {
+    return NextResponse.json({ error: 'Failed to create listing' }, { status: 500 })
+  }
+
   if (images.length > 0) {
     const imageInserts = (
       images as (string | { url: string; thumbnail_url?: string | null })[]
@@ -290,13 +300,6 @@ export async function POST(request: NextRequest) {
       }
     })
     await supabase.from('listing_images').insert(imageInserts)
-  }
-
-  if (section === 'new' && inventory_quantity != null && Number(inventory_quantity) > 0) {
-    await supabase.from('inventory').insert({
-      listing_id: listing.id,
-      quantity: parseInt(String(inventory_quantity), 10),
-    })
   }
 
   const firstEntry = (images as (string | { url: string; thumbnail_url?: string | null })[])[0]

@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
     volume,
     brand,
     shaper,
+    brand_id: bodyBrandId,
+    brand_model_id: bodyBrandModelId,
+    model: listingModelText,
     images = [],
     length_inches_display,
     width_inches_display,
@@ -104,6 +107,17 @@ export async function POST(request: NextRequest) {
       ? board_shipping_cost_mode
       : null
 
+  const listingBrandId =
+    typeof bodyBrandId === "string" && bodyBrandId.trim() ? bodyBrandId.trim() : null
+  const listingBrandModelId =
+    typeof bodyBrandModelId === "string" && bodyBrandModelId.trim()
+      ? bodyBrandModelId.trim()
+      : null
+  const listingModelNormalized =
+    typeof listingModelText === "string" && listingModelText.trim()
+      ? listingModelText.trim()
+      : null
+
   const listingInsertRow = {
     user_id: user.id,
     title: resolvedTitle,
@@ -134,6 +148,9 @@ export async function POST(request: NextRequest) {
     volume_display: listingDimensionDisplayTrim(volume_display),
     brand,
     shaper,
+    brand_id: listingBrandId,
+    brand_model_id: listingBrandModelId,
+    model: listingModelNormalized,
   }
   let { data: listing, error: listingError } = await supabase
     .from('listings')

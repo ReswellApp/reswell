@@ -16,6 +16,8 @@ export type SellBoardModelCatalogPatch = {
   boardIndexModelSlug: string
   boardIndexBrandSlug: string
   boardIndexLabel: string
+  /** `public.brand_models.id` when the seller picked a catalog row; omit or clear for free-text model. */
+  boardBrandModelId?: string
   boardBrandId?: string
   brand?: string
   boardLinkedBrandName?: string
@@ -94,6 +96,7 @@ export function SellBoardModelField({
       boardIndexBrandSlug: slugOut,
       boardIndexLabel:
         v.trim() && brandLabel ? `${brandLabel} ${v.trim()}`.trim() : brandLabel,
+      boardBrandModelId: "",
     })
   }
 
@@ -104,6 +107,7 @@ export function SellBoardModelField({
       boardIndexBrandSlug: row.brandSlug,
       boardIndexLabel: `${row.brandName} ${row.name}`.trim(),
       boardBrandId: row.brandId,
+      boardBrandModelId: row.id,
       brand: row.brandName,
       boardLinkedBrandName: row.brandName,
     })

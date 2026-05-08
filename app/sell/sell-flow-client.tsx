@@ -616,6 +616,7 @@ function createInitialSellFormData() {
     boardFins: "",
     boardTail: "",
     boardBrandId: "",
+    boardBrandModelId: "",
     boardIndexBrandSlug: "",
     boardIndexModelSlug: "",
     boardIndexLabel: "",
@@ -626,6 +627,17 @@ function createInitialSellFormData() {
     locationCity: "",
     locationState: "",
     locationDisplay: "",
+  }
+}
+
+function listingSurfboardBrandFieldsForDb(
+  fd: ReturnType<typeof createInitialSellFormData>,
+): { brand_model_id: string | null; model: string | null } {
+  const catalogId = fd.boardBrandModelId.trim()
+  const modelText = fd.boardModelName.trim()
+  return {
+    brand_model_id: catalogId || null,
+    model: modelText || null,
   }
 }
 
@@ -1215,7 +1227,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           `
           *,
           listing_images (id, url, thumbnail_url, is_primary, sort_order),
-          user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug )
+          user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug ),
+          brand_models ( id, name, brands ( slug ) )
         `,
         )
         .eq("id", editId)
@@ -1307,6 +1320,25 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const loadedCatalogModelSlug = snapRow?.catalog_model_slug?.trim() ?? ""
       const loadedCatalogBrandSlug = snapRow?.catalog_brand_slug?.trim() ?? ""
 
+      type BrandModelListingEmbed = {
+        id?: string
+        name?: string | null
+        brands?: { slug?: string | null } | { slug?: string | null }[] | null
+      }
+      const bmRaw = (listing as { brand_models?: BrandModelListingEmbed | BrandModelListingEmbed[] | null })
+        .brand_models
+      const bmRow = Array.isArray(bmRaw) ? bmRaw[0] : bmRaw
+      const brandSlugFromCatalogModel = (() => {
+        const b = bmRow?.brands
+        const o = Array.isArray(b) ? b[0] : b
+        return o?.slug?.trim() ?? ""
+      })()
+      const listingModelCol = (listing as { model?: string | null }).model?.trim() ?? ""
+      const loadedBrandModelId =
+        (listing as { brand_model_id?: string | null }).brand_model_id?.trim() ||
+        bmRow?.id?.trim() ||
+        ""
+
       const loadedReswellPackage = reswellPackageFormFromDbRow(
         listing as {
           shipping_packed_length_in?: number | string | null
@@ -1385,15 +1417,18 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
-        boardIndexBrandSlug: loadedCatalogBrandSlug,
-        boardIndexModelSlug: loadedCatalogModelSlug,
+        boardBrandModelId: loadedBrandModelId,
+        boardIndexBrandSlug: loadedCatalogBrandSlug || brandSlugFromCatalogModel,
+        boardIndexModelSlug:
+          loadedCatalogModelSlug ||
+          (bmRow?.name?.trim() ? slugify(bmRow.name.trim()) : ""),
         boardIndexLabel: (() => {
           const b = (listing as { brand?: string | null }).brand?.trim() ?? ""
-          const m = loadedBoardModelName
+          const m = listingModelCol || loadedBoardModelName || bmRow?.name?.trim() || ""
           if (b && m) return `${b} ${m}`.trim()
           return b || m || ""
         })(),
-        boardModelName: loadedBoardModelName,
+        boardModelName: listingModelCol || loadedBoardModelName || bmRow?.name?.trim() || "",
         boardLinkedBrandName:
           (listing as { brand_id?: string | null }).brand_id?.trim()
             ? ((listing as { brand?: string | null }).brand?.trim() ?? "")
@@ -2200,6 +2235,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           buyer_offers_enabled: fd.buyerOffers !== false,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
+          ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
         }
 
@@ -2354,6 +2390,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           buyer_offers_enabled: fd.buyerOffers !== false,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
+          ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
         }
 
@@ -2858,6 +2895,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                     ...f,
                                     brand: v,
                                     boardBrandId: "",
+                                    boardBrandModelId: "",
                                     boardIndexBrandSlug: "",
                                     boardIndexModelSlug: "",
                                     boardIndexLabel: "",
@@ -2874,6 +2912,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 setFormData((f) => ({
                                   ...f,
                                   boardBrandId: opt.brandId,
+                                  boardBrandModelId: "",
                                   boardIndexBrandSlug: opt.brandSlug,
                                   boardIndexModelSlug: opt.modelSlug,
                                   boardIndexLabel: opt.label,
@@ -2937,6 +2976,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               ...f,
                               brand: brandName,
                               boardBrandId: "",
+                              boardBrandModelId: "",
                               boardIndexBrandSlug: "",
                               boardIndexModelSlug: "",
                               boardIndexLabel: "",
@@ -2947,7 +2987,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         />
                         <p className="text-xs text-muted-foreground/45">
                           {
-                            "Brand and model are optional and don't appear on your listing. We use them to match your board to search and filters so surfers can find it."
+                            "Brand and model are saved on your listing and power search and filters. Requesting a missing brand or model still goes through the separate request queue for our catalog team."
                           }
                         </p>
                       </div>

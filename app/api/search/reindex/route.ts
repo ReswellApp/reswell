@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
         status,
         board_type,
         brand,
+        model,
         city,
         state,
         created_at,

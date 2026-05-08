@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS public.listings (
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'sold', 'pending', 'removed')),
   is_featured BOOLEAN DEFAULT FALSE,
   views INTEGER DEFAULT 0,
+  stock_quantity INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -250,21 +251,6 @@ DROP POLICY IF EXISTS "order_items_select_own" ON public.order_items;
 
 CREATE POLICY "order_items_select_own" ON public.order_items 
   FOR SELECT USING (EXISTS (SELECT 1 FROM public.orders WHERE id = order_id AND user_id = auth.uid()));
-
--- New items inventory table
-CREATE TABLE IF NOT EXISTS public.inventory (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  listing_id UUID NOT NULL REFERENCES public.listings(id) ON DELETE CASCADE UNIQUE,
-  quantity INTEGER NOT NULL DEFAULT 0,
-  sku TEXT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "inventory_select_public" ON public.inventory;
-
-CREATE POLICY "inventory_select_public" ON public.inventory FOR SELECT USING (true);
 
 -- Reports table
 CREATE TABLE IF NOT EXISTS public.reports (

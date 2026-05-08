@@ -49,7 +49,7 @@ const featuredNewSelect = `
   title,
   price,
   listing_images (url, thumbnail_url, sort_order, is_primary),
-  inventory (quantity),
+  stock_quantity,
   categories (name)
 `
 
@@ -162,8 +162,7 @@ export default async function HomePage() {
   const featuredNew =
     rawFeaturedNew
       ?.map((l) => {
-        const inv = Array.isArray(l.inventory) ? l.inventory[0] : l.inventory
-        const qty = inv ? Number((inv as { quantity: number }).quantity) : 0
+        const qty = Number((l as { stock_quantity?: number }).stock_quantity) || 0
         const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
         const catRow = Array.isArray(cat) ? cat[0] : cat
         return { listing: l, stockQuantity: qty, categoryName: catRow?.name ?? null }

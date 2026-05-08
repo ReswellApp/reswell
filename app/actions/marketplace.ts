@@ -46,17 +46,37 @@ export async function getInventoryProductById(
   id: string,
 ): Promise<{ product: InventoryProductRow } | { error: string }> {
   const supabase = await createClient()
-  const { data: product, error } = await supabase
-    .from("inventory")
-    .select("id, name, price, image_url, stock_quantity")
+  const { data: listing, error } = await supabase
+    .from("listings")
+    .select("id, title, price, stock_quantity, listing_images (url, is_primary)")
     .eq("id", id)
-    .eq("is_active", true)
-    .single()
+    .eq("section", "new")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .maybeSingle()
 
-  if (error || !product) {
+  if (error || !listing) {
     return { error: "Product not found" }
   }
-  return { product: product as InventoryProductRow }
+
+  const stockQty = Number((listing as { stock_quantity?: number }).stock_quantity) || 0
+  if (stockQty <= 0) {
+    return { error: "Product not found" }
+  }
+
+  const images =
+    (listing.listing_images as { url: string; is_primary: boolean }[] | null) || []
+  const primary = images.find((i) => i.is_primary) || images[0]
+
+  return {
+    product: {
+      id: listing.id,
+      name: listing.title,
+      price: Number(listing.price),
+      image_url: primary?.url ?? null,
+      stock_quantity: stockQty,
+    },
+  }
 }
 
 export async function getBoardModelsCatalogItems() {

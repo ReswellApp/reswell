@@ -11,6 +11,8 @@ export type ListingSearchDoc = {
   category_name: string
   board_type: string | null
   brand: string | null
+  /** Surfboard model label (catalog or free text). */
+  model: string | null
   city: string | null
   state: string | null
   created_at: string
@@ -42,6 +44,7 @@ const INDEX_MAPPINGS = {
     category_name: { type: "text" as const, analyzer: "listing_text" },
     board_type: { type: "keyword" as const },
     brand: { type: "text" as const, analyzer: "listing_text" },
+    model: { type: "text" as const, analyzer: "listing_text" },
     city: { type: "text" as const },
     state: { type: "text" as const },
     created_at: { type: "date" as const },
@@ -106,6 +109,7 @@ const SEARCH_FIELDS = [
   "description^2",
   "category_name^2",
   "brand^2",
+  "model^2",
   "board_type",
   "city",
   "state",
@@ -192,7 +196,7 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
         {
           multi_match: {
             query: q,
-            fields: ["title^4", "brand^3", "category_name^2"],
+            fields: ["title^4", "brand^3", "model^3", "category_name^2"],
             type: "phrase",
             boost: 5,
           },
@@ -290,6 +294,7 @@ export function listingRowToSearchDocFromRow(row: {
   status: string
   board_type: string | null
   brand: string | null
+  model: string | null
   city: string | null
   state: string | null
   created_at: string
@@ -305,6 +310,7 @@ export function listingRowToSearchDocFromRow(row: {
     category_name: cat?.name ?? "",
     board_type: row.board_type,
     brand: row.brand,
+    model: row.model,
     city: row.city,
     state: row.state,
     created_at: row.created_at,
@@ -326,6 +332,7 @@ export async function listingRowToSearchDoc(
       status,
       board_type,
       brand,
+      model,
       city,
       state,
       created_at,

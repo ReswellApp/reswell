@@ -14,15 +14,15 @@ export const metadata: Metadata = pageSeoMetadata({
 export default async function ShopPage() {
   const supabase = await createClient()
 
-  // Marketplace new listings (section=new with inventory) — purchasable in-app
+  // Marketplace new listings (section=new with stock_quantity > 0) — purchasable in-app
   const { data: newListings } = await supabase
     .from("listings")
     .select(`
       id,
       title,
       price,
+      stock_quantity,
       listing_images (url, is_primary),
-      inventory (quantity),
       categories (name)
     `)
     .eq("section", "new")
@@ -33,13 +33,9 @@ export default async function ShopPage() {
 
   const marketplaceItems =
     newListings
-      ?.filter((l) => {
-        const inv = Array.isArray(l.inventory) ? l.inventory[0] : l.inventory
-        return inv && Number((inv as { quantity: number }).quantity) > 0
-      })
+      ?.filter((l) => Number((l as { stock_quantity?: number }).stock_quantity) > 0)
       .map((l) => {
-        const inv = Array.isArray(l.inventory) ? l.inventory[0] : l.inventory
-        const quantity = inv ? Number((inv as { quantity: number }).quantity) : 0
+        const quantity = Number((l as { stock_quantity?: number }).stock_quantity) || 0
         const images = (l.listing_images as { url: string; is_primary: boolean }[]) || []
         const primary = images.find((i) => i.is_primary) || images[0]
         const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined

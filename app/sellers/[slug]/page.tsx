@@ -199,8 +199,7 @@ export default async function SellerProfilePage({
       `
       *,
       listing_images (url, is_primary),
-      categories (name, slug),
-      inventory (quantity)
+      categories (name, slug)
     `,
     )
     .eq("user_id", id)

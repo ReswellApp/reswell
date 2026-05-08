@@ -43,8 +43,7 @@ export async function ShopListingDetailPage({
     notFound()
   }
 
-  const inv = Array.isArray(listing.inventory) ? listing.inventory[0] : listing.inventory
-  const stockQuantity = inv ? Number((inv as { quantity: number }).quantity) : 0
+  const stockQuantity = Number((listing as { stock_quantity?: number }).stock_quantity) || 0
   const images = (listing.listing_images as { url: string; is_primary: boolean }[]) || []
   const primaryImage = images.find((i) => i.is_primary) || images[0]
   const imageUrl = primaryImage?.url ? proxiedListingImageSrc(primaryImage.url) : null
@@ -60,13 +59,9 @@ export async function ShopListingDetailPage({
 
   const relatedItems =
     relatedListings
-      ?.filter((l) => {
-        const invRel = Array.isArray(l.inventory) ? l.inventory[0] : l.inventory
-        return invRel && Number((invRel as { quantity: number }).quantity) > 0
-      })
+      ?.filter((l) => Number((l as { stock_quantity?: number }).stock_quantity) > 0)
       .map((l) => {
-        const invRel = Array.isArray(l.inventory) ? l.inventory[0] : l.inventory
-        const qty = invRel ? Number((invRel as { quantity: number }).quantity) : 0
+        const qty = Number((l as { stock_quantity?: number }).stock_quantity) || 0
         const imgs = (l.listing_images as { url: string; is_primary: boolean }[]) || []
         const prim = imgs.find((i) => i.is_primary) || imgs[0]
         const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
