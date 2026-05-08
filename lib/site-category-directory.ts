@@ -3,6 +3,8 @@
  * Surfboard types match `components/boards-listings-filters` (`type` query param).
  */
 
+import { BRANDS_BASE } from "@/lib/brands/routes"
+
 export type CategoryLink = { label: string; href: string }
 
 /** `/boards` root label — matches header nav and browse breadcrumbs. */
@@ -70,6 +72,21 @@ export function boardBrowseNavItemIsActive(
     if (searchParams.get(key) !== required.get(key)) return false
   }
   return pathname === path
+}
+
+/** Sellers, Brands, Board Talk — desktop header rail, mobile strip, hamburger. */
+export const siteHeaderSecondaryNavLinks: CategoryLink[] = [
+  { label: "Sellers", href: "/sellers" },
+  { label: "Brands", href: BRANDS_BASE },
+  { label: "Board Talk", href: "/board-talk" },
+]
+
+export function siteHeaderSecondaryNavItemIsActive(pathname: string | null, href: string): boolean {
+  if (!pathname) return false
+  const q = href.indexOf("?")
+  const pathOnly = (q === -1 ? href : href.slice(0, q)).replace(/\/$/, "") || "/"
+  const normalized = pathname.replace(/\/$/, "") || "/"
+  return normalized === pathOnly || normalized.startsWith(`${pathOnly}/`)
 }
 
 /* ------------------------------------------------------------------ */

@@ -3,7 +3,12 @@
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { boardBrowseNavItemIsActive, surfboardBrowseLinks } from "@/lib/site-category-directory"
+import {
+  boardBrowseNavItemIsActive,
+  siteHeaderSecondaryNavLinks,
+  siteHeaderSecondaryNavItemIsActive,
+  surfboardBrowseLinks,
+} from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 
 /**
@@ -20,7 +25,7 @@ export function HeaderMobileCategoryBar() {
   return (
     <nav
       className="-mx-5 border-t border-border bg-muted/25 px-5 py-1.5 sm:-mx-6 sm:px-6"
-      aria-label="Surfboard categories"
+      aria-label="Browse surfboards, sellers, and community"
     >
       <ul className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {surfboardBrowseLinks.map((link) => {
@@ -30,6 +35,24 @@ export function HeaderMobileCategoryBar() {
               <Link
                 href={link.href}
                 prefetch={boardsBrowseLinkPrefetch(link.href)}
+                className={cn(
+                  chipBase,
+                  active
+                    ? "border-foreground bg-muted font-semibold"
+                    : "border-border bg-background hover:border-midgray/35",
+                )}
+              >
+                {link.label}
+              </Link>
+            </li>
+          )
+        })}
+        {siteHeaderSecondaryNavLinks.map((link) => {
+          const active = siteHeaderSecondaryNavItemIsActive(pathname, link.href)
+          return (
+            <li key={link.href} className="flex shrink-0 items-center">
+              <Link
+                href={link.href}
                 className={cn(
                   chipBase,
                   active

@@ -45,8 +45,12 @@ import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { navigateToMarketplaceBrandResults } from "@/lib/nav-marketplace-brand-search"
-import { BRANDS_BASE } from "@/lib/brands/routes"
-import { boardBrowseNavItemIsActive, surfboardBrowseLinks } from "@/lib/site-category-directory"
+import {
+  boardBrowseNavItemIsActive,
+  siteHeaderSecondaryNavLinks,
+  siteHeaderSecondaryNavItemIsActive,
+  surfboardBrowseLinks,
+} from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
@@ -136,13 +140,6 @@ const boardShapeNav = surfboardBrowseLinks.map((link) => ({
   name: link.label,
   href: link.href,
 }))
-
-/** Right-aligned nav in the category bar, visually separated from marketplace categories. */
-const secondaryNav = [
-  { name: "Sellers", href: "/sellers" },
-  { name: "Brands", href: BRANDS_BASE },
-  { name: "Board Talk", href: "/board-talk" },
-]
 
 function isSearchResultsPath(p: string) {
   return p === "/search" || p === "/search/recent"
@@ -349,8 +346,8 @@ function HeaderDesktopCategoryBar({
           className="ml-6 flex shrink-0 items-center gap-8 border-l border-border pl-8"
           aria-label="Editorial and community"
         >
-          {secondaryNav.map((item) => {
-            const active = pathname === item.href || (pathname?.startsWith(`${item.href}/`) ?? false)
+          {siteHeaderSecondaryNavLinks.map((item) => {
+            const active = siteHeaderSecondaryNavItemIsActive(pathname, item.href)
             return (
               <Link
                 key={item.href}
@@ -359,7 +356,7 @@ function HeaderDesktopCategoryBar({
                   active ? "font-medium" : ""
                 }`}
               >
-                {item.name}
+                {item.label}
               </Link>
             )
           })}
@@ -1335,14 +1332,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 </Link>
               ))}
               <hr className="my-2 border-border" />
-              {secondaryNav.map((item) => (
+              {siteHeaderSecondaryNavLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onMobileDrawerLinkClick}
                   className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
                 >
-                  {item.name}
+                  {item.label}
                 </Link>
               ))}
             </nav>
