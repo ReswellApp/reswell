@@ -449,8 +449,6 @@ export async function SurfboardListingDetailPage({
                       initialFavorited={isFavorited}
                       isLoggedIn={!!user}
                       refreshAfterToggle
-                      className="flex size-[44px] items-center justify-center rounded-full border border-black/[0.08] bg-white/95 shadow-sm backdrop-blur-sm hover:bg-white dark:border-white/[0.12] dark:bg-background/95 dark:hover:bg-background"
-                      iconClassName="h-[18px] w-[18px]"
                     />
                   ) : null}
                 </div>

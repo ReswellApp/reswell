@@ -1901,11 +1901,16 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     await Promise.all(
       working.map(async (img, index) => {
         if (!img.id) return
+        const url = (img.url ?? "").trim()
+        const thumb = (img.thumbnailUrl ?? "").trim()
         const { error } = await supabase
           .from("listing_images")
           .update({
             sort_order: index,
             is_primary: index === 0,
+            ...(url
+              ? { url, thumbnail_url: thumb || null }
+              : {}),
           })
           .eq("id", img.id)
           .eq("listing_id", listingId)
@@ -2267,7 +2272,16 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           for (let i = 0; i < images.length; i++) {
             const img = images[i]
             if (img.id) {
-              imageOps.push({ id: img.id, is_primary: i === 0, sort_order: i })
+              if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
+                throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
+              }
+              imageOps.push({
+                id: img.id,
+                url: img.url,
+                thumbnail_url: img.thumbnailUrl,
+                is_primary: i === 0,
+                sort_order: i,
+              })
               continue
             }
             if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {

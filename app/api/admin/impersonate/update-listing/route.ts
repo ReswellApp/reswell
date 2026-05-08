@@ -148,9 +148,23 @@ export async function PUT(request: NextRequest) {
 
   for (const img of images) {
     if (img.id) {
+      const rowUpdate: {
+        sort_order: number
+        is_primary: boolean
+        url?: string
+        thumbnail_url?: string | null
+      } = { sort_order: img.sort_order, is_primary: img.is_primary }
+      const u = typeof img.url === "string" ? img.url.trim() : ""
+      if (u) {
+        rowUpdate.url = u
+        rowUpdate.thumbnail_url =
+          typeof img.thumbnail_url === "string" && img.thumbnail_url.trim()
+            ? img.thumbnail_url.trim()
+            : null
+      }
       await service
         .from("listing_images")
-        .update({ sort_order: img.sort_order, is_primary: img.is_primary })
+        .update(rowUpdate)
         .eq("id", img.id)
         .eq("listing_id", listingId)
     } else if (img.url) {
