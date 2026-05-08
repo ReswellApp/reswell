@@ -14,23 +14,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: [
-          'var(--font-sans)',
-          'system-ui',
-          'Segoe UI',
-          'Roboto',
-          'Helvetica Neue',
-          'Arial',
-          'sans-serif',
-        ],
-        headline: [
-          'var(--font-headline)',
-          'var(--font-sans)',
-          'system-ui',
-          'Segoe UI',
-          'Arial',
-          'sans-serif',
-        ],
+        sans: ['var(--font-sans)', 'sans-serif'],
+        headline: ['var(--font-headline)', 'var(--font-sans)', 'sans-serif'],
+        /** Technical strings use the same Stack Sans Text cut (no monospace). */
+        mono: ['var(--font-sans)', 'sans-serif'],
       },
       container: {
         center: true,

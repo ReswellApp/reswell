@@ -2,7 +2,6 @@ import React, { Suspense } from "react"
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import localFont from 'next/font/local'
-import { Caveat } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
@@ -23,14 +22,6 @@ const stackSansText = localFont({
   display: 'swap',
   weight: '200 700',
   adjustFontFallback: 'Arial',
-  preload: true,
-})
-
-const caveat = Caveat({
-  subsets: ['latin'],
-  variable: '--font-caveat',
-  display: 'swap',
-  adjustFontFallback: true,
   preload: true,
 })
 
@@ -75,7 +66,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="overflow-x-hidden">
-      <body className={`${stackSansText.variable} ${caveat.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
+      <body className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-hidden selection:bg-slate-900/10 selection:text-foreground`}>
         <GoogleAdsGtag />
         <LocaleProvider initialLocale={locale}>
           <Suspense fallback={null}>

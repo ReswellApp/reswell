@@ -12,3 +12,10 @@ export const listingProductCardGridClassName = cn(
   listingProductCardClassName,
   "min-w-0 h-full flex flex-col",
 )
+
+/**
+ * Listing card title — matches PDP “Recently viewed” marketplace tiles (Stack Sans Headline, semibold).
+ * Pair with `line-clamp-*` per layout (grids vs scroll bands).
+ */
+export const listingTileTitleHeadingClassName =
+  "font-headline text-sm font-semibold tracking-normal leading-snug text-foreground"

@@ -1,4 +1,7 @@
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import {
+  listingProductCardGridClassName,
+  listingTileTitleHeadingClassName,
+} from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 
 /** ~2 full cards + peek of 3rd on mobile; fixed width from `sm` up. */
@@ -25,8 +28,10 @@ export const homeListingScrollLinkClass = "min-w-0 flex flex-1 flex-col min-h-0"
 export const homeListingScrollBodyClass = "min-w-0 p-3 flex flex-col flex-1 min-h-0"
 export const homeListingScrollTitleSlotClass =
   "flex min-h-0 flex-1 flex-col overflow-hidden"
-export const homeListingScrollHeadingClass =
-  "font-sans text-sm font-normal tracking-normal leading-snug line-clamp-4 break-words sm:line-clamp-3"
+export const homeListingScrollHeadingClass = cn(
+  listingTileTitleHeadingClassName,
+  "line-clamp-4 break-words sm:line-clamp-3",
+)
 export const homeListingScrollMetaFooterClass = "w-full shrink-0 pt-1"
 
 /** Same peer tile as homepage scroll rows, for responsive grids (e.g. listing detail “more from seller”). */

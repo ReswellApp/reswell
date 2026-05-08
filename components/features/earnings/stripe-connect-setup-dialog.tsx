@@ -71,8 +71,9 @@ export function StripeConnectSetupDialog({
         appearance: {
           overlays: "dialog",
           variables: {
+            /* Embedded UI — cannot load local woff files; aligns with sans stack intent. */
             fontFamily:
-              'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+              'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
             fontSizeBase: "15px",
             borderRadius: "12px",
             spacingUnit: "10px",

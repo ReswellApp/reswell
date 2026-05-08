@@ -15,7 +15,10 @@ import { ListingTileCheckoutBasketIcon } from "@/components/listing-tile-checkou
 import { ListingTileAddToCartIcon, type ListingTileCartItem } from "@/components/listing-tile-add-to-cart-icon"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { VerifiedBadge } from "@/components/verified-badge"
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import {
+  listingProductCardGridClassName,
+  listingTileTitleHeadingClassName,
+} from "@/lib/listing-card-styles"
 
 const DEFAULT_IMAGE_SIZES =
   "(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
@@ -151,8 +154,7 @@ export function ListingTile({
   favorites,
   showFavorites = true,
   titleSlot,
-  titleClassName =
-    "font-sans text-sm font-normal tracking-normal leading-snug line-clamp-2 min-h-[2.8em]",
+  titleClassName = cn(listingTileTitleHeadingClassName, "line-clamp-3"),
   subtitle,
   compareAtPrice,
   priceAction,

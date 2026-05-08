@@ -120,19 +120,17 @@
 /* ─── Tailwind utilities ───────────────────────────────────────────────────── */
 @layer utilities {
   /*
-   * Stack Sans — semantic h1–h6 default to Stack Sans Text (see @layer base).
-   * Use .font-headline for display / marketing type (Headline cut, tight leading).
+   * Stack Sans Text (`font-sans`) — UI / body via `body` + Tailwind.
+   * Stack Sans Headline (`font-headline`) — family from tailwind.config; semantic h1–h6 use
+   * the Headline cut in @layer base. Weight / tracking come from component utilities.
    */
   .font-sans {
     font-optical-sizing: auto;
     font-style: normal;
   }
   .font-headline {
-    font-family: var(--font-headline), var(--font-sans), system-ui, sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.05em;
-    line-height: 1.05;
-    text-wrap: balance;
+    font-optical-sizing: auto;
+    font-style: normal;
   }
   .badge-olive {
     background-color: hsl(var(--foreground) / 0.08);
@@ -275,8 +273,8 @@
     position: relative;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-sans), system-ui, sans-serif;
-    /* Default: Text + regular; add font-bold / font-semibold / .font-headline per component */
+    font-family: var(--font-headline), var(--font-sans), sans-serif;
+    /* Weight / size from utilities (e.g. font-semibold, text-2xl) */
     font-weight: 400;
     letter-spacing: 0;
     line-height: 1.25;

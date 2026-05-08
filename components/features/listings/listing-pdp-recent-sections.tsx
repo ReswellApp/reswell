@@ -21,6 +21,7 @@ import {
   readRecentSurfboardListingIds,
 } from "@/lib/utils/recent-viewed-surfboards-storage"
 import { Skeleton } from "@/components/ui/skeleton"
+import { listingTileTitleHeadingClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 
 function catalogBrandLabel(listing: PdpRecentStripListingWithFavorite): string {
@@ -229,7 +230,7 @@ function PdpRecentMarketplaceCard({
           />
         </div>
         <div className="flex min-w-0 flex-1 flex-col p-3 pt-3">
-          <h3 className="line-clamp-3 text-sm font-semibold leading-snug text-foreground">
+          <h3 className={cn(listingTileTitleHeadingClassName, "line-clamp-3")}>
             {capitalizeWords(listing.title)}
           </h3>
           {condition ? (

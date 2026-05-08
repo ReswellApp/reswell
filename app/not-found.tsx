@@ -21,7 +21,7 @@ export default function NotFound() {
           </div>
         </div>
 
-        <p className="font-[family-name:var(--font-caveat)] text-6xl leading-none text-foreground sm:text-7xl">
+        <p className="font-headline text-6xl font-bold leading-none tracking-tight text-foreground sm:text-7xl">
           404
         </p>
 

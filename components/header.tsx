@@ -877,10 +877,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             href="/"
             className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
-            <span
-              className="text-2xl font-black tracking-tight text-foreground sm:text-3xl md:text-5xl"
-              style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
-            >
+            <span className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-5xl">
               Reswell
             </span>
           </Link>
@@ -929,10 +926,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   href="/"
                   className="flex shrink-0 items-center rounded-md px-1 py-1 no-underline hover:no-underline"
                 >
-                  <span
-                    className="text-2xl font-black tracking-tight text-foreground"
-                    style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
-                  >
+                  <span className="font-headline text-2xl font-bold tracking-tight text-foreground">
                     Reswell
                   </span>
                 </Link>
@@ -1083,10 +1077,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             href="/"
             className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
           >
-            <span
-              className="text-2xl font-black tracking-tight text-foreground sm:text-3xl md:text-5xl"
-              style={{ fontFamily: '"Alfran 2", Arial, sans-serif', fontWeight: 800 }}
-            >
+            <span className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-5xl">
               Reswell
             </span>
           </Link>
