@@ -3,9 +3,8 @@
  * All tiles delegate to {@link ListingTile} with shared scroll styles from `@/lib/home-listing-scroll-styles`.
  */
 import { ListingTile } from "@/components/listing-tile"
-import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
-import { capitalizeWords, formatHomePeerListingConditionLine, formatListingTileCategoryPillText } from "@/lib/listing-labels"
+import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
@@ -45,22 +44,19 @@ export type HomePeerScrollListing = {
 }
 
 /**
- * Standard peer surfboard tile: portrait image, heart, title → condition → price → cart + category pill.
+ * Standard peer surfboard tile: portrait image, heart, title → condition → price + cart.
  * `layout="homeScroll"` is homepage horizontal rows; `layout="grid"` fills listing-detail grids.
  */
 export function HomePeerListingScrollTile({
   listing,
   userId,
   isFavorited,
-  categoryPillLabel,
   layout = "homeScroll",
   onFavoritedChange,
 }: {
   listing: HomePeerScrollListing
   userId: string | null
   isFavorited: boolean
-  /** When set (e.g. Browse by Category), overrides {@link formatListingTileCategoryPillText}. */
-  categoryPillLabel?: string | null
   layout?: "homeScroll" | "grid"
   /** Optional — e.g. cart favorites row removes a tile when unfavorited. */
   onFavoritedChange?: (favorited: boolean) => void
@@ -73,10 +69,6 @@ export function HomePeerListingScrollTile({
     local_pickup: listing.local_pickup,
     shipping_available: listing.shipping_available,
   })
-  const pill =
-    categoryPillLabel?.trim() ||
-    formatListingTileCategoryPillText(listing) ||
-    ""
 
   const conditionLine = formatHomePeerListingConditionLine(listing.condition)
 
@@ -118,9 +110,6 @@ export function HomePeerListingScrollTile({
             ) : (
               <span className={cn(homeScrollTileCartSlotClass)} aria-hidden />
             )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <ListingTileCategoryPill label={pill || null} />
           </div>
         </div>
       }

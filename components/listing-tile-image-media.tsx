@@ -82,7 +82,8 @@ export function ListingTileImageMedia({
       className={cn(
         aspectClass,
         "relative w-full overflow-hidden bg-muted",
-        imageAspect === "portrait" && linkLayoutUnified && "shrink-0",
+        imageAspect === "portrait" && linkLayoutUnified && "shrink-0 rounded-t-xl",
+        imageAspect === "square" && linkLayoutUnified && "rounded-t-xl",
       )}
     >
       {hasImage ? (

@@ -17,10 +17,14 @@ export const homeUniformScrollCarouselTileWrapClass = cn(
   "w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
 )
 
-/** Fills {@link homeUniformScrollCarouselTileWrapClass}; width/snap live on the wrapper. */
+/** Fills {@link homeUniformScrollCarouselTileWrapClass}. Rest: transparent — blends into section bg; hover/focus-within: card panel + shadow. */
 export const homeUniformScrollCardClass = cn(
   listingProductCardClassName,
   "flex min-h-0 min-w-0 w-full flex-1 flex-col",
+  "overflow-visible border-transparent bg-transparent shadow-none",
+  "transition-[background-color,border-color,box-shadow] duration-200",
+  "hover:border-border hover:bg-card hover:shadow-md",
+  "focus-within:border-border focus-within:bg-card focus-within:shadow-md",
 )
 
 export const homeListingScrollImageSizes = "(max-width: 639px) 44vw, 208px"
