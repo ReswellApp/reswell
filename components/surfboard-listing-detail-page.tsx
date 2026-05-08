@@ -48,7 +48,12 @@ import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-pe
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
-import { HomePeerListingScrollTile } from "@/components/features/home"
+import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
+import {
+  fetchMostViewedSurfboardsPoolForListingPdp,
+  fetchSimilarSurfboardsForListingPdp,
+  type SimilarSurfboardListingRow,
+} from "@/lib/db/listing-detail-similar-surfboards"
 import {
   boardsBrowseBoardTypeLabel,
   browseTypeParamFromBoardType,
@@ -196,6 +201,45 @@ export async function SurfboardListingDetailPage({
   )
   const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
   const acceptOffers = buyerOffersOn
+
+  const [similarBoardsRaw, mostViewedPool] = await Promise.all([
+    fetchSimilarSurfboardsForListingPdp(supabase, {
+      excludeListingId: board.id,
+      boardType: rawBoardType,
+      priceUsd: listPriceNum,
+    }),
+    fetchMostViewedSurfboardsPoolForListingPdp(supabase, {
+      excludeListingId: board.id,
+      limit: 48,
+    }),
+  ])
+  const similarBoardIds = similarBoardsRaw.map((r) => String(r.id))
+  const similarIdSet = new Set(similarBoardIds)
+  const mostViewedBoardsRaw: SimilarSurfboardListingRow[] = []
+  for (const row of mostViewedPool) {
+    if (similarIdSet.has(String(row.id))) continue
+    mostViewedBoardsRaw.push(row)
+    if (mostViewedBoardsRaw.length >= 16) break
+  }
+  const mostViewedBoardIds = mostViewedBoardsRaw.map((r) => String(r.id))
+  let mostViewedFavoritedIds: string[] = []
+  if (user && mostViewedBoardIds.length > 0) {
+    const { data: mostViewedFavs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", mostViewedBoardIds)
+    mostViewedFavoritedIds = (mostViewedFavs ?? []).map((f) => f.listing_id)
+  }
+  let similarBoardFavoritedIds: string[] = []
+  if (user && similarBoardIds.length > 0) {
+    const { data: similarFavs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", similarBoardIds)
+    similarBoardFavoritedIds = (similarFavs ?? []).map((f) => f.listing_id)
+  }
 
   const primaryImageRaw =
     (images[0] as { thumbnail_url?: string | null; url?: string | null } | undefined)
@@ -575,6 +619,21 @@ export async function SurfboardListingDetailPage({
                   showTrustRibbon={false}
                 />
               </div>
+              {similarBoardsRaw.length > 0 ? (
+                <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
+                  <HomeListingScrollRow uniformCardHeights>
+                    {similarBoardsRaw.map((row) => (
+                      <HomePeerListingScrollTile
+                        key={String(row.id)}
+                        listing={row as unknown as HomePeerScrollListing}
+                        userId={user?.id ?? null}
+                        isFavorited={similarBoardFavoritedIds.includes(String(row.id))}
+                      />
+                    ))}
+                  </HomeListingScrollRow>
+                </section>
+              ) : null}
             </div>
 
             {/* Details */}
@@ -717,6 +776,24 @@ export async function SurfboardListingDetailPage({
               )}
             </div>
           </div>
+
+          {mostViewedBoardsRaw.length > 0 ? (
+            <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
+              <h2 className="mb-8 px-4 text-2xl font-bold text-foreground sm:px-6 lg:px-8">
+                Boards you might like
+              </h2>
+              <HomeListingScrollRow uniformCardHeights viewportFullWidth>
+                {mostViewedBoardsRaw.map((row) => (
+                  <HomePeerListingScrollTile
+                    key={String(row.id)}
+                    listing={row as unknown as HomePeerScrollListing}
+                    userId={user?.id ?? null}
+                    isFavorited={mostViewedFavoritedIds.includes(String(row.id))}
+                  />
+                ))}
+              </HomeListingScrollRow>
+            </section>
+          ) : null}
 
           {/* Seller's Other Boards */}
           {sellerBoards && sellerBoards.length > 0 && (
