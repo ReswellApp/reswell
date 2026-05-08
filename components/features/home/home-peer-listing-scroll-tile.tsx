@@ -5,7 +5,7 @@
 import { ListingTile } from "@/components/listing-tile"
 import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
-import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
+import { capitalizeWords, formatHomePeerListingConditionLine, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
@@ -18,7 +18,9 @@ import {
   homeUniformScrollLinkClass,
   homeUniformScrollMetaFooterClass,
   homeUniformScrollTitleSlotClass,
-  homeListingScrollHeadingClass,
+  homePeerListingTileTitleClass,
+  homePeerTileSubtitleClass,
+  homePeerTilePriceClass,
 } from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
 
@@ -38,10 +40,12 @@ export type HomePeerScrollListing = {
   listing_images?: ListingImageForCard[] | null
   categories?: { name?: string | null } | null | { name?: string | null }[] | null
   board_type?: string | null
+  /** Listing condition (`listings.condition`) — surfaced as “Used — …” under title on homepage tiles. */
+  condition?: string | null
 }
 
 /**
- * Standard peer surfboard tile: portrait image, heart, title band, price + peer cart, category pill.
+ * Standard peer surfboard tile: portrait image, heart, title → condition → price → cart + category pill.
  * `layout="homeScroll"` is homepage horizontal rows; `layout="grid"` fills listing-detail grids.
  */
 export function HomePeerListingScrollTile({
@@ -74,6 +78,8 @@ export function HomePeerListingScrollTile({
     formatListingTileCategoryPillText(listing) ||
     ""
 
+  const conditionLine = formatHomePeerListingConditionLine(listing.condition)
+
   const isGrid = layout === "grid"
 
   return (
@@ -95,22 +101,25 @@ export function HomePeerListingScrollTile({
       imageSizes={isGrid ? homePeerListingGridImageSizes : homeListingScrollImageSizes}
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
-          <h3 className={homeListingScrollHeadingClass}>{capitalizeWords(listing.title)}</h3>
+          <h3 className={homePeerListingTileTitleClass}>{capitalizeWords(listing.title)}</h3>
         </div>
+      }
+      subtitle={
+        conditionLine ? (
+          <p className={homePeerTileSubtitleClass}>{conditionLine}</p>
+        ) : null
       }
       footerSlot={
         <div className={homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
-            <p className="text-base font-bold text-black dark:text-white tabular-nums">
-              ${Number(listing.price).toFixed(2)}
-            </p>
+            <p className={homePeerTilePriceClass}>${Number(listing.price).toFixed(2)}</p>
             {cart?.type === "addToCartServer" ? (
               <ListingTileAddToCartServerIcon listingId={cart.listingId} isLoggedIn={cart.isLoggedIn} />
             ) : (
               <span className={cn(homeScrollTileCartSlotClass)} aria-hidden />
             )}
           </div>
-          <div className="mt-1 flex justify-end">
+          <div className="flex flex-wrap gap-2">
             <ListingTileCategoryPill label={pill || null} />
           </div>
         </div>

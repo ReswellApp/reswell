@@ -244,7 +244,7 @@ export function ListingTile({
       className={cn(
         "flex min-w-0 items-center justify-between gap-2",
         linkLayout === "split" && "mt-1",
-        linkLayout === "unified" && (subtitle ? "mt-2" : "mt-1"),
+        linkLayout === "unified" && "mt-1",
       )}
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -278,16 +278,23 @@ export function ListingTile({
     </div>
   )
 
-  const metaAndPillRow =
-    meta || categoryPill ? (
+  const categoryPillBelowPrice =
+    categoryPill ? (
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        <ListingTileCategoryPill label={categoryPill} />
+      </div>
+    ) : null
+
+  const metaOnlyRow =
+    meta ? (
       <div
         className={cn(
-          "mt-1 flex items-start justify-between gap-1",
-          meta?.variant === "location" && !metaRowClassName && "mt-2",
+          "flex min-w-0 items-start gap-1",
+          categoryPill ? "mt-1" : meta.variant === "location" && !metaRowClassName ? "mt-2" : "mt-1",
           metaRowClassName,
         )}
       >
-        {meta?.variant === "seller" ? (
+        {meta.variant === "seller" ? (
           <p
             className={cn(
               "text-xs text-muted-foreground flex min-w-0 items-center gap-1",
@@ -307,19 +314,12 @@ export function ListingTile({
               <VerifiedBadge size="sm" className={cn("shrink-0", meta.multiline && "mt-0.5")} />
             )}
           </p>
-        ) : meta?.variant === "location" ? (
+        ) : meta.variant === "location" ? (
           <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-muted-foreground">
             {meta.showMapPin !== false && <MapPin className="h-3 w-3 shrink-0" />}
             <span className="truncate">{meta.text}</span>
           </div>
-        ) : (
-          <span className="min-w-0 flex-1" />
-        )}
-        <ListingTileCategoryPill label={categoryPill} />
-      </div>
-    ) : categoryPill ? (
-      <div className="mt-1 flex justify-end">
-        <ListingTileCategoryPill label={categoryPill} />
+        ) : null}
       </div>
     ) : null
 
@@ -334,14 +334,12 @@ export function ListingTile({
             Sold for ${soldPrice.toFixed(2)}
           </p>
         ) : null}
-        <div className="mt-2 flex items-start justify-between gap-1">
-          {soldFootnote != null ? (
-            <div className="min-w-0 flex-1 text-xs text-muted-foreground">{soldFootnote}</div>
-          ) : (
-            <span className="min-w-0 flex-1" />
-          )}
+        <div className="mt-1 flex flex-wrap items-center gap-2">
           <ListingTileCategoryPill label={categoryPill} />
         </div>
+        {soldFootnote != null ? (
+          <div className="mt-1 text-xs text-muted-foreground">{soldFootnote}</div>
+        ) : null}
       </>
     ) : footerSlot ? (
       <>
@@ -354,12 +352,7 @@ export function ListingTile({
         {titleBlock}
         {subtitle}
         {linkLayout === "unified" && !priceAction && compareAtPrice == null ? (
-          <p
-            className={cn(
-              "text-base font-bold text-black dark:text-white",
-              subtitle ? "mt-2" : "mt-1",
-            )}
-          >
+          <p className="mt-1 text-base font-bold tabular-nums text-black dark:text-white">
             ${price.toFixed(2)}
           </p>
         ) : (
@@ -375,7 +368,8 @@ export function ListingTile({
           </p>
         ) : null}
         {afterPriceSlot}
-        {metaAndPillRow}
+        {categoryPillBelowPrice}
+        {metaOnlyRow}
       </>
     ))
 

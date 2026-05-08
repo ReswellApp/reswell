@@ -311,7 +311,7 @@ export async function SurfboardListingDetailPage({
 
   return (
       <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
-        <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
+        <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
           <div className="mb-5 min-w-0 max-w-full pt-0.5 lg:mb-8">
             <Breadcrumb>
               <BreadcrumbList className="gap-1 text-[13px] font-normal tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[14px]">
@@ -800,10 +800,10 @@ export async function SurfboardListingDetailPage({
           {/* Seller's other boards — full-width horizontal scroll row */}
           {sellerBoards && sellerBoards.length > 0 && (
             <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-              <h2 className="mb-8 px-4 text-2xl font-bold text-foreground sm:px-6 lg:px-8">
+              <h2 className="mb-8 text-2xl font-bold text-foreground">
                 More boards from this seller
               </h2>
-              <HomeListingScrollRow uniformCardHeights viewportFullWidth>
+              <HomeListingScrollRow uniformCardHeights>
                 {sellerBoards.map((item) => (
                   <HomePeerListingScrollTile
                     key={item.id}

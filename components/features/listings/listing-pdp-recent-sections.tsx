@@ -21,6 +21,7 @@ import {
   readRecentSurfboardListingIds,
 } from "@/lib/utils/recent-viewed-surfboards-storage"
 import { Skeleton } from "@/components/ui/skeleton"
+import { listingDetailHorizontalStripBleedClassName } from "@/components/features/home/home-listing-scroll-row"
 import { listingTileTitleHeadingClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 
@@ -49,7 +50,7 @@ function recentStripImageSizes(tilesInRow: number): string {
 function PdpRecentHorizontalStrip({ tileCount, children }: { tileCount: number; children: ReactNode }) {
   const sparse = tileCount <= 2
   return (
-    <div className="relative left-1/2 w-[calc(100vw-1.25rem)] max-w-[calc(100vw-1.25rem)] -translate-x-1/2 sm:w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-2rem)] lg:w-[calc(100vw-2.5rem)] lg:max-w-[calc(100vw-2.5rem)]">
+    <div className={listingDetailHorizontalStripBleedClassName}>
       <div
         className={cn(
           "flex gap-3 px-4 pb-2 sm:gap-4 sm:px-6 lg:px-8",
@@ -139,10 +140,10 @@ function PdpRecentStripSkeleton({
       aria-busy="true"
       aria-label="Loading recently viewed"
     >
-      <div className="mb-8 px-4 sm:px-6 lg:px-8">
+      <div className="mb-8">
         <Skeleton className={cn("h-9", titleClass)} />
       </div>
-      <div className="relative left-1/2 w-[calc(100vw-1.25rem)] max-w-[calc(100vw-1.25rem)] -translate-x-1/2 sm:w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-2rem)] lg:w-[calc(100vw-2.5rem)] lg:max-w-[calc(100vw-2.5rem)]">
+      <div className={listingDetailHorizontalStripBleedClassName}>
         <div
           className={cn(
             "flex gap-3 px-4 pb-2 sm:gap-4 sm:px-6 lg:px-8",
@@ -406,7 +407,7 @@ export function ListingPdpRecentSections({
     <div className="min-w-0 w-full space-y-14">
       {catalogRow?.length ? (
         <section className="min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-          <h2 className="mb-8 px-4 text-2xl font-bold text-foreground sm:px-6 lg:px-8">
+          <h2 className="mb-8 text-2xl font-bold text-foreground">
             Recently viewed products
           </h2>
           <PdpRecentHorizontalStrip tileCount={catalogRow.length}>
@@ -424,7 +425,7 @@ export function ListingPdpRecentSections({
 
       {marketRow?.length ? (
         <section className="min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-          <h2 className="mb-8 px-4 text-2xl font-bold text-foreground sm:px-6 lg:px-8">
+          <h2 className="mb-8 text-2xl font-bold text-foreground">
             {padStripWithRecommendations ? (
               <>Recently Viewed &amp; More</>
             ) : (

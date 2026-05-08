@@ -67,6 +67,18 @@ export function formatCondition(condition: string | null | undefined): string {
   )
 }
 
+/**
+ * Homepage peer listing tiles — secondary line under title (e.g. “Used — Excellent”, “Brand New”).
+ */
+export function formatHomePeerListingConditionLine(condition: string | null | undefined): string | null {
+  const raw = typeof condition === "string" ? condition.trim() : ""
+  if (!raw) return null
+  const label = formatCondition(raw)
+  if (!label) return null
+  if (raw === "brand_new" || raw === "new") return label
+  return `Used — ${label}`
+}
+
 /** Sell-form and browse filter condition values (excludes legacy `new`). */
 export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] = LISTING_CONDITION_ORDER.map(
   (v) => ({ value: v, label: LISTING_CONDITION_LABELS[v] ?? v }),

@@ -85,7 +85,7 @@ export async function ShopListingDetailPage({
 
   return (
     <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
-      <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:max-w-[1120px]">
+      <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:max-w-[1120px] lg:px-8">
         <div className="mb-5 min-w-0 max-w-full pt-0.5 lg:mb-8">
           <Breadcrumb>
             <BreadcrumbList className="gap-1 text-[13px] font-normal tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[15px]">
@@ -132,8 +132,8 @@ export async function ShopListingDetailPage({
           </Breadcrumb>
         </div>
 
-        <div className="mx-auto grid w-full min-w-0 max-w-6xl gap-8 lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)] lg:items-start lg:gap-12 xl:gap-16">
-          <div className="relative aspect-square min-h-0 w-full min-w-0 overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]">
+        <div className="mx-auto grid w-full min-w-0 max-w-full gap-8 sm:max-w-6xl lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)] lg:items-start lg:gap-12 xl:gap-16">
+          <div className="relative aspect-square min-h-0 w-full min-w-0 max-w-full overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -151,10 +151,10 @@ export async function ShopListingDetailPage({
 
           <div className="min-w-0 space-y-8 lg:pt-2">
             <div className="min-w-0">
-              <h1 className="font-headline text-balance break-words text-[2.125rem] font-semibold leading-[1.15] tracking-[-0.035em] text-foreground lg:text-[2.25rem] xl:text-[2.375rem]">
+              <h1 className="font-headline text-balance break-words text-[1.625rem] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground sm:text-[2.125rem] lg:text-[2.25rem] xl:text-[2.375rem]">
                 {listing.title}
               </h1>
-              <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-foreground tabular-nums xl:text-[2.5rem]">
+              <p className="font-headline mt-4 text-3xl font-semibold tracking-tight text-foreground tabular-nums sm:text-4xl xl:text-[2.5rem]">
                 ${price.toFixed(2)}
               </p>
             </div>

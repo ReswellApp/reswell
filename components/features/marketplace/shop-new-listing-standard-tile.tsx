@@ -1,5 +1,4 @@
 import { ListingTile } from "@/components/listing-tile"
-import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
 import { ListingTileShopInventoryCartIcon } from "@/components/listing-tile-shop-inventory-cart-icon"
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
 import { listingCardImageSrc, type ListingImageForCard } from "@/lib/listing-image-display"
@@ -12,7 +11,9 @@ import {
   homeUniformScrollLinkClass,
   homeUniformScrollMetaFooterClass,
   homeUniformScrollTitleSlotClass,
-  homeListingScrollHeadingClass,
+  homePeerListingTileTitleClass,
+  homePeerTileSubtitleClass,
+  homePeerTilePriceClass,
 } from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
 
@@ -28,7 +29,7 @@ export type ShopNewListingStandardTileListing = {
 }
 
 /**
- * Shop “new” inventory tile — matches peer surfboard tile chrome (portrait image, heart, title band, price + bag, category pill).
+ * Shop “new” inventory tile — matches homepage peer stack: title → category line → price + cart.
  * `layout="homeScroll"` is the homepage horizontal row width; `layout="grid"` fills responsive shop grids.
  */
 export function ShopNewListingStandardTile({
@@ -67,16 +68,15 @@ export function ShopNewListingStandardTile({
       imageSizes={isGrid ? gridImageSizes : homeListingScrollImageSizes}
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
-          <h3 className={homeListingScrollHeadingClass}>{capitalizeWords(listing.title)}</h3>
+          <h3 className={homePeerListingTileTitleClass}>{capitalizeWords(listing.title)}</h3>
         </div>
       }
+      subtitle={<p className={homePeerTileSubtitleClass}>{pill || "New"}</p>}
       footerSlot={
         <div className={homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0">
-              <p className="text-base font-bold text-black dark:text-white tabular-nums">
-                ${listing.price.toFixed(2)}
-              </p>
+              <p className={homePeerTilePriceClass}>${listing.price.toFixed(2)}</p>
               {listing.compare_at_price != null && listing.compare_at_price > listing.price ? (
                 <p className="text-sm text-muted-foreground line-through tabular-nums">
                   ${listing.compare_at_price.toFixed(2)}
@@ -94,9 +94,6 @@ export function ShopNewListingStandardTile({
                 }}
               />
             ) : null}
-          </div>
-          <div className="mt-1 flex justify-end">
-            <ListingTileCategoryPill label={pill || null} />
           </div>
         </div>
       }
