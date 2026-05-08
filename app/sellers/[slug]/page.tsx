@@ -7,8 +7,8 @@ import { wideShimmer } from "@/lib/image-shimmer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
-import { ListingTile } from "@/components/listing-tile"
+import { capitalizeWords } from "@/lib/listing-labels"
+import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
@@ -22,11 +22,9 @@ import {
   Package,
 } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import { FollowButton } from "@/components/follows/follow-button"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { listingDetailHref } from "@/lib/listing-href"
-import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 const PROFILE_UUID_RE =
@@ -504,7 +502,6 @@ export default async function SellerProfilePage({
                 <ListingGrid
                   listings={currentListings}
                   favoritedIds={favoritedIds}
-                  isLoggedIn={!!user}
                   viewerId={user?.id ?? null}
                 />
               </TabsContent>
@@ -512,7 +509,6 @@ export default async function SellerProfilePage({
                 <ListingGrid
                   listings={newListings}
                   favoritedIds={favoritedIds}
-                  isLoggedIn={!!user}
                   viewerId={user?.id ?? null}
                 />
               </TabsContent>
@@ -520,7 +516,6 @@ export default async function SellerProfilePage({
                 <ListingGrid
                   listings={boardListings}
                   favoritedIds={favoritedIds}
-                  isLoggedIn={!!user}
                   viewerId={user?.id ?? null}
                 />
               </TabsContent>
@@ -540,7 +535,6 @@ export default async function SellerProfilePage({
               <ListingGrid
                 listings={pastListings}
                 favoritedIds={favoritedIds}
-                isLoggedIn={!!user}
                 viewerId={user?.id ?? null}
               />
             </div>
@@ -553,12 +547,10 @@ export default async function SellerProfilePage({
 function ListingGrid({
   listings,
   favoritedIds,
-  isLoggedIn,
   viewerId,
 }: {
   listings: any[]
   favoritedIds: string[]
-  isLoggedIn: boolean
   viewerId: string | null
 }) {
   if (listings.length === 0) {
@@ -573,11 +565,6 @@ function ListingGrid({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => {
-        const href = listingDetailHref(listing)
-        const loc =
-          listing.city &&
-          `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
-        const pill = formatListingTileCategoryPillText(listing)
         const statusLabel =
           !listing.status || listing.status === "active"
             ? null
@@ -586,35 +573,27 @@ function ListingGrid({
               : listing.status === "pending"
                 ? ("pending" as const)
                 : ("ended" as const)
-        const cartAction = computePeerCartPriceAction(viewerId, {
-          id: listing.id,
-          user_id: listing.user_id,
-          section: listing.section,
-          status: listing.status ?? "active",
-          local_pickup: listing.local_pickup,
-          shipping_available: listing.shipping_available,
-        })
         return (
-          <ListingTile
+          <HomePeerListingScrollTile
             key={listing.id}
-            href={href}
-            listingId={listing.id}
-            title={capitalizeWords(listing.title)}
-            imageAlt={capitalizeWords(listing.title)}
-            listingImages={listing.listing_images}
-            price={Number(listing.price)}
-            linkLayout="split"
-            useBlurPlaceholder={false}
-            cardClassName={listingProductCardGridClassName}
-            cardContentClassName="flex min-w-0 flex-1 flex-col p-3"
+            layout="grid"
+            userId={viewerId}
+            isFavorited={favoritedIds.includes(listing.id)}
             statusLabel={statusLabel}
-            meta={loc ? { variant: "location", text: loc, showMapPin: true } : null}
-            metaRowClassName={loc ? "mt-2" : undefined}
-            categoryPill={pill}
-            priceAction={cartAction}
-            favorites={{
-              initialFavorited: favoritedIds.includes(listing.id),
-              isLoggedIn,
+            listing={{
+              id: listing.id,
+              slug: listing.slug,
+              user_id: listing.user_id,
+              title: listing.title,
+              price: listing.price,
+              status: listing.status ?? "active",
+              section: listing.section,
+              local_pickup: listing.local_pickup,
+              shipping_available: listing.shipping_available,
+              listing_images: listing.listing_images,
+              categories: listing.categories,
+              board_type: listing.board_type,
+              condition: listing.condition,
             }}
           />
         )

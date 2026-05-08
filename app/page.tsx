@@ -14,7 +14,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowRight, MapPin } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
-import { listingProductCardClassName } from "@/lib/listing-card-styles"
+import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
@@ -439,7 +439,7 @@ export default async function HomePage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {featuredShops.map((shop) => (
                   <Link key={shop.id} href={sellerProfileHref(shop)}>
-                    <Card className={cn(listingProductCardClassName, "h-full")}>
+                    <Card className={cn(listingProductCardSolidClassName, "h-full")}>
                       <div className="h-20 bg-offwhite relative overflow-hidden">
                         {shop.shop_banner_url && (
                           <Image

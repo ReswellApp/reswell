@@ -27,7 +27,8 @@ export interface ListingTileImageMediaProps {
   imageClassName?: string
   imageGrayscale?: boolean
   overlayTopLeft?: ReactNode
-  overlayTopRight?: ReactNode
+  /** e.g. favorite control — positioned bottom-right over the photo */
+  overlayBottomRight?: ReactNode
   overlayFull?: ReactNode
 }
 
@@ -44,7 +45,7 @@ export function ListingTileImageMedia({
   imageClassName,
   imageGrayscale,
   overlayTopLeft,
-  overlayTopRight,
+  overlayBottomRight,
   overlayFull,
 }: ListingTileImageMediaProps) {
   const count = urls.length
@@ -123,8 +124,8 @@ export function ListingTileImageMedia({
         overlayTopLeft != null ? (
           <Fragment key="listing-tile-overlay-tl">{overlayTopLeft}</Fragment>
         ) : null,
-        overlayTopRight != null ? (
-          <Fragment key="listing-tile-overlay-tr">{overlayTopRight}</Fragment>
+        overlayBottomRight != null ? (
+          <Fragment key="listing-tile-overlay-br">{overlayBottomRight}</Fragment>
         ) : null,
         count > 1 ? (
           <Fragment key="listing-tile-carousel-nav">

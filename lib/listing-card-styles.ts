@@ -1,10 +1,17 @@
 import { cn } from "@/lib/utils"
 
 /**
- * Standard classes for marketplace listing / product cards (grids, feeds, detail “more from seller”).
- * Matches homepage horizontal listing cards: rounded corners + hover shadow.
+ * Marketplace listing tiles (grids, feeds, `ListingTile` default): no panel at rest so they blend
+ * into the section background; border, fill, and shadow on hover / focus-within — same as homepage
+ * horizontal surfboard rows.
  */
 export const listingProductCardClassName =
+  "group overflow-visible rounded-xl border border-transparent bg-transparent shadow-none transition-[background-color,border-color,box-shadow] duration-200 hover:border-border hover:bg-card hover:shadow-md focus-within:border-border focus-within:bg-card focus-within:shadow-md"
+
+/**
+ * Bordered card panel always visible (dashboard listing rows, seller directory, featured shop cards).
+ */
+export const listingProductCardSolidClassName =
   "group overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md"
 
 /** Grid cells that fill a track and use a column flex layout (most listing grids). */

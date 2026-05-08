@@ -2,9 +2,19 @@
 
 import Link from "next/link"
 import { formatDistanceToNowStrict } from "date-fns"
-import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
-import { ListingTile } from "@/components/listing-tile"
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
+import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
+import { ListingTile, ListingTileSoldStamp } from "@/components/listing-tile"
+import {
+  homePeerListingGridCardClass,
+  homeUniformScrollBodyClass,
+  homeUniformScrollLinkClass,
+  homeUniformScrollMetaFooterClass,
+  homeUniformScrollTitleSlotClass,
+  homePeerListingTileTitleClass,
+  homePeerTileSubtitleClass,
+  homePeerTilePriceClass,
+} from "@/lib/home-listing-scroll-styles"
+import { cn } from "@/lib/utils"
 import { Package } from "lucide-react"
 import { listingDetailHref } from "@/lib/listing-href"
 
@@ -56,36 +66,50 @@ function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
       ? `${listing.city}, ${listing.state}`
       : listing.profiles?.location || "Location not set"
   const timeLine = soldRelativeLabel(listing.sold_at)
+  const conditionLine = formatHomePeerListingConditionLine(listing.condition)
 
   return (
     <ListingTile
       href={href}
       listingId={listing.id}
-      title={capitalizeWords(listing.title)}
+      title={listing.title}
       imageAlt={capitalizeWords(listing.title)}
       listingImages={listing.listing_images ?? null}
       price={listing.price}
+      imageTopLeftOverlay={<ListingTileSoldStamp />}
       linkLayout="unified"
+      linkClassName={homeUniformScrollLinkClass}
+      cardClassName={homePeerListingGridCardClass}
+      cardContentClassName={homeUniformScrollBodyClass}
       useBlurPlaceholder={false}
       imageGrayscale
-      cardClassName={listingProductCardGridClassName}
-      cardContentClassName="min-w-0 p-3"
-      variant="soldFeed"
-      soldPrice={listing.soldPrice}
-      subtitle={
-        listing.section === "surfboards" && listing.board_length ? (
-          <p className="text-sm text-muted-foreground mt-1">{listing.board_length}</p>
-        ) : null
-      }
-      soldFootnote={
-        <>
-          {timeLine}
-          <span className="text-muted-foreground/80"> · </span>
-          {locationText}
-        </>
-      }
-      categoryPill={formatListingTileCategoryPillText(listing)}
       showFavorites={false}
+      favorites={null}
+      titleSlot={
+        <div className={homeUniformScrollTitleSlotClass}>
+          <h3 className={homePeerListingTileTitleClass}>{capitalizeWords(listing.title)}</h3>
+        </div>
+      }
+      subtitle={
+        conditionLine ? <p className={homePeerTileSubtitleClass}>{conditionLine}</p> : null
+      }
+      footerSlot={
+        <div className={homeUniformScrollMetaFooterClass}>
+          <p
+            className={cn(
+              homePeerTilePriceClass,
+              "text-emerald-600 dark:text-emerald-400",
+            )}
+          >
+            Sold for ${listing.soldPrice.toFixed(2)}
+          </p>
+          <div className="mt-1.5 text-xs font-normal leading-snug text-muted-foreground">
+            {timeLine}
+            <span className="text-muted-foreground/80"> · </span>
+            {locationText}
+          </div>
+        </div>
+      }
     />
   )
 }

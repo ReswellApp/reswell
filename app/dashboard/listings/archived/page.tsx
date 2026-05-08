@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Package, Archive, ArrowLeft } from 'lucide-react'
 import { formatDistanceToNow, format, addDays } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
-import { listingProductCardClassName } from '@/lib/listing-card-styles'
+import { listingProductCardSolidClassName } from '@/lib/listing-card-styles'
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { listingDetailHref } from '@/lib/listing-href'
 
@@ -129,7 +129,7 @@ export default function ArchivedListingsPage() {
             const isPastDelete = deleteOn <= new Date()
 
             return (
-              <Card key={listing.id} className={listingProductCardClassName}>
+              <Card key={listing.id} className={listingProductCardSolidClassName}>
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <Link

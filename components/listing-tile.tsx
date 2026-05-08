@@ -24,6 +24,18 @@ import {
 const DEFAULT_IMAGE_SIZES =
   "(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
 
+/** Top-left “SOLD” stamp on listing tile imagery. */
+export function ListingTileSoldStamp() {
+  return (
+    <div
+      className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+      style={{ backgroundColor: "#111" }}
+    >
+      SOLD
+    </div>
+  )
+}
+
 const tilePriceActionRevealClass =
   "opacity-0 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 [@media(pointer:coarse)]:pointer-events-auto [@media(pointer:coarse)]:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100"
 
@@ -64,6 +76,9 @@ export interface ListingTileProps {
   listingImages?: ListingImageForCard[] | null
   imageUrl?: string | null
   imageAlt: string
+
+  /** Optional badge or label over the image top-left (e.g. “SOLD” on sold feed). */
+  imageTopLeftOverlay?: ReactNode
 
   imageSizes?: string
   imageAspect?: "portrait" | "square"
@@ -113,10 +128,6 @@ export interface ListingTileProps {
 
   soldOverlay?: boolean
 
-  variant?: "default" | "soldFeed"
-  soldPrice?: number
-  soldFootnote?: ReactNode
-
   trailingInsideCard?: ReactNode
 
   children?: ReactNode
@@ -142,6 +153,7 @@ export function ListingTile({
   listingImages,
   imageUrl,
   imageAlt,
+  imageTopLeftOverlay,
   imageSizes = DEFAULT_IMAGE_SIZES,
   imageAspect = "portrait",
   imageFit = "cover",
@@ -169,9 +181,6 @@ export function ListingTile({
   categoryPill,
   statusLabel,
   soldOverlay,
-  variant = "default",
-  soldPrice,
-  soldFootnote,
   trailingInsideCard,
   children,
 }: ListingTileProps) {
@@ -184,7 +193,15 @@ export function ListingTile({
   const aspectClass =
     imageAspect === "square" ? "aspect-square" : "aspect-[3/4]"
 
-  const showSoldFeed = variant === "soldFeed"
+  const favoriteOverlay =
+    showFavorites && favorites ? (
+      <FavoriteButtonCardOverlay
+        listingId={listingId}
+        initialFavorited={favorites.initialFavorited}
+        isLoggedIn={favorites.isLoggedIn}
+        onFavoritedChange={favorites.onFavoritedChange}
+      />
+    ) : null
 
   const imageBlock = (
     <ListingTileImageMedia
@@ -199,26 +216,8 @@ export function ListingTile({
       imageFit={imageFit}
       imageClassName={imageClassName}
       imageGrayscale={imageGrayscale}
-      overlayTopLeft={
-        showSoldFeed ? (
-          <div
-            className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-            style={{ backgroundColor: "#111" }}
-          >
-            SOLD
-          </div>
-        ) : null
-      }
-      overlayTopRight={
-        showFavorites && favorites ? (
-          <FavoriteButtonCardOverlay
-            listingId={listingId}
-            initialFavorited={favorites.initialFavorited}
-            isLoggedIn={favorites.isLoggedIn}
-            onFavoritedChange={favorites.onFavoritedChange}
-          />
-        ) : null
-      }
+      overlayTopLeft={imageTopLeftOverlay ?? null}
+      overlayBottomRight={favoriteOverlay}
       overlayFull={
         soldOverlay ? (
           <div className="absolute inset-0 z-[25] flex items-center justify-center bg-background/80">
@@ -325,26 +324,19 @@ export function ListingTile({
 
   const bodyInner =
     children ??
-    (showSoldFeed ? (
+    (footerSlot ? (
       <>
         {titleBlock}
         {subtitle}
-        {soldPrice != null ? (
-          <p className="text-base font-semibold text-emerald-600 dark:text-emerald-400 mt-2">
-            Sold for ${soldPrice.toFixed(2)}
+        {statusLabel ? (
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            {statusLabel === "sold"
+              ? "Sold"
+              : statusLabel === "pending"
+                ? "Pending"
+                : "Ended"}
           </p>
         ) : null}
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <ListingTileCategoryPill label={categoryPill} />
-        </div>
-        {soldFootnote != null ? (
-          <div className="mt-1 text-xs text-muted-foreground">{soldFootnote}</div>
-        ) : null}
-      </>
-    ) : footerSlot ? (
-      <>
-        {titleBlock}
-        {subtitle}
         {footerSlot}
       </>
     ) : (

@@ -7,15 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Heart, MapPin } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
-import {
-  capitalizeWords,
-  formatListingTileCategoryPillText,
-  getPublicSellerDisplayName,
-} from '@/lib/listing-labels'
-import { ListingTile } from '@/components/listing-tile'
-import { listingProductCardGridClassName } from '@/lib/listing-card-styles'
-import { listingDetailHref } from '@/lib/listing-href'
-import { toast } from 'sonner'
+import { getPublicSellerDisplayName } from '@/lib/listing-labels'
+import { HomePeerListingScrollTile } from '@/components/features/home/home-peer-listing-scroll-tile'
+import type { ListingImageForCard } from '@/lib/listing-image-display'
 
 export interface SavedFavorite {
   id: string
@@ -35,6 +29,7 @@ export interface SavedFavorite {
     length_feet?: number | null
     length_inches?: number | null
     shipping_available?: boolean
+    local_pickup?: boolean | null
     listing_images: { url: string; is_primary: boolean }[]
     profiles?: { display_name?: string | null; shop_verified?: boolean } | null
     categories?: { name?: string | null } | null
@@ -44,6 +39,7 @@ export interface SavedFavorite {
 export function SavedListContent() {
   const [favorites, setFavorites] = useState<SavedFavorite[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewerId, setViewerId] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -56,6 +52,8 @@ export function SavedListContent() {
       setLoading(false)
       return
     }
+
+    setViewerId(user.id)
 
     const { data, error } = await supabase
       .from('favorites')
@@ -77,6 +75,7 @@ export function SavedListContent() {
           length_feet,
           length_inches,
           shipping_available,
+          local_pickup,
           listing_images(url, is_primary),
           profiles!listings_user_id_fkey(display_name, shop_verified),
           categories(name)
@@ -94,26 +93,6 @@ export function SavedListContent() {
   function handleRemoveFromList(listingId: string) {
     setFavorites(prev => prev.filter(f => f.listing.id !== listingId))
   }
-
-  const getSectionLabel = (section: string) => {
-    switch (section) {
-      case 'used':
-        return 'Surfboards'
-      case 'new':
-        return 'Shop (new)'
-      case 'surfboards':
-        return 'Surfboards'
-      default:
-        return section
-    }
-  }
-
-  const getListingHref = (listing: SavedFavorite['listing']) =>
-    listingDetailHref({
-      id: listing.id,
-      slug: listing.slug,
-      section: listing.section,
-    })
 
   return (
     <div>
@@ -152,47 +131,42 @@ export function SavedListContent() {
             const listing = favorite.listing
             if (!listing) return null
 
-            const href = getListingHref(listing)
             const locationText =
               listing.city && listing.state
                 ? `${listing.city}, ${listing.state}`
                 : 'Location not set'
-            const boardLength =
-              listing.length_feet != null && listing.length_inches != null
-                ? `${listing.length_feet}'${listing.length_inches}"`
-                : listing.length_feet != null
-                  ? `${listing.length_feet}'`
-                  : null
 
             return (
-              <ListingTile
+              <HomePeerListingScrollTile
                 key={favorite.id}
-                href={href}
-                listingId={listing.id}
-                title={capitalizeWords(listing.title)}
-                imageAlt={capitalizeWords(listing.title)}
-                listingImages={listing.listing_images}
-                price={Number(listing.price)}
-                linkLayout="unified"
-                useBlurPlaceholder={false}
-                cardClassName={listingProductCardGridClassName}
-                cardContentClassName="min-w-0 p-3"
+                layout="grid"
+                userId={viewerId}
+                isFavorited
                 soldOverlay={listing.status === 'sold'}
-                subtitle={
-                  listing.section === 'surfboards' && boardLength ? (
-                    <p className="text-xs text-muted-foreground mt-0.5">{boardLength}</p>
-                  ) : null
-                }
-                favorites={{
-                  initialFavorited: true,
-                  isLoggedIn: true,
-                  onFavoritedChange: (favorited) => {
-                    if (!favorited) handleRemoveFromList(listing.id)
-                  },
+                listing={{
+                  id: listing.id,
+                  slug: listing.slug,
+                  user_id: listing.user_id,
+                  title: listing.title,
+                  price: listing.price,
+                  status: listing.status,
+                  section: listing.section,
+                  local_pickup: listing.local_pickup,
+                  shipping_available: listing.shipping_available,
+                  listing_images: listing.listing_images as ListingImageForCard[],
+                  categories: listing.categories,
+                  board_type: listing.board_type,
+                  condition:
+                    listing.condition && listing.condition.trim() !== ''
+                      ? listing.condition
+                      : null,
                 }}
-                afterPriceSlot={
+                onFavoritedChange={(favorited) => {
+                  if (!favorited) handleRemoveFromList(listing.id)
+                }}
+                footerTrailing={
                   <>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
                       {getPublicSellerDisplayName(listing.profiles)}
                       {listing.profiles?.shop_verified && <VerifiedBadge size="sm" />}
                     </p>
@@ -201,9 +175,6 @@ export function SavedListContent() {
                       {locationText}
                     </div>
                   </>
-                }
-                categoryPill={
-                  formatListingTileCategoryPillText(listing) ?? getSectionLabel(listing.section)
                 }
               />
             )

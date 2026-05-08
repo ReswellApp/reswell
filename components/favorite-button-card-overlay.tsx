@@ -9,16 +9,20 @@ interface FavoriteButtonCardOverlayProps {
   onFavoritedChange?: (favorited: boolean) => void
 }
 
-/** Wrapper for using FavoriteButton on listing cards; stops click from navigating to listing. */
+/** Listing-card favorite control: same `h-8 w-8` footprint as carousel arrows; stops click from navigating to listing. */
 export function FavoriteButtonCardOverlay({
   listingId,
   initialFavorited,
   isLoggedIn,
   onFavoritedChange,
 }: FavoriteButtonCardOverlayProps) {
+  const listingCardFavoriteButtonClassName =
+    "h-8 w-8 min-h-8 min-w-8"
+
+
   return (
     <div
-      className="group/favorite pointer-events-auto absolute right-2 top-2 z-[25] flex h-14 w-14 shrink-0 items-start justify-end"
+      className="group/favorite pointer-events-auto absolute right-2 bottom-2 z-[25] flex h-8 w-8 shrink-0 items-center justify-center"
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -29,6 +33,7 @@ export function FavoriteButtonCardOverlay({
         initialFavorited={initialFavorited}
         isLoggedIn={isLoggedIn}
         onFavoritedChange={onFavoritedChange}
+        className={listingCardFavoriteButtonClassName}
       />
     </div>
   )

@@ -2,35 +2,39 @@
 
 import type { ReactNode } from "react"
 import { useLayoutEffect, useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { ShieldCheck, Truck } from "lucide-react"
-import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
-import { boardFulfillmentSummary } from "@/lib/listing-fulfillment"
-import { listingDetailHref } from "@/lib/listing-href"
-import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingDetailHorizontalStripBleedClassName } from "@/components/features/home/home-listing-scroll-row"
 import {
-  capitalizeWords,
-  formatBoardType,
-  formatCondition,
-  formatListingTileCategoryPillText,
-} from "@/lib/listing-labels"
+  HomePeerListingScrollTile,
+  type HomePeerScrollListing,
+} from "@/components/features/home/home-peer-listing-scroll-tile"
 import type { PdpRecentStripListingWithFavorite } from "@/lib/pdp-recent-strip-listing"
 import {
   pushRecentSurfboardListingId,
   readRecentSurfboardListingIds,
 } from "@/lib/utils/recent-viewed-surfboards-storage"
 import { Skeleton } from "@/components/ui/skeleton"
-import { listingDetailHorizontalStripBleedClassName } from "@/components/features/home/home-listing-scroll-row"
-import { listingTileTitleHeadingClassName } from "@/lib/listing-card-styles"
+import { listingProductCardClassName } from "@/lib/listing-card-styles"
+import { homeUniformScrollBodyClass } from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
 
-function catalogBrandLabel(listing: PdpRecentStripListingWithFavorite): string {
-  const b = listing.brand?.trim()
-  if (b) return b.toUpperCase()
-  const title = listing.title.trim()
-  const first = title.split(/\s+/)[0] ?? ""
-  return first ? first.toUpperCase() : "BOARD"
+function pdpRecentToHomePeerListing(
+  listing: PdpRecentStripListingWithFavorite,
+): HomePeerScrollListing {
+  return {
+    id: listing.id,
+    slug: listing.slug,
+    user_id: listing.user_id,
+    title: listing.title,
+    price: listing.price,
+    status: "active",
+    section: listing.section,
+    local_pickup: listing.local_pickup,
+    shipping_available: listing.shipping_available,
+    listing_images: listing.listing_images,
+    categories: listing.categories,
+    board_type: listing.board_type,
+    condition: listing.condition,
+  }
 }
 
 /** Hard cap (~280px): keeps sparse PDP “recent” rows from growing with the viewport. */
@@ -45,6 +49,17 @@ function recentStripImageSizes(tilesInRow: number): string {
   if (tilesInRow === 4) return "(max-width: 640px) 70vw, 180px"
   if (tilesInRow === 5) return "(max-width: 640px) 65vw, 160px"
   return "(max-width: 640px) 60vw, 150px"
+}
+
+function pdpRecentStripTileWrapClass(tilesInRow: number, sparseRow: boolean) {
+  return cn(
+    "flex min-h-0 flex-col",
+    recentStripCardMaxWidthClass(),
+    tilesInRow === 1 && "mx-auto w-full",
+    sparseRow && tilesInRow >= 2 && "w-full flex-1 basis-0 sm:w-auto",
+    !sparseRow &&
+      "w-[min(100%,260px)] shrink-0 snap-start sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 sm:snap-none",
+  )
 }
 
 function PdpRecentHorizontalStrip({ tileCount, children }: { tileCount: number; children: ReactNode }) {
@@ -65,63 +80,27 @@ function PdpRecentHorizontalStrip({ tileCount, children }: { tileCount: number; 
   )
 }
 
-function PdpRecentCatalogCard({
+function PdpRecentHomePeerTile({
   listing,
+  viewerUserId,
   tilesInRow,
   sparseRow,
 }: {
   listing: PdpRecentStripListingWithFavorite
+  viewerUserId: string | null
   tilesInRow: number
   sparseRow: boolean
 }) {
-  const href = listingDetailHref({
-    id: listing.id,
-    slug: listing.slug,
-    section: listing.section,
-  })
-  const src = listingCardImageSrc(listing.listing_images)
-  const typeLabel = formatListingTileCategoryPillText(listing) ?? formatBoardType(listing.board_type)
-  const crumb = typeLabel ? `Surfboards > ${typeLabel}` : "Surfboards"
-  const price = listing.price
-
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex min-h-0 flex-col",
-        recentStripCardMaxWidthClass(),
-        tilesInRow === 1 && "mx-auto w-full",
-        sparseRow && tilesInRow >= 2 && "w-full flex-1 basis-0 sm:w-auto",
-        !sparseRow &&
-          "w-[min(100%,260px)] shrink-0 snap-start sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 sm:snap-none",
-      )}
-    >
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/40 bg-card shadow-sm transition-shadow hover:shadow-md dark:border-border dark:bg-muted/20">
-        <div className="relative aspect-[3/4] w-full min-h-[112px] shrink-0 overflow-hidden bg-muted sm:min-h-[128px]">
-          {src ? (
-            <Image
-              src={src}
-              alt={capitalizeWords(listing.title)}
-              fill
-              className="object-cover object-center"
-              sizes={recentStripImageSizes(tilesInRow)}
-            />
-          ) : null}
-        </div>
-        <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {catalogBrandLabel(listing)}
-          </p>
-          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:line-clamp-3">
-            {capitalizeWords(listing.title)}
-          </p>
-          <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{crumb}</p>
-          <p className="mt-auto pt-3 text-[11px] font-medium text-muted-foreground">
-            From <span className="tabular-nums text-foreground">${price.toFixed(2)}</span>
-          </p>
-        </div>
-      </div>
-    </Link>
+    <div className={pdpRecentStripTileWrapClass(tilesInRow, sparseRow)}>
+      <HomePeerListingScrollTile
+        listing={pdpRecentToHomePeerListing(listing)}
+        userId={viewerUserId}
+        isFavorited={listing.viewerFavorited}
+        layout="homeScroll"
+        imageSizesOverride={recentStripImageSizes(tilesInRow)}
+      />
+    </div>
   )
 }
 
@@ -155,22 +134,17 @@ function PdpRecentStripSkeleton({
           {Array.from({ length: tileCount }, (_, i) => (
             <div
               key={i}
-              className={cn(
-                "flex min-h-0 flex-col",
-                recentStripCardMaxWidthClass(),
-                tileCount === 1 && "mx-auto w-full",
-                sparse && tileCount >= 2 && "w-full flex-1 basis-0 sm:w-auto",
-                !sparse &&
-                  "w-[min(100%,260px)] shrink-0 snap-start sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 sm:snap-none",
-              )}
+              className={pdpRecentStripTileWrapClass(tileCount, tileCount <= 2)}
             >
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/40 bg-card shadow-sm dark:border-border dark:bg-muted/20">
+              <div className={cn(listingProductCardClassName, "flex min-h-0 min-w-0 flex-1 flex-col")}>
                 <Skeleton className="aspect-[3/4] w-full min-h-[112px] shrink-0 rounded-none sm:min-h-[128px]" />
-                <div className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-3">
-                  <Skeleton className="h-3 w-14" />
+                <div className={cn(homeUniformScrollBodyClass, "gap-1.5")}>
                   <Skeleton className="h-4 w-full max-w-[min(100%,14rem)]" />
-                  <Skeleton className="h-3 w-[85%] max-w-[min(100%,12rem)]" />
-                  <Skeleton className="mt-auto h-3 w-24 pt-2" />
+                  <Skeleton className="h-3 w-24" />
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <Skeleton className="h-6 w-20" />
+                    <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,81 +152,6 @@ function PdpRecentStripSkeleton({
         </div>
       </div>
     </section>
-  )
-}
-
-function PdpRecentMarketplaceCard({
-  listing,
-  viewerUserId,
-  tilesInRow,
-  sparseRow,
-}: {
-  listing: PdpRecentStripListingWithFavorite
-  viewerUserId: string | null
-  tilesInRow: number
-  sparseRow: boolean
-}) {
-  const href = listingDetailHref({
-    id: listing.id,
-    slug: listing.slug,
-    section: listing.section,
-  })
-  const src = listingCardImageSrc(listing.listing_images)
-  const condition = formatCondition(listing.condition)
-  const fulfill = boardFulfillmentSummary(listing.local_pickup, listing.shipping_available)
-
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "group flex min-h-0 flex-col",
-        recentStripCardMaxWidthClass(),
-        tilesInRow === 1 && "mx-auto w-full",
-        sparseRow && tilesInRow >= 2 && "w-full flex-1 basis-0 sm:w-auto",
-        !sparseRow &&
-          "w-[min(100%,260px)] shrink-0 snap-start sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 sm:snap-none",
-      )}
-    >
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow duration-200 hover:shadow-md">
-        <div className="relative aspect-[3/4] w-full min-h-[112px] shrink-0 overflow-hidden bg-muted sm:min-h-[128px]">
-          {src ? (
-            <Image
-              src={src}
-              alt={capitalizeWords(listing.title)}
-              fill
-              className="object-cover object-center transition-transform duration-200 group-hover:scale-[1.02]"
-              sizes={recentStripImageSizes(tilesInRow)}
-            />
-          ) : null}
-          <FavoriteButtonCardOverlay
-            listingId={listing.id}
-            initialFavorited={listing.viewerFavorited}
-            isLoggedIn={!!viewerUserId}
-          />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col p-3 pt-3">
-          <h3 className={cn(listingTileTitleHeadingClassName, "line-clamp-3")}>
-            {capitalizeWords(listing.title)}
-          </h3>
-          {condition ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {listing.condition === "brand_new" ? "New" : `Used – ${condition}`}
-            </p>
-          ) : null}
-          <p className="mt-2 text-base font-bold tabular-nums text-foreground">${listing.price.toFixed(2)}</p>
-          <div className="mt-auto space-y-1.5 pt-2">
-            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Truck className="h-3.5 w-3.5 shrink-0 text-foreground/70" aria-hidden />
-              <span>{fulfill}</span>
-            </p>
-            <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/70" aria-hidden />
-              <span>Purchase Protection on eligible checkout</span>
-            </p>
-          </div>
-        </div>
-      </div>
-    </Link>
   )
 }
 
@@ -267,8 +166,7 @@ export function ListingPdpRecentSections({
   moreListings: PdpRecentStripListingWithFavorite[]
   /**
    * When false (e.g. short `/l/*` PDP URLs), only listing IDs from local “recently viewed”
-   * are shown — no filler tiles from `moreListings`. Also omits the separate catalog-style
-   * strip so a single “Recently viewed” row matches marketplace cards.
+   * are shown — no filler tiles from `moreListings`.
    */
   padStripWithRecommendations?: boolean
 }) {
@@ -412,9 +310,10 @@ export function ListingPdpRecentSections({
           </h2>
           <PdpRecentHorizontalStrip tileCount={catalogRow.length}>
             {catalogRow.map((listing) => (
-              <PdpRecentCatalogCard
+              <PdpRecentHomePeerTile
                 key={listing.id}
                 listing={listing}
+                viewerUserId={viewerUserId}
                 tilesInRow={catalogRow.length}
                 sparseRow={catalogRow.length <= 2}
               />
@@ -434,7 +333,7 @@ export function ListingPdpRecentSections({
           </h2>
           <PdpRecentHorizontalStrip tileCount={marketRow.length}>
             {marketRow.map((listing) => (
-              <PdpRecentMarketplaceCard
+              <PdpRecentHomePeerTile
                 key={listing.id}
                 listing={listing}
                 viewerUserId={viewerUserId}

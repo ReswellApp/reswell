@@ -31,7 +31,7 @@ import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
-import { listingProductCardClassName } from '@/lib/listing-card-styles'
+import { listingProductCardSolidClassName } from '@/lib/listing-card-styles'
 import { postEndListing } from "@/lib/listing-end-request"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
@@ -177,7 +177,7 @@ export default function MyListingsPage() {
     const cardHref = isDraft ? `/sell?edit=${listing.id}` : getListingHref(listing.section, listing.id, listing.slug)
 
     return (
-      <Card className={listingProductCardClassName}>
+      <Card className={listingProductCardSolidClassName}>
         <CardContent className="p-4">
           <div className="flex gap-4">
             <Link href={cardHref} className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">

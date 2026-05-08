@@ -2,6 +2,7 @@
  * Homepage horizontal listing tiles — single module for peer surfboard rows (Recently added, categories, verified, etc.).
  * All tiles delegate to {@link ListingTile} with shared scroll styles from `@/lib/home-listing-scroll-styles`.
  */
+import type { ReactNode } from "react"
 import { ListingTile } from "@/components/listing-tile"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
@@ -52,12 +53,30 @@ export function HomePeerListingScrollTile({
   userId,
   isFavorited,
   layout = "homeScroll",
+  imageSizesOverride,
+  statusLabel,
+  soldOverlay,
+  imageGrayscale,
+  useBlurPlaceholder = false,
+  footerTrailing,
+  imageTopLeftOverlay,
+  showFavorites = true,
   onFavoritedChange,
 }: {
   listing: HomePeerScrollListing
   userId: string | null
   isFavorited: boolean
   layout?: "homeScroll" | "grid"
+  /** Overrides default scroll/grid `sizes` on the listing image (e.g. PDP recent strip). */
+  imageSizesOverride?: string
+  statusLabel?: "sold" | "pending" | "ended" | null
+  soldOverlay?: boolean
+  imageGrayscale?: boolean
+  useBlurPlaceholder?: boolean
+  /** Renders below the price + cart row inside the footer band (e.g. favorites: seller + location). */
+  footerTrailing?: ReactNode
+  imageTopLeftOverlay?: ReactNode
+  showFavorites?: boolean
   /** Optional — e.g. cart favorites row removes a tile when unfavorited. */
   onFavoritedChange?: (favorited: boolean) => void
 }) {
@@ -73,6 +92,9 @@ export function HomePeerListingScrollTile({
   const conditionLine = formatHomePeerListingConditionLine(listing.condition)
 
   const isGrid = layout === "grid"
+  const imageSizes =
+    imageSizesOverride ??
+    (isGrid ? homePeerListingGridImageSizes : homeListingScrollImageSizes)
 
   return (
     <ListingTile
@@ -86,11 +108,14 @@ export function HomePeerListingScrollTile({
       imageAlt={capitalizeWords(listing.title)}
       listingImages={listing.listing_images}
       price={Number(listing.price)}
+      imageTopLeftOverlay={imageTopLeftOverlay}
+      imageSizes={imageSizes}
+      imageGrayscale={imageGrayscale}
+      useBlurPlaceholder={useBlurPlaceholder}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
       cardContentClassName={homeUniformScrollBodyClass}
-      imageSizes={isGrid ? homePeerListingGridImageSizes : homeListingScrollImageSizes}
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
           <h3 className={homePeerListingTileTitleClass}>{capitalizeWords(listing.title)}</h3>
@@ -101,6 +126,8 @@ export function HomePeerListingScrollTile({
           <p className={homePeerTileSubtitleClass}>{conditionLine}</p>
         ) : null
       }
+      statusLabel={statusLabel}
+      soldOverlay={soldOverlay}
       footerSlot={
         <div className={homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
@@ -111,13 +138,19 @@ export function HomePeerListingScrollTile({
               <span className={cn(homeScrollTileCartSlotClass)} aria-hidden />
             )}
           </div>
+          {footerTrailing ?? null}
         </div>
       }
-      favorites={{
-        initialFavorited: isFavorited,
-        isLoggedIn: !!userId,
-        onFavoritedChange,
-      }}
+      favorites={
+        showFavorites
+          ? {
+              initialFavorited: isFavorited,
+              isLoggedIn: !!userId,
+              onFavoritedChange,
+            }
+          : null
+      }
+      showFavorites={showFavorites}
     />
   )
 }

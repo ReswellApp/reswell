@@ -3,9 +3,9 @@ import { ListingTileShopInventoryCartIcon } from "@/components/listing-tile-shop
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
 import { listingCardImageSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { listingDetailHref } from "@/lib/listing-href"
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
 import {
   homeListingScrollImageSizes,
+  homePeerListingGridCardClass,
   homeUniformScrollBodyClass,
   homeUniformScrollCardClass,
   homeUniformScrollLinkClass,
@@ -15,7 +15,6 @@ import {
   homePeerTileSubtitleClass,
   homePeerTilePriceClass,
 } from "@/lib/home-listing-scroll-styles"
-import { cn } from "@/lib/utils"
 
 const gridImageSizes = "(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
 
@@ -63,7 +62,7 @@ export function ShopNewListingStandardTile({
       price={listing.price}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
-      cardClassName={isGrid ? cn(listingProductCardGridClassName, "h-full") : homeUniformScrollCardClass}
+      cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
       cardContentClassName={homeUniformScrollBodyClass}
       imageSizes={isGrid ? gridImageSizes : homeListingScrollImageSizes}
       titleSlot={

@@ -11,15 +11,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { Users } from "lucide-react"
-import { ListingTile } from "@/components/listing-tile"
-import { listingDetailHref } from "@/lib/listing-href"
-import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
+import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
+import type { ListingImageForCard } from "@/lib/listing-image-display"
 import {
   boardTypeForDbFromBrowseParam,
   boardsBrowseBoardTypeLabel,
@@ -28,6 +26,21 @@ import {
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
+
+type BoardBrowseListingRow = {
+  id: string
+  slug: string | null
+  user_id: string
+  title: string
+  price: number | string
+  status: string
+  local_pickup?: boolean | null
+  shipping_available?: boolean | null
+  listing_images?: ListingImageForCard[] | null
+  categories?: { name?: string | null } | null | { name?: string | null }[] | null
+  board_type?: string | null
+  condition?: string | null
+}
 
 function haversineMi(
   lat1: number,
@@ -212,18 +225,20 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     )
   }
 
+  const boardRows = boards as BoardBrowseListingRow[]
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
   let favoritedIds: string[] = []
-  if (user && boards.length > 0) {
+  if (user && boardRows.length > 0) {
     const { data: favs } = await supabase
       .from("favorites")
       .select("listing_id")
       .eq("user_id", user.id)
       .in(
         "listing_id",
-        boards.map((b) => b.id),
+        boardRows.map((b) => b.id),
       )
     favoritedIds = (favs ?? []).map((f) => f.listing_id)
   }
@@ -231,48 +246,29 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {boards.map((board) => {
-          const locationText =
-            board.city && board.state
-              ? `${board.city}, ${board.state}`
-              : board.profiles?.location || "Location not set"
-          const cartAction = computePeerCartPriceAction(user?.id ?? null, {
-            id: board.id,
-            user_id: board.user_id,
-            section: "surfboards",
-            status: board.status,
-            local_pickup: board.local_pickup,
-            shipping_available: board.shipping_available,
-          })
-          return (
-            <ListingTile
-              key={board.id}
-              href={listingDetailHref({
-                id: board.id,
-                slug: board.slug,
-                section: "surfboards",
-              })}
-              listingId={board.id}
-              title={capitalizeWords(board.title)}
-              imageAlt={capitalizeWords(board.title)}
-              listingImages={board.listing_images}
-              price={Number(board.price)}
-              cardContentClassName="flex min-w-0 flex-1 flex-col p-3"
-              subtitle={
-                board.board_length ? (
-                  <p className="text-xs text-muted-foreground mt-0.5">{board.board_length}</p>
-                ) : null
-              }
-              meta={{ variant: "location", text: locationText }}
-              categoryPill={formatListingTileCategoryPillText(board)}
-              priceAction={cartAction}
-              favorites={{
-                initialFavorited: favoritedIds.includes(board.id),
-                isLoggedIn: !!user,
-              }}
-            />
-          )
-        })}
+        {boardRows.map((board) => (
+          <HomePeerListingScrollTile
+            key={board.id}
+            layout="grid"
+            userId={user?.id ?? null}
+            isFavorited={favoritedIds.includes(board.id)}
+            listing={{
+              id: board.id,
+              slug: board.slug,
+              user_id: board.user_id,
+              title: board.title,
+              price: board.price,
+              status: board.status,
+              section: "surfboards",
+              local_pickup: board.local_pickup,
+              shipping_available: board.shipping_available,
+              listing_images: board.listing_images,
+              categories: board.categories,
+              board_type: board.board_type,
+              condition: board.condition,
+            }}
+          />
+        ))}
       </div>
 
       {totalPages > 1 && (

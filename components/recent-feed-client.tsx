@@ -1,10 +1,7 @@
 "use client"
 
-import { capitalizeWords, formatListingTileCategoryPillText } from "@/lib/listing-labels"
-import { ListingTile } from "@/components/listing-tile"
-import { listingProductCardGridClassName } from "@/lib/listing-card-styles"
-import { listingDetailHref } from "@/lib/listing-href"
-import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
+import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
+import type { ListingImageForCard } from "@/lib/listing-image-display"
 
 export interface RecentListing {
   id: string
@@ -12,7 +9,7 @@ export interface RecentListing {
   user_id: string
   title: string
   price: number
-  condition: string
+  condition?: string | null
   section: string
   status?: string
   city?: string | null
@@ -21,7 +18,7 @@ export interface RecentListing {
   local_pickup?: boolean | null
   board_type?: string | null
   board_length?: string | null
-  listing_images?: { url: string; is_primary?: boolean }[] | null
+  listing_images?: { url: string; is_primary?: boolean; thumbnail_url?: string | null }[] | null
   profiles?: { display_name?: string | null; avatar_url?: string | null; location?: string | null; sales_count?: number; shop_verified?: boolean } | null
   categories?: { name?: string | null; slug?: string | null } | null
 }
@@ -35,18 +32,10 @@ interface RecentFeedClientProps {
   emptyMessage?: string
 }
 
-function getListingHref(listing: RecentListing): string {
-  return listingDetailHref({
-    section: listing.section,
-    slug: listing.slug,
-    id: listing.id,
-  })
-}
-
 export function RecentFeedClient({
   listings,
   favoritedListingIds,
-  isLoggedIn,
+  isLoggedIn: _isLoggedIn,
   viewerUserId,
   emptyMessage,
 }: RecentFeedClientProps) {
@@ -60,48 +49,29 @@ export function RecentFeedClient({
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      {listings.map((listing) => {
-        const href = getListingHref(listing)
-        const locationText =
-          listing.city && listing.state
-            ? `${listing.city}, ${listing.state}`
-            : listing.profiles?.location || "Location not set"
-        const cartAction = computePeerCartPriceAction(viewerUserId, {
-          id: listing.id,
-          user_id: listing.user_id,
-          section: listing.section,
-          status: listing.status ?? "active",
-          local_pickup: listing.local_pickup,
-          shipping_available: listing.shipping_available,
-        })
-        return (
-          <ListingTile
-            key={listing.id}
-            href={href}
-            listingId={listing.id}
-            title={capitalizeWords(listing.title)}
-            imageAlt={capitalizeWords(listing.title)}
-            listingImages={listing.listing_images ?? null}
-            price={listing.price}
-            linkLayout="unified"
-            useBlurPlaceholder={false}
-            cardClassName={listingProductCardGridClassName}
-            cardContentClassName="min-w-0 p-3"
-            subtitle={
-              listing.section === "surfboards" && listing.board_length ? (
-                <p className="text-sm text-muted-foreground mt-1">{listing.board_length}</p>
-              ) : null
-            }
-            meta={{ variant: "location", text: locationText }}
-            categoryPill={formatListingTileCategoryPillText(listing)}
-            priceAction={cartAction}
-            favorites={{
-              initialFavorited: favoritedListingIds.includes(listing.id),
-              isLoggedIn,
-            }}
-          />
-        )
-      })}
+      {listings.map((listing) => (
+        <HomePeerListingScrollTile
+          key={listing.id}
+          layout="grid"
+          userId={viewerUserId}
+          isFavorited={favoritedListingIds.includes(listing.id)}
+          listing={{
+            id: listing.id,
+            slug: listing.slug,
+            user_id: listing.user_id,
+            title: listing.title,
+            price: listing.price,
+            status: listing.status ?? "active",
+            section: listing.section,
+            local_pickup: listing.local_pickup,
+            shipping_available: listing.shipping_available,
+            listing_images: listing.listing_images as ListingImageForCard[] | null,
+            categories: listing.categories,
+            board_type: listing.board_type,
+            condition: listing.condition && listing.condition.trim() !== "" ? listing.condition : null,
+          }}
+        />
+      ))}
     </div>
   )
 }

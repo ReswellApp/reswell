@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { MapPin, Store, ArrowRight } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
-import { listingProductCardClassName } from "@/lib/listing-card-styles"
+import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -199,7 +199,7 @@ export default async function SellersPage({
                 return (
                   <Card
                     key={shop.id}
-                    className={cn(listingProductCardClassName, "overflow-hidden border-border/80")}
+                    className={cn(listingProductCardSolidClassName, "border-border/80")}
                   >
                     <CardContent className="p-0">
                       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
