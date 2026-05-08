@@ -4,6 +4,7 @@ import type { ComponentProps } from "react"
 import { useCallback, useState } from "react"
 import { Download, FileText, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -31,6 +32,7 @@ export function OpenMarketplacePdfButton({
   const [openBusy, setOpenBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [downloadBusy, setDownloadBusy] = useState(false)
+  const openSignIn = useSignInGate()
 
   const attachmentPath = `/api/messages/${messageId}/attachment`
 
@@ -40,7 +42,7 @@ export function OpenMarketplacePdfButton({
       const probe = await fetch(attachmentPath, { method: "HEAD" })
       if (!probe.ok) {
         if (probe.status === 401) {
-          toast.error("Sign in required")
+          openSignIn(null)
         } else {
           toast.error("Could not open PDF")
         }
@@ -59,7 +61,11 @@ export function OpenMarketplacePdfButton({
     try {
       const res = await fetch(attachmentPath)
       if (!res.ok) {
-        toast.error("Could not download PDF")
+        if (res.status === 401) {
+          openSignIn(null)
+        } else {
+          toast.error("Could not download PDF")
+        }
         return
       }
       const blob = await res.blob()
@@ -81,7 +87,7 @@ export function OpenMarketplacePdfButton({
     } finally {
       setDownloadBusy(false)
     }
-  }, [attachmentPath, fileName])
+  }, [attachmentPath, fileName, openSignIn])
 
   return (
     <>

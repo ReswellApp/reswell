@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { toast } from "sonner"
 import { UserPlus, UserCheck, UserMinus, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -47,7 +47,7 @@ export function FollowButton({
   const [followerCount, setFollowerCount] = useState(initialFollowerCount)
   const [loading, setLoading] = useState(false)
   const [hovering, setHovering] = useState(false)
-  const router = useRouter()
+  const openSignIn = useSignInGate()
 
   // On own profile: show follower count only (no button)
   if (isOwnProfile) {
@@ -60,22 +60,7 @@ export function FollowButton({
 
   async function handleClick() {
     if (!isLoggedIn) {
-      toast.error(
-        sellerName
-          ? `Sign in to follow ${sellerName} and get notified of new listings`
-          : "Sign in to follow this seller and get notified of new listings",
-        {
-          action: {
-            label: "Sign in",
-            onClick: () =>
-              router.push(
-                `/auth/login?redirect=${encodeURIComponent(
-                  sellerProfileHref({ seller_slug: sellerSlug }),
-                )}`,
-              ),
-          },
-        }
-      )
+      openSignIn(sellerProfileHref({ seller_slug: sellerSlug }))
       return
     }
 

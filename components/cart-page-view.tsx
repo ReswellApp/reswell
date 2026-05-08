@@ -26,6 +26,7 @@ import {
 } from "@/components/features/cart/cart-favorites-carousel"
 import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
 import { cn } from "@/lib/utils"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 
 function listingAvailable(listing: CartPageItem["listing"]) {
   return listing.status === "active" || listing.status === "pending_sale"
@@ -46,13 +47,18 @@ function CartLineFavoriteButton({
 }) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
+  const openSignIn = useSignInGate()
 
   async function onClick() {
     setLoading(true)
     try {
       const result = await toggleFavoriteListing(listingId)
       if ("error" in result) {
-        toast.error(result.error === "Unauthorized" ? "Please sign in to save favorites" : "Could not update favorites")
+        if (result.error === "Unauthorized") {
+          openSignIn(null)
+        } else {
+          toast.error("Could not update favorites")
+        }
         return
       }
       setFavorited(result.favorited)

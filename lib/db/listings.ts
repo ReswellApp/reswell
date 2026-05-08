@@ -83,6 +83,46 @@ export type ListingFavoriteNotificationRow = {
   section: string | null
 }
 
+export async function patchListingPriceByOwner(
+  client: SupabaseClient,
+  params: {
+    listingId: string
+    ownerUserId: string
+    priceUsd: number
+    allowedStatuses: readonly string[]
+  },
+): Promise<
+  | { ok: true }
+  | { ok: false; kind: "not_found"; message: string }
+  | { ok: false; kind: "update_failed"; message: string }
+> {
+  const { listingId, ownerUserId, priceUsd, allowedStatuses } = params
+
+  const { data, error } = await client
+    .from("listings")
+    .update({
+      price: priceUsd,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", listingId)
+    .eq("user_id", ownerUserId)
+    .in("status", [...allowedStatuses])
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    return { ok: false, kind: "update_failed", message: error.message }
+  }
+  if (!data) {
+    return {
+      ok: false,
+      kind: "not_found",
+      message: "Listing not found or price can’t be updated in this state.",
+    }
+  }
+  return { ok: true }
+}
+
 export async function getListingRowForFavoriteNotification(
   client: SupabaseClient,
   listingId: string,

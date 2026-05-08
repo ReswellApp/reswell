@@ -125,6 +125,7 @@ import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   validateSellListingForm,
   buildResolvedListingTitle,
@@ -660,6 +661,8 @@ type SellPageContentProps = {
 function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const listingPhotosInputId = useId()
   const router = useRouter()
+  const sellSearchParams = useSearchParams()
+  const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
 
   /** Start blank: clear session hint only (no auto-redirect — avoids loading flash). */
@@ -1943,16 +1946,16 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        toast.error("Please sign in to create a listing")
-        router.push("/auth/login?redirect=/sell")
+        const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
+        openSignIn(ret)
         return
       }
 
       const { data: { session } } = await supabase.auth.getSession()
       const accessToken = session?.access_token
       if (!accessToken) {
-        toast.error("Your session expired. Please sign in again.")
-        router.push("/auth/login?redirect=/sell")
+        const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
+        openSignIn(ret)
         return
       }
 

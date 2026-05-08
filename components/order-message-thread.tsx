@@ -12,6 +12,7 @@ import { Check, Loader2, MessageCircle, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { sendConversationReply, sendListingMessage } from "@/app/actions/messages"
 import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 
 export type OrderThreadMessage = {
   id: string
@@ -42,6 +43,7 @@ export function OrderMessageThread({
   const [sentFlash, setSentFlash] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+  const openSignIn = useSignInGate()
 
   const canStartFromOrder =
     variant === "buyer" && !conversationId && !!startConversation?.listingId && !!startConversation?.sellerId
@@ -58,7 +60,7 @@ export function OrderMessageThread({
           data: { user },
         } = await supabase.auth.getUser()
         if (!user) {
-          toast.error("Sign in to send a message")
+          openSignIn(null)
           return
         }
         const result = await sendListingMessage({
@@ -90,7 +92,7 @@ export function OrderMessageThread({
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        toast.error("Sign in to send a message")
+        openSignIn(null)
         return
       }
       const result = await sendConversationReply({

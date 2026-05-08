@@ -35,7 +35,7 @@ export function ListingDetailPeerPurchaseActions({
   isLoggedIn,
   makeOffer,
   agreedCheckoutItemUsd,
-  favoritesSlot,
+  offerRowTrailingSlot,
 }: {
   listingId: string
   /** Slug or id for `/checkout?listing=` */
@@ -45,8 +45,8 @@ export function ListingDetailPeerPurchaseActions({
   makeOffer?: ListingMakeOfferConfig
   /** When the buyer has an ACCEPTED offer, checkout uses this item price (listing stays at list price in the gallery). */
   agreedCheckoutItemUsd?: number | null
-  /** Renders beside “Make an offer” (Reverb-style circular favorite). */
-  favoritesSlot?: React.ReactNode
+  /** Renders beside “Make an offer” (e.g. share roundel). */
+  offerRowTrailingSlot?: React.ReactNode
 }) {
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
@@ -164,7 +164,7 @@ export function ListingDetailPeerPurchaseActions({
             <div className="min-w-0 flex-1">
               <MakeOfferTriggerButton onClick={openMakeOffer} />
             </div>
-            {favoritesSlot ? <div className="shrink-0">{favoritesSlot}</div> : null}
+            {offerRowTrailingSlot ? <div className="shrink-0">{offerRowTrailingSlot}</div> : null}
           </div>
           <MakeOfferDialog
             listingId={listingId}

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Anchor, Box, LayoutTemplate, Loader2, Ruler, Sailboat, Waves } from "lucide-react"
 import { toast } from "sonner"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import type { AddressFields } from "@/app/admin/shipping/address-fields"
 import {
   reswellSuggestedPackageInchesFromBoard,
@@ -96,6 +97,7 @@ export function SurfboardShippingEstimatorDialog({
   const [heightIn, setHeightIn] = useState("6")
   const [busy, setBusy] = useState(false)
   const [rates, setRates] = useState<RateRow[] | null>(null)
+  const openSignIn = useSignInGate()
 
   const applyListingSuggestions = useCallback(() => {
     const pkg = reswellSuggestedPackageInchesFromBoard({
@@ -221,7 +223,7 @@ export function SurfboardShippingEstimatorDialog({
       const json = (await res.json()) as { data?: { rates: RateRow[] }; error?: string }
       if (!res.ok) {
         if (res.status === 401) {
-          toast.error("Sign in to get live shipping estimates.")
+          openSignIn(null)
         } else {
           toast.error(json.error ?? "Could not get rates.")
         }

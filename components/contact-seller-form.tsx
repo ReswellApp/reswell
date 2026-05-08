@@ -4,11 +4,11 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { sendListingMessage } from "@/app/actions/messages"
 import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { MessageSquare, Send } from "lucide-react"
-import Link from "next/link"
 import { listingDetailHref } from "@/lib/listing-href"
 
 interface ContactSellerFormProps {
@@ -38,6 +38,8 @@ export function ContactSellerForm({
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
   const router = useRouter()
+  const openSignIn = useSignInGate()
+  const listingReturnPath = listingDetailHref({ id: listingId, slug: listingSlug, section })
 
   const quickMessages = shippingAvailable
     ? [
@@ -71,8 +73,7 @@ export function ContactSellerForm({
 
       if ("error" in result) {
         if (result.error === "Unauthorized") {
-          toast.error("Please sign in to send messages")
-          router.push("/auth/login")
+          openSignIn(listingReturnPath)
           return
         }
         if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
@@ -95,14 +96,12 @@ export function ContactSellerForm({
       <div className="py-6 text-center">
         <MessageSquare className="mx-auto mb-3 h-8 w-8 text-foreground" aria-hidden />
         <p className="mb-5 text-[15px] text-foreground">Sign in to contact the seller</p>
-        <Button asChild className="rounded-full px-8">
-          <Link
-            href={`/auth/login?redirect=${encodeURIComponent(
-              listingDetailHref({ id: listingId, slug: listingSlug, section }),
-            )}`}
-          >
-            Sign In to Message
-          </Link>
+        <Button
+          type="button"
+          className="rounded-full px-8"
+          onClick={() => openSignIn(listingReturnPath)}
+        >
+          Sign In to Message
         </Button>
       </div>
     )

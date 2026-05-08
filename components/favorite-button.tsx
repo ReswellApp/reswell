@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+
 import { toggleFavoriteListing } from "@/app/actions/favorites"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
-import { Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Heart } from "lucide-react"
+import { toast } from "sonner"
 
 interface FavoriteButtonProps {
   listingId: string
@@ -35,12 +36,11 @@ export function FavoriteButton({
 }: FavoriteButtonProps) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const openSignIn = useSignInGate()
 
   async function toggleFavorite() {
     if (!isLoggedIn) {
-      toast.error("Please sign in to save favorites")
-      router.push(`/auth/login?redirect=${redirectPath || `/l/${listingId}`}`)
+      openSignIn(redirectPath ?? `/l/${listingId}`)
       return
     }
 
@@ -49,14 +49,11 @@ export function FavoriteButton({
     try {
       const result = await toggleFavoriteListing(listingId)
       if ("error" in result) {
-        toast.error(
-          result.error === "Unauthorized"
-            ? "Please sign in to save favorites"
-            : "Failed to update favorites",
-        )
         if (result.error === "Unauthorized") {
-          router.push(`/auth/login?redirect=${redirectPath || `/l/${listingId}`}`)
+          openSignIn(redirectPath ?? `/l/${listingId}`)
+          return
         }
+        toast.error("Failed to update favorites")
         return
       }
       setFavorited(result.favorited)
@@ -73,7 +70,7 @@ export function FavoriteButton({
       type="button"
       variant={variant}
       size="icon"
-      onClick={toggleFavorite}
+      onClick={() => void toggleFavorite()}
       disabled={loading}
       aria-label="Favorites button"
       aria-pressed={favorited}

@@ -4,8 +4,8 @@ import { useRef, useState } from "react"
 import { Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -20,6 +20,7 @@ export function ThreadLikeButton({ threadId, initialCount, initialLiked, isLogge
   const [count, setCount] = useState(initialCount)
   const [liked, setLiked] = useState(initialLiked)
   const busy = useRef(false)
+  const openSignIn = useSignInGate()
 
   async function toggle() {
     if (!isLoggedIn || busy.current) return
@@ -30,6 +31,7 @@ export function ThreadLikeButton({ threadId, initialCount, initialLiked, isLogge
     } = await supabase.auth.getUser()
     if (!user) {
       busy.current = false
+      openSignIn(null)
       return
     }
 
@@ -63,18 +65,20 @@ export function ThreadLikeButton({ threadId, initialCount, initialLiked, isLogge
     busy.current = false
   }
 
-  const loginHref = `/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/board-talk")}`
-
   if (!isLoggedIn) {
     return (
       <TooltipProvider delayDuration={300}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2 rounded-full px-4 shadow-sm transition-transform active:scale-95" asChild>
-              <Link href={loginHref}>
-                <Heart className="h-4 w-4" />
-                <span className="tabular-nums">{count > 0 ? count : "Stoke"}</span>
-              </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-full px-4 shadow-sm transition-transform active:scale-95"
+              onClick={() => openSignIn(null)}
+            >
+              <Heart className="h-4 w-4" />
+              <span className="tabular-nums">{count > 0 ? count : "Stoke"}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>Log in to show love for this post</TooltipContent>

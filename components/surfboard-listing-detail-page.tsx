@@ -24,7 +24,7 @@ import {
 } from "@/lib/listing-detail-cache"
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
-import { Info, Hourglass, Flag } from "lucide-react"
+import { Info, Hourglass, Flag, ShoppingCart } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -60,6 +60,8 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { formatDistanceToNow } from "date-fns"
 import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
+import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
+import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -286,6 +288,7 @@ export async function SurfboardListingDetailPage({
   }
 
   const listingViews = Number((board as { views?: number | null }).views ?? 0)
+  const cartHolderCount = !isSold ? await getListingCartHolderCount(supabase, board.id) : 0
   let listedRelative: string | null = null
   if (board.created_at != null) {
     const d = new Date(board.created_at as string | number | Date)
@@ -298,7 +301,9 @@ export async function SurfboardListingDetailPage({
     "rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 dark:border-border dark:bg-muted/15"
 
   const favoriteNextToOffer = !!(canPeerPurchase && makeOfferConfig)
-  const showGalleryFavorite = !isOwnListing && !favoriteNextToOffer
+  /** Share stays on image except when inline with Make an offer row (favorite goes on image corner). */
+  const showShareOnGalleryOverlay = isOwnListing || !favoriteNextToOffer
+  const showFavoriteOnGalleryOverlay = !isOwnListing
 
   return (
       <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
@@ -426,7 +431,14 @@ export async function SurfboardListingDetailPage({
               )}
               <div className="relative isolate">
                 <div className="absolute right-2 top-2 z-[15] flex gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
-                  {showGalleryFavorite ? (
+                  {showShareOnGalleryOverlay ? (
+                    <ShareButton
+                      title={listingTitle}
+                      className="size-11 rounded-full border border-border/55 bg-background/90 shadow-sm backdrop-blur-md hover:bg-muted/40"
+                      iconClassName="h-[18px] w-[18px]"
+                    />
+                  ) : null}
+                  {showFavoriteOnGalleryOverlay ? (
                     <FavoriteButton
                       listingId={board.id}
                       redirectPath={listingDetailHref(board)}
@@ -436,11 +448,6 @@ export async function SurfboardListingDetailPage({
                       iconClassName="h-[18px] w-[18px]"
                     />
                   ) : null}
-                  <ShareButton
-                    title={capitalizeWords(board.title)}
-                    className="size-11 rounded-full border border-border/55 bg-background/90 shadow-sm backdrop-blur-md hover:bg-muted/40"
-                    iconClassName="h-[18px] w-[18px]"
-                  />
                 </div>
                 <ImageGallery images={images} title={capitalizeWords(board.title)} sold={isSold} />
               </div>
@@ -453,13 +460,10 @@ export async function SurfboardListingDetailPage({
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
-                    favoritesSlot={
+                    offerRowTrailingSlot={
                       favoriteNextToOffer ? (
-                        <FavoriteButton
-                          listingId={board.id}
-                          redirectPath={listingDetailHref(board)}
-                          initialFavorited={isFavorited}
-                          isLoggedIn={!!user}
+                        <ShareButton
+                          title={listingTitle}
                           className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#f2f3f5] shadow-none hover:bg-[#e8e9ec] dark:border-white/[0.12] dark:bg-secondary dark:hover:bg-secondary/80"
                           iconClassName="h-[18px] w-[18px]"
                         />
@@ -684,13 +688,10 @@ export async function SurfboardListingDetailPage({
                       isLoggedIn={!!user}
                       makeOffer={makeOfferConfig}
                       agreedCheckoutItemUsd={buyerAgreedPriceUsd}
-                      favoritesSlot={
+                      offerRowTrailingSlot={
                         favoriteNextToOffer ? (
-                          <FavoriteButton
-                            listingId={board.id}
-                            redirectPath={listingDetailHref(board)}
-                            initialFavorited={isFavorited}
-                            isLoggedIn={!!user}
+                          <ShareButton
+                            title={listingTitle}
                             className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#f2f3f5] shadow-none hover:bg-[#e8e9ec] dark:border-white/[0.12] dark:bg-secondary dark:hover:bg-secondary/80"
                             iconClassName="h-[18px] w-[18px]"
                           />
@@ -701,7 +702,7 @@ export async function SurfboardListingDetailPage({
                 )}
               </div>
 
-              {(listedRelative || !isSold) && (
+              {(listedRelative || !isSold || cartHolderCount > 0) && (
                 <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-b border-neutral-200/90 pb-4 text-[12px] text-muted-foreground dark:border-neutral-700/70">
                   {listedRelative ? (
                     <span>
@@ -709,11 +710,23 @@ export async function SurfboardListingDetailPage({
                     </span>
                   ) : null}
                   {!isSold ? (
-                    <span>
-                      Views:{" "}
-                      <span className="font-medium tabular-nums text-foreground/80">
-                        {Number.isFinite(listingViews) ? listingViews : 0}
+                    <span className="inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span>
+                        Views:{" "}
+                        <span className="font-medium tabular-nums text-foreground/80">
+                          {Number.isFinite(listingViews) ? listingViews : 0}
+                        </span>
                       </span>
+                      {cartHolderCount > 0 ? (
+                        <span className="inline-flex items-center gap-1">
+                          <ShoppingCart className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+                          <span className="font-medium text-foreground/80">
+                            {cartHolderCount === 1
+                              ? "In someone’s cart"
+                              : `In ${cartHolderCount} buyers’ carts`}
+                          </span>
+                        </span>
+                      ) : null}
                     </span>
                   ) : null}
                 </div>
@@ -749,15 +762,20 @@ export async function SurfboardListingDetailPage({
                 <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
                   <div className="flex min-w-0 flex-col items-start gap-2">
                     <p className="text-[12px] text-muted-foreground">Your listing</p>
-                    <div className="grid w-full max-w-[17.5rem] grid-cols-2 gap-2">
-                      <Button asChild className="w-full rounded-full">
+                    <div className="flex min-w-0 flex-wrap gap-2">
+                      <Button asChild className="rounded-full">
                         <Link prefetch={false} href={`/sell?edit=${board.id}`}>
                           Edit listing
                         </Link>
                       </Button>
+                      <QuickEditListingPriceDialog
+                        listingId={board.id}
+                        currentPriceUsd={listPriceNum}
+                        triggerClassName="rounded-full border-border/60 shadow-none"
+                      />
                       <EndListingButton
                         listingId={board.id}
-                        triggerClassName="w-full rounded-full border-border/60 shadow-none"
+                        triggerClassName="rounded-full border-border/60 shadow-none"
                       />
                     </div>
                   </div>

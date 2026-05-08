@@ -4,8 +4,8 @@ import { useRef, useState } from "react"
 import { Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -27,8 +27,14 @@ export function CommentLikeButton({
   const [count, setCount] = useState(initialCount)
   const [liked, setLiked] = useState(initialLiked)
   const busy = useRef(false)
+  const openSignIn = useSignInGate()
 
-  const loginHref = `/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/board-talk")}`
+  const pillClass = cn(
+    "gap-1.5 rounded-full border bg-background/90 px-3 shadow-sm backdrop-blur-sm transition-all duration-200",
+    "hover:border-primary/25 hover:bg-muted/60 active:scale-95",
+    compact ? "h-8 text-xs" : "h-9",
+    "text-muted-foreground hover:text-foreground",
+  )
 
   async function toggle() {
     if (!isLoggedIn || busy.current) return
@@ -39,6 +45,7 @@ export function CommentLikeButton({
     } = await supabase.auth.getUser()
     if (!user) {
       busy.current = false
+      openSignIn(null)
       return
     }
 
@@ -71,23 +78,20 @@ export function CommentLikeButton({
     busy.current = false
   }
 
-  const pillClass = cn(
-    "gap-1.5 rounded-full border bg-background/90 px-3 shadow-sm backdrop-blur-sm transition-all duration-200",
-    "hover:border-primary/25 hover:bg-muted/60 active:scale-95",
-    compact ? "h-8 text-xs" : "h-9",
-    "text-muted-foreground hover:text-foreground",
-  )
-
   if (!isLoggedIn) {
     return (
       <TooltipProvider delayDuration={250}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className={pillClass} asChild>
-              <Link href={loginHref}>
-                <Heart className={cn("h-3.5 w-3.5", compact && "h-3 w-3")} />
-                <span className="tabular-nums">{count > 0 ? count : "Like"}</span>
-              </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={pillClass}
+              onClick={() => openSignIn(null)}
+            >
+              <Heart className={cn("h-3.5 w-3.5", compact && "h-3 w-3")} />
+              <span className="tabular-nums">{count > 0 ? count : "Like"}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">Log in to like replies</TooltipContent>
