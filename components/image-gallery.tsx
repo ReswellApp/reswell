@@ -182,7 +182,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
                 )}
                 priority={i === 0}
                 fetchPriority={i === 0 ? "high" : "auto"}
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="(max-width: 1024px) 100svw, 50svw"
                 placeholder="blur"
                 blurDataURL={portraitShimmer}
                 aria-hidden={!isSelected}

@@ -5,16 +5,24 @@ import {
 } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 
+/**
+ * Mobile tile width — use `svw` (small viewport) instead of `vw` so rows don’t exceed
+ * the paintable layout on iOS / mobile Chrome (raw `100vw` often includes UI chrome).
+ */
+const homeScrollTileMobileWidthClass =
+  "w-[calc((100svw-1rem-2.25rem)/2.25)] sm:w-52"
+
 /** ~2 full cards + peek of 3rd on mobile; fixed width from `sm` up. */
 export const homeListingScrollCardClass = cn(
   listingProductCardGridClassName,
-  "shrink-0 snap-start w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
+  "shrink-0 snap-start",
+  homeScrollTileMobileWidthClass,
 )
 
 /** Equal-height carousel columns: stretch wrapper + flex-1 card (see `HomeListingScrollRow`). */
 export const homeUniformScrollCarouselTileWrapClass = cn(
   "flex min-h-0 shrink-0 snap-start self-stretch flex-col",
-  "w-[calc((100vw-1rem-2.25rem)/2.25)] sm:w-52",
+  homeScrollTileMobileWidthClass,
 )
 
 /** Fills {@link homeUniformScrollCarouselTileWrapClass} — {@link listingProductCardClassName} + column stretch. */
@@ -23,7 +31,7 @@ export const homeUniformScrollCardClass = cn(
   "flex min-h-0 min-w-0 w-full flex-1 flex-col",
 )
 
-export const homeListingScrollImageSizes = "(max-width: 639px) 44vw, 208px"
+export const homeListingScrollImageSizes = "(max-width: 639px) 40svw, 208px"
 
 export const homeUniformScrollLinkClass = "flex min-h-0 h-full min-w-0 flex-1 flex-col"
 /** Homepage horizontal tiles — tight inset under image (Reverb-style text stack). */

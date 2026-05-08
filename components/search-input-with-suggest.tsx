@@ -407,6 +407,14 @@ export function SearchInputWithSuggest({
       (suggestions?.categories?.length ?? 0) > 0 ||
       flatSuggestions.length > 0)
 
+  /** Footers stay `shrink-0` by default; when Top listings shares the panel, allow them to concede height so listings stay visible (nav search). */
+  const suggestDropdownFooterShrinkable = listingsSharePanelWithFooter
+
+  /** Tighter suggestion list budget when listings are present so Brands + Suggestions cannot dominate the panel height. */
+  const suggestionsListMaxClass = suggestDropdownFooterShrinkable
+    ? "max-h-[min(26dvh,176px)] sm:max-h-[min(28dvh,192px)]"
+    : "max-h-[min(36dvh,240px)] sm:max-h-[min(40vh,280px)]"
+
   useEffect(() => {
     if (!showPanelForRect || !containerRef.current || typeof document === "undefined") {
       setDropdownRect(null)
@@ -757,7 +765,7 @@ export function SearchInputWithSuggest({
               className={cn(
                 "min-h-0 overflow-y-auto overscroll-contain py-1",
                 listingsSharePanelWithFooter
-                  ? "flex-1"
+                  ? "min-h-[8.75rem] flex-1 sm:min-h-[10rem]"
                   : "max-h-[min(42dvh,280px)] sm:max-h-[min(45vh,360px)]",
               )}
             >
@@ -839,7 +847,10 @@ export function SearchInputWithSuggest({
         {(suggestions?.brands?.length ?? 0) > 0 && (
           <div
             className={cn(
-              "shrink-0 border-t border-border/60 bg-background",
+              "border-t border-border/60 bg-background",
+              suggestDropdownFooterShrinkable
+                ? "min-h-0 max-h-[min(22dvh,140px)] shrink overflow-y-auto overscroll-contain"
+                : "shrink-0",
               boardsTitleStyle ? "px-0 py-0" : "px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3",
               listings.length === 0 && panelTopRounded,
             )}
@@ -911,7 +922,14 @@ export function SearchInputWithSuggest({
         )}
 
         {(suggestions?.categories?.length ?? 0) > 0 && (
-          <div className="shrink-0 border-t border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div
+            className={cn(
+              "border-t border-border/60 px-3 py-2.5 sm:px-4 sm:py-3",
+              suggestDropdownFooterShrinkable
+                ? "min-h-0 max-h-[min(24dvh,160px)] shrink overflow-y-auto overscroll-contain"
+                : "shrink-0",
+            )}
+          >
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:mb-2">
               Categories
             </p>
@@ -942,7 +960,10 @@ export function SearchInputWithSuggest({
         {flatSuggestions.length > 0 && (
           <div
             className={cn(
-              "shrink-0 border-t border-border/60",
+              "border-t border-border/60",
+              suggestDropdownFooterShrinkable
+                ? "min-h-0 max-h-[min(34dvh,220px)] shrink overflow-hidden sm:max-h-[min(36dvh,240px)]"
+                : "shrink-0",
               listings.length === 0 &&
                 (suggestions?.brands?.length ?? 0) === 0 &&
                 (suggestions?.categories?.length ?? 0) === 0 &&
@@ -952,7 +973,7 @@ export function SearchInputWithSuggest({
             <p className="border-b border-border/40 bg-muted/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-4 sm:py-2">
               Suggestions
             </p>
-            <ul className="max-h-[min(36dvh,240px)] overflow-y-auto overscroll-contain py-1 sm:max-h-[min(40vh,280px)]">
+            <ul className={cn("overflow-y-auto overscroll-contain py-1", suggestionsListMaxClass)}>
               {flatSuggestions.map((item, i) => {
                 const Icon = item.type === "category" ? Tag : item.type === "brand" ? Package : Type
                 return (

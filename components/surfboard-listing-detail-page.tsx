@@ -661,7 +661,7 @@ export async function SurfboardListingDetailPage({
               )}
             </div>
 
-            <div className="col-span-full mt-8 border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-2 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
+            <div className="col-span-full mt-8 min-w-0 max-w-full border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-2 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
               <Accordion
                 type="multiple"
                 defaultValue={["about", "specs", "shipping"]}
