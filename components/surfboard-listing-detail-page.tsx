@@ -314,7 +314,7 @@ export async function SurfboardListingDetailPage({
         <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
           <div className="mb-5 min-w-0 max-w-full pt-0.5 lg:mb-8">
             <Breadcrumb>
-              <BreadcrumbList className="gap-1 text-xs font-normal tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[13px]">
+              <BreadcrumbList className="gap-1 text-[13px] font-normal tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[14px]">
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
                     <Link href="/">Home</Link>
@@ -375,16 +375,16 @@ export async function SurfboardListingDetailPage({
           )}
 
           <div className="mb-5 min-w-0 max-w-full space-y-3 lg:hidden">
-            <h1 className="text-balance text-2xl font-bold leading-snug tracking-[-0.02em] text-foreground">
+            <h1 className="text-balance text-[1.625rem] font-bold leading-snug tracking-[-0.02em] text-foreground">
               {capitalizeWords(board.title)}
             </h1>
             {conditionWords ? (
-              <span className="inline-block border-b border-dashed border-muted-foreground/55 pb-0.5 text-[13px] text-muted-foreground">
+              <span className="inline-block border-b border-dashed border-muted-foreground/55 pb-0.5 text-[14px] text-muted-foreground">
                 Used – {conditionWords}
               </span>
             ) : null}
             {specSubline ? (
-              <p className="text-[13px] leading-snug text-muted-foreground">{specSubline}</p>
+              <p className="text-[14px] leading-snug text-muted-foreground">{specSubline}</p>
             ) : null}
             {isSold ? (
               <p className="font-headline text-3xl font-semibold tracking-tight text-emerald-600 tabular-nums dark:text-emerald-400">
@@ -397,18 +397,18 @@ export async function SurfboardListingDetailPage({
                     ${board.price.toFixed(2)}
                   </p>
                   {shippingPriceCaption ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{shippingPriceCaption}</p>
+                    <p className="mt-1 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
                   ) : null}
                 </div>
                 {buyerAgreedPriceUsd != null ? (
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  <p className="text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
                     Your accepted price: ${buyerAgreedPriceUsd.toFixed(2)} at checkout
                   </p>
                 ) : null}
               </>
             )}
             {!isSold && !isOwnListing && board.status === "active" ? (
-              <p className="flex items-start gap-2 pt-1 text-sm text-foreground">
+              <p className="flex items-start gap-2 pt-1 text-[15px] text-foreground">
                 <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
                 <span>
                   <span className="font-semibold">Only one available</span>
@@ -417,7 +417,7 @@ export async function SurfboardListingDetailPage({
               </p>
             ) : null}
             {!isSold && !isOwnListing ? (
-              <p className="text-[11px] leading-snug text-muted-foreground">
+              <p className="text-[14px] leading-snug text-muted-foreground">
                 Eligible checkout is covered by our{" "}
                 <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">
                   Purchase Protection
@@ -427,9 +427,9 @@ export async function SurfboardListingDetailPage({
             ) : null}
           </div>
 
-          <div className="mx-auto grid w-full min-w-0 max-w-full gap-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:items-start lg:gap-12 xl:gap-16">
+          <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:grid-rows-[auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
             {/* Images */}
-            <div className="relative min-w-0">
+            <div className="relative min-w-0 max-lg:order-1 lg:[grid-area:gallery] lg:order-none">
               {!(isSold && isOwnListing) && (
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
@@ -477,172 +477,22 @@ export async function SurfboardListingDetailPage({
                   />
                 </div>
               )}
-              <div className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                <Accordion
-                  type="multiple"
-                  defaultValue={["about", "specs", "shipping"]}
-                  className="w-full"
-                >
-                  <AccordionItem value="about" className="border-border/55">
-                    <AccordionTrigger className="py-4 text-[15px] font-medium text-foreground hover:no-underline [&[data-state=open]>svg]:text-foreground">
-                      About this listing
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-6 pt-0">
-                      <div className="text-[15px] leading-[1.65] text-foreground">
-                        <TranslateableDescription text={board.description || ""} className="text-foreground" />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="specs" className="border-border/55">
-                    <AccordionTrigger className="py-4 text-[15px] font-medium text-foreground hover:no-underline">
-                      Board specs
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pb-6 pt-0">
-                      <ListingBoardDimensionsBlock
-                        listingId={board.id}
-                        className="!rounded-none !border-0 !bg-transparent !px-0 !py-0 shadow-none dark:!bg-transparent"
-                        dimensions={{
-                          length_feet: board.length_feet,
-                          length_inches: board.length_inches,
-                          width: board.width,
-                          thickness: board.thickness,
-                          volume: board.volume,
-                          length_inches_display: (board as { length_inches_display?: string | null })
-                            .length_inches_display,
-                          width_inches_display: (board as { width_inches_display?: string | null })
-                            .width_inches_display,
-                          thickness_inches_display: (board as { thickness_inches_display?: string | null })
-                            .thickness_inches_display,
-                          volume_display: (board as { volume_display?: string | null }).volume_display,
-                        }}
-                      />
-                      {indexBrand ? (
-                        <div className="border-t border-border/50 pt-4">
-                          <p className="text-[11px] font-medium uppercase tracking-wide text-foreground">
-                            Brand
-                          </p>
-                          <p className="mt-1.5 text-[15px] font-medium text-foreground">
-                            <Link
-                              href={`${BRANDS_BASE}/${indexBrand.slug}`}
-                              className="text-foreground underline-offset-4 hover:underline"
-                            >
-                              {indexBrand.name}
-                            </Link>
-                          </p>
-                        </div>
-                      ) : null}
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="shipping" className="border-border/55">
-                    <AccordionTrigger className="py-4 text-[15px] font-medium text-foreground hover:no-underline">
-                      Shipping &amp; pickup
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-0 pb-6 pt-0">
-                      <div>
-                        <p className="text-[11px] font-medium uppercase tracking-wide text-foreground">
-                          Location
-                        </p>
-                        <p className="mt-1.5 text-[15px] font-medium text-foreground">
-                          {listingLocationLine ?? "Location not specified"}
-                        </p>
-                      </div>
-                      <p className="mt-4 text-[13px] leading-relaxed text-foreground">
-                        {pickupOffered && shippingOffered &&
-                          "Approximate area for pickup, or the seller can ship this board to you."}
-                        {pickupOffered && !shippingOffered &&
-                          "Approximate pickup area for meeting the seller and inspecting the board."}
-                        {!pickupOffered &&
-                          shippingOffered &&
-                          "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
-                      </p>
-                      <ul className="mt-4 space-y-2.5 text-[13px] leading-snug text-foreground">
-                        <li className="flex gap-2">
-                          <Info className="mt-0.5 h-4 w-4 shrink-0 text-foreground" aria-hidden />
-                          <span>Check for cracks, dings, and delamination before you pay.</span>
-                        </li>
-                        <li className="flex gap-2">
-                          <Info className="mt-0.5 h-4 w-4 shrink-0 text-foreground" aria-hidden />
-                          <span>Bring a friend for local pickups when you can.</span>
-                        </li>
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {!isOwnListing && !isSold ? (
-                    <AccordionItem value="contact" className="border-border/55">
-                      <AccordionTrigger className="py-4 text-[15px] font-medium text-foreground hover:no-underline">
-                        Contact seller
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-6 pt-0">
-                        <ContactSellerForm
-                          listingId={board.id}
-                          listingSlug={board.slug}
-                          sellerId={board.user_id}
-                          listingTitle={capitalizeWords(board.title)}
-                          isLoggedIn={!!user}
-                          section="surfboards"
-                          shippingAvailable={shippingOffered}
-                          hideSectionTitle
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  ) : null}
-                </Accordion>
-              </div>
-              <div className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                <ListingAboutSellerSection
-                  profiles={board.profiles as AboutSellerProfilesProp}
-                  sellerProfileHref={sellerProfileHref(board.profiles)}
-                  messageHrefAuthenticated={`/messages?user=${board.user_id}&listing=${board.id}`}
-                  messageHrefLoginRedirect={`/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`}
-                  isLoggedIn={!!user}
-                  isOwnListing={isOwnListing}
-                  isSold={isSold}
-                  avgRating={sellerAvgRating}
-                  reviewCount={sellerReviewCount}
-                  itemsSold={Number(board.profiles?.sales_count ?? 0)}
-                  previewReviews={sellerReviewPreviews}
-                  showTrustRibbon={false}
-                />
-              </div>
-              {!isOwnListing ? (
-                <div className="mt-10 w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <ListingBuyerProtectionTrustRibbon />
-                </div>
-              ) : null}
-              {similarBoardsRaw.length > 0 ? (
-                <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
-                  <HomeListingScrollRow uniformCardHeights>
-                    {similarBoardsRaw.map((row) => (
-                      <HomePeerListingScrollTile
-                        key={String(row.id)}
-                        listing={row as unknown as HomePeerScrollListing}
-                        userId={user?.id ?? null}
-                        isFavorited={similarBoardFavoritedIds.includes(String(row.id))}
-                      />
-                    ))}
-                  </HomeListingScrollRow>
-                </section>
-              ) : null}
             </div>
 
             {/* Details */}
-            <div className="min-w-0 space-y-5 lg:pt-1">
+            <div className="min-w-0 space-y-5 max-lg:order-3 lg:[grid-area:details] lg:order-none lg:pt-1">
               <div className="hidden lg:block">
-                <h1 className="text-balance text-[1.875rem] font-bold leading-snug tracking-[-0.025em] text-foreground xl:text-[2rem]">
+                <h1 className="text-balance text-[2rem] font-bold leading-snug tracking-[-0.025em] text-foreground xl:text-[2.125rem]">
                   {capitalizeWords(board.title)}
                 </h1>
                 <div className="mt-3 flex flex-col gap-2">
                   {conditionWords ? (
-                    <span className="inline-block w-fit border-b border-dashed border-muted-foreground/55 pb-0.5 text-[13px] text-muted-foreground">
+                    <span className="inline-block w-fit border-b border-dashed border-muted-foreground/55 pb-0.5 text-[14px] text-muted-foreground">
                       Used – {conditionWords}
                     </span>
                   ) : null}
                   {specSubline ? (
-                    <p className="text-[13px] text-muted-foreground">{specSubline}</p>
+                    <p className="text-[14px] text-muted-foreground">{specSubline}</p>
                   ) : null}
                 </div>
                 {isSold ? (
@@ -656,18 +506,18 @@ export async function SurfboardListingDetailPage({
                         ${board.price.toFixed(2)}
                       </p>
                       {shippingPriceCaption ? (
-                        <p className="mt-1.5 text-sm text-muted-foreground">{shippingPriceCaption}</p>
+                        <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
                       ) : null}
                     </div>
                     {buyerAgreedPriceUsd != null ? (
-                      <p className="mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                      <p className="mt-2 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
                         Your accepted price: ${buyerAgreedPriceUsd.toFixed(2)} at checkout
                       </p>
                     ) : null}
                   </>
                 )}
                 {!isSold && !isOwnListing && board.status === "active" ? (
-                  <p className="mt-4 flex items-start gap-2 text-sm text-foreground">
+                  <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                     <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
                     <span>
                       <span className="font-semibold">Only one available</span>
@@ -676,7 +526,7 @@ export async function SurfboardListingDetailPage({
                   </p>
                 ) : null}
                 {!isSold && !isOwnListing ? (
-                  <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
+                  <p className="mt-3 text-[14px] leading-snug text-muted-foreground">
                     Eligible checkout is covered by our{" "}
                     <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">
                       Purchase Protection
@@ -708,7 +558,7 @@ export async function SurfboardListingDetailPage({
               </div>
 
               {(listedRelative || !isSold || cartHolderCount > 0) && (
-                <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-b border-neutral-200/90 pb-4 text-[12px] text-muted-foreground dark:border-neutral-700/70">
+                <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-b border-neutral-200/90 pb-4 text-[14px] text-muted-foreground dark:border-neutral-700/70">
                   {listedRelative ? (
                     <span>
                       Listed: <span className="font-medium text-foreground/80">{listedRelative}</span>
@@ -743,6 +593,23 @@ export async function SurfboardListingDetailPage({
                 </div>
               )}
 
+              <div className="mt-5">
+                <ListingAboutSellerSection
+                  profiles={board.profiles as AboutSellerProfilesProp}
+                  sellerProfileHref={sellerProfileHref(board.profiles)}
+                  messageHrefAuthenticated={`/messages?user=${board.user_id}&listing=${board.id}`}
+                  messageHrefLoginRedirect={`/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`}
+                  isLoggedIn={!!user}
+                  isOwnListing={isOwnListing}
+                  isSold={isSold}
+                  avgRating={sellerAvgRating}
+                  reviewCount={sellerReviewCount}
+                  itemsSold={Number(board.profiles?.sales_count ?? 0)}
+                  previewReviews={sellerReviewPreviews}
+                  showTrustRibbon={false}
+                />
+              </div>
+
               <ListingProtectionTrustRibbon
                 viewerRole={isOwnListing ? "seller" : "buyer"}
                 className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
@@ -752,7 +619,7 @@ export async function SurfboardListingDetailPage({
                 <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
                   <Link
                     href={`/contact?topic=listing-report&listing=${encodeURIComponent(board.id)}`}
-                    className="inline-flex items-center gap-2 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    className="inline-flex items-center gap-2 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
                   >
                     <Flag className="h-3.5 w-3.5 shrink-0" aria-hidden />
                     Report listing to Reswell
@@ -772,7 +639,7 @@ export async function SurfboardListingDetailPage({
               {isOwnListing && !isSold && (
                 <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
                   <div className="flex min-w-0 flex-col items-start gap-2">
-                    <p className="text-[12px] text-muted-foreground">Your listing</p>
+                    <p className="text-[14px] text-muted-foreground">Your listing</p>
                     <div className="flex min-w-0 flex-wrap gap-2">
                       <Button asChild className="rounded-full">
                         <Link prefetch={false} href={`/sell?edit=${board.id}`}>
@@ -792,6 +659,141 @@ export async function SurfboardListingDetailPage({
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="col-span-full mt-8 border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-2 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
+              <Accordion
+                type="multiple"
+                defaultValue={["about", "specs", "shipping"]}
+                className="w-full"
+              >
+                <AccordionItem value="about" className="border-border/55">
+                  <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline [&[data-state=open]>svg]:text-foreground">
+                    About this listing
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-6 pt-0">
+                    <div className="text-[16px] leading-[1.65] text-foreground">
+                      <TranslateableDescription text={board.description || ""} className="text-foreground" />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="specs" className="border-border/55">
+                  <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
+                    Board specs
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pb-6 pt-0">
+                    <ListingBoardDimensionsBlock
+                      listingId={board.id}
+                      className="!rounded-none !border-0 !bg-transparent !px-0 !py-0 shadow-none dark:!bg-transparent"
+                      dimensions={{
+                        length_feet: board.length_feet,
+                        length_inches: board.length_inches,
+                        width: board.width,
+                        thickness: board.thickness,
+                        volume: board.volume,
+                        length_inches_display: (board as { length_inches_display?: string | null })
+                          .length_inches_display,
+                        width_inches_display: (board as { width_inches_display?: string | null })
+                          .width_inches_display,
+                        thickness_inches_display: (board as { thickness_inches_display?: string | null })
+                          .thickness_inches_display,
+                        volume_display: (board as { volume_display?: string | null }).volume_display,
+                      }}
+                    />
+                    {indexBrand ? (
+                      <div className="border-t border-border/50 pt-4">
+                        <p className="text-[14px] font-medium uppercase tracking-wide text-foreground">
+                          Brand
+                        </p>
+                        <p className="mt-1.5 text-[16px] font-medium text-foreground">
+                          <Link
+                            href={`${BRANDS_BASE}/${indexBrand.slug}`}
+                            className="text-foreground underline-offset-4 hover:underline"
+                          >
+                            {indexBrand.name}
+                          </Link>
+                        </p>
+                      </div>
+                    ) : null}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="shipping" className="border-border/55">
+                  <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
+                    Shipping &amp; pickup
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-0 pb-6 pt-0">
+                    <div>
+                      <p className="text-[14px] font-medium uppercase tracking-wide text-foreground">
+                        Location
+                      </p>
+                      <p className="mt-1.5 text-[16px] font-medium text-foreground">
+                        {listingLocationLine ?? "Location not specified"}
+                      </p>
+                    </div>
+                    <p className="mt-4 text-[16px] leading-relaxed text-foreground">
+                      {pickupOffered && shippingOffered &&
+                        "Approximate area for pickup, or the seller can ship this board to you."}
+                      {pickupOffered && !shippingOffered &&
+                        "Approximate pickup area for meeting the seller and inspecting the board."}
+                      {!pickupOffered &&
+                        shippingOffered &&
+                        "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
+                    </p>
+                    <ul className="mt-4 space-y-2.5 text-[16px] leading-snug text-foreground">
+                      <li className="flex gap-2">
+                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-foreground" aria-hidden />
+                        <span>Check for cracks, dings, and delamination before you pay.</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-foreground" aria-hidden />
+                        <span>Bring a friend for local pickups when you can.</span>
+                      </li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {!isOwnListing && !isSold ? (
+                  <AccordionItem value="contact" className="border-border/55">
+                    <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
+                      Contact seller
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-6 pt-0">
+                      <ContactSellerForm
+                        listingId={board.id}
+                        listingSlug={board.slug}
+                        sellerId={board.user_id}
+                        listingTitle={capitalizeWords(board.title)}
+                        isLoggedIn={!!user}
+                        section="surfboards"
+                        shippingAvailable={shippingOffered}
+                        hideSectionTitle
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                ) : null}
+              </Accordion>
+              {!isOwnListing ? (
+                <div className="mt-10 w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
+                  <ListingBuyerProtectionTrustRibbon />
+                </div>
+              ) : null}
+              {similarBoardsRaw.length > 0 ? (
+                <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
+                  <HomeListingScrollRow uniformCardHeights>
+                    {similarBoardsRaw.map((row) => (
+                      <HomePeerListingScrollTile
+                        key={String(row.id)}
+                        listing={row as unknown as HomePeerScrollListing}
+                        userId={user?.id ?? null}
+                        isFavorited={similarBoardFavoritedIds.includes(String(row.id))}
+                      />
+                    ))}
+                  </HomeListingScrollRow>
+                </section>
+              ) : null}
             </div>
           </div>
 

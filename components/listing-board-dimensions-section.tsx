@@ -34,14 +34,14 @@ export function ListingBoardDimensionsBlock({
         className,
       )}
     >
-      <div className="flex flex-col gap-1.5 min-[400px]:flex-row min-[400px]:items-baseline min-[400px]:justify-between min-[400px]:gap-3">
+      <div className="flex flex-col gap-1.5 items-start text-left">
         <h2
           id={headingId}
-          className="shrink-0 font-sans text-[11px] font-normal uppercase tracking-wide text-foreground"
+          className="font-sans text-[12px] font-normal uppercase tracking-wide text-foreground"
         >
           Board dimensions
         </h2>
-        <p className="min-w-0 font-sans text-[15px] font-medium tabular-nums leading-snug text-foreground sm:text-base">
+        <p className="min-w-0 font-sans text-[16px] font-medium tabular-nums leading-snug text-foreground sm:text-[17px]">
           {geometry ? (
             <>
               <span>{geometry}</span>

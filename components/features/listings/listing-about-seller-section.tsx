@@ -90,13 +90,13 @@ export function ListingProtectionTrustRibbon({
       <div className="flex gap-3">
         <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-[#4263eb]" aria-hidden />
         <div className="min-w-0">
-          <p className="text-[14px] font-bold text-foreground">{protectionTitle}</p>
-          <p className="mt-1 text-[12px] leading-snug text-neutral-700 dark:text-neutral-300">
+          <p className="text-[15px] font-bold text-foreground">{protectionTitle}</p>
+          <p className="mt-1 text-[14px] leading-snug text-neutral-700 dark:text-neutral-300">
             {protectionBody}
           </p>
           <Link
             href={protectionPolicyHref}
-            className="mt-2 inline-block text-[12px] font-semibold underline underline-offset-4"
+            className="mt-2 inline-block text-[14px] font-semibold underline underline-offset-4"
           >
             Learn more
           </Link>
@@ -106,8 +106,8 @@ export function ListingProtectionTrustRibbon({
         <div className="flex gap-3 sm:border-l sm:border-indigo-200/60 sm:pl-4 dark:sm:border-indigo-900/50">
           <Lock className="mt-0.5 h-6 w-6 shrink-0 text-[#4263eb]" aria-hidden />
           <div className="min-w-0">
-            <p className="text-[14px] font-bold text-foreground">Secure checkout</p>
-            <p className="mt-1 text-[12px] leading-snug text-neutral-700 dark:text-neutral-300">
+            <p className="text-[15px] font-bold text-foreground">Secure checkout</p>
+            <p className="mt-1 text-[14px] leading-snug text-neutral-700 dark:text-neutral-300">
               At Reswell, your safety comes first—we use industry-standard encryption every time you pay.
             </p>
           </div>
@@ -130,14 +130,14 @@ export function ListingBuyerProtectionTrustRibbon({ className }: { className?: s
     >
       <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-[#4263eb]" aria-hidden />
       <div className="min-w-0">
-        <p className="text-[14px] font-bold text-foreground">Reswell protection</p>
-        <p className="mt-1 text-[12px] leading-snug text-neutral-700 dark:text-neutral-300">
+        <p className="text-[15px] font-bold text-foreground">Reswell protection</p>
+        <p className="mt-1 text-[14px] leading-snug text-neutral-700 dark:text-neutral-300">
           Shop knowing eligible purchases include Purchase Protection—clear coverage rules, a dispute path if the
           item isn&apos;t as described, and our team when you need a hand.
         </p>
         <Link
           href="/protection-policy"
-          className="mt-2 inline-block text-[12px] font-semibold underline underline-offset-4"
+          className="mt-2 inline-block text-[14px] font-semibold underline underline-offset-4"
         >
           Learn more
         </Link>
@@ -203,7 +203,7 @@ export function ListingAboutSellerSection({
 
   return (
     <section className="border-b border-neutral-200/90 pb-6 dark:border-neutral-700/70">
-      <h2 className="text-xl font-bold tracking-tight text-foreground">About the seller</h2>
+      <h2 className="text-[1.375rem] font-bold tracking-tight text-foreground">About the seller</h2>
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
         <Link
@@ -218,17 +218,17 @@ export function ListingAboutSellerSection({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 pt-0.5">
-            <p className="flex flex-wrap items-center gap-2 truncate text-[17px] font-bold tracking-tight text-foreground">
+            <p className="flex flex-wrap items-center gap-2 truncate text-[18px] font-bold tracking-tight text-foreground">
               <span className="truncate">{displayName}</span>
               {profiles?.shop_verified ? <VerifiedBadge size="sm" /> : null}
             </p>
             {locationLine ? (
-              <p className="mt-1.5 truncate text-[15px] text-neutral-600 dark:text-neutral-400">
+              <p className="mt-1.5 truncate text-[16px] text-neutral-600 dark:text-neutral-400">
                 {locationLine}
               </p>
             ) : null}
             {joinYear ? (
-              <p className="mt-2.5 text-[15px] font-medium leading-none text-foreground">
+              <p className="mt-2.5 text-[16px] font-medium leading-none text-foreground">
                 Joined Reswell: {joinYear}
               </p>
             ) : null}
@@ -241,7 +241,7 @@ export function ListingAboutSellerSection({
               variant="secondary"
               size="lg"
               asChild
-              className="min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
+              className="min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[16px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
             >
               <Link href={messageHref} prefetch={false}>
                 <MessageSquare className="mr-2 h-[18px] w-[18px]" aria-hidden />
@@ -252,7 +252,7 @@ export function ListingAboutSellerSection({
               variant="secondary"
               size="lg"
               asChild
-              className="min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
+              className="min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[16px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
             >
               <Link href={sellerProfileHref} prefetch={false}>
                 View more from this shop
@@ -263,39 +263,16 @@ export function ListingAboutSellerSection({
       </div>
 
       <Accordion type="multiple" className="mt-8 w-full border-t border-neutral-200/90 dark:border-neutral-700/70">
-        <AccordionItem value="payments" className="border-neutral-200/90 dark:border-neutral-700/70">
-          <AccordionTrigger className="py-4 text-left text-[15px] font-bold text-foreground hover:no-underline">
-            Payment &amp; returns
-          </AccordionTrigger>
-          <AccordionContent className="space-y-3 pb-5 text-[13px] leading-relaxed text-neutral-700 dark:text-neutral-300">
-            <p>
-              Pay securely with major cards through Reswell checkout. Your payment details are encrypted; we never
-              store your full card number.
-            </p>
-            <p>
-              If something goes wrong with an eligible purchase, Purchase Protection may apply—see full terms on the{" "}
-              <Link href="/protection-policy" className="font-medium text-foreground underline underline-offset-2 hover:no-underline dark:text-white">
-                Purchase Protection policy
-              </Link>{" "}
-              page.
-            </p>
-            <p className="text-muted-foreground">
-              Return and refund timelines depend on the situation; most issues start with messaging the seller from
-              your order.
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-
         <AccordionItem value="reviews" className="border-neutral-200/90 dark:border-neutral-700/70">
           <AccordionTrigger className="items-center py-4 text-left hover:no-underline [&>svg]:shrink-0">
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-4">
-              <span className="text-[15px] font-bold text-foreground">Seller reviews ({reviewCount})</span>
+              <span className="text-[16px] font-bold text-foreground">Seller reviews ({reviewCount})</span>
               <StarRowAvg value={reviewCount > 0 ? avgRating : 0} size="md" />
             </span>
           </AccordionTrigger>
           <AccordionContent className="pb-5 pt-1">
             {reviewCount === 0 ? (
-              <p className="text-[13px] text-muted-foreground">
+              <p className="text-[15px] text-muted-foreground">
                 No reviews yet. After a purchase completes, buyers may leave seller feedback—check back soon.
               </p>
             ) : (
@@ -318,23 +295,23 @@ export function ListingAboutSellerSection({
                       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                         <StarRowAvg value={rv.rating} size="sm" />
                         {dtLabel ? (
-                          <time className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          <time className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
                             {dtLabel}
                           </time>
                         ) : null}
                       </div>
-                      <p className="mt-1.5 text-[13px] font-semibold text-foreground">{nm}</p>
+                      <p className="mt-1.5 text-[15px] font-semibold text-foreground">{nm}</p>
                       {rv.comment?.trim() ? (
-                        <p className="mt-1 whitespace-pre-wrap text-[13px] leading-relaxed text-neutral-700 dark:text-neutral-300">
+                        <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300">
                           {rv.comment.trim()}
                         </p>
                       ) : (
-                        <p className="mt-1 text-[12px] text-muted-foreground">Rated {rv.rating.toFixed(0)}★</p>
+                        <p className="mt-1 text-[14px] text-muted-foreground">Rated {rv.rating.toFixed(0)}★</p>
                       )}
                     </li>
                   )
                 })}
-                <li className="pt-2 text-[13px] text-muted-foreground">
+                <li className="pt-2 text-[15px] text-muted-foreground">
                   Items sold ·{" "}
                   <span className="font-semibold tabular-nums text-foreground/90">{itemsSold}</span>
                   {reviewCount > previewReviews.length ? (

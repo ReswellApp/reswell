@@ -95,7 +95,7 @@ export function ContactSellerForm({
     return (
       <div className="py-6 text-center">
         <MessageSquare className="mx-auto mb-3 h-8 w-8 text-foreground" aria-hidden />
-        <p className="mb-5 text-[15px] text-foreground">Sign in to contact the seller</p>
+        <p className="mb-5 text-[16px] text-foreground">Sign in to contact the seller</p>
         <Button
           type="button"
           className="rounded-full px-8"
@@ -110,7 +110,7 @@ export function ContactSellerForm({
   return (
     <div className="space-y-5">
       {!hideSectionTitle ? (
-        <h3 className="font-headline text-xl font-semibold tracking-tight text-foreground">
+        <h3 className="font-headline text-[1.3125rem] font-semibold tracking-tight text-foreground">
           Contact seller
         </h3>
       ) : null}
@@ -122,7 +122,7 @@ export function ContactSellerForm({
             key={quick}
             variant="outline"
             size="sm"
-            className="rounded-full border-border/60 bg-background text-[13px] font-normal text-foreground shadow-none hover:bg-muted/60"
+            className="rounded-full border-border/60 bg-background text-[14px] font-normal text-foreground shadow-none hover:bg-muted/60"
             onClick={() => setMessage(quick)}
           >
             {quick}
@@ -135,7 +135,7 @@ export function ContactSellerForm({
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={3}
-        className="rounded-2xl border-border/60 bg-background text-[15px] text-foreground shadow-none placeholder:text-foreground/75 transition-colors focus-visible:ring-[1.5px]"
+        className="rounded-2xl border-border/60 bg-background text-[16px] text-foreground shadow-none placeholder:text-foreground/75 transition-colors focus-visible:ring-[1.5px]"
       />
 
       <Button
