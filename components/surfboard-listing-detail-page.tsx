@@ -62,6 +62,7 @@ import { formatDistanceToNow } from "date-fns"
 import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
+import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -288,7 +289,10 @@ export async function SurfboardListingDetailPage({
   }
 
   const listingViews = Number((board as { views?: number | null }).views ?? 0)
-  const cartHolderCount = !isSold ? await getListingCartHolderCount(supabase, board.id) : 0
+  const [cartHolderCount, listingWatchersCount] = await Promise.all([
+    !isSold ? getListingCartHolderCount(supabase, board.id) : Promise.resolve(0),
+    !isSold ? getListingFavoriteCount(supabase, board.id) : Promise.resolve(0),
+  ])
   let listedRelative: string | null = null
   if (board.created_at != null) {
     const d = new Date(board.created_at as string | number | Date)
@@ -444,6 +448,7 @@ export async function SurfboardListingDetailPage({
                       redirectPath={listingDetailHref(board)}
                       initialFavorited={isFavorited}
                       isLoggedIn={!!user}
+                      refreshAfterToggle
                       className="flex size-[44px] items-center justify-center rounded-full border border-black/[0.08] bg-white/95 shadow-sm backdrop-blur-sm hover:bg-white dark:border-white/[0.12] dark:bg-background/95 dark:hover:bg-background"
                       iconClassName="h-[18px] w-[18px]"
                     />
@@ -715,6 +720,12 @@ export async function SurfboardListingDetailPage({
                         Views:{" "}
                         <span className="font-medium tabular-nums text-foreground/80">
                           {Number.isFinite(listingViews) ? listingViews : 0}
+                        </span>
+                      </span>
+                      <span>
+                        Watchers:{" "}
+                        <span className="font-medium tabular-nums text-foreground/80">
+                          {Number.isFinite(listingWatchersCount) ? listingWatchersCount : 0}
                         </span>
                       </span>
                       {cartHolderCount > 0 ? (

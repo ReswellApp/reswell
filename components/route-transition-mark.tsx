@@ -1,28 +1,23 @@
 "use client"
 
-import Image from "next/image"
 import { useLayoutEffect, useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 const overlayEase =
   "transition-opacity duration-500 transition-timing-function-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
-const logoEase =
+const indicatorEase =
   "transition-[transform,opacity] duration-300 transition-timing-function-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none motion-reduce:duration-0"
 
-function ReswellMarkImage({ className, visible }: { className?: string; visible: boolean }) {
+function LoadingIndicator({ visible }: { visible: boolean }) {
   return (
-    <Image
-      src="/images/reswell-mark.png"
-      alt=""
-      width={256}
-      height={256}
+    <Skeleton
       className={cn(
-        "h-auto w-[clamp(72px,15vw,112px)]",
-        logoEase,
+        "h-2.5 w-24 rounded-full bg-muted/70",
+        indicatorEase,
         visible ? "scale-100 opacity-100" : "scale-[0.96] opacity-0",
-        className
       )}
-      priority
+      aria-hidden
     />
   )
 }
@@ -46,7 +41,7 @@ export function RouteTransitionMark({ variant = "overlay" }: RouteTransitionMark
     return () => cancelAnimationFrame(id)
   }, [])
 
-  const mark = <ReswellMarkImage visible={enter} />
+  const indicator = <LoadingIndicator visible={enter} />
 
   const overlayClassName = cn(
     "flex w-full flex-1 flex-col items-center justify-center self-stretch",
@@ -70,7 +65,7 @@ export function RouteTransitionMark({ variant = "overlay" }: RouteTransitionMark
   if (variant === "inline") {
     return (
       <main className={inlineClassName} aria-hidden>
-        {mark}
+        {indicator}
       </main>
     )
   }
@@ -81,7 +76,7 @@ export function RouteTransitionMark({ variant = "overlay" }: RouteTransitionMark
       role="status"
       aria-label="Loading page"
     >
-      {mark}
+      {indicator}
     </div>
   )
 }

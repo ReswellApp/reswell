@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { toggleFavoriteListing } from "@/app/actions/favorites"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
@@ -22,6 +23,8 @@ interface FavoriteButtonProps {
   iconClassName?: string
   /** Render as an outlined icon button matching the CTA row instead of the borderless default. */
   variant?: "ghost" | "outline"
+  /** Refetch server components after a successful toggle (e.g. PDP watchers count). */
+  refreshAfterToggle?: boolean
 }
 
 export function FavoriteButton({
@@ -33,7 +36,9 @@ export function FavoriteButton({
   className,
   iconClassName,
   variant = "ghost",
+  refreshAfterToggle = false,
 }: FavoriteButtonProps) {
+  const router = useRouter()
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
   const openSignIn = useSignInGate()
@@ -58,6 +63,9 @@ export function FavoriteButton({
       }
       setFavorited(result.favorited)
       onFavoritedChange?.(result.favorited)
+      if (refreshAfterToggle) {
+        router.refresh()
+      }
     } catch {
       toast.error("Failed to update favorites")
     } finally {

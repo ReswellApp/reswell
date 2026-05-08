@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
 
-/** Phones / tablets: pinch-zoom anchors to viewport center instead of finger midpoint (library default). */
 function usePrefersCoarsePointer() {
   const [coarse, setCoarse] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(pointer: coarse)").matches : false,
@@ -181,27 +180,12 @@ export function ListingImageLightbox({
                   }}
                   pinch={{
                     step: 5,
-                    allowPanning: coarsePointer ? false : true,
+                    // Coarse pointers: pinch may translate the image while scaling (natural map-style gestures).
+                    allowPanning: true,
                   }}
                   doubleClick={{ mode: "toggle", step: 2.2 }}
-                  onPinchStop={(ctx) => {
-                    if (!coarsePointer) return
-                    queueMicrotask(() =>
-                      ctx.centerView(ctx.state.scale, 0, "linear"),
-                    )
-                  }}
-                  onTransform={(ctx, state) => {
+                  onTransform={(_ctx, state) => {
                     setScale(state.scale)
-                    // Keep pinch-zoom visually centered on small screens (library pins to fingers otherwise).
-                    if (
-                      coarsePointer &&
-                      typeof window !== "undefined" &&
-                      ctx.instance.isPinching
-                    ) {
-                      requestAnimationFrame(() => {
-                        ctx.centerView(state.scale, 0, "linear")
-                      })
-                    }
                   }}
                 >
                   <TransformComponent
