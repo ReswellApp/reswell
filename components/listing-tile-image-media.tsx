@@ -129,7 +129,7 @@ export function ListingTileImageMedia({
           <Fragment key="listing-tile-carousel-nav">
             <span
               className={cn(
-                "absolute inset-y-0 left-0 z-20 flex items-center pr-8",
+                "absolute inset-y-0 left-0 z-20 hidden items-center pr-8 md:flex",
                 hoverRevealNav,
               )}
             >
@@ -143,7 +143,7 @@ export function ListingTileImageMedia({
             </span>
             <span
               className={cn(
-                "absolute inset-y-0 right-0 z-20 flex items-center pl-8",
+                "absolute inset-y-0 right-0 z-20 hidden items-center pl-8 md:flex",
                 hoverRevealNav,
               )}
             >
