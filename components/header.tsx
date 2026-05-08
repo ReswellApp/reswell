@@ -51,6 +51,7 @@ import {
   siteHeaderSecondaryNavItemIsActive,
   surfboardBrowseLinks,
 } from "@/lib/site-category-directory"
+import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
@@ -1299,27 +1300,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Link>
             )}
             <nav className="flex flex-col gap-1 mb-6">
-              <Link
-                href={
-                  user
-                    ? "/sell"
-                    : `/auth/login?redirect=${encodeURIComponent("/sell")}`
-                }
-                onClick={
-                  user
-                    ? onMobileDrawerLinkClick
-                    : (e) => {
-                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                        e.preventDefault()
-                        openLogin("/sell")
-                        queueMicrotask(() => setMobileMenuOpen(false))
-                      }
-                }
-                className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center gap-2"
-              >
-                <Plus className="h-5 w-5 shrink-0" aria-hidden />
-                Sell your board
-              </Link>
               {boardShapeNav.map((item) => (
                 <Link
                   key={item.href}
@@ -1341,6 +1321,35 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 >
                   {item.label}
                 </Link>
+              ))}
+              <hr className="my-2 border-border" />
+              {(
+                [
+                  {
+                    title: "Marketplace",
+                    links: siteFooterNavLinks.marketplace.filter((link) => link.href !== "/boards"),
+                  },
+                  { title: "Support", links: siteFooterNavLinks.support },
+                  { title: "Legal", links: siteFooterNavLinks.legal },
+                ] as const
+              ).map((section, sectionIndex) => (
+                <div key={section.title}>
+                  {sectionIndex > 0 ? <hr className="my-2 border-border" /> : null}
+                  <p className="px-2 pt-1 pb-1 text-sm font-semibold text-foreground">
+                    {section.title}
+                  </p>
+                  {section.links.map((link) => (
+                    <Link
+                      key={`${section.title}-${link.href}`}
+                      href={link.href}
+                      prefetch={boardsBrowseLinkPrefetch(link.href)}
+                      onClick={onMobileDrawerLinkClick}
+                      className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
+                    >
+                      {link.name}
+                    </Link>
+                  ))}
+                </div>
               ))}
             </nav>
           </div>

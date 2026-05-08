@@ -3,31 +3,8 @@ import Image from "next/image"
 import { Heart, ShieldCheck } from "lucide-react"
 import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
+import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { footerCategoryLinks } from "@/lib/site-category-directory"
-
-const footerLinks = {
-  marketplace: [
-    { name: "Surfboards", href: "/boards" },
-    { name: "Recently sold", href: "/sold" },
-    { name: "Sell your board", href: "/sell" },
-    { name: "Sellers", href: "/sellers" },
-    { name: "What is Reswell", href: "/what-is-reswell" },
-    { name: "Blog", href: "/blog" },
-  ],
-  support: [
-    { name: "FAQ", href: "/faq" },
-    { name: "Purchase Protection", href: "/protection-policy" },
-    { name: "Safety Tips", href: "/safety" },
-    { name: "Shipping Guide", href: "/shipping" },
-    { name: "Contact Us", href: "/contact" },
-  ],
-  legal: [
-    { name: "Privacy Policy", href: "/privacy" },
-    { name: "Return Policy", href: "/return-policy" },
-    { name: "Terms of Service", href: "/terms" },
-    { name: "Cookie Policy", href: "/cookies" },
-  ],
-}
 
 export function Footer() {
   return (
@@ -53,7 +30,7 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Marketplace</h3>
             <ul className="mt-4 space-y-3">
-              {footerLinks.marketplace.map((link) => (
+              {siteFooterNavLinks.marketplace.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
@@ -89,7 +66,7 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Support</h3>
             <ul className="mt-4 space-y-3">
-              {footerLinks.support.map((link) => (
+              {siteFooterNavLinks.support.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
@@ -106,7 +83,7 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Legal</h3>
             <ul className="mt-4 space-y-3">
-              {footerLinks.legal.map((link) => (
+              {siteFooterNavLinks.legal.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
