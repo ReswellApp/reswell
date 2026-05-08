@@ -1,7 +1,13 @@
 "use client"
 
 import Image from "next/image"
-import { useCallback, useState, type MouseEventHandler, type ReactNode } from "react"
+import {
+  Fragment,
+  useCallback,
+  useState,
+  type MouseEventHandler,
+  type ReactNode,
+} from "react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { cn } from "@/lib/utils"
 
@@ -112,33 +118,50 @@ export function ListingTileImageMedia({
         </div>
       )}
 
-      {overlayTopLeft}
-      {overlayTopRight}
+      {[
+        overlayTopLeft != null ? (
+          <Fragment key="listing-tile-overlay-tl">{overlayTopLeft}</Fragment>
+        ) : null,
+        overlayTopRight != null ? (
+          <Fragment key="listing-tile-overlay-tr">{overlayTopRight}</Fragment>
+        ) : null,
+        count > 1 ? (
+          <Fragment key="listing-tile-carousel-nav">
+            <span
+              className={cn(
+                "absolute inset-y-0 left-0 z-20 flex items-center pr-8",
+                hoverRevealNav,
+              )}
+            >
+              <ListingImageCarouselNavButton
+                direction="prev"
+                variant="lightbox"
+                sideClassName="left-2"
+                srLabel="Previous listing photo"
+                onClick={goPrev}
+              />
+            </span>
+            <span
+              className={cn(
+                "absolute inset-y-0 right-0 z-20 flex items-center pl-8",
+                hoverRevealNav,
+              )}
+            >
+              <ListingImageCarouselNavButton
+                direction="next"
+                variant="lightbox"
+                sideClassName="right-2"
+                srLabel="Next listing photo"
+                onClick={goNext}
+              />
+            </span>
+          </Fragment>
+        ) : null,
+        overlayFull != null ? (
+          <Fragment key="listing-tile-overlay-full">{overlayFull}</Fragment>
+        ) : null,
+      ].filter((n) => n != null)}
 
-      {count > 1 && (
-        <>
-          <span className={cn("absolute inset-y-0 left-0 z-20 flex items-center pr-8", hoverRevealNav)}>
-            <ListingImageCarouselNavButton
-              direction="prev"
-              variant="lightbox"
-              sideClassName="left-2"
-              srLabel="Previous listing photo"
-              onClick={goPrev}
-            />
-          </span>
-          <span className={cn("absolute inset-y-0 right-0 z-20 flex items-center pl-8", hoverRevealNav)}>
-            <ListingImageCarouselNavButton
-              direction="next"
-              variant="lightbox"
-              sideClassName="right-2"
-              srLabel="Next listing photo"
-              onClick={goNext}
-            />
-          </span>
-        </>
-      )}
-
-      {overlayFull}
     </div>
   )
 }
