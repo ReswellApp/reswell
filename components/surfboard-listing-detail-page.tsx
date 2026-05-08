@@ -719,7 +719,10 @@ export async function SurfboardListingDetailPage({
                 </div>
               )}
 
-              <ListingProtectionTrustRibbon className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70" />
+              <ListingProtectionTrustRibbon
+                viewerRole={isOwnListing ? "seller" : "buyer"}
+                className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
+              />
 
               {!isOwnListing ? (
                 <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
@@ -743,18 +746,20 @@ export async function SurfboardListingDetailPage({
               )}
 
               {isOwnListing && !isSold && (
-                <div className={`${softPanelClass} border-primary/20 bg-primary/[0.03] text-center`}>
-                  <p className="mb-4 text-sm text-muted-foreground">This is your listing</p>
-                  <div className="flex flex-col justify-center gap-2.5 sm:flex-row">
-                    <Button asChild className="rounded-full">
-                      <Link prefetch={false} href={`/sell?edit=${board.id}`}>
-                        Edit listing
-                      </Link>
-                    </Button>
-                    <EndListingButton
-                      listingId={board.id}
-                      triggerClassName="rounded-full border-border/60 shadow-none sm:flex-1"
-                    />
+                <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
+                  <div className="flex min-w-0 flex-col items-start gap-2">
+                    <p className="text-[12px] text-muted-foreground">Your listing</p>
+                    <div className="grid w-full max-w-[17.5rem] grid-cols-2 gap-2">
+                      <Button asChild className="w-full rounded-full">
+                        <Link prefetch={false} href={`/sell?edit=${board.id}`}>
+                          Edit listing
+                        </Link>
+                      </Button>
+                      <EndListingButton
+                        listingId={board.id}
+                        triggerClassName="w-full rounded-full border-border/60 shadow-none"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
