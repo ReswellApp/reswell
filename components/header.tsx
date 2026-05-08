@@ -46,7 +46,7 @@ import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { navigateToMarketplaceBrandResults } from "@/lib/nav-marketplace-brand-search"
 import { BRANDS_BASE } from "@/lib/brands/routes"
-import { surfboardBrowseLinks } from "@/lib/site-category-directory"
+import { boardBrowseNavItemIsActive, surfboardBrowseLinks } from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
@@ -55,6 +55,7 @@ import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
 import { CartHeaderLink } from "@/components/cart-header-link"
+import { HeaderMobileCategoryBar } from "@/components/header-mobile-category-bar"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
@@ -142,30 +143,6 @@ const secondaryNav = [
   { name: "Brands", href: BRANDS_BASE },
   { name: "Board Talk", href: "/board-talk" },
 ]
-
-function navItemIsActive(pathname: string | null, searchParams: URLSearchParams, href: string): boolean {
-  if (!pathname) return false
-  const q = href.indexOf("?")
-  const path = q === -1 ? href : href.slice(0, q)
-  const query = q === -1 ? null : href.slice(q + 1)
-
-  if (!pathname.startsWith(path)) return false
-
-  if (!query) {
-    if (path === "/boards") {
-      return (
-        (pathname === path && !searchParams.get("type")) || pathname.startsWith(`${path}/`)
-      )
-    }
-    return pathname === path || pathname.startsWith(`${path}/`)
-  }
-
-  const required = new URLSearchParams(query)
-  for (const key of new Set(required.keys())) {
-    if (searchParams.get(key) !== required.get(key)) return false
-  }
-  return pathname === path
-}
 
 function isSearchResultsPath(p: string) {
   return p === "/search" || p === "/search/recent"
@@ -339,7 +316,7 @@ function HeaderDesktopCategoryBar({
                   href={item.href}
                   prefetch={boardsBrowseLinkPrefetch(item.href)}
                   className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
-                    navItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
+                    boardBrowseNavItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
                   }`}
                 >
                   {item.name}
@@ -1069,6 +1046,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   </Button>
                 </form>
               </div>
+              <HeaderMobileCategoryBar />
             </>
           ) : (
             <>

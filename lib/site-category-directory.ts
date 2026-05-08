@@ -40,6 +40,38 @@ export const categoryDirectorySections: CategoryDirectorySection[] = [
   },
 ]
 
+/**
+ * Whether a `/boards` or `/boards?type=…` nav link is active for the current URL.
+ * Used by the header category bar and mobile category strip.
+ */
+export function boardBrowseNavItemIsActive(
+  pathname: string | null,
+  searchParams: Pick<URLSearchParams, "get">,
+  href: string,
+): boolean {
+  if (!pathname) return false
+  const q = href.indexOf("?")
+  const path = q === -1 ? href : href.slice(0, q)
+  const query = q === -1 ? null : href.slice(q + 1)
+
+  if (!pathname.startsWith(path)) return false
+
+  if (!query) {
+    if (path === "/boards") {
+      return (
+        (pathname === path && !searchParams.get("type")) || pathname.startsWith(`${path}/`)
+      )
+    }
+    return pathname === path || pathname.startsWith(`${path}/`)
+  }
+
+  const required = new URLSearchParams(query)
+  for (const key of new Set(required.keys())) {
+    if (searchParams.get(key) !== required.get(key)) return false
+  }
+  return pathname === path
+}
+
 /* ------------------------------------------------------------------ */
 /*  Advanced category directory — used by /categories page             */
 /* ------------------------------------------------------------------ */
