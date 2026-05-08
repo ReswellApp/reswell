@@ -39,7 +39,11 @@ import {
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import { findListingByParam } from "@/lib/listing-query"
-import { ListingAboutSellerSection, ListingProtectionTrustRibbon } from "@/components/features/listings/listing-about-seller-section"
+import {
+  ListingAboutSellerSection,
+  ListingBuyerProtectionTrustRibbon,
+  ListingProtectionTrustRibbon,
+} from "@/components/features/listings/listing-about-seller-section"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -49,16 +53,13 @@ import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
-import {
-  fetchMostViewedSurfboardsPoolForListingPdp,
-  fetchSimilarSurfboardsForListingPdp,
-  type SimilarSurfboardListingRow,
-} from "@/lib/db/listing-detail-similar-surfboards"
+import { fetchSimilarSurfboardsForListingPdp } from "@/lib/db/listing-detail-similar-surfboards"
 import {
   boardsBrowseBoardTypeLabel,
   browseTypeParamFromBoardType,
 } from "@/lib/marketplace-slug-metadata"
 import { formatDistanceToNow } from "date-fns"
+import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -140,7 +141,7 @@ export async function SurfboardListingDetailPage({
     .eq("section", "surfboards")
     .eq("hidden_from_site", false)
     .neq("id", board.id)
-    .limit(4)
+    .order("created_at", { ascending: false })
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -202,35 +203,13 @@ export async function SurfboardListingDetailPage({
   const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
   const acceptOffers = buyerOffersOn
 
-  const [similarBoardsRaw, mostViewedPool] = await Promise.all([
-    fetchSimilarSurfboardsForListingPdp(supabase, {
-      excludeListingId: board.id,
-      boardType: rawBoardType,
-      priceUsd: listPriceNum,
-    }),
-    fetchMostViewedSurfboardsPoolForListingPdp(supabase, {
-      excludeListingId: board.id,
-      limit: 48,
-    }),
-  ])
+  const similarBoardsRaw = await fetchSimilarSurfboardsForListingPdp(supabase, {
+    excludeListingId: board.id,
+    boardType: rawBoardType,
+    priceUsd: listPriceNum,
+  })
   const similarBoardIds = similarBoardsRaw.map((r) => String(r.id))
-  const similarIdSet = new Set(similarBoardIds)
-  const mostViewedBoardsRaw: SimilarSurfboardListingRow[] = []
-  for (const row of mostViewedPool) {
-    if (similarIdSet.has(String(row.id))) continue
-    mostViewedBoardsRaw.push(row)
-    if (mostViewedBoardsRaw.length >= 16) break
-  }
-  const mostViewedBoardIds = mostViewedBoardsRaw.map((r) => String(r.id))
-  let mostViewedFavoritedIds: string[] = []
-  if (user && mostViewedBoardIds.length > 0) {
-    const { data: mostViewedFavs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", mostViewedBoardIds)
-    mostViewedFavoritedIds = (mostViewedFavs ?? []).map((f) => f.listing_id)
-  }
+
   let similarBoardFavoritedIds: string[] = []
   if (user && similarBoardIds.length > 0) {
     const { data: similarFavs } = await supabase
@@ -323,7 +302,7 @@ export async function SurfboardListingDetailPage({
 
   return (
       <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
-        <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:max-w-[1120px]">
+        <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
           <div className="mb-5 min-w-0 max-w-full pt-0.5 lg:mb-8">
             <Breadcrumb>
               <BreadcrumbList className="gap-1 text-xs font-normal tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[13px]">
@@ -381,7 +360,7 @@ export async function SurfboardListingDetailPage({
           </div>
 
           {isSold && (
-            <div className="mx-auto mb-6 w-full min-w-0 max-w-6xl lg:mb-8">
+            <div className="mx-auto mb-6 w-full min-w-0 max-w-full lg:mb-8">
               <ListingSoldDetailNotice />
             </div>
           )}
@@ -439,7 +418,7 @@ export async function SurfboardListingDetailPage({
             ) : null}
           </div>
 
-          <div className="mx-auto grid w-full min-w-0 max-w-6xl gap-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:items-start lg:gap-12 xl:gap-16">
+          <div className="mx-auto grid w-full min-w-0 max-w-full gap-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:items-start lg:gap-12 xl:gap-16">
             {/* Images */}
             <div className="relative min-w-0">
               {!(isSold && isOwnListing) && (
@@ -619,6 +598,11 @@ export async function SurfboardListingDetailPage({
                   showTrustRibbon={false}
                 />
               </div>
+              {!isOwnListing ? (
+                <div className="mt-10 w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
+                  <ListingBuyerProtectionTrustRibbon />
+                </div>
+              ) : null}
               {similarBoardsRaw.length > 0 ? (
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
                   <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
@@ -777,43 +761,32 @@ export async function SurfboardListingDetailPage({
             </div>
           </div>
 
-          {mostViewedBoardsRaw.length > 0 ? (
+          {/* Seller's other boards — full-width horizontal scroll row */}
+          {sellerBoards && sellerBoards.length > 0 && (
             <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
               <h2 className="mb-8 px-4 text-2xl font-bold text-foreground sm:px-6 lg:px-8">
-                Boards you might like
-              </h2>
-              <HomeListingScrollRow uniformCardHeights viewportFullWidth>
-                {mostViewedBoardsRaw.map((row) => (
-                  <HomePeerListingScrollTile
-                    key={String(row.id)}
-                    listing={row as unknown as HomePeerScrollListing}
-                    userId={user?.id ?? null}
-                    isFavorited={mostViewedFavoritedIds.includes(String(row.id))}
-                  />
-                ))}
-              </HomeListingScrollRow>
-            </section>
-          ) : null}
-
-          {/* Seller's Other Boards */}
-          {sellerBoards && sellerBoards.length > 0 && (
-            <section className="mt-20 min-w-0 max-w-full border-t border-border/40 pt-16">
-              <h2 className="font-headline mb-10 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
                 More boards from this seller
               </h2>
-              <div className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <HomeListingScrollRow uniformCardHeights viewportFullWidth>
                 {sellerBoards.map((item) => (
                   <HomePeerListingScrollTile
                     key={item.id}
-                    layout="grid"
                     listing={item}
                     userId={user?.id ?? null}
                     isFavorited={sellerBoardFavoritedIds.includes(item.id)}
                   />
                 ))}
-              </div>
+              </HomeListingScrollRow>
             </section>
           )}
+
+          <ListingPdpRecentSections
+            key={board.id}
+            currentListingId={board.id}
+            viewerUserId={user?.id ?? null}
+            moreListings={[]}
+            padStripWithRecommendations={false}
+          />
         </div>
       </main>
   )

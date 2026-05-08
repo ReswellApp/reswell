@@ -98,6 +98,35 @@ export function ListingProtectionTrustRibbon({ className }: { className?: string
   )
 }
 
+/**
+ * Buyer-oriented Reswell protection callout for the left column PDP (below about the seller).
+ */
+export function ListingBuyerProtectionTrustRibbon({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex w-full gap-3 rounded-xl border border-indigo-200/55 bg-[#eef0fb] px-5 py-5 dark:border-indigo-900/50 dark:bg-indigo-950/35",
+        className,
+      )}
+    >
+      <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-[#4263eb]" aria-hidden />
+      <div className="min-w-0">
+        <p className="text-[14px] font-bold text-foreground">Reswell protection</p>
+        <p className="mt-1 text-[12px] leading-snug text-neutral-700 dark:text-neutral-300">
+          Shop knowing eligible purchases include Purchase Protection—clear coverage rules, a dispute path if the
+          item isn&apos;t as described, and our team when you need a hand.
+        </p>
+        <Link
+          href="/protection-policy"
+          className="mt-2 inline-block text-[12px] font-semibold underline underline-offset-4"
+        >
+          Learn more
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 interface ListingAboutSellerSectionProps {
   profiles: {
     id: string

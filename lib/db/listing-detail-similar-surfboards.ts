@@ -63,31 +63,3 @@ export async function fetchSimilarSurfboardsForListingPdp(
 
   return []
 }
-
-/**
- * Active surfboard listings with the highest `views`, excluding the current PDP.
- * Returns a pool for the PDP to further filter (e.g. omit “similar boards” duplicates).
- */
-export async function fetchMostViewedSurfboardsPoolForListingPdp(
-  supabase: SupabaseClient,
-  opts: {
-    excludeListingId: string
-    /** Cap before client-side filtering; keep generous for duplicate removal. */
-    limit?: number
-  },
-): Promise<SimilarSurfboardListingRow[]> {
-  const fetchCap = Math.min(Math.max(opts.limit ?? 48, 8), 64)
-
-  const { data, error } = await supabase
-    .from("listings")
-    .select(PDP_PEER_SURFBOARD_STRIP_SELECT)
-    .eq("section", "surfboards")
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .neq("id", opts.excludeListingId)
-    .order("views", { ascending: false, nullsFirst: false })
-    .limit(fetchCap)
-
-  if (error || !data?.length) return []
-  return data as SimilarSurfboardListingRow[]
-}
