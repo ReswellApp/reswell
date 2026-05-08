@@ -1,6 +1,7 @@
 /**
  * - `listingCardImageSrc` — marketplace tiles (`ListingTile` and similar): prefer full `url`
  *   so `next/image` can downscale from a sharp source; fall back to `thumbnail_url`.
+ * - `listingTileCarouselImageUrls` — ordered proxied URLs for multi-photo tiles (primary first).
  * - `listingTitleThumbnailSrc` — compact “thumb + title” rows (cart, checkout, orders):
  *   prefer `thumbnail_url` for bandwidth; fall back to `url`.
  * - `listingHeroSlideSrc` — large hero imagery: full `url` only.
@@ -25,6 +26,30 @@ export function listingCardImageSrc(
   const thumb = primary.thumbnail_url?.trim()
   if (thumb) return proxiedListingImageSrc(thumb)
   return ""
+}
+
+/** All listing photos for carousel tiles: primary first, then remaining images in original order. */
+export function listingTileCarouselImageUrls(
+  images: ListingImageForCard[] | null | undefined,
+): string[] {
+  const list = images ?? []
+  if (list.length === 0) return []
+
+  const primaryIdx = list.findIndex((i) => i.is_primary)
+  const ordered =
+    primaryIdx <= 0
+      ? [...list]
+      : [list[primaryIdx]!, ...list.filter((_, i) => i !== primaryIdx)]
+
+  return ordered
+    .map((img) => {
+      const full = img.url?.trim()
+      if (full) return proxiedListingImageSrc(full)
+      const thumb = img.thumbnail_url?.trim()
+      if (thumb) return proxiedListingImageSrc(thumb)
+      return ""
+    })
+    .filter((url): url is string => url.length > 0)
 }
 
 /**

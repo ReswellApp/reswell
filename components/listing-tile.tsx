@@ -1,15 +1,16 @@
 import Link from "next/link"
-import Image from "next/image"
 import type { ReactNode } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   listingCardImageSrc,
+  listingTileCarouselImageUrls,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
 import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
+import { ListingTileImageMedia } from "@/components/listing-tile-image-media"
 import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
 import { ListingTileCheckoutBasketIcon } from "@/components/listing-tile-checkout-basket-icon"
 import { ListingTileAddToCartIcon, type ListingTileCartItem } from "@/components/listing-tile-add-to-cart-icon"
@@ -22,6 +23,9 @@ import {
 
 const DEFAULT_IMAGE_SIZES =
   "(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
+
+const tilePriceActionRevealClass =
+  "opacity-0 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 [@media(pointer:coarse)]:pointer-events-auto [@media(pointer:coarse)]:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100"
 
 export type ListingTileLinkLayout = "unified" | "split"
 
@@ -172,72 +176,57 @@ export function ListingTile({
   children,
 }: ListingTileProps) {
   const src = resolveSrc(listingImages ?? null, imageUrl ?? null)
-  const hasImage = Boolean(src)
+  const carouselProxiedUrls = listingTileCarouselImageUrls(listingImages ?? null)
+  const tileImageUrls =
+    carouselProxiedUrls.length > 0 ? carouselProxiedUrls : src ? [src] : []
   const defaultBlur =
     blurDataURL ?? (imageAspect === "square" ? squareShimmer : portraitShimmer)
   const aspectClass =
     imageAspect === "square" ? "aspect-square" : "aspect-[3/4]"
-  const objectStyle =
-    imageFit === "contain"
-      ? ({ objectFit: "contain" } as const)
-      : ({ objectFit: "cover" } as const)
 
   const showSoldFeed = variant === "soldFeed"
 
   const imageBlock = (
-    <div
-      className={cn(
-        aspectClass,
-        "w-full relative bg-muted overflow-hidden",
-        imageAspect === "portrait" && linkLayout === "unified" && "shrink-0",
-      )}
-    >
-      {hasImage ? (
-        <Image
-          src={src}
-          alt={imageAlt}
-          fill
-          sizes={imageSizes}
-          quality={90}
-          className={cn(
-            "transition-transform duration-300 group-hover:scale-105",
-            imageFit === "cover" && "object-cover",
-            imageFit === "contain" && "object-contain",
-            imageGrayscale && "[filter:grayscale(30%)]",
-            imageClassName,
-          )}
-          style={objectStyle}
-          {...(useBlurPlaceholder
-            ? { placeholder: "blur" as const, blurDataURL: defaultBlur }
-            : {})}
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-          No Image
-        </div>
-      )}
-      {showSoldFeed && (
-        <div
-          className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-          style={{ backgroundColor: "#111" }}
-        >
-          SOLD
-        </div>
-      )}
-      {showFavorites && favorites && (
-        <FavoriteButtonCardOverlay
-          listingId={listingId}
-          initialFavorited={favorites.initialFavorited}
-          isLoggedIn={favorites.isLoggedIn}
-          onFavoritedChange={favorites.onFavoritedChange}
-        />
-      )}
-      {soldOverlay && (
-        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-          <span className="text-sm font-semibold text-foreground">SOLD</span>
-        </div>
-      )}
-    </div>
+    <ListingTileImageMedia
+      urls={tileImageUrls}
+      imageAlt={imageAlt}
+      imageSizes={imageSizes}
+      aspectClass={aspectClass}
+      imageAspect={imageAspect}
+      linkLayoutUnified={linkLayout === "unified"}
+      useBlurPlaceholder={useBlurPlaceholder}
+      blurDataURL={defaultBlur}
+      imageFit={imageFit}
+      imageClassName={imageClassName}
+      imageGrayscale={imageGrayscale}
+      overlayTopLeft={
+        showSoldFeed ? (
+          <div
+            className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+            style={{ backgroundColor: "#111" }}
+          >
+            SOLD
+          </div>
+        ) : null
+      }
+      overlayTopRight={
+        showFavorites && favorites ? (
+          <FavoriteButtonCardOverlay
+            listingId={listingId}
+            initialFavorited={favorites.initialFavorited}
+            isLoggedIn={favorites.isLoggedIn}
+            onFavoritedChange={favorites.onFavoritedChange}
+          />
+        ) : null
+      }
+      overlayFull={
+        soldOverlay ? (
+          <div className="absolute inset-0 z-[25] flex items-center justify-center bg-background/80">
+            <span className="text-sm font-semibold text-foreground">SOLD</span>
+          </div>
+        ) : null
+      }
+    />
   )
 
   const titleBlock =
@@ -268,19 +257,23 @@ export function ListingTile({
           </p>
         ) : null}
       </div>
-      {priceAction?.type === "checkout" ? (
-        <ListingTileCheckoutBasketIcon
-          checkoutHref={priceAction.checkoutPath}
-          loginHref={`/auth/login?redirect=${encodeURIComponent(priceAction.checkoutPath)}`}
-          isLoggedIn={priceAction.isLoggedIn}
-        />
-      ) : priceAction?.type === "addToCart" ? (
-        <ListingTileAddToCartIcon item={priceAction.item} />
-      ) : priceAction?.type === "addToCartServer" ? (
-        <ListingTileAddToCartServerIcon
-          listingId={priceAction.listingId}
-          isLoggedIn={priceAction.isLoggedIn}
-        />
+      {priceAction ? (
+        <div className={tilePriceActionRevealClass}>
+          {priceAction.type === "checkout" ? (
+            <ListingTileCheckoutBasketIcon
+              checkoutHref={priceAction.checkoutPath}
+              loginHref={`/auth/login?redirect=${encodeURIComponent(priceAction.checkoutPath)}`}
+              isLoggedIn={priceAction.isLoggedIn}
+            />
+          ) : priceAction.type === "addToCart" ? (
+            <ListingTileAddToCartIcon item={priceAction.item} />
+          ) : (
+            <ListingTileAddToCartServerIcon
+              listingId={priceAction.listingId}
+              isLoggedIn={priceAction.isLoggedIn}
+            />
+          )}
+        </div>
       ) : null}
     </div>
   )
