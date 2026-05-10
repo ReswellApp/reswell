@@ -20,35 +20,19 @@ export function ListingBoardDimensionsBlock({
   dimensions,
   className,
 }: ListingBoardDimensionsBlockProps) {
-  const stored = dimensions.dimensions?.trim()
-  if (stored) {
-    const headingId = `listing-${listingId}-board-dimensions`
-    return (
-      <section
-        aria-labelledby={headingId}
-        className={cn(
-          "rounded-3xl bg-muted/45 px-5 py-4 dark:bg-muted/25",
-          className,
-        )}
-      >
-        <div className="flex flex-col gap-1.5 items-start text-left">
-          <h2
-            id={headingId}
-            className="font-sans text-[12px] font-normal uppercase tracking-wide text-foreground"
-          >
-            Board dimensions
-          </h2>
-          <p className="min-w-0 font-sans text-[16px] font-medium tabular-nums leading-snug text-foreground sm:text-[17px]">
-            {stored}
-          </p>
-        </div>
-      </section>
-    )
-  }
-
   const geometry = formatListingGeometryLine(dimensions)
   const volume = formatListingVolumePart(dimensions)
-  if (!geometry && !volume) return null
+
+  const stored = dimensions.dimensions?.trim()
+  const looksLikeStoredPartialDimensionsJson =
+    typeof stored === "string" &&
+    stored.startsWith("{") &&
+    stored.includes('"v"')
+
+  const showUnparsedStoredFallback =
+    Boolean(stored) && !geometry && !volume && !looksLikeStoredPartialDimensionsJson
+
+  if (!geometry && !volume && !showUnparsedStoredFallback) return null
 
   const headingId = `listing-${listingId}-board-dimensions`
 
@@ -80,9 +64,11 @@ export function ListingBoardDimensionsBlock({
                 </>
               ) : null}
             </>
-          ) : (
+          ) : volume ? (
             <span>{volume}</span>
-          )}
+          ) : showUnparsedStoredFallback ? (
+            <span>{stored}</span>
+          ) : null}
         </p>
       </div>
     </section>
