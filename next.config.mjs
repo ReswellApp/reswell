@@ -1,8 +1,25 @@
 import path from 'path'
+import fs from 'node:fs'
 import { fileURLToPath } from 'url'
 import bundleAnalyzer from '@next/bundle-analyzer'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+const siteWordmarkSvgPath = path.join(__dirname, 'public', 'images', 'reswell-logo.svg')
+
+/** Enables `<img src="/images/reswell-logo.svg">` in the site chrome; component falls back on error to raster. */
+function siteWordmarkVectorEnabled() {
+  try {
+    const st = fs.statSync(siteWordmarkSvgPath)
+    return st.isFile() && st.size >= 96
+  } catch {
+    return false
+  }
+}
+
+const NEXT_PUBLIC_SITE_WORDMARK_USE_VECTOR_SVG = siteWordmarkVectorEnabled()
+  ? 'true'
+  : 'false'
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -35,6 +52,9 @@ const brandCatalogImageHosts = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  env: {
+    NEXT_PUBLIC_SITE_WORDMARK_USE_VECTOR_SVG,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

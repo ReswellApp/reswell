@@ -60,6 +60,7 @@ import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
 import { CartHeaderLink } from "@/components/cart-header-link"
+import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { HeaderMobileCategoryBar } from "@/components/header-mobile-category-bar"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -848,14 +849,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     return (
       <header className="relative z-50 w-full border-b border-border bg-softwhite shadow-sm">
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
-          <Link
-            href="/"
-            className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
-          >
-            <span className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-5xl">
-              Reswell
-            </span>
-          </Link>
+          <SiteWordmarkLink />
           <div className="flex shrink-0 items-center justify-end">
             {!authLoaded ? (
               <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
@@ -897,14 +891,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           {isMobileViewport ? (
             <>
               <div className="flex min-h-[48px] min-w-0 items-center justify-between gap-2">
-                <Link
-                  href="/"
-                  className="flex shrink-0 items-center rounded-md px-1 py-1 no-underline hover:no-underline"
-                >
-                  <span className="font-headline text-2xl font-bold tracking-tight text-foreground">
-                    Reswell
-                  </span>
-                </Link>
+                <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
                 <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
                   {!authLoaded ? (
                     <Skeleton className="h-9 w-28 shrink-0 rounded-md" aria-hidden />
@@ -1049,14 +1036,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           ) : (
             <>
           {/* Logo + home link; padding keeps white breathing room around the mark */}
-          <Link
-            href="/"
-            className="flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5"
-          >
-            <span className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-5xl">
-              Reswell
-            </span>
-          </Link>
+          <SiteWordmarkLink />
 
           {/* Main search (md+ when row is wide enough); icon + drawer when row is cramped */}
           {!headerRowCompact ? (

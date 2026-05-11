@@ -1,7 +1,6 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Heart, ShieldCheck } from "lucide-react"
-import reswellFooterLogo from "@/public/images/reswell-footer-logo.png"
+import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { footerCategoryLinks } from "@/lib/site-category-directory"
@@ -13,14 +12,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src={reswellFooterLogo}
-                alt="Reswell logo"
-                className="h-28 w-auto sm:h-32 md:h-40"
-                placeholder="blur"
-              />
-            </Link>
+            <SiteWordmarkLink variant="footer" className="-ml-1 px-0 sm:ml-0" />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               The peer-to-peer marketplace for surfing enthusiasts. Buy, sell, and discover amazing surf gear.
             </p>
