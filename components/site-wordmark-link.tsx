@@ -25,7 +25,7 @@ const IMG_HEADER =
   "h-auto max-h-5 w-auto max-w-[9rem] object-contain object-left sm:max-h-6 sm:max-w-[10.5rem] md:max-h-7 md:max-w-[12rem]"
 /** Stacked mobile chrome row — stay a touch smaller next to icon cluster */
 const IMG_HEADER_COMPACT =
-  "h-auto max-h-5 w-auto max-w-[8.25rem] object-contain object-left sm:max-w-[9.5rem]"
+  "h-auto max-h-5 w-auto max-w-[min(100%,8.25rem)] object-contain object-left sm:max-w-[min(100%,9.5rem)]"
 const IMG_FOOTER =
   "h-auto w-auto max-h-24 max-w-[min(260px,100%)] object-contain object-left sm:max-h-28 md:max-h-32"
 
@@ -72,7 +72,8 @@ export function SiteWordmarkLink({
     <Link
       href={href}
       className={cn(
-        "flex shrink-0 items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5",
+        "flex items-center rounded-md px-2 py-1 no-underline hover:no-underline sm:px-2 sm:py-1.5",
+        compact ? "min-w-0 shrink" : "shrink-0",
         className,
       )}
     >

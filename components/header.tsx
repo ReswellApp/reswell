@@ -890,9 +890,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         >
           {isMobileViewport ? (
             <>
-              <div className="flex min-h-[48px] min-w-0 items-center justify-between gap-2">
-                <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
-                <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5">
+              <div className="flex min-h-[48px] min-w-0 items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
+                </div>
+                <div className="flex shrink-0 items-center justify-end gap-0.5">
                   {!authLoaded ? (
                     <Skeleton className="h-9 w-28 shrink-0 rounded-md" aria-hidden />
                   ) : user ? (
