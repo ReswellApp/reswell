@@ -147,17 +147,6 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
           touchStartRef.current = null
         }}
       >
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          aria-expanded={lightboxOpen}
-          aria-label="View enlarged photos"
-          onClick={() => {
-            if (suppressHeroClickRef.current) return
-            openLightbox()
-          }}
-          className="absolute inset-0 z-[6] cursor-zoom-in border-0 bg-transparent p-0 outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring"
-        />
         <div className="pointer-events-none absolute bottom-3 left-3 z-[8] rounded-full bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-md tabular-nums">
           <span className="inline-flex items-center gap-1.5">
             <Maximize2 className="size-3.5 shrink-0 opacity-70" aria-hidden />
@@ -165,7 +154,24 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
           </span>
         </div>
 
-        <div className="absolute inset-0">
+        <div
+          className="absolute inset-0 z-[1] cursor-zoom-in outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring"
+          role="button"
+          tabIndex={0}
+          aria-haspopup="dialog"
+          aria-expanded={lightboxOpen}
+          aria-label="View enlarged photos"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" && e.key !== " ") return
+            e.preventDefault()
+            if (suppressHeroClickRef.current) return
+            openLightbox()
+          }}
+          onClick={() => {
+            if (suppressHeroClickRef.current) return
+            openLightbox()
+          }}
+        >
           {images.map((image, i) => {
             const isSelected = i === selectedIndex
             return (
