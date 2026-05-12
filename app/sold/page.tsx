@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
+import { fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
@@ -16,10 +17,13 @@ export const metadata: Metadata = pageSeoMetadata({
   path: "/sold",
 })
 
-function mapSoldRow(row: Record<string, unknown>): SoldFeedListing {
+function mapSoldRow(
+  row: Record<string, unknown>,
+  saleConfirmedAtIso: string | null,
+): SoldFeedListing {
   const dimStr = row.dimensions != null ? String(row.dimensions) : ""
   const boardLength = boardLengthLabelFromDimensionsColumn(dimStr) ?? null
-  const soldAtRaw = row.sold_at ?? row.updated_at
+  const soldAtRaw = saleConfirmedAtIso ?? row.sold_at ?? row.updated_at
   const soldAt = soldAtRaw ? String(soldAtRaw) : new Date().toISOString()
   const listPrice = Number(row.price ?? 0)
   const soldPriceRaw = row.sold_price
@@ -49,6 +53,9 @@ function mapSoldRow(row: Record<string, unknown>): SoldFeedListing {
 async function SoldPageData() {
   const supabase = await createClient()
 
+  const { orderedListingIds, confirmedAtIsoByListingId } =
+    await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(supabase, SOLD_LIMIT)
+
   const soldSelect = `
     id,
     slug,
@@ -67,21 +74,30 @@ async function SoldPageData() {
     categories (name, slug)
   `
 
-  const [soldQuery, stats] = await Promise.all([
-    supabase
-      .from("listings")
-      .select(soldSelect)
-      .eq("status", "sold")
-      .eq("hidden_from_site", false)
-      .in("section", ["surfboards"])
-      .order("updated_at", { ascending: false })
-      .limit(SOLD_LIMIT),
+  const [soldRes, stats] = await Promise.all([
+    orderedListingIds.length === 0
+      ? Promise.resolve({
+          data: [] as Record<string, unknown>[] | null,
+          error: null as { message: string } | null,
+        })
+      : supabase.from("listings").select(soldSelect).in("id", orderedListingIds),
     getSoldFeedStats(),
   ])
 
-  const soldListings: SoldFeedListing[] = ((soldQuery.data ?? []) as Record<string, unknown>[]).map(
-    mapSoldRow,
-  )
+  if (soldRes.error) {
+    console.error("[sold page] listings fetch:", soldRes.error.message)
+  }
+
+  const soldRows = (soldRes.data ?? []) as Record<string, unknown>[]
+  const mapById = new Map(soldRows.map((r) => [String(r.id), r]))
+  const soldListings: SoldFeedListing[] = orderedListingIds
+    .map((id) => {
+      const row = mapById.get(id)
+      if (!row) return null
+      const at = confirmedAtIsoByListingId.get(id) ?? null
+      return mapSoldRow(row, at)
+    })
+    .filter((x): x is SoldFeedListing => x != null)
 
   const gmvFormatted = formatGmv(stats.gmvTotal)
 
