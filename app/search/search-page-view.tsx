@@ -11,6 +11,7 @@ import {
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
 import {
   displayMarketplaceSearchQueryForAnalytics,
   normalizeMarketplaceSearchQueryForAnalytics,
@@ -69,6 +70,8 @@ export async function SearchPageView({
     if (b) {
       brandRow = { id: b.id, name: b.name, slug: b.slug }
     }
+  } else if (rawQuery.trim()) {
+    brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
   }
 
   const [{ data: { user } }, { data: categoryRows }] = await Promise.all([

@@ -4,11 +4,15 @@ import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { listBrandModelsWithBrandsForSellCatalog } from "@/lib/db/brand-models"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
-import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-index"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
-import { pickCatalogBrandForNavPick } from "@/lib/brands/pick-catalog-brand-for-nav"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { listBrands } from "@/lib/brands/server"
+import {
+  resolveDirectoryBrandRowFromLabel,
+  searchBrandsCatalogSuggestWithClient,
+  type BrandCatalogSuggestResponse,
+  type BrandCatalogSuggestRow,
+} from "@/lib/services/brandDirectorySearch"
 import { slugify } from "@/lib/slugify"
 
 export async function getDistinctBrandsFromListings(section: string): Promise<string[]> {
@@ -335,127 +339,27 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
   return { titles, categories, brands, listings, meta: { listingsBackend } }
 }
 
-/** `public.brands` row shape for the `/sell` brand typeahead (nav-style dropdown). */
-export type BrandCatalogSuggestRow = {
-  id: string
-  name: string
-  slug: string
-  short_description: string | null
-  logo_url: string | null
-  location_label: string | null
-  lead_shaper_name: string | null
-}
-
-export type BrandCatalogSuggestResponse = {
-  rows: BrandCatalogSuggestRow[]
-  meta: { backend: "elasticsearch" | "supabase" }
-}
-
-const MAX_BRAND_CATALOG_SUGGEST = 20
+export type { BrandCatalogSuggestResponse, BrandCatalogSuggestRow }
 
 /**
  * Search the official brand directory (not listing-derived brand text).
  * Used by the sell form brand field (`BrandInputWithSuggestions`) and nav-style brand typeahead.
- * When Elasticsearch is configured and the brands index is populated, results are ranked in ES
- * and hydrated from `public.brands`; otherwise uses Supabase `ilike` (same as before).
  */
 export async function searchBrandsCatalogSuggest(
   qRaw: string,
 ): Promise<BrandCatalogSuggestResponse> {
-  const q = (qRaw || "").trim().replace(/%/g, "")
-  if (q.length < 1) {
-    return { rows: [], meta: { backend: "supabase" } }
-  }
-
   const supabase = await createClient()
-  const select =
-    "id, name, slug, short_description, logo_url, location_label, lead_shaper_name" as const
-
-  if (isElasticsearchConfigured()) {
-    try {
-      const ids = await searchBrandIdsFromElasticsearch(q, MAX_BRAND_CATALOG_SUGGEST)
-      if (ids.length > 0) {
-        const { data, error } = await supabase.from("brands").select(select).in("id", ids)
-
-        if (!error && data?.length) {
-          const byId = new Map(data.map((row) => [row.id, row as BrandCatalogSuggestRow]))
-          const rows = ids
-            .map((id) => byId.get(id))
-            .filter((row): row is BrandCatalogSuggestRow => row != null)
-          if (rows.length > 0) {
-            return { rows, meta: { backend: "elasticsearch" } }
-          }
-        }
-      }
-    } catch (err) {
-      console.error("[searchBrandsCatalogSuggest] Elasticsearch error, falling back to Supabase:", err)
-    }
-  }
-
-  const safe = escapeIlikeToken(q)
-  const pattern = `"%${safe}%"`
-
-  const { data, error } = await supabase
-    .from("brands")
-    .select(select)
-    .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
-    .order("name", { ascending: true })
-    .limit(MAX_BRAND_CATALOG_SUGGEST)
-
-  if (error || !data) {
-    if (error && process.env.NODE_ENV === "development") {
-      console.error("[searchBrandsCatalogSuggest]", error)
-    }
-    return { rows: [], meta: { backend: "supabase" } }
-  }
-
-  return { rows: data as BrandCatalogSuggestRow[], meta: { backend: "supabase" } }
+  return searchBrandsCatalogSuggestWithClient(supabase, qRaw)
 }
 
 /**
  * Resolve a nav brand-chip label (listing-derived text) to a directory profile path.
- * `searchBrandsCatalogSuggest` is capped and ES-ranked; this adds slug + name DB fallbacks
- * so picks like "Channel Islands" still reach `/brands/channel-islands-surfboards`.
  */
 export async function resolveBrandProfilePathFromNavLabel(rawLabel: string): Promise<string | null> {
   const name = (rawLabel || "").trim()
   if (!name) return null
 
   const supabase = await createClient()
-
-  const { rows } = await searchBrandsCatalogSuggest(name)
-  const fromSuggest = pickCatalogBrandForNavPick(rows, name)
-  if (fromSuggest) return `${BRANDS_BASE}/${fromSuggest.slug}`
-
-  const hint = slugify(name).toLowerCase()
-  if (hint.length > 0) {
-    const { data: exactSlug } = await supabase.from("brands").select("slug").eq("slug", hint).maybeSingle()
-    if (exactSlug?.slug) return `${BRANDS_BASE}/${exactSlug.slug}`
-
-    const { data: prefixRows, error: prefixErr } = await supabase
-      .from("brands")
-      .select("slug")
-      .like("slug", `${hint}-%`)
-      .order("slug", { ascending: true })
-      .limit(1)
-    if (!prefixErr && prefixRows?.[0]?.slug) {
-      return `${BRANDS_BASE}/${prefixRows[0].slug}`
-    }
-  }
-
-  const safe = escapeIlikeToken(name)
-  const pattern = `"%${safe}%"`
-  const { data: nameRows, error: nameErr } = await supabase
-    .from("brands")
-    .select("slug,name")
-    .ilike("name", pattern)
-    .order("name", { ascending: true })
-    .limit(24)
-
-  if (!nameErr && nameRows?.length) {
-    const picked = pickCatalogBrandForNavPick(nameRows, name)
-    if (picked) return `${BRANDS_BASE}/${picked.slug}`
-  }
-
-  return null
+  const row = await resolveDirectoryBrandRowFromLabel(supabase, name)
+  return row ? `${BRANDS_BASE}/${row.slug}` : null
 }
