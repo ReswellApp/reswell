@@ -83,13 +83,15 @@ export function ContactSellerForm({
           setMessage("")
           return
         }
-        throw new Error(result.error)
+        toast.error(result.error)
+        return
       }
 
       setMessage("")
       setBlockedPhoneNotice(null)
       router.push(`/messages/${result.conversation_id}`)
-    } catch {
+    } catch (e) {
+      console.error("[contact-seller] sendListingMessage failed:", e)
       toast.error("Failed to send message")
     } finally {
       setSending(false)

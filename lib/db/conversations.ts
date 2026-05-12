@@ -26,11 +26,11 @@ export async function getAnyConversationBetweenUsers(
   supabase: SupabaseClient,
   userIdA: string,
   userIdB: string,
-): Promise<{ id: string } | null> {
+): Promise<{ id: string; listing_id: string | null } | null> {
   const ab = await getConversationForBuyerSeller(supabase, userIdA, userIdB)
-  if (ab) return { id: ab.id }
+  if (ab) return ab
   const ba = await getConversationForBuyerSeller(supabase, userIdB, userIdA)
-  if (ba) return { id: ba.id }
+  if (ba) return ba
   return null
 }
 

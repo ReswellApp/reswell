@@ -3,7 +3,7 @@
 import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getAnyConversationBetweenUsers, getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { messageAppearsToSharePhoneNumber } from "@/lib/utils/detect-message-phone-sharing"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
@@ -178,7 +178,7 @@ export async function sendListingMessage(input: {
   const body = content.trim()
 
   let conversation: { id: string }
-  const existing = await getConversationForBuyerSeller(supabase, user.id, seller_id)
+  const existing = await getAnyConversationBetweenUsers(supabase, user.id, seller_id)
 
   if (existing) {
     conversation = { id: existing.id }
@@ -227,6 +227,7 @@ export async function sendListingMessage(input: {
     .single()
 
   if (msgError || !inserted) {
+    console.error("[sendListingMessage] message insert:", msgError)
     return { error: "Failed to send message" as const }
   }
 
@@ -314,6 +315,7 @@ export async function sendConversationReply(input: {
     .single()
 
   if (msgError || !inserted) {
+    console.error("[sendConversationReply] message insert:", msgError)
     return { error: "Failed to send message" as const }
   }
 
@@ -434,6 +436,7 @@ export async function sendConversationLocationReply(input: unknown) {
     .single()
 
   if (msgError || !inserted) {
+    console.error("[sendConversationLocationReply] message insert:", msgError)
     return { error: "Failed to send message" as const }
   }
 

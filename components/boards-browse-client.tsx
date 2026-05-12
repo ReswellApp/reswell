@@ -1,7 +1,13 @@
 "use client"
 
 import { type ReactNode, useTransition, Suspense } from "react"
-import { BoardsListingsFilters, boardTypes, boardConditions, boardSortOptions } from "@/components/boards-listings-filters"
+import {
+  BoardsListingsFilters,
+  boardRadiusOptions,
+  boardTypes,
+  boardConditions,
+  boardSortOptions,
+} from "@/components/boards-listings-filters"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
 import { ActiveFilterChips } from "@/components/active-filter-chips"
 import { cn } from "@/lib/utils"
@@ -15,11 +21,15 @@ const CONDITION_LABEL: Record<string, string> = Object.fromEntries(
 const SORT_LABEL: Record<string, string> = Object.fromEntries(
   boardSortOptions.map((s) => [s.value, s.label]),
 )
+const RADIUS_LABEL: Record<string, string> = Object.fromEntries(
+  boardRadiusOptions.filter((r) => r.value !== "any").map((r) => [r.value, r.label]),
+)
 
 type BoardsBrowseClientProps = {
   children: ReactNode
   initialQ?: string
   initialLocation?: string
+  initialRadius?: string
   initialType?: string
   initialCondition?: string
   initialSort?: string
@@ -33,6 +43,7 @@ export function BoardsBrowseClient({
   children,
   initialQ = "",
   initialLocation = "",
+  initialRadius = "",
   initialType = "all",
   initialCondition = "all",
   initialSort = BOARDS_BROWSE_DEFAULT_SORT,
@@ -47,6 +58,7 @@ export function BoardsBrowseClient({
             transitionStart={startTransition}
             initialQ={initialQ}
             initialLocation={initialLocation}
+            initialRadius={initialRadius}
             initialType={initialType}
             initialCondition={initialCondition}
             initialSort={initialSort}
@@ -58,13 +70,14 @@ export function BoardsBrowseClient({
         <div className="px-1 sm:px-2 pt-3 pb-1 min-h-[2rem]">
           <ActiveFilterChips
             clearHref="/boards"
-            ignore={["page", "lat", "lng", "radius", "minPrice", "maxPrice"]}
+            ignore={["page", "lat", "lng", "minPrice", "maxPrice"]}
             quoteValues={["q"]}
             valuePrefixes={{ location: "Near " }}
             valueLookups={{
               type: TYPE_LABEL,
               condition: CONDITION_LABEL,
               sort: SORT_LABEL,
+              radius: RADIUS_LABEL,
             }}
           />
         </div>

@@ -24,6 +24,7 @@ import { LocationInputSuggest } from "@/components/location-input-suggest"
 import { useToast } from "@/hooks/use-toast"
 import { listingConditionFilterRows } from "@/lib/listing-labels"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
+import { cn } from "@/lib/utils"
 
 export const boardTypes = [
   { value: "all", label: "All Board Types" },
@@ -47,9 +48,27 @@ export const boardSortOptions = [
   { value: "price-high", label: "Price: High → Low" },
 ]
 
+const BOARD_RADIUS_VALUES = ["25", "50", "100", "200"] as const
+
+/** Surfboard browse map radius (miles). `any` = no distance cap (location text match only unless sort is nearest). Compact labels so the bar does not crowd/overlap. */
+export const boardRadiusOptions: { value: string; label: string }[] = [
+  { value: "any", label: "Radius" },
+  ...BOARD_RADIUS_VALUES.map((mi) => ({
+    value: mi,
+    label: `${mi} mi`,
+  })),
+]
+
+function normalizeInitialRadius(r: string | undefined): string {
+  if (!r?.trim()) return "any"
+  const t = r.trim()
+  return BOARD_RADIUS_VALUES.includes(t as (typeof BOARD_RADIUS_VALUES)[number]) ? t : "any"
+}
+
 type FilterSnapshot = {
   q: string
   location: string
+  radiusMi: string
   type: string
   condition: string
   sort: string
@@ -60,6 +79,8 @@ type FilterSnapshot = {
 interface BoardsListingsFiltersProps {
   initialQ?: string
   initialLocation?: string
+  /** Miles from `radius=`; `any` / empty = no distance filter in URL */
+  initialRadius?: string
   initialType?: string
   initialCondition?: string
   initialSort?: string
@@ -76,6 +97,7 @@ const DEBOUNCE_MS = 380
 export function BoardsListingsFilters({
   initialQ = "",
   initialLocation = "",
+  initialRadius = "",
   initialType = "all",
   initialCondition = "all",
   initialSort = BOARDS_BROWSE_DEFAULT_SORT,
@@ -92,6 +114,7 @@ export function BoardsListingsFilters({
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
+  const [radiusMi, setRadiusMi] = useState(() => normalizeInitialRadius(initialRadius))
   const [type, setType] = useState(initialType)
   const [condition, setCondition] = useState(initialCondition)
   const [sort, setSort] = useState(initialSort)
@@ -99,13 +122,14 @@ export function BoardsListingsFilters({
   const filtersRef = useRef<FilterSnapshot>({
     q: initialQ,
     location: initialLocation,
+    radiusMi: normalizeInitialRadius(initialRadius),
     type: initialType,
     condition: initialCondition,
     sort: initialSort,
     userLat: null,
     userLng: null,
   })
-  filtersRef.current = { q, location, type, condition, sort, userLat, userLng }
+  filtersRef.current = { q, location, radiusMi, type, condition, sort, userLat, userLng }
 
   const skipTextDebounceRef = useRef(true)
   const skipSelectApplyRef = useRef(true)
@@ -124,12 +148,15 @@ export function BoardsListingsFilters({
     const typeChanged = initialType !== filtersRef.current.type
     const conditionChanged = initialCondition !== filtersRef.current.condition
     const sortChanged = initialSort !== filtersRef.current.sort
+    const nextRadius = normalizeInitialRadius(initialRadius)
+    const radiusChanged = nextRadius !== filtersRef.current.radiusMi
 
-    if (typeChanged || conditionChanged || sortChanged) {
+    if (typeChanged || conditionChanged || sortChanged || radiusChanged) {
       skipSelectApplyRef.current = true
       setType(initialType)
       setCondition(initialCondition)
       setSort(initialSort)
+      setRadiusMi(nextRadius)
     }
 
     const incomingQ = (initialQ ?? "").trim()
@@ -146,7 +173,7 @@ export function BoardsListingsFilters({
     setLocation(initialLocation)
     setUserLat(null)
     setUserLng(null)
-  }, [initialQ, initialLocation, initialType, initialCondition, initialSort])
+  }, [initialQ, initialLocation, initialRadius, initialType, initialCondition, initialSort])
 
   const pushSearchParams = useCallback(
     async (override?: Partial<FilterSnapshot>) => {
@@ -187,6 +214,14 @@ export function BoardsListingsFilters({
       if (live.condition && live.condition !== "all") params.set("condition", live.condition)
       if (live.sort && live.sort !== BOARDS_BROWSE_DEFAULT_SORT) params.set("sort", live.sort)
       params.set("page", "1")
+
+      if (
+        live.radiusMi &&
+        live.radiusMi !== "any" &&
+        BOARD_RADIUS_VALUES.includes(live.radiusMi as (typeof BOARD_RADIUS_VALUES)[number])
+      ) {
+        params.set("radius", live.radiusMi)
+      }
 
       if (
         resolvedLat != null &&
@@ -230,7 +265,7 @@ export function BoardsListingsFilters({
       return
     }
     void pushSearchParams()
-  }, [type, condition, sort, pushSearchParams])
+  }, [type, condition, sort, radiusMi, pushSearchParams])
 
   async function handleUseMyLocation() {
     if (!navigator.geolocation) {
@@ -283,10 +318,13 @@ export function BoardsListingsFilters({
         e.preventDefault()
         void pushSearchParams()
       }}
-      className="grid w-full min-w-0 max-w-full grid-cols-2 gap-2 items-center md:flex md:flex-wrap md:gap-2 md:items-center"
+      className={cn(
+        "grid w-full min-w-0 max-w-full grid-cols-2 gap-2 items-center",
+        "md:flex md:flex-nowrap md:gap-2 md:overflow-x-auto md:pb-0.5 [scrollbar-width:thin]",
+      )}
     >
-      <div className="col-span-2 flex max-w-full items-center gap-2 min-w-[200px] md:col-auto md:w-[300px] md:min-w-0 md:max-w-full md:shrink-0">
-        <div className="relative flex-1 min-w-[160px]">
+      <div className="col-span-2 flex max-w-full min-w-0 items-center gap-2 min-w-[200px] md:col-auto md:shrink-0 md:w-[min(24rem,34vw)] md:min-w-[19rem]">
+        <div className="relative min-w-0 flex-1">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 z-[1] h-4 w-4 text-muted-foreground pointer-events-none" />
           <LocationInputSuggest
             name="location"
@@ -296,6 +334,7 @@ export function BoardsListingsFilters({
               setLocation(v)
               setUserLat(null)
               setUserLng(null)
+              if (!v.trim()) setRadiusMi("any")
             }}
             onPickSuggestion={(place) => {
               setLocation(place.label)
@@ -322,8 +361,23 @@ export function BoardsListingsFilters({
         >
           <LocateFixed className={`h-4 w-4 ${userLat != null ? "text-primary" : ""}`} />
         </Button>
+        <Select name="radius" value={radiusMi} onValueChange={setRadiusMi}>
+          <SelectTrigger
+            aria-label="Search radius (miles from location)"
+            className={cn(siteFilterSelectTriggerClassName(), "w-[8.5rem] shrink-0")}
+          >
+            <SelectValue placeholder="Radius" />
+          </SelectTrigger>
+          <SelectContent>
+            {boardRadiusOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <div className="col-span-2 w-full min-w-0 md:col-span-auto md:w-[200px] md:shrink-0">
+      <div className="col-span-2 w-full min-w-0 md:col-auto md:w-[200px] md:shrink-0">
         <Select name="type" value={type} onValueChange={setType}>
           <SelectTrigger className={siteFilterSelectTriggerClassName()}>
             <SelectValue placeholder="Board type" />
@@ -337,7 +391,7 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="w-full min-w-0 md:w-[120px] md:shrink-0">
+      <div className="col-span-1 w-full min-w-0 md:col-auto md:w-[120px] md:shrink-0">
         <Select name="condition" value={condition} onValueChange={setCondition}>
           <SelectTrigger className={siteFilterSelectTriggerClassName()}>
             <SelectValue placeholder="Any Condition" />
@@ -351,7 +405,7 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="w-full min-w-0 md:w-[140px] md:shrink-0">
+      <div className="col-span-1 w-full min-w-0 md:col-auto md:w-[140px] md:shrink-0">
         <Select name="sort" value={sort} onValueChange={setSort}>
           <SelectTrigger className={siteFilterSelectTriggerClassName()}>
             <SelectValue placeholder="Sort order" />

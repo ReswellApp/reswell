@@ -461,7 +461,11 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         })
         if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
           setNewMessage(content)
-          toast.error('Failed to send message')
+          const messageText =
+            result.error === 'Unauthorized'
+              ? 'Sign in again to send messages.'
+              : result.error
+          toast.error(messageText)
         }
         return
       }

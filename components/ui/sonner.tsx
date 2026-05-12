@@ -21,7 +21,7 @@ const Toaster = ({ style, ...props }: ToasterProps) => {
       pauseWhenPageIsHidden
       swipeDirections={['top', 'left', 'right']}
       offset={{
-        top: 'max(0.625rem, env(safe-area-inset-top, 0px))',
+        top: 'calc(7rem + env(safe-area-inset-top, 0px))',
       }}
       style={
         {
