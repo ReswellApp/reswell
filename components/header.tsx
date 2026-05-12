@@ -44,7 +44,7 @@ import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
-import { navigateToMarketplaceBrandResults } from "@/lib/nav-marketplace-brand-search"
+import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 import {
   boardBrowseNavItemIsActive,
   siteHeaderSecondaryNavLinks,
@@ -813,7 +813,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         value={searchQuery}
         onChange={setSearchQuery}
         onBrandStripPick={(brandName) => {
-          void navigateToMarketplaceBrandResults(router, brandName, {
+          void navigateToBrandProfileFromNavPick(router, brandName, {
             categorySlug: isSearchResultsPath(pathname ?? "")
               ? headerSearchParams.get("category")
               : null,
@@ -997,7 +997,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                       value={mobileNavSearchQuery}
                       onChange={setMobileNavSearchQuery}
                       onBrandStripPick={(brandName) => {
-                        void navigateToMarketplaceBrandResults(router, brandName, {
+                        void navigateToBrandProfileFromNavPick(router, brandName, {
                           categorySlug: isSearchResultsPath(pathname ?? "")
                             ? headerSearchParams.get("category")
                             : null,

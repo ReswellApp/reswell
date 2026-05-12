@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ExternalLink, MapPin } from "lucide-react"
-import { BRANDS_BASE } from "@/lib/brands/routes"
+import { BRANDS_BASE, brandKeywordSearchHref } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { Button } from "@/components/ui/button"
@@ -9,8 +9,8 @@ import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
 
 /**
- * Brand detail — directory fields from `public.brands`; marketplace strip uses the same listing
- * query as `/search?brandSlug=`.
+ * Brand detail — directory fields from `public.brands`; CTAs use keyword `/search?q={name}`;
+ * listing preview uses the same surfboard query as search.
  */
 export function BrandProfileView({
   brand,
@@ -102,7 +102,7 @@ export function BrandProfileView({
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="rounded-full px-6">
-                <Link href={`/search?brandSlug=${encodeURIComponent(brand.slug)}`}>Search listings</Link>
+                <Link href={brandKeywordSearchHref(brand.name)}>Search listings</Link>
               </Button>
             </div>
           </div>
@@ -124,7 +124,7 @@ export function BrandProfileView({
             />
             <div className="mt-8 flex justify-center sm:justify-end">
               <Button asChild variant="outline" className="rounded-full px-6">
-                <Link href={`/search?brandSlug=${encodeURIComponent(brand.slug)}`}>View all listings</Link>
+                <Link href={brandKeywordSearchHref(brand.name)}>View all listings</Link>
               </Button>
             </div>
           </div>

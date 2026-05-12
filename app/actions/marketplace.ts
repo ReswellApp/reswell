@@ -6,6 +6,8 @@ import { listBrandModelsWithBrandsForSellCatalog } from "@/lib/db/brand-models"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-index"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
+import { pickCatalogBrandForNavPick } from "@/lib/brands/pick-catalog-brand-for-nav"
+import { BRANDS_BASE } from "@/lib/brands/routes"
 import { listBrands } from "@/lib/brands/server"
 import { slugify } from "@/lib/slugify"
 
@@ -408,4 +410,52 @@ export async function searchBrandsCatalogSuggest(
   }
 
   return { rows: data as BrandCatalogSuggestRow[], meta: { backend: "supabase" } }
+}
+
+/**
+ * Resolve a nav brand-chip label (listing-derived text) to a directory profile path.
+ * `searchBrandsCatalogSuggest` is capped and ES-ranked; this adds slug + name DB fallbacks
+ * so picks like "Channel Islands" still reach `/brands/channel-islands-surfboards`.
+ */
+export async function resolveBrandProfilePathFromNavLabel(rawLabel: string): Promise<string | null> {
+  const name = (rawLabel || "").trim()
+  if (!name) return null
+
+  const supabase = await createClient()
+
+  const { rows } = await searchBrandsCatalogSuggest(name)
+  const fromSuggest = pickCatalogBrandForNavPick(rows, name)
+  if (fromSuggest) return `${BRANDS_BASE}/${fromSuggest.slug}`
+
+  const hint = slugify(name).toLowerCase()
+  if (hint.length > 0) {
+    const { data: exactSlug } = await supabase.from("brands").select("slug").eq("slug", hint).maybeSingle()
+    if (exactSlug?.slug) return `${BRANDS_BASE}/${exactSlug.slug}`
+
+    const { data: prefixRows, error: prefixErr } = await supabase
+      .from("brands")
+      .select("slug")
+      .like("slug", `${hint}-%`)
+      .order("slug", { ascending: true })
+      .limit(1)
+    if (!prefixErr && prefixRows?.[0]?.slug) {
+      return `${BRANDS_BASE}/${prefixRows[0].slug}`
+    }
+  }
+
+  const safe = escapeIlikeToken(name)
+  const pattern = `"%${safe}%"`
+  const { data: nameRows, error: nameErr } = await supabase
+    .from("brands")
+    .select("slug,name")
+    .ilike("name", pattern)
+    .order("name", { ascending: true })
+    .limit(24)
+
+  if (!nameErr && nameRows?.length) {
+    const picked = pickCatalogBrandForNavPick(nameRows, name)
+    if (picked) return `${BRANDS_BASE}/${picked.slug}`
+  }
+
+  return null
 }

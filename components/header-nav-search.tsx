@@ -14,7 +14,7 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
-import { navigateToMarketplaceBrandResults } from "@/lib/nav-marketplace-brand-search"
+import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 import {
   rankNavSuggestedSurfboardRows,
   readNavSuggestedListingEngagement,
@@ -459,7 +459,7 @@ export function HeaderNavSearch({
             const category = isSearchResultsPath(pathname)
               ? searchParams.get("category")
               : null
-            void navigateToMarketplaceBrandResults(router, brandName, {
+            void navigateToBrandProfileFromNavPick(router, brandName, {
               categorySlug: category,
               navSubmitted: true,
             })

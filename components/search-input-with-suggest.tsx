@@ -563,7 +563,7 @@ export function SearchInputWithSuggest({
   }
 
   const pickMarketplaceBrandLabel = (brandName: string, pickKind: SearchSuggestPickKind) => {
-    if (onBrandStripPick && suggestSource === "marketplace") {
+    if (onBrandStripPick && !isBrands) {
       logSuggestAnalytics({ pickKind, selectionLabel: brandName, listingId: null })
       invalidatePendingSuggest()
       onBrandStripPick(brandName)
