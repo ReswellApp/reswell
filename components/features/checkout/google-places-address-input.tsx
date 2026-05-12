@@ -17,13 +17,26 @@ export type GoogleResolvedAddress = {
   country: string
 }
 
+export type GoogleFullPlaceResolved = {
+  formattedAddress: string
+  latitude: number
+  longitude: number
+  placeId: string
+  address: GoogleResolvedAddress
+}
+
 interface GooglePlacesAddressInputProps {
   id?: string
   name?: string
   value: string
   onChange: (value: string) => void
   /** Called after Place Details resolves (user picked a suggestion). */
-  onAddressResolved: (address: GoogleResolvedAddress) => void
+  onAddressResolved?: (address: GoogleResolvedAddress) => void
+  /**
+   * When set, Place Details loads geometry + formatted address (for pins, messaging, etc.).
+   * You can combine with `onAddressResolved` when both structured fields and coordinates are needed.
+   */
+  onFullPlaceResolved?: (place: GoogleFullPlaceResolved) => void
   /** Maps JS API failed to load or Places returned an error — parent may fall back to OSM. */
   onProviderError?: () => void
   placeholder?: string
@@ -61,6 +74,7 @@ export function GooglePlacesAddressInput({
   value,
   onChange,
   onAddressResolved,
+  onFullPlaceResolved,
   onProviderError,
   placeholder = "Street number and name",
   inputClassName = "",
@@ -250,10 +264,13 @@ export function GooglePlacesAddressInput({
       void loadGoogleMapsWithPlaces().then((g) => {
         const svc = new g.maps.places.PlacesService(document.createElement("div"))
         setLoadingDetails(true)
+        const fields: string[] = onFullPlaceResolved
+          ? ["address_components", "formatted_address", "geometry", "place_id"]
+          : ["address_components"]
         svc.getDetails(
           {
             placeId,
-            fields: ["address_components"],
+            fields,
           },
           (place, status) => {
             setLoadingDetails(false)
@@ -262,12 +279,36 @@ export function GooglePlacesAddressInput({
               return
             }
             const parsed = parseGoogleAddressComponents(place.address_components)
-            onAddressResolved(parsed)
+            onAddressResolved?.(parsed)
+
+            if (onFullPlaceResolved) {
+              const geom = place.geometry?.location
+              const formattedAddress = typeof place.formatted_address === "string" ? place.formatted_address.trim() : ""
+              const resolvedPlaceId = typeof place.place_id === "string" ? place.place_id : ""
+              const latNum = geom ? geom.lat() : NaN
+              const lngNum = geom ? geom.lng() : NaN
+              if (
+                formattedAddress &&
+                resolvedPlaceId &&
+                Number.isFinite(latNum) &&
+                Number.isFinite(lngNum)
+              ) {
+                onFullPlaceResolved({
+                  formattedAddress,
+                  latitude: latNum,
+                  longitude: lngNum,
+                  placeId: resolvedPlaceId,
+                  address: parsed,
+                })
+              } else {
+                onProviderErrorRef.current?.()
+              }
+            }
           },
         )
       })
     },
-    [onAddressResolved],
+    [onAddressResolved, onFullPlaceResolved],
   )
 
   const pick = useCallback(

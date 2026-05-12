@@ -11,7 +11,12 @@ import { toast } from "sonner"
 import { Check, Loader2, MessageCircle, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { sendConversationReply, sendListingMessage } from "@/app/actions/messages"
+import { LocalPhonePolicyBlockBubble } from "@/components/features/messages/local-phone-policy-block-bubble"
 import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import {
+  createLocalPhonePolicyBlockMessage,
+  parseLocalPhonePolicyBlockMetadata,
+} from "@/lib/messages/local-phone-policy-block-message"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 
 export type OrderThreadMessage = {
@@ -19,6 +24,7 @@ export type OrderThreadMessage = {
   content: string
   sender_id: string
   created_at: string
+  metadata?: unknown | null
 }
 
 export function OrderMessageThread({
@@ -41,6 +47,8 @@ export function OrderMessageThread({
   const [body, setBody] = useState("")
   const [sending, setSending] = useState(false)
   const [sentFlash, setSentFlash] = useState(false)
+  /** First-send path (no thread row yet): show policy bubble without a conversation id. */
+  const [blockedPhoneNotice, setBlockedPhoneNotice] = useState<string | null>(null)
   const supabase = createClient()
   const router = useRouter()
   const openSignIn = useSignInGate()
@@ -70,10 +78,13 @@ export function OrderMessageThread({
         })
         if ("error" in result) {
           if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+            setBlockedPhoneNotice(text)
+            setBody("")
             return
           }
           throw new Error(result.error)
         }
+        setBlockedPhoneNotice(null)
         setBody("")
         setSentFlash(true)
         window.setTimeout(() => setSentFlash(false), 2000)
@@ -102,6 +113,14 @@ export function OrderMessageThread({
 
       if ("error" in result) {
         if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+          setMessages((prev) => [
+            ...prev,
+            createLocalPhonePolicyBlockMessage({
+              senderId: currentUserId,
+              originalContent: text,
+            }),
+          ])
+          setBody("")
           return
         }
         throw new Error(result.error)
@@ -109,6 +128,7 @@ export function OrderMessageThread({
 
       const inserted = result.message as OrderThreadMessage
       setMessages((prev) => [...prev, inserted])
+      setBlockedPhoneNotice(null)
       setBody("")
       setSentFlash(true)
       window.setTimeout(() => setSentFlash(false), 2000)
@@ -171,10 +191,33 @@ export function OrderMessageThread({
           <p className="text-sm text-muted-foreground">No messages yet. Say hello below.</p>
         )}
 
+        {blockedPhoneNotice && !conversationId ? (
+          <LocalPhonePolicyBlockBubble
+            originalContent={blockedPhoneNotice}
+            relatedConversationId={null}
+            align="inline"
+          />
+        ) : null}
+
         {conversationId && messages.length > 0 && (
           <ul className="space-y-3 max-h-72 overflow-y-auto rounded-lg border bg-muted/30 p-3 text-sm">
             {messages.map((m) => {
               const fromSelf = m.sender_id === currentUserId
+              const phoneBlock = parseLocalPhonePolicyBlockMetadata(m.metadata)
+              if (phoneBlock && fromSelf) {
+                return (
+                  <li key={m.id} className="flex flex-col gap-0.5 items-end">
+                    <span className="text-xs text-muted-foreground">
+                      You · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                    </span>
+                    <LocalPhonePolicyBlockBubble
+                      originalContent={phoneBlock.originalContent}
+                      relatedConversationId={conversationId}
+                      align="inline"
+                    />
+                  </li>
+                )
+              }
               return (
                 <li
                   key={m.id}
@@ -204,7 +247,10 @@ export function OrderMessageThread({
             <Textarea
               placeholder={conversationId ? "Write a reply…" : "Message the seller…"}
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => {
+                setBody(e.target.value)
+                if (blockedPhoneNotice) setBlockedPhoneNotice(null)
+              }}
               rows={3}
               className="resize-none"
               disabled={sending}

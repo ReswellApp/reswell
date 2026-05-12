@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VerifiedBadge } from '@/components/verified-badge'
@@ -14,7 +13,7 @@ import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { sendConversationReply } from '@/app/actions/messages'
+import { sendConversationReply, sendConversationLocationReply } from '@/app/actions/messages'
 import { MESSAGE_BLOCKED_PHONE_ERROR } from '@/lib/messages/policy-errors'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
 import {
@@ -26,14 +25,30 @@ import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiatio
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
+import {
+  composeLocationShareMessageBody,
+  messageLocationMetadataSchema,
+  parseMessageLocationMetadata,
+  type MessageLocationPayload,
+} from '@/lib/validations/message-location-metadata'
 import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
 import { ReviewRequestMessageCard } from '@/components/features/messages/review-request-message-card'
+import { MessageLocationCard } from '@/components/features/messages/message-location-card'
+import type { GoogleFullPlaceResolved } from '@/components/features/checkout/google-places-address-input'
+import { MessageInlineAddressSuggestInput } from '@/components/features/messages/message-inline-address-suggest-input'
+import { MessageLocationSendPopover } from '@/components/features/messages/message-location-send-popover'
+import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { OpenMarketplacePdfButton } from '@/components/features/messages/open-marketplace-pdf-button'
 import { parseMarketplaceMessagePdfAttachment } from '@/lib/validations/marketplace-message-attachment'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
+import {
+  createLocalPhonePolicyBlockMessage,
+  mergeServerMessagesPreservingLocalPhoneBlocks,
+  parseLocalPhonePolicyBlockMetadata,
+} from '@/lib/messages/local-phone-policy-block-message'
 
 interface Message {
   id: string
@@ -223,7 +238,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       .order('created_at', { ascending: true })
 
     const rows = (msgData ?? []) as Message[]
-    setMessages(rows)
+    setMessages((prev) => mergeServerMessagesPreservingLocalPhoneBlocks(prev, rows))
 
     const offerIds = [...new Set(rows.map((m) => m.offer_id).filter(Boolean))] as string[]
     let offerRows: OfferRowLite[] = []
@@ -368,9 +383,21 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     })
 
     if ('error' in result) {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId))
-      setNewMessage(content)
+      setMessages((prev) => {
+        const withoutPending = prev.filter((m) => m.id !== tempId)
+        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+          return [
+            ...withoutPending,
+            createLocalPhonePolicyBlockMessage({
+              senderId: currentUserId,
+              originalContent: content,
+            }),
+          ]
+        }
+        return withoutPending
+      })
       if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
+        setNewMessage(content)
         toast.error('Failed to send message')
       }
     } else {
@@ -381,6 +408,89 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
     setSending(false)
   }
+
+  const sendLocationPin = useCallback(
+    async (place: GoogleFullPlaceResolved): Promise<{ ok: boolean }> => {
+      if (!currentUserId || !conversation) return { ok: false }
+
+      const formattedAddress = place.formattedAddress.trim()
+      if (!formattedAddress) {
+        toast.error('Pick a full address from suggestions before sending.')
+        return { ok: false }
+      }
+
+      let metadata: MessageLocationPayload
+      try {
+        metadata = messageLocationMetadataSchema.parse({
+          kind: 'location_share',
+          formattedAddress,
+          latitude: place.latitude,
+          longitude: place.longitude,
+          placeId: place.placeId,
+        })
+      } catch {
+        toast.error('Invalid location data')
+        return { ok: false }
+      }
+
+      const body = composeLocationShareMessageBody(formattedAddress)
+      setSending(true)
+      stickToBottomRef.current = true
+
+      const tempId = `pending-${Date.now()}`
+      const optimisticMessage: Message = {
+        id: tempId,
+        content: body,
+        sender_id: currentUserId,
+        is_read: true,
+        created_at: new Date().toISOString(),
+        metadata,
+      }
+      setMessages((prev) => [...prev, optimisticMessage])
+
+      const result = await sendConversationLocationReply({
+        conversation_id: id,
+        formattedAddress,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        placeId: place.placeId,
+      })
+
+      if ('error' in result) {
+        setMessages((prev) => {
+          const withoutPending = prev.filter((m) => m.id !== tempId)
+          if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+            return [
+              ...withoutPending,
+              createLocalPhonePolicyBlockMessage({
+                senderId: currentUserId,
+                originalContent: formattedAddress,
+              }),
+            ]
+          }
+          return withoutPending
+        })
+        if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
+          toast.error('Failed to send location')
+        }
+        setSending(false)
+        return { ok: false }
+      }
+
+      const inserted = result.message as Message
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
+      setSending(false)
+      return { ok: true }
+    },
+    [conversation, currentUserId, id],
+  )
+
+  const handleComposerPickAddress = useCallback(
+    async (place: GoogleFullPlaceResolved) => {
+      return sendLocationPin(place)
+    },
+    [sendLocationPin],
+  )
 
   const formatMessageDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -520,6 +630,18 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       : undefined
                   const isSeller = currentUserId === conversation.seller_id
 
+                  const phoneBlock = parseLocalPhonePolicyBlockMetadata(message.metadata)
+                  if (phoneBlock && isOwn) {
+                    return (
+                      <LocalPhonePolicyBlockBubble
+                        key={message.id}
+                        originalContent={phoneBlock.originalContent}
+                        formattedTime={formatMessageDate(message.created_at)}
+                        relatedConversationId={id}
+                      />
+                    )
+                  }
+
                   if (offer && message.offer_id) {
                     return (
                       <div
@@ -589,6 +711,29 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           viewerIsBuyer={viewerIsBuyer}
                           sellerDisplayName={sellerDisplayName}
                           onAfterReviewSubmitted={loadThread}
+                        />
+                      </div>
+                    )
+                  }
+
+                  const locationPin = parseMessageLocationMetadata(message.metadata)
+                  if (locationPin) {
+                    const listingImgUrl = displayListing?.listing_images?.[0]?.url ?? null
+                    const locationThumbSrc = listingImgUrl
+                      ? proxiedListingImageSrc(listingImgUrl) || listingImgUrl
+                      : null
+                    const locationThumbAlt =
+                      (displayListing?.title ? capitalizeWords(displayListing.title) : '') || 'Listing'
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <MessageLocationCard
+                          payload={locationPin}
+                          formattedTime={formatMessageDate(message.created_at)}
+                          listingThumbnailSrc={locationThumbSrc}
+                          listingImageAlt={locationThumbAlt}
                         />
                       </div>
                     )
@@ -719,12 +864,17 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             }}
             className="flex items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm dark:border-border/80 dark:bg-card/95 dark:shadow-none"
           >
-            <Input
+            <MessageInlineAddressSuggestInput
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={setNewMessage}
+              onPickAddress={handleComposerPickAddress}
               placeholder="Message"
-              className="min-h-touch flex-1 border-0 bg-transparent px-3 text-[17px] shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
               disabled={sending}
+              className="min-h-touch border-0 bg-transparent px-3 text-[17px] shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <MessageLocationSendPopover
+              disabled={sending || !currentUserId || !conversation}
+              onSend={sendLocationPin}
             />
             <Button
               type="submit"

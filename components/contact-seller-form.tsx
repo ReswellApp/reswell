@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { sendListingMessage } from "@/app/actions/messages"
+import { LocalPhonePolicyBlockBubble } from "@/components/features/messages/local-phone-policy-block-bubble"
 import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,7 @@ export function ContactSellerForm({
   hideSectionTitle = false,
 }: ContactSellerFormProps) {
   const [message, setMessage] = useState("")
+  const [blockedPhoneNotice, setBlockedPhoneNotice] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const router = useRouter()
   const openSignIn = useSignInGate()
@@ -77,12 +79,15 @@ export function ContactSellerForm({
           return
         }
         if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+          setBlockedPhoneNotice(message.trim())
+          setMessage("")
           return
         }
         throw new Error(result.error)
       }
 
       setMessage("")
+      setBlockedPhoneNotice(null)
       router.push(`/messages/${result.conversation_id}`)
     } catch {
       toast.error("Failed to send message")
@@ -133,10 +138,21 @@ export function ContactSellerForm({
       <Textarea
         placeholder={`Ask about "${listingTitle}"…`}
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={(e) => {
+          setMessage(e.target.value)
+          if (blockedPhoneNotice) setBlockedPhoneNotice(null)
+        }}
         rows={3}
         className="rounded-2xl border-border/60 bg-background text-[16px] text-foreground shadow-none placeholder:text-foreground/75 transition-colors focus-visible:ring-[1.5px]"
       />
+
+      {blockedPhoneNotice ? (
+        <LocalPhonePolicyBlockBubble
+          originalContent={blockedPhoneNotice}
+          relatedConversationId={null}
+          align="inline"
+        />
+      ) : null}
 
       <Button
         variant="outline"

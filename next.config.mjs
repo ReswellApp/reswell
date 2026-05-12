@@ -109,6 +109,12 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      // Maps Static API previews (conversation location pins — same GCP key as Places)
+      {
+        protocol: 'https',
+        hostname: 'maps.googleapis.com',
+        pathname: '/maps/api/**',
+      },
     ],
   },
   experimental: {

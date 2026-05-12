@@ -10,6 +10,18 @@ import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-t
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
+import {
+  composeLocationShareMessageBody,
+  messageLocationMetadataSchema,
+} from "@/lib/validations/message-location-metadata"
+
+const sendConversationLocationReplySchema = z.object({
+  conversation_id: z.string().uuid(),
+  formattedAddress: z.string().min(1).max(500),
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+  placeId: z.string().min(1).max(256).optional(),
+})
 
 const sendSellerReviewRequestSchema = z.object({
   order_id: z.string().uuid(),
@@ -334,6 +346,125 @@ export async function sendConversationReply(input: {
     const service = createServiceRoleClient()
     const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
     /** Support teammate is always `seller_id` in member↔support threads opened from Messages. */
+    const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
+
+    if (supportStaffReply) {
+      void trackKlaviyoSupportTicketResponse({
+        supportTicketId: ticketMeta.id,
+        email: ticketMeta.email.trim(),
+        externalId: ticketMeta.user_id,
+        response: body,
+        responseType: "support_dm_reply",
+        uniqueId: `support-ticket-response-dm-${inserted.id}`,
+      })
+    }
+  } catch {
+    // Missing service role locally — Response metric skipped for support DM attribution.
+  }
+
+  return { success: true as const, message: inserted }
+}
+
+export async function sendConversationLocationReply(input: unknown) {
+  const parsed = sendConversationLocationReplySchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: "Invalid location" as const }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" as const }
+  }
+
+  const formattedAddress = parsed.data.formattedAddress.trim()
+  if (!formattedAddress) {
+    return { error: "Invalid location" as const }
+  }
+
+  const { data: conv, error: convErr } = await supabase
+    .from("conversations")
+    .select("id, buyer_id, seller_id, listing_id")
+    .eq("id", parsed.data.conversation_id)
+    .single()
+
+  if (convErr || !conv) {
+    return { error: "Conversation not found" as const }
+  }
+
+  if (user.id !== conv.buyer_id && user.id !== conv.seller_id) {
+    return { error: "Forbidden" as const }
+  }
+
+  const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+
+  if (messageAppearsToSharePhoneNumber(formattedAddress)) {
+    await capturePolicyBlockedDmContent({
+      conversationId: conv.id,
+      senderId: user.id,
+      recipientId: receiverId,
+      listingId: conv.listing_id,
+      content: formattedAddress,
+    })
+    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+  }
+
+  const metadataPayload = messageLocationMetadataSchema.parse({
+    kind: "location_share",
+    formattedAddress,
+    latitude: parsed.data.latitude,
+    longitude: parsed.data.longitude,
+    ...(parsed.data.placeId ? { placeId: parsed.data.placeId } : {}),
+  })
+
+  const body = composeLocationShareMessageBody(formattedAddress)
+
+  const { data: inserted, error: msgError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conv.id,
+      sender_id: user.id,
+      content: body,
+      metadata: metadataPayload,
+    })
+    .select("id, content, sender_id, created_at, is_read, metadata")
+    .single()
+
+  if (msgError || !inserted) {
+    return { error: "Failed to send message" as const }
+  }
+
+  await supabase
+    .from("conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", conv.id)
+
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("display_name, shop_name, is_shop")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  void trackKlaviyoMessageSent({
+    senderUserId: user.id,
+    receiverUserId: receiverId,
+    message: body,
+    conversationId: conv.id,
+    listingId: conv.listing_id,
+    messageId: inserted.id,
+    sentAt: inserted.created_at,
+    sessionSender: {
+      email: user.email ?? null,
+      profile: senderProfile,
+    },
+  })
+
+  try {
+    const service = createServiceRoleClient()
+    const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
     const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
 
     if (supportStaffReply) {

@@ -18,6 +18,7 @@ import { MessagesSupportDialog } from '@/components/features/messages/messages-s
 import { SellerMakeOfferToBuyerDialog } from '@/components/features/messages/seller-make-offer-to-buyer-dialog'
 import { ensureMarketplaceThread } from '@/app/actions/messages'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
+import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
 
 interface Notification {
   id: string
@@ -266,6 +267,13 @@ function MessagesContent() {
     if (reviewReq && lastMessage) {
       const you = lastMessage.sender_id === currentId
       const hint = you ? 'You asked for a review' : 'Asked you for a review'
+      if (listing) return `${listing} · ${hint}`
+      return hint
+    }
+    const sharedLoc = parseMessageLocationMetadata(lastMessage?.metadata)
+    if (sharedLoc && lastMessage) {
+      const you = lastMessage.sender_id === currentId
+      const hint = you ? 'You shared a location' : 'Shared a location'
       if (listing) return `${listing} · ${hint}`
       return hint
     }
