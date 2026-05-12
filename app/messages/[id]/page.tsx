@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,7 +38,6 @@ import { OrderPlacedMessageCard } from '@/components/features/messages/order-pla
 import { ReviewRequestMessageCard } from '@/components/features/messages/review-request-message-card'
 import { MessageLocationCard } from '@/components/features/messages/message-location-card'
 import type { GoogleFullPlaceResolved } from '@/components/features/checkout/google-places-address-input'
-import { MessageInlineAddressSuggestInput } from '@/components/features/messages/message-inline-address-suggest-input'
 import { MessageLocationSendPopover } from '@/components/features/messages/message-location-send-popover'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
@@ -50,6 +50,9 @@ import {
   mergeServerMessagesPreservingLocalPhoneBlocks,
   parseLocalPhonePolicyBlockMetadata,
 } from '@/lib/messages/local-phone-policy-block-message'
+import { PromiseDeadlineError, raceWithDeadline } from '@/lib/utils/race-with-deadline'
+
+const SEND_SERVER_ACTION_MS = 45_000
 
 interface Message {
   id: string
@@ -434,10 +437,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     setMessages((prev) => [...prev, optimisticMessage])
 
     try {
-      const result = await sendConversationReply({
-        conversation_id: id,
-        content,
-      })
+      const result = await raceWithDeadline(
+        sendConversationReply({
+          conversation_id: id,
+          content,
+        }),
+        SEND_SERVER_ACTION_MS,
+      )
 
       if ('error' in result) {
         setMessages((prev) => {
@@ -462,10 +468,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
       const inserted = result.message as Message
       setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
-    } catch {
+    } catch (e) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
       setNewMessage(content)
-      toast.error('Failed to send message')
+      toast.error(
+        e instanceof PromiseDeadlineError
+          ? 'Message took too long. Check your connection and try again.'
+          : 'Failed to send message',
+      )
     } finally {
       setSending(false)
     }
@@ -511,13 +521,16 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       setMessages((prev) => [...prev, optimisticMessage])
 
       try {
-        const result = await sendConversationLocationReply({
-          conversation_id: id,
-          formattedAddress,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          placeId: place.placeId,
-        })
+        const result = await raceWithDeadline(
+          sendConversationLocationReply({
+            conversation_id: id,
+            formattedAddress,
+            latitude: place.latitude,
+            longitude: place.longitude,
+            placeId: place.placeId,
+          }),
+          SEND_SERVER_ACTION_MS,
+        )
 
         if ('error' in result) {
           setMessages((prev) => {
@@ -542,22 +555,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         const inserted = result.message as Message
         setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
         return { ok: true }
-      } catch {
+      } catch (e) {
         setMessages((prev) => prev.filter((m) => m.id !== tempId))
-        toast.error('Failed to send location')
+        toast.error(
+          e instanceof PromiseDeadlineError
+            ? 'Location send took too long. Check your connection and try again.'
+            : 'Failed to send location',
+        )
         return { ok: false }
       } finally {
         setSending(false)
       }
     },
     [conversation, currentUserId, id],
-  )
-
-  const handleComposerPickAddress = useCallback(
-    async (place: GoogleFullPlaceResolved) => {
-      return sendLocationPin(place)
-    },
-    [sendLocationPin],
   )
 
   const formatMessageDate = (dateStr: string) => {
@@ -978,17 +988,18 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              handleSend()
+              void handleSend()
             }}
             className="flex items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm dark:border-border/80 dark:bg-card/95 dark:shadow-none"
           >
-            <MessageInlineAddressSuggestInput
+            <Input
               value={newMessage}
-              onChange={setNewMessage}
-              onPickAddress={handleComposerPickAddress}
+              onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Message"
               disabled={sending}
-              className="min-h-touch border-0 bg-transparent px-3 text-[17px] shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+              autoComplete="off"
+              aria-label="Message text"
+              className="min-h-touch min-w-0 flex-1 border-0 bg-transparent px-3 text-[17px] shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <MessageLocationSendPopover
               disabled={sending || !currentUserId || !conversation}

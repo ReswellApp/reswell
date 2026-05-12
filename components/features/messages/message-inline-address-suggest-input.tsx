@@ -294,58 +294,81 @@ export function MessageInlineAddressSuggestInput({
     (placeId: string) => {
       const typedBackup = inputRef.current?.value ?? value
 
-      void loadGoogleMapsWithPlaces().then((g) => {
-        const svc = new g.maps.places.PlacesService(document.createElement("div"))
-        setLoadingDetails(true)
-        svc.getDetails(
-          {
-            placeId,
-            fields: ["address_components", "formatted_address", "geometry", "place_id"],
-          },
-          (place, status) => {
+      void loadGoogleMapsWithPlaces()
+        .then((g) => {
+          let detailsReturned = false
+          const releaseLoading = () => {
+            if (detailsReturned) return
+            detailsReturned = true
             setLoadingDetails(false)
-            if (
-              status !== g.maps.places.PlacesServiceStatus.OK ||
-              !place?.address_components ||
-              !place.geometry?.location ||
-              !place.formatted_address ||
-              !place.place_id
-            ) {
-              return
-            }
-            const parsed = parseGoogleAddressComponents(place.address_components)
-            const geom = place.geometry.location
-            const latNum = geom.lat()
-            const lngNum = geom.lng()
-            const formatted = place.formatted_address.trim()
-            if (!formatted || !Number.isFinite(latNum) || !Number.isFinite(lngNum)) return
+          }
 
-            const full: GoogleFullPlaceResolved = {
-              formattedAddress: formatted,
-              latitude: latNum,
-              longitude: lngNum,
-              placeId: place.place_id,
-              address: parsed,
-            }
+          try {
+            const svc = new g.maps.places.PlacesService(document.createElement("div"))
+            setLoadingDetails(true)
 
-            void (async () => {
-              invalidatePending()
-              suppressOpenUntilTypingRef.current = true
-              setOpen(false)
-              setRows([])
-              setActiveIndex(-1)
-              onChange("")
-              const { ok } = await onPickAddress(full)
-              if (!ok && typedBackup !== "") {
-                onChange(typedBackup)
-              }
-              requestAnimationFrame(() => {
-                suppressOpenUntilTypingRef.current = false
-              })
-            })()
-          },
-        )
-      })
+            const safetyMs = 20_000
+            const safetyId = window.setTimeout(() => {
+              releaseLoading()
+            }, safetyMs)
+
+            svc.getDetails(
+              {
+                placeId,
+                fields: ["address_components", "formatted_address", "geometry", "place_id"],
+              },
+              (place, status) => {
+                window.clearTimeout(safetyId)
+                releaseLoading()
+
+                if (
+                  status !== g.maps.places.PlacesServiceStatus.OK ||
+                  !place?.address_components ||
+                  !place.geometry?.location ||
+                  !place.formatted_address ||
+                  !place.place_id
+                ) {
+                  return
+                }
+                const parsed = parseGoogleAddressComponents(place.address_components)
+                const geom = place.geometry.location
+                const latNum = geom.lat()
+                const lngNum = geom.lng()
+                const formatted = place.formatted_address.trim()
+                if (!formatted || !Number.isFinite(latNum) || !Number.isFinite(lngNum)) return
+
+                const full: GoogleFullPlaceResolved = {
+                  formattedAddress: formatted,
+                  latitude: latNum,
+                  longitude: lngNum,
+                  placeId: place.place_id,
+                  address: parsed,
+                }
+
+                void (async () => {
+                  invalidatePending()
+                  suppressOpenUntilTypingRef.current = true
+                  setOpen(false)
+                  setRows([])
+                  setActiveIndex(-1)
+                  onChange("")
+                  const { ok } = await onPickAddress(full)
+                  if (!ok && typedBackup !== "") {
+                    onChange(typedBackup)
+                  }
+                  requestAnimationFrame(() => {
+                    suppressOpenUntilTypingRef.current = false
+                  })
+                })()
+              },
+            )
+          } catch {
+            releaseLoading()
+          }
+        })
+        .catch(() => {
+          setLoadingDetails(false)
+        })
     },
     [invalidatePending, onChange, onPickAddress, value],
   )
