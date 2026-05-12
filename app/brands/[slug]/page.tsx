@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { BrandProfileView } from "@/components/brands/brand-profile-view"
 import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
-import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
+import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 export const revalidate = 3600
@@ -59,30 +59,34 @@ export default async function BrandPage({ params }: Props) {
     notFound()
   }
 
-  const brandListingsPreview = await listActiveListingsForBrand(
-    supabase,
-    { id: brand.id, name: brand.name },
-    { limit: 6 },
-  )
+  const previewLimit = 6
+  const brandRef = { id: brand.id, name: brand.name }
+  const [brandListingsPreview, brandSoldListingsPreview] = await Promise.all([
+    listActiveListingsForBrand(supabase, brandRef, { limit: previewLimit }),
+    listRecentlySoldListingsForBrand(supabase, brandRef, { limit: previewLimit }),
+  ])
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
   let favoritedListingIds: string[] = []
-  if (user && brandListingsPreview.length > 0) {
-    const ids = brandListingsPreview.map((l) => l.id)
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", ids)
-    favoritedListingIds = (favs ?? []).map((f) => f.listing_id)
+  if (user) {
+    const ids = [...new Set([...brandListingsPreview, ...brandSoldListingsPreview].map((l) => l.id))]
+    if (ids.length > 0) {
+      const { data: favs } = await supabase
+        .from("favorites")
+        .select("listing_id")
+        .eq("user_id", user.id)
+        .in("listing_id", ids)
+      favoritedListingIds = (favs ?? []).map((f) => f.listing_id)
+    }
   }
 
   return (
     <BrandProfileView
       brand={brand}
       brandListingsPreview={brandListingsPreview}
+      brandSoldListingsPreview={brandSoldListingsPreview}
       favoritedListingIds={favoritedListingIds}
       isLoggedIn={!!user}
       viewerUserId={user?.id ?? null}

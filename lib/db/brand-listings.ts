@@ -106,3 +106,40 @@ export async function listActiveListingsForBrand(
   if (!data?.length) return []
   return (data as BrandMarketplaceListingRow[]).map(mapRowToRecentListing)
 }
+
+/**
+ * Sold marketplace listings for a directory brand, newest completion first (`updated_at`).
+ * Same brand linkage and sections as {@link listActiveListingsForBrand}; aligns with `/sold` visibility (`archived_at` null).
+ */
+export async function listRecentlySoldListingsForBrand(
+  supabase: SupabaseClient,
+  brand: { id: string; name: string },
+  options: { limit: number; categoryId?: string | null },
+): Promise<RecentListing[]> {
+  const { limit, categoryId = null } = options
+  const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
+
+  let q = supabase
+    .from("listings")
+    .select(BRAND_MARKETPLACE_LISTING_SELECT)
+    .eq("status", "sold")
+    .eq("hidden_from_site", false)
+    .is("archived_at", null)
+
+  if (categoryId) {
+    q = q.eq("category_id", categoryId)
+  } else {
+    q = q.in("section", ["surfboards", "new"])
+  }
+
+  q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
+  q = q.order("updated_at", { ascending: false }).limit(limit)
+
+  const { data, error } = await q
+  if (error) {
+    console.error("[listRecentlySoldListingsForBrand]", error.message)
+    return []
+  }
+  if (!data?.length) return []
+  return (data as BrandMarketplaceListingRow[]).map(mapRowToRecentListing)
+}

@@ -1,10 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ExternalLink, MapPinned } from "lucide-react"
 import type { MessageLocationPayload } from "@/lib/validations/message-location-metadata"
 import { googleMapsSearchUrl } from "@/lib/maps/google-static-map-url"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface MessageLocationCardProps {
   payload: MessageLocationPayload
@@ -12,6 +14,8 @@ interface MessageLocationCardProps {
   /** First listing image from the thread (active listing banner). Same-origin `/media/listings/` or trusted URL. */
   listingThumbnailSrc: string | null
   listingImageAlt: string
+  /** Thread listing metadata is still loading — show image-area skeleton instead of “unavailable”. */
+  listingThumbnailPending?: boolean
 }
 
 export function MessageLocationCard({
@@ -19,22 +23,44 @@ export function MessageLocationCard({
   formattedTime,
   listingThumbnailSrc,
   listingImageAlt,
+  listingThumbnailPending = false,
 }: MessageLocationCardProps) {
   const { formattedAddress, latitude, longitude } = payload
   const mapsHref = googleMapsSearchUrl(latitude, longitude)
   const hasThumb = listingThumbnailSrc != null && listingThumbnailSrc.length > 0
+  const [imageDecoded, setImageDecoded] = useState(false)
+
+  useEffect(() => {
+    setImageDecoded(false)
+  }, [listingThumbnailSrc])
+
+  const showDecodeSkeleton = hasThumb && !imageDecoded
 
   return (
     <div className="max-w-[min(100%,18.5rem)] overflow-hidden rounded-2xl border-2 border-foreground bg-background text-foreground shadow-sm sm:max-w-[min(100%,21rem)] md:max-w-[min(100%,28rem)]">
       <div className="relative aspect-[5/4] w-full bg-muted">
-        {hasThumb ? (
-          <Image
-            src={listingThumbnailSrc}
-            alt={listingImageAlt}
-            fill
-            className="object-cover object-center"
-            sizes="(max-width: 640px) 85vw, min(448px, 28rem)"
+        {listingThumbnailPending ? (
+          <Skeleton
+            className="absolute inset-0 h-full w-full rounded-none"
+            aria-hidden
           />
+        ) : hasThumb ? (
+          <>
+            {showDecodeSkeleton ? (
+              <Skeleton
+                className="absolute inset-0 z-10 h-full w-full rounded-none"
+                aria-hidden
+              />
+            ) : null}
+            <Image
+              src={listingThumbnailSrc}
+              alt={listingImageAlt}
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 640px) 85vw, min(448px, 28rem)"
+              onLoadingComplete={() => setImageDecoded(true)}
+            />
+          </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-muted-foreground">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted-foreground/10 text-foreground">

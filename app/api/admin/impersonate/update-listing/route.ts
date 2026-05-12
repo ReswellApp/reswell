@@ -7,6 +7,7 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
+import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
 export async function PUT(request: NextRequest) {
@@ -136,6 +137,19 @@ export async function PUT(request: NextRequest) {
       : ""
 
   if (removedImageIds.length > 0) {
+    const { data: removedRows } = await service
+      .from("listing_images")
+      .select("url, thumbnail_url")
+      .eq("listing_id", listingId)
+      .in("id", removedImageIds)
+    const removedUrls: string[] = []
+    for (const r of removedRows ?? []) {
+      if (r.url?.trim()) removedUrls.push(r.url)
+      if (r.thumbnail_url?.trim()) removedUrls.push(r.thumbnail_url)
+    }
+    if (removedUrls.length > 0) {
+      await removeListingImageFilesFromStorage(service, removedUrls)
+    }
     const { error: delErr } = await service
       .from("listing_images")
       .delete()

@@ -30,6 +30,8 @@ interface RecentFeedClientProps {
   viewerUserId: string | null
   /** Override default empty state copy (e.g. search results). */
   emptyMessage?: string
+  /** Sold strip: grayscale photo + “Sold” label (see `/sold`, seller profile past listings). */
+  soldPresentation?: boolean
 }
 
 export function RecentFeedClient({
@@ -38,6 +40,7 @@ export function RecentFeedClient({
   isLoggedIn: _isLoggedIn,
   viewerUserId,
   emptyMessage,
+  soldPresentation = false,
 }: RecentFeedClientProps) {
   if (!listings.length) {
     return (
@@ -55,13 +58,15 @@ export function RecentFeedClient({
           layout="grid"
           userId={viewerUserId}
           isFavorited={favoritedListingIds.includes(listing.id)}
+          statusLabel={soldPresentation ? "sold" : undefined}
+          imageGrayscale={soldPresentation}
           listing={{
             id: listing.id,
             slug: listing.slug,
             user_id: listing.user_id,
             title: listing.title,
             price: listing.price,
-            status: listing.status ?? "active",
+            status: listing.status ?? (soldPresentation ? "sold" : "active"),
             section: listing.section,
             local_pickup: listing.local_pickup,
             shipping_available: listing.shipping_available,

@@ -7,12 +7,13 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { format, isToday, isYesterday } from 'date-fns'
 import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { sendConversationReply, sendConversationLocationReply } from '@/app/actions/messages'
 import { MESSAGE_BLOCKED_PHONE_ERROR } from '@/lib/messages/policy-errors'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
@@ -71,7 +72,7 @@ interface Conversation {
     price: number
     section: string
     slug?: string | null
-    listing_images: { url: string }[]
+    listing_images: ListingImageForCard[]
     minimum_offer_pct?: number | null
   } | null
   buyer: {
@@ -100,6 +101,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
   const supabase = createClient()
@@ -125,8 +127,11 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const displayListing = useMemo((): Conversation['listing'] | null => {
     if (!conversation) return null
     if (!threadPrimaryListingId) return conversation.listing ?? null
-    if (conversation.listing?.id === threadPrimaryListingId) return conversation.listing
-    return threadListingsById[threadPrimaryListingId] ?? null
+    return (
+      threadListingsById[threadPrimaryListingId] ??
+      (conversation.listing?.id === threadPrimaryListingId ? conversation.listing : null) ??
+      null
+    )
   }, [conversation, threadPrimaryListingId, threadListingsById])
 
   const listPriceNum = useMemo(() => {
@@ -151,6 +156,11 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     [conversation, threadPrimaryListingId, displayListing],
   )
 
+  const threadListingThumbSrc = useMemo(() => {
+    if (!displayListing) return ''
+    return listingTitleThumbnailSrc(displayListing.listing_images)
+  }, [displayListing])
+
   const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesScrollRef.current
     if (!el) return
@@ -160,7 +170,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     stickToBottomRef.current = true
     setThreadListingsById({})
+    setListingBannerImageReady(false)
   }, [id])
+
+  useEffect(() => {
+    setListingBannerImageReady(false)
+  }, [threadListingThumbSrc])
 
   useEffect(() => {
     const el = messagesScrollRef.current
@@ -195,21 +210,54 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     ;(async () => {
       const { data, error } = await supabase
         .from('listings')
-        .select('id, title, price, section, slug, listing_images(url), minimum_offer_pct')
+        .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
         .eq('id', threadPrimaryListingId)
         .maybeSingle()
       if (cancelled || error || !data) return
       const row = data as NonNullable<Conversation['listing']>
-      setThreadListingsById((prev) => {
-        if (prev[row.id]) return prev
-        return { ...prev, [row.id]: row }
-      })
+      setThreadListingsById((prev) => ({ ...prev, [row.id]: row }))
     })()
 
     return () => {
       cancelled = true
     }
   }, [threadPrimaryListingId, conversation?.listing?.id, supabase])
+
+  useEffect(() => {
+    const lid = threadPrimaryListingId
+    if (!lid) return
+
+    const channel = supabase
+      .channel(`listing-images:${id}:${lid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'listing_images',
+          filter: `listing_id=eq.${lid}`,
+        },
+        () => {
+          void supabase
+            .from('listings')
+            .select(
+              'id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct',
+            )
+            .eq('id', lid)
+            .maybeSingle()
+            .then(({ data: row, error }) => {
+              if (error || !row) return
+              const L = row as NonNullable<Conversation['listing']>
+              setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
+            })
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [id, threadPrimaryListingId, supabase])
 
   const loadThread = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -220,7 +268,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       .from('conversations')
       .select(`
           *,
-          listing:listings(id, title, price, section, slug, listing_images(url), minimum_offer_pct),
+          listing:listings(id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
           buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
           seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
         `)
@@ -228,7 +276,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       .single()
 
     if (convData) {
-      setConversation(convData as Conversation)
+      const nextConv = convData as Conversation
+      setConversation(nextConv)
+      if (nextConv.listing) {
+        const L = nextConv.listing
+        setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
+      }
     }
 
     const { data: msgData } = await supabase
@@ -271,7 +324,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     if (offerListingIds.length > 0) {
       const { data: listingRows } = await supabase
         .from('listings')
-        .select('id, title, price, section, slug, listing_images(url), minimum_offer_pct')
+        .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
         .in('id', offerListingIds)
       const next: Record<string, NonNullable<Conversation['listing']>> = {}
       for (const row of (listingRows ?? []) as NonNullable<Conversation['listing']>[]) {
@@ -334,15 +387,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                   if (lid) {
                     void supabase
                       .from('listings')
-                      .select('id, title, price, section, slug, listing_images(url), minimum_offer_pct')
+                      .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
                       .eq('id', lid)
                       .maybeSingle()
                       .then(({ data: row }) => {
                         if (!row) return
                         const L = row as NonNullable<Conversation['listing']>
-                        setThreadListingsById((prev) =>
-                          prev[L.id] ? prev : { ...prev, [L.id]: L },
-                        )
+                        setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
                       })
                   }
                 }
@@ -360,9 +411,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   }, [id, supabase, loadThread])
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !currentUserId || !conversation) return
+    const trimmed = newMessage.trim()
+    if (!trimmed) return
+    if (!currentUserId || !conversation) {
+      toast.error('Still loading — try again in a moment.')
+      return
+    }
 
-    const content = newMessage.trim()
+    const content = trimmed
     setNewMessage('')
     setSending(true)
     stickToBottomRef.current = true
@@ -377,36 +433,42 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
     setMessages((prev) => [...prev, optimisticMessage])
 
-    const result = await sendConversationReply({
-      conversation_id: id,
-      content,
-    })
-
-    if ('error' in result) {
-      setMessages((prev) => {
-        const withoutPending = prev.filter((m) => m.id !== tempId)
-        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
-          return [
-            ...withoutPending,
-            createLocalPhonePolicyBlockMessage({
-              senderId: currentUserId,
-              originalContent: content,
-            }),
-          ]
-        }
-        return withoutPending
+    try {
+      const result = await sendConversationReply({
+        conversation_id: id,
+        content,
       })
-      if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
-        setNewMessage(content)
-        toast.error('Failed to send message')
+
+      if ('error' in result) {
+        setMessages((prev) => {
+          const withoutPending = prev.filter((m) => m.id !== tempId)
+          if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+            return [
+              ...withoutPending,
+              createLocalPhonePolicyBlockMessage({
+                senderId: currentUserId,
+                originalContent: content,
+              }),
+            ]
+          }
+          return withoutPending
+        })
+        if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
+          setNewMessage(content)
+          toast.error('Failed to send message')
+        }
+        return
       }
-    } else {
+
       const inserted = result.message as Message
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? inserted : m))
-      )
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId))
+      setNewMessage(content)
+      toast.error('Failed to send message')
+    } finally {
+      setSending(false)
     }
-    setSending(false)
   }
 
   const sendLocationPin = useCallback(
@@ -448,39 +510,45 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       }
       setMessages((prev) => [...prev, optimisticMessage])
 
-      const result = await sendConversationLocationReply({
-        conversation_id: id,
-        formattedAddress,
-        latitude: place.latitude,
-        longitude: place.longitude,
-        placeId: place.placeId,
-      })
-
-      if ('error' in result) {
-        setMessages((prev) => {
-          const withoutPending = prev.filter((m) => m.id !== tempId)
-          if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
-            return [
-              ...withoutPending,
-              createLocalPhonePolicyBlockMessage({
-                senderId: currentUserId,
-                originalContent: formattedAddress,
-              }),
-            ]
-          }
-          return withoutPending
+      try {
+        const result = await sendConversationLocationReply({
+          conversation_id: id,
+          formattedAddress,
+          latitude: place.latitude,
+          longitude: place.longitude,
+          placeId: place.placeId,
         })
-        if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
-          toast.error('Failed to send location')
-        }
-        setSending(false)
-        return { ok: false }
-      }
 
-      const inserted = result.message as Message
-      setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
-      setSending(false)
-      return { ok: true }
+        if ('error' in result) {
+          setMessages((prev) => {
+            const withoutPending = prev.filter((m) => m.id !== tempId)
+            if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+              return [
+                ...withoutPending,
+                createLocalPhonePolicyBlockMessage({
+                  senderId: currentUserId,
+                  originalContent: formattedAddress,
+                }),
+              ]
+            }
+            return withoutPending
+          })
+          if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
+            toast.error('Failed to send location')
+          }
+          return { ok: false }
+        }
+
+        const inserted = result.message as Message
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
+        return { ok: true }
+      } catch {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId))
+        toast.error('Failed to send location')
+        return { ok: false }
+      } finally {
+        setSending(false)
+      }
     },
     [conversation, currentUserId, id],
   )
@@ -501,8 +569,45 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   if (!conversation) {
     return (
-      <main className="flex min-h-[50vh] flex-1 items-center justify-center bg-gradient-to-b from-muted/40 to-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading conversation" />
+      <main
+        className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-muted/35 to-background"
+        aria-busy="true"
+        aria-label="Loading conversation"
+      >
+        <div className="container mx-auto flex min-h-0 max-w-2xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
+          <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:px-3">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+              <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-2 py-0.5">
+                <Skeleton className="h-5 w-[min(100%,11rem)] max-w-full" />
+                <Skeleton className="h-4 w-[min(100%,14rem)] max-w-full" />
+              </div>
+            </div>
+          </header>
+          <Skeleton className="mb-4 h-[96px] w-full rounded-[18px]" />
+          <div
+            className={cn(
+              'flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
+              'h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
+            )}
+          >
+            <div className="flex flex-1 flex-col justify-end gap-3 p-4 pb-8">
+              <div className="flex justify-start">
+                <Skeleton className="h-12 w-[min(72%,18rem)] rounded-[20px] rounded-bl-[6px]" />
+              </div>
+              <div className="flex justify-end">
+                <Skeleton className="h-11 w-[min(55%,14rem)] rounded-[20px] rounded-br-[6px]" />
+              </div>
+              <div className="flex justify-start">
+                <Skeleton className="h-24 w-[min(85%,20rem)] max-w-[min(100%,28rem)] rounded-2xl" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 shrink-0">
+            <Skeleton className="h-[52px] w-full rounded-[24px]" />
+          </div>
+        </div>
       </main>
     )
   }
@@ -569,8 +674,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
         <div className="relative flex min-h-0 flex-1 flex-col">
         {listingChromeLoading ? (
-          <div className="mb-4 flex min-h-[88px] items-center justify-center rounded-[18px] border border-border/70 bg-card">
-            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" aria-label="Loading listing" />
+          <div className="mb-4 flex gap-3 rounded-[18px] border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none">
+            <Skeleton className="h-[72px] w-[72px] shrink-0 rounded-2xl" />
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+              <Skeleton className="h-5 w-[min(100%,14rem)]" />
+              <Skeleton className="h-6 w-24" />
+            </div>
           </div>
         ) : null}
         {displayListing ? (
@@ -580,13 +689,23 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           >
             <div className="flex gap-3 p-3">
               <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-muted">
-                {displayListing.listing_images?.[0]?.url ? (
-                  <Image
-                    src={proxiedListingImageSrc(displayListing.listing_images[0].url) || '/placeholder.svg'}
-                    alt={capitalizeWords(displayListing.title)}
-                    fill
-                    className="object-cover object-center"
-                  />
+                {threadListingThumbSrc ? (
+                  <>
+                    {!listingBannerImageReady ? (
+                      <Skeleton
+                        className="absolute inset-0 z-10 h-full w-full rounded-2xl"
+                        aria-hidden
+                      />
+                    ) : null}
+                    <Image
+                      key={threadListingThumbSrc}
+                      src={threadListingThumbSrc}
+                      alt={capitalizeWords(displayListing.title)}
+                      fill
+                      className="object-cover object-center"
+                      onLoadingComplete={() => setListingBannerImageReady(true)}
+                    />
+                  </>
                 ) : null}
               </div>
               <div className="min-w-0 flex flex-col justify-center">
@@ -718,10 +837,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
                   const locationPin = parseMessageLocationMetadata(message.metadata)
                   if (locationPin) {
-                    const listingImgUrl = displayListing?.listing_images?.[0]?.url ?? null
-                    const locationThumbSrc = listingImgUrl
-                      ? proxiedListingImageSrc(listingImgUrl) || listingImgUrl
-                      : null
+                    const locationThumbSrc =
+                      listingTitleThumbnailSrc(displayListing?.listing_images ?? null) || null
                     const locationThumbAlt =
                       (displayListing?.title ? capitalizeWords(displayListing.title) : '') || 'Listing'
                     return (
@@ -734,6 +851,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           formattedTime={formatMessageDate(message.created_at)}
                           listingThumbnailSrc={locationThumbSrc}
                           listingImageAlt={locationThumbAlt}
+                          listingThumbnailPending={listingChromeLoading}
                         />
                       </div>
                     )

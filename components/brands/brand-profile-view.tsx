@@ -15,12 +15,14 @@ import { RecentFeedClient } from "@/components/recent-feed-client"
 export function BrandProfileView({
   brand,
   brandListingsPreview,
+  brandSoldListingsPreview,
   favoritedListingIds,
   isLoggedIn,
   viewerUserId,
 }: {
   brand: BrandRow
   brandListingsPreview: RecentListing[]
+  brandSoldListingsPreview: RecentListing[]
   favoritedListingIds: string[]
   isLoggedIn: boolean
   viewerUserId: string | null
@@ -109,24 +111,43 @@ export function BrandProfileView({
         </div>
       </header>
 
-      {brandListingsPreview.length > 0 ? (
+      {brandListingsPreview.length > 0 || brandSoldListingsPreview.length > 0 ? (
         <section
           id="listings"
           className="scroll-mt-28 border-b border-border/80 bg-background sm:scroll-mt-32"
           aria-label="Listings"
         >
           <div className="container mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-            <RecentFeedClient
-              listings={brandListingsPreview}
-              favoritedListingIds={favoritedListingIds}
-              isLoggedIn={isLoggedIn}
-              viewerUserId={viewerUserId}
-            />
-            <div className="mt-8 flex justify-center sm:justify-end">
-              <Button asChild variant="outline" className="rounded-full px-6">
-                <Link href={brandKeywordSearchHref(brand.name)}>View all listings</Link>
-              </Button>
-            </div>
+            {brandListingsPreview.length > 0 ? (
+              <>
+                <RecentFeedClient
+                  listings={brandListingsPreview}
+                  favoritedListingIds={favoritedListingIds}
+                  isLoggedIn={isLoggedIn}
+                  viewerUserId={viewerUserId}
+                />
+                <div className="mt-8 flex justify-center sm:justify-end">
+                  <Button asChild variant="outline" className="rounded-full px-6">
+                    <Link href={brandKeywordSearchHref(brand.name)}>View all listings</Link>
+                  </Button>
+                </div>
+              </>
+            ) : null}
+
+            {brandSoldListingsPreview.length > 0 ? (
+              <div className={brandListingsPreview.length > 0 ? "mt-14" : undefined}>
+                <h2 className="mb-6 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                  Recently sold
+                </h2>
+                <RecentFeedClient
+                  listings={brandSoldListingsPreview}
+                  favoritedListingIds={favoritedListingIds}
+                  isLoggedIn={isLoggedIn}
+                  viewerUserId={viewerUserId}
+                  soldPresentation
+                />
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}

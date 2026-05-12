@@ -12,7 +12,7 @@ import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailHref } from '@/lib/listing-href'
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { cn } from '@/lib/utils'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { SellerMakeOfferToBuyerDialog } from '@/components/features/messages/seller-make-offer-to-buyer-dialog'
@@ -38,7 +38,7 @@ type ActivityListing = {
   title: string
   section: string
   price?: number | string | null
-  listing_images?: { url: string }[]
+  listing_images?: ListingImageForCard[]
 }
 
 type SellerOfferDraft = {
@@ -72,7 +72,7 @@ interface Conversation {
   listing: {
     id: string
     title: string
-    listing_images: { url: string }[]
+    listing_images: ListingImageForCard[]
   } | null
   buyer: {
     id: string
@@ -167,7 +167,7 @@ function MessagesContent() {
           .from('conversations')
           .select(`
             *,
-            listing:listings(id, title, listing_images(url)),
+            listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)),
             buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
             seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
             messages(content, is_read, sender_id, created_at, metadata)
@@ -185,7 +185,7 @@ function MessagesContent() {
             message,
             is_read,
             created_at,
-            listings(id, slug, title, section, price, listing_images(url))
+            listings(id, slug, title, section, price, listing_images(url, thumbnail_url, is_primary))
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -573,7 +573,9 @@ function MessagesContent() {
                       const listing = n.listing ?? n.listings
                       const href =
                         n.listing_id && listing?.section ? listingDetailHref(listing) : '/favorites'
-                      const thumb = listing?.listing_images?.[0]?.url
+                      const thumb =
+                        listing?.listing_images &&
+                        listingTitleThumbnailSrc(listing.listing_images)
                       const kind = activityKindLabel(n.type)
                       const showSellerOfferCta =
                         !!n.actor_id &&
@@ -601,7 +603,8 @@ function MessagesContent() {
                               {thumb ? (
                                 <>
                                   <Image
-                                    src={proxiedListingImageSrc(thumb)}
+                                    key={thumb}
+                                    src={thumb}
                                     alt={listing?.title ? capitalizeWords(listing.title) : 'Listing'}
                                     fill
                                     className="object-cover"

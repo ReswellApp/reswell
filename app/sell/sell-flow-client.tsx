@@ -15,6 +15,7 @@ import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { purgeListingImageStorageAction } from "@/lib/actions/listingImageStoragePurge"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -1878,6 +1879,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     removedIds: string[],
   ): Promise<{ nextSlots: ListingPhotoSlot[]; didInsert: boolean }> {
     if (removedIds.length) {
+      const purge = await purgeListingImageStorageAction({
+        listingId,
+        imageRowIds: removedIds,
+      })
+      if ("error" in purge) {
+        throw new Error(
+          typeof purge.error === "string"
+            ? purge.error
+            : "Could not remove old photos from storage.",
+        )
+      }
       await supabase
         .from("listing_images")
         .delete()

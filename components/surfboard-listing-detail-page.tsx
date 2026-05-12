@@ -191,6 +191,11 @@ export async function SurfboardListingDetailPage({
   const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
   const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
 
+  const freeBrandLabel = (board as { brand?: string | null }).brand?.trim() ?? ""
+  const modelForSpecs = (board as { model?: string | null }).model?.trim() ?? ""
+  const boardSpecsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
+  const boardSpecsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
+
   const rawBoardType = board.board_type?.trim() || null
   const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
   const browseBoardTypeParam = browseTypeParamFromBoardType(rawBoardType)
@@ -689,22 +694,10 @@ export async function SurfboardListingDetailPage({
                       dimensions={{
                         dimensions: (board as { dimensions?: string | null }).dimensions,
                       }}
+                      brandLabel={boardSpecsBrandLabel}
+                      brandHref={boardSpecsBrandHref}
+                      modelLabel={modelForSpecs || null}
                     />
-                    {indexBrand ? (
-                      <div className="border-t border-border/50 pt-4">
-                        <p className="text-[14px] font-medium uppercase tracking-wide text-foreground">
-                          Brand
-                        </p>
-                        <p className="mt-1.5 text-[16px] font-medium text-foreground">
-                          <Link
-                            href={`${BRANDS_BASE}/${indexBrand.slug}`}
-                            className="text-foreground underline-offset-4 hover:underline"
-                          >
-                            {indexBrand.name}
-                          </Link>
-                        </p>
-                      </div>
-                    ) : null}
                   </AccordionContent>
                 </AccordionItem>
 
