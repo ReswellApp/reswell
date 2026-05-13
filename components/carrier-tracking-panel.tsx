@@ -66,12 +66,12 @@ export function CarrierTrackingPanel(props: {
           <p className="text-xs text-muted-foreground rounded-lg border border-border/80 bg-muted/30 px-3 py-2 leading-relaxed">
             {variant === "seller" ? (
               <>
-                The carrier may show delivered. The buyer still confirms on Reswell before the order completes; then a
+                The carrier may show delivered. The buyer still confirms on Reswell before the sale completes; then a
                 Reswell admin approves your payout.
               </>
             ) : (
               <>
-                The carrier may show this shipment as delivered. On Reswell, your order stays open until you confirm —
+                The carrier may show this shipment as delivered. On Reswell, your purchase stays open until you confirm —
                 so you can inspect your board first.
               </>
             )}

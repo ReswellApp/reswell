@@ -22,7 +22,7 @@ import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
-  description: "Orders you are fulfilling as a seller: ship, add tracking, and confirm pickup on Reswell.",
+  description: "Sales you're fulfilling on Reswell: ship, add tracking, and confirm pickup.",
   path: "/dashboard/sales",
 })
 
@@ -178,7 +178,7 @@ export default async function SalesPage() {
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <PackageCheck className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4 max-w-sm">
-              When someone buys your gear, the order shows up here with fulfillment details.
+              When someone buys your gear, the sale shows up here with fulfillment details.
             </p>
             <Button asChild>
               <Link href="/sell?new=1">Create a listing</Link>
@@ -267,14 +267,14 @@ export default async function SalesPage() {
                       <p className="font-medium text-foreground line-clamp-2">{title}</p>
                       <p className="text-sm text-muted-foreground mt-0.5">Buyer: {buyerName}</p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Tap for order details, shipping address, and messages
+                        Tap for sale details, shipping address, and messages
                       </p>
                     </div>
                   </div>
 
                   <div className="border-t pt-3 space-y-1 text-sm">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Order total</span>
+                      <span>Sale total</span>
                       <span
                         className={`tabular-nums ${orderStatusIsRefunded(sale.status) ? "line-through" : ""}`}
                       >

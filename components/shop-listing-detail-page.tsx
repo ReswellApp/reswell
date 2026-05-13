@@ -205,7 +205,7 @@ export async function ShopListingDetailPage({
                 </div>
                 <div className="min-w-0 pt-0.5">
                   <p className="font-medium text-foreground">Free shipping</p>
-                  <p className="mt-0.5 text-[14px] text-muted-foreground">On orders over $50</p>
+                  <p className="mt-0.5 text-[14px] text-muted-foreground">On purchases over $50</p>
                 </div>
               </div>
               <div className="flex min-w-0 items-start gap-3.5 text-[15px]">

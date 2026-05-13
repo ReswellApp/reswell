@@ -316,7 +316,7 @@ export function CheckoutClient({
                       <span>{shipFromLocalityLine}</span>
                     </p>
                     <p className="mt-2 text-[12px] leading-relaxed text-neutral-500">
-                      This is the area the seller chose when listing. We use it to estimate shipping for your order.
+                      This is the area the seller chose when listing. We use it to estimate shipping for your purchase.
                     </p>
                   </>
                 ) : (

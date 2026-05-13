@@ -32,7 +32,7 @@ import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 export const metadata = privatePageMetadata({
   title: "Dashboard — Reswell",
   description:
-    "Your Reswell home: listings, orders, wallet, offers, and messages — manage your surf marketplace activity.",
+    "Your Reswell home: listings, purchases, wallet, offers, and messages — manage your surf marketplace activity.",
   path: "/dashboard",
 })
 
@@ -206,10 +206,10 @@ export default async function DashboardPage() {
       href: "/dashboard/sales",
     },
     {
-      name: "Orders",
+      name: "Purchases",
       value: buyerOrderCount,
       icon: ShoppingBag,
-      href: "/dashboard/orders",
+      href: "/dashboard/purchases",
     },
     {
       name: "My listings",
@@ -307,7 +307,7 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Core metrics — earnings, sales, orders, listings */}
+      {/* Core metrics — earnings, sales, purchases, listings */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4 xl:gap-4">
         {coreStats.map((stat) => (
           <Link key={stat.name} href={stat.href} className="min-w-0">
@@ -582,9 +582,9 @@ export default async function DashboardPage() {
               </Link>
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/orders">
+              <Link href="/dashboard/purchases">
                 <ShoppingBag className="h-6 w-6 mb-2" />
-                Orders
+                Purchases
               </Link>
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>

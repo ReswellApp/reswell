@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 
 /**
  * Keeps the dashboard overview in sync when Supabase data changes
- * (orders, listings, wallet, profile counts, follows, offers, favorites, notifications).
+ * (purchases, listings, wallet, profile counts, follows, offers, favorites, notifications).
  */
 export function DashboardOverviewRealtimeRefresh() {
   const router = useRouter()

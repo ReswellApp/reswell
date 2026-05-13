@@ -33,7 +33,7 @@ function fulfillmentSummary(
     }
     return {
       label: "Shipping",
-      hint: "Track delivery and confirm receipt from your order dashboard once the seller ships.",
+      hint: "Track delivery and confirm receipt from your purchases dashboard once the seller ships.",
       Icon: Truck,
     }
   }
@@ -62,8 +62,8 @@ export function OrderPlacedMessageCard({
 
   const dashboardHref = viewerIsSeller
     ? `/dashboard/sales/${orderId}`
-    : `/dashboard/orders/${orderId}`
-  const ctaLabel = viewerIsSeller ? "View sale & status" : "View order & status"
+    : `/dashboard/purchases/${orderId}`
+  const ctaLabel = viewerIsSeller ? "View sale & status" : "View purchase & status"
 
   return (
     <div

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 
 export type CheckoutOrderSuccessPayload = {
   orderId: string
-  /** `orders.order_num` (shown as `Order #…`, same as dashboard Orders). */
+  /** `orders.order_num` (shown as `Order #…`, same as dashboard Purchases). */
   displayNumber: string
   buyerEmail: string | null
   total: number
@@ -99,10 +99,10 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
       ? data.shipping.oneLine
       : fulfill === "pickup"
         ? "Coordinate time and place with the seller via Messages."
-        : "Details are available on your order page."
+        : "Details are available on your purchase page."
   const shippingHint =
     fulfill === "shipping"
-      ? "Seller will add tracking from your orders page when it ships."
+      ? "Seller will add tracking from your purchases page when it ships."
       : fulfill === "pickup"
         ? "Bring your pickup code when you meet the seller."
         : null
@@ -259,8 +259,8 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
           className="flex flex-col justify-center gap-3 sm:flex-row sm:justify-center"
         >
           <Button size="lg" asChild>
-            <Link href="/dashboard/orders" className="gap-2">
-              Track order
+            <Link href="/dashboard/purchases" className="gap-2">
+              Track purchase
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
@@ -281,10 +281,10 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
               : "Order confirmation sent to your email"}
           </p>
           <Link
-            href={`/dashboard/orders/${data.orderId}`}
+            href={`/dashboard/purchases/${data.orderId}`}
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            View order details
+            View purchase details
           </Link>
         </motion.div>
       </div>

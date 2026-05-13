@@ -109,7 +109,7 @@ export function ContactForm() {
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="What can we help with? Include listing links or order details if relevant."
+              placeholder="What can we help with? Include listing links or purchase details if relevant."
               rows={6}
               className="min-h-[140px] resize-y rounded-xl border-border/80 bg-background"
               required

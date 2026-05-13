@@ -163,7 +163,7 @@ export function CartPageView({
 
     const note =
       sellerGroupCount > 1
-        ? "Multiple sellers — checkout each group separately. Boards from one seller can be purchased together in one order when pickup is available."
+        ? "Multiple sellers — checkout each group separately. Boards from one seller can be purchased together in one checkout when pickup is available."
         : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
           ? "Shipping cost and delivery timing are finalized with the seller at checkout."
           : "Pickup or shipping details are confirmed with the seller when you check out."

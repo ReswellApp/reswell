@@ -427,7 +427,7 @@ export function SurfboardShippingEstimatorDialog({
                 </ul>
                 <p className="mt-4 text-xs leading-relaxed text-neutral-600">
                   Buy your shipping label through Reswell when you sell to keep fulfillment in one place and
-                  use protections that apply to supported orders.
+                  use protections that apply to supported purchases.
                 </p>
               </div>
             ) : null}

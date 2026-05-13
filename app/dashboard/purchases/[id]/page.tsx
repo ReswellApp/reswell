@@ -43,10 +43,10 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
   const { id } = await props.params
   return privatePageMetadata({
-    title: "Order details — Reswell",
+    title: "Purchase details — Reswell",
     description:
       "Track delivery or pickup, view tracking, and manage resolutions for this surfboard purchase.",
-    path: `/dashboard/orders/${id}`,
+    path: `/dashboard/purchases/${id}`,
   })
 }
 
@@ -283,9 +283,9 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       <OrderDetailRealtimeRefresh orderId={id} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/dashboard/orders" className="gap-2">
+          <Link href="/dashboard/purchases" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
-            All orders
+            All purchases
           </Link>
         </Button>
       </div>
@@ -339,7 +339,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         }}
       />
 
-      {/* Buyer action: confirm delivery for shipped orders (hidden when refunded) */}
+      {/* Buyer action: confirm delivery for shipped purchases (hidden when refunded) */}
       {!fulfillmentLocked && (
         <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
       )}
@@ -404,7 +404,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
             {order.status === "refunding" && (
               <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5 text-sm text-amber-950 dark:text-amber-100">
                 Refund in progress — your payment is being returned
-                {paidWithCard ? " through Stripe" : ""}. This order will show as fully refunded when it
+                {paidWithCard ? " through Stripe" : ""}. This purchase will show as fully refunded when it
                 finishes (card statements can take several business days).
               </div>
             )}
@@ -439,7 +439,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground">
             <p>
-              This order is <span className="font-medium text-foreground">local pickup</span>. Use
+              This purchase is <span className="font-medium text-foreground">local pickup</span>. Use
               messages below to agree on a time and place with the seller.
             </p>
           </CardContent>
@@ -462,7 +462,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
       <div className="flex flex-wrap gap-3">
         <Button variant="outline" asChild>
-          <Link href="/dashboard/orders">Back to orders</Link>
+          <Link href="/dashboard/purchases">Back to purchases</Link>
         </Button>
       </div>
     </div>

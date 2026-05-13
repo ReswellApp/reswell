@@ -34,14 +34,14 @@ export default function ReturnPolicyPage() {
             </h2>
             <p className="leading-relaxed">
               This return policy applies to buyers with a delivery address in the{" "}
-              <strong className="text-foreground">United States</strong> for eligible orders processed
+              <strong className="text-foreground">United States</strong> for eligible purchases processed
               through Reswell checkout, except where exclusions apply below.
             </p>
             <ul className="mt-4 list-none space-y-3 pl-0 leading-relaxed">
               <li>
                 <strong className="text-foreground">Returns.</strong> We accept returns for{" "}
                 <strong className="text-foreground">defective and non-defective products</strong>, when the
-                product and order meet this policy&apos;s eligibility, condition, timing, and process
+                product and purchase meet this policy&apos;s eligibility, condition, timing, and process
                 requirements.
               </li>
               <li>
@@ -69,10 +69,10 @@ export default function ReturnPolicyPage() {
               <strong className="text-foreground">
                 seven (7) calendar days of delivery
               </strong>{" "}
-              for shipped orders — measured from carrier delivery confirmation on the qualifying shipment —
+              for shipped purchases — measured from carrier delivery confirmation on the qualifying shipment —
               unless a longer promotional window applies (for example seasonal extensions we advertise on
               the site). For other fulfillment types, timelines may follow from handoff confirmation as
-              described in your order and support communications.
+              described in your purchase and support communications.
             </p>
           </section>
 
@@ -81,7 +81,7 @@ export default function ReturnPolicyPage() {
               Methods, labels, fees &amp; refunds
             </h2>
             <p className="leading-relaxed mb-2">
-              Depending on order type and what we authorize for your case, completing a return may use any
+              Depending on purchase type and what we authorize for your case, completing a return may use any
               of these paths when available:
             </p>
             <ul className="list-disc space-y-2 pl-6 leading-relaxed">
@@ -95,7 +95,7 @@ export default function ReturnPolicyPage() {
               </li>
               <li>
                 <strong className="text-foreground">In person</strong> — Returning to a seller storefront or agreed
-                in-person drop-off/meet-up when coordinated for your eligible order through Reswell and the
+                in-person drop-off/meet-up when coordinated for your eligible purchase through Reswell and the
                 seller.
               </li>
             </ul>
@@ -137,20 +137,20 @@ export default function ReturnPolicyPage() {
               </Link>{" "}
               (evidence windows, exclusions, prepaid return labels where stated). Label and restocking terms on
               this page apply once a return path is authorized. Initiate defective and quality issues primarily
-              through Purchase Protection workflows; initiate other qualifying returns via your order and support,
+              through Purchase Protection workflows; initiate other qualifying returns via your purchase and support,
               staying within eligibility (including exclusions such as unsupported claims or pickups outside
               policy).
             </p>
             <p className="mt-4 leading-relaxed">
               This Return Policy is the storefront summary aligned with Merchant Center disclosures (US buyers,
               acceptance of defective and non-defective returns where eligible, no exchanges, timing, labels, and
-              refund horizons). Orders that aren&apos;t eligible for checkout-backed returns (examples: some local
+              refund horizons). Purchases that aren&apos;t eligible for checkout-backed returns (examples: some local
               pickup-only paths, violations of{" "}
               <Link href="/terms" className="text-primary underline">
                 Terms of Service
               </Link>
               , or exclusions in Purchase Protection for your claim type) aren&apos;t covered by the return paths
-              above even if broadly described here — use your order screens and support prompts for definitive
+              above even if broadly described here — use your purchase screens and support prompts for definitive
               qualification.
             </p>
           </section>
@@ -167,7 +167,7 @@ export default function ReturnPolicyPage() {
           <section>
             <h2 className="!mb-3 !mt-0 text-xl font-semibold text-foreground">Contact</h2>
             <p className="leading-relaxed">
-              Start from your order in the dashboard or{" "}
+              Start from your purchase in the dashboard or{" "}
               <Link href="/contact" className="text-primary underline">
                 contact us
               </Link>{" "}

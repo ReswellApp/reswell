@@ -69,12 +69,12 @@ function ShippingGuideCards() {
               </li>
               <li>
                 Inspect the package when it arrives. If something is damaged or not as described,
-                message the seller right away. Eligible orders paid through Reswell checkout are
+                message the seller right away. Eligible purchases paid through Reswell checkout are
                 covered by{" "}
                 <Link href="/protection-policy" className="text-primary underline">
                   Purchase Protection
                 </Link>
-                , so you can open a refund claim from the order page if you need help.
+                , so you can open a refund claim from your purchase page if you need help.
               </li>
             </ul>
           </CardContent>

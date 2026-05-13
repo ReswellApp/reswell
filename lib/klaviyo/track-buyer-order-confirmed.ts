@@ -43,7 +43,7 @@ export async function trackKlaviyoBuyerOrderConfirmed(
     section: payload.listingSection,
   })
   const listingUrl = `${origin}${listingPath}`
-  const orderUrl = `${origin}/dashboard/orders/${payload.orderId}`
+  const orderUrl = `${origin}/dashboard/purchases/${payload.orderId}`
 
   const profile =
     payload.buyerUserId?.trim()

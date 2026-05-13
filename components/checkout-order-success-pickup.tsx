@@ -14,7 +14,7 @@ function money(n: number) {
 }
 
 /**
- * Order confirmation for local-pickup orders.
+ * Purchase confirmation for local pickup.
  * Mirrors `CheckoutOrderSuccess` styling but surfaces the buyer's pickup code
  * (shown to the seller at handoff) and a direct Messages link.
  */
@@ -249,7 +249,7 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
             </Button>
           ) : (
             <Button size="lg" asChild>
-              <Link href={`/dashboard/orders/${data.orderId}`} className="gap-2">
+              <Link href={`/dashboard/purchases/${data.orderId}`} className="gap-2">
                 View pickup details
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -272,10 +272,10 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
               : "Order confirmation sent to your email"}
           </p>
           <Link
-            href={`/dashboard/orders/${data.orderId}`}
+            href={`/dashboard/purchases/${data.orderId}`}
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            View order details
+            View purchase details
           </Link>
         </motion.div>
       </div>

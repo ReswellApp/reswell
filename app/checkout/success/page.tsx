@@ -20,12 +20,12 @@ function StaticSuccess() {
             </div>
             <h1 className="text-xl font-bold mb-2">Thanks for using Reswell</h1>
             <p className="text-muted-foreground text-sm mb-6">
-              Your order history lives in your dashboard. If you have a wallet balance, you can apply it
+              Your purchase history lives in your dashboard. If you have a wallet balance, you can apply it
               toward future purchases at checkout.
             </p>
             <div className="flex flex-col gap-3">
               <Button asChild>
-                <Link href="/dashboard/orders">View orders</Link>
+                <Link href="/dashboard/purchases">View purchases</Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/gear">Browse gear</Link>
@@ -85,16 +85,16 @@ function CheckoutSuccessInner() {
           return
         }
         if (!res.ok) {
-          setFinalizeError(data.error ?? "Could not complete your order.")
+          setFinalizeError(data.error ?? "Could not complete your purchase.")
           return
         }
         if (!data.orderId?.trim()) {
-          setFinalizeError("Could not complete your order.")
+          setFinalizeError("Could not complete your purchase.")
           return
         }
         setFinalizedOrderId(data.orderId.trim())
       } catch {
-        if (!cancelled) setFinalizeError("Something went wrong completing your order.")
+        if (!cancelled) setFinalizeError("Something went wrong completing your purchase.")
       } finally {
         if (!cancelled) setFinalizeBusy(false)
       }
@@ -126,7 +126,7 @@ function CheckoutSuccessInner() {
               </p>
               <div className="flex flex-col gap-3">
                 <Button asChild>
-                  <Link href="/dashboard/orders">View orders</Link>
+                  <Link href="/dashboard/purchases">View purchases</Link>
                 </Button>
                 <Button variant="outline" asChild>
                   <Link href="/boards">Browse boards</Link>
@@ -153,14 +153,14 @@ function CheckoutSuccessInner() {
               <h1 className="text-xl font-bold">Payment received</h1>
               <p className="text-sm text-muted-foreground">
                 Your card was charged successfully. Sign in with the same account you used at checkout to load
-                your order confirmation.
+                your purchase confirmation.
               </p>
               <div className="flex flex-col gap-3">
                 <Button asChild>
                   <Link href={signInContinueHref}>Sign in to continue</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href="/dashboard/orders">View orders</Link>
+                  <Link href="/dashboard/purchases">View purchases</Link>
                 </Button>
               </div>
             </CardContent>
@@ -180,7 +180,7 @@ function CheckoutSuccessInner() {
               <p className="text-sm text-muted-foreground">{finalizeError}</p>
               <div className="flex flex-col gap-3">
                 <Button asChild>
-                  <Link href="/dashboard/orders">View orders</Link>
+                  <Link href="/dashboard/purchases">View purchases</Link>
                 </Button>
                 <Button variant="outline" asChild>
                   <Link href="/boards">Browse boards</Link>
@@ -209,7 +209,7 @@ function CheckoutSuccessInner() {
           <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             {finalizeBusy || waitingOnFinalize
-              ? "Confirming your order…"
+              ? "Confirming your purchase…"
               : "Taking you to your receipt…"}
           </p>
         </div>
@@ -221,7 +221,7 @@ function CheckoutSuccessInner() {
     <main className="flex-1 py-16">
       <div className="container mx-auto max-w-md text-center">
         <Button asChild>
-          <Link href="/dashboard/orders">View orders</Link>
+          <Link href="/dashboard/purchases">View purchases</Link>
         </Button>
       </div>
     </main>

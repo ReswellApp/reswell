@@ -456,7 +456,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               {/* Financial breakdown */}
               <div className="p-6 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Order total</span>
+                  <span className="text-muted-foreground">Sale total</span>
                   <span
                     className={`tabular-nums font-medium ${isRefunded ? "line-through text-muted-foreground" : ""}`}
                   >
@@ -496,7 +496,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 {isRefunding && (
                   <p className="text-xs text-muted-foreground rounded-md border border-amber-500/20 bg-amber-500/[0.04] px-2.5 py-2">
                     Totals stay as recorded until Stripe finishes the refund; your earnings line will mark
-                    reversed once the order is fully refunded.
+                    reversed once the sale is fully refunded.
                   </p>
                 )}
                 {isRefunded && (
@@ -504,7 +504,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     <Separator />
                     <div className="flex justify-between items-baseline gap-3 rounded-lg border border-destructive/15 bg-destructive/[0.04] px-3 py-2.5">
                       <span className="text-sm font-semibold text-destructive">
-                        Refund to buyer (full order)
+                        Refund to buyer (full sale)
                       </span>
                       <span className="text-lg font-bold tabular-nums text-destructive">
                         ${Number(sale.amount).toFixed(2)}
@@ -532,7 +532,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 )}
                 {isRefunded && (
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    The buyer is refunded the full order total. The earnings line is your net share
+                    The buyer is refunded the full sale total. The earnings line is your net share
                     that was reversed (after the platform fee).
                   </p>
                 )}
@@ -542,7 +542,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
           {/* ── Seller actions ── */}
 
-          {/* Tracking form for shipping orders */}
+          {/* Tracking form for shipping sales */}
           {!fulfillmentLocked && sale.fulfillment_method === "shipping" && (
             <>
               {adminPreparedLabelUrl && sale.delivery_status === "pending" ? (
@@ -578,7 +578,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             </>
           )}
 
-          {/* Shipping label for surfboard orders */}
+          {/* Shipping label for surfboard shipments */}
           {!fulfillmentLocked &&
             sale.fulfillment_method === "shipping" &&
             displayListings.some((l) => l.section === "surfboards") &&
@@ -648,7 +648,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             <CardContent className="pt-0 space-y-3">
               <p className="font-semibold text-foreground">{buyerName}</p>
               <p className="text-xs text-muted-foreground">
-                Completed checkout for this order.
+                Completed checkout for this sale.
               </p>
               {canAskBuyerForReview ? (
                 <div className="space-y-2 border-t border-border/60 pt-3">
@@ -706,12 +706,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
-          {/* Order details card */}
+          {/* Sale details card */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Hash className="h-4 w-4" />
-                Order details
+                Sale details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">

@@ -41,7 +41,7 @@ const TOPIC_KEYS = Object.keys(messagesSupportTopicLabels) as MessagesSupportTop
 const TOPIC_HINTS: Record<MessagesSupportTopic, string> = {
   general: "Buying, selling, fees, messages",
   account: "Profile, login, earnings & payouts",
-  buying_selling: "Offers, shipping, orders, listings",
+  buying_selling: "Offers, shipping, purchases, listings",
   payments: "Checkout, wallet, cash out, fees",
   safety: "Scams, meetups, harassment",
   other: "Doesn’t fit the categories above",
@@ -222,7 +222,7 @@ export function MessagesSupportDialog({
               <DialogTrigger asChild>{floatingTrigger}</DialogTrigger>
             </TooltipTrigger>
             <TooltipContent side="left" align="center" className="max-w-[220px] text-center leading-snug">
-              Get help from Reswell — billing, orders, safety, and more
+              Get help from Reswell — billing, purchases, safety, and more
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -381,7 +381,7 @@ export function MessagesSupportDialog({
                   id="support-details"
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
-                  placeholder="Add order numbers, listing links, what you expected, and what happened instead. The more detail, the faster we can help."
+                  placeholder="Add purchase or order numbers, listing links, what you expected, and what happened instead. The more detail, the faster we can help."
                   rows={6}
                   className="min-h-[120px] resize-y text-[15px] leading-relaxed"
                   maxLength={10000}

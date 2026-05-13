@@ -128,8 +128,8 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: "/dashboard/purchases", destination: "/dashboard/orders", permanent: true },
-      { source: "/dashboard/purchases/:id", destination: "/dashboard/orders/:id", permanent: true },
+      { source: "/dashboard/orders", destination: "/dashboard/purchases", permanent: true },
+      { source: "/dashboard/orders/:id", destination: "/dashboard/purchases/:id", permanent: true },
       { source: "/dashboard/claims", destination: "/dashboard", permanent: true },
       { source: "/dashboard/claims/:path*", destination: "/dashboard", permanent: true },
       { source: "/dashboard/disputes", destination: "/dashboard", permanent: true },

@@ -43,9 +43,9 @@ type ReviewSellerControlsProps = {
   sellerName: string
   canReview: boolean
   existingReview: ExistingSellerReview | null
-  /** When true, use compact layout (e.g. orders list). */
+  /** When true, use compact layout (e.g. purchases list). */
   compact?: boolean
-  /** Called after a new review is saved (e.g. refetch client-loaded order lists). */
+  /** Called after a new review is saved (e.g. refetch client-loaded purchase lists). */
   onSuccess?: () => void
 }
 

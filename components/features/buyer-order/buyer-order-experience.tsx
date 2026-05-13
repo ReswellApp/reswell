@@ -66,7 +66,7 @@ export type BuyerOrderExperienceProps = {
   messagesHref: string
   canRequestCancel: boolean
   canRequestRefundHelp: boolean
-  /** Set when buyer may rate the seller, or when they already left a review for this order. */
+  /** Set when buyer may rate the seller, or when they already left a review for this purchase. */
   sellerReview: {
     canSubmit: boolean
     existing: ExistingSellerReview | null
@@ -89,7 +89,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
     return [
       {
         key: "placed",
-        title: "Order placed",
+        title: "Purchase confirmed",
         description: "Your original purchase was confirmed.",
         state: "done",
       },
@@ -124,14 +124,14 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
     return [
       {
         key: "placed",
-        title: "Order placed",
+        title: "Purchase confirmed",
         description: "Your original purchase was confirmed.",
         state: "done",
       },
       {
         key: "refund-issued",
         title: `Refund issued${refundDateStr ? ` — ${refundDateStr}` : ""}`,
-        description: `A full refund of $${amount.toFixed(2)} was processed for this order.`,
+        description: `A full refund of $${amount.toFixed(2)} was processed for this purchase.`,
         state: "done",
       },
       {
@@ -151,7 +151,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
     return [
       {
         key: "placed",
-        title: "Order placed",
+        title: "Purchase confirmed",
         description: "We’ve notified the seller. They’ll pack and ship your item.",
         state: "done",
       },
@@ -184,7 +184,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
   return [
     {
       key: "placed",
-      title: "Order placed",
+      title: "Purchase confirmed",
       description: "Message the seller to agree on a safe public meeting place and time.",
       state: "done",
     },
@@ -290,7 +290,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
               </CardTitle>
               <CardDescription className="text-[15px] leading-relaxed mt-2 max-w-2xl">
                 {isRefunded
-                  ? "This order has been fully refunded. See the timeline below for details on when to expect your funds."
+                  ? "This purchase has been fully refunded. See the timeline below for details on when to expect your funds."
                   : isRefunding
                     ? props.paidWithCard
                       ? "Stripe is returning your payment. This page updates automatically when the refund completes; your bank may take a few days to show the credit."
@@ -368,17 +368,17 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
           <SheetTrigger asChild>
             <Button type="button" variant="outline" className="gap-2">
               <ScrollText className="h-4 w-4" />
-              Order details
+              Purchase details
             </Button>
           </SheetTrigger>
           <SheetContent className="w-full sm:max-w-md overflow-y-auto">
             <SheetHeader>
-              <SheetTitle>Order details</SheetTitle>
+              <SheetTitle>Purchase details</SheetTitle>
               <SheetDescription>Reference and payment summary for this purchase.</SheetDescription>
             </SheetHeader>
             <div className="mt-6 space-y-4 text-sm">
               <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Order</span>
+                <span className="text-muted-foreground">Purchase</span>
                 <span className="font-mono font-medium text-right">#{props.displayOrderNum}</span>
               </div>
               <div className="flex justify-between gap-4">
@@ -458,7 +458,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" />
           <span>
-            A refund is underway for this order. You don’t need to do anything — refresh this page if the
+            A refund is underway for this purchase. You don’t need to do anything — refresh this page if the
             status doesn’t update after a few minutes.
           </span>
         </p>
@@ -466,7 +466,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
           <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
           <span>
-            This order has been fully refunded. If you have any questions about the refund timeline or
+            This purchase has been fully refunded. If you have any questions about the refund timeline or
             amount, contact our support team.
           </span>
         </p>
@@ -517,7 +517,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Request order cancellation</DialogTitle>
+            <DialogTitle>Request purchase cancellation</DialogTitle>
             <DialogDescription>
               Use this before the seller ships (or before pickup is completed). We&apos;ll review and contact
               you — cancellation isn&apos;t guaranteed until confirmed.

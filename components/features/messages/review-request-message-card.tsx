@@ -143,7 +143,7 @@ export function ReviewRequestMessageCard({
           )
         ) : (
           <p className="mt-3 rounded-2xl bg-muted/45 px-3 py-2.5 text-[14px] leading-snug text-foreground/90">
-            You asked the buyer to leave a review for this order.
+            You asked the buyer to leave a review for this sale.
           </p>
         )}
 

@@ -52,7 +52,7 @@ export function OrderDetailRealtimeRefresh({
 }
 
 /**
- * Revalidates the orders or sales list when any of the user’s marketplace orders change.
+ * Revalidates the purchases or sales list when any of the user's marketplace purchases/sales change.
  */
 export function OrdersListRealtimeRefresh({ role }: { role: "buyer" | "seller" }) {
   const router = useRouter()

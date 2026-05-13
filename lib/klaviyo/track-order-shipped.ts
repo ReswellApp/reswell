@@ -1,5 +1,5 @@
 /**
- * Server-only: Klaviyo Events API — fires when the seller adds tracking to a shipped order.
+ * Server-only: Klaviyo Events API — fires when the seller adds tracking to a shipped purchase.
  *
  * **Metric name in Klaviyo:** `Order Shipped` — create a flow triggered by this metric.
  * Template variables: `{{ event.Title }}`, `{{ event.tracking_number }}`,
@@ -24,7 +24,7 @@ export async function trackKlaviyoOrderShipped(
   payload: KlaviyoOrderShippedPayload,
 ): Promise<void> {
   const origin = publicSiteOrigin()
-  const orderUrl = `${origin}/dashboard/orders/${payload.orderId}`
+  const orderUrl = `${origin}/dashboard/purchases/${payload.orderId}`
 
   await sendKlaviyoServerEvent({
     metricName: "Order Shipped",

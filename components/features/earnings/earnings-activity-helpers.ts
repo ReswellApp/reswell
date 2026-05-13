@@ -17,7 +17,7 @@ export function orderDetailPathFromTx(t: EarningsTransaction): string | null {
     rt === "order_seller_earnings" ||
     rt === "wallet_refund"
   ) {
-    return `/dashboard/orders/${rid}`
+    return `/dashboard/purchases/${rid}`
   }
   return null
 }

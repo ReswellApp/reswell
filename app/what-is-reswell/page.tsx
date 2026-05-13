@@ -29,7 +29,7 @@ export default function WhatIsReswellPage() {
           gear from each other, plus some new stuff from shops we work with. You get messaging,
           checkout, help with shipping labels when it applies, and real humans on support when you need
           them. When you buy or sell here, you are dealing with the other person directly. We step in
-          on covered orders through{" "}
+          on covered purchases through{" "}
           <Link href="/protection-policy" className="text-primary underline">
             Purchase Protection
           </Link>{" "}
@@ -52,7 +52,7 @@ export default function WhatIsReswellPage() {
                 pickup, or both are on the table.
               </p>
               <p>
-                If your order is eligible and you paid through Reswell, Purchase Protection has your
+                If your purchase is eligible and you paid through Reswell, Purchase Protection has your
                 back for covered issues. Buyers do not pay extra for that.
               </p>
             </CardContent>
@@ -68,7 +68,7 @@ export default function WhatIsReswellPage() {
                 <Link href="/sell" className="text-primary underline">
                   Sell your board
                 </Link>
-                , hook up how you get paid, and keep an eye on orders from your dashboard. We collect a
+                , hook up how you get paid, and keep an eye on purchases from your dashboard. We collect a
                 marketplace fee when a sale completes. Sellers do not get hit with a separate protection
                 fee on top of that.
               </p>

@@ -27,8 +27,8 @@ export function OrderCompletedMessageCard({
 
   const dashboardHref = viewerIsSeller
     ? `/dashboard/sales/${orderId}`
-    : `/dashboard/orders/${orderId}`
-  const ctaLabel = viewerIsSeller ? "View sale & status" : "View order & status"
+    : `/dashboard/purchases/${orderId}`
+  const ctaLabel = viewerIsSeller ? "View sale & status" : "View purchase & status"
 
   return (
     <div
@@ -56,7 +56,7 @@ export function OrderCompletedMessageCard({
       <p className="mt-3 rounded-2xl bg-muted/45 px-3 py-2.5 text-[14px] leading-snug text-foreground/90">
         {viewerIsSeller
           ? "Pickup is complete. Your sale is finalized — open your sale for receipts and status."
-          : "Pickup is complete. Open your order anytime for receipts and status."}
+          : "Pickup is complete. Open your purchase anytime for receipts and status."}
       </p>
 
       <Button

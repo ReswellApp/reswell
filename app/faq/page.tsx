@@ -62,7 +62,7 @@ const sections: FaqSection[] = [
         answer: (
           <>
             Every listing tells you whether the seller offers local pickup, shipping, or both. For
-            shipped orders, the seller adds tracking once the board is on its way. For pickup, you
+            shipped purchases, the seller adds tracking once the board is on its way. For pickup, you
             and the seller sort out a time and place in Messages. It&apos;s worth reading our{" "}
             <Link href="/safety" className="text-primary underline">
               Safety tips
@@ -114,14 +114,14 @@ const sections: FaqSection[] = [
         question: "I sold a board. What happens next?",
         answer: (
           <>
-            Open the order from{" "}
+            Open the sale from{" "}
             <Link href="/dashboard/sales" className="text-primary underline">
               Sales
             </Link>
             . If you&apos;re shipping it, pack the board well, use a tracked carrier, and add the
-            tracking number to the order. You can also buy a label straight from the order page
+            tracking number to the sale. You can also buy a label straight from the sale page
             when ShipEngine is set up. If it&apos;s local pickup, confirm the meetup in Messages.
-            Your earnings land in your wallet once the order reaches the right state, as laid out
+            Your earnings land in your wallet once the sale reaches the right state, as laid out
             in{" "}
             <Link href="/protection-policy" className="text-primary underline">
               Purchase Protection
@@ -195,13 +195,13 @@ const sections: FaqSection[] = [
   {
     id: "protection",
     title: "Purchase Protection and problems",
-    description: "What's covered on eligible orders, and how to open a claim if something goes wrong.",
+    description: "What's covered on eligible purchases, and how to open a claim if something goes wrong.",
     faqs: [
       {
         question: "What is Reswell Purchase Protection?",
         answer: (
           <>
-            Purchase Protection covers buyers on eligible orders paid through Reswell checkout
+            Purchase Protection covers buyers on eligible purchases paid through Reswell checkout
             when the item never arrives, turns up damaged, or is materially different from the
             listing. Buyers don&apos;t pay an extra fee for it, and sellers are not charged a
             separate protection deduction. The full policy and exclusions live on the{" "}
@@ -213,17 +213,17 @@ const sections: FaqSection[] = [
         ),
       },
       {
-        question: "I have a problem with an order. What should I do?",
+        question: "I have a problem with a purchase. What should I do?",
         answer: (
           <>
             Message the other person first. Most issues get sorted out with a quick conversation.
-            If you still need help, open the order from{" "}
-            <Link href="/dashboard/orders" className="text-primary underline">
-              Orders
+            If you still need help, open the purchase from{" "}
+            <Link href="/dashboard/purchases" className="text-primary underline">
+              Purchases
             </Link>{" "}
             and tap <strong className="text-foreground">Refund help</strong> to file a claim, or{" "}
             <strong className="text-foreground">Ask Reswell</strong> for a general question about
-            the order. We aim to review claims within 3 business days.
+            the purchase. We aim to review claims within 3 business days.
           </>
         ),
       },
@@ -259,7 +259,7 @@ const sections: FaqSection[] = [
               Messages
             </Link>{" "}
             (the envelope icon in the header). Every thread is tied to a specific listing or
-            order, so pickup details, shipping updates, and order questions all live in one place.
+            purchase, so pickup details, shipping updates, and purchase questions all live in one place.
             Keep the conversation on Reswell so we have a record if you ever need us to step in.
           </>
         ),

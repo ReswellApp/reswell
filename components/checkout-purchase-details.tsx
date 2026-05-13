@@ -220,7 +220,7 @@ export function CheckoutPurchaseDetails({
             disabled
             className={`${fieldClass} bg-neutral-50 text-neutral-700`}
           />
-          <p className="text-xs text-neutral-500">Receipts and order updates are sent here.</p>
+          <p className="text-xs text-neutral-500">Receipts and purchase updates are sent here.</p>
         </div>
       </section>
 
@@ -238,7 +238,7 @@ export function CheckoutPurchaseDetails({
               required
               aria-required
               onChange={(e) => setPickupName(e.target.value)}
-              placeholder="Name for your order"
+              placeholder="Name for your purchase"
               className={fieldClass}
             />
           </div>

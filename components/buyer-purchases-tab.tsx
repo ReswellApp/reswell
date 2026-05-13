@@ -59,7 +59,7 @@ function primaryImage(
   return s || null
 }
 
-export function BuyerOrdersTab() {
+export function BuyerPurchasesTab() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -184,7 +184,7 @@ export function BuyerOrdersTab() {
   if (error) {
     return (
       <p className="text-sm text-destructive">
-        Could not load orders. If this persists, check marketplace RLS for the{" "}
+        Could not load purchases. If this persists, check marketplace RLS for the{" "}
         <code className="rounded bg-muted px-1 py-0.5 text-xs">orders</code> table in Supabase.
       </p>
     )
@@ -197,7 +197,7 @@ export function BuyerOrdersTab() {
           <Receipt className="h-10 w-10 text-muted-foreground" />
           <p className="text-muted-foreground text-sm max-w-sm">
             You have not bought anything from other members yet. When you do, it will show here and on
-            the full orders page.
+            the full purchases page.
           </p>
           <Button asChild variant="outline">
             <Link href="/gear">Browse gear</Link>
@@ -214,7 +214,7 @@ export function BuyerOrdersTab() {
           Peer-to-peer buys (surfboards, wallet or card).
         </p>
         <Button asChild size="sm" variant="outline">
-          <Link href="/dashboard/orders">Open full page</Link>
+          <Link href="/dashboard/purchases">Open full page</Link>
         </Button>
       </div>
       <ul className="space-y-2">
@@ -238,7 +238,7 @@ export function BuyerOrdersTab() {
               className="flex flex-col gap-2 rounded-lg border bg-card overflow-hidden sm:flex-row sm:items-stretch"
             >
               <Link
-                href={`/dashboard/orders/${row.id}`}
+                href={`/dashboard/purchases/${row.id}`}
                 className="flex flex-1 items-center gap-3 p-3 min-w-0 transition-colors hover:bg-muted/40"
               >
                 <div className="relative h-12 w-12 flex-shrink-0 rounded-md border bg-muted overflow-hidden">

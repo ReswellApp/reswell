@@ -62,21 +62,21 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">5. Payments, fees, and payouts</h2>
               <p className="leading-relaxed">
-                Buyers pay for orders through Reswell checkout using our payment processor. When a sale completes, we take a {MARKETPLACE_FEE_PERCENT}% marketplace fee and the remaining {SELLER_SHARE_PERCENT}% is the seller&apos;s. Payment processing on card purchases is not an extra deduction on top of that. Sellers cash out their balance to the payout destination they set up in their account. You are responsible for any taxes that apply to your sales or income, and for making sure the information on your payout account is accurate.
+                Buyers pay for purchases through Reswell checkout using our payment processor. When a sale completes, we take a {MARKETPLACE_FEE_PERCENT}% marketplace fee and the remaining {SELLER_SHARE_PERCENT}% is the seller&apos;s. Payment processing on card purchases is not an extra deduction on top of that. Sellers cash out their balance to the payout destination they set up in their account. You are responsible for any taxes that apply to your sales or income, and for making sure the information on your payout account is accurate.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">6. Shipping, pickup, and Purchase Protection</h2>
               <p className="leading-relaxed">
-                For shipped orders, sellers are expected to ship promptly and use tracked shipping. For local pickup, both parties arrange a safe meeting and complete the handoff in good faith. Eligible orders paid through Reswell checkout are covered by our Purchase Protection program, which is explained in detail on the <Link href="/protection-policy" className="text-primary underline">Purchase Protection</Link> page. Buyers do not pay an extra fee for protection, and sellers do not pay a separate protection deduction on top of the marketplace fee.
+                For shipped purchases, sellers are expected to ship promptly and use tracked shipping. For local pickup, both parties arrange a safe meeting and complete the handoff in good faith. Eligible purchases paid through Reswell checkout are covered by our Purchase Protection program, which is explained in detail on the <Link href="/protection-policy" className="text-primary underline">Purchase Protection</Link> page. Buyers do not pay an extra fee for protection, and sellers do not pay a separate protection deduction on top of the marketplace fee.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-semibold text-foreground mt-8 mb-2">7. Disputes between users</h2>
               <p className="leading-relaxed">
-                If something goes sideways on an order, talk to the other person first. Most issues get solved with a quick message. If you need us, open a claim or message support from the order page and we&apos;ll step in where our Purchase Protection policy covers it. Outside of that, disputes are between the buyer and the seller. We may help facilitate a resolution or investigate abuse, but we are not obligated to resolve every dispute or to refund or compensate you. You use the platform and transact at your own risk.
+                If something goes sideways on a purchase, talk to the other person first. Most issues get solved with a quick message. If you need us, open a claim or message support from the purchase page and we&apos;ll step in where our Purchase Protection policy covers it. Outside of that, disputes are between the buyer and the seller. We may help facilitate a resolution or investigate abuse, but we are not obligated to resolve every dispute or to refund or compensate you. You use the platform and transact at your own risk.
               </p>
             </section>
 

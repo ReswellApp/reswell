@@ -53,7 +53,7 @@ export async function trackKlaviyoSellerOrderConfirmed(
     section: payload.listingSection,
   })
   const listingUrl = `${origin}${listingPath}`
-  const orderUrl = `${origin}/dashboard/orders/${payload.orderId}`
+  const orderUrl = `${origin}/dashboard/purchases/${payload.orderId}`
 
   await sendKlaviyoServerEvent({
     metricName: "Sale Successful",

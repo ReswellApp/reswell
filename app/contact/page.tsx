@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 export const metadata = pageSeoMetadata({
   title: "Contact — Reswell",
   description:
-    "Reach Reswell support by email or through this page. Quick replies, private handling, and help with your account, orders, and safety.",
+    "Reach Reswell support by email or through this page. Quick replies, private handling, and help with your account, purchases, and safety.",
   path: "/contact",
 })
 

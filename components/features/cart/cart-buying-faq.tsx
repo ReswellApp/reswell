@@ -28,7 +28,7 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     a: "Reswell does not offer financing today. You pay the listing total (and shipping when applicable) at checkout with your card.",
   },
   {
-    q: "When I buy on Reswell, is my order ready to ride?",
+    q: "When I buy on Reswell, is my purchase ready to ride?",
     a: "Listings describe condition and what’s included. Confirm details with the seller before you pay. Use messages to ask about fins, dings, or pickup logistics.",
   },
 ]

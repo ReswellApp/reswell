@@ -22,9 +22,9 @@ import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 export const metadata = privatePageMetadata({
-  title: "Orders — Reswell",
+  title: "Purchases — Reswell",
   description: "Your purchases on Reswell: shipping status, pickup codes, and order history.",
-  path: "/dashboard/orders",
+  path: "/dashboard/purchases",
 })
 
 type ShippingAddressJson = {
@@ -111,7 +111,7 @@ function paymentLabel(stripeSessionId: string | null): string {
   return stripeSessionId ? "Card" : "Wallet"
 }
 
-export default async function OrdersPage() {
+export default async function PurchasesPage() {
   const supabase = await createClient()
   const {
     data: { user },
@@ -173,7 +173,7 @@ export default async function OrdersPage() {
     <div className="space-y-6">
       <OrdersListRealtimeRefresh role="buyer" />
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Orders</h1>
+        <h1 className="text-3xl font-bold text-foreground">Purchases</h1>
         <p className="text-muted-foreground mt-1">
           Used gear and peer-to-peer buys. Sales you make are under{" "}
           <Link href="/dashboard/sales" className="text-primary underline underline-offset-2">
@@ -189,7 +189,7 @@ export default async function OrdersPage() {
 
       {error && (
         <p className="text-sm text-destructive">
-          Could not load orders. If this persists, check that marketplace RLS policies for{" "}
+          Could not load purchases. If this persists, check that marketplace RLS policies for{" "}
           <code className="rounded bg-muted px-1 py-0.5 text-xs">orders</code> are applied in Supabase.
         </p>
       )}
@@ -247,7 +247,7 @@ export default async function OrdersPage() {
               }`}
             >
               <Link
-                href={`/dashboard/orders/${row.id}`}
+                href={`/dashboard/purchases/${row.id}`}
                 className="block rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <CardHeader className="pb-3">
@@ -299,14 +299,14 @@ export default async function OrdersPage() {
                       <p className="font-medium text-foreground line-clamp-2">{title}</p>
                       <p className="text-sm text-muted-foreground mt-0.5">Seller: {sellerName}</p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Tap for order details, tracking, and messages
+                        Tap for purchase details, tracking, and messages
                       </p>
                     </div>
                   </div>
 
                   <div className="border-t pt-3 space-y-1 text-sm">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Order total</span>
+                      <span>Purchase total</span>
                       <span
                         className={`tabular-nums ${orderStatusIsRefunded(row.status) ? "line-through" : ""}`}
                       >

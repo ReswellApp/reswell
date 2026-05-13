@@ -16,7 +16,7 @@ import { pageSeoMetadata } from '@/lib/site-metadata'
 export const metadata: Metadata = pageSeoMetadata({
   title: 'Purchase Protection — Reswell',
   description:
-    'Purchase Protection for buyers and sellers on Reswell: buyer refunds for covered problems on eligible orders; sellers are not charged extra for protection — policy, exclusions, and claims.',
+    'Purchase Protection for buyers and sellers on Reswell: buyer refunds for covered problems on eligible purchases; sellers are not charged extra for protection — policy, exclusions, and claims.',
   path: '/protection-policy',
 })
 
@@ -60,7 +60,7 @@ export default function ProtectionPolicyPage() {
           Reswell Purchase Protection
         </h1>
         <p className="text-muted-foreground max-w-lg mx-auto text-base">
-          Purchase Protection covers <strong>buyers</strong> on eligible orders paid through Reswell
+          Purchase Protection covers <strong>buyers</strong> on eligible purchases paid through Reswell
           checkout. This page also explains what <strong>sellers</strong> can expect — fair rules,
           no extra protection fees on your payouts, and how claims work when a buyer opens one.
         </p>
@@ -82,7 +82,7 @@ export default function ProtectionPolicyPage() {
           Purchase Protection is for <strong>buyers</strong>: people who buy items on Reswell and
           complete payment in the app. It is how we stand behind your purchase when something goes
           wrong in a covered scenario — you do not pay an extra fee for this coverage on eligible
-          orders.
+          purchases.
         </p>
         <p className="text-sm text-foreground/80 leading-relaxed mt-3">
           <strong>What buyers get when a claim is approved:</strong>
@@ -92,7 +92,7 @@ export default function ProtectionPolicyPage() {
             <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" aria-hidden />
             <span>
               <strong>Money back</strong> — a full refund of the item price and shipping you paid
-              for that order (no separate protection cap on covered claims).
+              for that purchase (no separate protection cap on covered claims).
             </span>
           </li>
           <li className="flex items-start gap-2.5">
@@ -112,7 +112,7 @@ export default function ProtectionPolicyPage() {
           </li>
         </ul>
         <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-          <strong>Eligibility:</strong> Protection applies to eligible orders only — for example, it
+          <strong>Eligibility:</strong> Protection applies to eligible purchases only — for example, it
           requires checkout and payment on Reswell, tracked shipping for covered shipment claims
           (not local pickup), and filing within the protection window. See{' '}
           <a href="#not-covered" className="font-medium text-foreground underline underline-offset-2">
@@ -139,7 +139,7 @@ export default function ProtectionPolicyPage() {
           </h2>
         </div>
         <p className="text-sm text-foreground/80 leading-relaxed">
-          When you sell on Reswell, eligible orders are still covered by the same Purchase
+          When you sell on Reswell, eligible purchases are still covered by the same Purchase
           Protection program — but <strong>you are not charged an additional fee</strong>{' '}for it.
           Reswell funds approved buyer refunds from our marketplace fee; your agreed seller share
           (93% of the sale price) is not reduced by a separate &ldquo;protection&rdquo; line item. See{' '}
@@ -181,9 +181,9 @@ export default function ProtectionPolicyPage() {
           <li className="flex items-start gap-2.5">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-400" aria-hidden />
             <span>
-              <strong>Tracking protects everyone</strong> — for shipped orders, use{' '}
-              <strong>tracked shipping</strong> and add tracking to the order. It helps show
-              delivery status and is required for protection on shipped orders (see exclusions for
+              <strong>Tracking protects everyone</strong> — for shipped purchases, use{' '}
+              <strong>tracked shipping</strong> and add tracking on the sale in Reswell. It helps show
+              delivery status and is required for protection on shipped purchases (see exclusions for
               local pickup).
             </span>
           </li>
@@ -193,7 +193,7 @@ export default function ProtectionPolicyPage() {
           <Link href="/dashboard/sales" className="font-medium text-foreground underline underline-offset-2">
             Sales
           </Link>
-          . If a buyer opens a claim, respond promptly in the order thread with accurate information
+          . If a buyer opens a claim, respond promptly in Messages with accurate information
           so we can review fairly.
         </p>
       </section>
@@ -201,7 +201,7 @@ export default function ProtectionPolicyPage() {
       {/* Coverage sections (buyer remedies — detail) */}
       <p className="text-center text-sm text-muted-foreground -mb-2">
         The sections below describe <strong className="text-foreground/90">buyer remedies</strong>{' '}
-        for covered problems. Sellers should ship as described, use tracking for shipped orders,
+        for covered problems. Sellers should ship as described, use tracking for shipped purchases,
         and cooperate with returns when this policy applies.
       </p>
       <div className="space-y-4">
@@ -261,7 +261,7 @@ export default function ProtectionPolicyPage() {
             'Changed your mind after purchase (buyer\'s remorse)',
             'Item matches the description but you expected something different',
             'Damage you caused after receiving the item',
-            'Local pickup orders — protection requires tracked shipping',
+            'Local pickup purchases — protection requires tracked shipping',
             'Payments made outside Reswell (e.g. Venmo, cash, bank transfer)',
             'Claims filed more than 30 days after confirmed delivery',
           ].map((item) => (
@@ -283,13 +283,13 @@ export default function ProtectionPolicyPage() {
           {(
             [
               <>
-                Go to <strong>Orders</strong> (
-                <Link href="/dashboard/orders" className="font-medium text-foreground underline underline-offset-2">
-                  /dashboard/orders
+                Go to <strong>Purchases</strong> (
+                <Link href="/dashboard/purchases" className="font-medium text-foreground underline underline-offset-2">
+                  /dashboard/purchases
                 </Link>
                 ).
               </>,
-              <>Open the order you need help with.</>,
+              <>Open the purchase you need help with.</>,
               <>
                 Tap <strong>Refund help</strong>. Say whether you&apos;ve already messaged the seller,
                 then describe what happened in <strong>What should we know?</strong> — include
@@ -301,8 +301,8 @@ export default function ProtectionPolicyPage() {
                 <strong>3 business days</strong>.
               </>,
               <>
-                For general questions to Reswell that aren&apos;t a refund issue on this order, use{' '}
-                <strong>Ask Reswell</strong> on the same order page instead.
+                For general questions to Reswell that aren&apos;t a refund issue on this purchase, use{' '}
+                <strong>Ask Reswell</strong> on the same purchase page instead.
               </>,
             ] as const
           ).map((step, i) => (
@@ -315,17 +315,17 @@ export default function ProtectionPolicyPage() {
           ))}
         </ol>
         <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-          <strong>Refund help</strong> and <strong>Ask Reswell</strong> show on the order page while
-          the order is <strong>confirmed</strong> and a refund isn&apos;t already processing or
+          <strong>Refund help</strong> and <strong>Ask Reswell</strong> show on the purchase page while
+          the purchase is <strong>confirmed</strong> and a refund isn&apos;t already processing or
           completed.
         </p>
         <div className="mt-4 pt-4 border-t">
           <Link
-            href="/dashboard/orders"
+            href="/dashboard/purchases"
             className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
           >
             <ShieldCheck className="h-4 w-4" />
-            Go to my orders
+            Go to my purchases
           </Link>
         </div>
       </div>
@@ -342,7 +342,7 @@ export default function ProtectionPolicyPage() {
           <div className="flex items-start gap-2">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
             <p>
-              <strong>Opens</strong> when your order is placed.
+              <strong>Opens</strong> when your purchase is confirmed.
             </p>
           </div>
           <div className="flex items-start gap-2">
@@ -355,7 +355,7 @@ export default function ProtectionPolicyPage() {
           <div className="flex items-start gap-2">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
             <p>
-              You can see the exact countdown on your order detail page while protection is active.
+              You can see the exact countdown on your purchase detail page while protection is active.
             </p>
           </div>
         </div>
