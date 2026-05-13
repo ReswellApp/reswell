@@ -9,7 +9,11 @@ import { Input } from '@/components/ui/input'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
-import { VerifiedBadge } from '@/components/verified-badge'
+import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
+import {
+  loadOtherPartyProfile,
+  type OtherPartyProfileSummary,
+} from '@/lib/messages/profile-reviews-loader'
 import { format, isToday, isYesterday } from 'date-fns'
 import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -95,6 +99,8 @@ interface Conversation {
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [conversation, setConversation] = useState<Conversation | null>(null)
+  const [otherPartyProfile, setOtherPartyProfile] =
+    useState<OtherPartyProfileSummary | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [offersById, setOffersById] = useState<Record<string, OfferRowLite>>({})
   const [threadListingsById, setThreadListingsById] = useState<
@@ -174,6 +180,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     stickToBottomRef.current = true
     setThreadListingsById({})
     setListingBannerImageReady(false)
+    setOtherPartyProfile(null)
   }, [id])
 
   useEffect(() => {
@@ -285,6 +292,11 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         const L = nextConv.listing
         setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
       }
+      const otherUserId =
+        nextConv.buyer_id === user.id ? nextConv.seller_id : nextConv.buyer_id
+      void loadOtherPartyProfile(supabase, otherUserId).then((snapshot) => {
+        setOtherPartyProfile(snapshot)
+      })
     }
 
     const { data: msgData } = await supabase
@@ -644,45 +656,26 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 <ArrowLeft className="h-[22px] w-[22px]" strokeWidth={2} />
               </Button>
             </Link>
-            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border/60">
-                {otherUser?.avatar_url ? (
-                  <Image
-                    src={otherUser.avatar_url || '/placeholder.svg'}
-                    alt={otherUser.display_name || ''}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-[15px] font-semibold text-foreground">
-                    {otherUser?.display_name?.[0]?.toUpperCase() || '?'}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <p className="truncate text-[17px] font-semibold leading-tight text-foreground">
-                    {otherUser?.display_name}
-                  </p>
-                  {otherUser?.shop_verified && (
-                    <span className="shrink-0">
-                      <VerifiedBadge size="sm" />
-                    </span>
-                  )}
-                </div>
-                {displayListing && (
+            <ConversationPartyProfile
+              displayName={otherUser?.display_name ?? ''}
+              avatarUrl={otherUser?.avatar_url ?? null}
+              shopVerified={!!otherUser?.shop_verified}
+              profile={otherPartyProfile}
+              secondaryLine={
+                displayListing ? (
                   <Link
                     href={listingDetailPath(displayListing)}
-                    className="mt-0.5 block truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground"
+                    className="block truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {capitalizeWords(displayListing.title)}
                   </Link>
-                )}
-                {listingChromeLoading ? (
-                  <p className="mt-0.5 truncate text-[15px] text-muted-foreground">Updating listing…</p>
-                ) : null}
-              </div>
-            </div>
+                ) : listingChromeLoading ? (
+                  <p className="truncate text-[15px] text-muted-foreground">
+                    Updating listing…
+                  </p>
+                ) : null
+              }
+            />
           </div>
         </header>
 

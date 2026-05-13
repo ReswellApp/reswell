@@ -208,20 +208,54 @@ export default async function SellerProfilePage({
   }
   const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
 
-  // Fetch reviews (for stats + list); reviewer display name when available
+  /**
+   * Fetch reviews received in either direction (buyer→seller and seller→buyer).
+   * The listing owner determines direction: if `listing.user_id === id`, the
+   * reviewed user was the seller (reviews "as seller"); otherwise they were
+   * the buyer (reviews "as buyer"). Both sections render on this page so a
+   * visitor sees the user's full reputation across roles.
+   */
   const { data: reviews } = await supabase
     .from("reviews")
     .select(
-      "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name )",
+      "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name ), listing:listings!reviews_listing_id_fkey ( user_id )",
     )
     .eq("reviewed_id", id)
     .order("created_at", { ascending: false })
 
+  type ReviewRow = {
+    id: string
+    rating: number
+    comment: string | null
+    created_at: string
+    reviewer:
+      | { display_name: string | null }
+      | { display_name: string | null }[]
+      | null
+    listing:
+      | { user_id: string | null }
+      | { user_id: string | null }[]
+      | null
+  }
+
+  function pickRel<T>(rel: T | T[] | null | undefined): T | null {
+    if (rel == null) return null
+    return Array.isArray(rel) ? rel[0] ?? null : rel
+  }
+
+  const allReviews = (reviews ?? []) as ReviewRow[]
+  const reviewsAsSeller = allReviews.filter(
+    (r) => pickRel(r.listing)?.user_id === id,
+  )
+  const reviewsAsBuyer = allReviews.filter(
+    (r) => pickRel(r.listing)?.user_id !== id,
+  )
+
   const avgRating =
-    reviews && reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    allReviews.length > 0
+      ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
       : 0
-  const reviewCount = reviews?.length || 0
+  const reviewCount = allReviews.length
 
   let favoritedIds: string[] = []
   if (user && listings && listings.length > 0) {
@@ -415,66 +449,25 @@ export default async function SellerProfilePage({
             </div>
           </div>
 
-          {/* Buyer reviews (directly under contact) */}
-          <div className="py-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Star className="h-4 w-4 fill-amber-500 text-amber-500" aria-hidden />
-              Buyer reviews
-            </h2>
-            {reviews && reviews.length > 0 ? (
-              <div className="space-y-4">
-                {reviews.map((review) => {
-                  const rel = review.reviewer as
-                    | { display_name: string | null }
-                    | { display_name: string | null }[]
-                    | null
-                    | undefined
-                  const reviewer = Array.isArray(rel) ? rel[0] : rel
-                  const reviewerLabel =
-                    reviewer?.display_name?.trim() || "Verified buyer"
-                  return (
-                  <Card key={review.id}>
-                    <CardContent className="py-3 px-4">
-                      <div className="flex items-center gap-2 text-sm mb-1 flex-wrap">
-                        <span className="font-medium text-foreground">{reviewerLabel}</span>
-                        <span className="text-muted-foreground">·</span>
-                        <span
-                          className="inline-flex items-center"
-                          role="img"
-                          aria-label={`${review.rating} out of 5 stars`}
-                        >
-                          <SellerRatingStarRow value={review.rating} size="md" />
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {review.created_at
-                            ? new Date(review.created_at).toLocaleDateString(
-                                "en-US",
-                                { month: "short", day: "numeric", year: "numeric" }
-                              )
-                            : null}
-                        </span>
-                      </div>
-                      {review.comment && (
-                        <p className="text-sm text-muted-foreground">
-                          {review.comment}
-                        </p>
-                      )}
-                      {!review.comment && (
-                        <p className="text-sm text-muted-foreground italic">
-                          No written comment provided.
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No reviews yet.
-              </p>
-            )}
-          </div>
+          {/* Reviews — split into "as seller" (from buyers) and "as buyer" (from sellers). */}
+          <ReviewsSection
+            heading="Reviews as a seller"
+            emptyFallback={
+              reviewCount === 0
+                ? "No reviews yet."
+                : "No seller reviews yet."
+            }
+            defaultReviewerLabel="Verified buyer"
+            reviews={reviewsAsSeller}
+          />
+          {reviewsAsBuyer.length > 0 ? (
+            <ReviewsSection
+              heading="Reviews as a buyer"
+              emptyFallback="No buyer reviews yet."
+              defaultReviewerLabel="Verified seller"
+              reviews={reviewsAsBuyer}
+            />
+          ) : null}
 
           <Separator />
 
@@ -540,6 +533,77 @@ export default async function SellerProfilePage({
           )}
         </div>
       </main>
+  )
+}
+
+function ReviewsSection({
+  heading,
+  emptyFallback,
+  defaultReviewerLabel,
+  reviews,
+}: {
+  heading: string
+  emptyFallback: string
+  defaultReviewerLabel: string
+  reviews: Array<{
+    id: string
+    rating: number
+    comment: string | null
+    created_at: string
+    reviewer:
+      | { display_name: string | null }
+      | { display_name: string | null }[]
+      | null
+  }>
+}) {
+  return (
+    <div className="py-6">
+      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <Star className="h-4 w-4 fill-amber-500 text-amber-500" aria-hidden />
+        {heading}
+      </h2>
+      {reviews.length > 0 ? (
+        <div className="space-y-4">
+          {reviews.map((review) => {
+            const rel = review.reviewer
+            const reviewer = Array.isArray(rel) ? rel[0] : rel
+            const reviewerLabel =
+              reviewer?.display_name?.trim() || defaultReviewerLabel
+            return (
+              <Card key={review.id}>
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-2 text-sm mb-1 flex-wrap">
+                    <span className="font-medium text-foreground">{reviewerLabel}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span
+                      className="inline-flex items-center"
+                      role="img"
+                      aria-label={`${review.rating} out of 5 stars`}
+                    >
+                      <SellerRatingStarRow value={review.rating} size="md" />
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {review.created_at
+                        ? new Date(review.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : null}
+                    </span>
+                  </div>
+                  {review.comment?.trim() ? (
+                    <p className="text-sm text-muted-foreground">{review.comment}</p>
+                  ) : null}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{emptyFallback}</p>
+      )}
+    </div>
   )
 }
 
