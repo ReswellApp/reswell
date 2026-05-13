@@ -1,18 +1,24 @@
 import Link from "next/link"
+import { FaqJsonLd } from "@/components/features/faq/faq-json-ld"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CircleHelp } from "lucide-react"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 import { MARKETPLACE_FEE_PERCENT, SELLER_SHARE_PERCENT } from "@/lib/seller-fees"
+
+export const revalidate = 86400
 
 export const metadata = pageSeoMetadata({
   title: "FAQ — Reswell",
   description:
     "Frequently asked questions about buying, selling, fees, shipping, messages, and Purchase Protection on Reswell.",
   path: "/faq",
+  robots: { index: true, follow: true },
 })
 
 type Faq = {
   question: string
+  /** Plain text for FAQPage JSON-LD — keep aligned with the visible `answer`. */
+  answerPlain: string
   answer: React.ReactNode
 }
 
@@ -31,6 +37,8 @@ const sections: FaqSection[] = [
     faqs: [
       {
         question: "How do I buy a board?",
+        answerPlain:
+          "Browse boards from the Surfboards page, open a listing you like, and hit Buy now to check out. If you want to ask the seller something first, tap Message seller. Payment always happens inside Reswell checkout. We don't process payments outside the app.",
         answer: (
           <>
             Browse boards from the{" "}
@@ -47,6 +55,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "Can I make an offer?",
+        answerPlain:
+          "If the seller has offers turned on for a listing, you'll see a Make an offer button on the listing page. Send your price and the seller can accept, counter, or decline in Messages. Once an offer is accepted, we'll send you a checkout link so you can pay at the agreed price.",
         answer: (
           <>
             If the seller has offers turned on for a listing, you&apos;ll see a{" "}
@@ -59,6 +69,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "Local pickup or shipping, how do I know which a listing offers?",
+        answerPlain:
+          "Every listing tells you whether the seller offers local pickup, shipping, or both. For shipped purchases, the seller adds tracking once the board is on its way. For pickup, you and the seller sort out a time and place in Messages. It's worth reading our Safety tips before you meet up.",
         answer: (
           <>
             Every listing tells you whether the seller offers local pickup, shipping, or both. For
@@ -80,6 +92,8 @@ const sections: FaqSection[] = [
     faqs: [
       {
         question: "How do I list a board for sale?",
+        answerPlain:
+          "Sign in and tap Sell in the header, or go straight to /sell. Add good photos, your price, the condition, the dimensions (length, width, thickness, volume), the fin setup, and whether you want to offer local pickup, shipping, or both. Posting a listing is free.",
         answer: (
           <>
             Sign in and tap <strong className="text-foreground">Sell</strong> in the header, or go
@@ -95,6 +109,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "How do I respond to messages and offers?",
+        answerPlain:
+          "Buyer messages land in Messages. Offers show up in the listing thread and also in Offers in your dashboard, so you can accept, counter, or decline from wherever you are. Quick, honest replies keep your listings healthy and help you close the sale.",
         answer: (
           <>
             Buyer messages land in{" "}
@@ -112,6 +128,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "I sold a board. What happens next?",
+        answerPlain:
+          "Open the sale from Sales. If you're shipping it, pack the board well, use a tracked carrier, and add the tracking number to the sale. You can also buy a label straight from the sale page when ShipEngine is set up. If it's local pickup, confirm the meetup in Messages. Your earnings land in your wallet once the sale reaches the right state, as laid out in Purchase Protection.",
         answer: (
           <>
             Open the sale from{" "}
@@ -139,6 +157,8 @@ const sections: FaqSection[] = [
     faqs: [
       {
         question: "How do I pay?",
+        answerPlain:
+          "Buyers pay by card in Reswell checkout. Our payment processor, Stripe, handles your card details directly. If you have a wallet balance from past sales, you can apply it toward your purchase at checkout. We don't accept payments outside of Reswell, and payments made outside the app aren't covered by Purchase Protection.",
         answer: (
           <>
             Buyers pay by card in Reswell checkout. Our payment processor, Stripe, handles your
@@ -150,6 +170,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "What is my wallet balance?",
+        answerPlain:
+          "Your wallet is where earnings from completed sales show up. You can spend that balance on other listings at checkout, or cash out to your payout destination from Earnings.",
         answer: (
           <>
             Your wallet is where earnings from completed sales show up. You can spend that balance
@@ -163,6 +185,7 @@ const sections: FaqSection[] = [
       },
       {
         question: "What are the fees?",
+        answerPlain: `On every completed sale, Reswell takes a ${MARKETPLACE_FEE_PERCENT}% marketplace fee and the seller keeps ${SELLER_SHARE_PERCENT}%. Card processing is not an extra deduction on top of that—Reswell absorbs it. There's no separate Purchase Protection fee for sellers either. You can find the full detail in the Terms of Service.`,
         answer: (
           <>
             On every completed sale, Reswell takes a {MARKETPLACE_FEE_PERCENT}% marketplace fee
@@ -178,6 +201,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "How do cash outs work?",
+        answerPlain:
+          "Once funds are released to your wallet, you can request a cash out from Earnings to the payout destination you've set up. How long it takes depends on your payout method and any checks our provider needs to run. Keep your payout details accurate so your transfer doesn't get held up.",
         answer: (
           <>
             Once funds are released to your wallet, you can request a cash out from{" "}
@@ -199,6 +224,8 @@ const sections: FaqSection[] = [
     faqs: [
       {
         question: "What is Reswell Purchase Protection?",
+        answerPlain:
+          "Purchase Protection covers buyers on eligible purchases paid through Reswell checkout when the item never arrives, turns up damaged, or is materially different from the listing. Buyers don't pay an extra fee for it, and sellers are not charged a separate protection deduction. The full policy and exclusions live on the Purchase Protection page.",
         answer: (
           <>
             Purchase Protection covers buyers on eligible purchases paid through Reswell checkout
@@ -214,6 +241,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "I have a problem with a purchase. What should I do?",
+        answerPlain:
+          "Message the other person first. Most issues get sorted out with a quick conversation. If you still need help, open the purchase from Purchases and tap Refund help to file a claim, or Ask Reswell for a general question about the purchase. We aim to review claims within 3 business days.",
         answer: (
           <>
             Message the other person first. Most issues get sorted out with a quick conversation.
@@ -229,6 +258,8 @@ const sections: FaqSection[] = [
       },
       {
         question: "I think I'm dealing with a scam.",
+        answerPlain:
+          "Slow down and keep the conversation in Reswell Messages. Don't send money outside the app. Report the listing or user from the listing page, and contact us with any details you have. Our Safety tips page covers common red flags worth a read.",
         answer: (
           <>
             Slow down and keep the conversation in Reswell Messages. Don&apos;t send money outside
@@ -252,6 +283,8 @@ const sections: FaqSection[] = [
     faqs: [
       {
         question: "Where do I find my messages?",
+        answerPlain:
+          "Open Messages (the envelope icon in the header). Every thread is tied to a specific listing or purchase, so pickup details, shipping updates, and purchase questions all live in one place. Keep the conversation on Reswell so we have a record if you ever need us to step in.",
         answer: (
           <>
             Open{" "}
@@ -272,6 +305,8 @@ const sections: FaqSection[] = [
     faqs: [
       {
         question: "How do I change my profile, password, or notifications?",
+        answerPlain:
+          "You can update your profile, display name, shop details, and notification preferences from Profile. If you've forgotten your password, use the reset link on the sign in screen. For help with account access or deletion, just contact us.",
         answer: (
           <>
             You can update your profile, display name, shop details, and notification preferences
@@ -292,9 +327,17 @@ const sections: FaqSection[] = [
   },
 ]
 
+const faqJsonLdItems = sections.flatMap((section) =>
+  section.faqs.map((faq) => ({
+    question: faq.question,
+    answerPlain: faq.answerPlain,
+  })),
+)
+
 export default function FaqPage() {
   return (
     <main className="flex-1 py-12">
+      <FaqJsonLd items={faqJsonLdItems} />
       <div className="container mx-auto max-w-3xl">
         <div className="flex items-center gap-3 mb-8">
           <CircleHelp className="h-10 w-10 text-primary" aria-hidden />
@@ -337,7 +380,9 @@ export default function FaqPage() {
                       <CardTitle className="text-base">{faq.question}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+                      <div className="text-muted-foreground leading-relaxed [&_a]:underline [&_a]:text-primary">
+                        {faq.answer}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

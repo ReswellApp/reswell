@@ -28,6 +28,29 @@ export function publicSiteOrigin(): string {
 }
 
 /**
+ * Hostname used to normalize **production** `www` vs apex and HTTP→HTTPS in middleware.
+ *
+ * Uses `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` when set (so `https://www.…` can be canonical),
+ * otherwise **`reswell.app`**. Does **not** fall back to `VERCEL_URL` — preview hostnames must never
+ * rewrite real-domain traffic.
+ */
+export function canonicalProductionSiteHostname(): string {
+  const explicit =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim()
+  if (explicit) {
+    try {
+      const normalized = /^https?:\/\//i.test(explicit)
+        ? explicit
+        : `https://${explicit.replace(/^\/+/, "")}`
+      return new URL(normalized).hostname.toLowerCase()
+    } catch {
+      /* fall through */
+    }
+  }
+  return "reswell.app"
+}
+
+/**
  * Canonical origin for **email** links (Klaviyo inactive winback, etc.).
  *
  * Does **not** use `VERCEL_URL`, so cron/jobs from preview deploys won’t emit `*.vercel.app`

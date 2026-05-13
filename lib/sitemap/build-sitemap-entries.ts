@@ -108,6 +108,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     {
       url: `${BASE}/what-is-reswell`,
       lastModified: now,
@@ -124,7 +125,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/surfers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
-    { url: `${BASE}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
+    { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
