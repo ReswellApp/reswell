@@ -2,7 +2,7 @@ import { canonicalHostRedirectResponse } from '@/lib/middleware/canonical-host-r
 import { updateSession } from '@/lib/supabase/proxy'
 import { type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const canonicalRedirect = canonicalHostRedirectResponse(request)
   if (canonicalRedirect) {
     return canonicalRedirect

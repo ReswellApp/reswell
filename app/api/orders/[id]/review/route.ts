@@ -4,6 +4,7 @@ import {
   insertMarketplaceReviewForOrder,
   getMarketplaceReviewByOrderAndReviewer,
 } from "@/lib/db/order-reviews"
+import { trackKlaviyoSellerReviewedBuyer } from "@/lib/klaviyo/track-seller-reviewed-buyer"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
 
@@ -86,6 +87,17 @@ export async function POST(
       return NextResponse.json({ error: "You already submitted a review for this order." }, { status: 409 })
     }
     return NextResponse.json({ error: "Could not save your review" }, { status: 500 })
+  }
+
+  if (isSeller && order.buyer_id) {
+    void trackKlaviyoSellerReviewedBuyer({
+      orderId,
+      buyerUserId: order.buyer_id,
+      sellerUserId: user.id,
+      listingId: order.listing_id,
+      rating: parsed.data.rating,
+      comment: parsed.data.comment ?? null,
+    })
   }
 
   return NextResponse.json({ success: true, id: data.id, created_at: data.created_at })
