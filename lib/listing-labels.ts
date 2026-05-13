@@ -84,7 +84,7 @@ export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] 
   (v) => ({ value: v, label: LISTING_CONDITION_LABELS[v] ?? v }),
 )
 
-/** Rows for browse filters (values only; pair with `{ value: \"all\", label: \"Any Condition\" }`). */
+/** Rows for browse filters (values only; pair with `{ value: \"all\", label: \"Condition Any\" }`). */
 export function listingConditionFilterRows(): { value: string; label: string }[] {
   return LISTING_CONDITION_ORDER.map((v) => ({
     value: v,

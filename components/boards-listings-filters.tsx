@@ -37,7 +37,7 @@ export const boardTypes = [
 ]
 
 export const boardConditions = [
-  { value: "all", label: "Any Condition" },
+  { value: "all", label: "Condition Any" },
   ...listingConditionFilterRows(),
 ]
 
@@ -394,7 +394,7 @@ export function BoardsListingsFilters({
       <div className="col-span-1 w-full min-w-0 md:col-auto md:w-[120px] md:shrink-0">
         <Select name="condition" value={condition} onValueChange={setCondition}>
           <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-            <SelectValue placeholder="Any Condition" />
+            <SelectValue placeholder="Condition Any" />
           </SelectTrigger>
           <SelectContent>
             {boardConditions.map((cond) => (
