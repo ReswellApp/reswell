@@ -28,31 +28,6 @@ export function publicSiteOrigin(): string {
 }
 
 /**
- * Derives the canonical production hostname from `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL`,
- * defaulting to **`reswell.app`** when unset or invalid.
- *
- * Middleware uses this for **www ↔ apex** redirects **only** when one of those env vars is set.
- * Without them, middleware leaves hostname as-is (HTTPS upgrade still applies), so Vercel’s primary
- * domain is the single source of truth and redirect loops are avoided.
- * Does **not** fall back to `VERCEL_URL` — preview hostnames must never rewrite production domains.
- */
-export function canonicalProductionSiteHostname(): string {
-  const explicit =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim()
-  if (explicit) {
-    try {
-      const normalized = /^https?:\/\//i.test(explicit)
-        ? explicit
-        : `https://${explicit.replace(/^\/+/, "")}`
-      return new URL(normalized).hostname.toLowerCase()
-    } catch {
-      /* fall through */
-    }
-  }
-  return "reswell.app"
-}
-
-/**
  * Canonical origin for **email** links (Klaviyo inactive winback, etc.).
  *
  * Does **not** use `VERCEL_URL`, so cron/jobs from preview deploys won’t emit `*.vercel.app`
