@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { klaviyoPageViewBodySchema } from "@/lib/validations/klaviyoPageView"
 import { trackKlaviyoPageView } from "@/lib/services/klaviyoPageView"
+import { recordSiteTrafficPageViewEvent } from "@/lib/services/siteTraffic"
 import { createClient } from "@/lib/supabase/server"
 
 /**
@@ -38,13 +39,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await trackKlaviyoPageView({
-      pathname: parsed.data.pathname,
-      search: parsed.data.search,
-      anonymousId: parsed.data.anonymous_id ?? null,
-      loggedInUserId: user?.id ?? null,
-      loggedInUserEmail: user?.email ?? null,
-    })
+    await Promise.all([
+      trackKlaviyoPageView({
+        pathname: parsed.data.pathname,
+        search: parsed.data.search,
+        anonymousId: parsed.data.anonymous_id ?? null,
+        loggedInUserId: user?.id ?? null,
+        loggedInUserEmail: user?.email ?? null,
+      }),
+      recordSiteTrafficPageViewEvent({
+        pathname: parsed.data.pathname,
+        anonymousId: parsed.data.anonymous_id ?? null,
+        loggedInUserId: user?.id ?? null,
+      }),
+    ])
   } catch (e) {
     console.error("[klaviyo] page-view:", e)
     return NextResponse.json({ error: "Failed to record view" }, { status: 500 })

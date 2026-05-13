@@ -9,11 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
-import {
-  getBoardModelsCatalogItems,
-  searchBrandsCatalogSuggest,
-  type BrandCatalogSuggestRow,
-} from "@/app/actions/marketplace"
+import { getBoardModelsCatalogItems, searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
+import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { useIsMobile } from "@/hooks/use-mobile"

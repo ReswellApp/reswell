@@ -20,6 +20,7 @@ import {
   Waves,
   Wallet,
   ChevronDown,
+  Target,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,7 @@ const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   shield: Shield,
   truck: Truck,
   settings: Settings,
+  target: Target,
 }
 
 function isNavActive(pathname: string, href: string): boolean {

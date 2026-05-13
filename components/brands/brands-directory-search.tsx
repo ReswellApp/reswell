@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import type { BrandRow } from "@/lib/brands/types"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
-import type { BrandCatalogSuggestRow } from "@/app/actions/marketplace"
+import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordBrandDirectorySearchAnalytics } from "@/app/actions/brand-directory-search-analytics"
 
 const BROWSE_LIMIT = 36

@@ -9,11 +9,8 @@ import { Input } from "@/components/ui/input"
 import { SlidersHorizontal, Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
-import {
-  searchBrandsCatalogSuggest,
-  searchSuggest,
-  type BrandCatalogSuggestRow,
-} from "@/app/actions/marketplace"
+import { searchBrandsCatalogSuggest, searchSuggest } from "@/app/actions/marketplace"
+import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import type {
   SearchSuggestPickKind,

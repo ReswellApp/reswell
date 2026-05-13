@@ -339,8 +339,6 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
   return { titles, categories, brands, listings, meta: { listingsBackend } }
 }
 
-export type { BrandCatalogSuggestResponse, BrandCatalogSuggestRow }
-
 /**
  * Search the official brand directory (not listing-derived brand text).
  * Used by the sell form brand field (`BrandInputWithSuggestions`) and nav-style brand typeahead.
