@@ -28,11 +28,13 @@ export function publicSiteOrigin(): string {
 }
 
 /**
- * Hostname used to normalize **production** `www` vs apex and HTTP→HTTPS in middleware.
+ * Derives the canonical production hostname from `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL`,
+ * defaulting to **`reswell.app`** when unset or invalid.
  *
- * Uses `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` when set (so `https://www.…` can be canonical),
- * otherwise **`reswell.app`**. Does **not** fall back to `VERCEL_URL` — preview hostnames must never
- * rewrite real-domain traffic.
+ * Middleware uses this for **www ↔ apex** redirects **only** when one of those env vars is set.
+ * Without them, middleware leaves hostname as-is (HTTPS upgrade still applies), so Vercel’s primary
+ * domain is the single source of truth and redirect loops are avoided.
+ * Does **not** fall back to `VERCEL_URL` — preview hostnames must never rewrite production domains.
  */
 export function canonicalProductionSiteHostname(): string {
   const explicit =

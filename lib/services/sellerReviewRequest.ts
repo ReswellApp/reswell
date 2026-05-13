@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSeller } from "@/lib/db/conversations"
-import { getSellerReviewByOrderId } from "@/lib/db/order-reviews"
+import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
@@ -126,7 +126,11 @@ export async function sendSellerReviewRequestForOrder(
     return { ok: false, error: gate.error }
   }
 
-  const { data: existingReview, error: revErr } = await getSellerReviewByOrderId(supabase, orderId)
+  const { data: existingReview, error: revErr } = await getMarketplaceReviewByOrderAndReviewer(
+    supabase,
+    orderId,
+    row.buyer_id,
+  )
   if (revErr) {
     return { ok: false, error: "Could not check existing reviews." }
   }

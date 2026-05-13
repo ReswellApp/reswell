@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { insertSellerReviewForOrder, getSellerReviewByOrderId } from "@/lib/db/order-reviews"
+import {
+  insertMarketplaceReviewForOrder,
+  getMarketplaceReviewByOrderAndReviewer,
+} from "@/lib/db/order-reviews"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
 
@@ -36,10 +39,15 @@ export async function POST(
     .from("orders")
     .select("id, buyer_id, seller_id, listing_id, status, delivery_status")
     .eq("id", orderId)
-    .eq("buyer_id", user.id)
     .maybeSingle()
 
   if (orderErr || !order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  }
+
+  const isBuyer = order.buyer_id === user.id
+  const isSeller = order.seller_id === user.id
+  if (!isBuyer && !isSeller) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
@@ -48,7 +56,7 @@ export async function POST(
     return NextResponse.json({ error: gate.error }, { status: 400 })
   }
 
-  const { data: existing } = await getSellerReviewByOrderId(supabase, orderId)
+  const { data: existing } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, user.id)
   if (existing) {
     return NextResponse.json({ error: "You already submitted a review for this order." }, { status: 409 })
   }
@@ -57,10 +65,12 @@ export async function POST(
     return NextResponse.json({ error: "This order has no listing to attach a review to." }, { status: 400 })
   }
 
-  const { data, error } = await insertSellerReviewForOrder(supabase, {
+  const reviewedId = isBuyer ? order.seller_id : order.buyer_id
+
+  const { data, error } = await insertMarketplaceReviewForOrder(supabase, {
     order_id: orderId,
     reviewer_id: user.id,
-    reviewed_id: order.seller_id,
+    reviewed_id: reviewedId,
     listing_id: order.listing_id,
     rating: parsed.data.rating,
     comment: parsed.data.comment ?? null,
@@ -68,7 +78,11 @@ export async function POST(
 
   if (error || !data) {
     console.error("[order review] insert:", error)
-    if (error?.message.includes("reviews_order_id_uidx") || error?.message.includes("duplicate key")) {
+    if (
+      error?.message.includes("reviews_order_id_reviewer_uidx") ||
+      error?.message.includes("reviews_order_id_uidx") ||
+      error?.message.includes("duplicate key")
+    ) {
       return NextResponse.json({ error: "You already submitted a review for this order." }, { status: 409 })
     }
     return NextResponse.json({ error: "Could not save your review" }, { status: 500 })

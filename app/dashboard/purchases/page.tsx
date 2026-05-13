@@ -165,6 +165,7 @@ export default async function PurchasesPage() {
           .from("reviews")
           .select("order_id, id, rating, comment, created_at")
           .in("order_id", orderIds)
+          .eq("reviewer_id", user.id)
       : { data: [] as { order_id: string; id: string; rating: number; comment: string | null; created_at: string }[] }
 
   const reviewsByOrderId = new Map((reviewRows ?? []).map((r) => [r.order_id, r]))

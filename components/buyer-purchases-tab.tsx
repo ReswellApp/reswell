@@ -124,6 +124,7 @@ export function BuyerPurchasesTab() {
               .from("reviews")
               .select("order_id, id, rating, comment, created_at")
               .in("order_id", ids)
+              .eq("reviewer_id", user.id)
           : { data: [] as { order_id: string; id: string; rating: number; comment: string | null; created_at: string }[] }
 
       const revByOrder = new Map((revs ?? []).map((x) => [x.order_id, x]))

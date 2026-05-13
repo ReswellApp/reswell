@@ -54,10 +54,11 @@ import {
 } from "@/lib/shipping/order-tracking-detail"
 import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
-import { getSellerReviewByOrderId } from "@/lib/db/order-reviews"
+import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { sellerReviewRequestAlreadySentForOrder } from "@/lib/services/sellerReviewRequest"
 import { AskBuyerReviewButton } from "@/components/features/sales/ask-buyer-review-button"
+import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -325,13 +326,31 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   const orderNumber = formatOrderNumForCustomer(sale.order_num, sale.id)
 
-  const { data: buyerReviewForOrder } = await getSellerReviewByOrderId(supabase, id)
+  const { data: buyerReviewForOrder } = await getMarketplaceReviewByOrderAndReviewer(
+    supabase,
+    id,
+    sale.buyer_id,
+  )
+  const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
   const buyerReviewGate = validateSellerReviewForOrder({
     status: sale.status,
     delivery_status: sale.delivery_status,
   })
   const canAskBuyerForReview =
     buyerReviewGate.ok && !buyerReviewForOrder && Boolean(sale.buyer_id)
+
+  const existingSellerReviewOfBuyer = sellerReviewOfBuyer
+    ? {
+        id: sellerReviewOfBuyer.id,
+        rating: sellerReviewOfBuyer.rating,
+        comment: sellerReviewOfBuyer.comment,
+        created_at: sellerReviewOfBuyer.created_at,
+      }
+    : null
+  const canSubmitBuyerReview =
+    buyerReviewGate.ok && !existingSellerReviewOfBuyer && Boolean(sale.buyer_id)
+  const showSellerOwnBuyerReviewUi = !!(existingSellerReviewOfBuyer || canSubmitBuyerReview)
+
   const reviewRequestAlreadySent = canAskBuyerForReview
     ? await sellerReviewRequestAlreadySentForOrder(supabase, sale.buyer_id, user.id, id)
     : false
@@ -650,6 +669,19 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               <p className="text-xs text-muted-foreground">
                 Completed checkout for this sale.
               </p>
+
+              {showSellerOwnBuyerReviewUi ? (
+                <div className="space-y-2 border-t border-border/60 pt-3">
+                  <p className="text-xs font-medium text-foreground">Your review of them</p>
+                  <ReviewBuyerControls
+                    orderId={sale.id}
+                    buyerName={buyerName}
+                    canReview={canSubmitBuyerReview}
+                    existingReview={existingSellerReviewOfBuyer}
+                  />
+                </div>
+              ) : null}
+
               {canAskBuyerForReview ? (
                 <div className="space-y-2 border-t border-border/60 pt-3">
                   <p className="text-xs text-muted-foreground leading-relaxed">

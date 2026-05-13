@@ -60,10 +60,16 @@ export function ReviewRequestMessageCard({
 
   const loadReview = useCallback(async () => {
     if (!viewerIsBuyer) return
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
     const { data: row } = await supabase
       .from("reviews")
       .select("id, rating, comment, created_at")
       .eq("order_id", orderId)
+      .eq("reviewer_id", user.id)
       .maybeSingle()
 
     if (

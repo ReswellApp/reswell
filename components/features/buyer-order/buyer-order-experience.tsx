@@ -47,6 +47,7 @@ import {
   ReviewSellerControls,
   type ExistingSellerReview,
 } from "@/components/review-seller-controls"
+import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 
 export type BuyerOrderExperienceProps = {
   orderId: string
@@ -71,6 +72,8 @@ export type BuyerOrderExperienceProps = {
     canSubmit: boolean
     existing: ExistingSellerReview | null
   }
+  /** Seller's rating of you on this order, if they have submitted one (read-only). */
+  reviewFromSeller: ExistingSellerReview | null
 }
 
 type JourneyStep = {
@@ -348,6 +351,40 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
             existingReview={props.sellerReview.existing}
           />
         )}
+
+        {props.reviewFromSeller ? (
+          <Card className="border-muted-foreground/20 bg-muted/25 sm:max-w-md">
+            <CardContent className="py-3 px-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Seller feedback
+              </p>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span
+                  className="inline-flex items-center"
+                  role="img"
+                  aria-label={`${props.reviewFromSeller.rating} out of 5 stars`}
+                >
+                  <SellerRatingStarRow value={props.reviewFromSeller.rating} size="md" />
+                </span>
+                <span className="text-sm font-medium tabular-nums">{props.reviewFromSeller.rating}/5</span>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  <LocalDateTime
+                    iso={props.reviewFromSeller.created_at}
+                    dateStyle="medium"
+                    timeStyle="short"
+                  />
+                </span>
+              </div>
+              {props.reviewFromSeller.comment ? (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {props.reviewFromSeller.comment}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">No written comment.</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
 
         {!isRefunded && !isRefunding && trackUrl ? (
           <Button className="gap-2" asChild>

@@ -29,7 +29,7 @@ import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-or
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
-import { getSellerReviewByOrderId } from "@/lib/db/order-reviews"
+import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import {
   fetchOptionalOrderTrackingDetailJson,
@@ -242,14 +242,28 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
 
-  const { data: orderReviewRow } = await getSellerReviewByOrderId(supabase, id)
+  const { data: buyerOwnReviewRow } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
+  const { data: sellerRatedBuyerRow } = await getMarketplaceReviewByOrderAndReviewer(
+    supabase,
+    id,
+    order.seller_id,
+  )
 
-  const existingSellerReview = orderReviewRow
+  const existingSellerReview = buyerOwnReviewRow
     ? {
-        id: orderReviewRow.id,
-        rating: orderReviewRow.rating,
-        comment: orderReviewRow.comment,
-        created_at: orderReviewRow.created_at,
+        id: buyerOwnReviewRow.id,
+        rating: buyerOwnReviewRow.rating,
+        comment: buyerOwnReviewRow.comment,
+        created_at: buyerOwnReviewRow.created_at,
+      }
+    : null
+
+  const reviewFromSeller = sellerRatedBuyerRow
+    ? {
+        id: sellerRatedBuyerRow.id,
+        rating: sellerRatedBuyerRow.rating,
+        comment: sellerRatedBuyerRow.comment,
+        created_at: sellerRatedBuyerRow.created_at,
       }
     : null
 
@@ -337,6 +351,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           canSubmit: canSubmitSellerReviewForOrder,
           existing: existingSellerReview,
         }}
+        reviewFromSeller={reviewFromSeller}
       />
 
       {/* Buyer action: confirm delivery for shipped purchases (hidden when refunded) */}

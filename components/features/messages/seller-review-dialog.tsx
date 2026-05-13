@@ -19,6 +19,8 @@ import { Textarea } from "@/components/ui/textarea"
 export type SellerReviewDialogProps = {
   orderId: string
   sellerName: string
+  /** Who receives the rating: the seller (buyer's review) or the buyer (seller's review). */
+  ratingSubject?: "seller" | "buyer"
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
@@ -27,6 +29,7 @@ export type SellerReviewDialogProps = {
 export function SellerReviewDialog({
   orderId,
   sellerName,
+  ratingSubject = "seller",
   open,
   onOpenChange,
   onSuccess,
@@ -68,8 +71,9 @@ export function SellerReviewDialog({
         <DialogHeader>
           <DialogTitle>Review {sellerName}</DialogTitle>
           <DialogDescription>
-            Rate your experience for this purchase. You can submit one review per order; it appears on the
-            seller&apos;s profile.
+            {ratingSubject === "buyer"
+              ? "Rate this buyer for this completed sale. You can submit one review per order; it is tied to this purchase."
+              : "Rate your experience for this purchase. You can submit one review per order; it appears on the seller's profile."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-1">
@@ -106,7 +110,11 @@ export function SellerReviewDialog({
               onChange={(e) => setComment(e.target.value)}
               rows={4}
               maxLength={2000}
-              placeholder="Optional. A quick note helps other buyers."
+              placeholder={
+                ratingSubject === "buyer"
+                  ? "Optional — e.g. communication, pickup, or payment reliability."
+                  : "Optional. A quick note helps other buyers."
+              }
             />
             <p className="text-xs text-muted-foreground text-right">{comment.length}/2000</p>
           </div>
