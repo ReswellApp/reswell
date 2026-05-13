@@ -3,6 +3,41 @@ import Stripe from "stripe"
 let stripe: Stripe | null = null
 
 /**
+ * Parse one or more webhook signing secrets from env (comma/newline-separated).
+ * Strips accidental quotes from dashboard copy/paste.
+ * During rotation Stripe may provide two secrets; listing both avoids 400s until env is narrowed to one.
+ */
+export function parseStripeWebhookSigningSecrets(raw: string | undefined): string[] {
+  if (!raw?.trim()) return []
+  return raw
+    .split(/[\n,]+/)
+    .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+    .filter(Boolean)
+}
+
+/** Try each signing secret until `constructEvent` succeeds (rotation-safe). */
+export function constructStripeWebhookEvent(
+  rawBody: string,
+  signature: string,
+  secretsRaw: string,
+): Stripe.Event {
+  const segments = parseStripeWebhookSigningSecrets(secretsRaw)
+  if (segments.length === 0) {
+    throw new Error("No STRIPE_WEBHOOK_SECRET value after parsing")
+  }
+  const client = getStripe()
+  let lastErr: unknown
+  for (const secret of segments) {
+    try {
+      return client.webhooks.constructEvent(rawBody, signature, secret)
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
+}
+
+/**
  * Returns an error message if publishable + secret keys are not the same mode (test vs live).
  *
  * On Vercel, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is embedded at **build** time, while

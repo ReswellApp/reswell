@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server"
-import { getStripe } from "@/lib/stripe-server"
+import {
+  constructStripeWebhookEvent,
+  getStripe,
+  parseStripeWebhookSigningSecrets,
+} from "@/lib/stripe-server"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
 import { tryHandleStripeConnectEvent } from "@/lib/services/stripeConnectWebhook"
@@ -15,7 +19,7 @@ export const runtime = "nodejs"
  * Stripe → Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`
  * Events: `payment_intent.succeeded`, `refund.created`, `refund.updated`, `charge.refunded`,
  * `account.updated`, `transfer.reversed`
- * Signing secret: `STRIPE_WEBHOOK_SECRET` in env.
+ * Signing secret: `STRIPE_WEBHOOK_SECRET` — one value, or comma/newline-separated during rotation.
  *
  * Use the **canonical** host Vercel serves without a redirect (www vs apex). Stripe does not follow
  * 308/301 redirects on webhook POSTs — a redirect causes delivery failures.
@@ -23,9 +27,10 @@ export const runtime = "nodejs"
  * Completes marketplace orders when the browser cannot call finalize (e.g. session cookie missing after 3DS return).
  */
 export async function POST(request: Request) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim()
-  if (!secret) {
-    console.error("[stripe webhook] STRIPE_WEBHOOK_SECRET is not set")
+  const secretsRaw = process.env.STRIPE_WEBHOOK_SECRET ?? ""
+  const secretSegments = parseStripeWebhookSigningSecrets(secretsRaw)
+  if (secretSegments.length === 0) {
+    console.error("[stripe webhook] STRIPE_WEBHOOK_SECRET is not set or empty after parsing")
     return NextResponse.json({ error: "Webhook not configured" }, { status: 501 })
   }
 
@@ -37,10 +42,13 @@ export async function POST(request: Request) {
 
   let event: Stripe.Event
   try {
-    const stripe = getStripe()
-    event = stripe.webhooks.constructEvent(rawBody, signature, secret)
+    event = constructStripeWebhookEvent(rawBody, signature, secretsRaw)
   } catch (e) {
-    console.error("[stripe webhook] signature verification failed:", e)
+    console.error("[stripe webhook] signature verification failed:", e, {
+      signing_secret_segments_configured: secretSegments.length,
+      hint:
+        "STRIPE_WEBHOOK_SECRET must be the Signing secret for this exact endpoint URL (Live mode Dashboard → Developers → Webhooks). Test CLI whsec_* will not verify live deliveries.",
+    })
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
 
