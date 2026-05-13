@@ -1,15 +1,17 @@
+import { pressArticles } from "@/lib/press-articles"
 import { fetchSurfboardListingSitemapEntries } from "@/lib/db/sitemap-surfboard-listings"
+import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
+import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
+import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
+import { fetchSurferSlugPathsForSitemap } from "@/lib/db/sitemap-surfers"
+import { fetchPublishedBlogPostSitemapEntries } from "@/lib/db/sitemap-blog-posts-published"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import type { SitemapUrlEntry } from "@/lib/sitemap/types"
+
+export type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
 const BASE = publicSiteOrigin()
-
-export type SitemapUrlEntry = {
-  url: string
-  lastModified: Date
-  changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never"
-  priority: number
-}
 
 async function supabaseForSitemapPublicRead() {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
@@ -38,51 +40,18 @@ const TOP_LOCATIONS = [
   "hawaii",
 ]
 
-/**
- * Canonical HTTP URLs for the public sitemap (unescaped `&` in query strings is correct here;
- * XML serialization must escape them — see `app/sitemap.xml/route.ts`).
- */
-export async function buildSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
-  const now = new Date()
-
-  const supabase = await supabaseForSitemapPublicRead()
-  const listingEntries = await fetchSurfboardListingSitemapEntries(supabase)
-
-  const staticPages: SitemapUrlEntry[] = [
-    { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-    { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-    {
-      url: `${BASE}/what-is-reswell`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    { url: `${BASE}/sold`, lastModified: now, changeFrequency: "hourly", priority: 0.75 },
-    { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
-    { url: `${BASE}/shop`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
-    // `/sell` requires auth (middleware) — omit from sitemap to avoid “indexed URL redirects” noise.
-    // Bare `/search` 308s to `/search/recent` when `q` / `brandSlug` are empty — use the final URL.
-    { url: `${BASE}/search/recent`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${BASE}/brands`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${BASE}/board-talk`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
-    { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
-    { url: `${BASE}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${BASE}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
-    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
-  ]
-
+function boardFilterPages(now: Date): SitemapUrlEntry[] {
   const boardTypePages: SitemapUrlEntry[] = BOARD_TYPE_FILTERS.map((type) => ({
     url: `${BASE}/boards?type=${type}`,
     lastModified: now,
-    changeFrequency: "daily",
+    changeFrequency: "daily" as const,
     priority: 0.8,
   }))
 
   const boardConditionPages: SitemapUrlEntry[] = BOARD_CONDITION_FILTERS.map((cond) => ({
     url: `${BASE}/boards?condition=${cond}`,
     lastModified: now,
-    changeFrequency: "daily",
+    changeFrequency: "daily" as const,
     priority: 0.7,
   }))
 
@@ -111,20 +80,134 @@ export async function buildSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
     })),
   )
 
-  const listingPages: SitemapUrlEntry[] = listingEntries.map((e) => ({
-    url: `${BASE}${e.path}`,
-    lastModified: e.lastModified,
-    changeFrequency: "daily",
-    priority: 0.75,
-  }))
-
   return [
-    ...staticPages,
     ...boardTypePages,
     ...boardConditionPages,
     ...boardTypePlusCondition,
     ...boardLocationPages,
     ...boardTypeLocationPages,
-    ...listingPages,
   ]
+}
+
+/**
+ * Public hubs, policies, discovery URLs — everything except individual `/l/{listing}` rows.
+ * Omits auth-gated shells (`/dashboard`, `/checkout`, `/sell`, …) per `robots.ts`.
+ */
+export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
+  const now = new Date()
+  const supabase = await supabaseForSitemapPublicRead()
+
+  const [brandRows, sellerEntries, forumEntries, surferPaths, blogEntries] = await Promise.all([
+    fetchBrandSlugRowsForSitemap(supabase),
+    fetchSellerProfileSitemapEntries(supabase),
+    fetchForumThreadSitemapEntries(supabase),
+    fetchSurferSlugPathsForSitemap(supabase),
+    fetchPublishedBlogPostSitemapEntries(supabase),
+  ])
+
+  const staticPages: SitemapUrlEntry[] = [
+    { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    {
+      url: `${BASE}/what-is-reswell`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    { url: `${BASE}/sold`, lastModified: now, changeFrequency: "hourly", priority: 0.75 },
+    { url: `${BASE}/shop`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+    // Bare `/search` redirects when empty — canonical bookmark is `/search/recent`.
+    { url: `${BASE}/search/recent`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE}/brands`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE}/board-talk`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
+    { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
+    { url: `${BASE}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
+    { url: `${BASE}/surfers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
+    { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
+    { url: `${BASE}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
+    { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
+    { url: `${BASE}/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE}/return-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.25 },
+    { url: `${BASE}/protection-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.25 },
+    { url: `${BASE}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.15 },
+    { url: `${BASE}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
+    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
+  ]
+
+  const pressPages: SitemapUrlEntry[] = pressArticles.map((a) => ({
+    url: `${BASE}/collections/press/${a.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.35,
+  }))
+
+  const brandPages: SitemapUrlEntry[] = brandRows.map((b) => ({
+    url: `${BASE}/brands/${b.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.55,
+  }))
+
+  const sellerPages: SitemapUrlEntry[] = sellerEntries.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: e.lastModified,
+    changeFrequency: "weekly",
+    priority: 0.5,
+  }))
+
+  const forumPages: SitemapUrlEntry[] = forumEntries.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: e.lastModified,
+    changeFrequency: "weekly",
+    priority: 0.35,
+  }))
+
+  const surferPages: SitemapUrlEntry[] = surferPaths.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.35,
+  }))
+
+  const blogPages: SitemapUrlEntry[] = blogEntries.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: e.lastModified,
+    changeFrequency: "monthly",
+    priority: 0.4,
+  }))
+
+  const merged = [
+    ...staticPages,
+    ...boardFilterPages(now),
+    ...pressPages,
+    ...brandPages,
+    ...sellerPages,
+    ...forumPages,
+    ...surferPages,
+    ...blogPages,
+  ]
+
+  const seen = new Set<string>()
+  const deduped: SitemapUrlEntry[] = []
+  for (const entry of merged) {
+    if (seen.has(entry.url)) continue
+    seen.add(entry.url)
+    deduped.push(entry)
+  }
+
+  return deduped
+}
+
+/** Active surfboard listing detail URLs (`/l/{slug-or-id}`). */
+export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
+  const supabase = await supabaseForSitemapPublicRead()
+  const listingEntries = await fetchSurfboardListingSitemapEntries(supabase)
+
+  return listingEntries.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: e.lastModified,
+    changeFrequency: "daily",
+    priority: 0.75,
+  }))
 }

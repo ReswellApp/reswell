@@ -7,13 +7,15 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      /** `/sell` disallow matches `/sellers` by prefix unless explicitly allowed (Google uses longest matching rule). */
+      allow: ["/sellers", "/sellers/"],
       disallow: [
         "/admin",
         "/dashboard",
         "/messages",
         "/offers",
         "/api/",
+        "/seller/",
         "/sell",
         "/auth/",
         "/cart",
