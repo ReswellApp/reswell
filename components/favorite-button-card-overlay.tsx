@@ -34,6 +34,7 @@ export function FavoriteButtonCardOverlay({
         isLoggedIn={isLoggedIn}
         onFavoritedChange={onFavoritedChange}
         className={listingCardFavoriteButtonClassName}
+        heartAccent="listingTile"
       />
     </div>
   )

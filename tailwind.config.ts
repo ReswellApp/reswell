@@ -71,6 +71,10 @@ const config: Config = {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
+        /** Listing tile favorite heart (hover + saved) */
+        listingHeart: '#355185',
+        /** Footer “Made with ♥” icon */
+        footerHeart: '#F9F9F2',
         border: '#E2E8F0',
         input: '#CBD5E1',
         ring: '#0F172A',

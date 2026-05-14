@@ -4,32 +4,38 @@ import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { footerCategoryLinks } from "@/lib/site-category-directory"
-import { reswellProtectionCardClassName } from "@/lib/reswell-protection-surface"
 import { cn } from "@/lib/utils"
+
+const footerLinkClassName =
+  "text-sm text-white/75 transition-colors duration-smooth hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-listingHeart rounded-sm"
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+    <footer className="border-t border-white/15 bg-listingHeart pb-[env(safe-area-inset-bottom)] text-white">
       <div className="container mx-auto py-10 sm:py-14">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <SiteWordmarkLink variant="footer" className="-ml-1 px-0 sm:ml-0" />
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            <SiteWordmarkLink
+              variant="footer"
+              className="-ml-1 px-0 sm:ml-0"
+              imgClassName="brightness-0 invert"
+            />
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">
               The peer-to-peer marketplace for surfing enthusiasts. Buy, sell, and discover amazing surf gear.
             </p>
           </div>
 
           {/* Marketplace */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Marketplace</h3>
+            <h3 className="text-sm font-semibold text-white">Marketplace</h3>
             <ul className="mt-4 space-y-3">
               {siteFooterNavLinks.marketplace.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
                     prefetch={boardsBrowseLinkPrefetch(link.href)}
-                    className="text-sm text-muted-foreground transition-colors duration-smooth hover:text-foreground"
+                    className={footerLinkClassName}
                   >
                     {link.name}
                   </Link>
@@ -40,14 +46,14 @@ export function Footer() {
 
           {/* Categories */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Categories</h3>
+            <h3 className="text-sm font-semibold text-white">Categories</h3>
             <ul className="mt-4 space-y-3">
               {footerCategoryLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
                     prefetch={boardsBrowseLinkPrefetch(link.href)}
-                    className="text-sm text-muted-foreground transition-colors duration-smooth hover:text-foreground"
+                    className={footerLinkClassName}
                   >
                     {link.label}
                   </Link>
@@ -58,14 +64,11 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Support</h3>
+            <h3 className="text-sm font-semibold text-white">Support</h3>
             <ul className="mt-4 space-y-3">
               {siteFooterNavLinks.support.map((link) => (
                 <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground transition-colors duration-smooth hover:text-foreground"
-                  >
+                  <Link href={link.href} className={footerLinkClassName}>
                     {link.name}
                   </Link>
                 </li>
@@ -75,14 +78,11 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Legal</h3>
+            <h3 className="text-sm font-semibold text-white">Legal</h3>
             <ul className="mt-4 space-y-3">
               {siteFooterNavLinks.legal.map((link) => (
                 <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground transition-colors duration-smooth hover:text-foreground"
-                  >
+                  <Link href={link.href} className={footerLinkClassName}>
                     {link.name}
                   </Link>
                 </li>
@@ -91,27 +91,27 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-border pt-8 space-y-4">
+        <div className="mt-12 space-y-4 border-t border-white/15 pt-8">
           <div className="flex justify-center">
             <Link
               href="/protection-policy"
               className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-[#7F9DD5]/25",
-                reswellProtectionCardClassName,
+                "inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-4 py-2 text-xs font-medium text-white shadow-sm transition-colors hover:bg-white/15",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-listingHeart",
               )}
             >
-              <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-white/90" aria-hidden />
               Every order protected by Reswell Purchase Protection
             </Link>
           </div>
-          <div className="text-center text-sm text-muted-foreground space-y-1.5">
+          <div className="space-y-1.5 text-center text-sm text-white/75">
             <p>
               Copyright {new Date().getFullYear()} Reswell. All rights reserved.
             </p>
             <p className="inline-flex w-full flex-wrap items-center justify-center gap-1">
               <span>Made with</span>
               <Heart
-                className="h-4 w-4 shrink-0 fill-red-500 text-red-500"
+                className="h-4 w-4 shrink-0 fill-footerHeart text-footerHeart"
                 aria-hidden
               />
               <span>in Santa Barbara.</span>

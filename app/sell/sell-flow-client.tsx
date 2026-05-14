@@ -2766,7 +2766,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     <span className="inline-flex flex-wrap items-center gap-1">
                       <span>Made with</span>
                       <Heart
-                        className="h-4 w-4 shrink-0 fill-red-500 text-red-500"
+                        className="h-4 w-4 shrink-0 fill-listingHeart text-listingHeart"
                         aria-hidden
                       />
                       <span>in Santa Barbara.</span>
@@ -3404,7 +3404,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 Shipping
                                 <Badge
                                   variant="default"
-                                  className="border-0 bg-[#3b63e3] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto"
+                                  className="border-0 bg-listingHeart text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto hover:bg-[#2a4170]"
                                 >
                                   Items sell faster
                                 </Badge>
@@ -3478,7 +3478,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   </span>
                                   <Badge
                                     variant="default"
-                                    className="border-0 bg-[#3b63e3] text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto shrink-0"
+                                    className="border-0 bg-listingHeart text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto shrink-0 hover:bg-[#2a4170]"
                                   >
                                     Recommended
                                   </Badge>
@@ -3687,7 +3687,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               onCheckedChange={(v) =>
                                 setFormData({ ...formData, autoPriceDrop: v === true })
                               }
-                              className="mt-0.5 shrink-0 data-[state=checked]:bg-emerald-600"
+                              className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
                               aria-label="Drop the price in 2 weeks if not sold"
                             />
                             <div className="min-w-0 space-y-1">
@@ -3740,7 +3740,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             onCheckedChange={(v) =>
                               setFormData({ ...formData, buyerOffers: v === true })
                             }
-                            className="mt-0.5 shrink-0 data-[state=checked]:bg-emerald-600"
+                            className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
                             aria-label="Allow buyers to make offers"
                           />
                           <div className="min-w-0 space-y-1">

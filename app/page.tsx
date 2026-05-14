@@ -31,6 +31,10 @@ import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrend
 import { loadHomeFeaturedShortboardRows, loadHomeFeaturedSurfboardRows } from "@/lib/services/homeFeaturedPeerSections"
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
+import {
+  marketingCtaBannerLinkClassName,
+  marketingCtaBannerPanelClassName,
+} from "@/components/marketing-cta-banners"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 export const metadata = pageSeoMetadata({
@@ -52,9 +56,6 @@ const featuredNewSelect = `
   stock_quantity,
   categories (name)
 `
-
-const homePrimaryCtaButtonClassName =
-  "bg-[#04070E] text-white shadow-sm hover:bg-[#04070E]/90 dark:bg-[#04070E] dark:text-white dark:hover:bg-[#04070E]/90"
 
 export const dynamic = "force-dynamic"
 
@@ -225,7 +226,7 @@ export default async function HomePage() {
                 Find surfboards locally or from sellers that offer shipping, list your own boards with photos and dimensions, and buy straight from the surf community.
               </p>
               <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5 md:mt-8 md:gap-4">
-                <Button size="lg" className={homePrimaryCtaButtonClassName} asChild>
+                <Button size="lg" asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                     Browse surfboards
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -280,7 +281,7 @@ export default async function HomePage() {
         {/* Features CTA */}
         <section className="py-8">
           <div className="container mx-auto">
-            <Link href="/sell" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+            <Link href="/sell" className={marketingCtaBannerLinkClassName}>
               <div>
                 <p className="text-lg font-semibold text-foreground">Every board deserves another session</p>
                 <p className="text-muted-foreground mt-1">
@@ -331,15 +332,15 @@ export default async function HomePage() {
         {/* Confidence banner */}
         <section className="py-8">
           <div className="container mx-auto">
-            <Link href="/contact" className="no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-primary/5 px-8 py-8 transition-colors hover:bg-primary/10">
+            <Link href="/contact" className={marketingCtaBannerLinkClassName}>
               <div>
                 <p className="text-lg font-semibold text-foreground">We&apos;re here whenever you need us</p>
-                <p className="text-muted-foreground mt-1">
+                <p className="mt-1 text-muted-foreground">
                   Real people, real surfers, happy to help with a listing, a question, or just pointing you toward the
                   right board. Say hi anytime.
                 </p>
               </div>
-              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+              <span className="inline-flex shrink-0 items-center gap-2 font-medium text-foreground">
                 Say hello
                 <ArrowRight className="h-4 w-4" />
               </span>
@@ -395,18 +396,18 @@ export default async function HomePage() {
         </FadeInSection>
 
         {/* CTA below How it works */}
-        <section className="py-8">
+        <section className="pt-8 pb-16 md:pb-20">
           <div className="container mx-auto">
-            <div className="rounded-2xl bg-primary/5 px-6 py-8 sm:px-8">
+            <div className={marketingCtaBannerPanelClassName}>
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
                   <p className="text-lg font-semibold text-foreground">Ready to get started?</p>
-                  <p className="mt-1 text-muted-foreground text-pretty">
+                  <p className="mt-1 text-pretty text-muted-foreground">
                     Browse boards from locals and shops, or list yours with photos and pickup options in a few minutes.
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
-                  <Button size="lg" className={homePrimaryCtaButtonClassName} asChild>
+                  <Button size="lg" asChild>
                     <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                       Browse surfboards
                       <ArrowRight className="ml-2 h-4 w-4" />

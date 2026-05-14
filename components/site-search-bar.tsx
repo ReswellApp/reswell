@@ -2,7 +2,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-/** Outer pill: white field + optional black Search button (matches site nav search). */
+/** Outer pill: white field + Search button (matches site nav search). */
 export const SITE_SEARCH_SHELL_CLASS =
   "flex w-full min-w-0 items-center gap-1 rounded-full border border-border bg-background pl-2 pr-1.5 py-0.5 transition-shadow focus-within:border-cerulean/40 focus-within:ring-2 focus-within:ring-cerulean/15 focus-within:shadow-sm"
 
@@ -41,7 +41,10 @@ export function siteFilterIconButtonClassName(className?: string) {
 
 export function siteSearchSubmitButtonClassName(compact?: boolean) {
   return cn(
-    "h-10 shrink-0 rounded-full px-5 text-[14px]",
+    "h-10 shrink-0 rounded-full px-5 text-[14px] font-medium",
+    "border-0 bg-[#04070E] text-white shadow-sm transition-colors",
+    "hover:bg-black focus-visible:ring-2 focus-visible:ring-white/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "dark:bg-[#04070E] dark:text-white dark:hover:bg-black",
     compact && "h-9 px-4 text-sm",
   )
 }
@@ -63,7 +66,7 @@ export function SiteSearchFormSubmitButton({
 
 export type SiteSearchShellProps = {
   children: React.ReactNode
-  /** Right-side black pill control (usually `<Button type="submit">Search</Button>`). */
+  /** Right-side Search pill (fills with `siteSearchSubmitButtonClassName`). */
   actionSlot: React.ReactNode
   className?: string
 }

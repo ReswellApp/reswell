@@ -126,10 +126,10 @@ export function SellSectionNav({
       aria-label="Listing form sections"
       className={cn("sticky top-24", className)}
     >
-      <div className="w-full overflow-auto rounded-xl bg-muted px-3 py-6 xl:px-4">
+      <div className="w-full overflow-auto rounded-xl bg-listingHeart px-3 py-6 xl:px-4">
         <div className="relative">
           <div
-            className="absolute left-3 top-3 bottom-3 w-[3px] -translate-x-1/2 bg-foreground"
+            className="absolute bottom-3 left-3 top-3 w-[3px] -translate-x-1/2 bg-white/35"
             aria-hidden
           />
           <ul className="relative m-0 list-none space-y-8 p-0">
@@ -145,7 +145,7 @@ export function SellSectionNav({
                     }
                     className={cn(
                       "group flex w-full items-start gap-3 rounded-sm text-left",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-listingHeart",
                     )}
                   >
                     <span
@@ -153,20 +153,20 @@ export function SellSectionNav({
                         "relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-opacity",
                         "group-hover:opacity-90",
                         complete
-                          ? "bg-foreground"
-                          : "border-[3px] border-foreground bg-background",
+                          ? "bg-white"
+                          : "border-[3px] border-white bg-listingHeart",
                       )}
                       aria-hidden
                     >
                       {complete ? (
                         <Check
-                          className="h-3.5 w-3.5 text-background"
+                          className="h-3.5 w-3.5 text-listingHeart"
                           strokeWidth={3}
                           aria-hidden
                         />
                       ) : null}
                     </span>
-                    <span className="min-w-0 max-w-[13rem] pt-1 text-sm leading-snug text-foreground group-hover:underline group-hover:underline-offset-4">
+                    <span className="min-w-0 max-w-[13rem] pt-1 text-sm leading-snug text-white/95 group-hover:underline group-hover:underline-offset-4">
                       {item.label}
                     </span>
                   </button>
