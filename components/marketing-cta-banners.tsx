@@ -2,13 +2,13 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-/** Cream CTA surface — Tailwind `footerHeart` / #F9F9F2 (homepage “Every board…” strip). */
+/** Marketing CTA surface — white with light hover press. */
 export const marketingCtaBannerLinkClassName =
-  "no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-footerHeart px-8 py-8 transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+  "no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-white px-8 py-8 transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 
 /** Block layout (e.g. homepage “Ready to get started?” row with buttons). */
 export const marketingCtaBannerPanelClassName =
-  "rounded-2xl bg-footerHeart px-6 py-8 sm:px-8"
+  "rounded-2xl bg-white px-6 py-8 sm:px-8"
 
 export type MarketingCtaBannerProps = {
   href: string
