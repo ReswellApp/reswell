@@ -8,6 +8,7 @@ import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { listBrands } from "@/lib/brands/server"
 import {
+  hydrateListingBrandLabelsForMarketplaceSuggest,
   resolveDirectoryBrandRowFromLabel,
   searchBrandsCatalogSuggestWithClient,
   type BrandCatalogSuggestResponse,
@@ -160,10 +161,17 @@ export type SearchSuggestMeta = {
   listingsBackend: "elasticsearch" | "supabase"
 }
 
+/** Listing `brand` text plus directory logo/slug when we can resolve a `public.brands` row. */
+export type SearchSuggestBrandChip = {
+  listingLabel: string
+  slug: string | null
+  logo_url: string | null
+}
+
 export type SearchSuggestResult = {
   titles: string[]
   categories: string[]
-  brands: string[]
+  brands: SearchSuggestBrandChip[]
   listings: SuggestListing[]
   meta: SearchSuggestMeta
 }
@@ -325,7 +333,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
     .slice(0, MAX_CATEGORIES) as string[]
 
   const brandSet = new Set<string>()
-  const brands = (brandsRes.data || [])
+  const brandLabels = (brandsRes.data || [])
     .map((r) => r.brand?.trim())
     .filter((b): b is string => !!b && b.length > 0)
     .filter((b) => {
@@ -335,6 +343,8 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       return true
     })
     .slice(0, MAX_BRANDS)
+
+  const brands = await hydrateListingBrandLabelsForMarketplaceSuggest(supabase, brandLabels)
 
   return { titles, categories, brands, listings, meta: { listingsBackend } }
 }

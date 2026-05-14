@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { SlidersHorizontal, Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
-import { searchBrandsCatalogSuggest, searchSuggest } from "@/app/actions/marketplace"
+import { searchBrandsCatalogSuggest, searchSuggest, type SearchSuggestBrandChip } from "@/app/actions/marketplace"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import type {
@@ -91,7 +91,7 @@ export type SuggestListing = {
 export interface SuggestResult {
   titles: string[]
   categories: string[]
-  brands: string[]
+  brands: SearchSuggestBrandChip[]
   listings?: SuggestListing[]
   meta: { listingsBackend: "elasticsearch" | "supabase" }
 }
@@ -378,7 +378,10 @@ export function SearchInputWithSuggest({
       ? extraTitles.map((t) => ({ type: "title" as const, text: t })).slice(0, SUGGEST_COMBINED_CAP)
       : [
           ...(suggestions?.categories?.map((c) => ({ type: "category" as const, text: c })) ?? []),
-          ...(suggestions?.brands?.map((b) => ({ type: "brand" as const, text: b })) ?? []),
+          ...(suggestions?.brands?.map((b) => ({
+            type: "brand" as const,
+            text: b.listingLabel,
+          })) ?? []),
           ...extraTitles.map((t) => ({ type: "title" as const, text: t })),
         ].slice(0, SUGGEST_COMBINED_CAP)
 
@@ -863,24 +866,43 @@ export function SearchInputWithSuggest({
             {boardsTitleStyle ? (
               <ul className="max-h-[min(240px,40vh)] overflow-y-auto py-1">
                 {suggestions!.brands!.map((brand) => (
-                  <li key={brand} role="option">
+                  <li key={brand.listingLabel} role="option">
                     <button
                       type="button"
-                      className="flex w-full cursor-pointer select-none items-center px-3 py-2.5 text-left text-sm outline-none min-h-touch hover:bg-accent/60 focus-visible:bg-accent"
+                      className="flex w-full cursor-pointer select-none items-center gap-2 px-3 py-2.5 text-left text-sm outline-none min-h-touch hover:bg-accent/60 focus-visible:bg-accent"
                       onMouseDown={(e) => e.preventDefault()}
                       onMouseEnter={() =>
-                        scheduleSuggestHover(`brand-row:${brand}`, {
+                        scheduleSuggestHover(`brand-row:${brand.listingLabel}`, {
                           pickKind: boardsTitleStyle ? "brand_row" : "brand_strip",
-                          selectionLabel: brand,
+                          selectionLabel: brand.listingLabel,
                           listingId: null,
                         })
                       }
-                      onMouseLeave={() => cancelSuggestHover(`brand-row:${brand}`)}
+                      onMouseLeave={() => cancelSuggestHover(`brand-row:${brand.listingLabel}`)}
                       onClick={() =>
-                        pickMarketplaceBrandLabel(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
+                        pickMarketplaceBrandLabel(
+                          brand.listingLabel,
+                          boardsTitleStyle ? "brand_row" : "brand_strip",
+                        )
                       }
                     >
-                      <span className="truncate font-medium text-foreground">{brand}</span>
+                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted">
+                        {brand.logo_url ? (
+                          <Image
+                            src={brand.logo_url}
+                            alt=""
+                            fill
+                            className="object-contain p-1"
+                            sizes="36px"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs font-bold text-cerulean">
+                            {brand.listingLabel.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <span className="truncate font-medium text-foreground">{brand.listingLabel}</span>
                     </button>
                   </li>
                 ))}
@@ -889,27 +911,38 @@ export function SearchInputWithSuggest({
               <div className="flex gap-3 overflow-x-auto overscroll-x-contain pb-1 pl-0.5 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [scroll-padding-inline:8px] sm:gap-4 [&::-webkit-scrollbar]:hidden">
                 {suggestions!.brands!.map((brand) => (
                   <button
-                    key={brand}
+                    key={brand.listingLabel}
                     type="button"
                     className="flex min-w-[4rem] max-w-[4.75rem] flex-col items-center gap-1.5 text-center sm:min-w-[4.5rem] sm:max-w-[5.5rem]"
                     onMouseDown={(e) => e.preventDefault()}
                     onMouseEnter={() =>
-                      scheduleSuggestHover(`brand-strip:${brand}`, {
+                      scheduleSuggestHover(`brand-strip:${brand.listingLabel}`, {
                         pickKind: "brand_strip",
-                        selectionLabel: brand,
+                        selectionLabel: brand.listingLabel,
                         listingId: null,
                       })
                     }
-                    onMouseLeave={() => cancelSuggestHover(`brand-strip:${brand}`)}
+                    onMouseLeave={() => cancelSuggestHover(`brand-strip:${brand.listingLabel}`)}
                     onClick={() =>
-                      pickMarketplaceBrandLabel(brand, boardsTitleStyle ? "brand_row" : "brand_strip")
+                      pickMarketplaceBrandLabel(brand.listingLabel, boardsTitleStyle ? "brand_row" : "brand_strip")
                     }
                   >
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-muted text-sm font-bold text-cerulean sm:h-12 sm:w-12 sm:text-base">
-                      {brand.slice(0, 1).toUpperCase()}
+                    <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-sm font-bold text-cerulean sm:h-12 sm:w-12 sm:text-base">
+                      {brand.logo_url ? (
+                        <Image
+                          src={brand.logo_url}
+                          alt=""
+                          fill
+                          className="object-contain p-1"
+                          sizes="44px"
+                          unoptimized
+                        />
+                      ) : (
+                        brand.listingLabel.slice(0, 1).toUpperCase()
+                      )}
                     </span>
                     <span className="line-clamp-2 w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
-                      {brand}
+                      {brand.listingLabel}
                     </span>
                   </button>
                 ))}

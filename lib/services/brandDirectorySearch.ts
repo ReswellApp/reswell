@@ -24,6 +24,7 @@ export type DirectoryBrandMini = {
   id: string
   name: string
   slug: string
+  logo_url: string | null
 }
 
 const MAX_BRAND_CATALOG_SUGGEST = 20
@@ -109,7 +110,12 @@ export async function resolveDirectoryBrandRowFromLabel(
   if (fromSuggest) {
     const full = rows.find((r) => r.slug === fromSuggest.slug)
     if (full) {
-      return { id: full.id, name: full.name, slug: full.slug }
+      return {
+        id: full.id,
+        name: full.name,
+        slug: full.slug,
+        logo_url: full.logo_url ?? null,
+      }
     }
   }
 
@@ -117,22 +123,27 @@ export async function resolveDirectoryBrandRowFromLabel(
   if (hint.length > 0) {
     const { data: exactRow } = await supabase
       .from("brands")
-      .select("id,name,slug")
+      .select("id,name,slug,logo_url")
       .eq("slug", hint)
       .maybeSingle()
     if (exactRow?.id && exactRow.slug) {
-      return { id: exactRow.id, name: exactRow.name, slug: exactRow.slug }
+      return {
+        id: exactRow.id,
+        name: exactRow.name,
+        slug: exactRow.slug,
+        logo_url: (exactRow as { logo_url?: string | null }).logo_url ?? null,
+      }
     }
 
     const { data: prefixRows, error: prefixErr } = await supabase
       .from("brands")
-      .select("id,name,slug")
+      .select("id,name,slug,logo_url")
       .like("slug", `${hint}-%`)
       .order("slug", { ascending: true })
       .limit(1)
     if (!prefixErr && prefixRows?.[0]?.id && prefixRows[0].slug) {
-      const r = prefixRows[0]
-      return { id: r.id, name: r.name, slug: r.slug }
+      const r = prefixRows[0] as { id: string; name: string; slug: string; logo_url?: string | null }
+      return { id: r.id, name: r.name, slug: r.slug, logo_url: r.logo_url ?? null }
     }
   }
 
@@ -140,7 +151,7 @@ export async function resolveDirectoryBrandRowFromLabel(
   const pattern = `"%${safe}%"`
   const { data: nameRows, error: nameErr } = await supabase
     .from("brands")
-    .select("id,name,slug")
+    .select("id,name,slug,logo_url")
     .ilike("name", pattern)
     .order("name", { ascending: true })
     .limit(24)
@@ -148,12 +159,37 @@ export async function resolveDirectoryBrandRowFromLabel(
   if (!nameErr && nameRows?.length) {
     const picked = pickCatalogBrandForNavPick(nameRows, name)
     if (picked) {
-      const full = nameRows.find((r) => r.slug === picked.slug)
+      const full = nameRows.find((r) => r.slug === picked.slug) as
+        | { id: string; name: string; slug: string; logo_url?: string | null }
+        | undefined
       if (full?.id && full.slug) {
-        return { id: full.id, name: full.name, slug: full.slug }
+        return { id: full.id, name: full.name, slug: full.slug, logo_url: full.logo_url ?? null }
       }
     }
   }
 
   return null
+}
+
+/** Map listing-derived brand strings to directory logos for marketplace search strips (max ~16 rows). */
+export async function hydrateListingBrandLabelsForMarketplaceSuggest(
+  supabase: SupabaseClient,
+  listingLabels: string[],
+): Promise<
+  Array<{ listingLabel: string; slug: string | null; logo_url: string | null }>
+> {
+  if (listingLabels.length === 0) return []
+
+  const hydrated = await Promise.all(
+    listingLabels.map(async (listingLabel) => {
+      const row = await resolveDirectoryBrandRowFromLabel(supabase, listingLabel)
+      return {
+        listingLabel,
+        slug: row?.slug ?? null,
+        logo_url: row?.logo_url ?? null,
+      }
+    }),
+  )
+
+  return hydrated
 }
