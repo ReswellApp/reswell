@@ -53,6 +53,9 @@ const featuredNewSelect = `
   categories (name)
 `
 
+const homePrimaryCtaButtonClassName =
+  "bg-[#04070E] text-white shadow-sm hover:bg-[#04070E]/90 dark:bg-[#04070E] dark:text-white dark:hover:bg-[#04070E]/90"
+
 export const dynamic = "force-dynamic"
 
 export default async function HomePage() {
@@ -222,7 +225,7 @@ export default async function HomePage() {
                 Find surfboards locally or from sellers that offer shipping, list your own boards with photos and dimensions, and buy straight from the surf community.
               </p>
               <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5 md:mt-8 md:gap-4">
-                <Button size="lg" asChild>
+                <Button size="lg" className={homePrimaryCtaButtonClassName} asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                     Browse surfboards
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -403,7 +406,7 @@ export default async function HomePage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
-                  <Button size="lg" asChild>
+                  <Button size="lg" className={homePrimaryCtaButtonClassName} asChild>
                     <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                       Browse surfboards
                       <ArrowRight className="ml-2 h-4 w-4" />

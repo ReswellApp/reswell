@@ -109,7 +109,7 @@ export function ListingDetailPeerPurchaseActions({
       <div className="flex flex-col gap-[10px]">
         <Button
           size="lg"
-          className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-blue-600 px-6 text-[15px] font-semibold text-white shadow-none hover:bg-blue-700 hover:text-white dark:bg-blue-600 dark:hover:bg-blue-500"
+          className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#04070E] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#04070E]/90 hover:text-white dark:bg-[#04070E] dark:hover:bg-[#04070E]/90"
           asChild
         >
           <Link href={checkoutHref} prefetch={false}>
