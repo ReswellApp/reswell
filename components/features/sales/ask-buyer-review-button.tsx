@@ -7,6 +7,7 @@ import { Star, Loader2, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { sendSellerReviewRequest } from "@/app/actions/messages"
+import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 
 type AskBuyerReviewButtonProps = {
@@ -31,7 +32,7 @@ function AmberStarsRow({ showPop }: { showPop: boolean }) {
           key={i}
           className={cn(
             "h-[18px] w-[18px] transition-all duration-500 ease-out",
-            "fill-amber-400 text-amber-500 drop-shadow-[0_0_10px_rgba(251,191,36,0.75)]",
+            ratingStarFilledClassName,
           )}
           strokeWidth={0}
           style={{ transitionDelay: `${i * 55}ms` }}
@@ -123,8 +124,8 @@ export function AskBuyerReviewButton({
           <Loader2 className="h-4 w-4 animate-spin text-amber-600 dark:text-amber-400" aria-hidden />
         ) : (
           <Star
-            className="h-4 w-4 fill-none stroke-amber-600/90 text-amber-600/90 dark:stroke-amber-400/90 dark:text-amber-400/90"
-            strokeWidth={1.5}
+            className={cn("h-4 w-4", ratingStarFilledClassName)}
+            strokeWidth={0}
             aria-hidden
           />
         )}

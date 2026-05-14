@@ -21,10 +21,12 @@ import {
   Calendar,
   Package,
 } from "lucide-react"
-import { VerifiedBadge } from "@/components/verified-badge"
+import { VerifiedBadge, verifiedSellerBadgeClassName } from "@/components/verified-badge"
 import { FollowButton } from "@/components/follows/follow-button"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { listingDetailHref } from "@/lib/listing-href"
+import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
+import { cn } from "@/lib/utils"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 const PROFILE_UUID_RE =
@@ -350,8 +352,8 @@ export default async function SellerProfilePage({
                     {displayName}
                   </h1>
                   {shop.shop_verified && (
-                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                      <VerifiedBadge size="sm" className="mr-1" />
+                    <Badge variant="outline" className={verifiedSellerBadgeClassName}>
+                      <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
                       Verified Seller
                     </Badge>
                   )}
@@ -559,7 +561,7 @@ function ReviewsSection({
   return (
     <div className="py-6">
       <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <Star className="h-4 w-4 fill-amber-500 text-amber-500" aria-hidden />
+        <Star className={cn("h-4 w-4", ratingStarFilledClassName)} strokeWidth={0} aria-hidden />
         {heading}
       </h2>
       {reviews.length > 0 ? (

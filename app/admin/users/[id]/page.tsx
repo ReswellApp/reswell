@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { VerifiedBadge, verifiedSellerBadgeClassName } from '@/components/verified-badge'
 import {
   Table,
   TableBody,
@@ -304,8 +305,8 @@ export default function AdminUserDetailPage() {
                 <Badge className="bg-primary text-primary-foreground">Admin</Badge>
               )}
               {profile.shop_verified && (
-                <Badge className="bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
-                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                <Badge variant="outline" className={verifiedSellerBadgeClassName}>
+                  <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
                   Verified Seller
                 </Badge>
               )}
@@ -389,9 +390,13 @@ export default function AdminUserDetailPage() {
       <Card>
         <CardContent className="p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <CheckCircle2 className={`h-5 w-5 shrink-0 ${profile.shop_verified ? 'text-neutral-900' : 'text-muted-foreground'}`} />
+            {profile.shop_verified ? (
+              <VerifiedBadge size="lg" className="shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+            )}
             <div>
-              <p className="font-medium text-foreground text-sm">Verified Seller Badge</p>
+              <p className="font-medium text-[#7F9DD5] text-sm">Verified Seller Badge</p>
               <p className="text-xs text-muted-foreground">
                 {profile.shop_verified
                   ? 'This user has a verified seller badge visible on their profile and listings.'

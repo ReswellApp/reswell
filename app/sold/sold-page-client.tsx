@@ -98,7 +98,7 @@ function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
           <p
             className={cn(
               homePeerTilePriceClass,
-              "text-emerald-600 dark:text-emerald-400",
+              "text-[#163060]",
             )}
           >
             Sold for ${listing.soldPrice.toFixed(2)}

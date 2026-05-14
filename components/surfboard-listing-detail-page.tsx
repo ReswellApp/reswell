@@ -392,7 +392,7 @@ export async function SurfboardListingDetailPage({
               <p className="text-[14px] leading-snug text-muted-foreground">{specSubline}</p>
             ) : null}
             {isSold ? (
-              <p className="font-headline text-3xl font-semibold tracking-tight text-emerald-600 tabular-nums dark:text-emerald-400">
+              <p className="font-headline text-3xl font-semibold tracking-tight text-[#163060] tabular-nums">
                 Sold for ${board.price.toFixed(2)}
               </p>
             ) : (
@@ -501,7 +501,7 @@ export async function SurfboardListingDetailPage({
                   ) : null}
                 </div>
                 {isSold ? (
-                  <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-emerald-600 tabular-nums xl:text-[2.5rem] dark:text-emerald-400">
+                  <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-[#163060] tabular-nums xl:text-[2.5rem]">
                     Sold for ${board.price.toFixed(2)}
                   </p>
                 ) : (

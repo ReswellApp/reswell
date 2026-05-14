@@ -1,9 +1,9 @@
 import { Star } from "lucide-react"
+import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 
-const FILLED = "fill-amber-500 text-amber-500"
-const EMPTY =
-  "fill-none stroke-amber-200/90 text-amber-200/90 dark:stroke-amber-700/70 dark:text-amber-800/60"
+const FILLED = ratingStarFilledClassName
+const EMPTY = ratingStarEmptyClassName
 
 type Size = "sm" | "md"
 
@@ -13,7 +13,7 @@ const sizeClass: Record<Size, string> = {
 }
 
 /**
- * Five-star display with partial fills (e.g. average 4.3). Uses amber/yellow filled stars.
+ * Five-star display with partial fills (e.g. average 4.3).
  */
 export function SellerRatingStarRow({
   value,
@@ -34,7 +34,7 @@ export function SellerRatingStarRow({
         const dim = sizeClass[size]
         return (
           <span key={i} className={cn("relative inline-flex shrink-0", dim)}>
-            <Star className={cn("absolute inset-0", dim, EMPTY)} strokeWidth={1.35} />
+            <Star className={cn("absolute inset-0", dim, EMPTY)} strokeWidth={0} />
             <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
               <Star className={cn(dim, FILLED)} strokeWidth={0} />
             </span>

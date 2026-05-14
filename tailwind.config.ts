@@ -71,8 +71,10 @@ const config: Config = {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
-        /** Listing tile favorite heart (hover + saved) */
+        /** Listing tile favorite heart (hover + saved) — card overlay only uses heartIcon (#04070E) */
         listingHeart: '#355185',
+        /** Listing grid/card favorite control (distinct from PDP red) */
+        heartIcon: '#04070E',
         /** Footer “Made with ♥” icon */
         footerHeart: '#F9F9F2',
         border: '#E2E8F0',

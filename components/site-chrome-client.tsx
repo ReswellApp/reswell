@@ -49,7 +49,9 @@ export function SiteChromeClient({
             <Header serverHeaderAuth={headerAuth} />
           </Suspense>
         </div>
-        <NavigationPageGate>{children}</NavigationPageGate>
+        <div className="flex min-h-0 flex-1 flex-col pb-10 sm:pb-12 md:pb-16">
+          <NavigationPageGate>{children}</NavigationPageGate>
+        </div>
         <Footer />
       </div>
     </AuthModalProvider>

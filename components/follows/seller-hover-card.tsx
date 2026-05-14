@@ -14,6 +14,8 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowStatusForSeller } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
+import { cn } from "@/lib/utils"
 
 interface SellerHoverCardProps {
   sellerId: string
@@ -193,7 +195,7 @@ export function SellerHoverCard({
               <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                 {reviews.count > 0 && (
                   <span className="flex items-center gap-0.5">
-                    <Star className="h-3 w-3 fill-accent text-accent" />
+                    <Star className={cn("h-3 w-3", ratingStarFilledClassName)} strokeWidth={0} />
                     {reviews.avg.toFixed(1)} · {reviews.count}
                   </span>
                 )}

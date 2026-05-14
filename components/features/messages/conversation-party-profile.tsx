@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 import type {
   OtherPartyProfileSummary,
@@ -182,7 +183,7 @@ function ReviewsPopover({ displayName, profile, sellerHref }: ReviewsPopoverProp
               className="inline-flex items-center gap-1 text-xs text-muted-foreground"
               aria-hidden
             >
-              <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+              <Star className={cn("h-3 w-3", ratingStarFilledClassName)} strokeWidth={0} />
               <span className="tabular-nums font-medium text-foreground">
                 {ratingLabel}
               </span>

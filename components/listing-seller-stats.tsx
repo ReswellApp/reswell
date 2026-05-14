@@ -1,8 +1,9 @@
 import { Star, Package } from "lucide-react"
+import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 
-const STAR_FILLED = "fill-neutral-900 text-neutral-900 dark:fill-neutral-100 dark:text-neutral-100"
-const STAR_EMPTY = "fill-none stroke-neutral-300/90 text-neutral-300/90 dark:stroke-neutral-600 dark:text-neutral-600"
+const STAR_FILLED = ratingStarFilledClassName
+const STAR_EMPTY = ratingStarEmptyClassName
 const RATING_COUNT = "text-neutral-600 dark:text-foreground/90"
 
 function StarRow({ value }: { value: number }) {
@@ -13,10 +14,7 @@ function StarRow({ value }: { value: number }) {
         const fill = Math.min(1, Math.max(0, clamped - i))
         return (
           <span key={i} className="relative inline-flex h-4 w-4 shrink-0" aria-hidden>
-            <Star
-              className={cn("absolute inset-0 h-4 w-4", STAR_EMPTY)}
-              strokeWidth={1.35}
-            />
+            <Star className={cn("absolute inset-0 h-4 w-4", STAR_EMPTY)} strokeWidth={0} />
             <span
               className="absolute inset-0 overflow-hidden"
               style={{ width: `${fill * 100}%` }}

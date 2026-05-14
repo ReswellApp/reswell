@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { VerifiedBadge, verifiedSellerBadgeClassName } from '@/components/verified-badge'
 import {
   Table,
   TableBody,
@@ -375,8 +376,8 @@ export default function AdminUsersPage() {
                           <Badge variant="outline">User</Badge>
                         )}
                         {user.shop_verified && (
-                          <Badge className="bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                          <Badge variant="outline" className={verifiedSellerBadgeClassName}>
+                            <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
                             Verified
                           </Badge>
                         )}

@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Star,
 } from "lucide-react"
+import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
 import {
@@ -21,8 +22,8 @@ import {
   reswellProtectionTrustRibbonColumnDividerClassName,
 } from "@/lib/reswell-protection-surface"
 
-const STAR_FILL = "fill-neutral-950 text-neutral-950 dark:fill-white dark:text-white"
-const STAR_EMPTY = "fill-none stroke-neutral-300 text-neutral-300 dark:stroke-neutral-600 dark:text-neutral-600"
+const STAR_FILL = ratingStarFilledClassName
+const STAR_EMPTY = ratingStarEmptyClassName
 
 export type SellerReviewPreviewRow = {
   id: string
@@ -46,7 +47,7 @@ function StarRowAvg({ value, size }: { value: number; size: "sm" | "md" }) {
         const fill = Math.min(1, Math.max(0, clamped - i))
         return (
           <span key={i} className={cn("relative inline-flex shrink-0", dim)}>
-            <Star className={cn("absolute inset-0", dim, STAR_EMPTY)} strokeWidth={1.25} />
+            <Star className={cn("absolute inset-0", dim, STAR_EMPTY)} strokeWidth={0} />
             <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
               <Star className={cn(dim, STAR_FILL)} strokeWidth={0} />
             </span>

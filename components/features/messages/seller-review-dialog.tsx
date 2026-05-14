@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 
 export type SellerReviewDialogProps = {
   orderId: string
@@ -91,11 +92,9 @@ export function SellerReviewDialog({
                   <Star
                     className={cn(
                       "h-8 w-8",
-                      n <= rating
-                        ? "fill-amber-500 text-amber-500"
-                        : "fill-none stroke-muted-foreground text-muted-foreground",
+                      n <= rating ? ratingStarFilledClassName : ratingStarEmptyClassName,
                     )}
-                    strokeWidth={n <= rating ? 0 : 1.35}
+                    strokeWidth={0}
                   />
                 </button>
               ))}

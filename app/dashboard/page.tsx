@@ -601,7 +601,7 @@ export default async function DashboardPage() {
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
               <Link href="/favorites">
-                <Heart className="h-6 w-6 mb-2" />
+                <Heart className="mb-2 h-6 w-6" />
                 Favorites
               </Link>
             </Button>
