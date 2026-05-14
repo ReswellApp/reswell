@@ -481,6 +481,7 @@ export function HeaderNavSearch({
           minLength={2}
           analyticsSurface="header_nav"
           onMarketplaceTopListingNavigate={bumpNavSuggestedListingEngagement}
+          showTextSuggestions={false}
         />
       </SiteSearchBar>
       {idleDropdown}

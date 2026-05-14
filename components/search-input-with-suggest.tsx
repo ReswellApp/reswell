@@ -96,6 +96,25 @@ export interface SuggestResult {
   meta: { listingsBackend: "elasticsearch" | "supabase" }
 }
 
+/**
+ * Nav search omits the bottom “Suggestions” list and does not open the panel for title-only
+ * matches (no listing, category, or brand strip).
+ */
+function marketplaceDropdownHasVisibleSections(data: SuggestResult, showTextSuggestions: boolean): boolean {
+  const listings = data.listings ?? []
+  if (
+    listings.length > 0 ||
+    (data.brands?.length ?? 0) > 0 ||
+    (data.categories?.length ?? 0) > 0
+  ) {
+    return true
+  }
+  if (!showTextSuggestions) return false
+  const listingTitlesLower = new Set(listings.map((l) => l.title.toLowerCase()))
+  const extraTitles = (data.titles ?? []).filter((t) => !listingTitlesLower.has(t.toLowerCase()))
+  return extraTitles.some((t) => t.trim().length > 0)
+}
+
 interface SearchInputWithSuggestProps {
   value: string
   onChange: (value: string) => void
@@ -147,6 +166,11 @@ interface SearchInputWithSuggestProps {
   analyticsSurface?: SearchSuggestPickSurface
   /** Marketplace only: user navigated to a listing via “Top listings”. Used for nav idle suggestions ranking. */
   onMarketplaceTopListingNavigate?: (listingId: string) => void
+  /**
+   * Marketplace: show the “Suggestions” block (title/category/brand text rows). Nav passes `false`
+   * so only Top listings + Categories + Brands strips appear.
+   */
+  showTextSuggestions?: boolean
   inputType?: "search" | "text"
   id?: string
   disabled?: boolean
@@ -210,6 +234,7 @@ export function SearchInputWithSuggest({
   onBrandsSearchSettled,
   analyticsSurface = "other",
   onMarketplaceTopListingNavigate,
+  showTextSuggestions = true,
   inputType = "search",
   id: inputId,
   disabled = false,
@@ -265,11 +290,14 @@ export function SearchInputWithSuggest({
     source: "valueEffect" | "focus",
   ) => {
     if (generation !== suggestGenerationRef.current) return
-    if (hasAny) {
+    const effectiveHasAny =
+      hasAny &&
+      (suggestSource !== "marketplace" || marketplaceDropdownHasVisibleSections(data, showTextSuggestions))
+    if (effectiveHasAny) {
       suggestBackendMetaRef.current.marketplaceListings = data.meta.listingsBackend
     }
-    setSuggestions(hasAny ? data : null)
-    if (!hasAny) {
+    setSuggestions(effectiveHasAny ? data : null)
+    if (!effectiveHasAny) {
       setOpen(false)
       return
     }
@@ -314,7 +342,16 @@ export function SearchInputWithSuggest({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [value, section, minLength, debounceMs, disableSuggest, autoOpenDropdownOnFetch, suggestSource])
+  }, [
+    value,
+    section,
+    minLength,
+    debounceMs,
+    disableSuggest,
+    autoOpenDropdownOnFetch,
+    suggestSource,
+    showTextSuggestions,
+  ])
 
   useEffect(() => {
     if (suggestSource !== "brands" || disableSuggest) return
@@ -373,7 +410,7 @@ export function SearchInputWithSuggest({
   const extraTitles = (suggestions?.titles ?? []).filter((t) => !listingTitlesLower.has(t.toLowerCase()))
 
   /** Avoid duplicating brands/categories already shown in the rich strips. */
-  const flatSuggestions =
+  const flatSuggestionsRaw =
     listings.length > 0
       ? extraTitles.map((t) => ({ type: "title" as const, text: t })).slice(0, SUGGEST_COMBINED_CAP)
       : [
@@ -384,6 +421,7 @@ export function SearchInputWithSuggest({
           })) ?? []),
           ...extraTitles.map((t) => ({ type: "title" as const, text: t })),
         ].slice(0, SUGGEST_COMBINED_CAP)
+  const flatSuggestions = showTextSuggestions ? flatSuggestionsRaw : []
 
   const hasRichStrip =
     !disableSuggest &&
@@ -407,7 +445,10 @@ export function SearchInputWithSuggest({
       (suggestions?.categories?.length ?? 0) > 0 ||
       flatSuggestions.length > 0)
 
-  /** Footers stay `shrink-0` by default; when Top listings shares the panel, allow them to concede height so listings stay visible (nav search). */
+  /**
+   * Categories / suggestion lists can scroll within a capped height when Top listings is open.
+   * Brand strip stays `shrink-0` so circular chips and labels are never clipped by flex shrink.
+   */
   const suggestDropdownFooterShrinkable = listingsSharePanelWithFooter
 
   /** Tighter suggestion list budget when listings are present so Brands + Suggestions cannot dominate the panel height. */
@@ -765,7 +806,7 @@ export function SearchInputWithSuggest({
               className={cn(
                 "min-h-0 overflow-y-auto overscroll-contain py-1",
                 listingsSharePanelWithFooter
-                  ? "min-h-[8.75rem] flex-1 sm:min-h-[10rem]"
+                  ? "flex-1"
                   : "max-h-[min(42dvh,280px)] sm:max-h-[min(45vh,360px)]",
               )}
             >
@@ -847,10 +888,7 @@ export function SearchInputWithSuggest({
         {(suggestions?.brands?.length ?? 0) > 0 && (
           <div
             className={cn(
-              "border-t border-border/60 bg-background",
-              suggestDropdownFooterShrinkable
-                ? "min-h-0 max-h-[min(22dvh,140px)] shrink overflow-y-auto overscroll-contain"
-                : "shrink-0",
+              "border-t border-border/60 bg-background shrink-0",
               boardsTitleStyle ? "px-0 py-0" : "px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3",
               listings.length === 0 && panelTopRounded,
             )}
@@ -1119,9 +1157,9 @@ export function SearchInputWithSuggest({
           const s = suggestions
           const has =
             (s?.listings?.length ?? 0) > 0 ||
-            (s?.titles?.length ?? 0) > 0 ||
             (s?.categories?.length ?? 0) > 0 ||
-            (s?.brands?.length ?? 0) > 0
+            (s?.brands?.length ?? 0) > 0 ||
+            (showTextSuggestions && (s?.titles?.length ?? 0) > 0)
           if (has) {
             setOpen(true)
             return
