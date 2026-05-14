@@ -43,7 +43,7 @@ export function SiteChromeClient({
       <PasswordResetRequiredDialog />
       <div className="flex min-h-dvh flex-col">
         <RouteProgressBar />
-        <div className="sticky top-0 z-50 w-full pt-[env(safe-area-inset-top)]">
+        <div className="sticky top-0 z-50 isolate w-full bg-background pt-[env(safe-area-inset-top)]">
           <ImpersonationBanner />
           <Suspense fallback={<header className="min-h-[56px] border-b border-border bg-background shadow-sm" aria-hidden />}>
             <Header serverHeaderAuth={headerAuth} />

@@ -197,13 +197,13 @@ function SellFlowPublishingOverlay({
       <div className="mx-auto mb-8 max-w-6xl border-b border-border/60 pb-8">
         <Skeleton className="h-4 w-56 max-w-[80%] sm:w-72" />
       </div>
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-14">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
         <div className="hidden w-52 shrink-0 space-y-7 lg:block xl:w-56">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-10 w-full rounded-lg" />
           ))}
         </div>
-        <div className="min-w-0 w-full max-w-2xl flex-1 space-y-8 lg:max-w-3xl">
+        <div className="min-w-0 w-full max-w-2xl space-y-8 lg:w-auto lg:max-w-3xl lg:shrink-0">
           <div className="md:mb-8 lg:hidden">
             <Skeleton className="h-14 w-full rounded-lg" />
           </div>
@@ -2654,14 +2654,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               <SellFlowFormColumnSkeleton />
             </div>
           ) : (
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-14">
+            <div className="flex w-full flex-col gap-8 lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
               <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
                 <SellSectionNav
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
                 />
               </div>
-              <div className="min-w-0 w-full max-w-2xl lg:max-w-3xl">
+              <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
                 <SellSectionNavHorizontal
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
