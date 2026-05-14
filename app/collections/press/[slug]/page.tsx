@@ -187,7 +187,7 @@ export default async function PressArticlePage(props: { params: Promise<{ slug: 
   return (
     <main className="flex-1">
       {/* Hero */}
-      <section className="relative min-h-[50vh] w-full bg-muted">
+      <section className="relative min-h-[50vh] w-full bg-background">
         <Image
           src={article.heroImage}
           alt={article.title}

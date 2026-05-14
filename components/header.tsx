@@ -848,7 +848,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   if (isMinimalNavChrome) {
     return (
-      <header className="relative z-50 w-full border-b border-border bg-softwhite shadow-sm">
+      <header className="relative z-50 w-full border-b border-border bg-background shadow-sm">
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <SiteWordmarkLink />
           <div className="flex shrink-0 items-center justify-end">
@@ -878,7 +878,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
       <header
-        className="relative z-50 w-full border-b border-border bg-softwhite shadow-sm"
+        className="relative z-50 w-full border-b border-border bg-background shadow-sm"
       >
         <div
           ref={headerMainRowRef}

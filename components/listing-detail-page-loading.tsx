@@ -35,7 +35,7 @@ function ListingDetailBottomStripSkeleton({
 export function ListingDetailRouteSkeleton() {
   return (
     <main
-      className="relative flex min-h-[calc(100dvh-9rem)] w-full min-w-0 max-w-full flex-1 flex-col overflow-x-clip bg-gradient-to-b from-muted/35 via-background to-background pt-8 pb-16 dark:from-muted/10 sm:min-h-[calc(100dvh-8rem)] sm:pb-24"
+      className="relative flex min-h-[calc(100dvh-9rem)] w-full min-w-0 max-w-full flex-1 flex-col overflow-x-clip bg-background pt-8 pb-16 sm:min-h-[calc(100dvh-8rem)] sm:pb-24"
       role="status"
       aria-busy="true"
       aria-label="Loading listing"

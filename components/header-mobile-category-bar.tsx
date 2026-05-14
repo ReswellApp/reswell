@@ -24,7 +24,7 @@ export function HeaderMobileCategoryBar() {
 
   return (
     <nav
-      className="-mx-5 border-t border-border bg-muted/25 px-5 py-1.5 sm:-mx-6 sm:px-6"
+      className="-mx-5 border-t border-border bg-background px-5 py-1.5 sm:-mx-6 sm:px-6"
       aria-label="Browse surfboards, sellers, and community"
     >
       <ul className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

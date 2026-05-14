@@ -596,7 +596,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   if (!conversation) {
     return (
       <main
-        className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-muted/35 to-background"
+        className="flex min-h-0 flex-1 flex-col bg-background"
         aria-busy="true"
         aria-label="Loading conversation"
       >
@@ -641,7 +641,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-muted/35 to-background">
+    <main className="flex min-h-0 flex-1 flex-col bg-background">
       <div className="container mx-auto flex min-h-0 max-w-2xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
         {/* Header */}
         <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:px-3">

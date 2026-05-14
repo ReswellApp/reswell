@@ -112,7 +112,7 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
   const category = head?.categoryLabel?.trim() || "Order"
 
   return (
-    <main className="relative flex-1 overflow-hidden bg-gradient-to-b from-muted/50 to-background">
+    <main className="relative flex-1 overflow-hidden bg-background">
       <div className="relative mx-auto max-w-4xl px-6 py-12 md:py-20">
         <motion.div
           initial={{ scale: 0, opacity: 0 }}

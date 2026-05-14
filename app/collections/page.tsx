@@ -13,7 +13,7 @@ export const metadata: Metadata = pageSeoMetadata({
 export default function CollectionsPage() {
   return (
     <main className="flex-1">
-      <div className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-muted/40 via-background to-background">
+      <div className="relative overflow-hidden border-b border-border/80 bg-background">
         <div
           className="pointer-events-none absolute -right-24 top-0 h-72 w-72 rounded-full bg-primary/[0.07] blur-3xl"
           aria-hidden

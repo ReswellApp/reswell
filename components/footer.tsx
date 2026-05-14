@@ -7,7 +7,7 @@ import { footerCategoryLinks } from "@/lib/site-category-directory"
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-muted/50 pb-[env(safe-area-inset-bottom)]">
+    <footer className="border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
       <div className="container mx-auto py-10 sm:py-14">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
           {/* Brand */}

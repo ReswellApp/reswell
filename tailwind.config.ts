@@ -33,7 +33,6 @@ const config: Config = {
       colors: {
         /* Slate-neutral professional palette */
         white: '#FFFFFF',
-        softwhite: '#F8FAFC',
         black: '#0F172A',
         midgray: '#64748B',
         lightgray: '#E2E8F0',

@@ -135,7 +135,7 @@ export default async function CheckoutPage(props: {
     const copy: CheckoutCopy | undefined = undefined
 
     return (
-      <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
+      <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
         <div className="container mx-auto max-w-2xl lg:max-w-6xl">
           <h1 className="sr-only">Checkout</h1>
           <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
@@ -279,7 +279,7 @@ export default async function CheckoutPage(props: {
 
   if (accountGate) {
     return (
-      <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
+      <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
         <div className="container mx-auto max-w-2xl lg:max-w-6xl">
           <h1 className="sr-only">Checkout</h1>
           <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
@@ -335,7 +335,7 @@ export default async function CheckoutPage(props: {
     null
 
   return (
-    <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
+    <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
       <div className="container mx-auto max-w-2xl lg:max-w-6xl">
         <h1 className="sr-only">Checkout</h1>
         <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">

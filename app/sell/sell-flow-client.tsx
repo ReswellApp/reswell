@@ -2553,7 +2553,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const optimizingAny = images.some((im) => im.optimizePhase === "running")
 
   return (
-      <main className="flex-1 w-full bg-muted pt-8 pb-16 md:pb-20 lg:pb-24">
+      <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
         <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
           {loading && !editLoading ? (
             <SellFlowPublishingOverlay

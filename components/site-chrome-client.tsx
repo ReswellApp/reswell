@@ -45,7 +45,7 @@ export function SiteChromeClient({
         <RouteProgressBar />
         <div className="sticky top-0 z-50 w-full pt-[env(safe-area-inset-top)]">
           <ImpersonationBanner />
-          <Suspense fallback={<header className="min-h-[56px] border-b border-border bg-white shadow-sm" aria-hidden />}>
+          <Suspense fallback={<header className="min-h-[56px] border-b border-border bg-background shadow-sm" aria-hidden />}>
             <Header serverHeaderAuth={headerAuth} />
           </Suspense>
         </div>

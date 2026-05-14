@@ -52,7 +52,7 @@ function TrustCard({
 export default function ContactPage() {
   return (
     <main className="flex-1">
-      <section className="border-b border-border/70 bg-gradient-to-b from-muted/90 via-muted/40 to-background">
+      <section className="border-b border-border/70 bg-background">
         <div className="container mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 md:py-20 lg:px-8">
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
             Support
