@@ -201,7 +201,7 @@ export function CheckoutPurchaseDetails({
   }
 
   const fieldClass =
-    "h-11 rounded-[6px] border-neutral-300 bg-white shadow-none transition-colors focus-visible:border-[#3b63e3] focus-visible:ring-[#3b63e3]/25"
+    "h-11 rounded-[6px] border-neutral-300 bg-white shadow-none transition-colors focus-visible:border-[#5574AD] focus-visible:ring-[#5574AD]/25"
 
   return (
     <div className="space-y-10">
@@ -392,7 +392,7 @@ export function CheckoutPurchaseDetails({
                   type="button"
                   onClick={saveNewAddress}
                   disabled={saving || !draftValid}
-                  className="h-11 rounded-[6px] bg-[#3b63e3] text-[15px] font-semibold text-white shadow-none hover:bg-[#2d54d8]"
+                  className="h-11 rounded-[6px] bg-[#5574AD] text-[15px] font-semibold text-white shadow-none hover:bg-[#466091]"
                 >
                   {saving ? (
                     <>

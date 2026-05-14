@@ -47,7 +47,7 @@ export function CheckoutAccountRequired({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
                   href={`/auth/sign-up?redirect=${redirectParam}`}
-                  className="inline-flex h-11 flex-1 items-center justify-center rounded-[6px] bg-[#3b63e3] px-5 text-[15px] font-semibold text-white shadow-none transition-colors hover:bg-[#2d54d8]"
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-[6px] bg-[#5574AD] px-5 text-[15px] font-semibold text-white shadow-none transition-colors hover:bg-[#466091]"
                 >
                   Create account
                 </Link>

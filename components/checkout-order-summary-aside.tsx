@@ -48,7 +48,7 @@ export function CheckoutOrderSummaryAside({
           <span className="text-[13px] font-medium uppercase tracking-wide text-neutral-500">Order summary</span>
           <Link
             href="/cart"
-            className="flex items-center gap-1.5 text-[13px] font-medium text-[#3b63e3] hover:underline"
+            className="flex items-center gap-1.5 text-[13px] font-medium text-[#5574AD] hover:underline"
           >
             <ShoppingBag className="h-4 w-4" aria-hidden />
             Cart
@@ -109,7 +109,7 @@ export function CheckoutOrderSummaryAside({
                   {seller && idx === listings.length - 1 ? (
                     <p className="mt-2 text-[12px] text-neutral-500">
                       Sold by{" "}
-                      <Link href={sellerProfileHref(seller)} className="font-medium text-[#3b63e3] hover:underline">
+                      <Link href={sellerProfileHref(seller)} className="font-medium text-[#5574AD] hover:underline">
                         {sellerDisplayName(seller)}
                       </Link>
                     </p>

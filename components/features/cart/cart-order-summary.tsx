@@ -11,12 +11,12 @@ function formatMoney(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-/** Blues match `BRAND_CTA_BLUE` / `BRAND_CTA_BLUE_HOVER` in `lib/brand-colors.ts`. */
+/** Blues match {@link BRAND_CTA_BLUE} / {@link BRAND_CTA_BLUE_HOVER} in `lib/brand-colors.ts`. */
 const primaryCta =
-  "h-12 w-full rounded-lg border-0 bg-[#3b63e3] text-[15px] font-medium text-white shadow-sm hover:bg-[#2d54d8] dark:bg-[#3b63e3] dark:hover:bg-[#2d54d8]"
+  "h-12 w-full rounded-lg border-0 bg-[#5574AD] text-[15px] font-medium text-white shadow-sm hover:bg-[#466091] dark:bg-[#5574AD] dark:hover:bg-[#466091]"
 
 const applyBtn =
-  "text-[15px] font-medium text-[#3b63e3] hover:underline dark:text-[#8ba3f5]"
+  "text-[15px] font-medium text-[#5574AD] hover:underline dark:text-[#9eb4da]"
 
 type RowProps = {
   label: string

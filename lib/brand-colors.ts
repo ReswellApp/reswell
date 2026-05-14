@@ -1,10 +1,10 @@
 /**
- * Primary CTA / marketing blue — matches `/sell` promotion badges (e.g. “Items sell faster”).
+ * Primary CTA / marketplace blue — checkout, cart CTAs, address affordances.
  *
  * - Use these constants in JS (e.g. Stripe `appearance.variables.colorPrimary`).
- * - In Tailwind `className`, use the same hex as literals (`bg-[#3b63e3]`) so JIT picks them up.
+ * - In Tailwind `className`, use the same hex as literals (`bg-[#5574AD]`) so JIT picks them up.
  */
-export const BRAND_CTA_BLUE = "#3b63e3"
+export const BRAND_CTA_BLUE = "#5574AD"
 
-/** Hover / pressed — slightly darker than {@link BRAND_CTA_BLUE}. Tailwind: `hover:bg-[#2d54d8]`. */
-export const BRAND_CTA_BLUE_HOVER = "#2d54d8"
+/** Hover / pressed — slightly darker than {@link BRAND_CTA_BLUE}. Tailwind: `hover:bg-[#466091]`. */
+export const BRAND_CTA_BLUE_HOVER = "#466091"

@@ -797,7 +797,7 @@ export function LocationInputSuggest({
                         ? cn(
                             "hover:bg-neutral-100/90 active:bg-neutral-100",
                             idx === activeIndex
-                              ? "border-l-[#3b63e3] bg-[#3b63e3]/[0.06]"
+                              ? "border-l-[#5574AD] bg-[#5574AD]/[0.06]"
                               : "border-l-transparent",
                           )
                         : cn(
@@ -815,7 +815,7 @@ export function LocationInputSuggest({
                       <Building2
                         className={cn(
                           "mt-0.5 h-3.5 w-3.5 shrink-0",
-                          idx === activeIndex ? "text-[#3b63e3]" : "text-neutral-400",
+                          idx === activeIndex ? "text-[#5574AD]" : "text-neutral-400",
                         )}
                         aria-hidden
                       />
@@ -912,13 +912,13 @@ export function LocationInputSuggest({
           (isAddress && loading) || resolvingPick || mapsBootPending ? "pr-10" : "",
           panelOpen &&
             (isAddress
-              ? "ring-1 ring-[#3b63e3]/30 ring-offset-0"
+              ? "ring-1 ring-[#5574AD]/30 ring-offset-0"
               : "ring-2 ring-ring/35 ring-offset-2 ring-offset-background"),
         )}
       />
       {(isAddress && loading) || resolvingPick || mapsBootPending ? (
         <Loader2
-          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#3b63e3]/80"
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#5574AD]/80"
           aria-hidden
         />
       ) : null}

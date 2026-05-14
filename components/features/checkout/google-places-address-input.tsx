@@ -409,7 +409,7 @@ export function GooglePlacesAddressInput({
                   className={cn(
                     "flex w-full min-h-touch cursor-pointer items-start gap-2.5 border-l-[3px] px-3 py-2.5 pl-[9px] text-left transition-colors",
                     "hover:bg-neutral-100/90 active:bg-neutral-100",
-                    idx === activeIndex ? "border-l-[#3b63e3] bg-[#3b63e3]/[0.06]" : "border-l-transparent",
+                    idx === activeIndex ? "border-l-[#5574AD] bg-[#5574AD]/[0.06]" : "border-l-transparent",
                   )}
                   onMouseDown={(ev) => {
                     ev.preventDefault()
@@ -483,11 +483,11 @@ export function GooglePlacesAddressInput({
         className={cn(
           inputClassName,
           (loadingPredictions || loadingDetails) && "pr-10",
-          panelOpen && "ring-1 ring-[#3b63e3]/30 ring-offset-0",
+          panelOpen && "ring-1 ring-[#5574AD]/30 ring-offset-0",
         )}
       />
       {(!apiReady || loadingPredictions || loadingDetails) && !disabled ? (
-        <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#3b63e3]/80" />
+        <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#5574AD]/80" />
       ) : null}
       {dropdownPanel}
     </div>

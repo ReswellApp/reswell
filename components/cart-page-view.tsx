@@ -5,14 +5,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ChevronDown, ChevronLeft, Heart, ShoppingCart, X } from "lucide-react"
+import { ChevronDown, ChevronLeft, ShoppingCart, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   clearCart,
   removeCartItem,
   type CartPageItem,
 } from "@/app/actions/cart"
-import { toggleFavoriteListing } from "@/app/actions/favorites"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { formatBoardType, formatCondition, getPublicSellerDisplayName } from "@/lib/listing-labels"
@@ -26,7 +25,7 @@ import {
 } from "@/components/features/cart/cart-favorites-carousel"
 import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
 import { cn } from "@/lib/utils"
-import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { FavoriteButton } from "@/components/favorite-button"
 
 function listingAvailable(listing: CartPageItem["listing"]) {
   return listing.status === "active" || listing.status === "pending_sale"
@@ -45,44 +44,16 @@ function CartLineFavoriteButton({
   listingId: string
   initialFavorited: boolean
 }) {
-  const [favorited, setFavorited] = useState(initialFavorited)
-  const [loading, setLoading] = useState(false)
-  const openSignIn = useSignInGate()
-
-  async function onClick() {
-    setLoading(true)
-    try {
-      const result = await toggleFavoriteListing(listingId)
-      if ("error" in result) {
-        if (result.error === "Unauthorized") {
-          openSignIn(null)
-        } else {
-          toast.error("Could not update favorites")
-        }
-        return
-      }
-      setFavorited(result.favorited)
-    } catch {
-      toast.error("Could not update favorites")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 transition-colors",
-        "hover:bg-neutral-200 disabled:opacity-50 dark:bg-white/10 dark:hover:bg-white/15",
-        favorited && "text-red-500 hover:text-red-600",
-      )}
-      aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
-    >
-      <Heart className={cn("h-4 w-4", favorited && "fill-current")} strokeWidth={1.75} />
-    </button>
+    <FavoriteButton
+      listingId={listingId}
+      initialFavorited={initialFavorited}
+      isLoggedIn
+      redirectPath="/cart"
+      refreshAfterToggle
+      heartAccent="listingTile"
+      className="!h-9 !w-9 !min-h-9 !min-w-9 rounded-lg border-0 bg-neutral-100 text-neutral-600 shadow-none hover:border-0 hover:bg-neutral-200 hover:shadow-none hover:backdrop-blur-none focus-visible:ring-2 focus-visible:ring-foreground/15 dark:bg-white/10 dark:text-neutral-300 dark:hover:bg-white/15 dark:hover:text-heartIcon"
+    />
   )
 }
 
@@ -232,7 +203,7 @@ export function CartPageView({
           </p>
           <Button
             asChild
-            className="mx-auto mt-10 h-11 min-w-[11rem] rounded-lg bg-[#3b63e3] px-7 text-[15px] font-medium text-white shadow-sm hover:bg-[#2d54d8]"
+            className="mx-auto mt-10 h-11 min-w-[11rem] rounded-lg bg-[#5574AD] px-7 text-[15px] font-medium text-white shadow-sm hover:bg-[#466091]"
             size="lg"
           >
             <Link href="/boards">Continue shopping</Link>

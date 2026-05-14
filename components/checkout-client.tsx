@@ -232,7 +232,7 @@ export function CheckoutClient({
 
   const payButtonClassName = cn(
     "h-[52px] w-full rounded-[6px] text-[16px] font-semibold shadow-none",
-    "bg-[#3b63e3] text-white hover:bg-[#2d54d8] focus-visible:ring-[#3b63e3]/40",
+    "bg-[#5574AD] text-white hover:bg-[#466091] focus-visible:ring-[#5574AD]/40",
   )
 
   return (
@@ -242,7 +242,7 @@ export function CheckoutClient({
         <div className="order-2 flex-1 bg-white px-4 py-8 sm:px-8 lg:order-1 lg:max-w-[640px] lg:shrink-0 lg:px-10 lg:py-10 xl:px-14">
           <div className="mx-auto max-w-[520px] lg:mx-0">
             {bundlePickupOnly ? (
-              <div className="mb-10 rounded-[8px] border border-[#3b63e3]/25 bg-[#3b63e3]/[0.06] px-4 py-3.5 text-[13px] leading-relaxed text-neutral-700">
+              <div className="mb-10 rounded-[8px] border border-[#5574AD]/25 bg-[#5574AD]/[0.06] px-4 py-3.5 text-[13px] leading-relaxed text-neutral-700">
                 You&apos;re buying <span className="font-semibold text-foreground">{listings.length} boards</span>{" "}
                 from one seller in a single payment. This combined checkout uses{" "}
                 <span className="font-medium text-foreground">local pickup</span> — you&apos;ll get one pickup code that
@@ -262,11 +262,11 @@ export function CheckoutClient({
                     className={cn(
                       "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
                       method === "pickup"
-                        ? "border-[#3b63e3] bg-[#3b63e3]/[0.04] shadow-[inset_0_0_0_1px_rgba(59,99,227,0.15)]"
+                        ? "border-[#5574AD] bg-[#5574AD]/[0.04] shadow-[inset_0_0_0_1px_rgba(85,116,173,0.15)]"
                         : "border-neutral-200 bg-white hover:border-neutral-300",
                     )}
                   >
-                    <RadioGroupItem value="pickup" id="fulfill-pickup" className="mt-0.5 border-neutral-400 text-[#3b63e3]" />
+                    <RadioGroupItem value="pickup" id="fulfill-pickup" className="mt-0.5 border-neutral-400 text-[#5574AD]" />
                     <div className="min-w-0">
                       <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <MapPin className="h-4 w-4 shrink-0 text-neutral-600" />
@@ -281,11 +281,11 @@ export function CheckoutClient({
                     className={cn(
                       "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
                       method === "shipping"
-                        ? "border-[#3b63e3] bg-[#3b63e3]/[0.04] shadow-[inset_0_0_0_1px_rgba(59,99,227,0.15)]"
+                        ? "border-[#5574AD] bg-[#5574AD]/[0.04] shadow-[inset_0_0_0_1px_rgba(85,116,173,0.15)]"
                         : "border-neutral-200 bg-white hover:border-neutral-300",
                     )}
                   >
-                    <RadioGroupItem value="shipping" id="fulfill-ship" className="mt-0.5 border-neutral-400 text-[#3b63e3]" />
+                    <RadioGroupItem value="shipping" id="fulfill-ship" className="mt-0.5 border-neutral-400 text-[#5574AD]" />
                     <div className="min-w-0">
                       <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <Truck className="h-4 w-4 shrink-0 text-neutral-600" />
@@ -394,16 +394,16 @@ export function CheckoutClient({
               className="mt-12 flex flex-wrap gap-x-4 gap-y-2 border-t border-neutral-200 pt-8 text-[13px]"
               aria-label="Policies"
             >
-              <Link href="/protection-policy" className="text-[#3b63e3] underline-offset-2 hover:underline">
+              <Link href="/protection-policy" className="text-[#5574AD] underline-offset-2 hover:underline">
                 Purchase protection
               </Link>
-              <Link href="/privacy" className="text-[#3b63e3] underline-offset-2 hover:underline">
+              <Link href="/privacy" className="text-[#5574AD] underline-offset-2 hover:underline">
                 Privacy policy
               </Link>
-              <Link href="/terms" className="text-[#3b63e3] underline-offset-2 hover:underline">
+              <Link href="/terms" className="text-[#5574AD] underline-offset-2 hover:underline">
                 Terms of service
               </Link>
-              <Link href="/cookies" className="text-[#3b63e3] underline-offset-2 hover:underline">
+              <Link href="/cookies" className="text-[#5574AD] underline-offset-2 hover:underline">
                 Cookies
               </Link>
             </nav>
