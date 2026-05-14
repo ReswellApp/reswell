@@ -13,7 +13,9 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
+import { SellersDirectoryAdminBar } from "@/components/sellers/sellers-directory-admin-bar"
 import { SellersDirectorySearch } from "@/components/sellers/sellers-directory-search"
+import { listSellersDirectoryDemotedProfileIdsOrdered } from "@/lib/db/sellers-directory-demotions"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
@@ -110,9 +112,25 @@ export default async function SellersPage({
           return data ?? []
         })()
 
+  const demotedOrder = await listSellersDirectoryDemotedProfileIdsOrdered(supabase)
+  const demotedSet = new Set(demotedOrder)
+  const demotedRank = new Map(demotedOrder.map((id, i) => [id, i]))
+  const orderedShops =
+    demotedOrder.length === 0
+      ? shops
+      : [...shops].sort((a, b) => {
+          const aDemoted = demotedSet.has(a.id)
+          const bDemoted = demotedSet.has(b.id)
+          if (aDemoted !== bDemoted) return aDemoted ? 1 : -1
+          if (aDemoted && bDemoted) {
+            return (demotedRank.get(a.id) ?? 0) - (demotedRank.get(b.id) ?? 0)
+          }
+          return 0
+        })
+
   /** Up to THUMB_PER_SELLER most recent active listings per seller (by global recency pass). */
   const thumbsBySeller = new Map<string, ListingThumb[]>()
-  if (shops.length > 0 && sellerIds.length > 0) {
+  if (orderedShops.length > 0 && sellerIds.length > 0) {
     const { data: invRows, error: invError } = await supabase
       .from("listings")
       .select(
@@ -120,7 +138,7 @@ export default async function SellersPage({
       )
       .in(
         "user_id",
-        shops.map((s) => s.id)
+        orderedShops.map((s) => s.id)
       )
       .eq("status", "active")
       .eq("hidden_from_site", false)
@@ -143,7 +161,10 @@ export default async function SellersPage({
   return (
     <main className="flex-1">
       <section className="border-b border-border/60 bg-offwhite py-10">
-        <div className="container mx-auto px-4">
+        <div className="container relative mx-auto px-4">
+          <div className="absolute right-2 top-2 z-10 sm:right-4 sm:top-4">
+            <SellersDirectoryAdminBar />
+          </div>
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Store className="h-5 w-5" aria-hidden />
@@ -167,7 +188,7 @@ export default async function SellersPage({
           {q ? (
             <div className="mx-auto mb-6 flex max-w-3xl flex-wrap items-center justify-between gap-2">
               <p className="text-sm text-muted-foreground">
-                {shops?.length || 0} seller{shops?.length !== 1 ? "s" : ""} found
+                {orderedShops?.length || 0} seller{orderedShops?.length !== 1 ? "s" : ""} found
                 {q ? ` for “${q}”` : ""}
               </p>
               <Button variant="ghost" size="sm" asChild>
@@ -176,7 +197,7 @@ export default async function SellersPage({
             </div>
           ) : null}
 
-          {!shops || shops.length === 0 ? (
+          {!orderedShops || orderedShops.length === 0 ? (
             <div className="mx-auto max-w-md py-14 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
                 <Store className="h-7 w-7 text-muted-foreground" aria-hidden />
@@ -193,7 +214,7 @@ export default async function SellersPage({
             </div>
           ) : (
             <div className="mx-auto flex max-w-3xl flex-col gap-5">
-              {shops.map((shop) => {
+              {orderedShops.map((shop) => {
                 const label = shop.shop_name?.trim() || shop.display_name || "Seller"
                 const thumbs = thumbsBySeller.get(shop.id) ?? []
                 return (
