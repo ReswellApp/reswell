@@ -16,6 +16,10 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
+import {
+  reswellProtectionCardClassName,
+  reswellProtectionTrustRibbonColumnDividerClassName,
+} from "@/lib/reswell-protection-surface"
 
 const STAR_FILL = "fill-neutral-950 text-neutral-950 dark:fill-white dark:text-white"
 const STAR_EMPTY = "fill-none stroke-neutral-300 text-neutral-300 dark:stroke-neutral-600 dark:text-neutral-600"
@@ -82,7 +86,8 @@ export function ListingProtectionTrustRibbon({
   return (
     <div
       className={cn(
-        "rounded-xl border border-indigo-200/55 bg-[#eef0fb] px-5 py-5 dark:border-indigo-900/50 dark:bg-indigo-950/35",
+        "rounded-xl px-5 py-5",
+        reswellProtectionCardClassName,
         !isSellerView && "grid gap-4 sm:grid-cols-2",
         className,
       )}
@@ -103,7 +108,7 @@ export function ListingProtectionTrustRibbon({
         </div>
       </div>
       {!isSellerView ? (
-        <div className="flex gap-3 sm:border-l sm:border-indigo-200/60 sm:pl-4 dark:sm:border-indigo-900/50">
+        <div className={cn("flex gap-3", reswellProtectionTrustRibbonColumnDividerClassName)}>
           <Lock className="mt-0.5 h-6 w-6 shrink-0 text-[#4263eb]" aria-hidden />
           <div className="min-w-0">
             <p className="text-[15px] font-bold text-foreground">Secure checkout</p>
@@ -124,7 +129,8 @@ export function ListingBuyerProtectionTrustRibbon({ className }: { className?: s
   return (
     <div
       className={cn(
-        "flex w-full gap-3 rounded-xl border border-indigo-200/55 bg-[#eef0fb] px-5 py-5 dark:border-indigo-900/50 dark:bg-indigo-950/35",
+        "flex w-full gap-3 rounded-xl px-5 py-5",
+        reswellProtectionCardClassName,
         className,
       )}
     >

@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { ShieldCheck, Package, Tag, AlertTriangle } from 'lucide-react'
+import { reswellProtectionCardClassName } from '@/lib/reswell-protection-surface'
+import { cn } from '@/lib/utils'
 
 /**
  * Checkout trust block — shown next to order summary when shipping is selected.
  */
 export function ProtectionTrustBlock() {
   return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-800/40 dark:bg-blue-950/20">
+    <div className={cn("rounded-xl p-4", reswellProtectionCardClassName)}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" aria-hidden />
@@ -68,7 +70,7 @@ export function ProtectionTrustBlock() {
       </div>
 
       {/* Footer */}
-      <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800/40 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-[#7F9DD5]/25 dark:border-[#7F9DD5]/35 flex items-center justify-between">
         <p className="text-xs text-blue-700/70 dark:text-blue-500/70">
           Protection active for 30 days after delivery.
         </p>

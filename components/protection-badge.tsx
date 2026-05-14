@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { reswellProtectionCardClassName } from '@/lib/reswell-protection-surface'
 
 type ProtectionBadgeSize = 'sm' | 'md'
 
@@ -21,7 +22,8 @@ export function ProtectionBadge({
   const content = (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 font-medium text-blue-700 dark:border-blue-800/50 dark:bg-blue-950/30 dark:text-blue-400',
+        'inline-flex items-center gap-1 rounded-full font-medium text-foreground',
+        reswellProtectionCardClassName,
         size === 'sm' && 'px-2 py-0.5 text-xs',
         size === 'md' && 'px-3 py-1 text-sm',
         className

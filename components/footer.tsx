@@ -4,6 +4,8 @@ import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { footerCategoryLinks } from "@/lib/site-category-directory"
+import { reswellProtectionCardClassName } from "@/lib/reswell-protection-surface"
+import { cn } from "@/lib/utils"
 
 export function Footer() {
   return (
@@ -93,7 +95,10 @@ export function Footer() {
           <div className="flex justify-center">
             <Link
               href="/protection-policy"
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-[#7F9DD5]/25",
+                reswellProtectionCardClassName,
+              )}
             >
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
               Every order protected by Reswell Purchase Protection

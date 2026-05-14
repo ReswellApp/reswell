@@ -12,6 +12,10 @@ import {
   Store,
 } from 'lucide-react'
 import { pageSeoMetadata } from '@/lib/site-metadata'
+import {
+  reswellProtectionBorderAndBg,
+  reswellProtectionIconWellClassName,
+} from '@/lib/reswell-protection-surface'
 
 export const metadata: Metadata = pageSeoMetadata({
   title: 'Purchase Protection — Reswell',
@@ -23,7 +27,7 @@ export const metadata: Metadata = pageSeoMetadata({
 function Section({
   icon: Icon,
   iconColor = 'text-blue-600 dark:text-blue-400',
-  bg = 'bg-blue-50/60 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40',
+  bg = reswellProtectionBorderAndBg,
   title,
   children,
 }: {
@@ -52,7 +56,7 @@ export default function ProtectionPolicyPage() {
       {/* Hero */}
       <div className="text-center space-y-4">
         <div className="flex justify-center">
-          <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-5">
+          <div className={`rounded-full p-5 ${reswellProtectionIconWellClassName}`}>
             <ShieldCheck className="h-10 w-10 text-blue-600 dark:text-blue-400" aria-hidden />
           </div>
         </div>
@@ -70,7 +74,7 @@ export default function ProtectionPolicyPage() {
       <section
         id="buyer-protections"
         aria-labelledby="buyer-protections-heading"
-        className="rounded-2xl border border-blue-200 dark:border-blue-800/40 bg-blue-50/60 dark:bg-blue-950/20 p-6 scroll-mt-8"
+        className={`rounded-2xl border p-6 scroll-mt-8 ${reswellProtectionBorderAndBg}`}
       >
         <div className="flex items-center gap-3 mb-4">
           <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" aria-hidden />
@@ -333,7 +337,7 @@ export default function ProtectionPolicyPage() {
       {/* Protection window */}
       <div
         id="protection-window"
-        className="rounded-2xl border border-blue-200 dark:border-blue-800/40 bg-blue-50/60 dark:bg-blue-950/20 p-6 scroll-mt-8"
+        className={`rounded-2xl border p-6 scroll-mt-8 ${reswellProtectionBorderAndBg}`}
       >
         <h2 className="text-base font-bold text-blue-900 dark:text-blue-300 mb-2">
           Protection window

@@ -1,10 +1,10 @@
 import Link from "next/link"
 import { ShieldCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { reswellProtectionCardClassName } from "@/lib/reswell-protection-surface"
 
 /**
- * Reswell buyer-protection callout — light-blue card with ShieldCheck, title, and one-line blurb.
- * Mirrors the Reverb-style template (blue-50 bg, blue-200 border) used in the redesign reference.
+ * Reswell buyer-protection callout — uses `reswellProtectionCardClassName` (Listing PDP / trust UI).
  */
 export function ListingPdpBuyerTrustStrip({
   policyHref = "/protection-policy",
@@ -15,10 +15,7 @@ export function ListingPdpBuyerTrustStrip({
 }) {
   return (
     <div
-      className={cn(
-        "rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/55 dark:bg-blue-950/35",
-        className,
-      )}
+      className={cn("rounded-lg p-4", reswellProtectionCardClassName, className)}
     >
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 size-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
