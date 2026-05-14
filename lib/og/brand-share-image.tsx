@@ -12,12 +12,12 @@ const toneStyles: Record<
   light: {
     bg: "linear-gradient(135deg, #f8fafc 0%, #e0f2fe 42%, #f1f5f9 100%)",
     accent: "linear-gradient(180deg, #0d9488 0%, #0f766e 100%)",
-    headline: "#0f172a",
+    headline: "#04070E",
     sub: "#334155",
     footer: "#64748b",
   },
   dark: {
-    bg: "linear-gradient(145deg, #0f172a 0%, #1e3a5f 48%, #0f172a 100%)",
+    bg: "linear-gradient(145deg, #04070E 0%, #1e3a5f 48%, #04070E 100%)",
     accent: "linear-gradient(180deg, #38bdf8 0%, #0284c7 100%)",
     headline: "#f8fafc",
     sub: "#cbd5e1",

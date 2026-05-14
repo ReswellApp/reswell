@@ -61,7 +61,7 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
     const animationEnd = Date.now() + duration
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
     /** Slate / neutral + subtle emerald — matches Reswell globals, not legacy cyan mock */
-    const colors = ["#0f172a", "#475569", "#94a3b8", "#cbd5e1", "#059669"]
+    const colors = ["#04070E", "#475569", "#94a3b8", "#cbd5e1", "#059669"]
 
     function randomInRange(min: number, max: number) {
       return Math.random() * (max - min) + min

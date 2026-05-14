@@ -37,7 +37,7 @@ export function sellShareImageResponse() {
             style={{
               fontSize: 58,
               fontWeight: 700,
-              color: "#0f172a",
+              color: "#04070E",
               lineHeight: 1.08,
               letterSpacing: -1.5,
             }}

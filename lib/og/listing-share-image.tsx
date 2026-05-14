@@ -181,7 +181,7 @@ export async function listingShareImageResponse(opts: {
             style={{
               fontSize: 38,
               fontWeight: 700,
-              color: "#000000",
+              color: "#04070E",
               lineHeight: 1.22,
               letterSpacing: -0.35,
             }}

@@ -149,7 +149,7 @@ function HighlightMatch({
   const q = query.trim()
   const matchClass = muted
     ? "font-medium text-neutral-800"
-    : "font-semibold text-neutral-950"
+    : "font-semibold text-foreground"
   if (!q) {
     return muted ? <span className="text-[13px] text-neutral-500">{text}</span> : <>{text}</>
   }

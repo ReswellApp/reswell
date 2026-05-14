@@ -120,8 +120,8 @@ export function CartOrderSummary({
       <div className="my-5 h-px bg-neutral-200 dark:bg-white/10" />
 
       <div className="flex items-baseline justify-between gap-4">
-        <span className="text-[17px] font-semibold text-neutral-900 dark:text-foreground">Total:</span>
-        <span className="text-[22px] font-semibold tabular-nums tracking-tight text-neutral-950 dark:text-foreground">
+        <span className="text-[17px] font-semibold text-foreground">Total:</span>
+        <span className="text-[22px] font-semibold tabular-nums tracking-tight text-foreground">
           ${formatMoney(total)}
         </span>
       </div>

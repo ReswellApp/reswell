@@ -43,8 +43,8 @@ export function siteSearchSubmitButtonClassName(compact?: boolean) {
   return cn(
     "h-10 shrink-0 rounded-full px-5 text-[14px] font-medium",
     "border-0 bg-[#04070E] text-white shadow-sm transition-colors",
-    "hover:bg-black focus-visible:ring-2 focus-visible:ring-white/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    "dark:bg-[#04070E] dark:text-white dark:hover:bg-black",
+    "hover:bg-[#020508] focus-visible:ring-2 focus-visible:ring-white/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "dark:bg-[#04070E] dark:text-white dark:hover:bg-[#020508]",
     compact && "h-9 px-4 text-sm",
   )
 }

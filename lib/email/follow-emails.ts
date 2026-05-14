@@ -104,7 +104,7 @@ You're receiving this because you follow sellers on Reswell.
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#fafafa; margin:0; padding:0;">
   <div style="max-width:560px; margin:0 auto; background:#fff; border-radius:12px; overflow:hidden; margin-top:24px; box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="background:#000; padding:20px 28px;">
+    <div style="background:#04070E; padding:20px 28px;">
       <span style="color:#fff; font-size:22px; font-weight:800; letter-spacing:-0.5px;">Reswell</span>
     </div>
     <div style="padding:28px;">

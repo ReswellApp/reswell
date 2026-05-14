@@ -40,7 +40,7 @@ export function ListingImageCarouselNavButton({
         isEmbed &&
           "z-10 opacity-80 hover:opacity-100",
         variant === "lightbox" &&
-          "z-20 border border-white/80 bg-white/75 text-neutral-800 shadow-[0_2px_12px_rgba(0,0,0,0.14)] backdrop-blur-md transition-[background-color,transform,color] hover:bg-white/95 hover:text-neutral-950 active:scale-[0.98] [&_svg]:stroke-[2]",
+          "z-20 border border-white/80 bg-white/75 text-neutral-800 shadow-[0_2px_12px_rgba(0,0,0,0.14)] backdrop-blur-md transition-[background-color,transform,color] hover:bg-white/95 hover:text-black active:scale-[0.98] [&_svg]:stroke-[2]",
       )}
     >
       <Icon className={ICON_CLASS} aria-hidden />

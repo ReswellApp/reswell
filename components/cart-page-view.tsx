@@ -224,7 +224,7 @@ export function CartPageView({
           <div className="mx-auto mb-10 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100/90 ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/10">
             <ShoppingCart className="h-6 w-6 text-neutral-400" strokeWidth={1} />
           </div>
-          <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-neutral-950 dark:text-foreground md:text-[32px]">
+          <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-foreground md:text-[32px]">
             Your cart is empty
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-neutral-600 dark:text-muted-foreground">
@@ -249,14 +249,14 @@ export function CartPageView({
       <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 lg:px-8 lg:pt-10">
         <Link
           href="/boards"
-          className="inline-flex items-center gap-1 text-[14px] text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-foreground"
+          className="inline-flex items-center gap-1 text-[14px] text-neutral-500 transition-colors hover:text-black dark:text-neutral-400 dark:hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           Continue shopping
         </Link>
 
         <header className="mt-6">
-          <h1 className="text-[28px] font-semibold tracking-tight text-neutral-950 dark:text-foreground md:text-[32px]">
+          <h1 className="text-[28px] font-semibold tracking-tight text-foreground md:text-[32px]">
             Your cart
           </h1>
           <p className="mt-1 text-[15px] text-neutral-500 dark:text-neutral-400">
@@ -320,11 +320,11 @@ export function CartPageView({
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                           <Link
                             href={href}
-                            className="text-[16px] font-semibold leading-snug text-neutral-950 hover:underline dark:text-foreground"
+                            className="text-[16px] font-semibold leading-snug text-foreground hover:underline"
                           >
                             {title}
                           </Link>
-                          <p className="shrink-0 text-[16px] font-semibold tabular-nums text-neutral-950 dark:text-foreground">
+                          <p className="shrink-0 text-[16px] font-semibold tabular-nums text-foreground">
                             ${formatMoney(price)}
                           </p>
                         </div>
@@ -358,7 +358,7 @@ export function CartPageView({
                             aria-label="Quantity 1"
                           >
                             <span className="text-[13px] text-neutral-500">Qty:</span>
-                            <span className="text-[15px] tabular-nums text-neutral-950 dark:text-foreground">1</span>
+                            <span className="text-[15px] tabular-nums text-foreground">1</span>
                             <ChevronDown className="h-4 w-4 text-neutral-500" strokeWidth={2} aria-hidden />
                           </div>
                           <CartLineFavoriteButton listingId={listing.id} initialFavorited={favorited} />
@@ -368,7 +368,7 @@ export function CartPageView({
                             onClick={() => remove(listing.id)}
                             className={cn(
                               "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100",
-                              "text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-neutral-950",
+                              "text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-black",
                               "disabled:opacity-50 dark:bg-white/10 dark:hover:bg-white/15",
                             )}
                             aria-label="Remove from cart"

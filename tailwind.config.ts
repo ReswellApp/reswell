@@ -33,31 +33,31 @@ const config: Config = {
       colors: {
         /* Slate-neutral professional palette */
         white: '#FFFFFF',
-        black: '#0F172A',
+        black: '#04070E',
         midgray: '#64748B',
         lightgray: '#E2E8F0',
         /* Legacy names → mapped to slate scale */
-        cerulean: '#0F172A',
+        cerulean: '#04070E',
         pacific: '#334155',
         olive: '#64748B',
         gold: '#94A3B8',
         background: '#FFFFFF',
-        foreground: '#0F172A',
+        foreground: '#04070E',
         card: {
           DEFAULT: '#FFFFFF',
-          foreground: '#0F172A',
+          foreground: '#04070E',
         },
         popover: {
           DEFAULT: '#FFFFFF',
-          foreground: '#0F172A',
+          foreground: '#04070E',
         },
         primary: {
-          DEFAULT: '#0F172A',
+          DEFAULT: '#04070E',
           foreground: '#FFFFFF',
         },
         secondary: {
           DEFAULT: 'transparent',
-          foreground: '#0F172A',
+          foreground: '#04070E',
         },
         muted: {
           DEFAULT: '#F8FAFC',
@@ -79,7 +79,7 @@ const config: Config = {
         footerHeart: '#F9F9F2',
         border: '#E2E8F0',
         input: '#CBD5E1',
-        ring: '#0F172A',
+        ring: '#04070E',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -110,10 +110,10 @@ const config: Config = {
         smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
       boxShadow: {
-        soft: '0 1px 2px 0 rgb(15 23 42 / 0.05)',
-        'soft-hover': '0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.05)',
-        surface: '0 1px 3px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.06)',
-        'surface-lg': '0 20px 25px -5px rgb(15 23 42 / 0.08), 0 8px 10px -6px rgb(15 23 42 / 0.05)',
+        soft: '0 1px 2px 0 rgb(4 7 14 / 0.05)',
+        'soft-hover': '0 10px 15px -3px rgb(4 7 14 / 0.08), 0 4px 6px -4px rgb(4 7 14 / 0.05)',
+        surface: '0 1px 3px 0 rgb(4 7 14 / 0.06), 0 1px 2px -1px rgb(4 7 14 / 0.06)',
+        'surface-lg': '0 20px 25px -5px rgb(4 7 14 / 0.08), 0 8px 10px -6px rgb(4 7 14 / 0.05)',
       },
       keyframes: {
         'accordion-down': {

@@ -2,13 +2,21 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-/** Marketing CTA surface — white with light hover press. */
+/** Marketing CTA surface — white tile, hairline ink outline (`foreground` @ low opacity). */
 export const marketingCtaBannerLinkClassName =
-  "no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl bg-white px-8 py-8 transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+  "no-underline hover:no-underline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl border-[0.5px] border-foreground/20 bg-white px-8 py-8 transition-colors hover:bg-neutral-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/[0.08] focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:hover:bg-neutral-100/80"
 
 /** Block layout (e.g. homepage “Ready to get started?” row with buttons). */
 export const marketingCtaBannerPanelClassName =
-  "rounded-2xl bg-white px-6 py-8 sm:px-8"
+  "rounded-2xl border-[0.5px] border-foreground/20 bg-white px-6 py-8 sm:px-8"
+
+/** Typography on {@link marketingCtaBannerLinkClassName} / {@link marketingCtaBannerPanelClassName}. */
+export const marketingCtaBannerTitleClassName = "text-lg font-semibold text-foreground"
+
+export const marketingCtaBannerDescriptionClassName = "mt-1 text-pretty text-muted-foreground"
+
+export const marketingCtaBannerCtaLabelClassName =
+  "inline-flex shrink-0 items-center gap-2 font-medium text-foreground"
 
 export type MarketingCtaBannerProps = {
   href: string
@@ -34,10 +42,10 @@ export function MarketingCtaBanner({
   const link = (
     <Link href={href} className={marketingCtaBannerLinkClassName}>
       <div>
-        <p className="text-lg font-semibold text-foreground">{title}</p>
-        <p className="text-muted-foreground mt-1">{description}</p>
+        <p className={marketingCtaBannerTitleClassName}>{title}</p>
+        <p className={marketingCtaBannerDescriptionClassName}>{description}</p>
       </div>
-      <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+      <span className={marketingCtaBannerCtaLabelClassName}>
         {ctaLabel}
         <ArrowRight className="h-4 w-4" />
       </span>

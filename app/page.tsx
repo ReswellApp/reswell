@@ -32,8 +32,11 @@ import { loadHomeFeaturedShortboardRows, loadHomeFeaturedSurfboardRows } from "@
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 import {
+  marketingCtaBannerCtaLabelClassName,
+  marketingCtaBannerDescriptionClassName,
   marketingCtaBannerLinkClassName,
   marketingCtaBannerPanelClassName,
+  marketingCtaBannerTitleClassName,
 } from "@/components/marketing-cta-banners"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
@@ -283,13 +286,13 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/sell" className={marketingCtaBannerLinkClassName}>
               <div>
-                <p className="text-lg font-semibold text-foreground">Every board deserves another session</p>
-                <p className="text-muted-foreground mt-1">
+                <p className={marketingCtaBannerTitleClassName}>Every board deserves another session</p>
+                <p className={marketingCtaBannerDescriptionClassName}>
                   A community of surfers buying, selling, and passing along the boards they love. Find your next board,
                   or send one off to its next.
                 </p>
               </div>
-              <span className="shrink-0 inline-flex items-center gap-2 font-medium text-foreground">
+              <span className={marketingCtaBannerCtaLabelClassName}>
                 List your board
                 <ArrowRight className="h-4 w-4" />
               </span>
@@ -334,13 +337,13 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/contact" className={marketingCtaBannerLinkClassName}>
               <div>
-                <p className="text-lg font-semibold text-foreground">We&apos;re here whenever you need us</p>
-                <p className="mt-1 text-muted-foreground">
+                <p className={marketingCtaBannerTitleClassName}>We&apos;re here whenever you need us</p>
+                <p className={marketingCtaBannerDescriptionClassName}>
                   Real people, real surfers, happy to help with a listing, a question, or just pointing you toward the
                   right board. Say hi anytime.
                 </p>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-2 font-medium text-foreground">
+              <span className={marketingCtaBannerCtaLabelClassName}>
                 Say hello
                 <ArrowRight className="h-4 w-4" />
               </span>
@@ -401,8 +404,8 @@ export default async function HomePage() {
             <div className={marketingCtaBannerPanelClassName}>
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
-                  <p className="text-lg font-semibold text-foreground">Ready to get started?</p>
-                  <p className="mt-1 text-pretty text-muted-foreground">
+                  <p className={marketingCtaBannerTitleClassName}>Ready to get started?</p>
+                  <p className={marketingCtaBannerDescriptionClassName}>
                     Browse boards from locals and shops, or list yours with photos and pickup options in a few minutes.
                   </p>
                 </div>
