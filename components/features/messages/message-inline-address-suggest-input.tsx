@@ -17,10 +17,14 @@ import {
   loadGoogleMapsWithPlaces,
 } from "@/lib/maps/load-google-maps"
 import {
+  choosePlacesAutocompleteBackend,
+  legacyFetchAddressPredictions,
+  legacyFetchPlaceDetails,
+} from "@/lib/maps/places-legacy-autocomplete"
+import {
   AUTOCOMPLETE_US_ADDRESS_PRIMARY_TYPES,
   createAutocompleteSessionToken,
   fetchAutocompletePlacePredictions,
-  mapsPlacesSupportsNewAutocomplete,
   newPlaceAddressComponentsToGeocoder,
   readPlaceLocationLatLng,
   suggestionToRowTexts,
@@ -51,7 +55,7 @@ type PredictionRow = {
   placeId: string
   mainText: string
   secondaryText: string
-  prediction: PlacePredictionHandle
+  prediction?: PlacePredictionHandle
 }
 
 function mapAddressSuggestions(suggestions: readonly AutocompleteSuggestionItem[]): PredictionRow[] {
@@ -137,6 +141,8 @@ export function MessageInlineAddressSuggestInput({
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
+  const googlePlacesBackendRef = useRef<"new" | "legacy" | null>(null)
+  const googleAutocompleteSvcRef = useRef<google.maps.places.AutocompleteService | null>(null)
 
   const qTrim = value.trim()
   const queryLooksAddress = useMemo(() => messageComposerLooksLikeAddressQuery(value), [value])
@@ -156,9 +162,9 @@ export function MessageInlineAddressSuggestInput({
     void loadGoogleMapsWithPlaces()
       .then((g) => {
         if (cancelled) return
-        if (!mapsPlacesSupportsNewAutocomplete(g)) {
-          setApiReady(false)
-          return
+        googlePlacesBackendRef.current = choosePlacesAutocompleteBackend(g)
+        if (googlePlacesBackendRef.current === "legacy") {
+          googleAutocompleteSvcRef.current = new g.maps.places.AutocompleteService()
         }
         setApiReady(true)
       })
@@ -254,13 +260,44 @@ export function MessageInlineAddressSuggestInput({
         }
 
         try {
+          const backend = googlePlacesBackendRef.current
+
+          if (backend === "legacy") {
+            const svc = googleAutocompleteSvcRef.current
+            if (!svc) {
+              throw new Error("Legacy AutocompleteService not initialized")
+            }
+            const list = await legacyFetchAddressPredictions(g, svc, q)
+            if (runId !== generationRef.current) return
+            setLoadingPredictions(false)
+            const mapped: PredictionRow[] = list.map((p) => ({
+              placeId: p.placeId,
+              mainText: p.mainText,
+              secondaryText: p.secondaryText,
+            }))
+            if (!mapped.length) {
+              setRows([])
+              setFetchEmpty(true)
+              setActiveIndex(-1)
+              setOpen(isInputFocused() && !suppressOpenUntilTypingRef.current)
+              return
+            }
+            setRows(mapped)
+            setFetchEmpty(false)
+            setActiveIndex(0)
+            setOpen(isInputFocused() && !suppressOpenUntilTypingRef.current)
+            return
+          }
+
           if (!sessionTokenRef.current) {
             sessionTokenRef.current = createAutocompleteSessionToken(g) ?? null
           }
           const suggestions = await fetchAutocompletePlacePredictions(g, {
             input: q,
             sessionToken: sessionTokenRef.current ?? undefined,
-            includedRegionCodes: ["us"],
+            includedRegionCodes: ["US"],
+            region: "us",
+            language: "en",
             includedPrimaryTypes: [...AUTOCOMPLETE_US_ADDRESS_PRIMARY_TYPES],
           })
           if (runId !== generationRef.current) return
@@ -279,10 +316,38 @@ export function MessageInlineAddressSuggestInput({
           setOpen(isInputFocused() && !suppressOpenUntilTypingRef.current)
         } catch {
           if (runId !== generationRef.current) return
-          setLoadingPredictions(false)
-          setRows([])
-          setFetchEmpty(false)
-          setOpen(false)
+          try {
+            if (!g?.maps?.places) throw new Error("no places")
+            if (!googleAutocompleteSvcRef.current) {
+              googleAutocompleteSvcRef.current = new g.maps.places.AutocompleteService()
+            }
+            const svc = googleAutocompleteSvcRef.current
+            googlePlacesBackendRef.current = "legacy"
+            const list = await legacyFetchAddressPredictions(g, svc, q)
+            if (runId !== generationRef.current) return
+            setLoadingPredictions(false)
+            const mapped: PredictionRow[] = list.map((p) => ({
+              placeId: p.placeId,
+              mainText: p.mainText,
+              secondaryText: p.secondaryText,
+            }))
+            if (!mapped.length) {
+              setRows([])
+              setFetchEmpty(true)
+              setActiveIndex(-1)
+              setOpen(isInputFocused() && !suppressOpenUntilTypingRef.current)
+              return
+            }
+            setRows(mapped)
+            setFetchEmpty(false)
+            setActiveIndex(0)
+            setOpen(isInputFocused() && !suppressOpenUntilTypingRef.current)
+          } catch {
+            setLoadingPredictions(false)
+            setRows([])
+            setFetchEmpty(false)
+            setOpen(false)
+          }
         }
       })()
     }, DEBOUNCE_MS)
@@ -335,33 +400,79 @@ export function MessageInlineAddressSuggestInput({
               releaseLoading()
             }, safetyMs)
 
-            const place = row.prediction.toPlace()
-            await place.fetchFields({
-              fields: ["addressComponents", "formattedAddress", "location", "id"],
-            })
-            sessionTokenRef.current = null
+            let full: GoogleFullPlaceResolved | null = null
+
+            if (row.prediction) {
+              const place = row.prediction.toPlace()
+              await place.fetchFields({
+                fields: ["addressComponents", "formattedAddress", "location", "id"],
+              })
+              sessionTokenRef.current = null
+
+              const geo = newPlaceAddressComponentsToGeocoder(place.addressComponents)
+              const coords = readPlaceLocationLatLng(place)
+              const formatted = (place.formattedAddress ?? "").trim()
+              const placeId = (place.id ?? row.placeId).trim()
+              if (geo.length && coords && formatted && placeId) {
+                const parsed = parseGoogleAddressComponents(geo)
+                const latNum = coords.lat
+                const lngNum = coords.lng
+                if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+                  full = {
+                    formattedAddress: formatted,
+                    latitude: latNum,
+                    longitude: lngNum,
+                    placeId,
+                    address: parsed,
+                  }
+                }
+              }
+            } else {
+              const g = window.google
+              sessionTokenRef.current = null
+              if (g?.maps?.places) {
+                const legacyPlace = await legacyFetchPlaceDetails(g, row.placeId, [
+                  "address_components",
+                  "formatted_address",
+                  "geometry",
+                  "place_id",
+                ])
+                const geom = legacyPlace?.geometry?.location
+                if (geom && legacyPlace.address_components) {
+                  const parsed = parseGoogleAddressComponents(legacyPlace.address_components)
+                  const formatted =
+                    typeof legacyPlace.formatted_address === "string"
+                      ? legacyPlace.formatted_address.trim()
+                      : ""
+                  const placeId =
+                    typeof legacyPlace.place_id === "string"
+                      ? legacyPlace.place_id.trim()
+                      : row.placeId
+                  const latNum = geom.lat()
+                  const lngNum = geom.lng()
+                  if (
+                    formatted &&
+                    placeId &&
+                    Number.isFinite(latNum) &&
+                    Number.isFinite(lngNum)
+                  ) {
+                    full = {
+                      formattedAddress: formatted,
+                      latitude: latNum,
+                      longitude: lngNum,
+                      placeId,
+                      address: parsed,
+                    }
+                  }
+                }
+              }
+            }
 
             window.clearTimeout(safetyId)
             releaseLoading()
 
-            const geo = newPlaceAddressComponentsToGeocoder(place.addressComponents)
-            const coords = readPlaceLocationLatLng(place)
-            const formatted = (place.formattedAddress ?? "").trim()
-            const placeId = (place.id ?? row.placeId).trim()
-            if (!geo.length || !coords || !formatted || !placeId) {
+            if (!full) {
               return
-            }
-            const parsed = parseGoogleAddressComponents(geo)
-            const latNum = coords.lat
-            const lngNum = coords.lng
-            if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return
-
-            const full: GoogleFullPlaceResolved = {
-              formattedAddress: formatted,
-              latitude: latNum,
-              longitude: lngNum,
-              placeId,
-              address: parsed,
             }
 
             invalidatePending()

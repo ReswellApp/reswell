@@ -3,8 +3,10 @@ import { importLibrary, setOptions } from "@googlemaps/js-api-loader"
 let loadPromise: Promise<typeof google> | null = null
 
 /**
- * Loads Maps JavaScript API with Places (singleton). Call only on the client.
- * Requires NEXT_PUBLIC_GOOGLE_MAPS_API_KEY and Places API enabled for the key.
+ * Loads Maps JavaScript API with core `maps` + `places` (singleton). Call only on the client.
+ * Loading both libraries before first use avoids incomplete initialization where `places` exists
+ * but new Programmatic Autocomplete (`AutocompleteSuggestion`) is missing.
+ * Requires NEXT_PUBLIC_GOOGLE_MAPS_API_KEY plus Maps JavaScript API / Places (new) enabled.
  */
 export function loadGoogleMapsWithPlaces(): Promise<typeof google> {
   if (typeof window === "undefined") {
@@ -19,12 +21,19 @@ export function loadGoogleMapsWithPlaces(): Promise<typeof google> {
       key: key.trim(),
       v: "weekly",
     })
-    loadPromise = importLibrary("places").then(() => {
-      if (!window.google?.maps?.places) {
-        throw new Error("Google Maps Places library failed to load")
-      }
-      return window.google
-    })
+    // Load core `maps` before `places` so modular Places + programmatic autocomplete init deterministically.
+    loadPromise = importLibrary("maps")
+      .then(() => importLibrary("places"))
+      .then(() => {
+        if (!window.google?.maps?.places) {
+          throw new Error("Google Maps Places library failed to load")
+        }
+        return window.google
+      })
   }
-  return loadPromise
+  // Clear sticky failure so reopening the message location popover (or a later navigation) can retry.
+  return loadPromise.catch((err: unknown) => {
+    loadPromise = null
+    return Promise.reject(err)
+  })
 }

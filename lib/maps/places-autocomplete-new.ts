@@ -1,5 +1,7 @@
 /// <reference types="google.maps" />
 
+import { importLibrary } from "@googlemaps/js-api-loader"
+
 /**
  * Maps JavaScript API — Places (new) programmatic autocomplete helpers.
  * @types/google.maps often lags; keep runtime-compatible shapes narrow.
@@ -10,16 +12,19 @@ export const AUTOCOMPLETE_US_REGION_PRIMARY_TYPES = [
   "locality",
   "postal_code",
   "administrative_area_level_1",
-  "administrative_area_level_3",
   "neighborhood",
+  "sublocality",
 ] as const
 
-/** Address-style suggestions (matches `included-primary-types="street_address"` examples). */
-export const AUTOCOMPLETE_US_ADDRESS_PRIMARY_TYPES = ["street_address"] as const
-
-type FormattableText = {
-  readonly text?: string
-}
+/**
+ * Street-level address suggestions for the new Autocomplete API.
+ * `street_address` alone is too narrow (many valid US addresses are typed `premise` / `subpremise`).
+ */
+export const AUTOCOMPLETE_US_ADDRESS_PRIMARY_TYPES = [
+  "premise",
+  "subpremise",
+  "street_address",
+] as const
 
 /** Minimal handle for resolving details via {@link google.maps.places.Place.fetchFields}. */
 export type PlacePredictionHandle = {
@@ -39,30 +44,67 @@ type PlacesLibWithNewAutocomplete = typeof google.maps.places & {
     }>
   }
   AutocompleteSessionToken?: new () => google.maps.places.AutocompleteSessionToken
+  Place?: new (opts: { id: string }) => google.maps.places.Place
+}
+
+function getFetchAutocompleteFromPlacesLib(lib: PlacesLibWithNewAutocomplete) {
+  return lib.AutocompleteSuggestion?.fetchAutocompleteSuggestions
 }
 
 export function mapsPlacesSupportsNewAutocomplete(g: typeof google): boolean {
   const p = g.maps.places as PlacesLibWithNewAutocomplete
-  return typeof p.AutocompleteSuggestion?.fetchAutocompleteSuggestions === "function"
+  return typeof getFetchAutocompleteFromPlacesLib(p) === "function"
 }
 
 export function createAutocompleteSessionToken(
   g: typeof google,
 ): google.maps.places.AutocompleteSessionToken | undefined {
-  const Ctor = (g.maps.places as PlacesLibWithNewAutocomplete).AutocompleteSessionToken
+  const lib = g.maps.places as PlacesLibWithNewAutocomplete
+  const Ctor = lib.AutocompleteSessionToken
   if (typeof Ctor !== "function") return undefined
   return new Ctor()
+}
+
+/** Reads `FormattableText` or plain strings from prediction fields (API surface varies by build). */
+function readFormattableTextLike(value: unknown): string {
+  if (value == null) return ""
+  if (typeof value === "string") return value.trim()
+  if (typeof value === "object" && value !== null && "text" in value) {
+    const t = (value as { text?: unknown }).text
+    if (typeof t === "string") return t.trim()
+  }
+  return ""
+}
+
+function toPlaceFromId(placeId: string): google.maps.places.Place {
+  const PlaceCtor = (window.google?.maps?.places as PlacesLibWithNewAutocomplete | undefined)?.Place
+  if (typeof PlaceCtor !== "function") {
+    throw new Error("google.maps.places.Place is not available")
+  }
+  return new PlaceCtor({ id: placeId })
+}
+
+async function resolveFetchAutocompleteSuggestions(
+  g: typeof google,
+): Promise<
+  (req: Record<string, unknown>) => Promise<{ suggestions: AutocompleteSuggestionItem[] }>
+> {
+  const onNamespace = getFetchAutocompleteFromPlacesLib(g.maps.places as PlacesLibWithNewAutocomplete)
+  if (typeof onNamespace === "function") return onNamespace
+
+  const fromImport = getFetchAutocompleteFromPlacesLib(
+    (await importLibrary("places")) as unknown as PlacesLibWithNewAutocomplete,
+  )
+  if (typeof fromImport === "function") return fromImport
+
+  throw new Error("AutocompleteSuggestion.fetchAutocompleteSuggestions is not available")
 }
 
 export async function fetchAutocompletePlacePredictions(
   g: typeof google,
   request: Record<string, unknown>,
 ): Promise<readonly AutocompleteSuggestionItem[]> {
-  const fetchFn = (g.maps.places as PlacesLibWithNewAutocomplete).AutocompleteSuggestion
-    ?.fetchAutocompleteSuggestions
-  if (typeof fetchFn !== "function") {
-    throw new Error("AutocompleteSuggestion.fetchAutocompleteSuggestions is not available")
-  }
+  const fetchFn = await resolveFetchAutocompleteSuggestions(g)
   const { suggestions } = await fetchFn(request)
   return suggestions ?? []
 }
@@ -75,22 +117,39 @@ export function suggestionToRowTexts(s: AutocompleteSuggestionItem): {
   prediction: PlacePredictionHandle
 } | null {
   const prediction = s.placePrediction
-  if (!prediction?.placeId || typeof prediction.toPlace !== "function") return null
+  if (!prediction) return null
+
+  const rawId = prediction.placeId
+  const placeId = typeof rawId === "string" ? rawId.trim() : ""
+  if (!placeId) return null
+
   const pt = prediction as PlacePredictionHandle & {
-    readonly text?: FormattableText
-    readonly mainText?: FormattableText | null
-    readonly secondaryText?: FormattableText | null
+    readonly text?: unknown
+    readonly mainText?: unknown | null
+    readonly secondaryText?: unknown | null
+    toPlace?: () => google.maps.places.Place
   }
-  const full = pt.text?.text?.trim() ?? ""
-  const main = pt.mainText?.text?.trim() ?? (full.split(",")[0]?.trim() ?? full)
-  const secondary = pt.secondaryText?.text?.trim() ?? ""
+
+  const full = readFormattableTextLike(pt.text)
+  const mainRaw = readFormattableTextLike(pt.mainText)
+  const main = mainRaw || full.split(",")[0]?.trim() || full
+  const secondary = readFormattableTextLike(pt.secondaryText)
   const description = full || [main, secondary].filter(Boolean).join(", ")
+
+  const toPlace =
+    typeof pt.toPlace === "function"
+      ? () => pt.toPlace!.call(pt)
+      : () => toPlaceFromId(placeId)
+
   return {
-    placeId: prediction.placeId,
+    placeId,
     description,
     mainText: main || description,
     secondaryText: secondary,
-    prediction,
+    prediction: {
+      placeId,
+      toPlace,
+    },
   }
 }
 

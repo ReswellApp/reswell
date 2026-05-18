@@ -7,10 +7,14 @@ import { SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { loadGoogleMapsWithPlaces } from "@/lib/maps/load-google-maps"
 import {
+  choosePlacesAutocompleteBackend,
+  legacyFetchPlaceDetails,
+  legacyFetchRegionPredictions,
+} from "@/lib/maps/places-legacy-autocomplete"
+import {
   AUTOCOMPLETE_US_REGION_PRIMARY_TYPES,
   createAutocompleteSessionToken,
   fetchAutocompletePlacePredictions,
-  mapsPlacesSupportsNewAutocomplete,
   newPlaceAddressComponentsToGeocoder,
   readPlaceLocationLatLng,
   suggestionToRowTexts,
@@ -35,7 +39,7 @@ type GoogleLocationRow = {
   description: string
   mainText: string
   secondaryText: string
-  prediction: PlacePredictionHandle
+  prediction?: PlacePredictionHandle
 }
 
 interface LocationInputSuggestProps {
@@ -244,6 +248,8 @@ export function LocationInputSuggest({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
+  const googlePlacesBackendRef = useRef<"new" | "legacy" | null>(null)
+  const googleAutocompleteSvcRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const googlePredictHangTimerRef = useRef<number | null>(null)
   const placeDetailsHangTimerRef = useRef<number | null>(null)
 
@@ -283,6 +289,8 @@ export function LocationInputSuggest({
     if (!preferGoogleLocation) {
       setGoogleLocationReady(false)
       setGoogleLocationFailed(true)
+      googlePlacesBackendRef.current = null
+      googleAutocompleteSvcRef.current = null
       return
     }
     let cancelled = false
@@ -290,9 +298,9 @@ export function LocationInputSuggest({
     void loadGoogleMapsWithPlaces()
       .then((g) => {
         if (cancelled) return
-        if (!mapsPlacesSupportsNewAutocomplete(g)) {
-          setGoogleLocationFailed(true)
-          return
+        googlePlacesBackendRef.current = choosePlacesAutocompleteBackend(g)
+        if (googlePlacesBackendRef.current === "legacy") {
+          googleAutocompleteSvcRef.current = new g.maps.places.AutocompleteService()
         }
         setGoogleLocationReady(true)
       })
@@ -365,11 +373,6 @@ export function LocationInputSuggest({
           return
         }
 
-        if (!sessionTokenRef.current) {
-          sessionTokenRef.current = createAutocompleteSessionToken(g) ?? null
-        }
-        const sessionToken = sessionTokenRef.current
-
         if (googlePredictHangTimerRef.current) {
           clearTimeout(googlePredictHangTimerRef.current)
           googlePredictHangTimerRef.current = null
@@ -382,9 +385,54 @@ export function LocationInputSuggest({
 
         void (async () => {
           try {
+            const backend = googlePlacesBackendRef.current
+
+            if (backend === "legacy") {
+              const svc = googleAutocompleteSvcRef.current
+              if (!svc) {
+                throw new Error("Legacy AutocompleteService not initialized")
+              }
+              const list = await legacyFetchRegionPredictions(g, svc, q)
+
+              if (googlePredictHangTimerRef.current) {
+                clearTimeout(googlePredictHangTimerRef.current)
+                googlePredictHangTimerRef.current = null
+              }
+              if (runId !== generationRef.current) return
+
+              const mappedRows: GoogleLocationRow[] = list.map((p) => ({
+                placeId: p.placeId,
+                description: [p.mainText, p.secondaryText].filter(Boolean).join(", "),
+                mainText: p.mainText,
+                secondaryText: p.secondaryText,
+              }))
+
+              if (mappedRows.length > 0) {
+                setGoogleRows(mappedRows)
+                setFetchEmpty(false)
+                setActiveIndex(0)
+                const allowOpen = !suppressOpenUntilTypingRef.current
+                setOpen(isInputFocused() && allowOpen)
+              } else {
+                setGoogleRows([])
+                setFetchEmpty(true)
+                setActiveIndex(-1)
+                const allowOpen = !suppressOpenUntilTypingRef.current
+                setOpen(isInputFocused() && allowOpen)
+              }
+              return
+            }
+
+            if (!sessionTokenRef.current) {
+              sessionTokenRef.current = createAutocompleteSessionToken(g) ?? null
+            }
+            const sessionToken = sessionTokenRef.current
+
             const baseReq: Record<string, unknown> = {
               input: q,
-              includedRegionCodes: ["us"],
+              includedRegionCodes: ["US"],
+              region: "us",
+              language: "en",
               sessionToken: sessionToken ?? undefined,
             }
             let suggestions = await fetchAutocompletePlacePredictions(g, {
@@ -424,11 +472,41 @@ export function LocationInputSuggest({
               googlePredictHangTimerRef.current = null
             }
             if (runId !== generationRef.current) return
-            setGoogleRows([])
-            setFetchEmpty(true)
-            setActiveIndex(-1)
-            const allowOpen = !suppressOpenUntilTypingRef.current
-            setOpen(isInputFocused() && allowOpen)
+            try {
+              const g = window.google
+              if (!g?.maps?.places) throw new Error("no places")
+              if (!googleAutocompleteSvcRef.current) {
+                googleAutocompleteSvcRef.current = new g.maps.places.AutocompleteService()
+              }
+              googlePlacesBackendRef.current = "legacy"
+              const list = await legacyFetchRegionPredictions(g, googleAutocompleteSvcRef.current, q)
+              if (runId !== generationRef.current) return
+              const mappedRows: GoogleLocationRow[] = list.map((p) => ({
+                placeId: p.placeId,
+                description: [p.mainText, p.secondaryText].filter(Boolean).join(", "),
+                mainText: p.mainText,
+                secondaryText: p.secondaryText,
+              }))
+              if (mappedRows.length > 0) {
+                setGoogleRows(mappedRows)
+                setFetchEmpty(false)
+                setActiveIndex(0)
+                const allowOpen = !suppressOpenUntilTypingRef.current
+                setOpen(isInputFocused() && allowOpen)
+              } else {
+                setGoogleRows([])
+                setFetchEmpty(true)
+                setActiveIndex(-1)
+                const allowOpen = !suppressOpenUntilTypingRef.current
+                setOpen(isInputFocused() && allowOpen)
+              }
+            } catch {
+              setGoogleRows([])
+              setFetchEmpty(true)
+              setActiveIndex(-1)
+              const allowOpen = !suppressOpenUntilTypingRef.current
+              setOpen(isInputFocused() && allowOpen)
+            }
           } finally {
             if (runId === generationRef.current) setLoading(false)
           }
@@ -622,10 +700,60 @@ export function LocationInputSuggest({
       void loadGoogleMapsWithPlaces()
         .then(async () => {
           try {
-            const place = row.prediction.toPlace()
-            await place.fetchFields({
-              fields: ["location", "addressComponents", "formattedAddress"],
-            })
+            if (row.prediction) {
+              const place = row.prediction.toPlace()
+              await place.fetchFields({
+                fields: ["location", "addressComponents", "formattedAddress"],
+              })
+              sessionTokenRef.current = null
+
+              if (placeDetailsHangTimerRef.current) {
+                clearTimeout(placeDetailsHangTimerRef.current)
+                placeDetailsHangTimerRef.current = null
+              }
+              setResolvingPick(false)
+
+              const coords = readPlaceLocationLatLng(place)
+              if (coords) {
+                const geo = newPlaceAddressComponentsToGeocoder(place.addressComponents)
+                const parsed = parseGoogleAddressComponents(geo)
+                const label = (place.formattedAddress ?? row.description).trim()
+                if (pickSetsInputValue) onChange(label)
+                onPickSuggestion({
+                  label,
+                  lat: coords.lat,
+                  lng: coords.lng,
+                  city: parsed.city || undefined,
+                  state: parsed.state || undefined,
+                })
+                return
+              }
+
+              const fallback = await forwardGeocodeServer(row.description)
+              if (fallback) {
+                const label = row.description.trim()
+                if (pickSetsInputValue) onChange(label)
+                onPickSuggestion({
+                  label,
+                  lat: fallback.lat,
+                  lng: fallback.lng,
+                })
+                return
+              }
+              if (pickSetsInputValue) onChange(row.description.trim())
+              return
+            }
+
+            const g = window.google
+            if (!g?.maps?.places) {
+              throw new Error("Google Maps Places not available")
+            }
+            const legacyPlace = await legacyFetchPlaceDetails(g, row.placeId, [
+              "address_components",
+              "formatted_address",
+              "geometry",
+              "place_id",
+            ])
             sessionTokenRef.current = null
 
             if (placeDetailsHangTimerRef.current) {
@@ -634,16 +762,15 @@ export function LocationInputSuggest({
             }
             setResolvingPick(false)
 
-            const coords = readPlaceLocationLatLng(place)
-            if (coords) {
-              const geo = newPlaceAddressComponentsToGeocoder(place.addressComponents)
-              const parsed = parseGoogleAddressComponents(geo)
-              const label = (place.formattedAddress ?? row.description).trim()
+            const geom = legacyPlace?.geometry?.location
+            if (geom && legacyPlace.address_components) {
+              const parsed = parseGoogleAddressComponents(legacyPlace.address_components)
+              const label = (legacyPlace.formatted_address ?? row.description).trim()
               if (pickSetsInputValue) onChange(label)
               onPickSuggestion({
                 label,
-                lat: coords.lat,
-                lng: coords.lng,
+                lat: geom.lat(),
+                lng: geom.lng(),
                 city: parsed.city || undefined,
                 state: parsed.state || undefined,
               })
