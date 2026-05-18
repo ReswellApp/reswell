@@ -11,6 +11,7 @@ import React, {
   useCallback,
   useId,
 } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -178,58 +179,6 @@ function scrollSellFormSectionIntoView(sectionId: string) {
   el.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
-function SellFlowPublishingOverlay({
-  uploadPhaseLabels,
-  submitStepIndex,
-  listingSubmitProgressValue,
-}: {
-  uploadPhaseLabels: string[]
-  submitStepIndex: number
-  listingSubmitProgressValue: number
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-[100] overflow-y-auto bg-background/92 p-5 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/85 sm:p-6 md:p-8"
-      aria-busy="true"
-      aria-live="polite"
-      aria-label="Publishing your listing"
-    >
-      <div className="mx-auto mb-8 max-w-6xl border-b border-border/60 pb-8">
-        <Skeleton className="h-4 w-56 max-w-[80%] sm:w-72" />
-      </div>
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
-        <div className="hidden w-52 shrink-0 space-y-7 lg:block xl:w-56">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full rounded-lg" />
-          ))}
-        </div>
-        <div className="min-w-0 w-full max-w-2xl space-y-8 lg:w-auto lg:max-w-3xl lg:shrink-0">
-          <div className="md:mb-8 lg:hidden">
-            <Skeleton className="h-14 w-full rounded-lg" />
-          </div>
-          <div className="space-y-3">
-            <Skeleton className="h-7 w-2/3 max-w-sm" />
-            <Skeleton className="h-4 w-full max-w-md" />
-          </div>
-          <Skeleton className="h-52 w-full rounded-xl sm:h-60" />
-          <Skeleton className="h-44 w-full rounded-xl" />
-          <Skeleton className="min-h-[12rem] w-full rounded-xl" />
-        </div>
-      </div>
-      <div className="mx-auto mt-10 max-w-2xl space-y-3 rounded-xl border border-border/60 bg-muted/30 p-5 shadow-sm lg:max-w-3xl">
-        <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
-          {uploadPhaseLabels[submitStepIndex] ?? "Working..."}
-        </p>
-        <Progress value={listingSubmitProgressValue} className="h-1.5" />
-        <p className="text-xs text-muted-foreground/45">
-          Hang tight — we&apos;ll take you to the listing when it&apos;s ready.
-        </p>
-      </div>
-    </div>
-  )
-}
-
 /** True once the seller has pinned the board (coordinates used for drafts + validation). */
 function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
   const lat = fd.locationLat
@@ -325,6 +274,152 @@ type PublishPreviewState = {
   detailHref?: string
   errorMessage?: string
   failedStepLabel?: string
+}
+
+function SellFlowPublishingInterior({
+  preview,
+  uploadPhaseLabels,
+  submitStepIndex,
+  listingSubmitProgressValue,
+}: {
+  preview: PublishPreviewState
+  uploadPhaseLabels: string[]
+  submitStepIndex: number
+  listingSubmitProgressValue: number
+}) {
+  const thumb = proxiedListingImageSrc(preview.coverUrl) || "/placeholder.svg"
+  const stepLabel = uploadPhaseLabels[submitStepIndex] ?? "Working…"
+
+  return (
+    <div
+      className="relative w-full max-w-md animate-in fade-in zoom-in-95 motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:zoom-in-100 duration-300"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label={`Publishing listing: ${preview.title}`}
+    >
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-md sm:p-7">
+        <div className="mb-6 space-y-2 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Publishing
+          </p>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            Finishing up your listing
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            You&apos;ll go to your live listing when everything is saved.
+          </p>
+        </div>
+
+        <div className="mb-6 flex gap-4">
+          <div className="relative h-[4.75rem] w-[4.75rem] shrink-0 overflow-hidden rounded-xl border border-border/80 bg-muted shadow-inner">
+            <Image
+              src={thumb}
+              alt=""
+              fill
+              className="object-cover object-center"
+              unoptimized
+            />
+          </div>
+          <div className="flex min-h-[4.75rem] min-w-0 flex-1 flex-col justify-center gap-2">
+            <p className="line-clamp-2 text-base font-semibold leading-snug text-foreground">
+              {preview.title}
+            </p>
+            <Skeleton className="h-3 w-[88%]" />
+            <Skeleton className="h-3 w-3/5" />
+            <p className="text-xs tabular-nums text-muted-foreground">${preview.price}</p>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-xl bg-muted/30 p-4 ring-1 ring-border/50">
+          <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
+            <span>{stepLabel}</span>
+          </p>
+          <Progress value={listingSubmitProgressValue} className="h-1.5" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SellPublishingGenericLoaderPortal() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!mounted) return
+    const prev = document.documentElement.style.overflow
+    document.documentElement.style.overflow = "hidden"
+    return () => {
+      document.documentElement.style.overflow = prev
+    }
+  }, [mounted])
+
+  if (!mounted || typeof document === "undefined") {
+    return null
+  }
+
+  return createPortal(
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Working"
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-background p-8 animate-in fade-in motion-reduce:animate-none duration-300"
+    >
+      <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-xl border border-border bg-card p-8 shadow-md">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" aria-hidden />
+        <p className="text-center text-sm text-muted-foreground">Loading…</p>
+        <Skeleton className="h-2 w-full rounded-full" />
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+/**
+ * Full-viewport takeover (ported to document.body — `.page-enter` applies transform on ancestors,
+ * which traps `position:fixed` so the footer stays visible underneath).
+ */
+function SellFlowPublishingFullscreenPortal(props: {
+  preview: PublishPreviewState
+  uploadPhaseLabels: string[]
+  submitStepIndex: number
+  listingSubmitProgressValue: number
+}) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!mounted) return
+    const prev = document.documentElement.style.overflow
+    document.documentElement.style.overflow = "hidden"
+    return () => {
+      document.documentElement.style.overflow = prev
+    }
+  }, [mounted])
+
+  if (!mounted || typeof document === "undefined") {
+    return null
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-y-auto overscroll-none bg-background p-6 sm:p-10 motion-safe:animate-in motion-safe:fade-in motion-reduce:animate-none motion-reduce:opacity-100 duration-200"
+      role="presentation"
+    >
+      <div className="flex min-h-0 w-full max-w-xl flex-1 flex-col justify-center py-8">
+        <SellFlowPublishingInterior {...props} />
+      </div>
+    </div>,
+    document.body,
+  )
 }
 
 type ListingPhotoSlot = {
@@ -503,37 +598,44 @@ function SellListingPhotoTile({
         ) : null}
         {!isFailure ? (
           <>
-            <button
-              type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={onRemove}
+            <div
               className={cn(
-                "absolute top-1 right-1 flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-full touch-manipulation hover:bg-background z-[5]",
-                skeletonVisible
-                  ? "bg-background/90 shadow-sm ring-1 ring-black/5"
-                  : "bg-background/80",
+                "absolute inset-x-1 top-1 z-[5] flex gap-1 pointer-events-none",
+                canRotate180 ? "justify-between" : "justify-end",
               )}
-              aria-label={`Remove photo ${index + 1}`}
             >
-              <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-            </button>
-            {canRotate180 ? (
+              {canRotate180 ? (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={onRotate180}
+                  className={cn(
+                    "pointer-events-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full touch-manipulation hover:bg-background sm:h-9 sm:w-9",
+                    skeletonVisible
+                      ? "bg-background/90 shadow-sm ring-1 ring-black/5"
+                      : "bg-background/80",
+                  )}
+                  aria-label={`Rotate photo ${index + 1} 180 degrees`}
+                  title="Rotate 180°"
+                >
+                  <RotateCw className="h-3.5 w-3.5 sm:h-3 sm:w-3" aria-hidden />
+                </button>
+              ) : null}
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={onRotate180}
+                onClick={onRemove}
                 className={cn(
-                  "absolute top-1 left-1 flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-full touch-manipulation hover:bg-background z-[5]",
+                  "pointer-events-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full touch-manipulation hover:bg-background sm:h-9 sm:w-9",
                   skeletonVisible
                     ? "bg-background/90 shadow-sm ring-1 ring-black/5"
                     : "bg-background/80",
                 )}
-                aria-label={`Rotate photo ${index + 1} 180 degrees`}
-                title="Rotate 180°"
+                aria-label={`Remove photo ${index + 1}`}
               >
-                <RotateCw className="h-3.5 w-3.5 sm:h-3 sm:w-3" aria-hidden />
+                <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
               </button>
-            ) : null}
+            </div>
             {skeletonVisible ? (
               <span className="sr-only">
                 {photoReady ? "Loading thumbnail preview" : "Processing photo"}
@@ -2546,22 +2648,37 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
   const stepCount = Math.max(1, uploadPhaseLabels.length)
   const listingSubmitProgressValue = Math.min(
-    99,
-    ((submitStepIndex + 0.35) / stepCount) * 100,
+    100,
+    Math.round(((submitStepIndex + 1) / stepCount) * 100),
   )
 
   const optimizingAny = images.some((im) => im.optimizePhase === "running")
 
+  /** Covers publish + rare early loading without preview; never while edit hydration is blocking. */
+  const fullscreenSellBlocking = loading && (!!publishPreview || !editLoading)
+
   return (
-      <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+      <main
+        className={cn(
+          "flex-1 w-full bg-background",
+          !fullscreenSellBlocking && "pt-8 pb-16 md:pb-20 lg:pb-24",
+        )}
+      >
         <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
-          {loading && !editLoading ? (
-            <SellFlowPublishingOverlay
+          {loading && publishPreview ? (
+            <SellFlowPublishingFullscreenPortal
+              preview={publishPreview}
               uploadPhaseLabels={uploadPhaseLabels}
               submitStepIndex={submitStepIndex}
               listingSubmitProgressValue={listingSubmitProgressValue}
             />
+          ) : loading && !editLoading && !publishPreview ? (
+            <SellPublishingGenericLoaderPortal />
           ) : null}
+          <div
+            className={cn(fullscreenSellBlocking && "hidden")}
+            aria-hidden={fullscreenSellBlocking ? true : undefined}
+          >
           <h1 className="sr-only">
             {editId ? "Edit listing" : "Create a Listing"}
           </h1>
@@ -3857,6 +3974,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               </div>
             </div>
               )}
+          </div>
         </div>
         <SurfboardShippingEstimatorDialog
           open={shippingEstimatorOpen}
