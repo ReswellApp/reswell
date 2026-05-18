@@ -761,7 +761,10 @@ export async function SurfboardListingDetailPage({
                   <ListingBuyerProtectionTrustRibbon />
                 </div>
               ) : null}
-              {similarBoardsRaw.length > 0 ? (
+            </div>
+
+            {similarBoardsRaw.length > 0 ? (
+              <div className="col-span-full min-w-0 max-w-full max-lg:order-4 lg:col-span-1 lg:[grid-area:about] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
                   <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
                   <HomeListingScrollRow uniformCardHeights>
@@ -775,8 +778,8 @@ export async function SurfboardListingDetailPage({
                     ))}
                   </HomeListingScrollRow>
                 </section>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
 
           {/* Seller's other boards — full-width horizontal scroll row */}
