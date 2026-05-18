@@ -6,6 +6,17 @@ import { Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { loadGoogleMapsWithPlaces } from "@/lib/maps/load-google-maps"
+import {
+  AUTOCOMPLETE_US_ADDRESS_PRIMARY_TYPES,
+  createAutocompleteSessionToken,
+  fetchAutocompletePlacePredictions,
+  mapsPlacesSupportsNewAutocomplete,
+  newPlaceAddressComponentsToGeocoder,
+  readPlaceLocationLatLng,
+  suggestionToRowTexts,
+  type AutocompleteSuggestionItem,
+  type PlacePredictionHandle,
+} from "@/lib/maps/places-autocomplete-new"
 import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-components"
 
 export type GoogleResolvedAddress = {
@@ -51,6 +62,22 @@ type PredictionRow = {
   placeId: string
   mainText: string
   secondaryText: string
+  prediction: PlacePredictionHandle
+}
+
+function mapAddressSuggestions(suggestions: readonly AutocompleteSuggestionItem[]): PredictionRow[] {
+  const out: PredictionRow[] = []
+  for (const s of suggestions) {
+    const mapped = suggestionToRowTexts(s)
+    if (!mapped) continue
+    out.push({
+      placeId: mapped.placeId,
+      mainText: mapped.mainText,
+      secondaryText: mapped.secondaryText,
+      prediction: mapped.prediction,
+    })
+  }
+  return out
 }
 
 function HighlightMatch({ text, query }: { text: string; query: string }) {
@@ -99,7 +126,7 @@ export function GooglePlacesAddressInput({
   const containerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
+  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
   const onProviderErrorRef = useRef(onProviderError)
   onProviderErrorRef.current = onProviderError
 
@@ -119,7 +146,10 @@ export function GooglePlacesAddressInput({
     void loadGoogleMapsWithPlaces()
       .then((g) => {
         if (cancelled) return
-        autocompleteServiceRef.current = new g.maps.places.AutocompleteService()
+        if (!mapsPlacesSupportsNewAutocomplete(g)) {
+          onProviderErrorRef.current?.()
+          return
+        }
         setApiReady(true)
       })
       .catch(() => {
@@ -166,25 +196,29 @@ export function GooglePlacesAddressInput({
     setActiveIndex(-1)
 
     debounceRef.current = setTimeout(() => {
-      if (runId !== generationRef.current) return
-      const svc = autocompleteServiceRef.current
-      if (!svc) {
-        setLoadingPredictions(false)
-        return
-      }
-
-      svc.getPlacePredictions(
-        {
-          input: q,
-          componentRestrictions: { country: "us" },
-          types: ["address"],
-        },
-        (predictions, status) => {
-          if (runId !== generationRef.current) return
+      void (async () => {
+        if (runId !== generationRef.current) return
+        const g = window.google
+        if (!g?.maps?.places) {
           setLoadingPredictions(false)
-          const g = window.google
-          if (!g) return
-          if (status === g.maps.places.PlacesServiceStatus.ZERO_RESULTS || !predictions?.length) {
+          onProviderErrorRef.current?.()
+          return
+        }
+
+        try {
+          if (!sessionTokenRef.current) {
+            sessionTokenRef.current = createAutocompleteSessionToken(g) ?? null
+          }
+          const suggestions = await fetchAutocompletePlacePredictions(g, {
+            input: q,
+            sessionToken: sessionTokenRef.current ?? undefined,
+            includedRegionCodes: ["us"],
+            includedPrimaryTypes: [...AUTOCOMPLETE_US_ADDRESS_PRIMARY_TYPES],
+          })
+          if (runId !== generationRef.current) return
+          const mapped = mapAddressSuggestions(suggestions)
+          setLoadingPredictions(false)
+          if (mapped.length === 0) {
             setRows([])
             setFetchEmpty(true)
             setActiveIndex(-1)
@@ -192,25 +226,20 @@ export function GooglePlacesAddressInput({
             setOpen(isInputFocused() && allowOpen)
             return
           }
-          if (status !== g.maps.places.PlacesServiceStatus.OK) {
-            onProviderErrorRef.current?.()
-            setRows([])
-            setFetchEmpty(false)
-            setOpen(false)
-            return
-          }
-          const mapped: PredictionRow[] = predictions.map((p) => ({
-            placeId: p.place_id,
-            mainText: p.structured_formatting?.main_text ?? p.description.split(",")[0]?.trim() ?? p.description,
-            secondaryText: p.structured_formatting?.secondary_text ?? "",
-          }))
           setRows(mapped)
           setFetchEmpty(mapped.length === 0)
           setActiveIndex(mapped.length > 0 ? 0 : -1)
           const allowOpen = !suppressOpenUntilTypingRef.current
           setOpen(isInputFocused() && allowOpen)
-        },
-      )
+        } catch {
+          if (runId !== generationRef.current) return
+          setLoadingPredictions(false)
+          onProviderErrorRef.current?.()
+          setRows([])
+          setFetchEmpty(false)
+          setOpen(false)
+        }
+      })()
     }, debounceMs)
 
     return () => {
@@ -260,33 +289,33 @@ export function GooglePlacesAddressInput({
   }, [invalidatePending])
 
   const resolvePlace = useCallback(
-    (placeId: string) => {
-      void loadGoogleMapsWithPlaces().then((g) => {
-        const svc = new g.maps.places.PlacesService(document.createElement("div"))
-        setLoadingDetails(true)
-        const fields: string[] = onFullPlaceResolved
-          ? ["address_components", "formatted_address", "geometry", "place_id"]
-          : ["address_components"]
-        svc.getDetails(
-          {
-            placeId,
-            fields,
-          },
-          (place, status) => {
+    (row: PredictionRow) => {
+      void loadGoogleMapsWithPlaces()
+        .then(async () => {
+          setLoadingDetails(true)
+          try {
+            const place = row.prediction.toPlace()
+            const fields = onFullPlaceResolved
+              ? (["addressComponents", "formattedAddress", "location", "id"] as const)
+              : (["addressComponents"] as const)
+            await place.fetchFields({ fields: [...fields] })
+            sessionTokenRef.current = null
             setLoadingDetails(false)
-            if (status !== g.maps.places.PlacesServiceStatus.OK || !place?.address_components) {
+
+            const geo = newPlaceAddressComponentsToGeocoder(place.addressComponents)
+            if (!geo.length) {
               onProviderErrorRef.current?.()
               return
             }
-            const parsed = parseGoogleAddressComponents(place.address_components)
+            const parsed = parseGoogleAddressComponents(geo)
             onAddressResolved?.(parsed)
 
             if (onFullPlaceResolved) {
-              const geom = place.geometry?.location
-              const formattedAddress = typeof place.formatted_address === "string" ? place.formatted_address.trim() : ""
-              const resolvedPlaceId = typeof place.place_id === "string" ? place.place_id : ""
-              const latNum = geom ? geom.lat() : NaN
-              const lngNum = geom ? geom.lng() : NaN
+              const coords = readPlaceLocationLatLng(place)
+              const formattedAddress = (place.formattedAddress ?? "").trim()
+              const resolvedPlaceId = (place.id ?? row.placeId).trim()
+              const latNum = coords?.lat ?? NaN
+              const lngNum = coords?.lng ?? NaN
               if (
                 formattedAddress &&
                 resolvedPlaceId &&
@@ -304,9 +333,15 @@ export function GooglePlacesAddressInput({
                 onProviderErrorRef.current?.()
               }
             }
-          },
-        )
-      })
+          } catch {
+            setLoadingDetails(false)
+            onProviderErrorRef.current?.()
+          }
+        })
+        .catch(() => {
+          setLoadingDetails(false)
+          onProviderErrorRef.current?.()
+        })
     },
     [onAddressResolved, onFullPlaceResolved],
   )
@@ -317,7 +352,7 @@ export function GooglePlacesAddressInput({
       suppressOpenUntilTypingRef.current = true
       setFetchEmpty(false)
       onChange(row.mainText)
-      resolvePlace(row.placeId)
+      resolvePlace(row)
       setOpen(false)
       setRows([])
       setActiveIndex(-1)

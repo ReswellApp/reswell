@@ -432,7 +432,7 @@ export async function SurfboardListingDetailPage({
             ) : null}
           </div>
 
-          <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:grid-rows-[auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
+          <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:grid-rows-[auto_auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'_'similar_similar'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
             {/* Images */}
             <div className="relative min-w-0 max-lg:order-1 lg:[grid-area:gallery] lg:order-none lg:w-full lg:max-w-[29rem] lg:justify-self-start xl:max-w-[32rem]">
               {!(isSold && isOwnListing) && (
@@ -764,7 +764,7 @@ export async function SurfboardListingDetailPage({
             </div>
 
             {similarBoardsRaw.length > 0 ? (
-              <div className="col-span-full min-w-0 max-w-full max-lg:order-4 lg:col-span-1 lg:[grid-area:about] lg:order-none">
+              <div className="col-span-full min-w-0 max-w-full max-lg:order-4 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
                   <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
                   <HomeListingScrollRow uniformCardHeights>

@@ -6,6 +6,17 @@ import { Input } from "@/components/ui/input"
 import { SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { loadGoogleMapsWithPlaces } from "@/lib/maps/load-google-maps"
+import {
+  AUTOCOMPLETE_US_REGION_PRIMARY_TYPES,
+  createAutocompleteSessionToken,
+  fetchAutocompletePlacePredictions,
+  mapsPlacesSupportsNewAutocomplete,
+  newPlaceAddressComponentsToGeocoder,
+  readPlaceLocationLatLng,
+  suggestionToRowTexts,
+  type AutocompleteSuggestionItem,
+  type PlacePredictionHandle,
+} from "@/lib/maps/places-autocomplete-new"
 import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-components"
 import { Building2, Loader2, MapPin } from "lucide-react"
 
@@ -24,6 +35,7 @@ type GoogleLocationRow = {
   description: string
   mainText: string
   secondaryText: string
+  prediction: PlacePredictionHandle
 }
 
 interface LocationInputSuggestProps {
@@ -65,7 +77,7 @@ const HAS_GOOGLE_KEY = Boolean(
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim(),
 )
 
-/** If `getPlacePredictions` never calls back, stop showing an in-field spinner. */
+/** If autocomplete fetch hangs, stop showing an in-field spinner. */
 const GOOGLE_PREDICTION_HANG_MS = 12_000
 
 /** If `getDetails` never calls back after picking a row, clear resolving state. */
@@ -126,15 +138,15 @@ async function forwardGeocodeServer(q: string): Promise<{ lat: number; lng: numb
   }
 }
 
-function mapGooglePredictions(
-  predictions: google.maps.places.AutocompletePrediction[],
+function mapAutocompleteSuggestions(
+  suggestions: readonly AutocompleteSuggestionItem[],
 ): GoogleLocationRow[] {
-  return predictions.map((p) => ({
-    placeId: p.place_id,
-    description: p.description,
-    mainText: p.structured_formatting?.main_text ?? p.description.split(",")[0]?.trim() ?? p.description,
-    secondaryText: p.structured_formatting?.secondary_text ?? "",
-  }))
+  const rows: GoogleLocationRow[] = []
+  for (const s of suggestions) {
+    const row = suggestionToRowTexts(s)
+    if (row) rows.push(row)
+  }
+  return rows
 }
 
 /** Split API label into a street line and locality for denser list rows. */
@@ -231,9 +243,9 @@ export function LocationInputSuggest({
   const shellRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
-  const googlePredictHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const placeDetailsHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
+  const googlePredictHangTimerRef = useRef<number | null>(null)
+  const placeDetailsHangTimerRef = useRef<number | null>(null)
 
   const qTrim = value.trim()
   const isAddress = suggestMode === "address"
@@ -278,7 +290,10 @@ export function LocationInputSuggest({
     void loadGoogleMapsWithPlaces()
       .then((g) => {
         if (cancelled) return
-        autocompleteServiceRef.current = new g.maps.places.AutocompleteService()
+        if (!mapsPlacesSupportsNewAutocomplete(g)) {
+          setGoogleLocationFailed(true)
+          return
+        }
         setGoogleLocationReady(true)
       })
       .catch(() => {
@@ -344,11 +359,16 @@ export function LocationInputSuggest({
 
       debounceRef.current = setTimeout(() => {
         if (runId !== generationRef.current) return
-        const svc = autocompleteServiceRef.current
-        if (!svc) {
+        const g = window.google
+        if (!g?.maps?.places) {
           setLoading(false)
           return
         }
+
+        if (!sessionTokenRef.current) {
+          sessionTokenRef.current = createAutocompleteSessionToken(g) ?? null
+        }
+        const sessionToken = sessionTokenRef.current
 
         if (googlePredictHangTimerRef.current) {
           clearTimeout(googlePredictHangTimerRef.current)
@@ -360,68 +380,59 @@ export function LocationInputSuggest({
           setLoading(false)
         }, GOOGLE_PREDICTION_HANG_MS)
 
-        const finish = (
-          predictions: google.maps.places.AutocompletePrediction[] | null,
-          status: string,
-          allowRetry: boolean,
-        ) => {
-          if (googlePredictHangTimerRef.current) {
-            clearTimeout(googlePredictHangTimerRef.current)
-            googlePredictHangTimerRef.current = null
-          }
-          if (runId !== generationRef.current) return
-          const g = window.google
-          if (!g) {
-            setLoading(false)
-            return
-          }
-          if (status === g.maps.places.PlacesServiceStatus.OK && predictions?.length) {
-            setGoogleRows(mapGooglePredictions(predictions))
-            setFetchEmpty(false)
-            setActiveIndex(0)
-            const allowOpen = !suppressOpenUntilTypingRef.current
-            setOpen(isInputFocused() && allowOpen)
-            setLoading(false)
-            return
-          }
-          if (
-            status !== g.maps.places.PlacesServiceStatus.ZERO_RESULTS &&
-            status !== g.maps.places.PlacesServiceStatus.OK
-          ) {
+        void (async () => {
+          try {
+            const baseReq: Record<string, unknown> = {
+              input: q,
+              includedRegionCodes: ["us"],
+              sessionToken: sessionToken ?? undefined,
+            }
+            let suggestions = await fetchAutocompletePlacePredictions(g, {
+              ...baseReq,
+              includedPrimaryTypes: [...AUTOCOMPLETE_US_REGION_PRIMARY_TYPES],
+            })
+            let rows = mapAutocompleteSuggestions(suggestions)
+            if (rows.length === 0) {
+              suggestions = await fetchAutocompletePlacePredictions(g, {
+                ...baseReq,
+              })
+              rows = mapAutocompleteSuggestions(suggestions)
+            }
+
+            if (googlePredictHangTimerRef.current) {
+              clearTimeout(googlePredictHangTimerRef.current)
+              googlePredictHangTimerRef.current = null
+            }
+            if (runId !== generationRef.current) return
+
+            if (rows.length > 0) {
+              setGoogleRows(rows)
+              setFetchEmpty(false)
+              setActiveIndex(0)
+              const allowOpen = !suppressOpenUntilTypingRef.current
+              setOpen(isInputFocused() && allowOpen)
+            } else {
+              setGoogleRows([])
+              setFetchEmpty(true)
+              setActiveIndex(-1)
+              const allowOpen = !suppressOpenUntilTypingRef.current
+              setOpen(isInputFocused() && allowOpen)
+            }
+          } catch {
+            if (googlePredictHangTimerRef.current) {
+              clearTimeout(googlePredictHangTimerRef.current)
+              googlePredictHangTimerRef.current = null
+            }
+            if (runId !== generationRef.current) return
             setGoogleRows([])
             setFetchEmpty(true)
             setActiveIndex(-1)
             const allowOpen = !suppressOpenUntilTypingRef.current
             setOpen(isInputFocused() && allowOpen)
-            setLoading(false)
-            return
+          } finally {
+            if (runId === generationRef.current) setLoading(false)
           }
-          if (allowRetry) {
-            svc.getPlacePredictions(
-              {
-                input: q,
-                componentRestrictions: { country: "us" },
-              },
-              (predictions2, status2) => finish(predictions2, status2, false),
-            )
-            return
-          }
-          setGoogleRows([])
-          setFetchEmpty(true)
-          setActiveIndex(-1)
-          const allowOpen = !suppressOpenUntilTypingRef.current
-          setOpen(isInputFocused() && allowOpen)
-          setLoading(false)
-        }
-
-        svc.getPlacePredictions(
-          {
-            input: q,
-            componentRestrictions: { country: "us" },
-            types: ["(regions)"],
-          },
-          (predictions, status) => finish(predictions, status, true),
-        )
+        })()
       }, debounceMs)
 
       return () => {
@@ -609,52 +620,67 @@ export function LocationInputSuggest({
       }, GOOGLE_PLACE_DETAILS_HANG_MS)
 
       void loadGoogleMapsWithPlaces()
-        .then((g) => {
-          const svc = new g.maps.places.PlacesService(document.createElement("div"))
-          svc.getDetails(
-            {
-              placeId: row.placeId,
-              fields: ["geometry", "address_components", "formatted_address"],
-            },
-            (place, status) => {
-              if (placeDetailsHangTimerRef.current) {
-                clearTimeout(placeDetailsHangTimerRef.current)
-                placeDetailsHangTimerRef.current = null
-              }
-              setResolvingPick(false)
-              const loc = place?.geometry?.location
-              const ok = status === g.maps.places.PlacesServiceStatus.OK && loc
-              if (ok) {
-                const lat = loc.lat()
-                const lng = loc.lng()
-                const parsed = parseGoogleAddressComponents(place.address_components ?? [])
-                const label = (place.formatted_address ?? row.description).trim()
-                if (pickSetsInputValue) onChange(label)
-                onPickSuggestion({
-                  label,
-                  lat,
-                  lng,
-                  city: parsed.city || undefined,
-                  state: parsed.state || undefined,
-                })
-                return
-              }
-              void (async () => {
-                const fallback = await forwardGeocodeServer(row.description)
-                if (fallback) {
-                  const label = row.description.trim()
-                  if (pickSetsInputValue) onChange(label)
-                  onPickSuggestion({
-                    label,
-                    lat: fallback.lat,
-                    lng: fallback.lng,
-                  })
-                  return
-                }
-                if (pickSetsInputValue) onChange(row.description.trim())
-              })()
-            },
-          )
+        .then(async () => {
+          try {
+            const place = row.prediction.toPlace()
+            await place.fetchFields({
+              fields: ["location", "addressComponents", "formattedAddress"],
+            })
+            sessionTokenRef.current = null
+
+            if (placeDetailsHangTimerRef.current) {
+              clearTimeout(placeDetailsHangTimerRef.current)
+              placeDetailsHangTimerRef.current = null
+            }
+            setResolvingPick(false)
+
+            const coords = readPlaceLocationLatLng(place)
+            if (coords) {
+              const geo = newPlaceAddressComponentsToGeocoder(place.addressComponents)
+              const parsed = parseGoogleAddressComponents(geo)
+              const label = (place.formattedAddress ?? row.description).trim()
+              if (pickSetsInputValue) onChange(label)
+              onPickSuggestion({
+                label,
+                lat: coords.lat,
+                lng: coords.lng,
+                city: parsed.city || undefined,
+                state: parsed.state || undefined,
+              })
+              return
+            }
+
+            const fallback = await forwardGeocodeServer(row.description)
+            if (fallback) {
+              const label = row.description.trim()
+              if (pickSetsInputValue) onChange(label)
+              onPickSuggestion({
+                label,
+                lat: fallback.lat,
+                lng: fallback.lng,
+              })
+              return
+            }
+            if (pickSetsInputValue) onChange(row.description.trim())
+          } catch {
+            if (placeDetailsHangTimerRef.current) {
+              clearTimeout(placeDetailsHangTimerRef.current)
+              placeDetailsHangTimerRef.current = null
+            }
+            setResolvingPick(false)
+            const fallback = await forwardGeocodeServer(row.description)
+            if (fallback) {
+              const label = row.description.trim()
+              if (pickSetsInputValue) onChange(label)
+              onPickSuggestion({
+                label,
+                lat: fallback.lat,
+                lng: fallback.lng,
+              })
+              return
+            }
+            if (pickSetsInputValue) onChange(row.description.trim())
+          }
         })
         .catch(() => {
           if (placeDetailsHangTimerRef.current) {
