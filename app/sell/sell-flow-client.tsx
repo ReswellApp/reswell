@@ -809,6 +809,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const submitStepIndexRef = useRef(0)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
+  const publishInFlightRef = useRef(false)
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
@@ -2071,14 +2073,25 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const syncListingImagesFromSnapshotRef = useRef(syncListingImagesFromSnapshot)
   syncListingImagesFromSnapshotRef.current = syncListingImagesFromSnapshot
 
+  function dismissUploadProgressToast() {
+    const tid = uploadToastIdRef.current
+    uploadToastIdRef.current = null
+    if (tid != null) toast.dismiss(tid)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (publishInFlightRef.current) {
+      return
+    }
+    publishInFlightRef.current = true
+
     const goSubmitStep = (n: number) => {
       submitStepIndexRef.current = n
       setSubmitStepIndex(n)
     }
     goSubmitStep(0)
-    uploadToastIdRef.current = null
+    dismissUploadProgressToast()
     setPublishValidationBanner(null)
 
     let retainPublishOverlayUntilNavigation = false
@@ -2170,6 +2183,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
 
       setLoading(true)
+      // Yield one frame so loading overlay / aria-busy can paint before slug DB work (mobile "frozen" tap).
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve())
+      })
 
       const fd = submitForm
 
@@ -2262,10 +2279,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         duration: 600_000,
       })
 
-      if (!editId && !flowImpersonation) {
-        await new Promise((r) => setTimeout(r, 200))
-      }
-
       let listingId: string | null = editId
       let listingSlug: string | null = null
       let usedImpersonationListingApi = false
@@ -2292,6 +2305,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       if (editId) {
         if (!editListingOwnerId) {
+          dismissUploadProgressToast()
           toast.error("Listing is still loading. Try again in a moment.")
           setLoading(false)
           return
@@ -2444,6 +2458,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           listingSlug = data.slug
           goSubmitStep(2)
         } else {
+          dismissUploadProgressToast()
           toast.error(
             "This listing belongs to another account. From admin, open the seller and use impersonation for that shop, or sign in as the listing owner.",
           )
@@ -2579,10 +2594,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         if (!editId && !listingImpersonation) {
           void clearSellListingDraft(user.id)
           persistDefaultListingLocalityForProfile()
-          await revalidateListingDetailAfterListingMutation()
-          const tid = uploadToastIdRef.current
-          uploadToastIdRef.current = null
-          if (tid != null) toast.dismiss(tid)
+          dismissUploadProgressToast()
+          void revalidateListingDetailAfterListingMutation({
+            listingId,
+            slug: listingSlug,
+          }).catch((err) => {
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[sell] listing-detail cache revalidation:", err)
+            }
+          })
           retainPublishOverlayUntilNavigation = true
           router.push(detailPath)
           return
@@ -2598,10 +2618,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       goSubmitStep(2)
       void clearSellListingDraft(user.id)
       persistDefaultListingLocalityForProfile()
-      await revalidateListingDetailAfterListingMutation()
-      const tidDone = uploadToastIdRef.current
-      uploadToastIdRef.current = null
-      if (tidDone != null) toast.dismiss(tidDone)
+      dismissUploadProgressToast()
+      if (listingId) {
+        void revalidateListingDetailAfterListingMutation({
+          listingId,
+          slug: listingSlug,
+        }).catch((err) => {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[sell] listing-detail cache revalidation:", err)
+          }
+        })
+      }
       retainPublishOverlayUntilNavigation = true
       router.push(detailPath)
     } catch (error: unknown) {
@@ -2620,9 +2647,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           : null,
       )
       const tid = uploadToastIdRef.current
+      uploadToastIdRef.current = null
       if (tid != null) {
+        toast.dismiss(tid)
         toast.error("Something went wrong. Please try again.", {
-          id: tid,
           duration: 8000,
           description: msg,
           action: {
@@ -2640,6 +2668,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         })
       }
     } finally {
+      publishInFlightRef.current = false
       if (!retainPublishOverlayUntilNavigation) {
         setLoading(false)
       }

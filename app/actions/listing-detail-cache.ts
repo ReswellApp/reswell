@@ -1,6 +1,32 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
+import { z } from "zod"
+import { listingDetailHref } from "@/lib/listing-href"
 import { createClient } from "@/lib/supabase/server"
+
+const listingMutationRevalidateSchema = z.object({
+  listingId: z.string().uuid(),
+  slug: z.string().nullable().optional(),
+})
+
+/**
+ * `/l/[listing]` is cached by the App Router; invalidate the canonical URL (and the `/l/{uuid}`
+ * alias when a slug exists) so the next visit reflects fresh fulfillment and listing fields.
+ */
+function revalidateListingDetailPaths(listingId: string, slug?: string | null) {
+  const primary = listingDetailHref({
+    id: listingId,
+    slug: slug ?? undefined,
+    section: "surfboards",
+  })
+  revalidatePath(primary, "page")
+
+  const trimmed = typeof slug === "string" ? slug.trim() : ""
+  if (trimmed !== "") {
+    revalidatePath(`/l/${listingId}`, "page")
+  }
+}
 
 /**
  * Call after a user or admin updates profile fields that appear on `/l/[slug]`
@@ -17,14 +43,26 @@ export async function revalidateListingDetailAfterProfileUpdate() {
   return { ok: true as const }
 }
 
-/** Call after a seller creates or updates a listing so `/l/[slug]` reflects new fulfillment flags. */
-export async function revalidateListingDetailAfterListingMutation() {
+/**
+ * Call after a seller creates or updates a listing so `/l/[listing]` is not serving a stale RSC payload.
+ */
+export async function revalidateListingDetailAfterListingMutation(
+  rawInput: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = listingMutationRevalidateSchema.safeParse(rawInput)
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid listing reference" }
+  }
+  const { listingId, slug } = parsed.data
+
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return { ok: false as const }
+    return { ok: false, error: "Unauthorized" }
   }
-  return { ok: true as const }
+
+  revalidateListingDetailPaths(listingId, slug ?? null)
+  return { ok: true }
 }
