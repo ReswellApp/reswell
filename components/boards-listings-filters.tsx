@@ -15,8 +15,6 @@ import { BoardsListingsSearchField } from "@/components/boards-listings-search-f
 import {
   SiteSearchFormSubmitButton,
   SiteSearchShell,
-  siteFilterBorderedInputClassName,
-  siteFilterIconButtonClassName,
   siteFilterSelectTriggerClassName,
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
@@ -323,9 +321,9 @@ export function BoardsListingsFilters({
         "md:flex md:flex-nowrap md:gap-2 md:overflow-x-auto md:pb-0.5 [scrollbar-width:thin]",
       )}
     >
-      <div className="col-span-2 flex max-w-full min-w-0 items-center gap-2 min-w-[200px] md:col-auto md:shrink-0 md:w-[min(24rem,34vw)] md:min-w-[19rem]">
+      <div className="order-2 col-span-2 flex max-w-full min-w-0 items-center gap-2 min-w-[200px] md:order-1 md:col-auto md:shrink-0 md:w-[min(24rem,34vw)] md:min-w-[19rem]">
         <div className="relative min-w-0 flex-1">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 z-[1] h-4 w-4 text-muted-foreground pointer-events-none" />
+          <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <LocationInputSuggest
             name="location"
             placeholder="City or ZIP"
@@ -347,20 +345,22 @@ export function BoardsListingsFilters({
               })
             }}
             listboxId="boards-location-suggest"
-            inputClassName={siteFilterBorderedInputClassName()}
+            endSlot={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full text-foreground hover:bg-muted"
+                title="Use my location"
+                aria-label="Use my location"
+                disabled={locationLoading}
+                onClick={handleUseMyLocation}
+              >
+                <LocateFixed className={cn("h-4 w-4", userLat != null && "text-primary")} />
+              </Button>
+            }
           />
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          title="Use my location"
-          disabled={locationLoading}
-          onClick={handleUseMyLocation}
-          className={siteFilterIconButtonClassName()}
-        >
-          <LocateFixed className={`h-4 w-4 ${userLat != null ? "text-primary" : ""}`} />
-        </Button>
         <Select name="radius" value={radiusMi} onValueChange={setRadiusMi}>
           <SelectTrigger
             aria-label="Search radius (miles from location)"
@@ -377,49 +377,56 @@ export function BoardsListingsFilters({
           </SelectContent>
         </Select>
       </div>
-      <div className="col-span-2 w-full min-w-0 md:col-auto md:w-[200px] md:shrink-0">
-        <Select name="type" value={type} onValueChange={setType}>
-          <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-            <SelectValue placeholder="Board type" />
-          </SelectTrigger>
-          <SelectContent>
-            {boardTypes.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div
+        className={cn(
+          "order-3 col-span-2 grid w-full min-w-0 grid-cols-3 gap-2",
+          "md:order-2 md:flex md:w-auto md:shrink-0 md:flex-nowrap md:gap-2",
+        )}
+      >
+        <div className="min-w-0 md:w-[200px] md:shrink-0">
+          <Select name="type" value={type} onValueChange={setType}>
+            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+              <SelectValue placeholder="Board type" />
+            </SelectTrigger>
+            <SelectContent>
+              {boardTypes.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-0 md:w-[120px] md:shrink-0">
+          <Select name="condition" value={condition} onValueChange={setCondition}>
+            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+              <SelectValue placeholder="Condition Any" />
+            </SelectTrigger>
+            <SelectContent>
+              {boardConditions.map((cond) => (
+                <SelectItem key={cond.value} value={cond.value}>
+                  {cond.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-0 md:w-[140px] md:shrink-0">
+          <Select name="sort" value={sort} onValueChange={setSort}>
+            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+              <SelectValue placeholder="Sort order" />
+            </SelectTrigger>
+            <SelectContent>
+              {boardSortOptions.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div className="col-span-1 w-full min-w-0 md:col-auto md:w-[120px] md:shrink-0">
-        <Select name="condition" value={condition} onValueChange={setCondition}>
-          <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-            <SelectValue placeholder="Condition Any" />
-          </SelectTrigger>
-          <SelectContent>
-            {boardConditions.map((cond) => (
-              <SelectItem key={cond.value} value={cond.value}>
-                {cond.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="col-span-1 w-full min-w-0 md:col-auto md:w-[140px] md:shrink-0">
-        <Select name="sort" value={sort} onValueChange={setSort}>
-          <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-            <SelectValue placeholder="Sort order" />
-          </SelectTrigger>
-          <SelectContent>
-            {boardSortOptions.map((s) => (
-              <SelectItem key={s.value} value={s.value}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="col-span-2 w-full min-w-0 md:col-auto md:min-w-[12rem] md:flex-1">
+      <div className="order-1 col-span-2 w-full min-w-0 md:order-5 md:col-auto md:min-w-[12rem] md:flex-1">
         <SiteSearchShell
           actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
         >

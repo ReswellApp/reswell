@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Input } from "@/components/ui/input"
+import { SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { loadGoogleMapsWithPlaces } from "@/lib/maps/load-google-maps"
 import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-components"
@@ -49,6 +50,11 @@ interface LocationInputSuggestProps {
   /** Passed to the underlying input (accessibility). */
   "aria-label"?: string
   /**
+   * Renders inside the same pill as the input (e.g. geolocation). Use borderless controls;
+   * the shell supplies height, border, and focus ring.
+   */
+  endSlot?: React.ReactNode
+  /**
    * When the suggestion dropdown is closed and the user presses Enter, optional handler
    * (e.g. geocode the current input as a free-text confirm).
    */
@@ -58,6 +64,12 @@ interface LocationInputSuggestProps {
 const HAS_GOOGLE_KEY = Boolean(
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim(),
 )
+
+/** If `getPlacePredictions` never calls back, stop showing an in-field spinner. */
+const GOOGLE_PREDICTION_HANG_MS = 12_000
+
+/** If `getDetails` never calls back after picking a row, clear resolving state. */
+const GOOGLE_PLACE_DETAILS_HANG_MS = 15_000
 
 const LOCATION_SUGGEST_CACHE_MAX = 64
 
@@ -196,6 +208,7 @@ export function LocationInputSuggest({
   debounceMs = 180,
   disabled = false,
   "aria-label": ariaLabel,
+  endSlot,
   onEnterWhenPanelClosed,
 }: LocationInputSuggestProps) {
   const [open, setOpen] = useState(false)
@@ -215,9 +228,12 @@ export function LocationInputSuggest({
   const generationRef = useRef(0)
   const suppressOpenUntilTypingRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const shellRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
+  const googlePredictHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const placeDetailsHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const qTrim = value.trim()
   const isAddress = suggestMode === "address"
@@ -274,6 +290,19 @@ export function LocationInputSuggest({
   }, [preferGoogleLocation])
 
   useEffect(() => {
+    return () => {
+      if (googlePredictHangTimerRef.current) {
+        clearTimeout(googlePredictHangTimerRef.current)
+        googlePredictHangTimerRef.current = null
+      }
+      if (placeDetailsHangTimerRef.current) {
+        clearTimeout(placeDetailsHangTimerRef.current)
+        placeDetailsHangTimerRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (disabled) return
     const q = value.trim()
     if (q.length < minLength) {
@@ -293,7 +322,6 @@ export function LocationInputSuggest({
       setGoogleRows([])
       setFetchEmpty(false)
       setActiveIndex(-1)
-      setLoading(true)
       return
     }
 
@@ -322,11 +350,25 @@ export function LocationInputSuggest({
           return
         }
 
+        if (googlePredictHangTimerRef.current) {
+          clearTimeout(googlePredictHangTimerRef.current)
+          googlePredictHangTimerRef.current = null
+        }
+        googlePredictHangTimerRef.current = window.setTimeout(() => {
+          googlePredictHangTimerRef.current = null
+          if (runId !== generationRef.current) return
+          setLoading(false)
+        }, GOOGLE_PREDICTION_HANG_MS)
+
         const finish = (
           predictions: google.maps.places.AutocompletePrediction[] | null,
           status: string,
           allowRetry: boolean,
         ) => {
+          if (googlePredictHangTimerRef.current) {
+            clearTimeout(googlePredictHangTimerRef.current)
+            googlePredictHangTimerRef.current = null
+          }
           if (runId !== generationRef.current) return
           const g = window.google
           if (!g) {
@@ -386,6 +428,10 @@ export function LocationInputSuggest({
         if (debounceRef.current) {
           clearTimeout(debounceRef.current)
           debounceRef.current = null
+        }
+        if (googlePredictHangTimerRef.current) {
+          clearTimeout(googlePredictHangTimerRef.current)
+          googlePredictHangTimerRef.current = null
         }
       }
     }
@@ -471,7 +517,8 @@ export function LocationInputSuggest({
       setDropdownRect(null)
       return
     }
-    const anchorEl = () => inputRef.current ?? containerRef.current
+    const anchorEl = () =>
+      endSlot ? (shellRef.current ?? inputRef.current ?? containerRef.current) : (inputRef.current ?? containerRef.current)
     const update = () => {
       const el = anchorEl()
       if (!el) return
@@ -503,7 +550,7 @@ export function LocationInputSuggest({
       window.clearTimeout(t0)
       window.clearTimeout(t1)
     }
-  }, [panelOpen])
+  }, [panelOpen, endSlot])
 
   useEffect(() => {
     if (!showListbox || activeIndex < 0) return
@@ -552,6 +599,15 @@ export function LocationInputSuggest({
       setActiveIndex(-1)
       setResolvingPick(true)
 
+      if (placeDetailsHangTimerRef.current) {
+        clearTimeout(placeDetailsHangTimerRef.current)
+        placeDetailsHangTimerRef.current = null
+      }
+      placeDetailsHangTimerRef.current = window.setTimeout(() => {
+        placeDetailsHangTimerRef.current = null
+        setResolvingPick(false)
+      }, GOOGLE_PLACE_DETAILS_HANG_MS)
+
       void loadGoogleMapsWithPlaces()
         .then((g) => {
           const svc = new g.maps.places.PlacesService(document.createElement("div"))
@@ -561,6 +617,10 @@ export function LocationInputSuggest({
               fields: ["geometry", "address_components", "formatted_address"],
             },
             (place, status) => {
+              if (placeDetailsHangTimerRef.current) {
+                clearTimeout(placeDetailsHangTimerRef.current)
+                placeDetailsHangTimerRef.current = null
+              }
               setResolvingPick(false)
               const loc = place?.geometry?.location
               const ok = status === g.maps.places.PlacesServiceStatus.OK && loc
@@ -596,7 +656,13 @@ export function LocationInputSuggest({
             },
           )
         })
-        .catch(() => setResolvingPick(false))
+        .catch(() => {
+          if (placeDetailsHangTimerRef.current) {
+            clearTimeout(placeDetailsHangTimerRef.current)
+            placeDetailsHangTimerRef.current = null
+          }
+          setResolvingPick(false)
+        })
     },
     [invalidatePending, onChange, onPickSuggestion, pickSetsInputValue],
   )
@@ -860,65 +926,98 @@ export function LocationInputSuggest({
       document.body,
     )
 
-  const inputBusy = loading || resolvingPick || mapsBootPending
+  const inputBusy =
+    resolvingPick ||
+    (isAddress && loading) ||
+    (mapsBootPending && (!endSlot || (inputFocused && qTrim.length >= minLength)))
+
+  const inputClass = cn(
+    inputClassName,
+    inputBusy ? "pr-10" : "",
+    !endSlot &&
+      panelOpen &&
+      (isAddress
+        ? "ring-1 ring-[#5574AD]/30 ring-offset-0"
+        : "ring-2 ring-ring/35 ring-offset-2 ring-offset-background"),
+    endSlot &&
+      cn(
+        "h-full min-h-0 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 pl-10 pr-1 text-[15px] shadow-none",
+        "truncate placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
+      ),
+  )
+
+  const shellCn = cn(
+    SITE_FILTER_BAR_HEIGHT,
+    "relative z-0 flex w-full min-w-0 items-stretch overflow-hidden rounded-full border border-border bg-background shadow-sm transition-shadow",
+    "focus-within:border-cerulean/40 focus-within:ring-2 focus-within:ring-cerulean/15 focus-within:ring-offset-2 focus-within:ring-offset-background",
+    panelOpen && !isAddress && "border-cerulean/40 ring-2 ring-ring/35 ring-offset-2 ring-offset-background",
+  )
+
+  const inputEl = (
+    <Input
+      ref={inputRef}
+      id={id}
+      name={name}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      value={value}
+      disabled={disabled}
+      autoComplete="off"
+      aria-expanded={panelOpen}
+      aria-busy={inputBusy}
+      aria-controls={panelOpen ? listboxId : undefined}
+      aria-activedescendant={
+        showListbox && activeIndex >= 0 ? `${listboxId}-opt-${activeIndex}` : undefined
+      }
+      aria-autocomplete="list"
+      role="combobox"
+      title={endSlot && value.trim() ? value : undefined}
+      onChange={(e) => {
+        suppressOpenUntilTypingRef.current = false
+        onChange(e.target.value)
+        setOpen(true)
+      }}
+      onFocus={() => {
+        setInputFocused(true)
+        const q = value.trim()
+        if (q.length >= minLength) {
+          setOpen(true)
+          if (!useGoogleLocationPath) {
+            const cached = readSuggestCache(q, suggestMode)
+            if (cached !== undefined) {
+              setSuggestions(cached)
+              setFetchEmpty(cached.length === 0)
+              setActiveIndex(cached.length > 0 ? 0 : -1)
+            }
+          }
+        }
+      }}
+      onBlur={(e) => {
+        const next = e.relatedTarget as Node | null
+        if (next && dropdownRef.current?.contains(next)) return
+        setInputFocused(false)
+      }}
+      onKeyDown={onKeyDown}
+      className={inputClass}
+    />
+  )
 
   return (
     <div ref={containerRef} className={cn("relative min-w-0", isAddress && "isolate", className)}>
-      <Input
-        ref={inputRef}
-        id={id}
-        name={name}
-        placeholder={placeholder}
-        aria-label={ariaLabel}
-        value={value}
-        disabled={disabled}
-        autoComplete="off"
-        aria-expanded={panelOpen}
-        aria-busy={inputBusy}
-        aria-controls={panelOpen ? listboxId : undefined}
-        aria-activedescendant={
-          showListbox && activeIndex >= 0 ? `${listboxId}-opt-${activeIndex}` : undefined
-        }
-        aria-autocomplete="list"
-        role="combobox"
-        onChange={(e) => {
-          suppressOpenUntilTypingRef.current = false
-          onChange(e.target.value)
-          setOpen(true)
-        }}
-        onFocus={() => {
-          setInputFocused(true)
-          const q = value.trim()
-          if (q.length >= minLength) {
-            setOpen(true)
-            if (!useGoogleLocationPath) {
-              const cached = readSuggestCache(q, suggestMode)
-              if (cached !== undefined) {
-                setSuggestions(cached)
-                setFetchEmpty(cached.length === 0)
-                setActiveIndex(cached.length > 0 ? 0 : -1)
-              }
-            }
-          }
-        }}
-        onBlur={(e) => {
-          const next = e.relatedTarget as Node | null
-          if (next && dropdownRef.current?.contains(next)) return
-          setInputFocused(false)
-        }}
-        onKeyDown={onKeyDown}
-        className={cn(
-          inputClassName,
-          (isAddress && loading) || resolvingPick || mapsBootPending ? "pr-10" : "",
-          panelOpen &&
-            (isAddress
-              ? "ring-1 ring-[#5574AD]/30 ring-offset-0"
-              : "ring-2 ring-ring/35 ring-offset-2 ring-offset-background"),
-        )}
-      />
-      {(isAddress && loading) || resolvingPick || mapsBootPending ? (
+      {endSlot ? (
+        <div ref={shellRef} className={shellCn}>
+          {inputEl}
+          <div className="flex shrink-0 items-center pr-1.5">{endSlot}</div>
+        </div>
+      ) : (
+        inputEl
+      )}
+      {inputBusy ? (
         <Loader2
-          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#5574AD]/80"
+          className={cn(
+            "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#5574AD]/80",
+            endSlot ? "right-12" : "right-3",
+          )}
           aria-hidden
         />
       ) : null}
