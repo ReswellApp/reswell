@@ -71,6 +71,14 @@ export type BoardsBrowseSearchParams = {
   location?: string
   page?: string
   brand?: string
+  /** Directory brand id (`public.brands.id`) — exact listing filter. */
+  brandId?: string
+  /** Free-text model filter (matches listings.model and title). */
+  model?: string
+  /** Catalog model id (`public.brand_models.id`) — exact listing filter. */
+  brandModelId?: string
+  /** Substring match on listings.dimensions (e.g. 5'6, 5ft6). */
+  dimensions?: string
   minPrice?: string
   maxPrice?: string
   radius?: string

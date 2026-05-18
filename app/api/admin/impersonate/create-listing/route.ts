@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import { slugify } from "@/lib/slugify"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
+import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -181,6 +182,7 @@ export async function POST(request: NextRequest) {
         : parseFloat(String(listingData.price)),
     photoUrl,
   })
+  void notifyBoardSavedSearchMatchesForListing(listing.id)
 
   revalidatePath(`/l/${listing.slug}`, "page")
 

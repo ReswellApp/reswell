@@ -614,7 +614,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           <Skeleton className="mb-4 h-[96px] w-full rounded-[18px]" />
           <div
             className={cn(
-              'flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
+              'flex shrink-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
               'h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
             )}
           >
@@ -877,7 +877,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           className={cn(
                             'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]',
                             isOwn
-                              ? 'rounded-br-[6px] bg-foreground text-background shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+                              ? 'rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]'
                               : 'rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm',
                           )}
                         >
@@ -888,7 +888,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                             className={cn(
                               'w-full justify-start',
                               isOwn &&
-                                'border-background/35 bg-background/15 text-background hover:bg-background/25',
+                                'border-white/35 bg-white/15 text-white hover:bg-white/25',
                             )}
                           />
                           {!redundantCaption && message.content?.trim() ? (
@@ -899,7 +899,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           <p
                             className={cn(
                               'mt-1 text-[11px] tabular-nums leading-none',
-                              isOwn ? 'text-background/55' : 'text-muted-foreground',
+                              isOwn ? 'text-white/55' : 'text-muted-foreground',
                             )}
                           >
                             {formatMessageDate(message.created_at)}
@@ -950,7 +950,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                         className={cn(
                           'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]',
                           isOwn
-                            ? 'rounded-br-[6px] bg-foreground text-background shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+                            ? 'rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]'
                             : 'rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm',
                         )}
                       >
@@ -960,7 +960,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                         <p
                           className={cn(
                             'mt-1 text-[11px] tabular-nums leading-none',
-                            isOwn ? 'text-background/55' : 'text-muted-foreground',
+                            isOwn ? 'text-white/55' : 'text-muted-foreground',
                           )}
                         >
                           {formatMessageDate(message.created_at)}
@@ -974,14 +974,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        <MessagesSupportDialog
-          relatedConversationId={id}
-          triggerMode="floating"
-          floatingTriggerClassName="pointer-events-auto absolute bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] right-1 z-20 sm:bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:right-2"
-        />
-
-        {/* Composer */}
-        <div className="mt-3 shrink-0">
+        <div className="mt-3 shrink-0 space-y-2">
+          <div className="flex justify-end">
+            <MessagesSupportDialog
+              relatedConversationId={id}
+              triggerMode="floating"
+              floatingTriggerClassName="pointer-events-auto relative"
+            />
+          </div>
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -1006,7 +1006,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               type="submit"
               size="icon"
               disabled={sending || !newMessage.trim()}
-              className="mb-0.5 h-10 w-10 shrink-0 rounded-full"
+              className={cn(
+                'mb-0.5 h-10 w-10 shrink-0 rounded-full',
+                'bg-listingHeart text-white shadow-sm hover:bg-[#2a4170]',
+                'dark:bg-listingHeart dark:text-white dark:hover:bg-[#2a4170]',
+                'focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-listingHeart',
+              )}
               aria-label="Send message"
             >
               {sending ? (

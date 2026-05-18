@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
+import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
   composeListingDimensionsFromSplitListingFields,
@@ -220,6 +221,7 @@ export async function POST(request: NextRequest) {
     price: parseFloat(String(price)),
     photoUrl: photoUrl || null,
   })
+  void notifyBoardSavedSearchMatchesForListing(listing.id)
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }

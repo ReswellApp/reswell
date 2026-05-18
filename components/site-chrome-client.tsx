@@ -10,10 +10,17 @@ import { AuthModalProvider } from "@/components/auth/auth-modal-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
 import { PasswordResetRequiredDialog } from "@/components/auth/password-reset-required-dialog"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
+import { cn } from "@/lib/utils"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
   return pathname.startsWith("/auth")
+}
+
+/** Messages inbox + threads use full vertical space without the marketing footer. */
+function hideFooter(pathname: string | null): boolean {
+  if (!pathname) return false
+  return pathname === "/messages" || pathname.startsWith("/messages/")
 }
 
 /**
@@ -49,10 +56,17 @@ export function SiteChromeClient({
             <Header serverHeaderAuth={headerAuth} />
           </Suspense>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col pb-10 sm:pb-12 md:pb-16">
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col",
+            hideFooter(pathname)
+              ? "pb-[env(safe-area-inset-bottom)]"
+              : "pb-10 sm:pb-12 md:pb-16",
+          )}
+        >
           <NavigationPageGate>{children}</NavigationPageGate>
         </div>
-        <Footer />
+        {!hideFooter(pathname) ? <Footer /> : null}
       </div>
     </AuthModalProvider>
   )

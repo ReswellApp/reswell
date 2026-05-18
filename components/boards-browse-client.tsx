@@ -1,6 +1,6 @@
 "use client"
 
-import { type ReactNode, useTransition, Suspense } from "react"
+import { type ReactNode, Suspense, useTransition } from "react"
 import {
   BoardsListingsFilters,
   boardRadiusOptions,
@@ -28,6 +28,13 @@ const RADIUS_LABEL: Record<string, string> = Object.fromEntries(
 type BoardsBrowseClientProps = {
   children: ReactNode
   initialQ?: string
+  initialBrand?: string
+  initialModel?: string
+  initialBrandId?: string
+  initialBrandModelId?: string
+  initialDimensions?: string
+  initialMinPrice?: string
+  initialMaxPrice?: string
   initialLocation?: string
   initialRadius?: string
   initialType?: string
@@ -36,12 +43,18 @@ type BoardsBrowseClientProps = {
 }
 
 /**
- * Surfboards browse uses search-param navigations; Next.js `loading.tsx` only runs for segment
- * changes, so we reuse the same transition + Reswell mark while filters update the URL.
+ * Surfboards browse uses search-param navigations; reuse transition + opacity while filters update the URL.
  */
 export function BoardsBrowseClient({
   children,
   initialQ = "",
+  initialBrand = "",
+  initialModel = "",
+  initialBrandId = "",
+  initialBrandModelId = "",
+  initialDimensions = "",
+  initialMinPrice = "",
+  initialMaxPrice = "",
   initialLocation = "",
   initialRadius = "",
   initialType = "all",
@@ -57,6 +70,13 @@ export function BoardsBrowseClient({
           <BoardsListingsFilters
             transitionStart={startTransition}
             initialQ={initialQ}
+            initialBrand={initialBrand}
+            initialModel={initialModel}
+            initialBrandId={initialBrandId}
+            initialBrandModelId={initialBrandModelId}
+            initialDimensions={initialDimensions}
+            initialMinPrice={initialMinPrice}
+            initialMaxPrice={initialMaxPrice}
             initialLocation={initialLocation}
             initialRadius={initialRadius}
             initialType={initialType}
@@ -70,9 +90,16 @@ export function BoardsBrowseClient({
         <div className="px-1 sm:px-2 pt-3 pb-1 min-h-[2rem]">
           <ActiveFilterChips
             clearHref="/boards"
-            ignore={["page", "lat", "lng", "minPrice", "maxPrice"]}
+            ignore={["page", "lat", "lng", "brandId", "brandModelId"]}
             quoteValues={["q"]}
-            valuePrefixes={{ location: "Near " }}
+            valuePrefixes={{
+              location: "Near ",
+              minPrice: "Min $",
+              maxPrice: "Max $",
+              brand: "Brand ",
+              model: "Model ",
+              dimensions: "Dims ",
+            }}
             valueLookups={{
               type: TYPE_LABEL,
               condition: CONDITION_LABEL,

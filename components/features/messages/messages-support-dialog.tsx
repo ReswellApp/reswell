@@ -221,7 +221,7 @@ export function MessagesSupportDialog({
             <TooltipTrigger asChild>
               <DialogTrigger asChild>{floatingTrigger}</DialogTrigger>
             </TooltipTrigger>
-            <TooltipContent side="left" align="center" className="max-w-[220px] text-center leading-snug">
+            <TooltipContent side="top" align="end" className="max-w-[220px] text-center leading-snug">
               Get help from Reswell — billing, purchases, safety, and more
             </TooltipContent>
           </Tooltip>

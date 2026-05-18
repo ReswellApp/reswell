@@ -27,6 +27,7 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
+import { isUuidString } from "@/lib/utils/isUuid"
 import type { PostgrestClientOptions, PostgrestFilterBuilder } from "@supabase/postgrest-js"
 
 /**
@@ -83,6 +84,14 @@ function haversineMi(
   return R * c
 }
 
+function escapePostgrestIlikeFragment(fragment: string): string {
+  return fragment.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+}
+
+function ilikeContainsPattern(fragment: string): string {
+  return `"%${escapePostgrestIlikeFragment(fragment)}%"`
+}
+
 const SURFBOARD_BROWSE_LISTING_SELECT = `
   *,
   listing_images (url, thumbnail_url, is_primary),
@@ -109,6 +118,11 @@ async function buildSurfboardBrowseBaseQuery(
     boardType: string
     condition: string
     query: string
+    brand?: string
+    model?: string
+    brandId?: string
+    brandModelId?: string
+    dimensions?: string
     minPrice?: number
     maxPrice?: number
     geoBbox?: { lat: number; lng: number; radiusMiles: number }
@@ -211,6 +225,30 @@ async function buildSurfboardBrowseBaseQuery(
     dbQuery = applyListingsLocationTextFilter(dbQuery, loc)
   }
 
+  const brandModelIdFilter = params.brandModelId?.trim()
+  const brandIdFilter = params.brandId?.trim()
+
+  if (brandModelIdFilter && isUuidString(brandModelIdFilter)) {
+    dbQuery = dbQuery.eq("brand_model_id", brandModelIdFilter)
+  } else if (brandIdFilter && isUuidString(brandIdFilter)) {
+    dbQuery = dbQuery.eq("brand_id", brandIdFilter)
+  } else {
+    const brandFilter = params.brand?.trim()
+    if (brandFilter) {
+      dbQuery = dbQuery.ilike("brand", `%${brandFilter}%`)
+    }
+    const modelFilter = params.model?.trim()
+    if (modelFilter) {
+      const pat = ilikeContainsPattern(modelFilter)
+      dbQuery = dbQuery.or(`model.ilike.${pat},title.ilike.${pat}`)
+    }
+  }
+
+  const dimensionsFilter = params.dimensions?.trim()
+  if (dimensionsFilter) {
+    dbQuery = dbQuery.ilike("dimensions", `%${dimensionsFilter}%`)
+  }
+
   if (params.query) {
     const escaped = params.query.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
     const pattern = `"%${escaped}%"`
@@ -249,6 +287,11 @@ async function fetchNearestSurfboardsWithinRadius(params: {
   boardType: string
   condition: string
   query: string
+  brand?: string
+  model?: string
+  brandId?: string
+  brandModelId?: string
+  dimensions?: string
   minPrice?: number
   maxPrice?: number
   offset: number
@@ -259,6 +302,11 @@ async function fetchNearestSurfboardsWithinRadius(params: {
     boardType: params.boardType,
     condition: params.condition,
     query: params.query,
+    brand: params.brand,
+    model: params.model,
+    brandId: params.brandId,
+    brandModelId: params.brandModelId,
+    dimensions: params.dimensions,
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
     geoBbox: {
@@ -296,6 +344,13 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
   const condition = searchParams.condition || "all"
   const sort = searchParams.sort || BOARDS_BROWSE_DEFAULT_SORT
   const query = searchParams.q || ""
+  const brand = searchParams.brand || ""
+  const model = searchParams.model || ""
+  const brandIdRaw = searchParams.brandId?.trim() ?? ""
+  const brandModelIdRaw = searchParams.brandModelId?.trim() ?? ""
+  const brandIdForQuery = isUuidString(brandIdRaw) ? brandIdRaw : undefined
+  const brandModelIdForQuery = isUuidString(brandModelIdRaw) ? brandModelIdRaw : undefined
+  const dimensions = searchParams.dimensions || ""
   const location = searchParams.location || ""
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
   const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
@@ -318,6 +373,11 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     boardType,
     condition,
     query,
+    brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
+    model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+    brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+    brandModelId: brandModelIdForQuery,
+    dimensions: dimensions.trim() || undefined,
     minPrice,
     maxPrice,
     geoBbox:
@@ -426,6 +486,11 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
           boardType,
           condition,
           query: q,
+          brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
+          model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+          brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+          brandModelId: brandModelIdForQuery,
+          dimensions: dimensions.trim() || undefined,
           minPrice,
           maxPrice,
           offset,
@@ -490,6 +555,13 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
   function pageUrl(pageNum: number) {
     const params = new URLSearchParams()
     if (searchParams.q) params.set("q", searchParams.q)
+    if (searchParams.brand?.trim()) params.set("brand", searchParams.brand.trim())
+    const pid = searchParams.brandId?.trim()
+    if (pid && isUuidString(pid)) params.set("brandId", pid)
+    if (searchParams.model?.trim()) params.set("model", searchParams.model.trim())
+    const pmid = searchParams.brandModelId?.trim()
+    if (pmid && isUuidString(pmid)) params.set("brandModelId", pmid)
+    if (searchParams.dimensions?.trim()) params.set("dimensions", searchParams.dimensions.trim())
     if (searchParams.location) params.set("location", searchParams.location)
     if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
     if (searchParams.condition && searchParams.condition !== "all")
@@ -655,6 +727,12 @@ export async function BoardsBrowsePage(props: {
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
 
+  const brandIdParam = searchParams.brandId?.trim() ?? ""
+  const brandModelIdParam = searchParams.brandModelId?.trim() ?? ""
+  const browseInitialBrandId = brandIdParam && isUuidString(brandIdParam) ? brandIdParam : ""
+  const browseInitialBrandModelId =
+    brandModelIdParam && isUuidString(brandModelIdParam) ? brandModelIdParam : ""
+
   return (
     <main className="flex-1">
       <BoardsBrowseJsonLd searchParams={searchParams} />
@@ -702,6 +780,13 @@ export async function BoardsBrowsePage(props: {
         <div className="container mx-auto min-w-0">
           <BoardsBrowseClient
             initialQ={searchParams.q ?? ""}
+            initialBrand={searchParams.brand ?? ""}
+            initialModel={searchParams.model ?? ""}
+            initialBrandId={browseInitialBrandId}
+            initialBrandModelId={browseInitialBrandModelId}
+            initialDimensions={searchParams.dimensions ?? ""}
+            initialMinPrice={searchParams.minPrice ?? ""}
+            initialMaxPrice={searchParams.maxPrice ?? ""}
             initialLocation={searchParams.location ?? ""}
             initialRadius={searchParams.radius ?? ""}
             initialType={searchParams.type ?? "all"}

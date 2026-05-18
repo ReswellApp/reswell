@@ -1,8 +1,14 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
-import { useState, useTransition, useEffect, useRef, useCallback } from "react"
+import { useState, useTransition, useEffect, useRef, useCallback, Suspense } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Select,
   SelectContent,
@@ -10,19 +16,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { MapPin, LocateFixed } from "lucide-react"
+import { ChevronDown, MapPin, LocateFixed } from "lucide-react"
 import { BoardsListingsSearchField } from "@/components/boards-listings-search-field"
 import {
   SiteSearchFormSubmitButton,
   SiteSearchShell,
   siteFilterSelectTriggerClassName,
   siteSearchInputClassName,
+  siteFilterBorderedInputClassName,
 } from "@/components/site-search-bar"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
 import { useToast } from "@/hooks/use-toast"
 import { listingConditionFilterRows } from "@/lib/listing-labels"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
 import { cn } from "@/lib/utils"
+import { isUuidString } from "@/lib/utils/isUuid"
+import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
+import { BoardsBrowseCatalogBrandModel } from "@/components/boards-browse-catalog-brand-model"
 
 export const boardTypes = [
   { value: "all", label: "All Board Types" },
@@ -65,6 +75,13 @@ function normalizeInitialRadius(r: string | undefined): string {
 
 type FilterSnapshot = {
   q: string
+  brand: string
+  model: string
+  catalogBrandId: string
+  catalogBrandModelId: string
+  dimensions: string
+  minPrice: string
+  maxPrice: string
   location: string
   radiusMi: string
   type: string
@@ -76,6 +93,15 @@ type FilterSnapshot = {
 
 interface BoardsListingsFiltersProps {
   initialQ?: string
+  initialBrand?: string
+  initialModel?: string
+  /** Catalog `public.brands.id` when browsed by UUID (`brandId=`). */
+  initialBrandId?: string
+  /** Catalog `public.brand_models.id` when browsed by UUID (`brandModelId=`). */
+  initialBrandModelId?: string
+  initialDimensions?: string
+  initialMinPrice?: string
+  initialMaxPrice?: string
   initialLocation?: string
   /** Miles from `radius=`; `any` / empty = no distance filter in URL */
   initialRadius?: string
@@ -94,6 +120,13 @@ const DEBOUNCE_MS = 380
 
 export function BoardsListingsFilters({
   initialQ = "",
+  initialBrand = "",
+  initialModel = "",
+  initialBrandId = "",
+  initialBrandModelId = "",
+  initialDimensions = "",
+  initialMinPrice = "",
+  initialMaxPrice = "",
   initialLocation = "",
   initialRadius = "",
   initialType = "all",
@@ -108,6 +141,13 @@ export function BoardsListingsFilters({
   const startTransition = transitionStartProp ?? internalStartTransition
 
   const [q, setQ] = useState(initialQ)
+  const [brand, setBrand] = useState(initialBrand)
+  const [model, setModel] = useState(initialModel)
+  const [catalogBrandId, setCatalogBrandId] = useState(initialBrandId)
+  const [catalogBrandModelId, setCatalogBrandModelId] = useState(initialBrandModelId)
+  const [dimensions, setDimensions] = useState(initialDimensions)
+  const [minPrice, setMinPrice] = useState(initialMinPrice)
+  const [maxPrice, setMaxPrice] = useState(initialMaxPrice)
   const [location, setLocation] = useState(initialLocation)
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
@@ -116,9 +156,17 @@ export function BoardsListingsFilters({
   const [type, setType] = useState(initialType)
   const [condition, setCondition] = useState(initialCondition)
   const [sort, setSort] = useState(initialSort)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   const filtersRef = useRef<FilterSnapshot>({
     q: initialQ,
+    brand: initialBrand,
+    model: initialModel,
+    catalogBrandId: initialBrandId,
+    catalogBrandModelId: initialBrandModelId,
+    dimensions: initialDimensions,
+    minPrice: initialMinPrice,
+    maxPrice: initialMaxPrice,
     location: initialLocation,
     radiusMi: normalizeInitialRadius(initialRadius),
     type: initialType,
@@ -127,7 +175,23 @@ export function BoardsListingsFilters({
     userLat: null,
     userLng: null,
   })
-  filtersRef.current = { q, location, radiusMi, type, condition, sort, userLat, userLng }
+  filtersRef.current = {
+    q,
+    brand,
+    model,
+    catalogBrandId,
+    catalogBrandModelId,
+    dimensions,
+    minPrice,
+    maxPrice,
+    location,
+    radiusMi,
+    type,
+    condition,
+    sort,
+    userLat,
+    userLng,
+  }
 
   const skipTextDebounceRef = useRef(true)
   const skipSelectApplyRef = useRef(true)
@@ -136,7 +200,17 @@ export function BoardsListingsFilters({
    * so we can skip resetting local text state when it matches (avoids clobbering mid-typing and
    * survives React Strict Mode double-invoking effects).
    */
-  const expectedAfterReplaceRef = useRef<{ q: string; location: string } | null>(null)
+  const expectedAfterReplaceRef = useRef<{
+    q: string
+    location: string
+    brand: string
+    model: string
+    catalogBrandId: string
+    catalogBrandModelId: string
+    dimensions: string
+    minPrice: string
+    maxPrice: string
+  } | null>(null)
 
   // Sync filter UI when server re-renders with new searchParams (back/forward, external links).
   // Skip resetting free-text fields when the payload matches what we just pushed from this form.
@@ -159,8 +233,26 @@ export function BoardsListingsFilters({
 
     const incomingQ = (initialQ ?? "").trim()
     const incomingLoc = (initialLocation ?? "").trim()
+    const incomingBrand = (initialBrand ?? "").trim()
+    const incomingModel = (initialModel ?? "").trim()
+    const incomingBrandId = (initialBrandId ?? "").trim()
+    const incomingBrandModelId = (initialBrandModelId ?? "").trim()
+    const incomingDims = (initialDimensions ?? "").trim()
+    const incomingMin = (initialMinPrice ?? "").trim()
+    const incomingMax = (initialMaxPrice ?? "").trim()
     const expected = expectedAfterReplaceRef.current
-    if (expected && expected.q === incomingQ && expected.location === incomingLoc) {
+    if (
+      expected &&
+      expected.q === incomingQ &&
+      expected.location === incomingLoc &&
+      expected.brand === incomingBrand &&
+      expected.model === incomingModel &&
+      expected.catalogBrandId === incomingBrandId &&
+      expected.catalogBrandModelId === incomingBrandModelId &&
+      expected.dimensions === incomingDims &&
+      expected.minPrice === incomingMin &&
+      expected.maxPrice === incomingMax
+    ) {
       expectedAfterReplaceRef.current = null
       return
     }
@@ -168,10 +260,31 @@ export function BoardsListingsFilters({
     expectedAfterReplaceRef.current = null
     skipTextDebounceRef.current = true
     setQ(initialQ)
+    setBrand(initialBrand)
+    setModel(initialModel)
+    setCatalogBrandId(initialBrandId ?? "")
+    setCatalogBrandModelId(initialBrandModelId ?? "")
+    setDimensions(initialDimensions)
+    setMinPrice(initialMinPrice)
+    setMaxPrice(initialMaxPrice)
     setLocation(initialLocation)
     setUserLat(null)
     setUserLng(null)
-  }, [initialQ, initialLocation, initialRadius, initialType, initialCondition, initialSort])
+  }, [
+    initialQ,
+    initialBrand,
+    initialModel,
+    initialBrandId,
+    initialBrandModelId,
+    initialDimensions,
+    initialMinPrice,
+    initialMaxPrice,
+    initialLocation,
+    initialRadius,
+    initialType,
+    initialCondition,
+    initialSort,
+  ])
 
   const pushSearchParams = useCallback(
     async (override?: Partial<FilterSnapshot>) => {
@@ -207,6 +320,28 @@ export function BoardsListingsFilters({
 
       const params = new URLSearchParams()
       if (live.q.trim()) params.set("q", live.q.trim())
+      if (live.brand.trim()) params.set("brand", live.brand.trim())
+      if (live.model.trim()) params.set("model", live.model.trim())
+
+      const bmId = live.catalogBrandModelId.trim()
+      const bId = live.catalogBrandId.trim()
+      if (bmId && isUuidString(bmId)) {
+        params.set("brandModelId", bmId)
+        const bid = bId && isUuidString(bId) ? bId : ""
+        if (bid) params.set("brandId", bid)
+      } else if (bId && isUuidString(bId)) {
+        params.set("brandId", bId)
+      }
+
+      if (live.dimensions.trim()) params.set("dimensions", live.dimensions.trim())
+
+      const minT = live.minPrice.trim()
+      const maxT = live.maxPrice.trim()
+      const minN = minT ? Math.round(Number(minT)) : NaN
+      const maxN = maxT ? Math.round(Number(maxT)) : NaN
+      if (Number.isFinite(minN) && minN >= 0) params.set("minPrice", String(minN))
+      if (Number.isFinite(maxN) && maxN >= 0) params.set("maxPrice", String(maxN))
+
       if (liveLocation) params.set("location", liveLocation)
       if (live.type && live.type !== "all") params.set("type", live.type)
       if (live.condition && live.condition !== "all") params.set("condition", live.condition)
@@ -233,6 +368,13 @@ export function BoardsListingsFilters({
       expectedAfterReplaceRef.current = {
         q: live.q.trim(),
         location: liveLocation,
+        brand: live.brand.trim(),
+        model: live.model.trim(),
+        catalogBrandId: live.catalogBrandId.trim(),
+        catalogBrandModelId: live.catalogBrandModelId.trim(),
+        dimensions: live.dimensions.trim(),
+        minPrice: minT,
+        maxPrice: maxT,
       }
       startTransition(() => {
         router.replace(
@@ -254,7 +396,7 @@ export function BoardsListingsFilters({
       void pushSearchParams()
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [q, location, pushSearchParams])
+  }, [q, location, brand, model, catalogBrandId, catalogBrandModelId, dimensions, minPrice, maxPrice, pushSearchParams])
 
   // Selects fire immediately
   useEffect(() => {
@@ -311,16 +453,17 @@ export function BoardsListingsFilters({
   }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        void pushSearchParams()
-      }}
-      className={cn(
-        "grid w-full min-w-0 max-w-full grid-cols-2 gap-2 items-center",
-        "md:flex md:flex-nowrap md:gap-2 md:overflow-x-auto md:pb-0.5 [scrollbar-width:thin]",
-      )}
-    >
+    <>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void pushSearchParams()
+        }}
+        className={cn(
+          "grid w-full min-w-0 max-w-full grid-cols-2 gap-2 items-center",
+          "md:flex md:flex-nowrap md:gap-2 md:overflow-x-auto md:pb-0.5 [scrollbar-width:thin]",
+        )}
+      >
       <div className="order-2 col-span-2 flex max-w-full min-w-0 items-center gap-2 min-w-[200px] md:order-1 md:col-auto md:shrink-0 md:w-[min(24rem,34vw)] md:min-w-[19rem]">
         <div className="relative min-w-0 flex-1">
           <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -440,5 +583,101 @@ export function BoardsListingsFilters({
         </SiteSearchShell>
       </div>
     </form>
+
+      <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-3 w-full min-w-0">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 rounded-xl border border-transparent px-1 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/60 hover:border-border"
+          >
+            <span>Advanced filters</span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                advancedOpen && "rotate-180",
+              )}
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-4 pt-1">
+          <p className="text-xs text-muted-foreground px-1">
+            Narrow by brand, model, size text, and price. Location and radius above still refine what you see on this
+            page only — saved email alerts match new listings anywhere.
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="col-span-1 grid min-w-0 grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-2 lg:col-span-2">
+            <BoardsBrowseCatalogBrandModel
+              brandText={brand}
+              catalogBrandId={catalogBrandId}
+              modelText={model}
+              onBrandTextChange={(v) => {
+                setBrand(v)
+                setCatalogBrandId("")
+                setCatalogBrandModelId("")
+                setModel("")
+              }}
+              onCatalogBrandPicked={(b) => {
+                setBrand(b.name)
+                setCatalogBrandId(b.id)
+                setCatalogBrandModelId("")
+                setModel("")
+                void pushSearchParams({
+                  catalogBrandId: b.id,
+                  catalogBrandModelId: "",
+                  brand: b.name,
+                  model: "",
+                })
+              }}
+              onModelTextChange={(v) => {
+                setModel(v)
+                setCatalogBrandModelId("")
+              }}
+              onCatalogModelPicked={(row) => {
+                setBrand(row.brandName)
+                setCatalogBrandId(row.brandId)
+                setCatalogBrandModelId(row.id)
+                setModel(row.name)
+                void pushSearchParams({
+                  catalogBrandModelId: row.id,
+                  catalogBrandId: row.brandId,
+                  brand: row.brandName,
+                  model: row.name,
+                })
+              }}
+            />
+          </div>
+            <Input
+              name="dimensions"
+              value={dimensions}
+              onChange={(e) => setDimensions(e.target.value)}
+              placeholder="Dimensions (e.g. 5'6 or 18 3/8)"
+              className={siteFilterBorderedInputClassName()}
+              autoComplete="off"
+            />
+            <Input
+              name="minPrice"
+              inputMode="numeric"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              placeholder="Min price (USD)"
+              className={siteFilterBorderedInputClassName()}
+              autoComplete="off"
+            />
+            <Input
+              name="maxPrice"
+              inputMode="numeric"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              placeholder="Max price (USD)"
+              className={siteFilterBorderedInputClassName()}
+              autoComplete="off"
+            />
+          </div>
+          <Suspense fallback={null}>
+            <BoardsSaveSearchPanel />
+          </Suspense>
+        </CollapsibleContent>
+      </Collapsible>
+    </>
   )
 }
