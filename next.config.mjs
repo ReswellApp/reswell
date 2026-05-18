@@ -62,6 +62,9 @@ const nextConfig = {
     // Default is 'attachment', which sets Content-Disposition on /_next/image so
     // opening or sharing those URLs downloads the file instead of showing it in-tab.
     contentDispositionType: 'inline',
+    // Allowlisted `quality` values for `<Image />` — required in Next.js 16+.
+    // Include 75 for components that omit `quality` (Next default).
+    qualities: [72, 75, 80, 88, 90, 92],
     remotePatterns: [
       // User listing + avatar photos (Supabase project subdomains)
       {
