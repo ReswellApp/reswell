@@ -709,8 +709,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       src={threadListingThumbSrc}
                       alt={capitalizeWords(displayListing.title)}
                       fill
+                      sizes="72px"
                       className="object-cover object-center"
-                      onLoadingComplete={() => setListingBannerImageReady(true)}
+                      onLoad={() => setListingBannerImageReady(true)}
                     />
                   </>
                 ) : null}

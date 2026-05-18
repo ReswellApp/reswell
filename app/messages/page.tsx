@@ -478,6 +478,7 @@ function MessagesContent() {
                                 src={otherUser.avatar_url || '/placeholder.svg'}
                                 alt={otherUser.display_name || 'Conversation'}
                                 fill
+                                sizes="48px"
                                 className="object-cover"
                               />
                             ) : (
@@ -607,6 +608,7 @@ function MessagesContent() {
                                     src={thumb}
                                     alt={listing?.title ? capitalizeWords(listing.title) : 'Listing'}
                                     fill
+                                    sizes="60px"
                                     className="object-cover"
                                   />
                                   <span className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/95 shadow-md ring-1 ring-border/40">

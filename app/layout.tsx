@@ -65,7 +65,7 @@ export default async function RootLayout({
   const locale: Locale = localeCookie === 'es' ? 'es' : 'en'
 
   return (
-    <html lang={locale} className="overflow-x-clip">
+    <html lang={locale} className="overflow-x-clip" data-scroll-behavior="smooth">
       <body className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}>
         <GoogleAdsGtag />
         <LocaleProvider initialLocale={locale}>
