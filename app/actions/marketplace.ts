@@ -180,6 +180,29 @@ function escapeIlikeToken(q: string) {
   return q.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
 }
 
+/** Dedupe listing `brand` labels for suggest chips; prefer `brand_id` when the Free-text label repeats across rows. */
+function dedupeListingBrandInputsForSuggest(
+  rows: { brand: string | null; brand_id: string | null }[],
+  maxBrands: number,
+): Array<{ listingLabel: string; brandId: string | null }> {
+  const map = new Map<string, { listingLabel: string; brandId: string | null }>()
+  for (const row of rows) {
+    const listingLabel = row.brand?.trim()
+    if (!listingLabel) continue
+    const key = listingLabel.toLowerCase()
+    const brandId =
+      typeof row.brand_id === "string" && row.brand_id.length > 0 ? row.brand_id : null
+    const existing = map.get(key)
+    if (!existing) {
+      if (map.size >= maxBrands) continue
+      map.set(key, { listingLabel, brandId })
+    } else if (!existing.brandId && brandId) {
+      existing.brandId = brandId
+    }
+  }
+  return [...map.values()]
+}
+
 function rowToSuggestListing(row: Record<string, unknown>): SuggestListing {
   const imgs = row.listing_images as { url?: string; is_primary?: boolean }[] | null
   const primary = imgs?.find((i) => i.is_primary) || imgs?.[0]
@@ -257,7 +280,7 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
       .limit(MAX_CATEGORIES * 3),
     supabase
       .from("listings")
-      .select("brand")
+      .select("brand, brand_id")
       .eq("status", "active")
       .eq("hidden_from_site", false)
       .in("section", sections)
@@ -332,19 +355,12 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
     .filter(Boolean)
     .slice(0, MAX_CATEGORIES) as string[]
 
-  const brandSet = new Set<string>()
-  const brandLabels = (brandsRes.data || [])
-    .map((r) => r.brand?.trim())
-    .filter((b): b is string => !!b && b.length > 0)
-    .filter((b) => {
-      const k = b.toLowerCase()
-      if (brandSet.has(k)) return false
-      brandSet.add(k)
-      return true
-    })
-    .slice(0, MAX_BRANDS)
+  const brandInputs = dedupeListingBrandInputsForSuggest(
+    (brandsRes.data || []) as { brand: string | null; brand_id: string | null }[],
+    MAX_BRANDS,
+  )
 
-  const brands = await hydrateListingBrandLabelsForMarketplaceSuggest(supabase, brandLabels)
+  const brands = await hydrateListingBrandLabelsForMarketplaceSuggest(supabase, brandInputs)
 
   return { titles, categories, brands, listings, meta: { listingsBackend } }
 }

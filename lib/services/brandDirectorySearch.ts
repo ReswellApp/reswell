@@ -171,25 +171,50 @@ export async function resolveDirectoryBrandRowFromLabel(
   return null
 }
 
-/** Map listing-derived brand strings to directory logos for marketplace search strips (max ~16 rows). */
+/** Map listing-derived brands to directory slug + logo for marketplace search strips (max ~16 rows). */
 export async function hydrateListingBrandLabelsForMarketplaceSuggest(
   supabase: SupabaseClient,
-  listingLabels: string[],
+  inputs: Array<{ listingLabel: string; brandId: string | null }>,
 ): Promise<
   Array<{ listingLabel: string; slug: string | null; logo_url: string | null }>
 > {
-  if (listingLabels.length === 0) return []
+  if (inputs.length === 0) return []
 
-  const hydrated = await Promise.all(
-    listingLabels.map(async (listingLabel) => {
-      const row = await resolveDirectoryBrandRowFromLabel(supabase, listingLabel)
+  const ids = [...new Set(inputs.map((i) => i.brandId).filter((id): id is string => !!id))]
+  let idToRow = new Map<string, DirectoryBrandMini>()
+  if (ids.length > 0) {
+    const { data, error } = await supabase.from("brands").select("id,name,slug,logo_url").in("id", ids)
+    if (!error && data?.length) {
+      idToRow = new Map(
+        data.map((row) => [
+          row.id,
+          {
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            logo_url: row.logo_url ?? null,
+          },
+        ]),
+      )
+    }
+  }
+
+  return Promise.all(
+    inputs.map(async (input) => {
+      const linked = input.brandId ? idToRow.get(input.brandId) : undefined
+      if (linked?.slug) {
+        return {
+          listingLabel: input.listingLabel,
+          slug: linked.slug,
+          logo_url: linked.logo_url ?? null,
+        }
+      }
+      const row = await resolveDirectoryBrandRowFromLabel(supabase, input.listingLabel)
       return {
-        listingLabel,
+        listingLabel: input.listingLabel,
         slug: row?.slug ?? null,
         logo_url: row?.logo_url ?? null,
       }
     }),
   )
-
-  return hydrated
 }

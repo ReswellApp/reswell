@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 import {
   rankNavSuggestedSurfboardRows,
@@ -454,15 +455,19 @@ export function HeaderNavSearch({
         <SearchInputWithSuggest
           value={query}
           onChange={setQuery}
-          onBrandStripPick={(brandName) => {
+          onBrandStripPick={(brandName, resolved) => {
             saveRecentSearch(brandName)
             const category = isSearchResultsPath(pathname)
               ? searchParams.get("category")
               : null
-            void navigateToBrandProfileFromNavPick(router, brandName, {
-              categorySlug: category,
-              navSubmitted: true,
-            })
+            if (resolved?.catalogSlug) {
+              router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
+            } else {
+              void navigateToBrandProfileFromNavPick(router, brandName, {
+                categorySlug: category,
+                navSubmitted: true,
+              })
+            }
             setQuery("")
             clearNavSearchQuery()
             setIdleOpen(false)

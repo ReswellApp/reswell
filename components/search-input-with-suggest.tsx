@@ -17,6 +17,7 @@ import type {
   SearchSuggestPickSurface,
   SearchSuggestPickTrace,
 } from "@/lib/elasticsearch/search-suggest-analytics-index"
+import { BRANDS_BASE } from "@/lib/brands/routes"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { useSearchSuggestPortalContainer } from "@/components/search-suggest-portal-context"
@@ -158,8 +159,12 @@ interface SearchInputWithSuggestProps {
   /**
    * Marketplace source only: user chose a **brand name** from listing-derived suggestions
    * (BRANDS row/strip or brand suggestion). Prefer over `onSelect` for catalog-scoped search.
+   * When the chip resolved to `public.brands`, `catalogSlug` is set so the handler can route to `/brands/{slug}` without a second lookup.
    */
-  onBrandStripPick?: (brandDisplayName: string) => void
+  onBrandStripPick?: (
+    brandDisplayName: string,
+    resolved?: { catalogSlug: string } | null,
+  ) => void
   /** Fires when a `brands` search finishes (e.g. show “request brand” when count is 0). */
   onBrandsSearchSettled?: (query: string, resultCount: number) => void
   /** Where this typeahead lives — drives search analytics “dropdown pick” events. */
@@ -418,6 +423,7 @@ export function SearchInputWithSuggest({
           ...(suggestions?.brands?.map((b) => ({
             type: "brand" as const,
             text: b.listingLabel,
+            catalogSlug: b.slug,
           })) ?? []),
           ...extraTitles.map((t) => ({ type: "title" as const, text: t })),
         ].slice(0, SUGGEST_COMBINED_CAP)
@@ -603,15 +609,33 @@ export function SearchInputWithSuggest({
     setSuggestions(null)
   }
 
-  const pickMarketplaceBrandLabel = (brandName: string, pickKind: SearchSuggestPickKind) => {
+  const pickMarketplaceBrandLabel = (
+    brandName: string,
+    pickKind: SearchSuggestPickKind,
+    catalogSlug?: string | null,
+  ) => {
     if (onBrandStripPick && !isBrands) {
       logSuggestAnalytics({ pickKind, selectionLabel: brandName, listingId: null })
       invalidatePendingSuggest()
-      onBrandStripPick(brandName)
+      const slug = catalogSlug?.trim()
+      if (slug) {
+        onBrandStripPick(brandName, { catalogSlug: slug })
+      } else {
+        onBrandStripPick(brandName)
+      }
       setOpen(false)
       setSuggestions(null)
       setLoading(false)
       if (inputRef.current && document.activeElement === inputRef.current) inputRef.current.blur()
+      return
+    }
+    const slugOnly = catalogSlug?.trim()
+    if (slugOnly) {
+      logSuggestAnalytics({ pickKind, selectionLabel: brandName, listingId: null })
+      invalidatePendingSuggest()
+      onNavigate?.()
+      router.push(`${BRANDS_BASE}/${encodeURIComponent(slugOnly)}`)
+      dismissForNavigation()
       return
     }
     handleSelectText(brandName, pickKind)
@@ -921,6 +945,7 @@ export function SearchInputWithSuggest({
                         pickMarketplaceBrandLabel(
                           brand.listingLabel,
                           boardsTitleStyle ? "brand_row" : "brand_strip",
+                          brand.slug,
                         )
                       }
                     >
@@ -962,7 +987,11 @@ export function SearchInputWithSuggest({
                     }
                     onMouseLeave={() => cancelSuggestHover(`brand-strip:${brand.listingLabel}`)}
                     onClick={() =>
-                      pickMarketplaceBrandLabel(brand.listingLabel, boardsTitleStyle ? "brand_row" : "brand_strip")
+                      pickMarketplaceBrandLabel(
+                        brand.listingLabel,
+                        boardsTitleStyle ? "brand_row" : "brand_strip",
+                        brand.slug,
+                      )
                     }
                   >
                     <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-sm font-bold text-cerulean sm:h-12 sm:w-12 sm:text-base">
@@ -1073,7 +1102,7 @@ export function SearchInputWithSuggest({
                       }
                       onClick={() =>
                         item.type === "brand"
-                          ? pickMarketplaceBrandLabel(item.text, "suggestion_brand")
+                          ? pickMarketplaceBrandLabel(item.text, "suggestion_brand", item.catalogSlug)
                           : handleSelectText(
                               item.text,
                               item.type === "title"

@@ -44,6 +44,7 @@ import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
+import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 import {
   boardBrowseNavItemIsActive,
@@ -812,13 +813,17 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       <SearchInputWithSuggest
         value={searchQuery}
         onChange={setSearchQuery}
-        onBrandStripPick={(brandName) => {
-          void navigateToBrandProfileFromNavPick(router, brandName, {
-            categorySlug: isSearchResultsPath(pathname ?? "")
-              ? headerSearchParams.get("category")
-              : null,
-            navSubmitted: true,
-          })
+        onBrandStripPick={(brandName, resolved) => {
+          if (resolved?.catalogSlug) {
+            router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
+          } else {
+            void navigateToBrandProfileFromNavPick(router, brandName, {
+              categorySlug: isSearchResultsPath(pathname ?? "")
+                ? headerSearchParams.get("category")
+                : null,
+              navSubmitted: true,
+            })
+          }
           setSearchQuery("")
           clearNavSearchQuery()
           setSearchOpen(false)
@@ -997,13 +1002,17 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     <SearchInputWithSuggest
                       value={mobileNavSearchQuery}
                       onChange={setMobileNavSearchQuery}
-                      onBrandStripPick={(brandName) => {
-                        void navigateToBrandProfileFromNavPick(router, brandName, {
-                          categorySlug: isSearchResultsPath(pathname ?? "")
-                            ? headerSearchParams.get("category")
-                            : null,
-                          navSubmitted: true,
-                        })
+                      onBrandStripPick={(brandName, resolved) => {
+                        if (resolved?.catalogSlug) {
+                          router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
+                        } else {
+                          void navigateToBrandProfileFromNavPick(router, brandName, {
+                            categorySlug: isSearchResultsPath(pathname ?? "")
+                              ? headerSearchParams.get("category")
+                              : null,
+                            navSubmitted: true,
+                          })
+                        }
                         setMobileNavSearchQuery("")
                         clearNavSearchQuery()
                       }}
