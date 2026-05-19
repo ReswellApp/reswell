@@ -1,14 +1,8 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
-import { useState, useTransition, useEffect, useRef, useCallback, Suspense } from "react"
+import { useState, useTransition, useEffect, useRef, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import {
   Select,
   SelectContent,
@@ -16,14 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ChevronDown, MapPin, LocateFixed } from "lucide-react"
+import { MapPin, LocateFixed } from "lucide-react"
 import { BoardsListingsSearchField } from "@/components/boards-listings-search-field"
 import {
   SiteSearchFormSubmitButton,
   SiteSearchShell,
   siteFilterSelectTriggerClassName,
   siteSearchInputClassName,
-  siteFilterBorderedInputClassName,
 } from "@/components/site-search-bar"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
 import { useToast } from "@/hooks/use-toast"
@@ -31,8 +24,9 @@ import { listingConditionFilterRows } from "@/lib/listing-labels"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
-import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
-import { BoardsBrowseCatalogBrandModel } from "@/components/boards-browse-catalog-brand-model"
+import { BoardsAdvancedFiltersPanel } from "@/components/boards-advanced-filters-panel"
+import { hasActiveAdvancedBrowseFilters } from "@/lib/utils/board-saved-search-criteria"
+import type { BoardsBrowseFilterFields } from "@/lib/utils/board-saved-search-criteria"
 
 export const boardTypes = [
   { value: "all", label: "All Board Types" },
@@ -113,6 +107,7 @@ interface BoardsListingsFiltersProps {
    * show pending UI (Next.js loading.tsx doesn't fire for search-param navigations).
    */
   transitionStart?: (cb: () => void) => void
+  isPending?: boolean
 }
 
 /** Debounce before syncing keyword/location to the URL so results update as you type without thrashing. */
@@ -133,6 +128,7 @@ export function BoardsListingsFilters({
   initialCondition = "all",
   initialSort = BOARDS_BROWSE_DEFAULT_SORT,
   transitionStart: transitionStartProp,
+  isPending = false,
 }: BoardsListingsFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -156,7 +152,46 @@ export function BoardsListingsFilters({
   const [type, setType] = useState(initialType)
   const [condition, setCondition] = useState(initialCondition)
   const [sort, setSort] = useState(initialSort)
-  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    hasActiveAdvancedBrowseFilters({
+      brand: initialBrand,
+      model: initialModel,
+      catalogBrandId: initialBrandId,
+      catalogBrandModelId: initialBrandModelId,
+      dimensions: initialDimensions,
+      minPrice: initialMinPrice,
+      maxPrice: initialMaxPrice,
+    }),
+  )
+
+  const browseFilterFields = useMemo<BoardsBrowseFilterFields>(
+    () => ({
+      q,
+      brand,
+      model,
+      catalogBrandId,
+      catalogBrandModelId,
+      dimensions,
+      minPrice,
+      maxPrice,
+      type,
+      condition,
+      sort,
+    }),
+    [
+      q,
+      brand,
+      model,
+      catalogBrandId,
+      catalogBrandModelId,
+      dimensions,
+      minPrice,
+      maxPrice,
+      type,
+      condition,
+      sort,
+    ],
+  )
 
   const filtersRef = useRef<FilterSnapshot>({
     q: initialQ,
@@ -452,6 +487,26 @@ export function BoardsListingsFilters({
     )
   }
 
+  function clearAdvancedFilters() {
+    setBrand("")
+    setModel("")
+    setCatalogBrandId("")
+    setCatalogBrandModelId("")
+    setDimensions("")
+    setMinPrice("")
+    setMaxPrice("")
+    skipTextDebounceRef.current = true
+    void pushSearchParams({
+      brand: "",
+      model: "",
+      catalogBrandId: "",
+      catalogBrandModelId: "",
+      dimensions: "",
+      minPrice: "",
+      maxPrice: "",
+    })
+  }
+
   return (
     <>
       <form
@@ -584,100 +639,60 @@ export function BoardsListingsFilters({
       </div>
     </form>
 
-      <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-3 w-full min-w-0">
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-2 rounded-xl border border-transparent px-1 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/60 hover:border-border"
-          >
-            <span>Advanced filters</span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
-                advancedOpen && "rotate-180",
-              )}
-            />
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-4 pt-1">
-          <p className="text-xs text-muted-foreground px-1">
-            Narrow by brand, model, size text, and price. Location and radius above still refine what you see on this
-            page only — saved email alerts match new listings anywhere.
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="col-span-1 grid min-w-0 grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-2 lg:col-span-2">
-            <BoardsBrowseCatalogBrandModel
-              brandText={brand}
-              catalogBrandId={catalogBrandId}
-              modelText={model}
-              onBrandTextChange={(v) => {
-                setBrand(v)
-                setCatalogBrandId("")
-                setCatalogBrandModelId("")
-                setModel("")
-              }}
-              onCatalogBrandPicked={(b) => {
-                setBrand(b.name)
-                setCatalogBrandId(b.id)
-                setCatalogBrandModelId("")
-                setModel("")
-                void pushSearchParams({
-                  catalogBrandId: b.id,
-                  catalogBrandModelId: "",
-                  brand: b.name,
-                  model: "",
-                })
-              }}
-              onModelTextChange={(v) => {
-                setModel(v)
-                setCatalogBrandModelId("")
-              }}
-              onCatalogModelPicked={(row) => {
-                setBrand(row.brandName)
-                setCatalogBrandId(row.brandId)
-                setCatalogBrandModelId(row.id)
-                setModel(row.name)
-                void pushSearchParams({
-                  catalogBrandModelId: row.id,
-                  catalogBrandId: row.brandId,
-                  brand: row.brandName,
-                  model: row.name,
-                })
-              }}
-            />
-          </div>
-            <Input
-              name="dimensions"
-              value={dimensions}
-              onChange={(e) => setDimensions(e.target.value)}
-              placeholder="Dimensions (e.g. 5'6 or 18 3/8)"
-              className={siteFilterBorderedInputClassName()}
-              autoComplete="off"
-            />
-            <Input
-              name="minPrice"
-              inputMode="numeric"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              placeholder="Min price (USD)"
-              className={siteFilterBorderedInputClassName()}
-              autoComplete="off"
-            />
-            <Input
-              name="maxPrice"
-              inputMode="numeric"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              placeholder="Max price (USD)"
-              className={siteFilterBorderedInputClassName()}
-              autoComplete="off"
-            />
-          </div>
-          <Suspense fallback={null}>
-            <BoardsSaveSearchPanel />
-          </Suspense>
-        </CollapsibleContent>
-      </Collapsible>
+      <BoardsAdvancedFiltersPanel
+        open={advancedOpen}
+        onOpenChange={setAdvancedOpen}
+        filterFields={browseFilterFields}
+        dimensions={dimensions}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        brand={brand}
+        catalogBrandId={catalogBrandId}
+        model={model}
+        isPending={isPending}
+        onDimensionsChange={setDimensions}
+        onMinPriceChange={setMinPrice}
+        onMaxPriceChange={setMaxPrice}
+        onBrandTextChange={(v) => {
+          setBrand(v)
+          setCatalogBrandId("")
+          setCatalogBrandModelId("")
+          setModel("")
+        }}
+        onCatalogBrandPicked={(b) => {
+          setBrand(b.name)
+          setCatalogBrandId(b.id)
+          setCatalogBrandModelId("")
+          setModel("")
+          void pushSearchParams({
+            catalogBrandId: b.id,
+            catalogBrandModelId: "",
+            brand: b.name,
+            model: "",
+          })
+        }}
+        onModelTextChange={(v) => {
+          setModel(v)
+          setCatalogBrandModelId("")
+        }}
+        onCatalogModelPicked={(row) => {
+          setBrand(row.brandName)
+          setCatalogBrandId(row.brandId)
+          setCatalogBrandModelId(row.id)
+          setModel(row.name)
+          void pushSearchParams({
+            catalogBrandModelId: row.id,
+            catalogBrandId: row.brandId,
+            brand: row.brandName,
+            model: row.name,
+          })
+        }}
+        onApplyFilters={() => {
+          skipTextDebounceRef.current = true
+          void pushSearchParams()
+        }}
+        onClearAdvanced={clearAdvancedFilters}
+      />
     </>
   )
 }

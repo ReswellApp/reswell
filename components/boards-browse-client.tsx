@@ -69,6 +69,7 @@ export function BoardsBrowseClient({
         <div className="min-w-0 w-full max-w-full">
           <BoardsListingsFilters
             transitionStart={startTransition}
+            isPending={isPending}
             initialQ={initialQ}
             initialBrand={initialBrand}
             initialModel={initialModel}
