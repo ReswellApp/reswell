@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { AdminGuard } from './AdminGuard'
 import { AdminSidebarNav } from '@/components/features/admin/admin-sidebar-nav'
 import { getAdminNavGroupsForUser } from '@/lib/admin-nav'
+import { fetchAdminNavBadgeCounts } from '@/lib/db/adminNavCounts'
 
 export default async function AdminLayout({
   children,
@@ -30,6 +31,9 @@ export default async function AdminLayout({
   }
 
   const navGroups = getAdminNavGroupsForUser(isAdmin)
+  const navBadgeCounts = await fetchAdminNavBadgeCounts(supabase, {
+    includeBrandRequests: isAdmin,
+  })
 
   return (
     <div className="flex-1 container mx-auto py-8 bg-background">
@@ -37,7 +41,7 @@ export default async function AdminLayout({
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0">
             <nav className="space-y-1">
-              <AdminSidebarNav groups={navGroups} />
+              <AdminSidebarNav groups={navGroups} badgeCounts={navBadgeCounts} />
             </nav>
           </aside>
 

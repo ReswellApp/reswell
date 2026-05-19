@@ -139,7 +139,10 @@ export function LoginFormPanel({
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
             {footerSignUp ?? (
-              <Link href="/auth/sign-up" className="underline underline-offset-4">
+              <Link
+                href={`/auth/sign-up?redirect=${encodeURIComponent(safeRedirectPath(redirectTo))}`}
+                className="underline underline-offset-4"
+              >
                 Sign up
               </Link>
             )}

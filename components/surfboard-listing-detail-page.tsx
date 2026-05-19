@@ -63,6 +63,8 @@ import { ListingPdpRecentSections } from "@/components/features/listings/listing
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
+import { getReswellPlatformReviewSummary } from "@/lib/db/reswellPlatformReviews"
+import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -128,6 +130,8 @@ export async function SurfboardListingDetailPage({
     .limit(8)
 
   const sellerReviewPreviews = sellerReviewPreviewRows ?? []
+
+  const { data: reswellPlatformReviewSummary } = await getReswellPlatformReviewSummary(supabase)
 
   // Get seller's other boards (same fields as standard peer tiles)
   const { data: sellerBoards } = await supabase
@@ -618,6 +622,11 @@ export async function SurfboardListingDetailPage({
               <ListingProtectionTrustRibbon
                 viewerRole={isOwnListing ? "seller" : "buyer"}
                 className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
+              />
+
+              <ReswellPlatformRatingWidget
+                summary={reswellPlatformReviewSummary}
+                className="mt-5"
               />
 
               {!isOwnListing ? (

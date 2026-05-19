@@ -121,7 +121,9 @@ export function SignUpFormPanel({
         navigateAfterClientAuth(redirectTo, router)
       } else {
         onSignUpSuccess?.()
-        router.push("/auth/login")
+        router.push(
+          `/auth/login?redirect=${encodeURIComponent(safeRedirectPath(redirectTo))}`,
+        )
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred")
@@ -209,7 +211,10 @@ export function SignUpFormPanel({
           <div className="mt-4 text-center text-sm">
             Already have an account?{" "}
             {footerLogin ?? (
-              <Link href="/auth/login" className="underline underline-offset-4">
+              <Link
+                href={`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(redirectTo))}`}
+                className="underline underline-offset-4"
+              >
                 Login
               </Link>
             )}

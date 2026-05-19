@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
 import {
   X,
   Menu,
@@ -922,14 +922,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                           className="h-10 w-10 text-foreground hover:bg-black/5"
                         >
                           <MessageSquare className="h-[22px] w-[22px]" />
-                          {unreadMessages > 0 && (
-                            <Badge
-                              variant="destructive"
-                              className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs text-white hover:bg-red-600"
-                            >
-                              {unreadMessages > 9 ? "9+" : unreadMessages}
-                            </Badge>
-                          )}
+                          <NavUnreadCountBadge count={unreadMessages} overlay />
                           <span className="sr-only">Messages</span>
                         </Button>
                       </Link>
@@ -1161,14 +1154,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <Link href="/messages" className="relative inline-flex shrink-0">
                   <Button variant="ghost" size="icon" className="text-foreground">
                     <MessageSquare className="h-6 w-6" />
-                    {unreadMessages > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center bg-red-500 text-white hover:bg-red-600"
-                      >
-                        {unreadMessages > 9 ? "9+" : unreadMessages}
-                      </Badge>
-                    )}
+                    <NavUnreadCountBadge count={unreadMessages} overlay />
                     <span className="sr-only">Messages</span>
                   </Button>
                 </Link>

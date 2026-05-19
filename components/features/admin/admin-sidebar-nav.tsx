@@ -34,6 +34,9 @@ import type {
   AdminNavGroupConfig,
   AdminNavIconKey,
 } from '@/lib/admin-nav'
+import type { AdminNavBadgeCounts } from '@/lib/db/adminNavCounts'
+import { sumAdminNavBadgeCounts } from '@/lib/db/adminNavCounts'
+import { NavUnreadCountBadge } from '@/components/nav-unread-count-badge'
 
 const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   layoutDashboard: LayoutDashboard,
@@ -65,9 +68,10 @@ function isNavActive(pathname: string, href: string): boolean {
 
 interface AdminSidebarNavProps {
   groups: AdminNavGroupConfig[]
+  badgeCounts?: AdminNavBadgeCounts
 }
 
-export function AdminSidebarNav({ groups }: AdminSidebarNavProps) {
+export function AdminSidebarNav({ groups, badgeCounts = {} }: AdminSidebarNavProps) {
   const pathname = usePathname() ?? ''
 
   return (
@@ -76,14 +80,21 @@ export function AdminSidebarNav({ groups }: AdminSidebarNavProps) {
         const isOpen = group.items.some((item) =>
           isNavActive(pathname, item.href),
         )
+        const groupBadgeCount = sumAdminNavBadgeCounts(
+          badgeCounts,
+          group.items.map((item) => item.href),
+        )
         return (
           <Collapsible key={group.id} defaultOpen={isOpen}>
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex h-9 w-full items-center justify-between px-3 font-semibold text-foreground hover:bg-secondary data-[state=open]:[&_.admin-nav-chevron]:rotate-180"
+                className="flex h-9 w-full items-center justify-between gap-2 px-3 font-semibold text-foreground hover:bg-secondary data-[state=open]:[&_.admin-nav-chevron]:rotate-180"
               >
-                <span>{group.label}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="truncate">{group.label}</span>
+                  <NavUnreadCountBadge count={groupBadgeCount} />
+                </span>
                 <ChevronDown className="admin-nav-chevron h-4 w-4 shrink-0 transition-transform duration-200" />
               </Button>
             </CollapsibleTrigger>
@@ -91,17 +102,21 @@ export function AdminSidebarNav({ groups }: AdminSidebarNavProps) {
               {group.items.map((item) => {
                 const Icon = NAV_ICONS[item.icon]
                 const active = isNavActive(pathname, item.href)
+                const itemBadgeCount = badgeCounts[item.href] ?? 0
                 return (
                   <Link key={item.href} href={item.href}>
                     <Button
                       variant="ghost"
                       className={cn(
-                        'w-full justify-start font-normal',
+                        'w-full justify-between gap-2 font-normal',
                         active && 'bg-secondary text-foreground',
                       )}
                     >
-                      <Icon className="mr-3 h-4 w-4 shrink-0" />
-                      {item.label}
+                      <span className="flex min-w-0 items-center">
+                        <Icon className="mr-3 h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </span>
+                      <NavUnreadCountBadge count={itemBadgeCount} />
                     </Button>
                   </Link>
                 )

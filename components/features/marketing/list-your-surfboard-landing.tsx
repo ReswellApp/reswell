@@ -41,6 +41,8 @@ function ListingSectionHeader({
   )
 }
 
+const SELL_FLOW_HREF = "/sell?new=1"
+
 export function ListYourSurfboardLanding({
   heroSlideUrls,
   featuredBoards,
@@ -48,6 +50,10 @@ export function ListYourSurfboardLanding({
   userId,
   favoritedIds,
 }: ListYourSurfboardLandingProps) {
+  const sellHref = userId
+    ? SELL_FLOW_HREF
+    : `/auth/login?redirect=${encodeURIComponent(SELL_FLOW_HREF)}`
+
   return (
     <main className="flex-1">
       <section className="relative flex min-h-[max(19.5rem,51svh)] items-center overflow-hidden sm:min-h-[max(21.5rem,51svh)] md:min-h-[max(34rem,min(72svh,42rem))]">
@@ -69,7 +75,7 @@ export function ListYourSurfboardLanding({
             </p>
             <div className="mt-8">
               <Button size="lg" asChild>
-                <Link href="/sell">
+                <Link href={sellHref}>
                   List your surfboard
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -82,7 +88,7 @@ export function ListYourSurfboardLanding({
       {featuredRecentlySold.length > 0 ? (
         <section className="scroll-mt-24 py-10 sm:py-16">
           <div className="container mx-auto">
-            <ListingSectionHeader title="Recently sold surfboards" href="/sell" ctaLabel="List a board" />
+            <ListingSectionHeader title="Recently sold surfboards" href={sellHref} ctaLabel="List a board" />
             <HomeListingScrollRow uniformCardHeights>
               {featuredRecentlySold.map((board) => (
                 <HomePeerListingScrollTile
