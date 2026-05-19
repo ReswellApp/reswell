@@ -14,6 +14,10 @@ import {
 } from "@/components/ui/collapsible"
 import { BoardsBrowseCatalogBrandModel } from "@/components/boards-browse-catalog-brand-model"
 import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
+import {
+  BoardDimensionsInputFields,
+  type BoardDimensionsInputValues,
+} from "@/components/board-dimensions-input-fields"
 import { siteFilterBorderedInputClassName } from "@/components/site-search-bar"
 import type { SellBrandModelCatalogRow } from "@/app/actions/marketplace"
 import type { BoardsBrowseFilterFields } from "@/lib/utils/board-saved-search-criteria"
@@ -52,13 +56,13 @@ export type BoardsAdvancedFiltersPanelProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   filterFields: BoardsBrowseFilterFields
-  dimensions: string
+  dimensionFields: BoardDimensionsInputValues
   minPrice: string
   maxPrice: string
   brand: string
   catalogBrandId: string
   model: string
-  onDimensionsChange: (value: string) => void
+  onDimensionFieldsChange: (patch: Partial<BoardDimensionsInputValues>) => void
   onMinPriceChange: (value: string) => void
   onMaxPriceChange: (value: string) => void
   onBrandTextChange: (value: string) => void
@@ -74,13 +78,13 @@ export function BoardsAdvancedFiltersPanel({
   open,
   onOpenChange,
   filterFields,
-  dimensions,
+  dimensionFields,
   minPrice,
   maxPrice,
   brand,
   catalogBrandId,
   model,
-  onDimensionsChange,
+  onDimensionFieldsChange,
   onMinPriceChange,
   onMaxPriceChange,
   onBrandTextChange,
@@ -161,27 +165,13 @@ export function BoardsAdvancedFiltersPanel({
                 />
               </div>
 
-              <AdvancedField
-                id="boards-advanced-dimensions"
-                label="Dimensions"
-                hint="Matches text in listing size (e.g. 5'6 or 18 3/8)"
-              >
-                <Input
-                  id="boards-advanced-dimensions"
-                  name="dimensions"
-                  value={dimensions}
-                  onChange={(e) => onDimensionsChange(e.target.value)}
-                  placeholder={'e.g. 5\'6" or 18 3/8'}
-                  className={siteFilterBorderedInputClassName()}
-                  autoComplete="off"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      onApplyFilters()
-                    }
-                  }}
-                />
-              </AdvancedField>
+              <BoardDimensionsInputFields
+                idPrefix="boards-advanced"
+                variant="filter"
+                values={dimensionFields}
+                onChange={onDimensionFieldsChange}
+                onEnter={onApplyFilters}
+              />
 
               <AdvancedField id="boards-advanced-min-price" label="Min price">
                 <Input

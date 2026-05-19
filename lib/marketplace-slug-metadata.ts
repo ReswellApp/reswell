@@ -77,8 +77,12 @@ export type BoardsBrowseSearchParams = {
   model?: string
   /** Catalog model id (`public.brand_models.id`) — exact listing filter. */
   brandModelId?: string
-  /** Substring match on listings.dimensions (e.g. 5'6, 5ft6). */
+  /** Substring match on listings.dimensions (legacy single-field filter). */
   dimensions?: string
+  dimLength?: string
+  dimWidth?: string
+  dimThickness?: string
+  dimVolume?: string
   minPrice?: string
   maxPrice?: string
   radius?: string

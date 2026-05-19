@@ -27,6 +27,10 @@ import { isUuidString } from "@/lib/utils/isUuid"
 import { BoardsAdvancedFiltersPanel } from "@/components/boards-advanced-filters-panel"
 import { hasActiveAdvancedBrowseFilters } from "@/lib/utils/board-saved-search-criteria"
 import type { BoardsBrowseFilterFields } from "@/lib/utils/board-saved-search-criteria"
+import {
+  appendBoardDimensionBrowseParams,
+} from "@/lib/utils/board-dimension-browse-filter"
+import type { BoardDimensionsInputValues } from "@/components/board-dimensions-input-fields"
 
 export const boardTypes = [
   { value: "all", label: "All Board Types" },
@@ -73,7 +77,10 @@ type FilterSnapshot = {
   model: string
   catalogBrandId: string
   catalogBrandModelId: string
-  dimensions: string
+  boardLength: string
+  boardWidthInches: string
+  boardThicknessInches: string
+  boardVolumeL: string
   minPrice: string
   maxPrice: string
   location: string
@@ -93,7 +100,10 @@ interface BoardsListingsFiltersProps {
   initialBrandId?: string
   /** Catalog `public.brand_models.id` when browsed by UUID (`brandModelId=`). */
   initialBrandModelId?: string
-  initialDimensions?: string
+  initialDimLength?: string
+  initialDimWidth?: string
+  initialDimThickness?: string
+  initialDimVolume?: string
   initialMinPrice?: string
   initialMaxPrice?: string
   initialLocation?: string
@@ -119,7 +129,10 @@ export function BoardsListingsFilters({
   initialModel = "",
   initialBrandId = "",
   initialBrandModelId = "",
-  initialDimensions = "",
+  initialDimLength = "",
+  initialDimWidth = "",
+  initialDimThickness = "",
+  initialDimVolume = "",
   initialMinPrice = "",
   initialMaxPrice = "",
   initialLocation = "",
@@ -141,7 +154,12 @@ export function BoardsListingsFilters({
   const [model, setModel] = useState(initialModel)
   const [catalogBrandId, setCatalogBrandId] = useState(initialBrandId)
   const [catalogBrandModelId, setCatalogBrandModelId] = useState(initialBrandModelId)
-  const [dimensions, setDimensions] = useState(initialDimensions)
+  const [dimensionFields, setDimensionFields] = useState<BoardDimensionsInputValues>({
+    boardLength: initialDimLength,
+    boardWidthInches: initialDimWidth,
+    boardThicknessInches: initialDimThickness,
+    boardVolumeL: initialDimVolume,
+  })
   const [minPrice, setMinPrice] = useState(initialMinPrice)
   const [maxPrice, setMaxPrice] = useState(initialMaxPrice)
   const [location, setLocation] = useState(initialLocation)
@@ -158,7 +176,10 @@ export function BoardsListingsFilters({
       model: initialModel,
       catalogBrandId: initialBrandId,
       catalogBrandModelId: initialBrandModelId,
-      dimensions: initialDimensions,
+      boardLength: initialDimLength,
+      boardWidthInches: initialDimWidth,
+      boardThicknessInches: initialDimThickness,
+      boardVolumeL: initialDimVolume,
       minPrice: initialMinPrice,
       maxPrice: initialMaxPrice,
     }),
@@ -171,7 +192,10 @@ export function BoardsListingsFilters({
       model,
       catalogBrandId,
       catalogBrandModelId,
-      dimensions,
+      boardLength: dimensionFields.boardLength,
+      boardWidthInches: dimensionFields.boardWidthInches,
+      boardThicknessInches: dimensionFields.boardThicknessInches,
+      boardVolumeL: dimensionFields.boardVolumeL,
       minPrice,
       maxPrice,
       type,
@@ -184,7 +208,10 @@ export function BoardsListingsFilters({
       model,
       catalogBrandId,
       catalogBrandModelId,
-      dimensions,
+      dimensionFields.boardLength,
+      dimensionFields.boardWidthInches,
+      dimensionFields.boardThicknessInches,
+      dimensionFields.boardVolumeL,
       minPrice,
       maxPrice,
       type,
@@ -199,7 +226,10 @@ export function BoardsListingsFilters({
     model: initialModel,
     catalogBrandId: initialBrandId,
     catalogBrandModelId: initialBrandModelId,
-    dimensions: initialDimensions,
+    boardLength: initialDimLength,
+    boardWidthInches: initialDimWidth,
+    boardThicknessInches: initialDimThickness,
+    boardVolumeL: initialDimVolume,
     minPrice: initialMinPrice,
     maxPrice: initialMaxPrice,
     location: initialLocation,
@@ -216,7 +246,10 @@ export function BoardsListingsFilters({
     model,
     catalogBrandId,
     catalogBrandModelId,
-    dimensions,
+    boardLength: dimensionFields.boardLength,
+    boardWidthInches: dimensionFields.boardWidthInches,
+    boardThicknessInches: dimensionFields.boardThicknessInches,
+    boardVolumeL: dimensionFields.boardVolumeL,
     minPrice,
     maxPrice,
     location,
@@ -242,7 +275,10 @@ export function BoardsListingsFilters({
     model: string
     catalogBrandId: string
     catalogBrandModelId: string
-    dimensions: string
+    boardLength: string
+    boardWidthInches: string
+    boardThicknessInches: string
+    boardVolumeL: string
     minPrice: string
     maxPrice: string
   } | null>(null)
@@ -272,7 +308,10 @@ export function BoardsListingsFilters({
     const incomingModel = (initialModel ?? "").trim()
     const incomingBrandId = (initialBrandId ?? "").trim()
     const incomingBrandModelId = (initialBrandModelId ?? "").trim()
-    const incomingDims = (initialDimensions ?? "").trim()
+    const incomingDimLength = (initialDimLength ?? "").trim()
+    const incomingDimWidth = (initialDimWidth ?? "").trim()
+    const incomingDimThickness = (initialDimThickness ?? "").trim()
+    const incomingDimVolume = (initialDimVolume ?? "").trim()
     const incomingMin = (initialMinPrice ?? "").trim()
     const incomingMax = (initialMaxPrice ?? "").trim()
     const expected = expectedAfterReplaceRef.current
@@ -284,7 +323,10 @@ export function BoardsListingsFilters({
       expected.model === incomingModel &&
       expected.catalogBrandId === incomingBrandId &&
       expected.catalogBrandModelId === incomingBrandModelId &&
-      expected.dimensions === incomingDims &&
+      expected.boardLength === incomingDimLength &&
+      expected.boardWidthInches === incomingDimWidth &&
+      expected.boardThicknessInches === incomingDimThickness &&
+      expected.boardVolumeL === incomingDimVolume &&
       expected.minPrice === incomingMin &&
       expected.maxPrice === incomingMax
     ) {
@@ -299,7 +341,12 @@ export function BoardsListingsFilters({
     setModel(initialModel)
     setCatalogBrandId(initialBrandId ?? "")
     setCatalogBrandModelId(initialBrandModelId ?? "")
-    setDimensions(initialDimensions)
+    setDimensionFields({
+      boardLength: initialDimLength,
+      boardWidthInches: initialDimWidth,
+      boardThicknessInches: initialDimThickness,
+      boardVolumeL: initialDimVolume,
+    })
     setMinPrice(initialMinPrice)
     setMaxPrice(initialMaxPrice)
     setLocation(initialLocation)
@@ -311,7 +358,10 @@ export function BoardsListingsFilters({
     initialModel,
     initialBrandId,
     initialBrandModelId,
-    initialDimensions,
+    initialDimLength,
+    initialDimWidth,
+    initialDimThickness,
+    initialDimVolume,
     initialMinPrice,
     initialMaxPrice,
     initialLocation,
@@ -368,7 +418,12 @@ export function BoardsListingsFilters({
         params.set("brandId", bId)
       }
 
-      if (live.dimensions.trim()) params.set("dimensions", live.dimensions.trim())
+      appendBoardDimensionBrowseParams(params, {
+        boardLength: live.boardLength,
+        boardWidthInches: live.boardWidthInches,
+        boardThicknessInches: live.boardThicknessInches,
+        boardVolumeL: live.boardVolumeL,
+      })
 
       const minT = live.minPrice.trim()
       const maxT = live.maxPrice.trim()
@@ -407,7 +462,10 @@ export function BoardsListingsFilters({
         model: live.model.trim(),
         catalogBrandId: live.catalogBrandId.trim(),
         catalogBrandModelId: live.catalogBrandModelId.trim(),
-        dimensions: live.dimensions.trim(),
+        boardLength: live.boardLength.trim(),
+        boardWidthInches: live.boardWidthInches.trim(),
+        boardThicknessInches: live.boardThicknessInches.trim(),
+        boardVolumeL: live.boardVolumeL.trim(),
         minPrice: minT,
         maxPrice: maxT,
       }
@@ -431,7 +489,21 @@ export function BoardsListingsFilters({
       void pushSearchParams()
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [q, location, brand, model, catalogBrandId, catalogBrandModelId, dimensions, minPrice, maxPrice, pushSearchParams])
+  }, [
+    q,
+    location,
+    brand,
+    model,
+    catalogBrandId,
+    catalogBrandModelId,
+    dimensionFields.boardLength,
+    dimensionFields.boardWidthInches,
+    dimensionFields.boardThicknessInches,
+    dimensionFields.boardVolumeL,
+    minPrice,
+    maxPrice,
+    pushSearchParams,
+  ])
 
   // Selects fire immediately
   useEffect(() => {
@@ -492,7 +564,12 @@ export function BoardsListingsFilters({
     setModel("")
     setCatalogBrandId("")
     setCatalogBrandModelId("")
-    setDimensions("")
+    setDimensionFields({
+      boardLength: "",
+      boardWidthInches: "",
+      boardThicknessInches: "",
+      boardVolumeL: "",
+    })
     setMinPrice("")
     setMaxPrice("")
     skipTextDebounceRef.current = true
@@ -501,7 +578,10 @@ export function BoardsListingsFilters({
       model: "",
       catalogBrandId: "",
       catalogBrandModelId: "",
-      dimensions: "",
+      boardLength: "",
+      boardWidthInches: "",
+      boardThicknessInches: "",
+      boardVolumeL: "",
       minPrice: "",
       maxPrice: "",
     })
@@ -643,14 +723,16 @@ export function BoardsListingsFilters({
         open={advancedOpen}
         onOpenChange={setAdvancedOpen}
         filterFields={browseFilterFields}
-        dimensions={dimensions}
+        dimensionFields={dimensionFields}
         minPrice={minPrice}
         maxPrice={maxPrice}
         brand={brand}
         catalogBrandId={catalogBrandId}
         model={model}
         isPending={isPending}
-        onDimensionsChange={setDimensions}
+        onDimensionFieldsChange={(patch) =>
+          setDimensionFields((prev) => ({ ...prev, ...patch }))
+        }
         onMinPriceChange={setMinPrice}
         onMaxPriceChange={setMaxPrice}
         onBrandTextChange={(v) => {

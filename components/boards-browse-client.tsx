@@ -32,7 +32,10 @@ type BoardsBrowseClientProps = {
   initialModel?: string
   initialBrandId?: string
   initialBrandModelId?: string
-  initialDimensions?: string
+  initialDimLength?: string
+  initialDimWidth?: string
+  initialDimThickness?: string
+  initialDimVolume?: string
   initialMinPrice?: string
   initialMaxPrice?: string
   initialLocation?: string
@@ -52,7 +55,10 @@ export function BoardsBrowseClient({
   initialModel = "",
   initialBrandId = "",
   initialBrandModelId = "",
-  initialDimensions = "",
+  initialDimLength = "",
+  initialDimWidth = "",
+  initialDimThickness = "",
+  initialDimVolume = "",
   initialMinPrice = "",
   initialMaxPrice = "",
   initialLocation = "",
@@ -75,7 +81,10 @@ export function BoardsBrowseClient({
             initialModel={initialModel}
             initialBrandId={initialBrandId}
             initialBrandModelId={initialBrandModelId}
-            initialDimensions={initialDimensions}
+            initialDimLength={initialDimLength}
+            initialDimWidth={initialDimWidth}
+            initialDimThickness={initialDimThickness}
+            initialDimVolume={initialDimVolume}
             initialMinPrice={initialMinPrice}
             initialMaxPrice={initialMaxPrice}
             initialLocation={initialLocation}
@@ -99,7 +108,10 @@ export function BoardsBrowseClient({
               maxPrice: "Max $",
               brand: "Brand ",
               model: "Model ",
-              dimensions: "Dims ",
+              dimLength: "Length ",
+              dimWidth: "Width ",
+              dimThickness: "Thickness ",
+              dimVolume: "Volume ",
             }}
             valueLookups={{
               type: TYPE_LABEL,

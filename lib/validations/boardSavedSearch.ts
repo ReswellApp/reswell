@@ -10,6 +10,10 @@ export const boardSavedSearchCriteriaSchema = z.object({
   model: z.string().trim().max(200).optional(),
   brandModelId: z.string().trim().uuid().optional(),
   dimensions: z.string().trim().max(120).optional(),
+  dimLength: z.string().trim().max(80).optional(),
+  dimWidth: z.string().trim().max(80).optional(),
+  dimThickness: z.string().trim().max(80).optional(),
+  dimVolume: z.string().trim().max(48).optional(),
   type: z.string().trim().max(64).optional(),
   condition: z.string().trim().max(64).optional(),
   sort: z.string().trim().max(64).optional(),
@@ -41,6 +45,10 @@ export function boardSavedCriteriaHasSpecificity(c: BoardSavedSearchCriteria): b
   if (c.model?.trim()) return true
   if (c.brandModelId?.trim()) return true
   if (c.dimensions?.trim()) return true
+  if (c.dimLength?.trim()) return true
+  if (c.dimWidth?.trim()) return true
+  if (c.dimThickness?.trim()) return true
+  if (c.dimVolume?.trim()) return true
   if (c.type && c.type !== "all") return true
   if (c.condition && c.condition !== "all") return true
   if (c.minPrice != null && Number.isFinite(c.minPrice)) return true

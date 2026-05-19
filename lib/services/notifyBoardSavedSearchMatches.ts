@@ -1,6 +1,10 @@
 import { boardSavedSearchCriteriaSchema } from "@/lib/validations/boardSavedSearch"
 import { boardTypeForDbFromBrowseParam } from "@/lib/marketplace-slug-metadata"
 import {
+  boardDimensionBrowseIlikeTokens,
+  boardDimensionBrowseFieldsFromSearchParams,
+} from "@/lib/utils/board-dimension-browse-filter"
+import {
   fetchBoardSavedSearchesWithEmailEnabled,
   tryInsertBoardSavedSearchAlertSent,
 } from "@/lib/db/boardSavedSearches"
@@ -105,7 +109,23 @@ export function listingMatchesBoardSavedCriteria(
     if (!modelOk) return false
   }
 
-  if (!includesInsensitive(listing.dimensions, c.dimensions)) return false
+  const hasStructuredDims =
+    Boolean(c.dimLength?.trim()) ||
+    Boolean(c.dimWidth?.trim()) ||
+    Boolean(c.dimThickness?.trim()) ||
+    Boolean(c.dimVolume?.trim())
+  const dimFields = boardDimensionBrowseFieldsFromSearchParams({
+    dimLength: c.dimLength,
+    dimWidth: c.dimWidth,
+    dimThickness: c.dimThickness,
+    dimVolume: c.dimVolume,
+    legacyDimensions: hasStructuredDims ? undefined : c.dimensions,
+  })
+  const dimTokens = boardDimensionBrowseIlikeTokens(dimFields)
+  for (const token of dimTokens) {
+    if (!includesInsensitive(listing.dimensions, token)) return false
+  }
+
   if (!boardTypeMatches(c.type, listing.board_type)) return false
   if (!conditionMatches(c.condition, listing.condition)) return false
   if (!priceMatches(listing.price, c.minPrice, c.maxPrice)) return false

@@ -28,6 +28,12 @@ import {
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
+import {
+  boardDimensionBrowseFieldsFromSearchParams,
+  boardDimensionBrowseIlikeTokens,
+  appendBoardDimensionBrowseParams,
+  type BoardDimensionBrowseFields,
+} from "@/lib/utils/board-dimension-browse-filter"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { isUuidString } from "@/lib/utils/isUuid"
 import type { PostgrestClientOptions, PostgrestFilterBuilder } from "@supabase/postgrest-js"
@@ -150,7 +156,9 @@ async function buildSurfboardBrowseBaseQuery(
     model?: string
     brandId?: string
     brandModelId?: string
-    dimensions?: string
+    dimensionFields?: BoardDimensionBrowseFields
+    /** Legacy `dimensions=` query param (single substring). */
+    legacyDimensions?: string
     minPrice?: number
     maxPrice?: number
     geoBbox?: { lat: number; lng: number; radiusMiles: number }
@@ -280,9 +288,14 @@ async function buildSurfboardBrowseBaseQuery(
     }
   }
 
-  const dimensionsFilter = params.dimensions?.trim()
-  if (dimensionsFilter) {
-    dbQuery = dbQuery.ilike("dimensions", `%${dimensionsFilter}%`)
+  const dimensionTokens = boardDimensionBrowseIlikeTokens(
+    params.dimensionFields ??
+      boardDimensionBrowseFieldsFromSearchParams({
+        legacyDimensions: params.legacyDimensions,
+      }),
+  )
+  for (const token of dimensionTokens) {
+    dbQuery = dbQuery.ilike("dimensions", `%${token}%`)
   }
 
   if (params.query) {
@@ -327,7 +340,8 @@ async function fetchNearestSurfboardsWithinRadius(params: {
   model?: string
   brandId?: string
   brandModelId?: string
-  dimensions?: string
+  dimensionFields?: BoardDimensionBrowseFields
+  legacyDimensions?: string
   minPrice?: number
   maxPrice?: number
   offset: number
@@ -343,7 +357,8 @@ async function fetchNearestSurfboardsWithinRadius(params: {
     model: params.model,
     brandId: params.brandId,
     brandModelId: params.brandModelId,
-    dimensions: params.dimensions,
+    dimensionFields: params.dimensionFields,
+    legacyDimensions: params.legacyDimensions,
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
     useSuppressionSort: params.useSuppressionSort,
@@ -389,7 +404,13 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
   const brandModelIdRaw = searchParams.brandModelId?.trim() ?? ""
   const brandIdForQuery = isUuidString(brandIdRaw) ? brandIdRaw : undefined
   const brandModelIdForQuery = isUuidString(brandModelIdRaw) ? brandModelIdRaw : undefined
-  const dimensions = searchParams.dimensions || ""
+  const dimensionFields = boardDimensionBrowseFieldsFromSearchParams({
+    dimLength: searchParams.dimLength,
+    dimWidth: searchParams.dimWidth,
+    dimThickness: searchParams.dimThickness,
+    dimVolume: searchParams.dimVolume,
+    legacyDimensions: searchParams.dimensions,
+  })
   const location = searchParams.location || ""
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
   const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
@@ -416,7 +437,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
     brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
     brandModelId: brandModelIdForQuery,
-    dimensions: dimensions.trim() || undefined,
+    dimensionFields,
     minPrice,
     maxPrice,
     useSuppressionSort,
@@ -484,7 +505,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
         model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
         brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
         brandModelId: brandModelIdForQuery,
-        dimensions: dimensions.trim() || undefined,
+        dimensionFields,
         minPrice,
         maxPrice,
         useSuppressionSort: false,
@@ -561,7 +582,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
           model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
           brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
           brandModelId: brandModelIdForQuery,
-          dimensions: dimensions.trim() || undefined,
+          dimensionFields,
           minPrice,
           maxPrice,
           offset,
@@ -633,7 +654,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     if (searchParams.model?.trim()) params.set("model", searchParams.model.trim())
     const pmid = searchParams.brandModelId?.trim()
     if (pmid && isUuidString(pmid)) params.set("brandModelId", pmid)
-    if (searchParams.dimensions?.trim()) params.set("dimensions", searchParams.dimensions.trim())
+    appendBoardDimensionBrowseParams(params, dimensionFields)
     if (searchParams.location) params.set("location", searchParams.location)
     if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
     if (searchParams.condition && searchParams.condition !== "all")
@@ -804,6 +825,13 @@ export async function BoardsBrowsePage(props: {
   const browseInitialBrandId = brandIdParam && isUuidString(brandIdParam) ? brandIdParam : ""
   const browseInitialBrandModelId =
     brandModelIdParam && isUuidString(brandModelIdParam) ? brandModelIdParam : ""
+  const browseInitialDimensionFields = boardDimensionBrowseFieldsFromSearchParams({
+    dimLength: searchParams.dimLength,
+    dimWidth: searchParams.dimWidth,
+    dimThickness: searchParams.dimThickness,
+    dimVolume: searchParams.dimVolume,
+    legacyDimensions: searchParams.dimensions,
+  })
 
   const supabase = await createClient()
   const {
@@ -873,7 +901,10 @@ export async function BoardsBrowsePage(props: {
             initialModel={searchParams.model ?? ""}
             initialBrandId={browseInitialBrandId}
             initialBrandModelId={browseInitialBrandModelId}
-            initialDimensions={searchParams.dimensions ?? ""}
+            initialDimLength={browseInitialDimensionFields.boardLength}
+            initialDimWidth={browseInitialDimensionFields.boardWidthInches}
+            initialDimThickness={browseInitialDimensionFields.boardThicknessInches}
+            initialDimVolume={browseInitialDimensionFields.boardVolumeL}
             initialMinPrice={searchParams.minPrice ?? ""}
             initialMaxPrice={searchParams.maxPrice ?? ""}
             initialLocation={searchParams.location ?? ""}
