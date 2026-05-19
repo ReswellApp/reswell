@@ -10,16 +10,30 @@ import { computeBelowFieldDropdownLayout } from "@/lib/utils/below-field-dropdow
 import type { SellBrandModelCatalogRow } from "@/app/actions/marketplace"
 import { LISTING_BOARD_MODEL_MAX_LENGTH } from "@/lib/sell-form-validation"
 
+const MODEL_SUBSTRING_MATCH_MIN_CHARS = 4
+
+/**
+ * Prefer token-prefix matches so very short needles (e.g. "and") don't match arbitrary
+ * substrings inside unrelated words ("hand", "sand", "island").
+ * For longer typed strings, substring search still finds mid-word fragments ("fish" in models).
+ */
 function filterCatalogModels(rows: SellBrandModelCatalogRow[], query: string): SellBrandModelCatalogRow[] {
   const q = query.trim().toLowerCase()
   if (!q) return rows.slice(0, 120)
+
   return rows
-    .filter(
-      (m) =>
-        m.name.toLowerCase().includes(q) ||
-        m.brandName.toLowerCase().includes(q) ||
-        `${m.brandName} ${m.name}`.toLowerCase().includes(q),
-    )
+    .filter((m) => {
+      const name = m.name.toLowerCase()
+      const brand = m.brandName.toLowerCase()
+      const combo = `${brand} ${name}`
+      const tokens = combo.split(/[\s\-'/.]+/).filter(Boolean)
+      const tokenHits = tokens.some((t) => t.startsWith(q) || t === q)
+      if (tokenHits) return true
+      if (q.length >= MODEL_SUBSTRING_MATCH_MIN_CHARS) {
+        return name.includes(q) || brand.includes(q) || combo.includes(q)
+      }
+      return false
+    })
     .slice(0, 120)
 }
 

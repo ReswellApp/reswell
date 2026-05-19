@@ -137,9 +137,17 @@ export function brandRowToSearchDoc(row: {
 }
 
 /**
- * Relevance-ordered brand ids for the directory typeahead. Uses analyzed matches plus
- * case-insensitive substring wildcards on name/slug so short prefixes (e.g. "ch") behave
- * like the previous `ilike '%…%'` query.
+ * Relevance-ordered brand ids for the directory typeahead.
+ *
+ * Avoid fuzzy `multi_match` over long text fields (`short_description`, location, bios):
+ * trivial tokens like "and" match thousands of prose blobs and swamp real brand/name matches
+ * ("Gato Heroi" appearing for "and", etc.).
+ *
+ * Strategy:
+ * - Substring-ish behavior on canonical labels via `wildcard` on `name.keyword` / `slug.keyword`
+ *   (mirrors Supabase `%q%`).
+ * - `bool_prefix` on analyzed name/slug/shaper so "and" aligns with "Andrew" but not unrelated blurbs.
+ * - Optional typo tolerance (`fuzziness: AUTO`) only on name/slug for queries ≥4 chars.
  */
 export async function searchBrandIdsFromElasticsearch(
   rawQuery: string,
@@ -157,23 +165,6 @@ export async function searchBrandIdsFromElasticsearch(
 
     const should: object[] = [
       {
-        multi_match: {
-          query: q,
-          fields: [
-            "name^3",
-            "lead_shaper_name^2",
-            "slug^2",
-            "short_description",
-            "location_label",
-            "founder_name",
-          ],
-          type: "best_fields",
-          tie_breaker: 0.2,
-          operator: "or",
-          fuzziness: "AUTO",
-        },
-      },
-      {
         wildcard: {
           "name.keyword": { value: `*${w}*`, case_insensitive: true },
         },
@@ -183,7 +174,28 @@ export async function searchBrandIdsFromElasticsearch(
           "slug.keyword": { value: `*${w}*`, case_insensitive: true },
         },
       },
+      {
+        multi_match: {
+          query: q,
+          fields: ["name^3", "slug^2", "lead_shaper_name"],
+          type: "bool_prefix",
+          operator: "or",
+        },
+      },
     ]
+
+    if (q.length >= 4) {
+      should.push({
+        multi_match: {
+          query: q,
+          fields: ["name^4", "slug^3"],
+          type: "best_fields",
+          tie_breaker: 0.15,
+          operator: "or",
+          fuzziness: "AUTO",
+        },
+      })
+    }
 
     const res = await es.search({
       index: ELASTICSEARCH_BRANDS_INDEX,
