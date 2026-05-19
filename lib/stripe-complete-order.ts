@@ -9,7 +9,7 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
-import { MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
+import { pendingSaleFeeClause } from "@/lib/seller-fees"
 import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
 import {
   profileAddressToOrderShippingJson,
@@ -36,7 +36,7 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
 function walletPendingSaleDescription(listingTitle: string, platformFeeUsd: number): string {
   const safeTitle =
     listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const raw = `Pending — Sold "${safeTitle}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFeeUsd.toFixed(2)}, card — available after delivery)`
+  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, card — available after delivery)`
   return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
 }
 

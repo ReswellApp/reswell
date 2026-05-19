@@ -15,7 +15,7 @@ export type BoardsOgPayload =
 
 /**
  * Featured active surfboard listing for OG share art (`/api/og/boards`, `opengraph-image` fallback).
- * Matches default `/boards` sort: highest price first, then newest.
+ * Matches default `/boards` sort: most recently added first.
  */
 export async function getBoardsBrowseOgPayload(typeParam: string | undefined): Promise<BoardsOgPayload> {
   const supabase = createAnonSupabaseClient()
@@ -45,9 +45,7 @@ export async function getBoardsBrowseOgPayload(typeParam: string | undefined): P
     }
   }
 
-  const { data: row, error } = await q
-    .order("price", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
+  const { data: row, error } = await q.order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle()
 

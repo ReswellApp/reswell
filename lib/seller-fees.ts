@@ -43,16 +43,35 @@ export function getPaymentProcessingFee(price: number): number {
   return Math.round((price * PAYMENT_PROCESSING_PERCENT) / 100 * 100) / 100 + PAYMENT_PROCESSING_FIXED
 }
 
+export type SellerFeeOptions = {
+  /** Reswell Seller program — no marketplace fee; seller receives 100% of item price. */
+  feeWaived?: boolean
+}
+
 /**
  * Platform fee (7%) and seller earnings (93%) for a sale, computed from the **item price only**.
  * Shipping must be excluded by the caller; it is paid through to the carrier and never reaches
  * the seller.
  */
-export function getSellerEarnings(itemPriceUsd: number): {
+export function getSellerEarnings(
+  itemPriceUsd: number,
+  options?: SellerFeeOptions,
+): {
   marketplaceFee: number
   sellerEarnings: number
 } {
+  if (options?.feeWaived) {
+    const sellerEarnings = Math.round(itemPriceUsd * 100) / 100
+    return { marketplaceFee: 0, sellerEarnings }
+  }
+
   const marketplaceFee = getMarketplaceFee(itemPriceUsd)
   const sellerEarnings = Math.round((itemPriceUsd - marketplaceFee) * 100) / 100
   return { marketplaceFee, sellerEarnings }
+}
+
+/** Wallet / ledger copy for the fee portion of a pending sale description. */
+export function pendingSaleFeeClause(platformFeeUsd: number): string {
+  const fee = Math.max(0, platformFeeUsd)
+  return `${MARKETPLACE_FEE_PERCENT}% fee: $${fee.toFixed(2)}`
 }

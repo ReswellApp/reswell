@@ -17,6 +17,8 @@ import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-bro
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { Users } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
+import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
+import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
 import {
   boardTypeForDbFromBrowseParam,
@@ -62,6 +64,32 @@ type BoardBrowseListingRow = {
   categories?: { name?: string | null } | null | { name?: string | null }[] | null
   board_type?: string | null
   condition?: string | null
+  suppressed_on_boards_browse?: boolean | null
+}
+
+function suppressedBrowseRank(row: BoardBrowseListingRow): number {
+  return row.suppressed_on_boards_browse === true ? 1 : 0
+}
+
+function compareBoardBrowseRows(
+  a: BoardBrowseListingRow,
+  b: BoardBrowseListingRow,
+  sort: string,
+): number {
+  const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
+  if (supDiff !== 0) return supDiff
+
+  const pa = Number(a.price ?? 0)
+  const pb = Number(b.price ?? 0)
+  const ta = new Date(a.created_at ?? 0).getTime()
+  const tb = new Date(b.created_at ?? 0).getTime()
+  if (sort === "price-low") return pa - pb
+  if (sort === "price-high") return pb - pa
+  if (sort === "price-newest") {
+    const priceDiff = pb - pa
+    if (priceDiff !== 0) return priceDiff
+  }
+  return tb - ta
 }
 
 function haversineMi(
@@ -153,6 +181,8 @@ async function buildSurfboardBrowseBaseQuery(
      * client chain does not lose `.order` / `.range` after `.or()`.
      */
     locationTextFilter?: string
+    /** When true, sort admin-suppressed surfboards last (requires DB column). */
+    useSuppressionSort?: boolean
   },
 ): Promise<SurfboardBrowseListingsQuery> {
   let dbQuery = supabase
@@ -181,6 +211,9 @@ async function buildSurfboardBrowseBaseQuery(
   }
 
   if (params.prependCreatedAtOrder) {
+    if (params.useSuppressionSort) {
+      dbQuery = dbQuery.order("suppressed_on_boards_browse", { ascending: true })
+    }
     dbQuery = dbQuery.order("created_at", { ascending: false })
   }
 
@@ -202,17 +235,20 @@ async function buildSurfboardBrowseBaseQuery(
   }
 
   if (params.pagedSort) {
+    if (params.useSuppressionSort) {
+      dbQuery = dbQuery.order("suppressed_on_boards_browse", { ascending: true })
+    }
     const s = params.pagedSort
     if (s === "price-low") {
       dbQuery = dbQuery.order("price", { ascending: true })
     } else if (s === "price-high") {
       dbQuery = dbQuery.order("price", { ascending: false, nullsFirst: false })
-    } else if (s === "newest") {
-      dbQuery = dbQuery.order("created_at", { ascending: false })
-    } else {
+    } else if (s === "price-newest") {
       dbQuery = dbQuery
         .order("price", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
+    } else {
+      dbQuery = dbQuery.order("created_at", { ascending: false })
     }
   }
 
@@ -297,6 +333,7 @@ async function fetchNearestSurfboardsWithinRadius(params: {
   offset: number
   limit: number
   maxFetch: number
+  useSuppressionSort?: boolean
 }) {
   let dbQuery = (await buildSurfboardBrowseBaseQuery(params.supabase, {
     boardType: params.boardType,
@@ -309,6 +346,7 @@ async function fetchNearestSurfboardsWithinRadius(params: {
     dimensions: params.dimensions,
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
+    useSuppressionSort: params.useSuppressionSort,
     geoBbox: {
       lat: params.anchorLat,
       lng: params.anchorLng,
@@ -339,6 +377,7 @@ async function fetchNearestSurfboardsWithinRadius(params: {
 
 async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearchParams }) {
   const supabase = await createClient()
+  const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
 
   const boardType = searchParams.type || "all"
   const condition = searchParams.condition || "all"
@@ -380,6 +419,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     dimensions: dimensions.trim() || undefined,
     minPrice,
     maxPrice,
+    useSuppressionSort,
     geoBbox:
       filterByRadius && hasLatLng
         ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
@@ -421,25 +461,56 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       withDistance = withDistance.filter((b) => b._distance <= radiusMi!)
     }
     if (isNearestSort) {
-      withDistance.sort((a, b) => a._distance - b._distance)
-    } else {
-      withDistance.sort((a: GeoListingRow, b: GeoListingRow) => {
-        const pa = Number(a.price ?? 0)
-        const pb = Number(b.price ?? 0)
-        const ta = new Date(a.created_at ?? 0).getTime()
-        const tb = new Date(b.created_at ?? 0).getTime()
-        if (sort === "price-low") return pa - pb
-        if (sort === "price-high") return pb - pa
-        if (sort === "newest") return tb - ta
-        const priceDiff = pb - pa
-        if (priceDiff !== 0) return priceDiff
-        return tb - ta
+      withDistance.sort((a, b) => {
+        const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
+        if (supDiff !== 0) return supDiff
+        return a._distance - b._distance
       })
+    } else {
+      withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
     }
     totalPages = Math.ceil(withDistance.length / limit)
     boards = withDistance.slice(offset, offset + limit)
   } else {
-    const { data: rawBoards, count } = await listingsChain
+    let { data: rawBoards, count, error } = await listingsChain
+
+    if (error && useSuppressionSort) {
+      console.error("BoardListings browse query (suppression sort):", error.message)
+      listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
+        boardType,
+        condition,
+        query,
+        brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
+        model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+        brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+        brandModelId: brandModelIdForQuery,
+        dimensions: dimensions.trim() || undefined,
+        minPrice,
+        maxPrice,
+        useSuppressionSort: false,
+        geoBbox:
+          filterByRadius && hasLatLng
+            ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
+            : undefined,
+        rangeBeforeKeywordOr:
+          filterByRadius || isNearestSort
+            ? { from: 0, to: geoBrowseMaxRows - 1 }
+            : undefined,
+        prependCreatedAtOrder: filterByRadius || isNearestSort,
+        pagedSort: filterByRadius || isNearestSort ? undefined : sort,
+        pagedRange:
+          filterByRadius || isNearestSort
+            ? undefined
+            : { from: offset, to: offset + limit - 1 },
+        locationTextFilter:
+          location.trim() && !useGeocodedAnchor ? location : undefined,
+      })) as unknown as SurfboardBrowseListingsQuery
+      ;({ data: rawBoards, count, error } = await listingsChain)
+    }
+
+    if (error) {
+      console.error("BoardListings browse query:", error.message)
+    }
 
     boards = rawBoards
 
@@ -496,6 +567,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
           offset,
           limit,
           maxFetch: radiusCapMi >= LOCATION_FALLBACK_WIDE_RADIUS_MI ? 4000 : 2500,
+          useSuppressionSort,
         })
       }
 
@@ -733,6 +805,20 @@ export async function BoardsBrowsePage(props: {
   const browseInitialBrandModelId =
     brandModelIdParam && isUuidString(brandModelIdParam) ? brandModelIdParam : ""
 
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  let isAdmin = false
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle()
+    isAdmin = profile?.is_admin === true
+  }
+
   return (
     <main className="flex-1">
       <BoardsBrowseJsonLd searchParams={searchParams} />
@@ -769,7 +855,10 @@ export async function BoardsBrowsePage(props: {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
+            <BoardsBrowseAdminCurator isAdmin={isAdmin} />
+          </div>
           <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
             {boardsBrowseHeroSubtext(searchParams.type)}
           </p>

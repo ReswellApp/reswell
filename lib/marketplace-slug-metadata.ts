@@ -58,10 +58,10 @@ export function boardsBrowseBoardTypeLabel(type: string | undefined | null): str
 const BOARDS_CONDITION_LABELS = LISTING_CONDITION_LABELS
 
 /**
- * Default surfboards browse sort: highest price first, then newest among equal prices
- * (Query: `sort` omitted or `sort=price-newest`).
+ * Default surfboards browse sort: most recently added first
+ * (Query: `sort` omitted or `sort=newest`).
  */
-export const BOARDS_BROWSE_DEFAULT_SORT = "price-newest" as const
+export const BOARDS_BROWSE_DEFAULT_SORT = "newest" as const
 
 export type BoardsBrowseSearchParams = {
   type?: string

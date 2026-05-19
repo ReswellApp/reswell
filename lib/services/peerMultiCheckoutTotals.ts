@@ -5,6 +5,7 @@ import {
   computePeerCheckoutTotalsUsd,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
+import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
 import { getSellerEarnings } from "@/lib/seller-fees"
 
 export type PeerCheckoutLineComputation = {
@@ -73,6 +74,8 @@ export async function computePeerMultiCheckoutUsd(params: {
       ? await fetchSellerShipFromLabelName(supabase, sellerId)
       : "Seller"
 
+  const feeWaived = await fetchSellerFeeWaived(sellerId)
+
   const lines: PeerCheckoutLineComputation[] = []
   let anyUsedReswellQuote = false
 
@@ -90,7 +93,9 @@ export async function computePeerMultiCheckoutUsd(params: {
     }
     if (totals.usedReswellQuote) anyUsedReswellQuote = true
 
-    const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(totals.itemPrice)
+    const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(totals.itemPrice, {
+      feeWaived,
+    })
 
     lines.push({
       listingId: listing.id,

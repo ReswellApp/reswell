@@ -42,6 +42,27 @@ export async function updateListingHiddenFromHomepage(
   return { ok: true }
 }
 
+export async function updateListingSuppressedOnBoardsBrowse(
+  client: SupabaseClient,
+  listingId: string,
+  suppressed: boolean,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data, error } = await client
+    .from("listings")
+    .update({ suppressed_on_boards_browse: suppressed })
+    .eq("id", listingId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    return { ok: false, message: error.message }
+  }
+  if (!data) {
+    return { ok: false, message: "Listing not found" }
+  }
+  return { ok: true }
+}
+
 export async function updateListingCategoryRow(
   client: SupabaseClient,
   listingId: string,

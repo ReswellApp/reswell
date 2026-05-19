@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { getSellerEarnings, MARKETPLACE_FEE_PERCENT } from "@/lib/seller-fees"
+import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
+import { getSellerEarnings, pendingSaleFeeClause } from "@/lib/seller-fees"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { generatePickupCode } from "@/lib/order-status"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
@@ -74,7 +75,10 @@ export async function POST(request: NextRequest) {
    */
   const itemPriceUsd = resolved.itemPrice
   const shippingUsd = resolved.shipping
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(itemPriceUsd)
+  const feeWaived = await fetchSellerFeeWaived(listing.user_id)
+  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(itemPriceUsd, {
+    feeWaived,
+  })
 
   const { data: buyerWallet } = await supabase
     .from("wallets")
@@ -190,7 +194,7 @@ export async function POST(request: NextRequest) {
     type: "sale",
     amount: sellerEarnings,
     balance_after: prevAvailable.toFixed(2),
-    description: `Pending — Sold "${listing.title}" (${MARKETPLACE_FEE_PERCENT}% fee: $${platformFee.toFixed(2)} — available after delivery)`,
+    description: `Pending — Sold "${listing.title}" (${pendingSaleFeeClause(platformFee)} — available after delivery)`,
     reference_id: purchase.id,
     reference_type: "order_pending_earnings",
   })

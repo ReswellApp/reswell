@@ -44,8 +44,8 @@ export const boardConditions = [
 ]
 
 export const boardSortOptions = [
-  { value: BOARDS_BROWSE_DEFAULT_SORT, label: "All boards" },
-  { value: "newest", label: "Newest" },
+  { value: BOARDS_BROWSE_DEFAULT_SORT, label: "Newest" },
+  { value: "price-newest", label: "Highest price" },
   { value: "price-low", label: "Price: Low → High" },
   { value: "price-high", label: "Price: High → Low" },
 ]

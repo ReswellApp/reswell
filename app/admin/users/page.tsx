@@ -30,6 +30,7 @@ import {
   Shield,
   ShieldOff,
   UserCog,
+  Store,
   CheckCircle2,
   XCircle,
   Mail,
@@ -48,6 +49,7 @@ interface User {
   city: string | null
   is_admin: boolean
   is_employee: boolean
+  is_reswell_seller: boolean
   shop_verified: boolean
   created_at: string
   last_active_at?: string | null
@@ -73,6 +75,17 @@ export default function AdminUsersPage() {
       .select('*')
       .order('created_at', { ascending: false })
 
+    let reswellSellerIds = new Set<string>()
+    try {
+      const res = await fetch('/api/admin/users/reswell-seller')
+      if (res.ok) {
+        const json = (await res.json()) as { data?: { profileIds?: string[] } }
+        reswellSellerIds = new Set(json.data?.profileIds ?? [])
+      }
+    } catch {
+      // Non-fatal: list still loads without Reswell Seller badges
+    }
+
     if (!error && data) {
       // Get listings count for each user
       const usersWithCounts = await Promise.all(
@@ -81,7 +94,11 @@ export default function AdminUsersPage() {
             .from('listings')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id)
-          return { ...user, listings_count: count || 0 }
+          return {
+            ...user,
+            listings_count: count || 0,
+            is_reswell_seller: reswellSellerIds.has(user.id),
+          }
         })
       )
       setUsers(usersWithCounts as User[])
@@ -115,6 +132,32 @@ export default function AdminUsersPage() {
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_employee: !currentStatus, is_admin: currentStatus ? u.is_admin : false } : u))
       toast.success(currentStatus ? 'Employee access removed' : 'Employee access granted')
     } else {
+      toast.error('Failed to update user')
+    }
+  }
+
+  async function toggleReswellSeller(userId: string, currentStatus: boolean) {
+    const nextStatus = !currentStatus
+    try {
+      const res = await fetch('/api/admin/users/reswell-seller', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, grant: nextStatus }),
+      })
+
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(json?.error ?? 'Failed to update user')
+        return
+      }
+
+      setUsers(prev =>
+        prev.map(u => (u.id === userId ? { ...u, is_reswell_seller: nextStatus } : u)),
+      )
+      toast.success(
+        nextStatus ? 'Reswell Seller access granted (0% marketplace fee)' : 'Reswell Seller access removed',
+      )
+    } catch {
       toast.error('Failed to update user')
     }
   }
@@ -375,6 +418,9 @@ export default function AdminUsersPage() {
                         ) : (
                           <Badge variant="outline">User</Badge>
                         )}
+                        {user.is_reswell_seller && (
+                          <Badge variant="secondary">Reswell Seller</Badge>
+                        )}
                         {user.shop_verified && (
                           <Badge variant="outline" className={verifiedSellerBadgeClassName}>
                             <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
@@ -425,6 +471,19 @@ export default function AdminUsersPage() {
                             ) : (
                               <>
                                 <UserCog className="h-4 w-4 mr-2" /> Make Employee
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleReswellSeller(user.id, user.is_reswell_seller)}
+                          >
+                            {user.is_reswell_seller ? (
+                              <>
+                                <Store className="h-4 w-4 mr-2" /> Remove Reswell Seller
+                              </>
+                            ) : (
+                              <>
+                                <Store className="h-4 w-4 mr-2" /> Make Reswell Seller
                               </>
                             )}
                           </DropdownMenuItem>
