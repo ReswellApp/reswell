@@ -39,6 +39,59 @@ export async function insertBoardSavedSearch(
   return { data: data as BoardSavedSearchRow | null, error: null }
 }
 
+export async function countBoardSavedSearchesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ count: number; error: Error | null }> {
+  const { count, error } = await supabase
+    .from("board_saved_searches")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+
+  if (error) {
+    return { count: 0, error: new Error(error.message) }
+  }
+
+  return { count: count ?? 0, error: null }
+}
+
+export async function fetchBoardSavedSearchesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  limit: number,
+): Promise<{ data: BoardSavedSearchRow[]; error: Error | null }> {
+  const { data, error } = await supabase
+    .from("board_saved_searches")
+    .select("id, user_id, label, criteria, email_notifications_enabled, created_at, updated_at")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    return { data: [], error: new Error(error.message) }
+  }
+
+  return { data: (data ?? []) as BoardSavedSearchRow[], error: null }
+}
+
+export async function deleteBoardSavedSearchForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  savedSearchId: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("board_saved_searches")
+    .delete()
+    .eq("id", savedSearchId)
+    .eq("user_id", userId)
+
+  if (error) {
+    return { error: new Error(error.message) }
+  }
+
+  return { error: null }
+}
+
 export async function fetchBoardSavedSearchesWithEmailEnabled(
   service: SupabaseClient,
 ): Promise<{ data: BoardSavedSearchRow[]; error: Error | null }> {

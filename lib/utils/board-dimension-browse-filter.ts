@@ -1,4 +1,5 @@
 import {
+  boardLengthFilterToken,
   formatDecimalDimension,
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
@@ -35,7 +36,7 @@ export function boardDimensionBrowseIlikeTokens(
 ): string[] {
   const tokens: string[] = []
 
-  const len = normalizeBoardLengthInput(fields.boardLength).trim()
+  const len = boardLengthFilterToken(fields.boardLength)
   if (len) tokens.push(len)
 
   const w = normalizeTapeStyleInchesInput(fields.boardWidthInches).trim()
@@ -91,7 +92,7 @@ export function appendBoardDimensionBrowseParams(
   params: URLSearchParams,
   fields: BoardDimensionBrowseFields,
 ): void {
-  const len = normalizeBoardLengthInput(fields.boardLength).trim()
+  const len = boardLengthFilterToken(fields.boardLength)
   const w = normalizeTapeStyleInchesInput(fields.boardWidthInches).trim()
   const t = normalizeTapeStyleInchesInput(fields.boardThicknessInches).trim()
   const v = normalizeVolumeLitersInput(fields.boardVolumeL).trim()

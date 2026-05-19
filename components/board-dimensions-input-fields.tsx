@@ -172,7 +172,7 @@ export function BoardDimensionsInputFields({
               id={`${idPrefix}-length`}
               type="text"
               inputMode="text"
-              placeholder="6'2"
+              placeholder="6'2 or 6 2"
               value={values.boardLength}
               onChange={(e) => onChange({ boardLength: normalizeBoardLengthInput(e.target.value) })}
               onKeyDown={handleEnterKey}

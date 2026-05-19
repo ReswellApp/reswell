@@ -237,6 +237,15 @@ export function parseBoardLengthParts(raw: string): { feetStr: string; inchesStr
     return { feetStr, inchesStr }
   }
 
+  // Feet and inches separated by a dot (e.g. 5.10, 6.2) — not a fractional inch string.
+  const dotParts = normalized.match(/^(\d{1,2})\.(\d{1,2})$/)
+  if (dotParts && !normalized.includes("/")) {
+    const inchesVal = Number.parseInt(dotParts[2], 10)
+    if (Number.isFinite(inchesVal) && inchesVal >= 0 && inchesVal < 12) {
+      return { feetStr: dotParts[1], inchesStr: dotParts[2] }
+    }
+  }
+
   const spaceParts = normalized.split(/\s+/).filter(Boolean)
   if (spaceParts.length >= 2) {
     const feetStr = spaceParts[0].replace(/\D/g, "")
@@ -277,6 +286,31 @@ export function normalizeBoardLengthInput(raw: string): string {
   t = t.replace(/^\s+/, "")
   if (t.length > BOARD_LENGTH_INPUT_MAX) t = t.slice(0, BOARD_LENGTH_INPUT_MAX)
   return t
+}
+
+/**
+ * Canonical `5'10` token when feet and inches parse like listing storage / sell validation.
+ * Returns null for partial entry (feet only) or unparseable input.
+ */
+export function canonicalBoardLengthFilterToken(raw: string): string | null {
+  const t = normalizeBoardLengthInput(raw).trim()
+  if (!t) return null
+  const { feetStr, inchesStr } = parseBoardLengthParts(t)
+  if (!feetStr.trim()) return null
+  const ft = parseLengthFeet(feetStr)
+  if (ft == null || ft < 1 || ft > 15) return null
+  if (inchesStr.trim() === "") return null
+  const inRaw = inchesStr.trim()
+  const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
+  if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return null
+  return `${feetStr}'${inRaw}`
+}
+
+/** Token for `listings.dimensions` ilike — canonical when complete, else normalized raw. */
+export function boardLengthFilterToken(raw: string): string {
+  const normalized = normalizeBoardLengthInput(raw).trim()
+  if (!normalized) return ""
+  return canonicalBoardLengthFilterToken(raw) ?? normalized
 }
 
 /** Hydrate combined length from legacy feet + inches fields or listing row parts. */

@@ -37,6 +37,13 @@ export type CreateBoardSavedSearchActionInput = z.infer<
   typeof createBoardSavedSearchActionSchema
 >
 
+/** Max saved surfboard searches per account (browse revisit + optional email alerts). */
+export const BOARD_SAVED_SEARCHES_MAX = 3
+
+export const deleteBoardSavedSearchActionSchema = z.object({
+  id: z.string().trim().uuid(),
+})
+
 /** True when the saved snapshot narrows beyond “all surfboards”. */
 export function boardSavedCriteriaHasSpecificity(c: BoardSavedSearchCriteria): boolean {
   if (c.q?.trim()) return true

@@ -1,20 +1,31 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { createBoardSavedSearchAction } from "@/lib/actions/boardSavedSearch"
+import {
+  createBoardSavedSearchAction,
+  deleteBoardSavedSearchAction,
+  listBoardSavedSearchesAction,
+  type BoardSavedSearchListItem,
+} from "@/lib/actions/boardSavedSearch"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
-import { boardSavedCriteriaHasSpecificity } from "@/lib/validations/boardSavedSearch"
+import { boardSavedCriteriaHasSpecificity, BOARD_SAVED_SEARCHES_MAX } from "@/lib/validations/boardSavedSearch"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
 import { boardSavedSearchCriteriaFromFilters } from "@/lib/utils/board-saved-search-criteria"
 import type { BoardsBrowseFilterFields } from "@/lib/utils/board-saved-search-criteria"
-import { Loader2, Bookmark } from "lucide-react"
+import {
+  boardSavedSearchCriteriaSummary,
+  boardSavedSearchCriteriaToBrowseHref,
+} from "@/lib/utils/board-saved-search-browse-url"
+import { Bookmark, Loader2, Mail, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+
 function boardsCriteriaFromSearchParams(sp: URLSearchParams): BoardSavedSearchCriteria {
   const fields: BoardsBrowseFilterFields = {
     q: sp.get("q") ?? "",
@@ -35,19 +46,6 @@ function boardsCriteriaFromSearchParams(sp: URLSearchParams): BoardSavedSearchCr
   return boardSavedSearchCriteriaFromFilters(fields)
 }
 
-function criteriaSummary(criteria: BoardSavedSearchCriteria): string {
-  const parts: string[] = []
-  if (criteria.q?.trim()) parts.push(`“${criteria.q.trim()}”`)
-  if (criteria.brand?.trim()) parts.push(criteria.brand.trim())
-  if (criteria.model?.trim()) parts.push(criteria.model.trim())
-  if (criteria.dimensions?.trim()) parts.push(criteria.dimensions.trim())
-  if (criteria.minPrice != null) parts.push(`from $${criteria.minPrice}`)
-  if (criteria.maxPrice != null) parts.push(`up to $${criteria.maxPrice}`)
-  if (criteria.type && criteria.type !== "all") parts.push(criteria.type.replace(/-/g, " "))
-  if (criteria.condition && criteria.condition !== "all") parts.push(criteria.condition.replace(/-/g, " "))
-  return parts.length > 0 ? parts.join(" · ") : "Add filters above to save this search"
-}
-
 export function BoardsSaveSearchPanel({
   className,
   criteria: criteriaProp,
@@ -60,13 +58,46 @@ export function BoardsSaveSearchPanel({
   const { toast } = useToast()
   const [emailOptIn, setEmailOptIn] = useState(false)
   const [pending, setPending] = useState(false)
+  const [savedSearches, setSavedSearches] = useState<BoardSavedSearchListItem[]>([])
+  const [savedLoading, setSavedLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [isSignedIn, setIsSignedIn] = useState(false)
 
   const criteria = useMemo(
     () => criteriaProp ?? boardsCriteriaFromSearchParams(sp),
     [criteriaProp, sp],
   )
   const canSave = boardSavedCriteriaHasSpecificity(criteria)
-  const summary = criteriaSummary(criteria)
+  const summary = boardSavedSearchCriteriaSummary(criteria)
+  const atSavedLimit = savedSearches.length >= BOARD_SAVED_SEARCHES_MAX
+
+  const refreshSavedSearches = useCallback(async () => {
+    setSavedLoading(true)
+    const res = await listBoardSavedSearchesAction()
+    setSavedLoading(false)
+    if ("error" in res) {
+      setSavedSearches([])
+      return
+    }
+    setSavedSearches(res.data)
+  }, [])
+
+  useEffect(() => {
+    const supabase = createClient()
+    void supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsSignedIn(Boolean(user))
+    })
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsSignedIn(Boolean(session?.user))
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    void refreshSavedSearches()
+  }, [refreshSavedSearches])
 
   async function handleSave() {
     setPending(true)
@@ -87,9 +118,26 @@ export function BoardsSaveSearchPanel({
       title: emailOptIn ? "Saved — watch your inbox" : "Search saved",
       description: emailOptIn
         ? "We’ll email you when a matching board is listed anywhere on Reswell."
-        : "Your saved criteria are stored on your account.",
+        : "Tap it below anytime to run this search again.",
     })
     setEmailOptIn(false)
+    await refreshSavedSearches()
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id)
+    const res = await deleteBoardSavedSearchAction({ id })
+    setDeletingId(null)
+    if ("error" in res) {
+      toast({
+        title: "Could not remove",
+        description: res.error,
+        variant: "destructive",
+      })
+      return
+    }
+    toast({ title: "Saved search removed" })
+    await refreshSavedSearches()
   }
 
   return (
@@ -106,8 +154,9 @@ export function BoardsSaveSearchPanel({
             Save this search
           </h3>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Separate from browsing: save criteria to revisit later or get emailed when new boards match.
-            Alerts are nationwide — location filters above only affect results on this page.
+            Save up to {BOARD_SAVED_SEARCHES_MAX} searches to revisit later or get emailed when new
+            boards match. Alerts are nationwide — location filters above only affect results on this
+            page.
           </p>
           <p className="text-xs text-foreground/80 pt-0.5">{summary}</p>
         </div>
@@ -120,27 +169,35 @@ export function BoardsSaveSearchPanel({
             checked={emailOptIn}
             onCheckedChange={(v) => setEmailOptIn(v === true)}
             className="mt-0.5"
-            disabled={!canSave}
+            disabled={!canSave || atSavedLimit}
           />
           <div className="space-y-1">
             <Label
               htmlFor="board-save-email-opt-in"
               className={cn(
                 "text-sm font-medium leading-snug",
-                canSave ? "cursor-pointer" : "cursor-not-allowed text-muted-foreground",
+                canSave && !atSavedLimit
+                  ? "cursor-pointer"
+                  : "cursor-not-allowed text-muted-foreground",
               )}
             >
               Email me when a board matches
             </Label>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Uses your account email.{" "}
-              <Link
-                href="/auth/login?redirect=%2Fboards"
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                Sign in
-              </Link>{" "}
-              to save.
+              {isSignedIn ? (
+                "Uses your account email."
+              ) : (
+                <>
+                  Uses your account email.{" "}
+                  <Link
+                    href="/auth/login?redirect=%2Fboards"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    Sign in
+                  </Link>{" "}
+                  to save.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -148,7 +205,7 @@ export function BoardsSaveSearchPanel({
           type="button"
           variant="outline"
           className="shrink-0 rounded-full"
-          disabled={pending || !canSave}
+          disabled={pending || !canSave || atSavedLimit}
           onClick={() => void handleSave()}
         >
           {pending ? (
@@ -156,10 +213,92 @@ export function BoardsSaveSearchPanel({
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving…
             </>
+          ) : atSavedLimit ? (
+            "3 saved — remove one"
           ) : (
             "Save search"
           )}
         </Button>
+      </div>
+
+      <div className="mt-4 border-t border-border/80 pt-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h4 className="text-xs font-medium text-foreground/90">Your saved searches</h4>
+          {!savedLoading ? (
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+              {savedSearches.length}/{BOARD_SAVED_SEARCHES_MAX}
+            </span>
+          ) : null}
+        </div>
+
+        {savedLoading ? (
+          <p className="text-xs text-muted-foreground">Loading saved searches…</p>
+        ) : savedSearches.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No saved searches yet. Set filters above and tap Save search.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {savedSearches.map((saved) => {
+              const label =
+                saved.label?.trim() || boardSavedSearchCriteriaSummary(saved.criteria)
+              const href = boardSavedSearchCriteriaToBrowseHref(saved.criteria)
+              return (
+                <li key={saved.id}>
+                  <div className="flex items-stretch gap-1 rounded-xl border border-border/80 bg-background/60 pr-1">
+                    <Link
+                      href={href}
+                      className={cn(
+                        "min-w-0 flex-1 rounded-xl px-3 py-2.5 text-left transition-colors",
+                        "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cerulean/20",
+                      )}
+                    >
+                      <span className="flex items-start gap-2">
+                        <Bookmark
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium leading-snug text-foreground">
+                            {label}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                            Tap to run this search
+                            {saved.emailNotificationsEnabled ? (
+                              <>
+                                {" "}
+                                ·{" "}
+                                <span className="inline-flex items-center gap-0.5">
+                                  <Mail className="inline h-3 w-3" aria-hidden />
+                                  email alerts on
+                                </span>
+                              </>
+                            ) : null}
+                          </span>
+                        </span>
+                      </span>
+                    </Link>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="my-1 h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove saved search: ${label}`}
+                      disabled={deletingId === saved.id}
+                      onClick={() => void handleDelete(saved.id)}
+                    >
+                      {deletingId === saved.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                    </Button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </div>
     </section>
   )
