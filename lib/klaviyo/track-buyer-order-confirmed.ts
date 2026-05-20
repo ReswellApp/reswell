@@ -2,6 +2,7 @@
  * Server-only: Klaviyo Events API — fires when a buyer’s purchase succeeds (payment captured).
  *
  * **Metric name in Klaviyo:** `Purchase Successful` — use as the flow trigger (Flows → Metric).
+ * Also emits **Placed Order** (standard commerce metric; same payload).
  *
  * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Purchase Successful** →
  * add email; in the template use event variables, e.g. `{{ event.order_num }}`, `{{ event.Title }}`,
@@ -11,9 +12,24 @@
  */
 
 import { listingDetailHref } from "@/lib/listing-href"
+import {
+  klaviyoCommerceEventProperties,
+  listingToKlaviyoEventCommerceItem,
+} from "@/lib/klaviyo/catalog-product"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { trackKlaviyoPlacedOrder } from "@/lib/klaviyo/track-placed-order"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+
+export type KlaviyoBuyerOrderLineItem = {
+  listingId: string
+  listingTitle: string
+  listingSection: string
+  listingSlug?: string | null
+  listingImageUrl?: string | null
+  price: number
+  quantity?: number
+}
 
 export type KlaviyoBuyerOrderConfirmedPayload = {
   /** Omitted for sessionless guest checkout (email-only Klaviyo profile). */
@@ -26,6 +42,9 @@ export type KlaviyoBuyerOrderConfirmedPayload = {
   listingTitle: string
   listingSection: string
   listingSlug?: string | null
+  listingImageUrl?: string | null
+  /** Optional multi-item checkout lines (defaults to primary listing). */
+  lineItems?: KlaviyoBuyerOrderLineItem[]
   amount: number
   fulfillmentMethod: "shipping" | "pickup"
   paymentMethod: "stripe" | "reswell_bucks"
@@ -53,6 +72,34 @@ export async function trackKlaviyoBuyerOrderConfirmed(
           anonymous_id: `guest-order-${payload.orderId}`,
         }
 
+  const commerceItem = listingToKlaviyoEventCommerceItem({
+    id: payload.listingId,
+    slug: payload.listingSlug,
+    title: payload.listingTitle,
+    price: payload.amount,
+    section: payload.listingSection,
+    listing_images: payload.listingImageUrl
+      ? [{ url: payload.listingImageUrl, is_primary: true }]
+      : null,
+  })
+  const commerceItems = payload.lineItems?.length
+    ? payload.lineItems.map((line) =>
+        listingToKlaviyoEventCommerceItem(
+          {
+            id: line.listingId,
+            slug: line.listingSlug,
+            title: line.listingTitle,
+            price: line.price,
+            section: line.listingSection,
+            listing_images: line.listingImageUrl
+              ? [{ url: line.listingImageUrl, is_primary: true }]
+              : null,
+          },
+          line.quantity ?? 1,
+        ),
+      )
+    : [commerceItem]
+
   await sendKlaviyoServerEvent({
     metricName: "Purchase Successful",
     profile,
@@ -60,6 +107,10 @@ export async function trackKlaviyoBuyerOrderConfirmed(
     value: Number.isFinite(amountNum) ? amountNum : undefined,
     valueCurrency: "USD",
     properties: {
+      ...klaviyoCommerceEventProperties({
+        primaryProductId: payload.listingId,
+        items: commerceItems,
+      }),
       order_id: payload.orderId,
       order_num: formatOrderNumForCustomer(payload.orderNum, payload.orderId),
       listing_id: payload.listingId,
@@ -70,4 +121,6 @@ export async function trackKlaviyoBuyerOrderConfirmed(
       order_url: orderUrl,
     },
   })
+
+  await trackKlaviyoPlacedOrder(payload)
 }

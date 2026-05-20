@@ -1,10 +1,16 @@
 /**
  * Server-only: Klaviyo Events API — fires when a buyer lands on checkout with items ready to purchase.
  * Metric name in Klaviyo: **"Checkout Started"** (use as the flow trigger for abandoned checkout).
+ * Includes **ProductID**, **Items**, and **checkout_items** for product / dynamic blocks.
+ * Suppress with filter: has not done **Placed Order** since starting this flow.
  */
 
 import { listingDetailHref } from "@/lib/listing-href"
-import { primaryListingImageUrl } from "@/lib/listing-metadata"
+import {
+  klaviyoCommerceEventProperties,
+  listingToKlaviyoCheckoutEventItem,
+  listingToKlaviyoEventCommerceItem,
+} from "@/lib/klaviyo/catalog-product"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
@@ -35,19 +41,8 @@ export type KlaviyoCheckoutStartedPayload = {
   sellerId?: string | null
 }
 
-function primaryPhotoUrl(listing: KlaviyoCheckoutStartedListing): string | null {
-  const images = listing.listing_images ?? null
-  const normalized = images?.map((image) => ({
-    url: image.url,
-    is_primary: image.is_primary ?? undefined,
-  }))
-  const primary = primaryListingImageUrl(normalized)
-  if (primary?.trim()) return primary.trim()
-  const first = images?.[0]
-  const thumb = first?.thumbnail_url?.trim()
-  if (thumb) return thumb
-  const url = first?.url?.trim()
-  return url || null
+function primaryPhotoUrl(listing: KlaviyoCheckoutStartedListing): string {
+  return listingToKlaviyoCheckoutEventItem(listing).image_url
 }
 
 function estimateCheckoutTotal(listings: KlaviyoCheckoutStartedListing[]): number {
@@ -96,19 +91,31 @@ export async function trackKlaviyoCheckoutStarted(
 
   const itemCount = payload.listings.length
   const total = estimateCheckoutTotal(payload.listings)
+  const checkoutItems = payload.listings.map((listing) =>
+    listingToKlaviyoCheckoutEventItem(listing),
+  )
+  const commerceItems = payload.listings.map((listing) =>
+    listingToKlaviyoEventCommerceItem(listing),
+  )
 
   await sendKlaviyoServerEvent({
     metricName: "Checkout Started",
     properties: {
+      ...klaviyoCommerceEventProperties({
+        primaryProductId: primary.id,
+        items: commerceItems,
+      }),
       listing_id: primary.id,
       Title: itemCount > 1 ? `${itemCount} boards` : String(primary.title ?? ""),
       item_count: itemCount,
       from_cart: payload.fromCart,
       seller_id: payload.sellerId ?? primary.user_id,
-      photo_url: primaryPhotoUrl(primary) ?? "",
+      photo_url: primaryPhotoUrl(primary),
       listing_url: listingUrl,
       checkout_url: checkoutUrl,
       listing_ids: payload.listings.map((listing) => listing.id).join(","),
+      checkout_items: checkoutItems,
+      checkout_items_count: checkoutItems.length,
     },
     profile: {
       external_id: payload.buyerUserId,

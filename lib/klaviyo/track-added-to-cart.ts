@@ -1,9 +1,14 @@
 /**
  * Server-only: Klaviyo Events API — fires when a buyer saves a listing to their cart.
  * Metric name in Klaviyo: **"Added to Cart"** (use as the flow trigger).
+ * Includes **ProductID** + **Items** for Klaviyo product blocks (catalog $id must match listing UUID).
  */
 
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
+import {
+  klaviyoCommerceEventProperties,
+  listingToKlaviyoEventCommerceItem,
+} from "@/lib/klaviyo/catalog-product"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
@@ -37,9 +42,24 @@ export async function trackKlaviyoAddedToCart(
   )
   const checkoutUrl = `${origin}${checkoutPath}`
 
+  const commerceItem = listingToKlaviyoEventCommerceItem({
+    id: payload.listingId,
+    slug: payload.slug,
+    title: payload.title,
+    price: payload.price,
+    section: payload.section,
+    listing_images: payload.photoUrl
+      ? [{ url: payload.photoUrl, is_primary: true }]
+      : null,
+  })
+
   await sendKlaviyoServerEvent({
     metricName: "Added to Cart",
     properties: {
+      ...klaviyoCommerceEventProperties({
+        primaryProductId: payload.listingId,
+        items: [commerceItem],
+      }),
       listing_id: payload.listingId,
       Title: payload.title,
       Price: Number.isFinite(priceNum) ? priceNum : payload.price,

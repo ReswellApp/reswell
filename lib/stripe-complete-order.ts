@@ -18,6 +18,7 @@ import {
 import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
@@ -639,6 +640,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       ? String(listingsOrdered[0]!.title ?? "")
       : `${listingsOrdered.length} boards (${listingTitles.slice(0, 3).join(" · ")}${listingTitles.length > 3 ? "…" : ""})`
 
+  const klaviyoLineItems: KlaviyoBuyerOrderLineItem[] = listingsForTotals.map((listing, idx) => ({
+    listingId: listing.id,
+    listingTitle: String(listing.title ?? ""),
+    listingSection: String(listing.section ?? "surfboards"),
+    price: bundle.lines[idx]?.itemPrice ?? parseFloat(String(listing.price)),
+    quantity: 1,
+  }))
+
   await trackKlaviyoBuyerOrderConfirmed({
     buyerUserId: buyerId ?? undefined,
     buyerEmail,
@@ -648,6 +657,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     listingTitle: klListingTitle.slice(0, 500),
     listingSection: String(listingsOrdered[0]!.section ?? ""),
     listingSlug: null,
+    lineItems: klaviyoLineItems,
     amount: chargedUsd,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     paymentMethod: "stripe",
