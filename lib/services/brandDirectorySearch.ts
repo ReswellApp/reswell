@@ -3,6 +3,10 @@ import { pickCatalogBrandForNavPick } from "@/lib/brands/pick-catalog-brand-for-
 import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-index"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { slugify } from "@/lib/slugify"
+import {
+  marketplaceBrandQueryCandidates,
+  pickClosestBrandNameMatch,
+} from "@/lib/utils/marketplace-brand-query"
 
 /** `public.brands` row shape for the `/sell` brand typeahead (nav-style dropdown). */
 export type BrandCatalogSuggestRow = {
@@ -91,9 +95,80 @@ export async function searchBrandsCatalogSuggestWithClient(
   return { rows: data as BrandCatalogSuggestRow[], meta: { backend: "supabase" } }
 }
 
+function directoryBrandMiniFromRow(row: {
+  id: string
+  name: string
+  slug: string
+  logo_url?: string | null
+}): DirectoryBrandMini {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    logo_url: row.logo_url ?? null,
+  }
+}
+
+async function resolveDirectoryBrandBySlugHint(
+  supabase: SupabaseClient,
+  label: string,
+): Promise<DirectoryBrandMini | null> {
+  const hint = slugify(label).toLowerCase()
+  if (hint.length === 0) return null
+
+  const { data: exactRow } = await supabase
+    .from("brands")
+    .select("id,name,slug,logo_url")
+    .eq("slug", hint)
+    .maybeSingle()
+  if (exactRow?.id && exactRow.slug) {
+    return directoryBrandMiniFromRow(exactRow)
+  }
+
+  const { data: prefixRows, error: prefixErr } = await supabase
+    .from("brands")
+    .select("id,name,slug,logo_url")
+    .like("slug", `${hint}-%`)
+    .order("slug", { ascending: true })
+    .limit(1)
+  if (!prefixErr && prefixRows?.[0]?.id && prefixRows[0].slug) {
+    return directoryBrandMiniFromRow(prefixRows[0])
+  }
+
+  return null
+}
+
+async function resolveDirectoryBrandFromNameIlike(
+  supabase: SupabaseClient,
+  label: string,
+  originalLabel: string,
+): Promise<DirectoryBrandMini | null> {
+  const safe = escapeIlikeToken(label)
+  const pattern = `"%${safe}%"`
+  const { data: nameRows, error: nameErr } = await supabase
+    .from("brands")
+    .select("id,name,slug,logo_url")
+    .ilike("name", pattern)
+    .order("name", { ascending: true })
+    .limit(40)
+
+  if (nameErr || !nameRows?.length) return null
+
+  const picked =
+    pickCatalogBrandForNavPick(nameRows, originalLabel) ??
+    pickCatalogBrandForNavPick(nameRows, label) ??
+    pickClosestBrandNameMatch(nameRows, label)
+
+  if (!picked?.slug) return null
+  const full = nameRows.find((r) => r.slug === picked.slug)
+  if (!full?.id || !full.slug) return null
+  return directoryBrandMiniFromRow(full)
+}
+
 /**
  * Map a free-text label (e.g. header nav chip or `/search?q=`) to a directory brand row.
  * Same resolution rules as the brand profile path helper: suggest pipeline + slug/name fallbacks.
+ * Strips generic words ("surfboards") and tolerates typos via closest name match.
  */
 export async function resolveDirectoryBrandRowFromLabel(
   supabase: SupabaseClient,
@@ -102,70 +177,26 @@ export async function resolveDirectoryBrandRowFromLabel(
   const name = (rawLabel || "").trim()
   if (!name) return null
 
-  const { rows } = await searchBrandsCatalogSuggestWithClient(supabase, name)
-  const fromSuggest = pickCatalogBrandForNavPick(
-    rows.map((r) => ({ name: r.name, slug: r.slug })),
-    name,
-  )
-  if (fromSuggest) {
-    const full = rows.find((r) => r.slug === fromSuggest.slug)
-    if (full) {
-      return {
-        id: full.id,
-        name: full.name,
-        slug: full.slug,
-        logo_url: full.logo_url ?? null,
-      }
-    }
-  }
+  const candidates = marketplaceBrandQueryCandidates(name)
 
-  const hint = slugify(name).toLowerCase()
-  if (hint.length > 0) {
-    const { data: exactRow } = await supabase
-      .from("brands")
-      .select("id,name,slug,logo_url")
-      .eq("slug", hint)
-      .maybeSingle()
-    if (exactRow?.id && exactRow.slug) {
-      return {
-        id: exactRow.id,
-        name: exactRow.name,
-        slug: exactRow.slug,
-        logo_url: (exactRow as { logo_url?: string | null }).logo_url ?? null,
+  for (const candidate of candidates) {
+    const { rows } = await searchBrandsCatalogSuggestWithClient(supabase, candidate)
+    const fromSuggest = pickCatalogBrandForNavPick(
+      rows.map((r) => ({ name: r.name, slug: r.slug })),
+      name,
+    )
+    if (fromSuggest) {
+      const full = rows.find((r) => r.slug === fromSuggest.slug)
+      if (full) {
+        return directoryBrandMiniFromRow(full)
       }
     }
 
-    const { data: prefixRows, error: prefixErr } = await supabase
-      .from("brands")
-      .select("id,name,slug,logo_url")
-      .like("slug", `${hint}-%`)
-      .order("slug", { ascending: true })
-      .limit(1)
-    if (!prefixErr && prefixRows?.[0]?.id && prefixRows[0].slug) {
-      const r = prefixRows[0] as { id: string; name: string; slug: string; logo_url?: string | null }
-      return { id: r.id, name: r.name, slug: r.slug, logo_url: r.logo_url ?? null }
-    }
-  }
+    const bySlug = await resolveDirectoryBrandBySlugHint(supabase, candidate)
+    if (bySlug) return bySlug
 
-  const safe = escapeIlikeToken(name)
-  const pattern = `"%${safe}%"`
-  const { data: nameRows, error: nameErr } = await supabase
-    .from("brands")
-    .select("id,name,slug,logo_url")
-    .ilike("name", pattern)
-    .order("name", { ascending: true })
-    .limit(24)
-
-  if (!nameErr && nameRows?.length) {
-    const picked = pickCatalogBrandForNavPick(nameRows, name)
-    if (picked) {
-      const full = nameRows.find((r) => r.slug === picked.slug) as
-        | { id: string; name: string; slug: string; logo_url?: string | null }
-        | undefined
-      if (full?.id && full.slug) {
-        return { id: full.id, name: full.name, slug: full.slug, logo_url: full.logo_url ?? null }
-      }
-    }
+    const byName = await resolveDirectoryBrandFromNameIlike(supabase, candidate, name)
+    if (byName) return byName
   }
 
   return null

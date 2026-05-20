@@ -1,6 +1,17 @@
 import { slugify } from "@/lib/slugify"
+import {
+  isMarketplaceSearchNoiseToken,
+  pickClosestBrandNameMatch,
+} from "@/lib/utils/marketplace-brand-query"
 
 export type BrandNavPickRow = { name: string; slug: string }
+
+function queryBrandTokens(lowerQuery: string): string[] {
+  const tokens = lowerQuery.match(/[\w']+/g) ?? []
+  return tokens
+    .map((t) => t.replace(/^['']+|['']+$/g, ""))
+    .filter((t) => t.length >= 3 && !isMarketplaceSearchNoiseToken(t))
+}
 
 /**
  * Map a user-picked label (often listing `brand` text like "Channel Islands") to a
@@ -16,6 +27,7 @@ export function pickCatalogBrandForNavPick(
   if (!q || rows.length === 0) return null
   const lower = q.toLowerCase()
   const slugHint = slugify(q).toLowerCase()
+  const queryTokens = queryBrandTokens(lower)
 
   const exact = rows.find((r) => r.name.toLowerCase() === lower)
   if (exact) return exact
@@ -29,13 +41,47 @@ export function pickCatalogBrandForNavPick(
   const nameContains = rows.find((r) => r.name.toLowerCase().includes(lower))
   if (nameContains) return nameContains
 
+  const queryContainsBrand = rows.find((r) => {
+    const brandLower = r.name.toLowerCase()
+    if (brandLower.length < 3) return false
+    return lower.includes(brandLower)
+  })
+  if (queryContainsBrand) return queryContainsBrand
+
+  const tokenOverlap = rows.find((r) => {
+    const brandLower = r.name.toLowerCase()
+    const brandTokens = brandLower.match(/[\w']+/g) ?? [brandLower]
+    return queryTokens.some((qt) => {
+      if (brandLower === qt || brandLower.startsWith(qt) || qt.startsWith(brandLower)) {
+        return true
+      }
+      return brandTokens.some(
+        (bt) => bt.length >= 3 && (bt === qt || bt.startsWith(qt) || qt.startsWith(bt)),
+      )
+    })
+  })
+  if (tokenOverlap) return tokenOverlap
+
   if (slugHint) {
     const bySlug = rows.find((r) => {
       const s = r.slug.toLowerCase()
       return s === slugHint || s.startsWith(`${slugHint}-`)
     })
     if (bySlug) return bySlug
+
+    for (const token of queryTokens) {
+      const tokenSlug = slugify(token).toLowerCase()
+      if (!tokenSlug) continue
+      const byTokenSlug = rows.find((r) => {
+        const s = r.slug.toLowerCase()
+        return s === tokenSlug || s.startsWith(`${tokenSlug}-`)
+      })
+      if (byTokenSlug) return byTokenSlug
+    }
   }
+
+  const fuzzy = pickClosestBrandNameMatch(rows, q)
+  if (fuzzy) return fuzzy
 
   return null
 }

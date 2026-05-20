@@ -1,0 +1,149 @@
+/**
+ * Normalize free-text marketplace search (e.g. `/search?q=`) for directory brand resolution.
+ * Strips generic listing words so "andreini surfboards" resolves to brand "Andreini".
+ */
+
+const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
+  "surfboard",
+  "surfboards",
+  "board",
+  "boards",
+  "surf",
+  "used",
+  "new",
+  "for",
+  "sale",
+  "listing",
+  "listings",
+  "shop",
+  "buy",
+  "sell",
+  "gear",
+])
+
+function tokenizeQuery(raw: string): string[] {
+  const s = raw.trim().toLowerCase()
+  if (!s) return []
+  const tokens = s.match(/[\w']+/g) ?? []
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const t of tokens) {
+    const core = t.replace(/^['']+|['']+$/g, "")
+    if (core.length < 2) continue
+    if (seen.has(core)) continue
+    seen.add(core)
+    out.push(core)
+  }
+  return out
+}
+
+/** Remove generic marketplace words from a search phrase. */
+export function stripMarketplaceSearchNoiseWords(raw: string): string {
+  const tokens = tokenizeQuery(raw)
+  const kept = tokens.filter((t) => !MARKETPLACE_SEARCH_NOISE_WORDS.has(t))
+  return kept.join(" ").trim()
+}
+
+/**
+ * Ordered labels to try when mapping user text → `public.brands` (longest / most specific first).
+ */
+export function marketplaceBrandQueryCandidates(raw: string): string[] {
+  const trimmed = (raw || "").trim()
+  if (!trimmed) return []
+
+  const seen = new Set<string>()
+  const out: string[] = []
+  const add = (s: string) => {
+    const t = s.trim()
+    if (t.length < 2) return
+    const key = t.toLowerCase()
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push(t)
+  }
+
+  add(trimmed)
+  const stripped = stripMarketplaceSearchNoiseWords(trimmed)
+  add(stripped)
+
+  const tokens = tokenizeQuery(stripped.length > 0 ? stripped : trimmed)
+  const byLength = [...tokens].sort((a, b) => b.length - a.length)
+  for (const token of byLength) {
+    add(token)
+  }
+
+  return out
+}
+
+/** True when a token is only generic marketplace vocabulary (not a brand hint). */
+export function isMarketplaceSearchNoiseToken(token: string): boolean {
+  const core = token.trim().toLowerCase().replace(/^['']+|['']+$/g, "")
+  return core.length > 0 && MARKETPLACE_SEARCH_NOISE_WORDS.has(core)
+}
+
+export function levenshteinDistance(a: string, b: string): number {
+  const left = a.toLowerCase()
+  const right = b.toLowerCase()
+  if (left === right) return 0
+  if (left.length === 0) return right.length
+  if (right.length === 0) return left.length
+
+  const rows = left.length + 1
+  const cols = right.length + 1
+  const matrix: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0) as number[])
+
+  for (let i = 0; i < rows; i++) matrix[i][0] = i
+  for (let j = 0; j < cols; j++) matrix[0][j] = j
+
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const cost = left[i - 1] === right[j - 1] ? 0 : 1
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      )
+    }
+  }
+
+  return matrix[left.length][right.length]
+}
+
+/** Max edit distance allowed for a typo-tolerant brand name match. */
+export function maxBrandTypoDistance(queryLen: number, brandLen: number): number {
+  const n = Math.min(queryLen, brandLen)
+  if (n <= 3) return 0
+  if (n <= 6) return 1
+  if (n <= 10) return 2
+  return 3
+}
+
+export type BrandNameRow = { name: string }
+
+/**
+ * Pick the catalog brand whose name is closest to the user label (typos), or null if none are close enough.
+ */
+export function pickClosestBrandNameMatch<T extends BrandNameRow>(
+  rows: T[],
+  label: string,
+): T | null {
+  const q = label.trim().toLowerCase()
+  if (!q || rows.length === 0) return null
+
+  let best: T | null = null
+  let bestDistance = Number.POSITIVE_INFINITY
+
+  for (const row of rows) {
+    const name = row.name.trim().toLowerCase()
+    if (!name) continue
+    const distance = levenshteinDistance(q, name)
+    const allowed = maxBrandTypoDistance(q.length, name.length)
+    if (distance > allowed) continue
+    if (distance < bestDistance) {
+      bestDistance = distance
+      best = row
+    }
+  }
+
+  return best
+}

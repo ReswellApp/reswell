@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 
@@ -129,6 +130,7 @@ export function meaningfulSearchTerms(raw: string): string[] {
     const core = t.replace(/^['']+|['']+$/g, "")
     if (core.length < 2) continue
     if (/^\d+$/.test(core)) continue
+    if (isMarketplaceSearchNoiseToken(core)) continue
     if (seen.has(core)) continue
     seen.add(core)
     out.push(core)

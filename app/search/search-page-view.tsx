@@ -8,6 +8,7 @@ import {
   meaningfulSearchTerms,
   searchListingIdsFromElasticsearch,
 } from "@/lib/elasticsearch/listings-index"
+import { stripMarketplaceSearchNoiseWords } from "@/lib/utils/marketplace-brand-query"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
@@ -127,7 +128,11 @@ export async function SearchPageView({
               <>Brand not found</>
             ) : brandRow ? (
               <>
-                Listings — {brandRow.name}
+                {rawQuery.trim() ? (
+                  <>Results for &ldquo;{rawQuery}&rdquo; — {brandRow.name}</>
+                ) : (
+                  <>Listings — {brandRow.name}</>
+                )}
               </>
             ) : rawQuery ? (
               <>Results for &ldquo;{rawQuery}&rdquo;</>
@@ -139,7 +144,11 @@ export async function SearchPageView({
             {brandUnknown ? (
               <>Check the spelling or search from the header — that slug is not in our brand directory.</>
             ) : brandRow ? (
-              <>Active marketplace listings linked to this brand (including legacy title-only matches).</>
+              <>
+                Active marketplace listings for this brand
+                {rawQuery.trim() ? " (matched from your search)" : ""} — including listings linked by
+                brand directory and legacy title text.
+              </>
             ) : rawQuery ? (
               <>
                 Use the search bar in the header to refine results.
@@ -393,7 +402,7 @@ async function buildSearchQuery(
         )
       }
     } else {
-      const terms = rawQuery
+      const terms = (stripMarketplaceSearchNoiseWords(rawQuery) || rawQuery)
         .split(/\s+/)
         .map((t) => t.trim())
         .filter(Boolean)
