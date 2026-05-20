@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
+import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { CheckoutAccountRequired } from "@/components/checkout-account-required"
 import { CheckoutClient } from "@/components/checkout-client"
@@ -25,6 +26,7 @@ import {
   inferPeerCartSellerIdFromBuyerCart,
 } from "@/lib/db/checkout-cart-bundle"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
+import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 
 export const dynamic = "force-dynamic"
 
@@ -136,6 +138,9 @@ export default async function CheckoutPage(props: {
 
     return (
       <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+        <Suspense fallback={null}>
+          <KlaviyoCheckoutStartedTracker />
+        </Suspense>
         <div className="container mx-auto max-w-2xl lg:max-w-6xl">
           <h1 className="sr-only">Checkout</h1>
           <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
@@ -336,6 +341,9 @@ export default async function CheckoutPage(props: {
 
   return (
     <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+      <Suspense fallback={null}>
+        <KlaviyoCheckoutStartedTracker />
+      </Suspense>
       <div className="container mx-auto max-w-2xl lg:max-w-6xl">
         <h1 className="sr-only">Checkout</h1>
         <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
