@@ -58,8 +58,15 @@ export async function searchBrandsCatalogSuggestWithClient(
 
   if (isElasticsearchConfigured()) {
     try {
-      const ids = await searchBrandIdsFromElasticsearch(q, MAX_BRAND_CATALOG_SUGGEST)
-      if (ids.length > 0) {
+      const candidateQueries = [
+        q,
+        ...marketplaceBrandQueryCandidates(q).filter(
+          (c) => c.toLowerCase() !== q.toLowerCase(),
+        ),
+      ]
+      for (const candidate of candidateQueries) {
+        const ids = await searchBrandIdsFromElasticsearch(candidate, MAX_BRAND_CATALOG_SUGGEST)
+        if (ids.length === 0) continue
         const { data, error } = await supabase.from("brands").select(BRAND_CATALOG_SELECT).in("id", ids)
 
         if (!error && data?.length) {
@@ -94,7 +101,26 @@ export async function searchBrandsCatalogSuggestWithClient(
     return { rows: [], meta: { backend: "supabase" } }
   }
 
-  return { rows: data as BrandCatalogSuggestRow[], meta: { backend: "supabase" } }
+  let rows = data as BrandCatalogSuggestRow[]
+  if (rows.length === 0) {
+    for (const candidate of marketplaceBrandQueryCandidates(q)) {
+      if (candidate.toLowerCase() === q.toLowerCase()) continue
+      const safeCandidate = escapeIlikeToken(candidate)
+      const candidatePattern = `"%${safeCandidate}%"`
+      const { data: retryData } = await supabase
+        .from("brands")
+        .select(BRAND_CATALOG_SELECT)
+        .or(`name.ilike.${candidatePattern},slug.ilike.${candidatePattern}`)
+        .order("name", { ascending: true })
+        .limit(MAX_BRAND_CATALOG_SUGGEST)
+      if (retryData?.length) {
+        rows = retryData as BrandCatalogSuggestRow[]
+        break
+      }
+    }
+  }
+
+  return { rows, meta: { backend: "supabase" } }
 }
 
 function directoryBrandMiniFromRow(row: {
@@ -245,6 +271,28 @@ export async function resolveDirectoryBrandRowFromLabel(
   }
 
   return resolveDirectoryBrandByFuzzyCatalogMatch(supabase, name)
+}
+
+/**
+ * Infer the directory brand a user is typing toward (nav/search suggest).
+ * Uses catalog suggest rows first, then full label resolution.
+ */
+export async function resolveInferredBrandForMarketplaceSuggest(
+  supabase: SupabaseClient,
+  q: string,
+  catalogRows: BrandCatalogSuggestRow[],
+): Promise<DirectoryBrandMini | null> {
+  const picked = pickCatalogBrandForNavPick(
+    catalogRows.map((r) => ({ name: r.name, slug: r.slug })),
+    q,
+  )
+  if (picked) {
+    const full = catalogRows.find((r) => r.slug === picked.slug)
+    if (full?.id && full.slug) {
+      return directoryBrandMiniFromRow(full)
+    }
+  }
+  return resolveDirectoryBrandRowFromLabel(supabase, q)
 }
 
 /** Map listing-derived brands to directory slug + logo for marketplace search strips (max ~16 rows). */

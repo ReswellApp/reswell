@@ -62,6 +62,18 @@ export function pickCatalogBrandForNavPick(
   })
   if (tokenOverlap) return tokenOverlap
 
+  /** Mid-typing fragments: "channel is" → "is" prefixes "islands" in Channel Islands. */
+  const shortFragments = (lower.match(/[\w']+/g) ?? [])
+    .map((t) => t.replace(/^['']+|['']+$/g, ""))
+    .filter((t) => t.length === 2 && !isMarketplaceSearchNoiseToken(t))
+  const fragmentPrefix = rows.find((r) => {
+    const brandTokens = r.name.toLowerCase().match(/[\w']+/g) ?? []
+    return shortFragments.some((frag) =>
+      brandTokens.some((bt) => bt.length >= 3 && bt.startsWith(frag)),
+    )
+  })
+  if (fragmentPrefix) return fragmentPrefix
+
   if (slugHint) {
     const bySlug = rows.find((r) => {
       const s = r.slug.toLowerCase()

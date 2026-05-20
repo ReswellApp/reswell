@@ -117,6 +117,46 @@ const SEARCH_FIELDS = [
 ] as const
 
 /**
+ * English function words excluded from Elasticsearch `minimum_should_match` logic.
+ * Without this, a partial brand like "channel is" (typing "Channel Islands") requires
+ * a separate match on "is", which filters out almost all Channel Islands listings.
+ */
+const ELASTICSEARCH_SEARCH_STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "been",
+  "being",
+  "but",
+  "by",
+  "for",
+  "from",
+  "in",
+  "is",
+  "it",
+  "its",
+  "of",
+  "on",
+  "or",
+  "so",
+  "that",
+  "the",
+  "this",
+  "to",
+  "was",
+  "were",
+  "with",
+])
+
+function isElasticsearchSearchStopWord(token: string): boolean {
+  return ELASTICSEARCH_SEARCH_STOP_WORDS.has(token.trim().toLowerCase())
+}
+
+/**
  * Tokens that carry real search intent. Pure digits (e.g. from "6/4/3" thickness) are
  * excluded so a single "6" cannot match unrelated listings like "Monsta 6".
  */
@@ -131,6 +171,7 @@ export function meaningfulSearchTerms(raw: string): string[] {
     if (core.length < 2) continue
     if (/^\d+$/.test(core)) continue
     if (isMarketplaceSearchNoiseToken(core)) continue
+    if (isElasticsearchSearchStopWord(core)) continue
     if (seen.has(core)) continue
     seen.add(core)
     out.push(core)

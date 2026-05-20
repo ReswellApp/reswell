@@ -77,9 +77,9 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
 export async function listActiveListingsForBrand(
   supabase: SupabaseClient,
   brand: { id: string; name: string },
-  options: { limit: number; categoryId?: string | null },
+  options: { limit: number; categoryId?: string | null; sections?: string[] },
 ): Promise<RecentListing[]> {
-  const { limit, categoryId = null } = options
+  const { limit, categoryId = null, sections } = options
   const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
 
   let q = supabase
@@ -90,6 +90,8 @@ export async function listActiveListingsForBrand(
 
   if (categoryId) {
     q = q.eq("category_id", categoryId)
+  } else if (sections?.length) {
+    q = q.in("section", sections)
   } else {
     /** Peer boards (`surfboards`) and shop inventory (`new`) both carry `brand_id` / `brand`. */
     q = q.in("section", ["surfboards", "new"])

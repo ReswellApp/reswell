@@ -7,9 +7,12 @@ import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { listBrands } from "@/lib/brands/server"
+import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
+import type { RecentListing } from "@/components/recent-feed-client"
 import {
   hydrateListingBrandLabelsForMarketplaceSuggest,
   resolveDirectoryBrandRowFromLabel,
+  resolveInferredBrandForMarketplaceSuggest,
   searchBrandsCatalogSuggestWithClient,
   type BrandCatalogSuggestResponse,
   type BrandCatalogSuggestRow,
@@ -220,6 +223,51 @@ function rowToSuggestListing(row: Record<string, unknown>): SuggestListing {
   }
 }
 
+function recentListingToSuggestListing(row: RecentListing): SuggestListing {
+  const imgs = row.listing_images ?? []
+  const primary = imgs.find((i) => i.is_primary) || imgs[0]
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    price: row.price,
+    section: row.section,
+    imageUrl: primary?.url ?? null,
+    brand: null,
+    city: row.city ?? null,
+    state: row.state ?? null,
+    condition: row.condition ?? null,
+  }
+}
+
+function catalogRowsToSuggestBrandChips(
+  rows: BrandCatalogSuggestRow[],
+  pickedSlug: string | null,
+  max: number,
+): SearchSuggestBrandChip[] {
+  const ordered =
+    pickedSlug && rows.some((r) => r.slug === pickedSlug)
+      ? [
+          rows.find((r) => r.slug === pickedSlug)!,
+          ...rows.filter((r) => r.slug !== pickedSlug),
+        ]
+      : rows
+  const seen = new Set<string>()
+  const chips: SearchSuggestBrandChip[] = []
+  for (const row of ordered) {
+    const key = row.slug.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    chips.push({
+      listingLabel: row.name,
+      slug: row.slug,
+      logo_url: row.logo_url ?? null,
+    })
+    if (chips.length >= max) break
+  }
+  return chips
+}
+
 export async function searchSuggest(qRaw: string, section: string): Promise<SearchSuggestResult> {
   const q = (qRaw || "").trim().replace(/%/g, "")
   if (!q || q.length < 2) {
@@ -236,6 +284,17 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
   const sections = section === "new" ? ["new"] : ["surfboards"]
+
+  const catalogBrands = await searchBrandsCatalogSuggestWithClient(supabase, q)
+  const inferredBrand = await resolveInferredBrandForMarketplaceSuggest(
+    supabase,
+    q,
+    catalogBrands.rows,
+  )
+  const pickedCatalogSlug =
+    inferredBrand?.slug ??
+    catalogBrands.rows.find((r) => r.name.toLowerCase().includes(q.toLowerCase()))?.slug ??
+    null
 
   const textOr = `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern}`
 
@@ -338,6 +397,17 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
     }
   }
 
+  if (inferredBrand) {
+    const brandListings = await listActiveListingsForBrand(supabase, inferredBrand, {
+      limit: MAX_LISTINGS,
+      sections,
+    })
+    if (brandListings.length > 0) {
+      listings = brandListings.map(recentListingToSuggestListing)
+      listingsBackend = "supabase"
+    }
+  }
+
   const titleSet = new Set<string>()
   const titles = (titlesRes.data || [])
     .map((r) => r.title?.trim())
@@ -355,12 +425,18 @@ export async function searchSuggest(qRaw: string, section: string): Promise<Sear
     .filter(Boolean)
     .slice(0, MAX_CATEGORIES) as string[]
 
-  const brandInputs = dedupeListingBrandInputsForSuggest(
-    (brandsRes.data || []) as { brand: string | null; brand_id: string | null }[],
+  let brands = catalogRowsToSuggestBrandChips(
+    catalogBrands.rows,
+    pickedCatalogSlug,
     MAX_BRANDS,
   )
-
-  const brands = await hydrateListingBrandLabelsForMarketplaceSuggest(supabase, brandInputs)
+  if (brands.length === 0) {
+    const brandInputs = dedupeListingBrandInputsForSuggest(
+      (brandsRes.data || []) as { brand: string | null; brand_id: string | null }[],
+      MAX_BRANDS,
+    )
+    brands = await hydrateListingBrandLabelsForMarketplaceSuggest(supabase, brandInputs)
+  }
 
   return { titles, categories, brands, listings, meta: { listingsBackend } }
 }
