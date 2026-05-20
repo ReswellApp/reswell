@@ -6,6 +6,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { SlidersHorizontal, Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
@@ -191,6 +192,80 @@ function listingSectionLabel(section: string) {
   return "Listing"
 }
 
+function MarketplaceSuggestPanelSkeleton({
+  boardsTitleStyle,
+  showBrandStrip,
+}: {
+  boardsTitleStyle: boolean
+  showBrandStrip: boolean
+}) {
+  return (
+    <>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:flex-nowrap sm:gap-3 sm:px-4 sm:py-2.5">
+        <Skeleton className="h-4 w-24 sm:h-[18px]" />
+        <Skeleton className="h-4 w-28 sm:h-[18px]" />
+      </div>
+      <ul className="min-h-0 py-1" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <li
+            key={i}
+            className="mx-1 flex gap-2 px-2 py-2.5 sm:gap-3 sm:rounded-xl sm:py-2.5"
+          >
+            <Skeleton
+              className={cn(
+                "shrink-0 rounded-md sm:rounded-lg",
+                boardsTitleStyle ? "h-9 w-9" : "h-12 w-12 sm:h-14 sm:w-14",
+              )}
+            />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-full max-w-[220px]" />
+              <Skeleton className="h-3 w-36 max-w-[85%]" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </li>
+        ))}
+      </ul>
+      {showBrandStrip && !boardsTitleStyle ? (
+        <div className="shrink-0 border-t border-border/60 px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3">
+          <Skeleton className="mb-2 h-3 w-14" />
+          <div className="flex gap-3 sm:gap-4">
+            {[0, 1, 2, 4].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <Skeleton className="h-11 w-11 rounded-full sm:h-12 sm:w-12" />
+                <Skeleton className="h-3 w-14" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+function BrandsSuggestPanelSkeleton() {
+  return (
+    <>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:px-4 sm:py-2.5">
+        <Skeleton className="h-4 w-16 sm:h-[18px]" />
+      </div>
+      <ul className="min-h-0 py-1" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <li
+            key={i}
+            className="mx-1 flex gap-2 px-2 py-2.5 sm:gap-3 sm:rounded-xl sm:py-2.5"
+          >
+            <Skeleton className="h-12 w-12 shrink-0 rounded-md sm:h-14 sm:w-14 sm:rounded-lg" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-full max-w-[200px]" />
+              <Skeleton className="h-3 w-40 max-w-[90%]" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
 async function fetchSearchSuggestionsJson(
   q: string,
   section: string,
@@ -335,6 +410,7 @@ export function SearchInputWithSuggest({
         if (generation !== suggestGenerationRef.current) return
         if (q.length < minLength) return
         setLoading(true)
+        if (isSearchInputFocused()) setOpen(true)
         try {
           const { data, hasAny } = await fetchSearchSuggestionsJson(q, section)
           if (generation !== suggestGenerationRef.current) return
@@ -375,6 +451,7 @@ export function SearchInputWithSuggest({
         if (generation !== suggestGenerationRef.current) return
         if (q.length < minLength) return
         setLoading(true)
+        if (isSearchInputFocused()) setOpen(true)
         try {
           const { rows, meta } = await searchBrandsCatalogSuggest(q)
           if (generation !== suggestGenerationRef.current) return
@@ -436,13 +513,20 @@ export function SearchInputWithSuggest({
     (listings.length > 0 || (suggestions.brands?.length ?? 0) > 0 || (suggestions.categories?.length ?? 0) > 0)
 
   const hasFallbackList = !disableSuggest && open && flatSuggestions.length > 0
-  const showMarketplacePanel = suggestSource === "marketplace" && (hasRichStrip || hasFallbackList)
+  const queryMeetsSuggestMin = value.trim().length >= minLength
+  const showLoadingPanel =
+    loading && !disableSuggest && open && queryMeetsSuggestMin
+  const showMarketplacePanel =
+    !showLoadingPanel &&
+    suggestSource === "marketplace" &&
+    (hasRichStrip || hasFallbackList)
   const showBrandsPanel =
+    !showLoadingPanel &&
     suggestSource === "brands" &&
     !disableSuggest &&
     open &&
     (brandRows?.length ?? 0) > 0
-  const showPanelForRect = showMarketplacePanel || showBrandsPanel
+  const showPanelForRect = showMarketplacePanel || showBrandsPanel || showLoadingPanel
 
   /** When listings share the panel with brands/categories/suggestions, flex so listings scroll instead of clipping the footer. */
   const listingsSharePanelWithFooter =
@@ -712,8 +796,19 @@ export function SearchInputWithSuggest({
                 maxHeight: panelLayout.maxHeight,
               }
         }
+        aria-busy={showLoadingPanel}
       >
-        {isBrands && showBrandsPanel && brandRows ? (
+        {showLoadingPanel ? (
+          isBrands ? (
+            <BrandsSuggestPanelSkeleton />
+          ) : (
+            <MarketplaceSuggestPanelSkeleton
+              boardsTitleStyle={boardsTitleStyle}
+              showBrandStrip={!showTextSuggestions}
+            />
+          )
+        ) : null}
+        {!showLoadingPanel && isBrands && showBrandsPanel && brandRows ? (
           <>
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:px-4 sm:py-2.5">
               <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">
@@ -788,7 +883,7 @@ export function SearchInputWithSuggest({
             </ul>
           </>
         ) : null}
-        {!isBrands && showMarketplacePanel && listings.length > 0 && (
+        {!showLoadingPanel && !isBrands && showMarketplacePanel && listings.length > 0 && (
           <div
             className={cn(
               "flex min-h-0 flex-col",
@@ -1165,6 +1260,7 @@ export function SearchInputWithSuggest({
                 if (gen !== suggestGenerationRef.current) return
                 if (q.length < minLength) return
                 setLoading(true)
+                setOpen(true)
                 try {
                   const { rows, meta } = await searchBrandsCatalogSuggest(q)
                   if (gen !== suggestGenerationRef.current) return
@@ -1200,6 +1296,7 @@ export function SearchInputWithSuggest({
             void (async () => {
               if (gen !== suggestGenerationRef.current) return
               setLoading(true)
+              setOpen(true)
               try {
                 const { data, hasAny } = await fetchSearchSuggestionsJson(q, section)
                 if (gen !== suggestGenerationRef.current) return
@@ -1215,13 +1312,14 @@ export function SearchInputWithSuggest({
         disabled={disabled}
         className={cn(
           leftIcon && "pl-10",
-          showClear && (loading ? "pr-16" : "pr-10"),
+          showClear && "pr-10",
           showClear &&
             "[&::-webkit-search-cancel-button]:hidden [&::-moz-search-clear]:hidden",
           inputClassName,
         )}
         autoComplete="off"
         aria-expanded={showPanelForRect}
+        aria-busy={showLoadingPanel}
         aria-controls={listboxId}
         aria-autocomplete="list"
         autoFocus={autoFocus}
@@ -1245,16 +1343,6 @@ export function SearchInputWithSuggest({
         </button>
       )}
       {dropdownPanel}
-      {loading && value.trim().length >= minLength && !disableSuggest && (
-        <span
-          className={cn(
-            "absolute top-1/2 -translate-y-1/2 text-xs text-muted-foreground",
-            showClear ? "right-10" : "right-3",
-          )}
-        >
-          …
-        </span>
-      )}
     </div>
   )
 }

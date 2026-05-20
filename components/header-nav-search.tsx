@@ -8,6 +8,7 @@ import { Clock, X, TrendingUp } from "lucide-react"
 import { createPortal } from "react-dom"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
@@ -91,6 +92,28 @@ function removeRecentSearch(term: string) {
     (s) => s.toLowerCase() !== term.toLowerCase(),
   )
   localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent))
+}
+
+function SuggestedSurfboardsSkeleton() {
+  return (
+    <div className="py-2" aria-busy="true" aria-label="Loading suggested surfboards">
+      <div className="flex items-center gap-2 px-4 pb-2">
+        <Skeleton className="h-4 w-4 rounded-full" />
+        <Skeleton className="h-3 w-36" />
+      </div>
+      <ul className="space-y-0.5" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <li key={i} className="mx-1 flex gap-3 rounded-xl px-3 py-2.5">
+            <Skeleton className="h-14 w-14 shrink-0 rounded-lg" />
+            <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+              <Skeleton className="h-4 w-full max-w-[240px]" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export function HeaderNavSearch({
@@ -391,6 +414,8 @@ export function HeaderNavSearch({
               ))}
             </ul>
           </div>
+        ) : !suggestedLoaded ? (
+          <SuggestedSurfboardsSkeleton />
         ) : suggestedListings.length > 0 ? (
           <div className="py-2">
             <div className="flex items-center gap-2 px-4 pb-2">
