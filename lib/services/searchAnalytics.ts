@@ -4,13 +4,17 @@ import {
   aggregateNavBarMarketplaceKeywordAnalytics,
   getMarketplaceOccurredAtBounds,
   indexSearchAnalyticsDocument,
+  listNavBarMarketplaceKeywordEvents,
   topQueriesInRange,
+  type NavBarMarketplaceKeywordEventHit,
   type SearchAnalyticsDoc,
 } from "@/lib/elasticsearch/search-analytics-index"
 import {
   aggregateSearchSuggestPicks,
   aggregateHeaderNavSuggestClickAnalytics,
   indexSearchSuggestPickDocument,
+  listHeaderNavSuggestPickEvents,
+  type HeaderNavSuggestPickEventHit,
   type SearchSuggestPickDoc,
   type SearchSuggestPickKind,
   type SearchSuggestPickSurface,
@@ -129,6 +133,20 @@ export type SearchAnalyticsTrendingRow = {
   velocity: number
 }
 
+/** One header-nav search action (free-form `/search` submit or typeahead row click). */
+export type NavSearchBarEventLine = {
+  id: string
+  occurredAt: string
+  kind: "free_form" | "dropdown"
+  query: string
+  detail: string | null
+  resultCount: number | null
+  pickKind: string | null
+}
+
+const NAV_SEARCH_BAR_RECENT_PER_SOURCE = 120
+const NAV_SEARCH_BAR_RECENT_MERGED_CAP = 200
+
 export type SearchAnalyticsDashboard = {
   configured: boolean
   rangeDays: number
@@ -182,6 +200,8 @@ export type SearchAnalyticsDashboard = {
     totalFreeFormSubmits: number
     totalDropdownSelections: number
     topFreeFormQueries: { query: string; count: number }[]
+    /** Newest-first line items for the selected range (capped). */
+    recentEvents: NavSearchBarEventLine[]
   }
   fetchedAt: string
 }
@@ -202,6 +222,46 @@ const EMPTY_NAV_SEARCH_BAR: SearchAnalyticsDashboard["navSearchBar"] = {
   totalFreeFormSubmits: 0,
   totalDropdownSelections: 0,
   topFreeFormQueries: [],
+  recentEvents: [],
+}
+
+function mergeNavSearchBarRecentEvents(
+  freeForm: NavBarMarketplaceKeywordEventHit[],
+  dropdown: HeaderNavSuggestPickEventHit[],
+): NavSearchBarEventLine[] {
+  const lines: NavSearchBarEventLine[] = [
+    ...freeForm.map((row) => ({
+      id: `ff:${row.id}`,
+      occurredAt: row.occurredAt,
+      kind: "free_form" as const,
+      query: row.queryDisplay,
+      detail: null,
+      resultCount: row.resultCount,
+      pickKind: null,
+    })),
+    ...dropdown.map((row) => ({
+      id: `dd:${row.id}`,
+      occurredAt: row.occurredAt,
+      kind: "dropdown" as const,
+      query: row.queryPrefix,
+      detail: row.selectionLabel,
+      resultCount: null,
+      pickKind: row.pickKind,
+    })),
+  ]
+  lines.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+  return lines.slice(0, NAV_SEARCH_BAR_RECENT_MERGED_CAP)
+}
+
+async function fetchNavSearchBarRecentEvents(
+  from: string,
+  to: string,
+): Promise<NavSearchBarEventLine[]> {
+  const [freeForm, dropdown] = await Promise.all([
+    listNavBarMarketplaceKeywordEvents(from, to, NAV_SEARCH_BAR_RECENT_PER_SOURCE),
+    listHeaderNavSuggestPickEvents(from, to, NAV_SEARCH_BAR_RECENT_PER_SOURCE),
+  ])
+  return mergeNavSearchBarRecentEvents(freeForm, dropdown)
 }
 
 function mergeNavSearchBarDaily(
@@ -229,6 +289,7 @@ function mergeNavSearchBarDaily(
 function buildNavSearchBarSlice(
   navMp: Awaited<ReturnType<typeof aggregateNavBarMarketplaceKeywordAnalytics>>,
   navSuggest: Awaited<ReturnType<typeof aggregateHeaderNavSuggestClickAnalytics>>,
+  recentEvents: NavSearchBarEventLine[],
 ): SearchAnalyticsDashboard["navSearchBar"] {
   const mp = navMp ?? { volumeByDay: [], topQueries: [], totalSubmits: 0 }
   const sg = navSuggest ?? { volumeByDay: [], totalClicks: 0 }
@@ -237,6 +298,7 @@ function buildNavSearchBarSlice(
     totalFreeFormSubmits: mp.totalSubmits,
     totalDropdownSelections: sg.totalClicks,
     topFreeFormQueries: mp.topQueries,
+    recentEvents,
   }
 }
 
@@ -463,14 +525,15 @@ export async function getSearchAnalyticsDashboardService(
   const from = start.toISOString()
   const to = end.toISOString()
 
-  const [main, suggestPicks, navMp, navSuggest] = await Promise.all([
+  const [main, suggestPicks, navMp, navSuggest, navRecentEvents] = await Promise.all([
     aggregateSearchAnalytics(from, to),
     aggregateSearchSuggestPicks(from, to),
     aggregateNavBarMarketplaceKeywordAnalytics(from, to),
     aggregateHeaderNavSuggestClickAnalytics(from, to),
+    fetchNavSearchBarRecentEvents(from, to),
   ])
 
-  const navSearchBar = buildNavSearchBarSlice(navMp, navSuggest)
+  const navSearchBar = buildNavSearchBarSlice(navMp, navSuggest, navRecentEvents)
 
   if (!main) {
     return {

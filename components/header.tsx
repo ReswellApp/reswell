@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
-import { clearNavSearchQuery } from "@/lib/nav-search-storage"
+import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
@@ -421,6 +421,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       clearNavSearchQuery()
     }
   }, [searchOpen])
+
+  useEffect(() => {
+    if (!isSearchResultsPath(pathname ?? "")) return
+    const qFromUrl = headerSearchParams.get("q")?.trim() ?? ""
+    if (!qFromUrl) return
+    setSearchQuery(qFromUrl)
+    setMobileNavSearchQuery(qFromUrl)
+    writeNavSearchQuery(qFromUrl)
+  }, [pathname, headerSearchParams])
 
   const headerAuthDigest = useMemo(() => {
     const u = serverHeaderAuth.user
@@ -803,9 +812,10 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
           return
         }
-        router.push(marketplaceNavSearchHref(q, pathname, headerSearchParams))
-        setSearchQuery("")
-        clearNavSearchQuery()
+        const href = marketplaceNavSearchHref(q, pathname, headerSearchParams)
+        setSearchQuery(q)
+        writeNavSearchQuery(q)
+        router.push(href)
         setSearchOpen(false)
       }}
       className="w-full"
@@ -829,9 +839,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           setSearchOpen(false)
         }}
         onSelect={(text) => {
-          router.push(marketplaceNavSearchHref(text, pathname, headerSearchParams))
-          setSearchQuery("")
-          clearNavSearchQuery()
+          const term = text.trim()
+          if (!term) return
+          setSearchQuery(term)
+          writeNavSearchQuery(term)
+          router.push(marketplaceNavSearchHref(term, pathname, headerSearchParams))
           setSearchOpen(false)
         }}
         onNavigate={() => {
@@ -986,9 +998,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                       await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
                       return
                     }
+                    setMobileNavSearchQuery(q)
+                    writeNavSearchQuery(q)
                     router.push(marketplaceNavSearchHref(q, pathname, headerSearchParams))
-                    setMobileNavSearchQuery("")
-                    clearNavSearchQuery()
                   }}
                 >
                   <div className="relative min-w-0 flex-1">
@@ -1010,9 +1022,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         clearNavSearchQuery()
                       }}
                       onSelect={(text) => {
-                        router.push(marketplaceNavSearchHref(text, pathname, headerSearchParams))
-                        setMobileNavSearchQuery("")
-                        clearNavSearchQuery()
+                        const term = text.trim()
+                        if (!term) return
+                        setMobileNavSearchQuery(term)
+                        writeNavSearchQuery(term)
+                        router.push(marketplaceNavSearchHref(term, pathname, headerSearchParams))
                       }}
                       onNavigate={() => {
                         setMobileNavSearchQuery("")

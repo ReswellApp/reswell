@@ -4,6 +4,8 @@ import { searchBrandIdsFromElasticsearch } from "@/lib/elasticsearch/brands-inde
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { slugify } from "@/lib/slugify"
 import {
+  fuzzyBrandLookupTokens,
+  fuzzyBrandNamePrefix,
   marketplaceBrandQueryCandidates,
   pickClosestBrandNameMatch,
 } from "@/lib/utils/marketplace-brand-query"
@@ -166,6 +168,49 @@ async function resolveDirectoryBrandFromNameIlike(
 }
 
 /**
+ * Typo-tolerant brand match when substring/suggest miss (e.g. "andreni" → Andreini).
+ * Uses Elasticsearch suggest when available, then a short prefix scan + edit distance.
+ */
+async function resolveDirectoryBrandByFuzzyCatalogMatch(
+  supabase: SupabaseClient,
+  rawLabel: string,
+): Promise<DirectoryBrandMini | null> {
+  const tokens = fuzzyBrandLookupTokens(rawLabel)
+  if (tokens.length === 0) return null
+
+  for (const token of tokens) {
+    const { rows: suggestRows } = await searchBrandsCatalogSuggestWithClient(supabase, token)
+    if (suggestRows.length > 0) {
+      const closestSuggest = pickClosestBrandNameMatch(suggestRows, token)
+      if (closestSuggest?.id && closestSuggest.slug) {
+        return directoryBrandMiniFromRow(closestSuggest)
+      }
+    }
+
+    const prefix = fuzzyBrandNamePrefix(token)
+    if (prefix.length < 3) continue
+
+    const safe = escapeIlikeToken(prefix)
+    const pattern = `"%${safe}%"`
+    const { data: prefixRows, error } = await supabase
+      .from("brands")
+      .select("id,name,slug,logo_url")
+      .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+      .order("name", { ascending: true })
+      .limit(100)
+
+    if (error || !prefixRows?.length) continue
+
+    const closest = pickClosestBrandNameMatch(prefixRows, token)
+    if (closest?.id && closest.slug) {
+      return directoryBrandMiniFromRow(closest)
+    }
+  }
+
+  return null
+}
+
+/**
  * Map a free-text label (e.g. header nav chip or `/search?q=`) to a directory brand row.
  * Same resolution rules as the brand profile path helper: suggest pipeline + slug/name fallbacks.
  * Strips generic words ("surfboards") and tolerates typos via closest name match.
@@ -199,7 +244,7 @@ export async function resolveDirectoryBrandRowFromLabel(
     if (byName) return byName
   }
 
-  return null
+  return resolveDirectoryBrandByFuzzyCatalogMatch(supabase, name)
 }
 
 /** Map listing-derived brands to directory slug + logo for marketplace search strips (max ~16 rows). */

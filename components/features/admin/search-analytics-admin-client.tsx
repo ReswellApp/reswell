@@ -177,6 +177,21 @@ function truncateQuery(q: string, max = 36): string {
   return `${t.slice(0, max - 1)}…`
 }
 
+function navPickKindLabel(kind: string): string {
+  const labels: Record<string, string> = {
+    top_listing: "Top listing",
+    brand_strip: "Brand strip",
+    brand_row: "Brand row",
+    category_chip: "Category chip",
+    suggestion_title: "Title suggestion",
+    suggestion_brand: "Brand suggestion",
+    suggestion_category: "Category suggestion",
+    view_all_results: "View all results",
+    brand_catalog: "Brand catalog",
+  }
+  return labels[kind] ?? kind.replace(/_/g, " ")
+}
+
 function reportPieLabelProps(props: Record<string, unknown>): {
   cx: number
   cy: number
@@ -2330,6 +2345,96 @@ export function SearchAnalyticsAdminClient() {
                     </BarChart>
                   </ChartContainer>
                 </div>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">Header nav search — event log</h3>
+              <p className="mt-1 max-w-3xl text-sm text-slate-500">
+                Every search action from the main nav search bar in the selected window — free-form{" "}
+                <code className="rounded bg-slate-100 px-1 text-[11px]">/search</code> submits and
+                typeahead row clicks. Newest first (up to{" "}
+                {data.navSearchBar.recentEvents.length.toLocaleString()} shown).
+              </p>
+            </div>
+            {data.navSearchBar.recentEvents.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-500">
+                No nav search events in this range yet.
+              </p>
+            ) : (
+              <div
+                className="max-h-[min(420px,50vh)] overflow-y-auto rounded-lg border border-slate-200"
+                role="list"
+                aria-label="Header nav search events"
+              >
+                <ul className="divide-y divide-slate-100">
+                  {data.navSearchBar.recentEvents.map((row) => {
+                    let when = row.occurredAt
+                    try {
+                      when = format(parseISO(row.occurredAt), "MMM d, h:mm a")
+                    } catch {
+                      /* keep raw */
+                    }
+                    const isFreeForm = row.kind === "free_form"
+                    return (
+                      <li
+                        key={row.id}
+                        className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2.5 text-sm sm:flex-nowrap"
+                      >
+                        <time
+                          className="shrink-0 text-xs tabular-nums text-slate-500 sm:w-[9.5rem]"
+                          dateTime={row.occurredAt}
+                          title={row.occurredAt}
+                        >
+                          {when}
+                        </time>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium",
+                            isFreeForm
+                              ? "bg-blue-50 text-blue-800 ring-1 ring-blue-200/80"
+                              : "bg-violet-50 text-violet-800 ring-1 ring-violet-200/80",
+                          )}
+                        >
+                          {isFreeForm ? "Free-form" : "Dropdown"}
+                        </span>
+                        <span
+                          className="min-w-0 flex-1 truncate font-medium text-slate-900"
+                          title={row.query}
+                        >
+                          {row.query}
+                        </span>
+                        <span className="w-full shrink-0 text-xs text-slate-500 sm:ml-auto sm:w-auto sm:max-w-[45%] sm:text-right">
+                          {isFreeForm ? (
+                            <>
+                              {row.resultCount != null
+                                ? `${row.resultCount.toLocaleString()} listing${
+                                    row.resultCount === 1 ? "" : "s"
+                                  }`
+                                : "—"}
+                            </>
+                          ) : (
+                            <>
+                              {row.detail && row.detail !== "—" ? (
+                                <span className="truncate" title={row.detail}>
+                                  {truncateQuery(row.detail, 48)}
+                                </span>
+                              ) : null}
+                              {row.pickKind ? (
+                                <span className="text-slate-400">
+                                  {row.detail && row.detail !== "—" ? " · " : ""}
+                                  {navPickKindLabel(row.pickKind)}
+                                </span>
+                              ) : null}
+                            </>
+                          )}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
               </div>
             )}
           </div>

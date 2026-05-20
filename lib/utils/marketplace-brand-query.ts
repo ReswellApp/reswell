@@ -118,10 +118,35 @@ export function maxBrandTypoDistance(queryLen: number, brandLen: number): number
   return 3
 }
 
-export type BrandNameRow = { name: string }
+export type BrandNameRow = { name: string; slug?: string }
+
+/** Minimum edit distance between label and any brand signal (name, slug, first token). */
+export function brandCatalogTypoDistance(
+  label: string,
+  row: { name: string; slug?: string },
+): number {
+  const q = label.trim().toLowerCase()
+  if (!q) return Number.POSITIVE_INFINITY
+
+  const name = row.name.trim().toLowerCase()
+  let best = name ? levenshteinDistance(q, name) : Number.POSITIVE_INFINITY
+
+  const slug = row.slug?.trim().toLowerCase()
+  if (slug) {
+    best = Math.min(best, levenshteinDistance(q, slug))
+    best = Math.min(best, levenshteinDistance(q, slug.replace(/-/g, "")))
+  }
+
+  const firstToken = name.match(/[\w']+/g)?.[0]
+  if (firstToken && firstToken.length >= 3) {
+    best = Math.min(best, levenshteinDistance(q, firstToken))
+  }
+
+  return best
+}
 
 /**
- * Pick the catalog brand whose name is closest to the user label (typos), or null if none are close enough.
+ * Pick the catalog brand closest to the user label (typos), comparing name, slug, and first name token.
  */
 export function pickClosestBrandNameMatch<T extends BrandNameRow>(
   rows: T[],
@@ -134,10 +159,14 @@ export function pickClosestBrandNameMatch<T extends BrandNameRow>(
   let bestDistance = Number.POSITIVE_INFINITY
 
   for (const row of rows) {
-    const name = row.name.trim().toLowerCase()
-    if (!name) continue
-    const distance = levenshteinDistance(q, name)
-    const allowed = maxBrandTypoDistance(q.length, name.length)
+    const distance = brandCatalogTypoDistance(q, row)
+    if (!Number.isFinite(distance)) continue
+    const compareLen = Math.max(
+      q.length,
+      row.name.trim().length,
+      row.slug?.replace(/-/g, "").length ?? 0,
+    )
+    const allowed = maxBrandTypoDistance(q.length, compareLen)
     if (distance > allowed) continue
     if (distance < bestDistance) {
       bestDistance = distance
@@ -146,4 +175,36 @@ export function pickClosestBrandNameMatch<T extends BrandNameRow>(
   }
 
   return best
+}
+
+/** Tokens worth a fuzzy catalog scan (noise stripped, length ≥ 4). */
+export function fuzzyBrandLookupTokens(rawLabel: string): string[] {
+  const candidates = marketplaceBrandQueryCandidates(rawLabel)
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const c of candidates) {
+    const t = c.trim().toLowerCase()
+    if (t.length < 4 || isMarketplaceSearchNoiseToken(t)) continue
+    if (seen.has(t)) continue
+    seen.add(t)
+    out.push(t)
+  }
+  return out.sort((a, b) => b.length - a.length)
+}
+
+/** Prefix length for typo-tolerant brand directory scan (e.g. andreni → andr). */
+export function fuzzyBrandNamePrefix(token: string): string {
+  const t = token.trim().toLowerCase()
+  if (t.length <= 4) return t.slice(0, 3)
+  return t.slice(0, 4)
+}
+
+/** True when the matched brand name is not literally present in the user's query (likely a typo correction). */
+export function isLikelyTypoBrandMatch(rawQuery: string, brandName: string): boolean {
+  const q = rawQuery.trim().toLowerCase()
+  const brand = brandName.trim().toLowerCase()
+  if (!q || !brand) return false
+  if (q.includes(brand)) return false
+  const brandTokens = brand.match(/[\w']+/g) ?? []
+  return !brandTokens.some((t) => t.length >= 3 && q.includes(t))
 }

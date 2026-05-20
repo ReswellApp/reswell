@@ -8,7 +8,7 @@ import { Clock, X, TrendingUp } from "lucide-react"
 import { createPortal } from "react-dom"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
-import { clearNavSearchQuery } from "@/lib/nav-search-storage"
+import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -103,7 +103,6 @@ export function HeaderNavSearch({
   const searchParams = useSearchParams()
   const [query, setQuery] = useState("")
   const prevPathnameRef = useRef(pathname)
-  const prevPathForEnterSearchRef = useRef(pathname)
 
   const [idleOpen, setIdleOpen] = useState(false)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
@@ -115,12 +114,13 @@ export function HeaderNavSearch({
   const idleDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const prev = prevPathForEnterSearchRef.current
-    prevPathForEnterSearchRef.current = pathname
-    if (isSearchResultsPath(pathname) && !isSearchResultsPath(prev)) {
-      setQuery("")
+    if (!isSearchResultsPath(pathname)) return
+    const qFromUrl = searchParams.get("q")?.trim() ?? ""
+    if (qFromUrl) {
+      setQuery(qFromUrl)
+      writeNavSearchQuery(qFromUrl)
     }
-  }, [pathname])
+  }, [pathname, searchParams])
 
   useEffect(() => {
     const prev = prevPathnameRef.current
@@ -306,9 +306,9 @@ export function HeaderNavSearch({
       params.set("q", term)
       if (category?.trim()) params.set("category", category.trim())
       params.set("nq", "1")
+      setQuery(term)
+      writeNavSearchQuery(term)
       router.push(`/search?${params.toString()}`)
-      setQuery("")
-      clearNavSearchQuery()
       setIdleOpen(false)
     },
     [router, pathname, searchParams],

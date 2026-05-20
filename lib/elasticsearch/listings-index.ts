@@ -228,6 +228,33 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
   }
 }
 
+/** Lenient match on the strongest token when the strict query returns nothing (typos in title/brand). */
+function buildListingsTypoFallbackQueryBody(filter: object[], rawQuery: string): object | null {
+  const meaningful = meaningfulSearchTerms(rawQuery)
+  if (meaningful.length === 0) return null
+  const term = [...meaningful].sort((a, b) => b.length - a.length)[0]
+  if (!term || term.length < 4) return null
+
+  return {
+    bool: {
+      filter,
+      should: [
+        {
+          multi_match: {
+            query: term,
+            fields: [...SEARCH_FIELDS],
+            type: "best_fields",
+            tie_breaker: 0.2,
+            operator: "or",
+            fuzziness: "AUTO",
+          },
+        },
+      ],
+      minimum_should_match: 1,
+    },
+  }
+}
+
 /**
  * Returns listing IDs in relevance order (then created_at).
  */
@@ -238,7 +265,7 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
 export async function searchListingIdsFromElasticsearch(
   rawQuery: string,
   limit: number,
-  options?: { sections?: string[]; categoryName?: string | null },
+  options?: { sections?: string[]; categoryName?: string | null; typoFallback?: boolean },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
   if (!es) return []
@@ -259,13 +286,20 @@ export async function searchListingIdsFromElasticsearch(
     }
 
     const q = rawQuery.trim()
+    const queryBody = options?.typoFallback
+      ? buildListingsTypoFallbackQueryBody(filter, q)
+      : buildListingsSearchQueryBody(filter, q)
 
-    const res = q
+    if (q && options?.typoFallback && !queryBody) {
+      return []
+    }
+
+    const res = q && queryBody
       ? await es.search({
           index: ELASTICSEARCH_LISTINGS_INDEX,
           size: limit,
           _source: false,
-          query: buildListingsSearchQueryBody(filter, q),
+          query: queryBody,
           sort: [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
         })
       : await es.search({

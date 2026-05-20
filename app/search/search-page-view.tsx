@@ -8,11 +8,15 @@ import {
   meaningfulSearchTerms,
   searchListingIdsFromElasticsearch,
 } from "@/lib/elasticsearch/listings-index"
-import { stripMarketplaceSearchNoiseWords } from "@/lib/utils/marketplace-brand-query"
+import {
+  fuzzyBrandNamePrefix,
+  stripMarketplaceSearchNoiseWords,
+} from "@/lib/utils/marketplace-brand-query"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
+import { isLikelyTypoBrandMatch } from "@/lib/utils/marketplace-brand-query"
 import {
   displayMarketplaceSearchQueryForAnalytics,
   normalizeMarketplaceSearchQueryForAnalytics,
@@ -89,6 +93,8 @@ export async function SearchPageView({
   const categorySlugForLog = matched?.slug ?? null
 
   const brandUnknown = Boolean(brandSlugRequested && !brandRow)
+  const brandTypoCorrected =
+    Boolean(brandRow && rawQuery.trim() && isLikelyTypoBrandMatch(rawQuery, brandRow.name))
 
   const { listings, searchMeta } = await resolveSearchListings(
     supabase,
@@ -145,9 +151,19 @@ export async function SearchPageView({
               <>Check the spelling or search from the header — that slug is not in our brand directory.</>
             ) : brandRow ? (
               <>
-                Active marketplace listings for this brand
-                {rawQuery.trim() ? " (matched from your search)" : ""} — including listings linked by
-                brand directory and legacy title text.
+                {brandTypoCorrected ? (
+                  <>
+                    No exact match for &ldquo;{rawQuery}&rdquo; — showing listings for{" "}
+                    <span className="font-medium text-foreground">{brandRow.name}</span>, the closest brand
+                    in our directory.
+                  </>
+                ) : (
+                  <>
+                    Active marketplace listings for this brand
+                    {rawQuery.trim() ? " (matched from your search)" : ""} — including listings linked by
+                    brand directory and legacy title text.
+                  </>
+                )}
               </>
             ) : rawQuery ? (
               <>
@@ -236,7 +252,14 @@ async function resolveSearchListings(
       const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
         categoryName: category?.name ?? null,
       })
-      const listings = await hydrateListingsByIds(supabase, ids)
+      let listings = await hydrateListingsByIds(supabase, ids)
+      if (listings.length === 0) {
+        const typoIds = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
+          categoryName: category?.name ?? null,
+          typoFallback: true,
+        })
+        listings = await hydrateListingsByIds(supabase, typoIds)
+      }
       return {
         listings,
         searchMeta: { resultCount: listings.length, backend: "elasticsearch" },
@@ -251,7 +274,11 @@ async function resolveSearchListings(
     }
   }
 
-  const { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
+  let { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
+  if (listings.length === 0) {
+    const retry = await buildSearchFromSupabaseTypoFallback(supabase, rawQuery, categoryId, LIMIT)
+    listings = retry.listings
+  }
   return {
     listings,
     searchMeta: { resultCount: listings.length, backend: "supabase" },
@@ -332,6 +359,62 @@ async function buildSearchFromSupabase(
   return {
     listings,
   }
+}
+
+/** Supabase fallback when strict listing text match returns nothing (prefix on strongest token). */
+async function buildSearchFromSupabaseTypoFallback(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  rawQuery: string,
+  categoryId: string | null,
+  limit: number,
+): Promise<{ listings: RecentListing[] }> {
+  const meaningful = meaningfulSearchTerms(rawQuery)
+  const primary = [...meaningful].sort((a, b) => b.length - a.length)[0]
+  if (!primary || primary.length < 4) {
+    return { listings: [] }
+  }
+  const prefix = fuzzyBrandNamePrefix(primary)
+  const safe = prefix.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+  const pattern = `"%${safe}%"`
+
+  let query = supabase
+    .from("listings")
+    .select(
+      `
+      id,
+      slug,
+      user_id,
+      title,
+      price,
+      condition,
+      section,
+      city,
+      state,
+      shipping_available,
+      board_type,
+      dimensions,
+      listing_images (url, is_primary),
+      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
+      categories (name, slug)
+    `,
+    )
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .or(
+      `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern},model.ilike.${pattern}`,
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (categoryId) {
+    query = query.eq("category_id", categoryId)
+  } else {
+    query = query.eq("section", "surfboards")
+  }
+
+  const { data, error } = await query
+  if (error || !data?.length) return { listings: [] }
+  return { listings: data.map((row: any) => rowToRecentListing(row)) }
 }
 
 function rowToRecentListing(row: any): RecentListing {

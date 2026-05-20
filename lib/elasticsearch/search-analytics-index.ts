@@ -596,3 +596,72 @@ export async function aggregateNavBarMarketplaceKeywordAnalytics(
     return null
   }
 }
+
+export type NavBarMarketplaceKeywordEventHit = {
+  id: string
+  occurredAt: string
+  queryDisplay: string
+  resultCount: number
+}
+
+/** Recent header-nav keyword `/search` loads (`origin_surface: header_nav`), newest first. */
+export async function listNavBarMarketplaceKeywordEvents(
+  fromIso: string,
+  toIso: string,
+  limit: number,
+): Promise<NavBarMarketplaceKeywordEventHit[]> {
+  const es = getElasticsearchClient()
+  if (!es || limit < 1) return []
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: limit,
+      sort: [{ occurred_at: { order: "desc" } }],
+      _source: ["occurred_at", "query_display", "result_count"],
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lte: toIso } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+            { term: { origin_surface: "header_nav" } },
+          ],
+        },
+      },
+    })
+
+    const out: NavBarMarketplaceKeywordEventHit[] = []
+    for (const hit of res.hits.hits ?? []) {
+      const src = hit._source as
+        | {
+            occurred_at?: string
+            query_display?: string
+            result_count?: number
+          }
+        | undefined
+      const occurredAt = typeof src?.occurred_at === "string" ? src.occurred_at : ""
+      const queryDisplay =
+        typeof src?.query_display === "string" && src.query_display.trim()
+          ? src.query_display.trim()
+          : ""
+      if (!occurredAt || !queryDisplay) continue
+      const resultCount =
+        typeof src?.result_count === "number" && Number.isFinite(src.result_count)
+          ? src.result_count
+          : 0
+      out.push({
+        id: typeof hit._id === "string" ? hit._id : `${occurredAt}:${queryDisplay}`,
+        occurredAt,
+        queryDisplay,
+        resultCount,
+      })
+    }
+    return out
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return []
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] listNavBarMarketplaceKeywordEvents failed:", msg)
+    return []
+  }
+}
