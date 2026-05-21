@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { privatePageMetadata } from '@/lib/site-metadata'
 import { AdminShippingClient } from './shipping-admin-client'
 import { createClient } from '@/lib/supabase/server'
@@ -28,5 +29,9 @@ export default async function AdminShippingPage() {
     redirect('/')
   }
 
-  return <AdminShippingClient />
+  return (
+    <Suspense fallback={null}>
+      <AdminShippingClient />
+    </Suspense>
+  )
 }

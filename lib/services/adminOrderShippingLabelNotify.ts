@@ -4,6 +4,7 @@ import {
   insertOrderAdminShippingLabel,
   type AdminShippingLabelSource,
 } from "@/lib/db/adminOrderShippingLabels"
+import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
 
 /**
  * Records admin-supplied label/tracking on the order without marking it shipped.
@@ -106,6 +107,8 @@ export async function attachAdminShippingLabelToOrder(params: {
       })
       .eq("id", conv.id)
   }
+
+  void resolveOpenOrderShippingLabelFailures(params.supabase, u.id, params.adminUserId)
 
   return { ok: true }
 }

@@ -46,7 +46,7 @@ import {
   PayoutStatusBadge,
   TrackingInfo,
 } from "@/components/order-actions"
-import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabels"
+import { getPreparedShippingLabelDownloadUrl } from "@/lib/db/orderShippingLabels"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   fetchOptionalOrderTrackingDetailJson,
@@ -292,16 +292,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
 
   let adminPreparedLabelUrl: string | null = null
-  const latestLabel = await getLatestAdminLabelUrlsForOrder(createServiceRoleClient(), id)
-  if (latestLabel?.label_pdf_url) {
-    adminPreparedLabelUrl = latestLabel.label_pdf_url
-  } else if (latestLabel?.label_storage_path) {
-    const svc = createServiceRoleClient()
-    const { data: signed } = await svc.storage
-      .from("order-shipping-labels")
-      .createSignedUrl(latestLabel.label_storage_path, 60 * 60 * 24 * 7)
-    adminPreparedLabelUrl = signed?.signedUrl ?? null
-  }
+  adminPreparedLabelUrl = await getPreparedShippingLabelDownloadUrl(createServiceRoleClient(), id)
 
   const convRow = await getConversationForBuyerSeller(supabase, sale.buyer_id, user.id)
   const conversationId = convRow?.id ?? null
@@ -597,11 +588,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             </>
           )}
 
-          {/* Shipping label for surfboard shipments */}
+          {/* Shipping label for surfboard shipments (self-purchase when Reswell did not prepare one) */}
           {!fulfillmentLocked &&
             sale.fulfillment_method === "shipping" &&
             displayListings.some((l) => l.section === "surfboards") &&
-            sale.delivery_status === "pending" && (
+            sale.delivery_status === "pending" &&
+            !adminPreparedLabelUrl && (
               <Card>
                 <CardContent className="flex items-center justify-between gap-4 p-5">
                   <div className="flex items-center gap-3">

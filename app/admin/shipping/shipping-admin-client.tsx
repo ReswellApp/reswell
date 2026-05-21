@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,8 +21,10 @@ import { Separator } from '@/components/ui/separator'
 import { ExternalLink, Loader2, RefreshCw, Ship, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
+import { AdminFailedLabelsTab } from './admin-failed-labels-tab'
 import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
 import { ShippingRateCalculator } from './rate-calculator'
+import { NavUnreadCountBadge } from '@/components/nav-unread-count-badge'
 
 type ApiSlice = { ok: boolean; status: number; data: unknown }
 
@@ -103,6 +106,20 @@ const shipTableHead =
   'bg-muted/40 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground h-11'
 
 export function AdminShippingClient() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
+  const initialTab =
+    tabFromUrl === 'failed-labels' ||
+    tabFromUrl === 'validate' ||
+    tabFromUrl === 'rates' ||
+    tabFromUrl === 'create' ||
+    tabFromUrl === 'labels-created'
+      ? tabFromUrl
+      : 'overview'
+
+  const [activeTab, setActiveTab] = useState(initialTab)
+  const [failedLabelCount, setFailedLabelCount] = useState(0)
   const [overview, setOverview] = useState<OverviewPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -113,6 +130,49 @@ export function AdminShippingClient() {
   const [addrResult, setAddrResult] = useState<unknown>(null)
 
   const [addrBusy, setAddrBusy] = useState(false)
+
+  const refreshFailedCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/shipping/label-failures?limit=1', { credentials: 'include' })
+      const body = (await res.json()) as { openCount?: number; total?: number }
+      if (res.ok) {
+        setFailedLabelCount(body.openCount ?? body.total ?? 0)
+      }
+    } catch {
+      /* ignore — tab fetch will surface errors */
+    }
+  }, [])
+
+  useEffect(() => {
+    void refreshFailedCount()
+  }, [refreshFailedCount])
+
+  useEffect(() => {
+    if (failedLabelCount > 0 && !tabFromUrl) {
+      setActiveTab('failed-labels')
+    }
+  }, [failedLabelCount, tabFromUrl])
+
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab])
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+    const params = new URLSearchParams(searchParams.toString())
+    if (value === 'overview') {
+      params.delete('tab')
+    } else {
+      params.set('tab', value)
+    }
+    const qs = params.toString()
+    router.replace(qs ? `/admin/shipping?${qs}` : '/admin/shipping', { scroll: false })
+  }
+
+  const handleFailureQueueChanged = () => {
+    void refreshFailedCount()
+    router.refresh()
+  }
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
     const firstEver = !initialLoadDoneRef.current
@@ -287,41 +347,64 @@ export function AdminShippingClient() {
         </div>
       ) : null}
 
-      {configured && overview.configured ? (
-        <Tabs defaultValue="overview" className="w-full">
+      {!loading && overview ? (
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="flex h-auto min-h-11 w-full flex-wrap items-center justify-start gap-1 rounded-full border border-border/50 bg-muted/35 p-1.5 backdrop-blur-sm sm:w-fit">
+            <TabsTrigger
+              value="failed-labels"
+              className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
+            >
+              <span className="flex items-center gap-2">
+                Failed labels
+                <NavUnreadCountBadge count={failedLabelCount} />
+              </span>
+            </TabsTrigger>
             <TabsTrigger
               value="overview"
               className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
+              disabled={!configured}
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="validate"
               className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
+              disabled={!configured}
             >
               Validate
             </TabsTrigger>
             <TabsTrigger
               value="rates"
               className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
+              disabled={!configured}
             >
               Rates
             </TabsTrigger>
             <TabsTrigger
               value="create"
               className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
+              disabled={!configured}
             >
               Order label
             </TabsTrigger>
             <TabsTrigger
               value="labels-created"
               className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
+              disabled={!configured}
             >
               Labels created
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="failed-labels" className="page-enter mt-8">
+            <AdminFailedLabelsTab
+              onOpenCountChange={setFailedLabelCount}
+              onResolved={handleFailureQueueChanged}
+            />
+          </TabsContent>
+
+          {configured && overview.configured ? (
+          <>
           <TabsContent value="overview" className="page-enter mt-8 space-y-6">
             <Card className="rounded-3xl border-border/50 shadow-[0_2px_32px_-18px_rgba(0,0,0,0.12)]">
               <CardHeader className="space-y-1 pb-2">
@@ -520,6 +603,19 @@ export function AdminShippingClient() {
           <TabsContent value="labels-created" className="page-enter mt-8">
             <AdminLabelsCreatedTab />
           </TabsContent>
+          </>
+          ) : (
+            <TabsContent value="overview" className="page-enter mt-8">
+              <Alert className="rounded-2xl border-border/50 bg-muted/20 shadow-sm">
+                <Ship className="h-4 w-4 text-foreground/70" strokeWidth={1.5} />
+                <AlertTitle className="font-semibold tracking-tight">ShipEngine tools unavailable</AlertTitle>
+                <AlertDescription className="text-[15px] leading-relaxed">
+                  Configure SHIPENGINE_API_KEY to use overview, rates, and label tools. Failed label queue above
+                  still works for orders that need manual labels.
+                </AlertDescription>
+              </Alert>
+            </TabsContent>
+          )}
         </Tabs>
       ) : null}
     </div>

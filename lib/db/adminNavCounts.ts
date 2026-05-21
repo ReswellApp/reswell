@@ -1,13 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-/** Badge counts keyed by admin nav href (customer-service section). */
+/** Badge counts keyed by admin nav href. */
 export type AdminNavBadgeCounts = Record<string, number>
 
 export async function fetchAdminNavBadgeCounts(
   supabase: SupabaseClient,
   options: { includeBrandRequests: boolean },
 ): Promise<AdminNavBadgeCounts> {
-  const [supportNewRes, fraudRes, brandPendingRes] = await Promise.all([
+  const [supportNewRes, fraudRes, brandPendingRes, labelFailuresRes] = await Promise.all([
     supabase
       .from('contact_messages')
       .select('*', { count: 'exact', head: true })
@@ -18,6 +18,12 @@ export async function fetchAdminNavBadgeCounts(
           .from('brand_requests')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'pending')
+      : Promise.resolve({ count: 0 as number | null, error: null }),
+    options.includeBrandRequests
+      ? supabase
+          .from('order_shipping_label_failures')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'open')
       : Promise.resolve({ count: 0 as number | null, error: null }),
   ])
 
@@ -34,6 +40,9 @@ export async function fetchAdminNavBadgeCounts(
   if (options.includeBrandRequests) {
     counts['/admin/listings/brand-requests'] = take(
       brandPendingRes as { count: number | null; error: unknown },
+    )
+    counts['/admin/shipping'] = take(
+      labelFailuresRes as { count: number | null; error: unknown },
     )
   }
 

@@ -22,6 +22,7 @@ import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
+import { autoPurchaseReswellShippingLabelForOrder } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -214,6 +215,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
     if (pendingLedger?.id) {
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
+      void autoPurchaseReswellShippingLabelForOrder(serviceSupabase, existing.id)
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -226,6 +228,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       return recovered
     }
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
+    void autoPurchaseReswellShippingLabelForOrder(serviceSupabase, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -662,6 +665,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     paymentMethod: "stripe",
   })
+
+  if (!isPickup && fulfillmentMethod === "shipping") {
+    void autoPurchaseReswellShippingLabelForOrder(serviceSupabase, purchase.id)
+  }
 
   return { ok: true, orderId: purchase.id }
 }
