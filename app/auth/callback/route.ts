@@ -1,4 +1,5 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
+import { COMPLETE_PROFILE_PATH, resolveGoogleProfileSetupRequired } from "@/lib/auth/profile-completion";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import {
   shouldTrackKlaviyoNewAccountForOAuthSession,
@@ -25,6 +26,13 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const u = data.session?.user;
+      let destination = next;
+      if (u) {
+        const needsProfileSetup = await resolveGoogleProfileSetupRequired(supabase, u);
+        if (needsProfileSetup) {
+          destination = `${COMPLETE_PROFILE_PATH}?next=${encodeURIComponent(next)}`;
+        }
+      }
       if (u && shouldTrackKlaviyoNewAccountForOAuthSession(u)) {
         after(async () => {
           try {
@@ -43,8 +51,12 @@ export async function GET(request: NextRequest) {
           }
         });
       }
-      redirectResponse.headers.set("Cache-Control", "private, no-store");
-      return redirectResponse;
+      const finalResponse = NextResponse.redirect(`${origin}${destination}`);
+      redirectResponse.cookies.getAll().forEach((cookie) => {
+        finalResponse.cookies.set(cookie);
+      });
+      finalResponse.headers.set("Cache-Control", "private, no-store");
+      return finalResponse;
     }
   }
 

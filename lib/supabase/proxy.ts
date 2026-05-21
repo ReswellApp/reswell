@@ -1,4 +1,8 @@
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
+import {
+  COMPLETE_PROFILE_PATH,
+  resolveGoogleProfileSetupRequired,
+} from '@/lib/auth/profile-completion'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -63,6 +67,37 @@ export async function updateSession(request: NextRequest) {
       : `${request.nextUrl.pathname}${request.nextUrl.search}`
     url.searchParams.set('redirect', redirectTarget)
     return NextResponse.redirect(url)
+  }
+
+  const isCompleteProfileRoute = pathname === COMPLETE_PROFILE_PATH
+  const isAuthRoute = pathname.startsWith('/auth/')
+  const isApiRoute = pathname.startsWith('/api/')
+
+  if (
+    user &&
+    !isCompleteProfileRoute &&
+    !isAuthRoute &&
+    !isApiRoute &&
+    !pathname.startsWith('/admin')
+  ) {
+    const needsGoogleProfileSetup = await resolveGoogleProfileSetupRequired(
+      supabase,
+      user,
+    )
+    if (needsGoogleProfileSetup) {
+      const url = request.nextUrl.clone()
+      url.pathname = COMPLETE_PROFILE_PATH
+      url.search = ''
+      url.searchParams.set(
+        'next',
+        `${request.nextUrl.pathname}${request.nextUrl.search}`,
+      )
+      const redirect = NextResponse.redirect(url)
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirect.cookies.set(cookie)
+      })
+      return redirect
+    }
   }
 
   // Admin routes: same rule as app/admin/layout.tsx — staff only (not buyers/sellers).

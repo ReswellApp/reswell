@@ -5,10 +5,12 @@ import type { User } from "@supabase/supabase-js"
 import { Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { accessTokenIndicatesPasswordRecovery } from "@/lib/auth/access-token-password-recovery"
+import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import {
+  fetchProfileCompletionRow,
   isGoogleAuthUser,
   profileNeedsCompletion,
-  userNeedsGoogleProfileCompletion,
+  resolveGoogleProfileSetupRequired,
   type ProfileCompletionRow,
 } from "@/lib/auth/profile-completion"
 import { ProfileCompletionFormFields } from "@/components/auth/profile-completion-form-fields"
@@ -20,22 +22,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-async function pollForProfile(
-  userId: string,
-  msBetween: number,
-  maxAttempts: number,
-): Promise<ProfileCompletionRow | null> {
+async function pollForSession(msBetween: number, maxAttempts: number) {
   const supabase = createClient()
   for (let i = 0; i < maxAttempts; i += 1) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("display_name, avatar_url, profile_completed_at, email")
-      .eq("id", userId)
-      .maybeSingle()
-
-    if (!error && data) {
-      return data as ProfileCompletionRow
-    }
+    const { data } = await supabase.auth.getSession()
+    if (data.session?.user) return data.session
     await new Promise((r) => setTimeout(r, msBetween))
   }
   return null
@@ -64,59 +55,52 @@ function ProfileCompletionRequiredDialogInner() {
       }
 
       setPhase("waiting_profile")
-      let row: ProfileCompletionRow | null = null
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("display_name, avatar_url, profile_completed_at, email")
-        .eq("id", sessionUser.id)
-        .maybeSingle()
+      const userResult = await getAuthUserWithRetry(supabase, { attempts: 2 })
+      const resolvedUser = userResult.ok ? userResult.user ?? sessionUser : sessionUser
 
-      if (!error && data) {
-        row = data as ProfileCompletionRow
-      } else if (error) {
-        console.warn("[profile-completion] profile lookup failed:", error.message)
-        setOpen(false)
-        setUser(null)
-        setProfile(null)
-        setPhase("ready")
-        return
-      }
-
-      if (!row) {
-        row = await pollForProfile(sessionUser.id, 75, 40)
-      }
+      const needsSetup = await resolveGoogleProfileSetupRequired(supabase, resolvedUser)
+      const { profile: row, hasCompletionColumn, error } =
+        await fetchProfileCompletionRow(supabase, resolvedUser.id)
 
       setPhase("ready")
 
-      if (!row) {
+      if (error && !row) {
+        console.warn("[profile-completion] profile lookup failed:", error)
         setOpen(false)
         setUser(null)
         setProfile(null)
         return
       }
 
-      if (!isGoogleAuthUser(sessionUser) && profileNeedsCompletion(row)) {
+      if (
+        !isGoogleAuthUser(resolvedUser) &&
+        hasCompletionColumn &&
+        profileNeedsCompletion(row, true)
+      ) {
         const completedAt = new Date().toISOString()
         await supabase
           .from("profiles")
           .update({ profile_completed_at: completedAt, updated_at: completedAt })
-          .eq("id", sessionUser.id)
+          .eq("id", resolvedUser.id)
+      }
+
+      if (!needsSetup) {
         setOpen(false)
         setUser(null)
         setProfile(null)
         return
       }
 
-      if (!userNeedsGoogleProfileCompletion(sessionUser, row)) {
-        setOpen(false)
-        setUser(null)
-        setProfile(null)
-        return
-      }
-
-      setUser(sessionUser)
-      setProfile(row)
+      setUser(resolvedUser)
+      setProfile(
+        row ?? {
+          display_name: null,
+          avatar_url: null,
+          profile_completed_at: null,
+          email: resolvedUser.email ?? null,
+        },
+      )
       setOpen(true)
     },
     [supabase],
@@ -126,9 +110,16 @@ function ProfileCompletionRequiredDialogInner() {
     let cancelled = false
 
     void (async () => {
-      const { data } = await supabase.auth.getSession()
+      let { data } = await supabase.auth.getSession()
       if (cancelled) return
-      await evaluateSession(data.session?.user ?? null, data.session?.access_token ?? null)
+
+      let session = data.session ?? null
+      if (!session?.user) {
+        session = await pollForSession(75, 40)
+        if (cancelled) return
+      }
+
+      await evaluateSession(session?.user ?? null, session?.access_token ?? null)
     })()
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {

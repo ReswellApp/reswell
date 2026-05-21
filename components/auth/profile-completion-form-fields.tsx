@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import {
   getOAuthAvatarUrl,
+  PROFILE_USERNAME_COMPLETED_METADATA_KEY,
   suggestProfileCompletionUsername,
   type ProfileCompletionRow,
 } from "@/lib/auth/profile-completion"
@@ -113,17 +114,43 @@ export function ProfileCompletionFormFields({
       const trimmedName = username.trim()
       const completedAt = new Date().toISOString()
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          display_name: trimmedName,
-          profile_completed_at: completedAt,
-          updated_at: completedAt,
-        })
-        .eq("id", user.id)
+      let updateError = (
+        await supabase
+          .from("profiles")
+          .update({
+            display_name: trimmedName,
+            profile_completed_at: completedAt,
+            updated_at: completedAt,
+          })
+          .eq("id", user.id)
+      ).error
+
+      if (
+        updateError &&
+        (updateError.message.toLowerCase().includes("profile_completed_at") ||
+          updateError.code === "42703" ||
+          updateError.code === "PGRST204")
+      ) {
+        updateError = (
+          await supabase
+            .from("profiles")
+            .update({
+              display_name: trimmedName,
+              updated_at: completedAt,
+            })
+            .eq("id", user.id)
+        ).error
+      }
 
       if (updateError) {
         throw new Error(updateError.message || "Failed to save profile")
+      }
+
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { [PROFILE_USERNAME_COMPLETED_METADATA_KEY]: true },
+      })
+      if (metadataError) {
+        throw new Error(metadataError.message || "Failed to finalize profile")
       }
 
       await uploadAvatarIfNeeded()
