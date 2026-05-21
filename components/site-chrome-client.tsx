@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
-  return pathname.startsWith("/auth")
+  return pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")
 }
 
 /** Messages inbox + threads use full vertical space without the marketing footer. */

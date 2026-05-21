@@ -5,6 +5,7 @@ import { ShippingLabelTool } from "@/components/shipping-label-tool"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { pageSeoMetadata } from "@/lib/site-metadata"
+import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
 
 export const metadata = pageSeoMetadata({
   title: "Shipping guide — Reswell",
@@ -131,13 +132,24 @@ function ShippingGuideCards() {
           </CardHeader>
           <CardContent className="space-y-3 text-muted-foreground">
             <p>
-              If a listing says “Ships,” you can buy it and have the seller send it to you. The
-              seller will add tracking once the board is on its way.
+              If a listing ships, you can buy it through Reswell checkout and have the seller send
+              it to your door. The listing shows whether shipping is calculated at checkout, a flat
+              rate, or included free.
             </p>
             <ul className="list-disc pl-5 space-y-1">
               <li>
-                Double check your shipping address with the seller in Messages before they send
-                the board.
+                At checkout you&apos;ll see the full total — item price plus shipping when it
+                applies. On Reswell shipping listings, the carrier rate appears once you enter your
+                address.
+              </li>
+              <li>
+                Confirm your shipping address before you pay. You can also double-check with the
+                seller in Messages.
+              </li>
+              <li>
+                Once the board ships, tracking appears on your purchase page. If the seller
+                hasn&apos;t shipped within {SHIPPING_DEADLINE_DAYS} days, Reswell cancels the order
+                and refunds you automatically.
               </li>
               <li>
                 Inspect the package when it arrives. If something is damaged or not as described,
@@ -170,14 +182,76 @@ function ShippingGuideCards() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Who pays for shipping?</CardTitle>
+            <CardTitle className="text-lg">Reswell shipping</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-muted-foreground">
             <p>
-              Every listing tells you whether shipping is free, a flat rate, or “Buyer pays
-              shipping.” It&apos;s worth confirming the final cost and carrier in Messages before
-              the seller ships.
+              On many listings, sellers choose Reswell shipping. We calculate the carrier rate from
+              the packed box size and weight on the listing, and the buyer sees that cost at
+              checkout.
             </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                Buyers pay shipping as part of their order total — no guessing what it will cost
+                later.
+              </li>
+              <li>
+                After a sale, the seller gets a shipping label to print and attach before handing
+                the board to the carrier.
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Flat rate shipping</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-muted-foreground">
+            <p>
+              Some sellers set one fixed shipping price for the Continental U.S. Every buyer on
+              that listing pays the same amount, shown clearly before checkout.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                The shipping cost is added to the buyer&apos;s order total at checkout — what you
+                see on the listing is what you pay.
+              </li>
+              <li>
+                Sellers arrange shipping themselves and add tracking in Messages once the board is
+                on its way.
+              </li>
+              <li>
+                Sellers can use Reswell&apos;s label tools from the sale when available, or buy a
+                label through their preferred carrier.
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Free shipping</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-muted-foreground">
+            <p>
+              Some sellers cover shipping to attract more buyers. On these listings, you only pay
+              the item price — shipping is included.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                No shipping line item at checkout. The listing price is your full total before
+                tax.
+              </li>
+              <li>
+                The seller still ships the board to you and should share tracking once it&apos;s
+                sent.
+              </li>
+              <li>
+                Sellers often build the shipping cost into the listing price, so the board may
+                reflect that upfront.
+              </li>
+            </ul>
           </CardContent>
         </Card>
       </div>

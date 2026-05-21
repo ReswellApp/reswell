@@ -207,7 +207,6 @@ const nextConfig = {
       { source: "/threads", destination: "/board-talk", permanent: true },
       { source: "/wax-room", destination: "/board-talk", permanent: true },
       { source: "/feed", destination: "/sold", permanent: true },
-      { source: "/help", destination: "/faq", permanent: true },
       // Do not add /FAQ → /faq: Next redirects are case-insensitive, so that rule loops on /faq.
     ]
   },
