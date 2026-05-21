@@ -6,12 +6,16 @@ import { Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { ProfileCompletionFormFields } from "@/components/auth/profile-completion-form-fields"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  PROFILE_SETUP_MODAL_CONTENT_CLASS,
+  PROFILE_SETUP_MODAL_OVERLAY_CLASS,
+} from "@/lib/auth/auth-modal-shell-classes"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import {
   fetchProfileCompletionRow,
@@ -96,27 +100,30 @@ export function CompleteProfilePagePanel() {
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-md">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Choose your username</CardTitle>
-            <CardDescription>
-              Pick a username other members will see on Reswell. Add a profile photo if you&apos;d like.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProfileCompletionFormFields
-              user={user}
-              profile={profile}
-              onSuccess={() => {
-                setPhase("redirecting")
-                router.replace(nextPath)
-              }}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Dialog open onOpenChange={() => {}}>
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName={PROFILE_SETUP_MODAL_OVERLAY_CLASS}
+        className={PROFILE_SETUP_MODAL_CONTENT_CLASS}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle className="text-2xl">Choose your username</DialogTitle>
+          <DialogDescription>
+            Pick a username other members will see on Reswell. Add a profile photo if you&apos;d
+            like.
+          </DialogDescription>
+        </DialogHeader>
+        <ProfileCompletionFormFields
+          user={user}
+          profile={profile}
+          onSuccess={() => {
+            setPhase("redirecting")
+            router.replace(nextPath)
+          }}
+        />
+      </DialogContent>
+    </Dialog>
   )
 }

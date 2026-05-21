@@ -1,0 +1,18 @@
+/**
+ * Shared Radix dialog shell for auth modals (login / sign-up / Google OAuth) and
+ * post-OAuth profile setup. Keep overlay opacity and content sizing in sync.
+ */
+
+/** Default login / sign-up modal — matches {@link AuthModal}. */
+export const AUTH_MODAL_OVERLAY_CLASS =
+  "z-[100] touch-none bg-black/80"
+
+export const AUTH_MODAL_CONTENT_CLASS =
+  "z-[101] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 sm:p-8"
+
+/** Profile setup after Google sign-in — stacks above the auth modal when both mount. */
+export const PROFILE_SETUP_MODAL_OVERLAY_CLASS =
+  "z-[109] touch-none bg-black/80"
+
+export const PROFILE_SETUP_MODAL_CONTENT_CLASS =
+  "z-[110] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 sm:p-8"

@@ -1,6 +1,10 @@
 "use client"
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import {
+  AUTH_MODAL_CONTENT_CLASS,
+  AUTH_MODAL_OVERLAY_CLASS,
+} from "@/lib/auth/auth-modal-shell-classes"
 import { LoginFormPanel } from "@/components/auth/login-form-panel"
 import { SignUpFormPanel } from "@/components/auth/sign-up-form-panel"
 import { ForgotPasswordFormPanel } from "@/components/auth/forgot-password-form-panel"
@@ -34,7 +38,8 @@ export function AuthModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="z-[100] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 sm:p-8"
+        overlayClassName={AUTH_MODAL_OVERLAY_CLASS}
+        className={AUTH_MODAL_CONTENT_CLASS}
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         {mode === "login" ? (
