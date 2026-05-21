@@ -3,7 +3,7 @@ import { getConversationForBuyerSeller } from "@/lib/db/conversations"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
+import { trackKlaviyoReviewRequested } from "@/lib/klaviyo/track-review-requested"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import type { ReviewRequestMessagePayload } from "@/lib/validations/review-request-message-metadata"
 import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
@@ -199,15 +199,17 @@ export async function sendSellerReviewRequestForOrder(
     .eq("id", sellerUserId)
     .maybeSingle()
 
-  void trackKlaviyoMessageSent({
-    senderUserId: sellerUserId,
-    receiverUserId: row.buyer_id,
-    message: REVIEW_REQUEST_MESSAGE,
-    conversationId: conversation.id,
+  void trackKlaviyoReviewRequested({
+    orderId: row.id,
+    orderNum,
     listingId: row.listing_id,
+    listingTitle,
+    buyerUserId: row.buyer_id,
+    sellerUserId: sellerUserId,
+    conversationId: conversation.id,
     messageId: inserted.id,
     sentAt: inserted.created_at,
-    sessionSender: {
+    sessionSeller: {
       email: session?.email ?? null,
       profile: senderProfile,
     },
