@@ -13,8 +13,10 @@ import {
 } from 'lucide-react'
 import { pageSeoMetadata } from '@/lib/site-metadata'
 import {
+  reswellProtectionAccentClassName,
   reswellProtectionBorderAndBg,
-  reswellProtectionIconWellClassName,
+  reswellProtectionSellerAccentClassName,
+  reswellProtectionSellerBorderAndBg,
 } from '@/lib/reswell-protection-surface'
 
 export const metadata: Metadata = pageSeoMetadata({
@@ -26,7 +28,7 @@ export const metadata: Metadata = pageSeoMetadata({
 
 function Section({
   icon: Icon,
-  iconColor = 'text-blue-600 dark:text-blue-400',
+  iconColor = reswellProtectionAccentClassName,
   bg = reswellProtectionBorderAndBg,
   title,
   children,
@@ -55,11 +57,6 @@ export default function ProtectionPolicyPage() {
     <div className="container mx-auto max-w-2xl py-12 px-4 space-y-10">
       {/* Hero */}
       <div className="text-center space-y-4">
-        <div className="flex justify-center">
-          <div className={`rounded-full p-5 ${reswellProtectionIconWellClassName}`}>
-            <ShieldCheck className="h-10 w-10 text-blue-600 dark:text-blue-400" aria-hidden />
-          </div>
-        </div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Reswell Purchase Protection
         </h1>
@@ -77,7 +74,7 @@ export default function ProtectionPolicyPage() {
         className={`rounded-2xl border p-6 scroll-mt-8 ${reswellProtectionBorderAndBg}`}
       >
         <div className="flex items-center gap-3 mb-4">
-          <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" aria-hidden />
+          <ShoppingBag className={`h-5 w-5 flex-shrink-0 ${reswellProtectionAccentClassName}`} aria-hidden />
           <h2 id="buyer-protections-heading" className="text-lg font-bold text-foreground">
             Buyer protections
           </h2>
@@ -93,21 +90,21 @@ export default function ProtectionPolicyPage() {
         </p>
         <ul className="mt-2 space-y-2 text-sm text-foreground/80">
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" aria-hidden />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionAccentClassName}`} aria-hidden />
             <span>
               <strong>Money back</strong> — a full refund of the item price and shipping you paid
               for that purchase (no separate protection cap on covered claims).
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" aria-hidden />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionAccentClassName}`} aria-hidden />
             <span>
               <strong>Covered problems</strong> — non-delivery, item not as described (material
               mismatch), or damage in transit (with required evidence where stated below).
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" aria-hidden />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionAccentClassName}`} aria-hidden />
             <span>
               <strong>Returns when required</strong> — for not-as-described and damage claims, we
               provide a prepaid return label; your refund is released after the seller confirms
@@ -134,10 +131,10 @@ export default function ProtectionPolicyPage() {
       <section
         id="seller-protections"
         aria-labelledby="seller-protections-heading"
-        className="rounded-2xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/60 dark:bg-emerald-950/20 p-6 scroll-mt-8"
+        className={`rounded-2xl border p-6 scroll-mt-8 ${reswellProtectionSellerBorderAndBg}`}
       >
         <div className="flex items-center gap-3 mb-4">
-          <Store className="h-5 w-5 text-emerald-700 dark:text-emerald-400 flex-shrink-0" aria-hidden />
+          <Store className={`h-5 w-5 flex-shrink-0 ${reswellProtectionSellerAccentClassName}`} aria-hidden />
           <h2 id="seller-protections-heading" className="text-lg font-bold text-foreground">
             Seller protections
           </h2>
@@ -157,7 +154,7 @@ export default function ProtectionPolicyPage() {
         </p>
         <ul className="mt-2 space-y-2 text-sm text-foreground/80">
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-400" aria-hidden />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionSellerAccentClassName}`} aria-hidden />
             <span>
               <strong>Claims are limited to the policy</strong> — buyer&apos;s remorse, subjective
               expectations, and off-platform payments are out of scope. &ldquo;Not as described&rdquo;
@@ -166,7 +163,7 @@ export default function ProtectionPolicyPage() {
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-400" aria-hidden />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionSellerAccentClassName}`} aria-hidden />
             <span>
               <strong>Review before outcomes</strong> — we aim to review protection claims within{' '}
               <strong>3 business days</strong>, using the evidence submitted (photos, tracking,
@@ -174,7 +171,7 @@ export default function ProtectionPolicyPage() {
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-400" aria-hidden />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionSellerAccentClassName}`} aria-hidden />
             <span>
               <strong>Returns when required</strong> — for covered not-as-described or damage
               claims, we issue a prepaid return label to the buyer. Refunds to the buyer complete
@@ -183,7 +180,7 @@ export default function ProtectionPolicyPage() {
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-400" aria-hidden />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionSellerAccentClassName}`} aria-hidden />
             <span>
               <strong>Tracking protects everyone</strong> — for shipped purchases, use{' '}
               <strong>tracked shipping</strong> and add tracking on the sale in Reswell. It helps show
@@ -339,25 +336,25 @@ export default function ProtectionPolicyPage() {
         id="protection-window"
         className={`rounded-2xl border p-6 scroll-mt-8 ${reswellProtectionBorderAndBg}`}
       >
-        <h2 className="text-base font-bold text-blue-900 dark:text-blue-300 mb-2">
+        <h2 className="text-base font-bold text-[#163060] dark:text-[#7F9DD5] mb-2">
           Protection window
         </h2>
-        <div className="space-y-2 text-sm text-blue-800/80 dark:text-blue-400/80">
+        <div className="space-y-2 text-sm text-[#355185]/90 dark:text-[#7F9DD5]/85">
           <div className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionAccentClassName}`} />
             <p>
               <strong>Opens</strong> when your purchase is confirmed.
             </p>
           </div>
           <div className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionAccentClassName}`} />
             <p>
               <strong>Closes</strong> 30 days after delivery confirmation — or when you leave a
               positive review, whichever comes first.
             </p>
           </div>
           <div className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+            <CheckCircle2 className={`h-4 w-4 flex-shrink-0 mt-0.5 ${reswellProtectionAccentClassName}`} />
             <p>
               You can see the exact countdown on your purchase detail page while protection is active.
             </p>
