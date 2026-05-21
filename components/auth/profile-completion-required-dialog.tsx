@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { accessTokenIndicatesPasswordRecovery } from "@/lib/auth/access-token-password-recovery"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import {
   fetchProfileCompletionRow,
   isGoogleAuthUser,
@@ -21,16 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
-async function pollForSession(msBetween: number, maxAttempts: number) {
-  const supabase = createClient()
-  for (let i = 0; i < maxAttempts; i += 1) {
-    const { data } = await supabase.auth.getSession()
-    if (data.session?.user) return data.session
-    await new Promise((r) => setTimeout(r, msBetween))
-  }
-  return null
-}
 
 function ProfileCompletionRequiredDialogInner() {
   const supabase = useMemo(() => createClient(), [])
@@ -115,7 +106,7 @@ function ProfileCompletionRequiredDialogInner() {
 
       let session = data.session ?? null
       if (!session?.user) {
-        session = await pollForSession(75, 40)
+        session = await waitForClientSession({ supabase })
         if (cancelled) return
       }
 

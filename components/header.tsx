@@ -58,6 +58,7 @@ import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-us
 import { useAuthModal } from "@/components/auth/auth-modal-context"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
 import { CartHeaderLink } from "@/components/cart-header-link"
@@ -463,6 +464,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   useLayoutEffect(() => {
     const d = deriveHeaderNavState(serverHeaderAuth)
+    // Soft `router.refresh()` after OAuth can return a guest snapshot before cookies are
+    // visible to RSC — do not paint logged-out over a verified client session.
+    if (!d.user && user) return
     setUser(d.user)
     setProfileAvatarUrl(d.profileAvatarUrl)
     setProfileDisplayName(d.profileDisplayName)
@@ -527,6 +531,26 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     void refetchFromClient()
   }, [authLoaded, user, refetchFromClient])
 
+  /** Server saw the OAuth cookies before the browser client storage caught up. */
+  useEffect(() => {
+    const serverUser = serverHeaderAuth.user
+    if (!serverUser) return
+
+    let cancelled = false
+    void (async () => {
+      const { data } = await supabase.auth.getSession()
+      if (cancelled || data.session?.user) return
+      const session = await waitForClientSession({ supabase })
+      if (cancelled || !session?.user) return
+      await refetchFromClient()
+      router.refresh()
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [serverHeaderAuth.user?.id, supabase, refetchFromClient, router])
+
   useEffect(() => {
     function onHeaderAuthRefresh() {
       void refetchFromClient()
@@ -546,13 +570,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (
-        event !== "SIGNED_IN" &&
-        event !== "SIGNED_OUT" &&
-        event !== "USER_UPDATED"
-      ) {
+      if (event === "INITIAL_SESSION") {
+        if (session?.user) {
+          setUser(session.user)
+          void refetchFromClient()
+        }
         return
       }
+
       if (event === "SIGNED_OUT") {
         const guest = deriveHeaderNavState({ user: null, bootstrap: null })
         setUser(guest.user)
@@ -562,10 +587,19 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setUnreadMessages(guest.unreadMessages)
         setWalletBalance(guest.walletBalance)
         setAuthLoaded(true)
-      } else if (session?.user) {
-        setUser(session.user)
+        router.refresh()
+        return
       }
-      router.refresh()
+
+      if (
+        (event === "SIGNED_IN" || event === "USER_UPDATED") &&
+        session?.user
+      ) {
+        setUser(session.user)
+        void refetchFromClient().then(() => {
+          router.refresh()
+        })
+      }
     })
 
     return () => {

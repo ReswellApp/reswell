@@ -53,7 +53,19 @@ export async function GET(request: NextRequest) {
       }
       const finalResponse = NextResponse.redirect(`${origin}${destination}`);
       redirectResponse.cookies.getAll().forEach((cookie) => {
-        finalResponse.cookies.set(cookie);
+        finalResponse.cookies.set({
+          name: cookie.name,
+          value: cookie.value,
+          path: cookie.path,
+          domain: cookie.domain,
+          expires: cookie.expires,
+          maxAge: cookie.maxAge,
+          httpOnly: cookie.httpOnly,
+          secure: cookie.secure,
+          sameSite: cookie.sameSite,
+          priority: cookie.priority,
+          partitioned: cookie.partitioned,
+        });
       });
       finalResponse.headers.set("Cache-Control", "private, no-store");
       return finalResponse;

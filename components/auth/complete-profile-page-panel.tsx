@@ -18,6 +18,7 @@ import {
   resolveGoogleProfileSetupRequired,
   type ProfileCompletionRow,
 } from "@/lib/auth/profile-completion"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import type { User } from "@supabase/supabase-js"
 
 export function CompleteProfilePagePanel() {
@@ -34,9 +35,13 @@ export function CompleteProfilePagePanel() {
     let cancelled = false
 
     void (async () => {
-      const {
-        data: { user: resolvedUser },
-      } = await supabase.auth.getUser()
+      let resolvedUser =
+        (await supabase.auth.getSession()).data.session?.user ?? null
+      if (!resolvedUser) {
+        const session = await waitForClientSession({ supabase })
+        if (cancelled) return
+        resolvedUser = session?.user ?? null
+      }
 
       if (cancelled) return
 

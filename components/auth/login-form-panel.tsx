@@ -19,6 +19,7 @@ import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 
 export function LoginFormPanel({
   redirectTo,
@@ -45,9 +46,13 @@ export function LoginFormPanel({
   useEffect(() => {
     const supabase = createClient()
     const dest = safeRedirectPath(redirectTo)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) navigateAfterClientAuth(dest, router)
-    })
+    void (async () => {
+      let session = (await supabase.auth.getSession()).data.session
+      if (!session?.user) {
+        session = await waitForClientSession({ supabase })
+      }
+      if (session?.user) navigateAfterClientAuth(dest, router)
+    })()
   }, [router, redirectTo])
 
   const handleLogin = async (e: React.FormEvent) => {
