@@ -167,7 +167,7 @@ export function RecentlySoldPageClient({
             <span aria-hidden>🤝</span>
             <span className="font-medium tabular-nums">{soldStats.count}</span>
             <span>items sold on Reswell ·</span>
-            <span className="font-medium tabular-nums text-emerald-700 dark:text-emerald-400">
+            <span className="font-medium tabular-nums text-listingHeart">
               {soldStats.gmvFormatted}
             </span>
             <span>in sales</span>

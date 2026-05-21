@@ -4,7 +4,6 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { Search } from "lucide-react"
 import { filterHelpCenterArticles, getHelpArticleHref } from "@/lib/help-center/registry"
-import { HELP_CENTER_ACCENT } from "@/lib/help-center/paths"
 import { cn } from "@/lib/utils"
 
 type HelpCenterSearchProps = {
@@ -42,8 +41,7 @@ export function HelpCenterSearch({
         />
         <button
           type="submit"
-          className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
-          style={{ backgroundColor: HELP_CENTER_ACCENT }}
+          className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-listingHeart text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-listingHeart focus-visible:ring-offset-2"
           aria-label="Search"
         >
           <Search className="h-5 w-5" strokeWidth={2.25} aria-hidden />

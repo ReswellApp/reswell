@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { getHelpCenterTabs } from "@/lib/help-center/registry"
-import { HELP_CENTER_ACCENT, helpTopicSectionPath } from "@/lib/help-center/paths"
+import { helpTopicSectionPath } from "@/lib/help-center/paths"
 import type { HelpCenterTabId } from "@/lib/help-center/types"
 import { HelpCenterSearch } from "@/components/features/help-center/help-center-search"
 import { cn } from "@/lib/utils"
@@ -50,8 +50,7 @@ export function HelpCenterHero({ activeTab, onTabChange }: HelpCenterHeroProps) 
               {t.label}
               {isActive ? (
                 <span
-                  className="absolute bottom-0 left-0 right-0 h-1 rounded-full"
-                  style={{ backgroundColor: HELP_CENTER_ACCENT }}
+                  className="absolute bottom-0 left-0 right-0 h-1 rounded-full bg-listingHeart"
                   aria-hidden
                 />
               ) : null}

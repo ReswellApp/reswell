@@ -86,6 +86,7 @@ export function filterHelpCenterArticles(query: string, articles: HelpArticle[] 
   return articles.filter((article) => {
     const haystack = [
       article.title,
+      article.description,
       article.sectionTitle,
       article.groupTitle,
       ...(article.keywords ?? []),

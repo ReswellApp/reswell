@@ -17,7 +17,7 @@ export function HelpCenterAdditionalResources() {
               href={resource.href}
               className={cn(
                 "flex min-h-[4.5rem] items-center rounded-md border border-[#d4c4a8] bg-white px-5 py-4 text-left font-bold text-neutral-900 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2",
-                resource.highlight && "text-[#FF5A00] underline decoration-[#FF5A00] underline-offset-2",
+                resource.highlight && "text-listingHeart underline decoration-listingHeart underline-offset-2",
               )}
             >
               {resource.title}

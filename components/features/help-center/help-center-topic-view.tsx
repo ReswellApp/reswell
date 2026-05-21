@@ -34,7 +34,7 @@ export function HelpCenterTopicView({ topic }: { topic: HelpTopicIndex }) {
                         <li key={article.slug}>
                           <Link
                             href={getHelpArticleHref({ topicId: topic.id, slug: article.slug })}
-                            className="text-sm text-neutral-900 transition-colors hover:text-[#FF5A00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 rounded-sm"
+                            className="text-sm text-neutral-900 transition-colors hover:text-listingHeart focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 rounded-sm"
                           >
                             {article.title}
                           </Link>

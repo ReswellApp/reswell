@@ -10,18 +10,30 @@ export type HelpCenterBreadcrumb = {
 export type HelpArticleSection = {
   heading?: string
   body: ReactNode
+  /** Optional screenshot shown below the section body. */
+  figure?: HelpArticleFigure
+}
+
+export type HelpArticleFigure = {
+  src: string
+  alt: string
+  caption?: string
 }
 
 export type HelpArticle = {
   slug: string
   topicId: HelpCenterTabId
   title: string
+  /** Plain-text summary for SEO metadata and previews. */
+  description: string
   sectionSlug: string
   sectionTitle: string
   groupTitle: string
   keywords?: string[]
   quickAnswer?: ReactNode
   sections: HelpArticleSection[]
+  /** Other articles in the same topic to surface at the bottom of the page. */
+  relatedSlugs?: string[]
 }
 
 export type HelpArticleLink = {

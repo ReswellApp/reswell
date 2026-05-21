@@ -1,6 +1,7 @@
 import type { HelpCenterTabId } from "@/lib/help-center/types"
 
-export const HELP_CENTER_ACCENT = "#FF5A00"
+/** Matches site footer (`bg-listingHeart`). */
+export const HELP_CENTER_ACCENT = "#355185"
 
 export function helpTopicPath(topicId: HelpCenterTabId): string {
   return `/help/${topicId}`

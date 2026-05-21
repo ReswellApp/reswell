@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps) {
   if (!article) return {}
   return pageSeoMetadata({
     title: `${article.title} — Help Center — Reswell`,
-    description: `Help article: ${article.title}`,
+    description: article.description,
     path: helpArticlePath(topicParam, slug),
   })
 }

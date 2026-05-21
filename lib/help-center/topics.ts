@@ -30,20 +30,13 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
             title: "Browsing and checkout",
             articles: [
               { slug: "how-do-i-buy-a-board", title: "How do I buy a board on Reswell?" },
-              { slug: "local-pickup-or-shipping", title: "Local pickup or shipping — how do I know which a listing offers?" },
+              { slug: "local-pickup-or-shipping", title: "How do I know if a listing offers pickup or shipping?" },
             ],
           },
           {
             title: "Search and favorites",
             articles: [
               { slug: "how-do-favorites-work", title: "How do favorites work on Reswell?" },
-            ],
-          },
-          {
-            title: "Buying internationally",
-            articles: [
-              { slug: "international-buying-guide", title: "International buying guide" },
-              { slug: "will-i-pay-import-fees", title: "Will I pay import fees?" },
             ],
           },
           {
@@ -81,7 +74,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
           {
             title: "Order issues",
             articles: [
-              { slug: "package-delayed-or-lost", title: "My package is delayed or lost — what should I do next?" },
+              { slug: "package-delayed-or-lost", title: "What should I do if my package is delayed or lost?" },
               { slug: "change-shipping-address", title: "How can I change the shipping address on my purchase?" },
               { slug: "how-long-to-pay", title: "How long do I have to pay for my Reswell purchase?" },
               { slug: "why-charged-tax", title: "Why was I charged tax on my order?" },
@@ -132,7 +125,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
           {
             title: "Receiving your earnings",
             articles: [
-              { slug: "i-sold-an-item-whats-next", title: "I sold an item — what's next?" },
+              { slug: "i-sold-an-item-whats-next", title: "I sold a board. What should I do next?" },
               { slug: "how-long-to-get-paid", title: "How long does it take to get paid?" },
               { slug: "marketplace-fees", title: "What are Reswell's selling fees?" },
             ],
@@ -249,7 +242,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
           {
             title: "Staying safe",
             articles: [
-              { slug: "avoid-scams", title: "I think I'm dealing with a scam — what should I do?" },
+              { slug: "avoid-scams", title: "What should I do if I think I am being scammed?" },
             ],
           },
         ],
