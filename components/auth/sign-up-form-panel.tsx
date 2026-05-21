@@ -90,11 +90,12 @@ export function SignUpFormPanel({
           /* keep window.location.origin */
         }
       }
+      const postAuthDest = safeRedirectPath(redirectTo)
       const { data: signData, error: signError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${siteOrigin}/auth/confirm`,
+          emailRedirectTo: `${siteOrigin}/auth/confirm?next=${encodeURIComponent(postAuthDest)}`,
           data: {
             display_name: name!,
           },

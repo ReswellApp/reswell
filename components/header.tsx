@@ -66,6 +66,9 @@ import { HeaderMobileCategoryBar } from "@/components/header-mobile-category-bar
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
+/** Post-auth destination when a guest taps “List your board” in the header. */
+const GUEST_SELL_REDIRECT = "/sell"
+
 type ProfileAvatarFields = {
   avatar_url: string | null
   shop_logo_url: string | null
@@ -914,7 +917,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 </div>
                 <div className="flex shrink-0 items-center justify-end gap-0.5">
                   {!authLoaded ? (
-                    <Skeleton className="h-9 w-28 shrink-0 rounded-md" aria-hidden />
+                    <Skeleton className="h-9 w-52 shrink-0 rounded-md" aria-hidden />
                   ) : user ? (
                     <>
                       <Link href="/favorites" className="inline-flex shrink-0">
@@ -956,6 +959,23 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     </>
                   ) : (
                     <>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="h-9 shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-3 text-[13px] font-medium"
+                      >
+                        <Link
+                          href={`/auth/login?redirect=${encodeURIComponent(GUEST_SELL_REDIRECT)}`}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                            e.preventDefault()
+                            openLogin(GUEST_SELL_REDIRECT)
+                          }}
+                        >
+                          List your board
+                        </Link>
+                      </Button>
                       <Link
                         href="/auth/login"
                         onClick={(e) => {
@@ -1098,32 +1118,18 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </PopoverContent>
             </Popover>
 
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 shrink-0 text-foreground hover:bg-muted"
-            >
-              <Link
-                href={
-                  user
-                    ? "/sell?new=1"
-                    : `/auth/login?redirect=${encodeURIComponent("/sell?new=1")}`
-                }
-                onClick={
-                  user
-                    ? undefined
-                    : (e) => {
-                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                        e.preventDefault()
-                        openLogin("/sell?new=1")
-                      }
-                }
-                aria-label="Create listing"
+            {authLoaded && user ? (
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 text-foreground hover:bg-muted"
               >
-                <Plus className="h-[22px] w-[22px]" aria-hidden />
-              </Link>
-            </Button>
+                <Link href="/sell?new=1" aria-label="Create listing">
+                  <Plus className="h-[22px] w-[22px]" aria-hidden />
+                </Link>
+              </Button>
+            ) : null}
 
             <Link
               href={
@@ -1179,6 +1185,23 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </div>
             ) : authLoaded ? (
               <div className="flex items-center gap-0">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="hidden h-9 shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-3 text-[13px] font-medium sm:inline-flex"
+                >
+                  <Link
+                    href={`/auth/login?redirect=${encodeURIComponent(GUEST_SELL_REDIRECT)}`}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      openLogin(GUEST_SELL_REDIRECT)
+                    }}
+                  >
+                    List your board
+                  </Link>
+                </Button>
                 <Link
                   href="/auth/login"
                   onClick={(e) => {
