@@ -1,5 +1,10 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
+
+import { fetchSellerSellPageKlaviyoContext } from "@/lib/db/sellerSellPageKlaviyoContext"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { sellPageViewContextFromPath } from "@/lib/klaviyo/sell-page-view-context"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { trackKlaviyoViewedSellPage } from "@/lib/klaviyo/track-viewed-sell-page"
 
 export type KlaviyoPageViewSegment = "sell" | "boards" | "site"
 
@@ -31,13 +36,15 @@ export type TrackKlaviyoPageViewInput = {
   loggedInUserId?: string | null
   /** Session email when available (avoids service lookup on every view) */
   loggedInUserEmail?: string | null
+  /** Required for `/sell` seller context (listing counts, edit status) */
+  supabase?: SupabaseClient
 }
 
 /**
  * Fires a Klaviyo Events API metric for SPA / full navigation page views.
  *
  * **Metrics (create in Klaviyo under Flows → Metric):**
- * - **Viewed Sell Page** — paths under `/sell`
+ * - **Viewed Sell Page** — signed-in `/sell` only; see `track-viewed-sell-page.ts` for abandoned-listing flow
  * - **Viewed Boards Page** — `/boards` and `/boards/...`
  * - **Viewed Site Page** — all other paths
  *
@@ -60,6 +67,42 @@ export async function trackKlaviyoPageView(
     typeof input.loggedInUserId === "string"
       ? input.loggedInUserId.trim() || null
       : null
+
+  if (segment === "sell") {
+    if (!userId) return
+    if (!email) {
+      email = await getAuthEmailForUserId(userId)
+    }
+    const sellContext = sellPageViewContextFromPath(pathname, search)
+    if (!sellContext) return
+
+    let activeListingCount = 0
+    let draftListingCount = 0
+    let editListingStatus: string | null = null
+    if (input.supabase) {
+      const ctx = await fetchSellerSellPageKlaviyoContext(
+        input.supabase,
+        userId,
+        sellContext.editListingId,
+      )
+      activeListingCount = ctx.activeListingCount
+      draftListingCount = ctx.draftListingCount
+      editListingStatus = ctx.editListingStatus
+    }
+
+    await trackKlaviyoViewedSellPage({
+      userId,
+      email,
+      pathname,
+      path,
+      search,
+      sellContext,
+      activeListingCount,
+      draftListingCount,
+      editListingStatus,
+    })
+    return
+  }
 
   if (userId && !email) {
     email = await getAuthEmailForUserId(userId)

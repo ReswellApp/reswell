@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
         anonymousId: parsed.data.anonymous_id ?? null,
         loggedInUserId: user?.id ?? null,
         loggedInUserEmail: user?.email ?? null,
+        supabase,
       }),
       recordSiteTrafficPageViewEvent({
         pathname: parsed.data.pathname,

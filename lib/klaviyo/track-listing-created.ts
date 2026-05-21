@@ -8,6 +8,9 @@
  * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Listing** →
  * add email/content; profile on the event is the seller (`external_id` = Supabase user id).
  *
+ * **Sell abandonment:** use as the “published” branch on flows triggered by **Viewed Sell Page**
+ * (conditional split: has done **Listing** since starting this flow). See `track-viewed-sell-page.ts`.
+ *
  * @see https://developers.klaviyo.com/en/reference/create_event
  */
 
