@@ -4,8 +4,8 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import {
   AlertCircle,
+  Check,
   CheckCircle2,
-  Circle,
   ExternalLink,
   HelpCircle,
   Loader2,
@@ -81,6 +81,37 @@ type JourneyStep = {
   title: string
   description: string
   state: "done" | "current" | "upcoming"
+}
+
+function JourneyStepIndicator({ state }: { state: JourneyStep["state"] }) {
+  if (state === "done") {
+    return (
+      <div
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-listingHeart text-white shadow-sm"
+        aria-hidden
+      >
+        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+      </div>
+    )
+  }
+
+  if (state === "current") {
+    return (
+      <div
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-listingHeart bg-listingHeart/8"
+        aria-hidden
+      >
+        <div className="h-2 w-2 rounded-full bg-listingHeart" />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/20 bg-background"
+      aria-hidden
+    />
+  )
 }
 
 function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
@@ -262,36 +293,36 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
   return (
     <div className="space-y-8">
       <Card
-        className={`overflow-hidden shadow-sm ${
+        className={`overflow-hidden rounded-2xl border shadow-sm ${
           isRefunded
             ? "border-destructive/20 bg-gradient-to-b from-destructive/[0.04] to-background"
             : isRefunding
               ? "border-amber-500/25 bg-gradient-to-b from-amber-500/[0.07] to-background"
-              : "border-primary/15 bg-gradient-to-b from-primary/[0.06] to-background"
+              : "border-listingHeart/12 bg-gradient-to-b from-listingHeart/[0.05] to-background"
         }`}
       >
-        <CardHeader className="pb-2">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <CardHeader className="pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p
-                className={`text-[11px] font-semibold uppercase tracking-wider ${
+                className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
                   isRefunded
                     ? "text-destructive/80"
                     : isRefunding
                       ? "text-amber-800 dark:text-amber-200/90"
-                      : "text-primary/80"
+                      : "text-listingHeart/85"
                 }`}
               >
                 {isRefunded ? "Refund processed" : isRefunding ? "Refund in progress" : "What happens next"}
               </p>
-              <CardTitle className="mt-1 text-xl font-semibold tracking-tight">
+              <CardTitle className="mt-1.5 text-xl font-semibold tracking-tight">
                 {isRefunded
                   ? `$${props.amount.toFixed(2)} refund issued`
                   : isRefunding
                     ? `Refund processing — $${props.amount.toFixed(2)}`
                     : "Your purchase is protected on Reswell"}
               </CardTitle>
-              <CardDescription className="text-[15px] leading-relaxed mt-2 max-w-2xl">
+              <CardDescription className="mt-2 max-w-2xl text-[15px] leading-relaxed">
                 {isRefunded
                   ? "This purchase has been fully refunded. See the timeline below for details on when to expect your funds."
                   : isRefunding
@@ -307,7 +338,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
                   ? "bg-destructive/10 text-destructive"
                   : isRefunding
                     ? "bg-amber-500/15 text-amber-900 dark:text-amber-100"
-                    : "bg-primary/10 text-primary"
+                    : "bg-listingHeart/10 text-listingHeart"
               }`}
             >
               {isRefunded || isRefunding ? (
@@ -318,27 +349,42 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-0 pt-2">
-          {journey.map((step, i) => (
-            <div key={step.key}>
-              {i > 0 ? <Separator className="my-4 bg-border/60" /> : null}
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center pt-0.5">
-                  {step.state === "done" ? (
-                    <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" aria-hidden />
-                  ) : step.state === "current" ? (
-                    <Circle className="h-6 w-6 text-primary fill-primary/15 shrink-0" aria-hidden />
-                  ) : (
-                    <Circle className="h-6 w-6 text-muted-foreground/40 shrink-0" aria-hidden />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1 pb-1">
-                  <p className="font-semibold text-foreground leading-snug">{step.title}</p>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{step.description}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+        <CardContent className="pt-0">
+          <ol className="space-y-0">
+            {journey.map((step, i) => {
+              const isLast = i === journey.length - 1
+              const connectorTone =
+                step.state === "done"
+                  ? "bg-listingHeart/35"
+                  : step.state === "current"
+                    ? "bg-listingHeart/20"
+                    : "bg-border/70"
+
+              return (
+                <li key={step.key} className="relative flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <JourneyStepIndicator state={step.state} />
+                    {!isLast ? (
+                      <span
+                        className={`mt-2 mb-1 w-px flex-1 min-h-[1.75rem] ${connectorTone}`}
+                        aria-hidden
+                      />
+                    ) : null}
+                  </div>
+                  <div className={`min-w-0 flex-1 ${isLast ? "pb-0.5" : "pb-6"}`}>
+                    <p
+                      className={`font-semibold leading-snug ${
+                        step.state === "upcoming" ? "text-muted-foreground" : "text-foreground"
+                      }`}
+                    >
+                      {step.title}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.description}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
         </CardContent>
       </Card>
 
@@ -501,7 +547,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         </p>
       ) : isRefunded ? (
         <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
-          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
+          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-listingHeart" />
           <span>
             This purchase has been fully refunded. If you have any questions about the refund timeline or
             amount, contact our support team.
