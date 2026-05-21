@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react"
-import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { Camera, Loader2, User as UserIcon } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import {
   getOAuthAvatarUrl,
   PROFILE_USERNAME_COMPLETED_METADATA_KEY,
@@ -32,7 +31,6 @@ export function ProfileCompletionFormFields({
   profile,
   onSuccess,
 }: ProfileCompletionFormFieldsProps) {
-  const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -155,10 +153,7 @@ export function ProfileCompletionFormFields({
 
       await uploadAvatarIfNeeded()
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
-      }
-      router.refresh()
+      dispatchHeaderAuthRefresh({ displayName: trimmedName })
       onSuccess()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")

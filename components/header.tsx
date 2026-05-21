@@ -56,7 +56,10 @@ import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
-import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import {
+  HEADER_AUTH_REFRESH_EVENT,
+  type HeaderAuthRefreshDetail,
+} from "@/lib/auth/header-auth-refresh"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
@@ -473,12 +476,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setIsAdmin(d.isAdmin)
     setUnreadMessages(d.unreadMessages)
     setWalletBalance(d.walletBalance)
-    setAuthLoaded(d.authLoaded)
+    // Never drop back to skeleton / logged-out chrome while the client session is still valid.
+    setAuthLoaded(d.user ? d.authLoaded || Boolean(user) : d.authLoaded)
     // headerAuthDigest is the meaningful identity of the server snapshot for this tree.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headerAuthDigest])
 
   const refetchFromClient = useCallback(async () => {
+    if (user) setAuthLoaded(true)
     try {
       const userResult = await getAuthUserWithRetry(supabase)
       if (!userResult.ok) {
@@ -523,7 +528,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     } finally {
       setAuthLoaded(true)
     }
-  }, [supabase])
+  }, [supabase, user])
 
   useEffect(() => {
     if (authLoaded) return
@@ -552,7 +557,16 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   }, [serverHeaderAuth.user?.id, supabase, refetchFromClient, router])
 
   useEffect(() => {
-    function onHeaderAuthRefresh() {
+    function onHeaderAuthRefresh(event: Event) {
+      const detail = (event as CustomEvent<HeaderAuthRefreshDetail>).detail
+      if (detail?.displayName?.trim()) {
+        setProfileDisplayName(detail.displayName.trim())
+        setAuthLoaded(true)
+      }
+      if (detail?.avatarUrl?.trim()) {
+        setProfileAvatarUrl(detail.avatarUrl.trim())
+        setAuthLoaded(true)
+      }
       void refetchFromClient()
     }
     window.addEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
@@ -596,9 +610,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         session?.user
       ) {
         setUser(session.user)
-        void refetchFromClient().then(() => {
-          router.refresh()
-        })
+        setAuthLoaded(true)
+        void refetchFromClient()
       }
     })
 

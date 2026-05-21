@@ -1,129 +1,29 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { ProfileCompletionFormFields } from "@/components/auth/profile-completion-form-fields"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  PROFILE_SETUP_MODAL_CONTENT_CLASS,
-  PROFILE_SETUP_MODAL_OVERLAY_CLASS,
-} from "@/lib/auth/auth-modal-shell-classes"
-import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import {
-  fetchProfileCompletionRow,
-  resolveGoogleProfileSetupRequired,
-  type ProfileCompletionRow,
-} from "@/lib/auth/profile-completion"
-import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
-import type { User } from "@supabase/supabase-js"
+import { resolveProfileCompletionReturnPath } from "@/lib/auth/profile-completion-return-path"
 
+/**
+ * Legacy / bookmarked `/auth/complete-profile` URLs — send users to their `next` target
+ * (usually `/`) so {@link ProfileCompletionRequiredDialog} can open over the homepage.
+ */
 export function CompleteProfilePagePanel() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [])
-  const [phase, setPhase] = useState<"loading" | "ready" | "redirecting">("loading")
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<ProfileCompletionRow | null>(null)
-
-  const nextPath = safeRedirectPath(searchParams.get("next"))
+  const returnPath = resolveProfileCompletionReturnPath(
+    "/auth/complete-profile",
+    searchParams,
+  )
 
   useEffect(() => {
-    let cancelled = false
-
-    void (async () => {
-      let resolvedUser =
-        (await supabase.auth.getSession()).data.session?.user ?? null
-      if (!resolvedUser) {
-        const session = await waitForClientSession({ supabase })
-        if (cancelled) return
-        resolvedUser = session?.user ?? null
-      }
-
-      if (cancelled) return
-
-      if (!resolvedUser) {
-        router.replace(`/auth/login?redirect=${encodeURIComponent(`/auth/complete-profile?next=${encodeURIComponent(nextPath)}`)}`)
-        return
-      }
-
-      const needsSetup = await resolveGoogleProfileSetupRequired(supabase, resolvedUser)
-      if (cancelled) return
-
-      if (!needsSetup) {
-        setPhase("redirecting")
-        router.replace(nextPath)
-        return
-      }
-
-      const { profile: row } = await fetchProfileCompletionRow(supabase, resolvedUser.id)
-      if (cancelled) return
-
-      setUser(resolvedUser)
-      setProfile(
-        row ?? {
-          display_name: null,
-          avatar_url: null,
-          profile_completed_at: null,
-          email: resolvedUser.email ?? null,
-        },
-      )
-      setPhase("ready")
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [nextPath, router, supabase])
-
-  if (phase === "loading" || phase === "redirecting") {
-    return (
-      <div className="flex min-h-svh w-full items-center justify-center p-6">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
-      </div>
-    )
-  }
-
-  if (!user || !profile) {
-    return (
-      <div className="flex min-h-svh w-full items-center justify-center p-6">
-        <p className="text-sm text-muted-foreground">Could not load your profile. Please refresh.</p>
-      </div>
-    )
-  }
+    router.replace(returnPath)
+  }, [returnPath, router])
 
   return (
-    <Dialog open onOpenChange={() => {}}>
-      <DialogContent
-        showCloseButton={false}
-        overlayClassName={PROFILE_SETUP_MODAL_OVERLAY_CLASS}
-        className={PROFILE_SETUP_MODAL_CONTENT_CLASS}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Choose your username</DialogTitle>
-          <DialogDescription>
-            Pick a username other members will see on Reswell. Add a profile photo if you&apos;d
-            like.
-          </DialogDescription>
-        </DialogHeader>
-        <ProfileCompletionFormFields
-          user={user}
-          profile={profile}
-          onSuccess={() => {
-            setPhase("redirecting")
-            router.replace(nextPath)
-          }}
-        />
-      </DialogContent>
-    </Dialog>
+    <div className="flex min-h-svh w-full items-center justify-center p-6" aria-hidden>
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
   )
 }
