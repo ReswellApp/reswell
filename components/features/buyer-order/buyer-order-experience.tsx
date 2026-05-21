@@ -20,6 +20,12 @@ import {
 import { toast } from "sonner"
 import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { deliveryStatusLabel } from "@/lib/order-status"
+import {
+  daysUntilShippingDeadline,
+  getShippingDeadlineDate,
+  isEligibleForShippingDeadlineAutoCancel,
+  SHIPPING_DEADLINE_DAYS,
+} from "@/lib/shipping-deadline"
 import { Button } from "@/components/ui/button"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -114,6 +120,31 @@ function JourneyStepIndicator({ state }: { state: JourneyStep["state"] }) {
   )
 }
 
+function buildShippingStepDescription(props: BuyerOrderExperienceProps): string {
+  const { createdAtIso, deliveryStatus, trackingNumber } = props
+  const hasTrack = !!trackingNumber?.trim()
+  const shipped = deliveryStatus === "shipped" || deliveryStatus === "delivered"
+
+  if (hasTrack) {
+    return "Tracking is available — use Track package below."
+  }
+
+  if (shipped) {
+    return "The seller marked your order as shipped."
+  }
+
+  const daysLeft = daysUntilShippingDeadline(createdAtIso)
+  if (daysLeft <= 0) {
+    return "The seller has not shipped yet. Reswell will cancel this purchase and refund you automatically."
+  }
+
+  const deadlineLabel = getShippingDeadlineDate(createdAtIso).toLocaleDateString(undefined, {
+    dateStyle: "medium",
+  })
+
+  return `You'll see tracking here once the seller adds it. If they haven't shipped by ${deadlineLabel} (${SHIPPING_DEADLINE_DAYS} days), Reswell will cancel and refund you automatically.`
+}
+
 function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
   const { fulfillmentMethod, deliveryStatus, trackingNumber, status, paymentMethod, refundedAt, amount } = props
   const ship = fulfillmentMethod === "shipping"
@@ -192,9 +223,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
       {
         key: "ship",
         title: hasTrack || shipped ? "Shipped" : "Seller ships your board",
-        description: hasTrack
-          ? "Tracking is available — use Track package below."
-          : "You’ll see tracking here once the seller adds it.",
+        description: buildShippingStepDescription(props),
         state: !hasTrack && !shipped ? "current" : "done",
       },
       {
@@ -289,6 +318,17 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
 
   const isRefunded = props.status === "refunded"
   const isRefunding = props.status === "refunding"
+  const showShippingDeadlineNotice =
+    !isRefunded &&
+    !isRefunding &&
+    isEligibleForShippingDeadlineAutoCancel({
+      status: props.status,
+      fulfillment_method: props.fulfillmentMethod,
+      delivery_status: props.deliveryStatus,
+    })
+  const shippingDaysLeft = showShippingDeadlineNotice
+    ? daysUntilShippingDeadline(props.createdAtIso)
+    : null
 
   return (
     <div className="space-y-8">
@@ -551,6 +591,27 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
           <span>
             This purchase has been fully refunded. If you have any questions about the refund timeline or
             amount, contact our support team.
+          </span>
+        </p>
+      ) : showShippingDeadlineNotice ? (
+        <p className="text-xs text-muted-foreground flex flex-wrap items-start gap-2 rounded-lg border border-listingHeart/20 bg-listingHeart/[0.05] px-3 py-2.5">
+          <Shield className="h-4 w-4 shrink-0 mt-0.5 text-listingHeart" />
+          <span>
+            {shippingDaysLeft && shippingDaysLeft > 0 ? (
+              <>
+                Sellers have {SHIPPING_DEADLINE_DAYS} days to ship. If your board isn&apos;t shipped by{" "}
+                {getShippingDeadlineDate(props.createdAtIso).toLocaleDateString(undefined, {
+                  dateStyle: "medium",
+                })}{" "}
+                ({shippingDaysLeft} day{shippingDaysLeft === 1 ? "" : "s"} left), Reswell will cancel the
+                purchase and refund you automatically.
+              </>
+            ) : (
+              <>
+                The {SHIPPING_DEADLINE_DAYS}-day shipping window has passed. Reswell is handling cancellation
+                and your refund — this page will update when processing completes.
+              </>
+            )}
           </span>
         </p>
       ) : (

@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { ShippingLabelTool } from "@/components/shipping-label-tool"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -26,6 +25,76 @@ function ShippingGuideCards() {
         on one.
       </p>
 
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          We&apos;ve partnered with A New Earth Project
+        </h2>
+
+        <div className="mb-4 overflow-hidden rounded-lg border border-border bg-muted shadow-sm">
+          <iframe
+            src="https://www.youtube.com/embed/f2K8VUpsgkw"
+            title="Reswell shipping guide video"
+            className="aspect-video w-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+          />
+        </div>
+
+        <p className="text-muted-foreground leading-relaxed">
+          Sellers can get purpose-built, sustainable surfboard shipping boxes from our partner{" "}
+          <a
+            href="https://anewearthproject.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline"
+          >
+            A New Earth Project
+          </a>
+          .
+        </p>
+      </section>
+
+      <section id="how-to-pack-a-surfboard" className="mb-8">
+        <h2 className="text-lg font-semibold text-foreground mb-4">How to pack a surfboard</h2>
+
+        <div className="mb-4 overflow-hidden rounded-lg border border-border bg-muted shadow-sm">
+          <iframe
+            src="https://www.youtube.com/embed/NzDaFE4d9V4?start=14"
+            title="How to pack a surfboard for shipping"
+            className="aspect-video w-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+          />
+        </div>
+
+        <Card>
+          <CardContent className="space-y-3 pt-6 text-muted-foreground">
+            <p>
+              A well-packed board is the best way to avoid damage in transit. If you need a box,
+              order one from our partner{" "}
+              <a
+                href="https://anewearthproject.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline"
+              >
+                A New Earth Project
+              </a>
+              . Their system is built for surfboards and is fully curbside recyclable.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Wrap the board in protective material, paying extra attention to the nose and tail.</li>
+              <li>Slide the board into a telescoping box that fits snugly without forcing it.</li>
+              <li>Fill any gaps so the board cannot shift during transit.</li>
+              <li>Seal the box securely and label it clearly before handing it to the carrier.</li>
+            </ul>
+            <p>The video above walks through the full process step by step.</p>
+          </CardContent>
+        </Card>
+      </section>
+
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -38,8 +107,11 @@ function ShippingGuideCards() {
             </p>
             <ul className="list-disc pl-5 space-y-1">
               <li>
-                Pack the board well. Bubble wrap, a sturdy box, and plenty of padding around the
-                nose and tail go a long way.
+                Pack the board well. See{" "}
+                <a href="#how-to-pack-a-surfboard" className="text-primary underline">
+                  How to pack a surfboard
+                </a>{" "}
+                above for a full walkthrough.
               </li>
               <li>
                 Use a tracked service like USPS, FedEx, or UPS, and drop the tracking number in
@@ -135,18 +207,15 @@ export default async function ShippingGuidePage(props: {
   return (
     <main className="flex-1 py-12">
       <div className="container mx-auto max-w-3xl">
-        <div className="flex items-center gap-3 mb-8">
-          <Package className="h-10 w-10 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              {labelFlow ? "Print shipping label" : "Shipping Guide"}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {labelFlow
-                ? "Buy a carrier label and add tracking to this order (ShipEngine)."
-                : "How to ship and receive surfboards safely"}
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">
+            {labelFlow ? "Print shipping label" : "Shipping Guide"}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {labelFlow
+              ? "Buy a carrier label and add tracking to this order (ShipEngine)."
+              : "How to ship and receive surfboards safely"}
+          </p>
         </div>
 
         {labelFlow && !user && (
