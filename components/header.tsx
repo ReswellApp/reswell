@@ -85,6 +85,40 @@ const recentlySoldNavButtonClassName =
   "h-11 w-14 shrink-0 px-0 text-foreground hover:bg-muted sm:h-12 sm:w-[3.75rem]"
 const recentlySoldNavIconClassName = "h-8 w-8 sm:h-9 sm:w-9"
 
+function HeaderMobileNavActionsSkeleton() {
+  return (
+    <div
+      className="flex shrink-0 items-center justify-end gap-1.5"
+      aria-busy="true"
+      aria-label="Loading navigation"
+    >
+      <Skeleton className="h-4 w-14 shrink-0 rounded" />
+      <Skeleton className="h-11 w-14 shrink-0 rounded-lg" />
+      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+    </div>
+  )
+}
+
+function HeaderDesktopNavActionsSkeleton() {
+  return (
+    <div
+      className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5"
+      aria-busy="true"
+      aria-label="Loading navigation"
+    >
+      <Skeleton className="hidden h-12 w-[9.5rem] shrink-0 rounded-full lg:mr-10 lg:block" />
+      <Skeleton className="hidden h-4 w-11 shrink-0 rounded lg:block" />
+      <Skeleton className="hidden h-11 w-14 shrink-0 rounded-lg lg:block" />
+      <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg lg:block" />
+      <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg lg:block" />
+      <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg sm:block" />
+      <Skeleton className="hidden h-12 w-36 shrink-0 rounded-full sm:block lg:hidden" />
+      <Skeleton className="hidden h-4 w-14 shrink-0 rounded sm:block lg:hidden" />
+      <Skeleton className="h-9 w-9 shrink-0 rounded-full sm:ml-2 md:ml-4" />
+    </div>
+  )
+}
+
 type ProfileAvatarFields = {
   avatar_url: string | null
   shop_logo_url: string | null
@@ -976,7 +1010,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 </div>
                 <div className="flex shrink-0 items-center justify-end gap-0.5">
                   {!authLoaded ? (
-                    <Skeleton className="h-9 w-52 shrink-0 rounded-md" aria-hidden />
+                    <HeaderMobileNavActionsSkeleton />
                   ) : user ? (
                     <>
                       <Link href="/favorites" className="inline-flex shrink-0">
@@ -1169,7 +1203,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </PopoverContent>
             </Popover>
 
-            {authLoaded && user ? (
+            {!authLoaded ? (
+              <HeaderDesktopNavActionsSkeleton />
+            ) : (
+              <>
+            {user ? (
               <Button
                 asChild
                 variant="ghost"
@@ -1182,7 +1220,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Button>
             ) : null}
 
-            {authLoaded && !user ? (
+            {!user ? (
               <Button
                 asChild
                 variant="outline"
@@ -1242,21 +1280,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
             <CartHeaderLink showOnDesktopNav />
 
-            {/* CLS-FIX: invisible placeholder ghost buttons reserve the same horizontal
-                space as the logged-in action cluster while the auth check is in-flight.
-                This prevents the search bar from shifting once the real buttons appear. */}
-            {!authLoaded && (
-              <div
-                className="pointer-events-none hidden select-none gap-1 sm:flex sm:items-center sm:gap-1.5 md:gap-0.5"
-                aria-hidden
-              >
-                <Skeleton className="h-11 w-11 shrink-0 rounded-lg" />
-                <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-                <Skeleton className="ml-2 h-9 w-9 shrink-0 rounded-full sm:ml-3 md:ml-4" />
-              </div>
-            )}
-
-            {authLoaded && user ? (
+            {user ? (
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
                 <CartHeaderLink />
                 <Link href="/messages" className="relative inline-flex shrink-0">
@@ -1271,7 +1295,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   {accountDropdown}
                 </div>
               </div>
-            ) : authLoaded ? (
+            ) : (
               <div className="flex items-center gap-0">
                 <Button
                   asChild
@@ -1301,7 +1325,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   Log in
                 </Link>
               </div>
-            ) : null}
+            )}
+              </>
+            )}
 
             {/* Menu toggle: phone & tablet only (below lg). Desktop/Mac use category bar + primary nav. */}
             <button
