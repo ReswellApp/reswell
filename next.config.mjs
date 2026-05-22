@@ -65,6 +65,11 @@ const nextConfig = {
     // Allowlisted `quality` values for `<Image />` — required in Next.js 16+.
     // Include 75 for components that omit `quality` (Next default).
     qualities: [72, 75, 80, 88, 90, 92],
+    // Supabase Storage objects and brand-CDN assets are immutable per-URL, so we
+    // can safely keep optimized variants in Vercel's edge cache for a long time.
+    // Default is 60s which forces a re-optimization roughly every page load and
+    // floods logs with `/_next/image` requests.
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       // User listing + avatar photos (Supabase project subdomains)
       {
