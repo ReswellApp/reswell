@@ -38,7 +38,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
-import { SiteSearchBar, SITE_SEARCH_SHELL_CLASS, siteSearchInputClassName, SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
+import { SiteSearchBar, siteSearchInputClassName, SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
@@ -434,7 +434,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [mobileNavSearchQuery, setMobileNavSearchQuery] = useState("")
   // CLS-FIX: track when auth check has resolved so we can reserve the
   // correct amount of space for auth-dependent action buttons before they
   // appear, preventing the search bar from shifting horizontally.
@@ -480,7 +479,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     const qFromUrl = headerSearchParams.get("q")?.trim() ?? ""
     if (!qFromUrl) return
     setSearchQuery(qFromUrl)
-    setMobileNavSearchQuery(qFromUrl)
     writeNavSearchQuery(qFromUrl)
   }, [pathname, headerSearchParams])
 
@@ -1090,73 +1088,16 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 >
                   {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
-                <form
-                  className={cn(
-                    SITE_SEARCH_SHELL_CLASS,
-                    "min-w-0 flex-1 border-foreground/20 bg-white pl-3 pr-1 shadow-none focus-within:border-foreground/35",
-                  )}
-                  onSubmit={async (e) => {
-                    e.preventDefault()
-                    const q = mobileNavSearchQuery.trim()
-                    if (!q) {
-                      clearNavSearchQuery()
-                      setMobileNavSearchQuery("")
-                      await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
-                      return
-                    }
-                    setMobileNavSearchQuery(q)
-                    writeNavSearchQuery(q)
-                    router.push(marketplaceNavSearchHref(q, pathname, headerSearchParams))
-                  }}
-                >
-                  <div className="relative min-w-0 flex-1">
-                    <SearchInputWithSuggest
-                      value={mobileNavSearchQuery}
-                      onChange={setMobileNavSearchQuery}
-                      onBrandStripPick={(brandName, resolved) => {
-                        if (resolved?.catalogSlug) {
-                          router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
-                        } else {
-                          void navigateToBrandProfileFromNavPick(router, brandName, {
-                            categorySlug: isSearchResultsPath(pathname ?? "")
-                              ? headerSearchParams.get("category")
-                              : null,
-                            navSubmitted: true,
-                          })
-                        }
-                        setMobileNavSearchQuery("")
-                        clearNavSearchQuery()
-                      }}
-                      onSelect={(text) => {
-                        const term = text.trim()
-                        if (!term) return
-                        setMobileNavSearchQuery(term)
-                        writeNavSearchQuery(term)
-                        router.push(marketplaceNavSearchHref(term, pathname, headerSearchParams))
-                      }}
-                      onNavigate={() => {
-                        setMobileNavSearchQuery("")
-                        clearNavSearchQuery()
-                      }}
-                      placeholder="Search surfboards…"
-                      section=""
-                      listboxId="nav-search-suggestions-mobile-nav"
-                      inputClassName={siteSearchInputClassName({ compact: true })}
-                      className="w-full"
-                      analyticsSurface="header_nav"
-                      showTextSuggestions={false}
-                      matchAnchorWidth
+                <Suspense
+                  fallback={
+                    <Skeleton
+                      className="h-10 min-h-[2.5rem] min-w-0 flex-1 rounded-full"
+                      aria-hidden
                     />
-                  </div>
-                  <Button
-                    type="submit"
-                    size="icon"
-                    className="h-9 w-9 shrink-0 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-                    aria-label="Search"
-                  >
-                    <Search className="h-4 w-4" aria-hidden />
-                  </Button>
-                </form>
+                  }
+                >
+                  <HeaderNavSearch variant="mobile" />
+                </Suspense>
               </div>
               <HeaderMobileCategoryBar />
             </>

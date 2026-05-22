@@ -4,11 +4,17 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Clock, X, TrendingUp } from "lucide-react"
+import { Clock, X, TrendingUp, Search } from "lucide-react"
 import { createPortal } from "react-dom"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
-import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
+import {
+  SiteSearchBar,
+  SITE_SEARCH_SHELL_CLASS,
+  siteSearchInputClassName,
+} from "@/components/site-search-bar"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import { createClient } from "@/lib/supabase/client"
@@ -116,10 +122,18 @@ function SuggestedSurfboardsSkeleton() {
   )
 }
 
+/**
+ * `desktop` — standard `SiteSearchBar` (pill + "Search" text button) shown on `md+` widths.
+ * `mobile` — compact white pill + circular search icon button; parent controls visibility (e.g. mobile header row).
+ */
+export type HeaderNavSearchVariant = "desktop" | "mobile"
+
 export function HeaderNavSearch({
   suggestedSurfboardsMode = "popular",
+  variant = "desktop",
 }: {
   suggestedSurfboardsMode?: HeaderNavSuggestedSurfboardsMode
+  variant?: HeaderNavSearchVariant
 } = {}) {
   const router = useRouter()
   const pathname = usePathname()
@@ -470,45 +484,84 @@ export function HeaderNavSearch({
       document.body,
     )
 
+  const sharedSearchInputProps = {
+    value: query,
+    onChange: setQuery,
+    onBrandStripPick: (
+      brandName: string,
+      resolved?: { catalogSlug: string } | null,
+    ) => {
+      saveRecentSearch(brandName)
+      const category = isSearchResultsPath(pathname)
+        ? searchParams.get("category")
+        : null
+      if (resolved?.catalogSlug) {
+        router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
+      } else {
+        void navigateToBrandProfileFromNavPick(router, brandName, {
+          categorySlug: category,
+          navSubmitted: true,
+        })
+      }
+      setQuery("")
+      clearNavSearchQuery()
+      setIdleOpen(false)
+    },
+    onSelect: (text: string) => {
+      saveRecentSearch(text)
+      runSearch(text)
+    },
+    onNavigate: clearSearchAndStorage,
+    onFocus: handleIdleFocus,
+    placeholder: "Search surfboards…",
+    section: "",
+    className: "w-full",
+    minLength: 2,
+    analyticsSurface: "header_nav" as const,
+    onMarketplaceTopListingNavigate: bumpNavSuggestedListingEngagement,
+    showTextSuggestions: false,
+    matchAnchorWidth: true,
+  }
+
+  if (variant === "mobile") {
+    return (
+      <>
+        <form
+          ref={formRef}
+          className={cn(
+            SITE_SEARCH_SHELL_CLASS,
+            "min-w-0 flex-1 border-foreground/20 bg-white pl-3 pr-1 shadow-none focus-within:border-foreground/35",
+          )}
+          onSubmit={handleSubmit}
+        >
+          <div className="relative min-w-0 flex-1">
+            <SearchInputWithSuggest
+              {...sharedSearchInputProps}
+              listboxId="nav-search-suggestions-mobile-nav"
+              inputClassName={siteSearchInputClassName({ compact: true })}
+            />
+          </div>
+          <Button
+            type="submit"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+            aria-label="Search"
+          >
+            <Search className="h-4 w-4" aria-hidden />
+          </Button>
+        </form>
+        {idleDropdown}
+      </>
+    )
+  }
+
   return (
     <div className="hidden min-w-0 w-full flex-1 items-center px-2 md:flex">
       <SiteSearchBar ref={formRef} onSubmit={handleSubmit} className="w-full">
         <SearchInputWithSuggest
-          value={query}
-          onChange={setQuery}
-          onBrandStripPick={(brandName, resolved) => {
-            saveRecentSearch(brandName)
-            const category = isSearchResultsPath(pathname)
-              ? searchParams.get("category")
-              : null
-            if (resolved?.catalogSlug) {
-              router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
-            } else {
-              void navigateToBrandProfileFromNavPick(router, brandName, {
-                categorySlug: category,
-                navSubmitted: true,
-              })
-            }
-            setQuery("")
-            clearNavSearchQuery()
-            setIdleOpen(false)
-          }}
-          onSelect={(text) => {
-            saveRecentSearch(text)
-            runSearch(text)
-          }}
-          onNavigate={clearSearchAndStorage}
-          onFocus={handleIdleFocus}
-          placeholder="Search surfboards…"
-          section=""
+          {...sharedSearchInputProps}
           listboxId="header-nav-search-suggestions"
           inputClassName={siteSearchInputClassName()}
-          className="w-full"
-          minLength={2}
-          analyticsSurface="header_nav"
-          onMarketplaceTopListingNavigate={bumpNavSuggestedListingEngagement}
-          showTextSuggestions={false}
-          matchAnchorWidth
         />
       </SiteSearchBar>
       {idleDropdown}
