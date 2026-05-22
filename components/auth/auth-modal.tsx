@@ -52,7 +52,7 @@ export function AuthModal({
               <Button
                 type="button"
                 variant="link"
-                className="h-auto p-0 text-base underline underline-offset-4"
+                className="h-auto p-0 text-base text-listingHeart underline underline-offset-4 hover:text-listingHeart/85"
                 onClick={() => onModeChange("sign-up")}
               >
                 Sign up

@@ -33,11 +33,12 @@ import {
   Heart,
   Plus,
   ChevronDown,
+  Clock,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { HeaderNavSearch } from "@/components/header-nav-search"
-import { SiteSearchBar, SITE_SEARCH_SHELL_CLASS, siteSearchInputClassName } from "@/components/site-search-bar"
+import { SiteSearchBar, SITE_SEARCH_SHELL_CLASS, siteSearchInputClassName, SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
@@ -72,6 +73,17 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 /** Post-auth destination when a guest taps “List your board” in the header. */
 const GUEST_SELL_REDIRECT = "/sell"
+
+/** Matches main nav search bar height (`SITE_FILTER_BAR_HEIGHT` / `h-12`). */
+const listYourBoardNavButtonClassName = cn(
+  SITE_FILTER_BAR_HEIGHT,
+  "shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-5 text-[14px] font-medium",
+)
+
+/** Guest “Recently sold” nav control — larger tap target (Clock icon, links to `/sold`). */
+const recentlySoldNavButtonClassName =
+  "h-11 w-14 shrink-0 px-0 text-foreground hover:bg-muted sm:h-12 sm:w-[3.75rem]"
+const recentlySoldNavIconClassName = "h-8 w-8 sm:h-9 sm:w-9"
 
 type ProfileAvatarFields = {
   avatar_url: string | null
@@ -406,7 +418,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setMobileMenuOpen(false)
   }, [pathname])
 
-  const { openLogin, openSignUp } = useAuthModal()
+  const { openLogin } = useAuthModal()
   const isMobileViewport = useIsMobile()
 
   const resolvedDisplayName = useMemo(
@@ -1006,23 +1018,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     </>
                   ) : (
                     <>
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="h-9 shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-3 text-[13px] font-medium"
-                      >
-                        <Link
-                          href={`/auth/login?redirect=${encodeURIComponent(GUEST_SELL_REDIRECT)}`}
-                          onClick={(e) => {
-                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                            e.preventDefault()
-                            openLogin(GUEST_SELL_REDIRECT)
-                          }}
-                        >
-                          List your board
-                        </Link>
-                      </Button>
                       <Link
                         href="/auth/login"
                         onClick={(e) => {
@@ -1032,7 +1027,16 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         }}
                         className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
                       >
-                        Sign in
+                        Log in
+                      </Link>
+                      <Link href="/sold" className="inline-flex shrink-0" title="Recently sold">
+                        <Button
+                          variant="ghost"
+                          className={cn(recentlySoldNavButtonClassName, "hover:bg-black/5")}
+                          aria-label="Recently sold"
+                        >
+                          <Clock className={recentlySoldNavIconClassName} />
+                        </Button>
                       </Link>
                       <CartHeaderLink showOnNarrowScreens />
                     </>
@@ -1178,6 +1182,41 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Button>
             ) : null}
 
+            {authLoaded && !user ? (
+              <Button
+                asChild
+                variant="outline"
+                className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
+              >
+                <Link
+                  href={`/auth/login?redirect=${encodeURIComponent(GUEST_SELL_REDIRECT)}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openLogin(GUEST_SELL_REDIRECT)
+                  }}
+                >
+                  List your board
+                </Link>
+              </Button>
+            ) : null}
+
+            <Link
+              href="/about"
+              className="hidden lg:inline-flex text-[15px] font-medium text-foreground/80 transition-colors hover:text-cerulean px-3 py-2"
+            >
+              About
+            </Link>
+
+            {!user ? (
+              <Link href="/sold" className="hidden lg:inline-flex" title="Recently sold">
+                <Button variant="ghost" className={recentlySoldNavButtonClassName}>
+                  <Clock className={recentlySoldNavIconClassName} />
+                  <span className="sr-only">Recently sold</span>
+                </Button>
+              </Link>
+            ) : null}
+
             <Link
               href={
                 user
@@ -1200,6 +1239,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <span className="sr-only">Favorites</span>
               </Button>
             </Link>
+
+            <CartHeaderLink showOnDesktopNav />
 
             {/* CLS-FIX: invisible placeholder ghost buttons reserve the same horizontal
                 space as the logged-in action cluster while the auth check is in-flight.
@@ -1235,8 +1276,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <Button
                   asChild
                   variant="outline"
-                  size="sm"
-                  className="hidden h-9 shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-3 text-[13px] font-medium sm:inline-flex"
+                  className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
                 >
                   <Link
                     href={`/auth/login?redirect=${encodeURIComponent(GUEST_SELL_REDIRECT)}`}
@@ -1259,17 +1299,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2"
                 >
                   Log in
-                </Link>
-                <Link
-                  href="/auth/sign-up"
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openSignUp()
-                  }}
-                  className="hidden sm:flex text-[15px] font-medium text-cerulean hover:text-cerulean/90 transition-colors px-3 py-2"
-                >
-                  Sign up
                 </Link>
               </div>
             ) : null}

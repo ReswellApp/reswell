@@ -8,7 +8,14 @@ export const AUTH_MODAL_OVERLAY_CLASS =
   "z-[100] touch-none bg-black/80"
 
 export const AUTH_MODAL_CONTENT_CLASS =
-  "z-[101] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 sm:p-8"
+  "z-[101] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 p-6 sm:p-8"
+
+/** Flatten nested Card inside auth modals — dialog shell is the only surface. */
+export const AUTH_MODAL_INNER_CARD_CLASS =
+  "rounded-none border-0 bg-transparent p-0 shadow-none hover:shadow-none"
+export const AUTH_MODAL_INNER_CARD_HEADER_CLASS = "px-0 pt-0"
+export const AUTH_MODAL_INNER_CARD_CONTENT_CLASS = "px-0 pb-0 pt-0"
+export const AUTH_MODAL_OR_EMAIL_LABEL_CLASS = "bg-background px-2 text-muted-foreground"
 
 /** Profile setup after Google sign-in — stacks above the auth modal when both mount. */
 export const PROFILE_SETUP_MODAL_OVERLAY_CLASS =

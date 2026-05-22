@@ -17,6 +17,12 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import {
+  AUTH_MODAL_INNER_CARD_CLASS,
+  AUTH_MODAL_INNER_CARD_CONTENT_CLASS,
+  AUTH_MODAL_INNER_CARD_HEADER_CLASS,
+  AUTH_MODAL_OR_EMAIL_LABEL_CLASS,
+} from "@/lib/auth/auth-modal-shell-classes"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { validateDisplayName } from "@/lib/display-name-validation"
@@ -134,19 +140,29 @@ export function SignUpFormPanel({
   }
 
   const inner = (
-    <Card className={variant === "modal" ? "border-0 shadow-none" : undefined}>
-      <CardHeader className={variant === "modal" ? "px-0 pt-0" : undefined}>
+    <Card className={variant === "modal" ? AUTH_MODAL_INNER_CARD_CLASS : undefined}>
+      <CardHeader className={variant === "modal" ? AUTH_MODAL_INNER_CARD_HEADER_CLASS : undefined}>
         <CardTitle className="text-2xl">Join Reswell</CardTitle>
         <CardDescription>Create an account to buy, sell, and trade surf gear</CardDescription>
       </CardHeader>
-      <CardContent className={`flex flex-col gap-6 ${variant === "modal" ? "px-0 pb-0" : ""}`}>
+      <CardContent
+        className={`flex flex-col gap-6 ${variant === "modal" ? AUTH_MODAL_INNER_CARD_CONTENT_CLASS : ""}`}
+      >
         <GoogleOAuthButton nextPath={redirectTo} />
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <Separator />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">Or with email</span>
+            <span
+              className={
+                variant === "modal"
+                  ? AUTH_MODAL_OR_EMAIL_LABEL_CLASS
+                  : "bg-card px-2 text-muted-foreground"
+              }
+            >
+              Or with email
+            </span>
           </div>
         </div>
         <form onSubmit={handleSignUp}>

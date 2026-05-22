@@ -4,6 +4,11 @@ import { useState, type ReactNode } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
+import {
+  AUTH_MODAL_INNER_CARD_CLASS,
+  AUTH_MODAL_INNER_CARD_CONTENT_CLASS,
+  AUTH_MODAL_INNER_CARD_HEADER_CLASS,
+} from "@/lib/auth/auth-modal-shell-classes"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -75,8 +80,8 @@ export function ForgotPasswordFormPanel({
   }
 
   const inner = (
-    <Card className={variant === "modal" ? "border-0 shadow-none" : undefined}>
-      <CardHeader className={variant === "modal" ? "px-0 pt-0" : undefined}>
+    <Card className={variant === "modal" ? AUTH_MODAL_INNER_CARD_CLASS : undefined}>
+      <CardHeader className={variant === "modal" ? AUTH_MODAL_INNER_CARD_HEADER_CLASS : undefined}>
         <CardTitle className="text-2xl">Reset your password</CardTitle>
         <CardDescription>
           {didRequest
@@ -84,7 +89,9 @@ export function ForgotPasswordFormPanel({
             : "Enter your email and we’ll send you a reset link."}
         </CardDescription>
       </CardHeader>
-      <CardContent className={`flex flex-col gap-6 ${variant === "modal" ? "px-0 pb-0" : ""}`}>
+      <CardContent
+        className={`flex flex-col gap-6 ${variant === "modal" ? AUTH_MODAL_INNER_CARD_CONTENT_CLASS : ""}`}
+      >
         {didRequest ? (
           <>
             <p className="text-sm text-muted-foreground">

@@ -9,9 +9,20 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
-export function CartHeaderLink({ showOnNarrowScreens = false }: { showOnNarrowScreens?: boolean }) {
+export function CartHeaderLink({
+  showOnNarrowScreens = false,
+  /** Primary cart control in the desktop (`lg+`) main nav row. */
+  showOnDesktopNav = false,
+}: {
+  showOnNarrowScreens?: boolean
+  showOnDesktopNav?: boolean
+}) {
   const [count, setCount] = useState<number | null>(null)
-  const visibility = showOnNarrowScreens ? "inline-flex" : "hidden sm:inline-flex"
+  const visibility = showOnNarrowScreens
+    ? "inline-flex"
+    : showOnDesktopNav
+      ? "hidden lg:inline-flex"
+      : "hidden sm:inline-flex lg:hidden"
 
   useEffect(() => {
     const supabase = createClient()

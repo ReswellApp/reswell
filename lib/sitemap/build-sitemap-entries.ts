@@ -115,6 +115,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       changeFrequency: "monthly",
       priority: 0.7,
     },
+    { url: `${BASE}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sold`, lastModified: now, changeFrequency: "hourly", priority: 0.75 },
     { url: `${BASE}/shop`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     // Bare `/search` redirects when empty — canonical bookmark is `/search/recent`.
