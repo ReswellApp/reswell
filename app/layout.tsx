@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChrome } from '@/components/site-chrome'
+import { AbortErrorSuppressor } from '@/components/abort-error-suppressor'
 import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { LOCALE_COOKIE_NAME } from '@/lib/translations'
 import type { Locale } from '@/lib/translations'
@@ -69,6 +70,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} className="overflow-x-clip" data-scroll-behavior="smooth">
       <body className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}>
+        <AbortErrorSuppressor />
         <GoogleAdsGtag />
         <MetaPixel />
         <LocaleProvider initialLocale={locale}>

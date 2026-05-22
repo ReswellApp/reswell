@@ -20,6 +20,7 @@ export type AdminNavIconKey =
   | 'truck'
   | 'settings'
   | 'target'
+  | 'contactRound'
 
 export interface AdminNavItemConfig {
   href: string
@@ -71,6 +72,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     id: 'customer-service',
     label: 'Customer service',
     items: [
+      { href: '/admin/crm', label: 'CRM', icon: 'contactRound' },
       { href: '/admin/contact-messages', label: 'Support inbox', icon: 'messageSquare' },
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
       {
