@@ -1,13 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import {
-  ArrowRight,
-  ChevronRight,
-  MessageCircle,
-  ShieldCheck,
-  Store,
-  Waves,
-} from "lucide-react"
+import { ArrowRight, ChevronRight } from "lucide-react"
 import { FALLBACK_HOME_HERO_SLIDE_PATHS } from "@/components/hero-slideshow"
 import { Button } from "@/components/ui/button"
 import { portraitShimmer, shimmerDataUrl } from "@/lib/image-shimmer"
@@ -46,7 +39,7 @@ const WHY_SURFERS_LOVE = [
   {
     title: "Honest deals",
     href: "/boards",
-    description: "Browse real listings from surfers and shops, with messaging built in.",
+    description: "Browse real listings from other surfers, with messaging built in.",
   },
   {
     title: "Purchase Protection",
@@ -56,7 +49,7 @@ const WHY_SURFERS_LOVE = [
   {
     title: "Surfer community",
     href: "/sellers",
-    description: "Meet sellers, follow shops, and keep gear moving within the lineup.",
+    description: "Meet sellers, follow listings, and keep gear moving within the lineup.",
   },
 ] as const
 
@@ -64,22 +57,18 @@ const VALUE_PILLARS = [
   {
     title: "Real support",
     body: "When you write in, a person on our team reads it. No scripts, no runaround.",
-    icon: MessageCircle,
   },
   {
-    title: "Second lives for boards",
-    body: "Every listing is a board that still has waves left in it, waiting for the right surfer.",
-    icon: Waves,
+    title: "Your next board is out there",
+    body: "That board sitting in your quiver might be someone else's dream setup. List what you are ready to move on from, or browse until you find the one you have been hunting for.",
   },
   {
     title: "Trust on both sides",
     body: "Buyers ask questions. Sellers describe honestly. Checkout stays on Reswell when it counts.",
-    icon: ShieldCheck,
   },
   {
-    title: "Shops and locals",
-    body: "Peer to peer boards sit alongside select shops, so you can browse the whole market in one spot.",
-    icon: Store,
+    title: "Surfer to surfer marketplace",
+    body: "Surfers buy and sell directly with each other, so the whole marketplace stays in one spot.",
   },
 ] as const
 
@@ -195,9 +184,10 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
                 apps. If a covered purchase goes wrong, there is a policy for that too.
               </p>
               <p>
-                We are a small team. We use the product, we read support messages, and we ship
-                fixes when something is off. The goal is not to reinvent surfing. It is to make buying
-                and selling a board feel straightforward enough that you actually finish the deal.
+                We&apos;re a small team. We use Reswell ourselves, read your support messages, and
+                push fixes when something&apos;s off. We&apos;re not trying to reinvent surfing. We
+                just want buying and selling a board to feel simple enough that you actually close
+                the deal.
               </p>
             </div>
           </div>
@@ -213,8 +203,8 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             We know how personal a board can be. That is why we built a marketplace with messaging,
-            checkout, shipping tools, and real support, so the whole deal lives in one place instead
-            of scattered across apps and parking lots.
+            checkout, shipping tools, and real support, so you can handle the whole thing in one
+            place.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
@@ -272,13 +262,11 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
               We stand behind covered purchases
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Our support team shows up when you need help. When you buy through Reswell checkout and
-              your purchase is eligible,{" "}
+              We are here when you need help. Buy through Reswell checkout on a qualifying sale and{" "}
               <Link href="/protection-policy" className="text-foreground underline underline-offset-4">
                 Purchase Protection
               </Link>{" "}
-              can cover qualifying issues under the policy. Buyers do not pay extra for that. It is
-              part of buying here when the sale qualifies.
+              can step in if something covered goes wrong. No extra cost to buyers.
             </p>
             <Link
               href="/help"
@@ -294,13 +282,12 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
               Keeping boards in the water
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Every board on Reswell comes from a surfer or shop that cared enough to list it
-              properly. Browse locally, find shipping when it is offered, check{" "}
+              Surfers list boards here when they are ready to sell. Browse what is nearby, get
+              get shipping when a seller offers it, and check{" "}
               <Link href="/sold" className="text-foreground underline underline-offset-4">
                 recently sold
               </Link>{" "}
-              boards for context, and give a favorite shape its next chapter instead of letting it
-              collect dust in the garage.
+              boards if you want a read on what similar setups are going for.
             </p>
             <Link
               href="/boards"
@@ -322,15 +309,12 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
             Reswell is still growing, and we are building it with the community, not apart from it.
           </p>
           <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {VALUE_PILLARS.map(({ title, body, icon: Icon }) => (
+            {VALUE_PILLARS.map(({ title, body }) => (
               <div
                 key={title}
                 className="rounded-2xl border border-border/80 bg-card p-6 text-center sm:text-left"
               >
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-listingHeart/10 sm:mx-0">
-                  <Icon className="h-5 w-5 text-listingHeart" aria-hidden />
-                </div>
-                <p className="mt-4 font-semibold text-foreground">{title}</p>
+                <p className="font-semibold text-foreground">{title}</p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
               </div>
             ))}
@@ -346,7 +330,7 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
               <a href="mailto:help@reswell.app" className="text-foreground underline underline-offset-4">
                 help@reswell.app
               </a>
-              . Thanks for being here. Now go find your next ride.
+              . Thanks for being here. Now go find your next board.
             </p>
           </div>
         </div>
