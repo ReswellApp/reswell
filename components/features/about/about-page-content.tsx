@@ -148,12 +148,8 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
 
       <section className="border-b border-border/70 bg-background">
         <div className="container mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-20">
-          <div className="relative mx-auto w-full max-w-md lg:mx-0">
-            <div
-              className="absolute -inset-4 rounded-[2.5rem] bg-listingHeart/10 sm:-inset-6"
-              aria-hidden
-            />
-            <div className="relative overflow-hidden rounded-[2rem] border border-border/80 bg-white shadow-sm">
+          <div className="mx-auto w-full max-w-md lg:mx-0">
+            <div className="overflow-hidden rounded-[2rem] border border-border/80 bg-white shadow-sm">
               <Image
                 src="/images/home/how-it-works-sell-connect.png"
                 alt="Surfers connecting on Reswell"
