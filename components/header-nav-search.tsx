@@ -363,12 +363,8 @@ export function HeaderNavSearch({
 
   const showIdleDropdown = idleOpen && query.trim().length === 0
 
-  const panelWidth = dropdownRect
-    ? Math.min(Math.max(dropdownRect.width, 380), 520)
-    : 400
-  const panelLeft = dropdownRect
-    ? Math.min(dropdownRect.left, typeof window !== "undefined" ? window.innerWidth - panelWidth - 16 : dropdownRect.left)
-    : 0
+  const panelWidth = dropdownRect ? dropdownRect.width : 400
+  const panelLeft = dropdownRect ? dropdownRect.left : 0
 
   const idleDropdown =
     showIdleDropdown &&
@@ -512,6 +508,7 @@ export function HeaderNavSearch({
           analyticsSurface="header_nav"
           onMarketplaceTopListingNavigate={bumpNavSuggestedListingEngagement}
           showTextSuggestions={false}
+          matchAnchorWidth
         />
       </SiteSearchBar>
       {idleDropdown}

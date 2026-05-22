@@ -39,6 +39,11 @@ function getSuggestPanelLayout(args: {
   anchorWidth: number
   /** When suggestions portal into the mobile nav sheet, center within this rect. */
   portalRect: { left: number; width: number } | null
+  /**
+   * When true, the panel width tracks the anchor's width exactly (no 400/520 clamp).
+   * Used by main-nav search so the dropdown is flush with the search bar.
+   */
+  matchAnchorWidth?: boolean
 }) {
   if (typeof window === "undefined") return null
   const vw = window.innerWidth
@@ -51,7 +56,10 @@ function getSuggestPanelLayout(args: {
   let width: number
   let left: number
 
-  if (compactViewport) {
+  if (args.matchAnchorWidth && (!args.portalRect || args.portalRect.width <= 0)) {
+    width = Math.min(args.anchorWidth, maxAllowableWidth)
+    left = Math.max(gutter, Math.min(args.anchorLeft, vw - width - gutter))
+  } else if (compactViewport) {
     if (args.portalRect && args.portalRect.width > 0) {
       const inner = Math.max(0, args.portalRect.width - 2 * gutter)
       width = inner > 0 ? Math.min(maxAllowableWidth, inner) : maxAllowableWidth
@@ -180,6 +188,11 @@ interface SearchInputWithSuggestProps {
   inputType?: "search" | "text"
   id?: string
   disabled?: boolean
+  /**
+   * When true, the suggestions panel width tracks the input's width exactly.
+   * Used by main-nav search so dropdowns are flush with the search bar.
+   */
+  matchAnchorWidth?: boolean
 }
 
 function listingHref(listing: SuggestListing) {
@@ -318,6 +331,7 @@ export function SearchInputWithSuggest({
   inputType = "search",
   id: inputId,
   disabled = false,
+  matchAnchorWidth = false,
 }: SearchInputWithSuggestProps) {
   const isBrands = suggestSource === "brands"
   const boardsTitleStyle = variant === "boards" && !isBrands
@@ -552,9 +566,16 @@ export function SearchInputWithSuggest({
       return
     }
     const el = containerRef.current
+    /**
+     * When `matchAnchorWidth` is on, the dropdown should be flush with the enclosing
+     * search bar form (input + submit button), not just the inner input wrapper —
+     * so it matches the idle dropdown in `HeaderNavSearch`, which measures the form.
+     */
+    const widthAnchor = matchAnchorWidth ? el.closest("form") ?? el : el
     const update = () => {
       const rect = el.getBoundingClientRect()
-      const dropTop = rect.bottom + 8
+      const widthRect = widthAnchor === el ? rect : widthAnchor.getBoundingClientRect()
+      const dropTop = widthRect.bottom + 8
       let portalTop: number | null = null
       let portalLeft: number | null = null
       let portalWidth: number | null = null
@@ -566,8 +587,8 @@ export function SearchInputWithSuggest({
       }
       setDropdownRect({
         dropTop,
-        anchorLeft: rect.left,
-        anchorWidth: rect.width,
+        anchorLeft: widthRect.left,
+        anchorWidth: widthRect.width,
         portalTop,
         portalLeft,
         portalWidth,
@@ -589,7 +610,7 @@ export function SearchInputWithSuggest({
         vv.removeEventListener("scroll", update)
       }
     }
-  }, [showPanelForRect, suggestPortalContainer])
+  }, [showPanelForRect, suggestPortalContainer, matchAnchorWidth])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -753,6 +774,7 @@ export function SearchInputWithSuggest({
             dropdownRect.portalLeft != null && dropdownRect.portalWidth != null
               ? { left: dropdownRect.portalLeft, width: dropdownRect.portalWidth }
               : null,
+          matchAnchorWidth,
         })
       : null
 

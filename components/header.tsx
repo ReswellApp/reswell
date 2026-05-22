@@ -955,6 +955,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         autoFocus={searchOpen}
         analyticsSurface="header_nav"
         showTextSuggestions={false}
+        matchAnchorWidth
       />
     </SiteSearchBar>
   )
@@ -1144,6 +1145,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                       className="w-full"
                       analyticsSurface="header_nav"
                       showTextSuggestions={false}
+                      matchAnchorWidth
                     />
                   </div>
                   <Button
