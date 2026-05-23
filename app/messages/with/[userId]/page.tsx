@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { use, useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -10,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { CounterpartyThreadsSkeleton } from "@/components/features/messages/messages-page-skeletons"
+import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { cn } from "@/lib/utils"
 import {
   getConversationLastActivityMs,
@@ -19,6 +22,7 @@ import {
 } from "@/lib/utils/messages-inbox-grouping"
 import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
 import { parseMessageLocationMetadata } from "@/lib/validations/message-location-metadata"
+import { isAbortError } from "@/lib/utils/is-abort-error"
 
 type ProfileLite = {
   id: string
@@ -50,32 +54,35 @@ export default function CounterpartyThreadsPage({
   params: Promise<{ userId: string }>
 }) {
   const { userId: otherUserId } = use(params)
+  const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [otherUser, setOtherUser] = useState<ProfileLite | null>(null)
   const [threads, setThreads] = useState<InboxConversationRow[]>([])
 
-  const loadThreads = useCallback(async () => {
+  const loadThreads = useCallback(async (isActive: () => boolean = () => true) => {
     setLoading(true)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      setLoading(false)
-      return
-    }
-    setCurrentUserId(user.id)
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!isActive()) return
+      if (!user) {
+        setLoading(false)
+        return
+      }
+      setCurrentUserId(user.id)
 
-    const [{ data: profile }, { data: convData }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, shop_verified")
-        .eq("id", otherUserId)
-        .maybeSingle(),
-      supabase
-        .from("conversations")
-        .select(`
+      const [{ data: profile }, { data: convData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url, shop_verified")
+          .eq("id", otherUserId)
+          .maybeSingle(),
+        supabase
+          .from("conversations")
+          .select(`
           id,
           listing_id,
           buyer_id,
@@ -86,39 +93,57 @@ export default function CounterpartyThreadsPage({
           seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
           messages(content, is_read, sender_id, created_at, metadata)
         `)
-        .or(
-          `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`,
-        )
-        .order("last_message_at", { ascending: false })
-        .order("created_at", { ascending: true, referencedTable: "messages" }),
-    ])
+          .or(
+            `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`,
+          )
+          .order("last_message_at", { ascending: false })
+          .order("created_at", { ascending: true, referencedTable: "messages" }),
+      ])
+      if (!isActive()) return
 
-    if (profile) {
-      setOtherUser(profile as ProfileLite)
+      if (profile) {
+        setOtherUser(profile as ProfileLite)
+      } else {
+        setOtherUser({
+          id: otherUserId,
+          display_name: "Member",
+          avatar_url: null,
+        })
+      }
+
+      const rows = (convData ?? []) as unknown as InboxConversationRow[]
+      const sorted = [...rows].sort(
+        (a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a),
+      )
+      setThreads(sorted)
+      setLoading(false)
+    } catch (err) {
+      if (isActive() && !isAbortError(err)) {
+        setLoading(false)
+      }
     }
-
-    const rows = (convData ?? []) as InboxConversationRow[]
-    const sorted = [...rows].sort(
-      (a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a),
-    )
-    setThreads(sorted)
-    setLoading(false)
   }, [otherUserId, supabase])
 
   useEffect(() => {
-    void loadThreads()
+    let active = true
+    void loadThreads(() => active).catch(() => {})
+    return () => {
+      active = false
+    }
   }, [loadThreads])
 
   useEffect(() => {
     if (!loading && threads.length === 1) {
-      window.location.replace(`/messages/${threads[0].id}`)
+      router.replace(`/messages/${threads[0].id}`)
     }
-  }, [loading, threads])
+  }, [loading, threads, router])
 
   const groupedShell =
     "overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none dark:border-border"
 
-  const initial = (otherUser?.display_name?.trim()?.[0] || "?").toUpperCase()
+  if (loading) {
+    return <CounterpartyThreadsSkeleton />
+  }
 
   return (
     <main className="flex-1 bg-background">
@@ -135,21 +160,12 @@ export default function CounterpartyThreadsPage({
             </Button>
           </Link>
           <div className="flex min-w-0 items-center gap-3">
-            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-muted">
-              {otherUser?.avatar_url ? (
-                <Image
-                  src={otherUser.avatar_url}
-                  alt={otherUser.display_name || "Member"}
-                  fill
-                  sizes="44px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-[15px] font-medium text-muted-foreground">
-                  {initial}
-                </div>
-              )}
-            </div>
+            <MessageProfileAvatar
+              avatarUrl={otherUser?.avatar_url}
+              displayName={otherUser?.display_name}
+              pending={!otherUser}
+              size="sm"
+            />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <h1 className="truncate text-[22px] font-semibold tracking-tight text-foreground">
@@ -164,19 +180,7 @@ export default function CounterpartyThreadsPage({
           </div>
         </header>
 
-        {loading ? (
-          <div className={cn("divide-y divide-border/40", groupedShell)}>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex animate-pulse gap-3 px-4 py-4">
-                <div className="h-16 w-16 shrink-0 rounded-xl bg-muted" />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="h-4 w-2/3 rounded-md bg-muted" />
-                  <div className="h-3 w-full rounded-md bg-muted/80" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : threads.length === 0 ? (
+        {threads.length === 0 ? (
           <div className={cn("px-6 py-14 text-center", groupedShell)}>
             <p className="text-[17px] font-medium text-foreground">No conversations yet</p>
             <p className="mt-2 text-[15px] text-muted-foreground">

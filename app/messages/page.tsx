@@ -9,6 +9,13 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { MessageCircle, Heart, Search, Inbox, Handshake } from 'lucide-react'
 import { MessagesOffersTab } from '@/components/features/messages/messages-offers-tab'
+import { MessageProfileAvatar } from '@/components/features/messages/message-profile-avatar'
+import {
+  MessagesInboxSkeleton,
+  MessagesOffersTabSkeleton,
+  MessagesActivityTabSkeleton,
+} from '@/components/features/messages/messages-page-skeletons'
+import { Skeleton } from '@/components/ui/skeleton'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -25,6 +32,7 @@ import {
 } from '@/lib/utils/messages-inbox-grouping'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
+import { isAbortError } from '@/lib/utils/is-abort-error'
 
 interface Notification {
   id: string
@@ -53,6 +61,24 @@ type SellerOfferDraft = {
   listingTitle: string
   listPrice: number
   primaryImageUrl: string | null
+}
+
+type SentSellerActivityOffer = {
+  offerId: string
+  conversationId: string | null
+}
+
+function activitySellerOfferKey(listingId: string, buyerId: string): string {
+  return `${listingId}:${buyerId}`
+}
+
+function sentOfferViewHref(
+  sent: SentSellerActivityOffer,
+  listingId: string,
+  buyerId: string,
+): string {
+  if (sent.conversationId) return `/messages/${sent.conversationId}`
+  return `/messages?user=${buyerId}&listing=${listingId}`
 }
 
 function activityKindLabel(type: string | undefined) {
@@ -92,7 +118,67 @@ function MessagesContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [sellerOfferDraft, setSellerOfferDraft] = useState<SellerOfferDraft | null>(null)
+  const [sentSellerOffersByKey, setSentSellerOffersByKey] = useState<
+    Record<string, SentSellerActivityOffer>
+  >({})
   const supabase = createClient()
+
+  const loadSentSellerOffers = useCallback(
+    async (sellerId: string, isActive: () => boolean = () => true) => {
+      try {
+        const { data: sentOffers } = await supabase
+          .from('offers')
+          .select('id, listing_id, buyer_id, created_at')
+          .eq('seller_id', sellerId)
+          .eq('seller_initiated', true)
+          .order('created_at', { ascending: false })
+        if (!isActive()) return
+
+        const offerRows = sentOffers ?? []
+        if (offerRows.length === 0) {
+          setSentSellerOffersByKey({})
+          return
+        }
+
+        const buyerIds = [...new Set(offerRows.map((row) => row.buyer_id as string))]
+        const { data: convRows } = await supabase
+          .from('conversations')
+          .select('id, listing_id, buyer_id')
+          .eq('seller_id', sellerId)
+          .in('buyer_id', buyerIds)
+        if (!isActive()) return
+
+        const conversationByKey = new Map<string, string>()
+        for (const row of convRows ?? []) {
+          const listingId = row.listing_id as string | null
+          const buyerId = row.buyer_id as string | null
+          if (!listingId || !buyerId) continue
+          conversationByKey.set(activitySellerOfferKey(listingId, buyerId), row.id as string)
+        }
+
+        const next: Record<string, SentSellerActivityOffer> = {}
+        for (const row of offerRows) {
+          const listingId = row.listing_id as string | null
+          const buyerId = row.buyer_id as string | null
+          const offerId = row.id as string | null
+          if (!listingId || !buyerId || !offerId) continue
+          const key = activitySellerOfferKey(listingId, buyerId)
+          if (next[key]) continue
+          next[key] = {
+            offerId,
+            conversationId: conversationByKey.get(key) ?? null,
+          }
+        }
+
+        setSentSellerOffersByKey(next)
+      } catch (err) {
+        if (!isAbortError(err)) {
+          setSentSellerOffersByKey({})
+        }
+      }
+    },
+    [supabase],
+  )
 
   const tabParam = searchParams.get('tab')
   const [tab, setTab] = useState<MessagesTab>(() => parseMessagesTab(tabParam))
@@ -120,50 +206,58 @@ function MessagesContent() {
   )
 
   useEffect(() => {
+    let cancelled = false
+
     async function fetchConversations() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
-      setCurrentUserId(user.id)
-
-      // Repair offer rows that never mirrored into `messages` (legacy / failed sync)
       try {
-        await fetch("/api/me/offers-sync-threads", { method: "POST", credentials: "include" })
-      } catch {
-        // non-blocking
-      }
-
-      // Open or create buyer↔seller thread (works when current user is buyer or listing owner)
-      if (userParam && listingParam && userParam !== user.id) {
-        const opened = await ensureMarketplaceThread({
-          listing_id: listingParam,
-          other_user_id: userParam,
-        })
-        if ('conversation_id' in opened && opened.conversation_id) {
-          window.location.replace(`/messages/${opened.conversation_id}`)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (cancelled) return
+        if (!user) {
+          setLoading(false)
           return
         }
-      }
 
-      const [{ data, error }, { data: notifData }] = await Promise.all([
-        supabase
-          .from('conversations')
-          .select(`
+        setCurrentUserId(user.id)
+
+        // Repair offer rows that never mirrored into `messages` (legacy / failed sync)
+        try {
+          await fetch("/api/me/offers-sync-threads", { method: "POST", credentials: "include" })
+        } catch (err) {
+          if (!isAbortError(err)) {
+            // non-blocking
+          }
+        }
+        if (cancelled) return
+
+        // Open or create buyer↔seller thread (works when current user is buyer or listing owner)
+        if (userParam && listingParam && userParam !== user.id) {
+          const opened = await ensureMarketplaceThread({
+            listing_id: listingParam,
+            other_user_id: userParam,
+          })
+          if (cancelled) return
+          if ('conversation_id' in opened && opened.conversation_id) {
+            router.replace(`/messages/${opened.conversation_id}`)
+            return
+          }
+        }
+
+        const [{ data, error }, { data: notifData }] = await Promise.all([
+          supabase
+            .from('conversations')
+            .select(`
             *,
             listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)),
             buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
             seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
             messages(content, is_read, sender_id, created_at, metadata)
           `)
-          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-          .order('last_message_at', { ascending: false })
-          .order('created_at', { ascending: true, referencedTable: 'messages' }),
-        supabase
-          .from('notifications')
-          .select(`
+            .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+            .order('last_message_at', { ascending: false })
+            .order('created_at', { ascending: true, referencedTable: 'messages' }),
+          supabase
+            .from('notifications')
+            .select(`
             id,
             type,
             listing_id,
@@ -173,29 +267,52 @@ function MessagesContent() {
             created_at,
             listings(id, slug, title, section, price, listing_images(url, thumbnail_url, is_primary))
           `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(50),
-      ])
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(50),
+        ])
+        if (cancelled) return
 
-      if (!error && data) {
-        setConversations(data as Conversation[])
-      }
-      if (notifData) {
-        setNotifications(notifData as unknown as Notification[])
-        const unreadIds = (notifData as unknown as Notification[]).filter((n) => !n.is_read).map((n) => n.id)
-        if (unreadIds.length > 0) {
-          await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds)
-          if (typeof window !== 'undefined') {
-            window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+        if (!error && data) {
+          setConversations(data as Conversation[])
+        }
+        if (notifData) {
+          setNotifications(notifData as unknown as Notification[])
+          const unreadIds = (notifData as unknown as Notification[]).filter((n) => !n.is_read).map((n) => n.id)
+          if (unreadIds.length > 0) {
+            await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds)
+            if (!cancelled && typeof window !== 'undefined') {
+              window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+            }
           }
         }
+        if (!cancelled) {
+          setLoading(false)
+        }
+        if (!cancelled) {
+          void loadSentSellerOffers(user.id, () => !cancelled)
+        }
+      } catch (err) {
+        if (cancelled || isAbortError(err)) return
+        setLoading(false)
       }
-      setLoading(false)
     }
 
-    fetchConversations()
-  }, [supabase, userParam, listingParam])
+    void fetchConversations().catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [supabase, userParam, listingParam, loadSentSellerOffers, router])
+
+  useEffect(() => {
+    if (tab !== 'activity' || !currentUserId) return
+    let active = true
+    void loadSentSellerOffers(currentUserId, () => active)
+    return () => {
+      active = false
+    }
+  }, [tab, currentUserId, loadSentSellerOffers])
 
   const searchLower = searchQuery.trim().toLowerCase()
 
@@ -266,45 +383,60 @@ function MessagesContent() {
   return (
     <main className="flex-1 bg-background">
       <div className="container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10 md:max-w-4xl lg:max-w-5xl">
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-[28px] font-semibold tracking-tight text-foreground sm:text-[34px]">
-              Messages
-            </h1>
-            <p className="mt-1 max-w-xl text-[15px] leading-snug text-muted-foreground">
-              Conversations about your listings and purchases. Reach Reswell anytime with Need help?
-            </p>
-          </div>
-          {!loading && currentUserId ? (
-            <div className="shrink-0 self-start sm:mt-1 w-full sm:w-auto">
-              <MessagesSupportDialog triggerClassName="w-full sm:w-auto" />
-            </div>
-          ) : null}
-        </header>
+        {loading ? (
+          <>
+            <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-9 w-48 sm:h-10" />
+                <Skeleton className="h-4 w-full max-w-xl bg-muted/70" />
+              </div>
+              <Skeleton className="h-11 w-full shrink-0 rounded-full sm:mt-1 sm:w-36" />
+            </header>
+            <Skeleton className="mb-5 h-12 w-full rounded-2xl" />
+          </>
+        ) : (
+          <>
+            <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 className="text-[28px] font-semibold tracking-tight text-foreground sm:text-[34px]">
+                  Messages
+                </h1>
+                <p className="mt-1 max-w-xl text-[15px] leading-snug text-muted-foreground">
+                  Conversations about your listings and purchases. Reach Reswell anytime with Need help?
+                </p>
+              </div>
+              {currentUserId ? (
+                <div className="shrink-0 self-start sm:mt-1 w-full sm:w-auto">
+                  <MessagesSupportDialog triggerClassName="w-full sm:w-auto" />
+                </div>
+              ) : null}
+            </header>
 
-        <div className="relative mb-5">
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            type="search"
-            placeholder={
-              tab === 'activity'
-                ? 'Search activity'
-                : tab === 'offers'
-                  ? 'Search offers'
-                  : 'Search chats'
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={cn(
-              'h-12 rounded-2xl border-border/80 bg-muted/80 pl-11 pr-4 text-[17px] shadow-none',
-              'placeholder:text-muted-foreground/80',
-              'focus-visible:border-border focus-visible:ring-2 focus-visible:ring-foreground/5',
-            )}
-          />
-        </div>
+            <div className="relative mb-5">
+              <Search
+                className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                placeholder={
+                  tab === 'activity'
+                    ? 'Search activity'
+                    : tab === 'offers'
+                      ? 'Search offers'
+                      : 'Search chats'
+                }
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={cn(
+                  'h-12 rounded-2xl border-border/80 bg-muted/80 pl-11 pr-4 text-[17px] shadow-none',
+                  'placeholder:text-muted-foreground/80',
+                  'focus-visible:border-border focus-visible:ring-2 focus-visible:ring-foreground/5',
+                )}
+              />
+            </div>
+          </>
+        )}
 
         {loading ? (
           <>
@@ -312,21 +444,30 @@ function MessagesContent() {
               className="mb-6 flex w-full gap-1 rounded-2xl border border-border/70 bg-muted/60 p-1 shadow-[inset_0_1px_2px_rgba(17,17,17,0.04)]"
               aria-hidden
             >
-              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/90 sm:h-[48px]" />
-              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/50 sm:h-[48px]" />
-              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/40 sm:h-[48px]" />
+              <Skeleton className="h-[46px] flex-1 rounded-[11px] sm:h-[48px]" />
+              <Skeleton className="h-[46px] flex-1 rounded-[11px] bg-muted/60 sm:h-[48px]" />
+              <Skeleton className="h-[46px] flex-1 rounded-[11px] bg-muted/50 sm:h-[48px]" />
             </div>
-            <div className={cn('divide-y divide-border/60', groupedShell)}>
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex animate-pulse items-center gap-3.5 px-4 py-3.5">
-                  <div className="h-[52px] w-[52px] shrink-0 rounded-full bg-muted" />
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="h-4 w-2/5 rounded-md bg-muted" />
-                    <div className="h-3 w-4/5 rounded-md bg-muted/80" />
+            {tab === 'offers' ? (
+              <MessagesOffersTabSkeleton shellClassName={groupedShell} />
+            ) : tab === 'activity' ? (
+              <MessagesActivityTabSkeleton shellClassName={activityShell} />
+            ) : (
+              <div className={cn('divide-y divide-border/60', groupedShell)}>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-4 sm:px-5">
+                    <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <Skeleton className="h-4 w-2/5" />
+                        <Skeleton className="h-3 w-14 shrink-0" />
+                      </div>
+                      <Skeleton className="h-3 w-4/5" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -453,7 +594,6 @@ function MessagesContent() {
                     const lastMessage = group.latestMessage
                     const lastActivityMs = group.latestActivityMs
                     const unreadCount = group.totalUnread
-                    const initial = (otherUser?.display_name?.trim()?.[0] || '?').toUpperCase()
                     const primaryListingTitle = group.primaryThread.listing?.title
                       ? capitalizeWords(group.primaryThread.listing.title)
                       : undefined
@@ -470,23 +610,13 @@ function MessagesContent() {
                         href={counterpartyInboxHref(group)}
                         className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/35 active:bg-muted/55 sm:px-5"
                       >
-                        <div className="relative h-12 w-12 shrink-0">
-                          <div className="relative h-12 w-12 overflow-hidden rounded-full bg-muted">
-                            {otherUser?.avatar_url ? (
-                              <Image
-                                src={otherUser.avatar_url || '/placeholder.svg'}
-                                alt={otherUser.display_name || 'Conversation'}
-                                fill
-                                sizes="48px"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[15px] font-medium text-muted-foreground">
-                                {initial}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        <MessageProfileAvatar
+                          avatarUrl={otherUser?.avatar_url}
+                          displayName={otherUser?.display_name}
+                          pending={!otherUser}
+                          size="md"
+                          className="ring-0"
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-1.5">
@@ -594,6 +724,10 @@ function MessagesContent() {
                           : parseFloat(String(listPriceRaw ?? ''))
                       const canSellerOffer =
                         showSellerOfferCta && Number.isFinite(listPriceNum) && listPriceNum > 0
+                      const sentOffer =
+                        n.listing_id && n.actor_id
+                          ? sentSellerOffersByKey[activitySellerOfferKey(n.listing_id, n.actor_id)]
+                          : undefined
 
                       return (
                         <article
@@ -654,30 +788,49 @@ function MessagesContent() {
                           </Link>
                           {showSellerOfferCta ? (
                             <div className="flex justify-end border-t border-border/40 pt-2.5 sm:justify-start sm:border-t-0 sm:pt-0 sm:pl-[72px]">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                className="h-9 shrink-0 rounded-full px-4 text-[13px] font-semibold"
-                                disabled={!canSellerOffer}
-                                title={
-                                  !canSellerOffer
-                                    ? 'Add a list price to this listing before sending an offer.'
-                                    : undefined
-                                }
-                                onClick={() => {
-                                  if (!canSellerOffer || !n.listing_id || !n.actor_id || !listing) return
-                                  setSellerOfferDraft({
-                                    listingId: n.listing_id,
-                                    buyerUserId: n.actor_id,
-                                    listingTitle: listing.title ?? '',
-                                    listPrice: listPriceNum,
-                                    primaryImageUrl: thumb ?? null,
-                                  })
-                                }}
-                              >
-                                Make them an offer
-                              </Button>
+                              {sentOffer ? (
+                                <Button
+                                  asChild
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-9 shrink-0 rounded-full px-4 text-[13px] font-semibold"
+                                >
+                                  <Link
+                                    href={sentOfferViewHref(
+                                      sentOffer,
+                                      n.listing_id!,
+                                      n.actor_id!,
+                                    )}
+                                  >
+                                    View the offer you sent
+                                  </Link>
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-9 shrink-0 rounded-full px-4 text-[13px] font-semibold"
+                                  disabled={!canSellerOffer}
+                                  title={
+                                    !canSellerOffer
+                                      ? 'Add a list price to this listing before sending an offer.'
+                                      : undefined
+                                  }
+                                  onClick={() => {
+                                    if (!canSellerOffer || !n.listing_id || !n.actor_id || !listing) return
+                                    setSellerOfferDraft({
+                                      listingId: n.listing_id,
+                                      buyerUserId: n.actor_id,
+                                      listingTitle: listing.title ?? '',
+                                      listPrice: listPriceNum,
+                                      primaryImageUrl: thumb ?? null,
+                                    })
+                                  }}
+                                >
+                                  Make them an offer
+                                </Button>
+                              )}
                             </div>
                           ) : null}
                         </article>
@@ -717,6 +870,15 @@ function MessagesContent() {
           listingTitle={sellerOfferDraft.listingTitle}
           listPrice={sellerOfferDraft.listPrice}
           primaryImageUrl={sellerOfferDraft.primaryImageUrl}
+          onOfferSent={({ listingId, buyerUserId, offerId, conversationId }) => {
+            setSentSellerOffersByKey((prev) => ({
+              ...prev,
+              [activitySellerOfferKey(listingId, buyerUserId)]: {
+                offerId,
+                conversationId,
+              },
+            }))
+          }}
         />
       ) : null}
     </main>
@@ -725,35 +887,7 @@ function MessagesContent() {
 
 export default function MessagesPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="flex-1 bg-background">
-          <div className="container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10 md:max-w-4xl lg:max-w-5xl">
-            <div className="mb-8 space-y-2">
-              <div className="h-9 w-48 animate-pulse rounded-lg bg-muted sm:h-10" />
-              <div className="h-4 w-64 max-w-full animate-pulse rounded-md bg-muted/70" />
-            </div>
-            <div className="mb-8 h-12 animate-pulse rounded-2xl bg-muted/80" />
-            <div className="mb-6 flex w-full gap-1 rounded-2xl border border-border/70 bg-muted/60 p-1">
-              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/90 sm:h-[48px]" />
-              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/50 sm:h-[48px]" />
-              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/40 sm:h-[48px]" />
-            </div>
-            <div className="overflow-hidden rounded-[20px] border border-border/70 bg-card divide-y divide-border/60">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex animate-pulse items-center gap-3.5 px-4 py-3.5">
-                  <div className="h-[52px] w-[52px] shrink-0 rounded-full bg-muted" />
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="h-4 w-2/5 rounded-md bg-muted" />
-                    <div className="h-3 w-4/5 rounded-md bg-muted/80" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
-      }
-    >
+    <Suspense fallback={<MessagesInboxSkeleton />}>
       <MessagesContent />
     </Suspense>
   )

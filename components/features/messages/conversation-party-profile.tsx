@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { ChevronDown, ExternalLink, Star } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
@@ -10,6 +9,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
+import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import type {
   OtherPartyProfileSummary,
   ProfileReviewItem,
@@ -24,6 +24,8 @@ interface ConversationPartyProfileProps {
   shopVerified: boolean
   /** Review/listing snapshot. `null` while still loading. */
   profile: OtherPartyProfileSummary | null
+  /** Avatar/name still resolving — keep skeleton until known. */
+  pending?: boolean
   /** Optional sub-line under the name (e.g. listing title link). */
   secondaryLine?: React.ReactNode
 }
@@ -42,6 +44,7 @@ export function ConversationPartyProfile({
   avatarUrl,
   shopVerified,
   profile,
+  pending = false,
   secondaryLine,
 }: ConversationPartyProfileProps) {
   const linkToSellerPage = !!profile?.hasListings && !!profile?.sellerSlug
@@ -53,21 +56,12 @@ export function ConversationPartyProfile({
   )
 
   const Avatar = (
-    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border/60">
-      {avatarUrl ? (
-        <Image
-          src={avatarUrl || "/placeholder.svg"}
-          alt={displayName}
-          fill
-          className="object-cover"
-          sizes="44px"
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-[15px] font-semibold text-foreground">
-          {displayName?.[0]?.toUpperCase() || "?"}
-        </div>
-      )}
-    </div>
+    <MessageProfileAvatar
+      avatarUrl={avatarUrl}
+      displayName={displayName}
+      pending={pending}
+      size="sm"
+    />
   )
 
   const NameRow = (

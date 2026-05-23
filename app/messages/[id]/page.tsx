@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ConversationThreadSkeleton } from '@/components/features/messages/messages-page-skeletons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import {
@@ -57,6 +58,7 @@ import {
   parseLocalPhonePolicyBlockMetadata,
 } from '@/lib/messages/local-phone-policy-block-message'
 import { PromiseDeadlineError, raceWithDeadline } from '@/lib/utils/race-with-deadline'
+import { isAbortError } from '@/lib/utils/is-abort-error'
 
 const SEND_SERVER_ACTION_MS = 45_000
 
@@ -272,8 +274,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
   }, [id, threadPrimaryListingId, supabase])
 
-  const loadThread = useCallback(async () => {
+  const loadThread = useCallback(async (isActive: () => boolean = () => true) => {
+    try {
     const { data: { user } } = await supabase.auth.getUser()
+    if (!isActive()) return
     if (!user) return
     setCurrentUserId(user.id)
 
@@ -287,6 +291,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         `)
       .eq('id', id)
       .single()
+    if (!isActive()) return
 
     if (convData) {
       const nextConv = convData as Conversation
@@ -297,9 +302,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       }
       const otherUserId =
         nextConv.buyer_id === user.id ? nextConv.seller_id : nextConv.buyer_id
-      void loadOtherPartyProfile(supabase, otherUserId).then((snapshot) => {
-        setOtherPartyProfile(snapshot)
-      })
+      void loadOtherPartyProfile(supabase, otherUserId)
+        .then((snapshot) => {
+          if (!isActive()) return
+          setOtherPartyProfile(snapshot)
+        })
+        .catch(() => {})
 
       const { data: siblingRows } = await supabase
         .from('conversations')
@@ -312,6 +320,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .eq('buyer_id', nextConv.buyer_id)
         .eq('seller_id', nextConv.seller_id)
         .order('last_message_at', { ascending: false })
+      if (!isActive()) return
 
       setListingThreads(
         (siblingRows ?? []).map((row) => {
@@ -334,6 +343,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       .select('*')
       .eq('conversation_id', id)
       .order('created_at', { ascending: true })
+    if (!isActive()) return
 
     const rows = (msgData ?? []) as Message[]
     setMessages((prev) => mergeServerMessagesPreservingLocalPhoneBlocks(prev, rows))
@@ -345,6 +355,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .from('offers')
         .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at')
         .in('id', offerIds)
+      if (!isActive()) return
       offerRows = (orows ?? []) as OfferRowLite[]
       if (offerRows.length) {
         const next: Record<string, OfferRowLite> = {}
@@ -371,6 +382,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .from('listings')
         .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
         .in('id', offerListingIds)
+      if (!isActive()) return
       const next: Record<string, NonNullable<Conversation['listing']>> = {}
       for (const row of (listingRows ?? []) as NonNullable<Conversation['listing']>[]) {
         next[row.id] = row
@@ -390,13 +402,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       .eq('user_id', user.id)
       .eq('is_read', false)
 
-    if (typeof window !== 'undefined') {
+    if (isActive() && typeof window !== 'undefined') {
       window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+    }
+    } catch (err) {
+      if (!isAbortError(err)) {
+        console.error("[messages] loadThread failed:", err)
+      }
     }
   }, [id, supabase])
 
   useEffect(() => {
-    void loadThread()
+    let active = true
+    void loadThread(() => active).catch(() => {})
 
     // Subscribe to new messages
     const channel = supabase
@@ -425,32 +443,34 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               .eq('id', msg.offer_id)
               .maybeSingle()
               .then(({ data: o }) => {
-                if (o) {
-                  const offer = o as OfferRowLite
-                  setOffersById((prev) => ({ ...prev, [offer.id]: offer }))
-                  const lid = offer.listing_id
-                  if (lid) {
-                    void supabase
-                      .from('listings')
-                      .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
-                      .eq('id', lid)
-                      .maybeSingle()
-                      .then(({ data: row }) => {
-                        if (!row) return
-                        const L = row as NonNullable<Conversation['listing']>
-                        setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
-                      })
-                  }
+                if (!active || !o) return
+                const offer = o as OfferRowLite
+                setOffersById((prev) => ({ ...prev, [offer.id]: offer }))
+                const lid = offer.listing_id
+                if (lid) {
+                  void supabase
+                    .from('listings')
+                    .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
+                    .eq('id', lid)
+                    .maybeSingle()
+                    .then(({ data: row }) => {
+                      if (!active || !row) return
+                      const L = row as NonNullable<Conversation['listing']>
+                      setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
+                    })
+                    .catch(() => {})
                 }
               })
+              .catch(() => {})
           } else {
-            void loadThread()
+            void loadThread(() => active).catch(() => {})
           }
         }
       )
       .subscribe()
 
     return () => {
+      active = false
       supabase.removeChannel(channel)
     }
   }, [id, supabase, loadThread])
@@ -624,48 +644,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   }
 
   if (!conversation) {
-    return (
-      <main
-        className="flex min-h-0 flex-1 flex-col bg-background"
-        aria-busy="true"
-        aria-label="Loading conversation"
-      >
-        <div className="container mx-auto flex min-h-0 max-w-2xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
-          <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:px-3">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
-              <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
-              <div className="min-w-0 flex-1 space-y-2 py-0.5">
-                <Skeleton className="h-5 w-[min(100%,11rem)] max-w-full" />
-                <Skeleton className="h-4 w-[min(100%,14rem)] max-w-full" />
-              </div>
-            </div>
-          </header>
-          <Skeleton className="mb-4 h-[96px] w-full rounded-[18px]" />
-          <div
-            className={cn(
-              'flex shrink-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
-              'h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
-            )}
-          >
-            <div className="flex flex-1 flex-col justify-end gap-3 p-4 pb-8">
-              <div className="flex justify-start">
-                <Skeleton className="h-12 w-[min(72%,18rem)] rounded-[20px] rounded-bl-[6px]" />
-              </div>
-              <div className="flex justify-end">
-                <Skeleton className="h-11 w-[min(55%,14rem)] rounded-[20px] rounded-br-[6px]" />
-              </div>
-              <div className="flex justify-start">
-                <Skeleton className="h-24 w-[min(85%,20rem)] max-w-[min(100%,28rem)] rounded-2xl" />
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 shrink-0">
-            <Skeleton className="h-[52px] w-full rounded-[24px]" />
-          </div>
-        </div>
-      </main>
-    )
+    return <ConversationThreadSkeleton />
   }
 
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
@@ -695,6 +674,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               avatarUrl={otherUser?.avatar_url ?? null}
               shopVerified={!!otherUser?.shop_verified}
               profile={otherPartyProfile}
+              pending={!otherUser?.display_name && !otherUser?.avatar_url}
               secondaryLine={
                 displayListing ? (
                   <Link

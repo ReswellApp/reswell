@@ -139,6 +139,7 @@ export function OfferRow({
   onRespondOpen,
   onViewCounterOpen,
   compact = false,
+  conversationId = null,
 }: {
   offer: DashboardOfferRow
   role: "buyer" | "seller"
@@ -148,6 +149,8 @@ export function OfferRow({
   onViewCounterOpen?: (o: DashboardOfferRow) => void
   /** Slightly tighter layout for the Messages offers tab. */
   compact?: boolean
+  /** When set, Messages links directly to the listing thread (skips inbox redirect). */
+  conversationId?: string | null
 }) {
   const listing = dashboardListingForOffer(offer)
   const href = listing ? listingDetailHref(listing) : "#"
@@ -155,7 +158,9 @@ export function OfferRow({
   const hasListingImage = Boolean(imageSrc)
   const listPrice = listing ? parseFloat(String(listing.price)) : 0
   const otherId = role === "buyer" ? offer.seller_id : offer.buyer_id
-  const messagesHref = `/messages?user=${otherId}&listing=${offer.listing_id}`
+  const messagesHref = conversationId
+    ? `/messages/${conversationId}`
+    : `/messages?user=${otherId}&listing=${offer.listing_id}`
 
   const showRespond =
     role === "seller" && offer.status === "PENDING" && Number.isFinite(listPrice) && listPrice > 0
@@ -282,7 +287,7 @@ export function OfferRow({
               className="h-7 rounded-md border-border/70 px-2.5 text-[11px] font-medium"
               asChild
             >
-              <Link href={messagesHref}>
+              <Link href={messagesHref} prefetch={!!conversationId}>
                 <MessageCircle className="h-3 w-3 opacity-75" aria-hidden />
                 Messages
               </Link>

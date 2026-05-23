@@ -42,6 +42,12 @@ export type SellerMakeOfferToBuyerDialogProps = {
   listingTitle: string
   listPrice: number
   primaryImageUrl: string | null
+  onOfferSent?: (payload: {
+    listingId: string
+    buyerUserId: string
+    offerId: string
+    conversationId: string | null
+  }) => void
 }
 
 export function SellerMakeOfferToBuyerDialog({
@@ -52,6 +58,7 @@ export function SellerMakeOfferToBuyerDialog({
   listingTitle,
   listPrice,
   primaryImageUrl,
+  onOfferSent,
 }: SellerMakeOfferToBuyerDialogProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -116,16 +123,26 @@ export function SellerMakeOfferToBuyerDialog({
 
       const data =
         typeof json === "object" && json !== null && "data" in json
-          ? (json as { data?: { conversationId?: string | null } }).data
+          ? (json as { data?: { offerId?: string; conversationId?: string | null } }).data
           : undefined
+      const offerId = data?.offerId ?? null
       const conversationId = data?.conversationId ?? null
+
+      if (offerId) {
+        onOfferSent?.({
+          listingId,
+          buyerUserId,
+          offerId,
+          conversationId,
+        })
+      }
 
       onOpenChange(false)
       toast.success("Offer sent.")
       if (conversationId) {
         router.push(`/messages/${conversationId}`)
       } else {
-        router.push("/messages")
+        router.push("/messages?tab=offers")
       }
       router.refresh()
     } finally {

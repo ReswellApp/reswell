@@ -7,6 +7,7 @@ import { OfferRow } from "@/components/features/offers/offer-row"
 import { SellerOfferResponseDialog, type OfferRowLite } from "@/components/features/messages/seller-offer-response-dialog"
 import { BuyerCounterOfferDialog } from "@/components/features/offers/buyer-counter-offer-dialog"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { MessagesOffersTabSkeleton } from "@/components/features/messages/messages-page-skeletons"
 import { cn } from "@/lib/utils"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
@@ -15,6 +16,8 @@ import type {
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
 import { dashboardListingForOffer } from "@/lib/utils/offers-dashboard-display"
+import { isAbortError } from "@/lib/utils/is-abort-error"
+import { offerConversationKey } from "@/lib/utils/offer-messages-href"
 
 type OfferSubTab = "sent" | "received"
 
@@ -86,79 +89,109 @@ export function MessagesOffersTab({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [buyerCounterOffer, setBuyerCounterOffer] = useState<DashboardOfferRow | null>(null)
   const [buyerCounterOpen, setBuyerCounterOpen] = useState(false)
+  const [conversationIdByOfferKey, setConversationIdByOfferKey] = useState<Record<string, string>>({})
 
-  const loadOffers = useCallback(async () => {
+  const loadOffers = useCallback(async (isActive: () => boolean = () => true) => {
     setLoading(true)
-    const [{ data: madeData }, { data: receivedData }] = await Promise.all([
-      supabase
-        .from("offers")
-        .select(OFFER_SELECT)
-        .eq("buyer_id", userId)
-        .order("updated_at", { ascending: false })
-        .limit(200),
-      supabase
-        .from("offers")
-        .select(OFFER_SELECT)
-        .eq("seller_id", userId)
-        .order("updated_at", { ascending: false })
-        .limit(200),
-    ])
+    try {
+      const [{ data: madeData }, { data: receivedData }] = await Promise.all([
+        supabase
+          .from("offers")
+          .select(OFFER_SELECT)
+          .eq("buyer_id", userId)
+          .order("updated_at", { ascending: false })
+          .limit(200),
+        supabase
+          .from("offers")
+          .select(OFFER_SELECT)
+          .eq("seller_id", userId)
+          .order("updated_at", { ascending: false })
+          .limit(200),
+      ])
+      if (!isActive()) return
 
-    const madeOffers = withSellerCounterNotes((madeData ?? []) as OfferDashboardRowRaw[])
-    const receivedOffers = withSellerCounterNotes((receivedData ?? []) as OfferDashboardRowRaw[])
-    setSent(madeOffers)
-    setReceived(receivedOffers)
+      const madeOffers = withSellerCounterNotes((madeData ?? []) as OfferDashboardRowRaw[])
+      const receivedOffers = withSellerCounterNotes((receivedData ?? []) as OfferDashboardRowRaw[])
+      setSent(madeOffers)
+      setReceived(receivedOffers)
 
-    const sellerIds = [...new Set(madeOffers.map((o) => o.seller_id))]
-    const buyerIds = [...new Set(receivedOffers.map((o) => o.buyer_id))]
-    const listingIds = [
-      ...new Set([...madeOffers, ...receivedOffers].map((o) => o.listing_id)),
-    ]
+      const allOffers = [...madeOffers, ...receivedOffers]
+      const listingIds = [...new Set(allOffers.map((o) => o.listing_id))]
 
-    if (sellerIds.length > 0) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, shop_name, is_shop")
-        .in("id", sellerIds)
-      setSellersById(mapProfiles((data ?? []) as DashboardProfileLite[]))
-    } else {
-      setSellersById({})
-    }
+      const sellerIds = [...new Set(madeOffers.map((o) => o.seller_id))]
+      const buyerIds = [...new Set(receivedOffers.map((o) => o.buyer_id))]
 
-    if (buyerIds.length > 0) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, shop_name, is_shop")
-        .in("id", buyerIds)
-      setBuyersById(mapProfiles((data ?? []) as DashboardProfileLite[]))
-    } else {
-      setBuyersById({})
-    }
+      const [profilesResult, listingMinResult, conversationsResult] = await Promise.all([
+        Promise.all([
+          sellerIds.length > 0
+            ? supabase
+                .from("profiles")
+                .select("id, display_name, avatar_url, shop_name, is_shop")
+                .in("id", sellerIds)
+            : Promise.resolve({ data: [] as DashboardProfileLite[] }),
+          buyerIds.length > 0
+            ? supabase
+                .from("profiles")
+                .select("id, display_name, avatar_url, shop_name, is_shop")
+                .in("id", buyerIds)
+            : Promise.resolve({ data: [] as DashboardProfileLite[] }),
+        ]),
+        listingIds.length > 0
+          ? supabase
+              .from("listings")
+              .select("id, minimum_offer_pct")
+              .in("id", listingIds)
+          : Promise.resolve({ data: [] as { id: string; minimum_offer_pct?: number | null }[] }),
+        listingIds.length > 0
+          ? supabase
+              .from("conversations")
+              .select("id, listing_id, buyer_id, seller_id")
+              .in("listing_id", listingIds)
+              .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+          : Promise.resolve({ data: [] as { id: string; listing_id: string | null; buyer_id: string; seller_id: string }[] }),
+      ])
+      if (!isActive()) return
 
-    if (listingIds.length > 0) {
-      const { data } = await supabase
-        .from("listings")
-        .select("id, minimum_offer_pct")
-        .in("id", listingIds)
-      const next: Record<string, number> = {}
-      for (const row of data ?? []) {
+      const [{ data: sellerProfiles }, { data: buyerProfiles }] = profilesResult
+      setSellersById(mapProfiles((sellerProfiles ?? []) as DashboardProfileLite[]))
+      setBuyersById(mapProfiles((buyerProfiles ?? []) as DashboardProfileLite[]))
+
+      const nextConversationIds: Record<string, string> = {}
+      for (const row of conversationsResult.data ?? []) {
+        const listingId = row.listing_id
+        if (!listingId) continue
+        const key = offerConversationKey(listingId, row.buyer_id, row.seller_id)
+        nextConversationIds[key] = row.id
+      }
+      setConversationIdByOfferKey(nextConversationIds)
+
+      const nextMinPct: Record<string, number> = {}
+      for (const row of listingMinResult.data ?? []) {
         const lid = row.id as string | undefined
         if (lid) {
-          next[lid] = effectiveMinimumOfferPct(
+          nextMinPct[lid] = effectiveMinimumOfferPct(
             row as { minimum_offer_pct?: number | null },
           )
         }
       }
-      setMinPctByListingId(next)
-    } else {
-      setMinPctByListingId({})
-    }
+      setMinPctByListingId(nextMinPct)
 
-    setLoading(false)
+      if (isActive()) {
+        setLoading(false)
+      }
+    } catch (err) {
+      if (isActive() && !isAbortError(err)) {
+        setLoading(false)
+      }
+    }
   }, [supabase, userId])
 
   useEffect(() => {
-    void loadOffers()
+    let active = true
+    void loadOffers(() => active).catch(() => {})
+    return () => {
+      active = false
+    }
   }, [loadOffers])
 
   const searchLower = searchQuery.trim().toLowerCase()
@@ -220,13 +253,7 @@ export function MessagesOffersTab({
     : "Listing"
 
   if (loading) {
-    return (
-      <div className={cn("space-y-3", shellClassName)}>
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted/70" />
-        ))}
-      </div>
-    )
+    return <MessagesOffersTabSkeleton shellClassName={shellClassName} />
   }
 
   return (
@@ -305,20 +332,29 @@ export function MessagesOffersTab({
         </div>
       ) : (
         <div className={cn("space-y-3", shellClassName)}>
-          {activeOffers.map((o) => (
+          {activeOffers.map((o) => {
+            const role = subTab === "sent" ? "buyer" : "seller"
+            const conversationId =
+              conversationIdByOfferKey[
+                offerConversationKey(o.listing_id, o.buyer_id, o.seller_id)
+              ] ?? null
+
+            return (
             <OfferRow
               key={o.id}
               offer={o}
-              role={subTab === "sent" ? "buyer" : "seller"}
+              role={role}
               counterparty={
-                subTab === "sent" ? sellersById[o.seller_id] : buyersById[o.buyer_id]
+                role === "buyer" ? sellersById[o.seller_id] : buyersById[o.buyer_id]
               }
               listingTitle={dashboardListingForOffer(o)?.title ?? ""}
               onRespondOpen={openRespond}
               onViewCounterOpen={subTab === "sent" ? openBuyerCounter : undefined}
+              conversationId={conversationId}
               compact
             />
-          ))}
+            )
+          })}
         </div>
       )}
 
