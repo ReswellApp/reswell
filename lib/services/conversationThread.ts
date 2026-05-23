@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 
 export type AppendConversationMessageOptions = {
   /** If true, skip insert when the same sender+content already exists on this thread */
@@ -7,8 +7,7 @@ export type AppendConversationMessageOptions = {
 }
 
 /**
- * Ensures the single thread per buyer + seller exists and appends a row to `messages`.
- * Listing context on the conversation row is updated when it differs (same behavior as contact flow).
+ * Ensures the listing-scoped thread for buyer + seller exists and appends a row to `messages`.
  * Accepts any Supabase client (user JWT or service role).
  * When `offerId` is set, dedupes by `(conversation_id, offer_id)` so each offer appears once in Chats.
  */
@@ -28,41 +27,19 @@ export async function appendConversationMessageWithClient(
   const { buyerId, sellerId, listingId, senderId, content, offerId } = input
   const skipIfDuplicate = options?.skipIfDuplicate ?? false
 
-  let conversationId: string
+  const ensured = await ensureConversationForBuyerSellerListing(
+    supabase,
+    buyerId,
+    sellerId,
+    listingId,
+  )
 
-  const existing = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
-
-  if (existing) {
-    conversationId = existing.id
-    if (existing.listing_id !== listingId) {
-      await supabase.from("conversations").update({ listing_id: listingId }).eq("id", conversationId)
-    }
-  } else {
-    const { data: newConv, error: insertErr } = await supabase
-      .from("conversations")
-      .insert({
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        listing_id: listingId,
-      })
-      .select("id")
-      .single()
-
-    if (insertErr || !newConv) {
-      const retry = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
-      if (retry) {
-        conversationId = retry.id
-        if (retry.listing_id !== listingId) {
-          await supabase.from("conversations").update({ listing_id: listingId }).eq("id", conversationId)
-        }
-      } else {
-        console.error("[appendConversationMessage] insert conversation:", insertErr)
-        return { ok: false }
-      }
-    } else {
-      conversationId = newConv.id as string
-    }
+  if (!ensured) {
+    console.error("[appendConversationMessage] ensure conversation failed")
+    return { ok: false }
   }
+
+  const conversationId = ensured.id
 
   if (offerId) {
     const { data: dupOffer } = await supabase

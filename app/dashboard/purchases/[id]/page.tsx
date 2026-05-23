@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -270,7 +270,12 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const canSubmitSellerReviewForOrder =
     !existingSellerReview && canSubmitSellerReview(order)
 
-  const convRow = await getConversationForBuyerSeller(supabase, user.id, order.seller_id)
+  const convRow = await getConversationForBuyerSellerListing(
+    supabase,
+    user.id,
+    order.seller_id,
+    order.listing_id,
+  )
 
   const conversationId = convRow?.id ?? null
 

@@ -4,6 +4,7 @@ import { fetchListingForOffer } from "@/lib/db/offers"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
+import { formatSellerOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 import { randomUUID } from "node:crypto"
 import type { SellerInitiatedOfferBody } from "@/lib/validations/seller-initiated-offer"
 
@@ -156,8 +157,7 @@ export async function createSellerInitiatedOffer(
 
   const offerId = inserted.id as string
 
-  const counterText =
-    note !== null ? `Counteroffer: $${amount.toFixed(2)} — ${note}` : `Counteroffer: $${amount.toFixed(2)}`
+  const counterText = formatSellerOfferThreadContent(amount, note)
 
   const threadResult = await appendConversationMessageWithClient(service, {
     buyerId: buyerUserId,

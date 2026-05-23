@@ -7,7 +7,8 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, Heart, Search, Inbox } from 'lucide-react'
+import { MessageCircle, Heart, Search, Inbox, Handshake } from 'lucide-react'
+import { MessagesOffersTab } from '@/components/features/messages/messages-offers-tab'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
@@ -17,6 +18,11 @@ import { cn } from '@/lib/utils'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { SellerMakeOfferToBuyerDialog } from '@/components/features/messages/seller-make-offer-to-buyer-dialog'
 import { ensureMarketplaceThread } from '@/app/actions/messages'
+import {
+  groupConversationsByCounterparty,
+  counterpartyInboxHref,
+  type InboxConversationRow,
+} from '@/lib/utils/messages-inbox-grouping'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
 
@@ -63,39 +69,19 @@ function isFavoriteActivityType(type: string | undefined) {
   return t === 'listing_saved' || t.includes('favorite') || t.includes('save')
 }
 
-interface Conversation {
-  id: string
-  listing_id: string | null
-  buyer_id: string
-  seller_id: string
-  last_message_at: string
-  listing: {
-    id: string
-    title: string
-    listing_images: ListingImageForCard[]
-  } | null
-  buyer: {
-    id: string
-    display_name: string
-    avatar_url: string | null
-    shop_verified?: boolean
-  }
-  seller: {
-    id: string
-    display_name: string
-    avatar_url: string | null
-    shop_verified?: boolean
-  }
-  messages: {
-    content: string
-    is_read: boolean
-    sender_id: string
-    created_at: string
-    metadata?: unknown | null
-  }[]
+interface Conversation extends InboxConversationRow {}
+
+type MessagesTab = 'chats' | 'activity' | 'offers'
+
+function parseMessagesTab(tabParam: string | null): MessagesTab {
+  if (tabParam === 'activity') return 'activity'
+  if (tabParam === 'offers') return 'offers'
+  return 'chats'
 }
 
-type MessagesTab = 'chats' | 'activity'
+function isOfferActivityType(type: string | undefined) {
+  return (type || '').toLowerCase().startsWith('offer_')
+}
 
 function MessagesContent() {
   const searchParams = useSearchParams()
@@ -109,23 +95,23 @@ function MessagesContent() {
   const supabase = createClient()
 
   const tabParam = searchParams.get('tab')
-  const [tab, setTab] = useState<MessagesTab>(() => (tabParam === 'activity' ? 'activity' : 'chats'))
+  const [tab, setTab] = useState<MessagesTab>(() => parseMessagesTab(tabParam))
 
   const userParam = searchParams.get('user')
   const listingParam = searchParams.get('listing')
 
   useEffect(() => {
-    setTab(tabParam === 'activity' ? 'activity' : 'chats')
+    setTab(parseMessagesTab(tabParam))
   }, [tabParam])
 
   const setMessagesTab = useCallback(
     (next: MessagesTab) => {
       setTab(next)
       const params = new URLSearchParams(searchParams.toString())
-      if (next === 'activity') {
-        params.set('tab', 'activity')
-      } else {
+      if (next === 'chats') {
         params.delete('tab')
+      } else {
+        params.set('tab', next)
       }
       const q = params.toString()
       router.replace(q ? `/messages?${q}` : '/messages', { scroll: false })
@@ -213,43 +199,27 @@ function MessagesContent() {
 
   const searchLower = searchQuery.trim().toLowerCase()
 
-  const getUnreadCount = (conv: Conversation) => {
-    return conv.messages.filter((m) => !m.is_read && m.sender_id !== currentUserId).length
-  }
+  const groupedChats = groupConversationsByCounterparty(conversations, currentUserId)
 
-  const totalUnreadChats = conversations.reduce((acc, conv) => acc + getUnreadCount(conv), 0)
+  const filteredGroups = groupedChats.filter((group) => {
+    if (!searchLower) return true
+    const name = group.otherUser?.display_name?.toLowerCase() ?? ''
+    const listingTitles = group.threads
+      .map((t) => t.listing?.title?.toLowerCase() ?? '')
+      .join(' ')
+    const preview = (group.latestMessage?.content || '').toLowerCase()
+    return (
+      name.includes(searchLower) ||
+      listingTitles.includes(searchLower) ||
+      preview.includes(searchLower)
+    )
+  })
 
-  function getLatestMessage(conv: Conversation): Conversation['messages'][number] | undefined {
-    if (!conv.messages?.length) return undefined
-    return [...conv.messages].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    ).at(-1)
-  }
+  const totalUnreadChats = groupedChats.reduce((acc, group) => acc + group.totalUnread, 0)
 
-  /** Latest activity: MAX(last_message_at, every loaded message.created_at). */
-  function getConversationLastActivityMs(conv: Conversation): number {
-    let maxMs = 0
-    const fromConv = new Date(conv.last_message_at).getTime()
-    if (Number.isFinite(fromConv)) maxMs = fromConv
-    for (const m of conv.messages ?? []) {
-      const t = new Date(m.created_at).getTime()
-      if (Number.isFinite(t) && t > maxMs) maxMs = t
-    }
-    return maxMs
-  }
+  const activityNotifications = notifications.filter((n) => !isOfferActivityType(n.type))
 
-  const filteredConversations = [...conversations]
-    .filter((conv) => {
-      const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
-      if (!searchLower) return true
-      return (
-        otherUser?.display_name?.toLowerCase().includes(searchLower) ||
-        conv.listing?.title?.toLowerCase().includes(searchLower)
-      )
-    })
-    .sort((a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a))
-
-  const filteredNotifications = notifications.filter((n) => {
+  const filteredNotifications = activityNotifications.filter((n) => {
     if (!searchLower) return true
     const listing = n.listing ?? n.listings
     const text = (n.message || '').toLowerCase()
@@ -319,7 +289,13 @@ function MessagesContent() {
           />
           <Input
             type="search"
-            placeholder={tab === 'activity' ? 'Search activity' : 'Search chats'}
+            placeholder={
+              tab === 'activity'
+                ? 'Search activity'
+                : tab === 'offers'
+                  ? 'Search offers'
+                  : 'Search chats'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(
@@ -338,6 +314,7 @@ function MessagesContent() {
             >
               <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/90 sm:h-[48px]" />
               <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/50 sm:h-[48px]" />
+              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/40 sm:h-[48px]" />
             </div>
             <div className={cn('divide-y divide-border/60', groupedShell)}>
               {[1, 2, 3, 4].map((i) => (
@@ -357,7 +334,7 @@ function MessagesContent() {
             <div
               className="mb-6 flex w-full gap-1 rounded-2xl border border-border/70 bg-muted/60 p-1 shadow-[inset_0_1px_2px_rgba(17,17,17,0.04)]"
               role="tablist"
-              aria-label="Messages and activity"
+              aria-label="Messages, activity, and offers"
             >
               <button
                 type="button"
@@ -375,11 +352,11 @@ function MessagesContent() {
               >
                 <Inbox className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
                 <span className="truncate">Chats</span>
-                {conversations.length > 0 && (
+                {groupedChats.length > 0 && (
                   <span className="tabular-nums text-[13px] font-medium text-muted-foreground">
-                    {filteredConversations.length !== conversations.length && searchLower
-                      ? `${filteredConversations.length}/${conversations.length}`
-                      : conversations.length}
+                    {filteredGroups.length !== groupedChats.length && searchLower
+                      ? `${filteredGroups.length}/${groupedChats.length}`
+                      : groupedChats.length}
                   </span>
                 )}
                 {totalUnreadChats > 0 && (
@@ -407,13 +384,30 @@ function MessagesContent() {
               >
                 <Heart className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
                 <span className="truncate">Activity</span>
-                {notifications.length > 0 && (
+                {activityNotifications.length > 0 && (
                   <span className="tabular-nums text-[13px] font-medium text-muted-foreground">
-                    {filteredNotifications.length !== notifications.length && searchLower
-                      ? `${filteredNotifications.length}/${notifications.length}`
-                      : notifications.length}
+                    {filteredNotifications.length !== activityNotifications.length && searchLower
+                      ? `${filteredNotifications.length}/${activityNotifications.length}`
+                      : activityNotifications.length}
                   </span>
                 )}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="messages-tab-offers"
+                aria-selected={tab === 'offers'}
+                aria-controls="messages-panel-offers"
+                onClick={() => setMessagesTab('offers')}
+                className={cn(
+                  'flex min-h-touch min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[11px] px-2 py-2.5 text-[15px] font-semibold transition-colors sm:gap-2 sm:px-3',
+                  tab === 'offers'
+                    ? 'bg-card text-foreground shadow-sm ring-1 ring-border/50'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <Handshake className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                <span className="truncate">Offers</span>
               </button>
             </div>
 
@@ -424,14 +418,14 @@ function MessagesContent() {
               aria-labelledby="messages-tab-chats"
               hidden={tab !== 'chats'}
             >
-              {filteredConversations.length === 0 ? (
+              {filteredGroups.length === 0 ? (
                 <div
                   className={cn(
                     'flex flex-col items-center px-6 py-14 text-center sm:py-16',
                     groupedShell,
                   )}
                 >
-                  {searchLower && conversations.length > 0 ? (
+                  {searchLower && groupedChats.length > 0 ? (
                     <>
                       <p className="text-[17px] font-medium text-foreground">No matching chats</p>
                       <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
@@ -454,21 +448,26 @@ function MessagesContent() {
                 </div>
               ) : (
                 <div className={cn('divide-y divide-border/40', groupedShell)}>
-                  {filteredConversations.map((conv) => {
-                    const otherUser = conv.buyer_id === currentUserId ? conv.seller : conv.buyer
-                    const lastMessage = getLatestMessage(conv)
-                    const lastActivityMs = getConversationLastActivityMs(conv)
-                    const unreadCount = getUnreadCount(conv)
+                  {filteredGroups.map((group) => {
+                    const otherUser = group.otherUser
+                    const lastMessage = group.latestMessage
+                    const lastActivityMs = group.latestActivityMs
+                    const unreadCount = group.totalUnread
                     const initial = (otherUser?.display_name?.trim()?.[0] || '?').toUpperCase()
-                    const listingTitle = conv.listing?.title
-                      ? capitalizeWords(conv.listing.title)
+                    const primaryListingTitle = group.primaryThread.listing?.title
+                      ? capitalizeWords(group.primaryThread.listing.title)
                       : undefined
-                    const previewText = formatChatPreviewText(lastMessage, listingTitle, currentUserId)
+                    const previewText = formatChatPreviewText(
+                      lastMessage,
+                      primaryListingTitle,
+                      currentUserId,
+                    )
+                    const listingCount = group.threads.length
 
                     return (
                       <Link
-                        key={conv.id}
-                        href={`/messages/${conv.id}`}
+                        key={group.otherUserId}
+                        href={counterpartyInboxHref(group)}
                         className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/35 active:bg-muted/55 sm:px-5"
                       >
                         <div className="relative h-12 w-12 shrink-0">
@@ -504,6 +503,11 @@ function MessagesContent() {
                                   <VerifiedBadge size="sm" />
                                 </span>
                               )}
+                              {listingCount > 1 ? (
+                                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground ring-1 ring-border/40">
+                                  {listingCount} listings
+                                </span>
+                              ) : null}
                             </div>
                             {lastActivityMs > 0 ? (
                               <time
@@ -549,7 +553,7 @@ function MessagesContent() {
               aria-labelledby="messages-tab-activity"
               hidden={tab !== 'activity'}
             >
-              {notifications.length === 0 ? (
+              {activityNotifications.length === 0 ? (
                 <div
                   className={cn(
                     'flex flex-col items-center px-6 py-14 text-center sm:py-16',
@@ -561,7 +565,7 @@ function MessagesContent() {
                   </div>
                   <h3 className="text-[17px] font-semibold text-foreground">No activity yet</h3>
                   <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
-                    When someone favorites your listing or other updates arrive, they will show here.
+                    When someone favorites your listing or follows you, updates will show here.
                   </p>
                 </div>
               ) : filteredNotifications.length === 0 ? (
@@ -682,6 +686,22 @@ function MessagesContent() {
                   </div>
                 )}
             </section>
+
+            {/* Offers */}
+            <section
+              id="messages-panel-offers"
+              role="tabpanel"
+              aria-labelledby="messages-tab-offers"
+              hidden={tab !== 'offers'}
+            >
+              {currentUserId ? (
+                <MessagesOffersTab
+                  userId={currentUserId}
+                  searchQuery={searchQuery}
+                  shellClassName={groupedShell}
+                />
+              ) : null}
+            </section>
           </>
         )}
       </div>
@@ -717,6 +737,7 @@ export default function MessagesPage() {
             <div className="mb-6 flex w-full gap-1 rounded-2xl border border-border/70 bg-muted/60 p-1">
               <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/90 sm:h-[48px]" />
               <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/50 sm:h-[48px]" />
+              <div className="h-[46px] flex-1 animate-pulse rounded-[11px] bg-muted/40 sm:h-[48px]" />
             </div>
             <div className="overflow-hidden rounded-[20px] border border-border/70 bg-card divide-y divide-border/60">
               {[1, 2, 3, 4].map((i) => (

@@ -3,7 +3,7 @@
 import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
-import { getAnyConversationBetweenUsers, getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { messageAppearsToSharePhoneNumber } from "@/lib/utils/detect-message-phone-sharing"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
@@ -104,12 +104,9 @@ export async function ensureMarketplaceThread(input: unknown) {
   const buyerId = viewerIsSeller ? other_user_id : user.id
   const sellerId = sellerUserId
 
-  const existing = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
+  const existing = await getConversationForBuyerSellerListing(supabase, buyerId, sellerId, listing_id)
 
   if (existing) {
-    if (existing.listing_id !== listing_id) {
-      await supabase.from("conversations").update({ listing_id }).eq("id", existing.id)
-    }
     return { conversation_id: existing.id as string }
   }
 
@@ -177,32 +174,26 @@ export async function sendListingMessage(input: {
 
   const body = content.trim()
 
+  if (!listing_id) {
+    return { error: "Listing is required to start a conversation." as const }
+  }
+
   let conversation: { id: string }
-  const existing = await getAnyConversationBetweenUsers(supabase, user.id, seller_id)
+  const existing = await getConversationForBuyerSellerListing(supabase, user.id, seller_id, listing_id)
 
   if (existing) {
     conversation = { id: existing.id }
-    if (listing_id && existing.listing_id !== listing_id) {
-      await supabase.from("conversations").update({ listing_id }).eq("id", existing.id)
-    }
   } else {
-    const { data: newConv, error: convError } = await supabase
-      .from("conversations")
-      .insert({
-        buyer_id: user.id,
-        seller_id,
-        listing_id: listing_id || null,
-      })
-      .select("id")
-      .single()
-
-    if (convError) {
+    const ensured = await ensureConversationForBuyerSellerListing(
+      supabase,
+      user.id,
+      seller_id,
+      listing_id,
+    )
+    if (!ensured) {
       return { error: "Failed to create conversation" as const }
     }
-    if (!newConv) {
-      return { error: "Failed to create conversation" as const }
-    }
-    conversation = newConv
+    conversation = ensured
   }
 
   if (messageAppearsToSharePhoneNumber(body)) {

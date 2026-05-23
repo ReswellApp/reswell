@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import {
   insertOrderAdminShippingLabel,
   type AdminShippingLabelSource,
@@ -89,7 +89,25 @@ export async function attachAdminShippingLabelToOrder(params: {
     .filter((l): l is string => l != null && l.length > 0)
     .join("\n")
 
-  const conv = await getConversationForBuyerSeller(params.supabase, u.buyer_id, u.seller_id)
+  let conv = await getConversationForBuyerSellerListing(
+    params.supabase,
+    u.buyer_id,
+    u.seller_id,
+    u.listing_id,
+  )
+
+  if (!conv) {
+    const ensured = await ensureConversationForBuyerSellerListing(
+      params.supabase,
+      u.buyer_id,
+      u.seller_id,
+      u.listing_id,
+    )
+    if (ensured) {
+      conv = { id: ensured.id, listing_id: u.listing_id }
+    }
+  }
+
   if (conv) {
     const { error: msgErr } = await params.supabase.from("messages").insert({
       conversation_id: conv.id,
@@ -103,7 +121,6 @@ export async function attachAdminShippingLabelToOrder(params: {
       .from("conversations")
       .update({
         last_message_at: new Date().toISOString(),
-        listing_id: u.listing_id,
       })
       .eq("id", conv.id)
   }

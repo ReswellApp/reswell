@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import type { OrderPlacedMessagePayload } from "@/lib/validations/order-placed-message-metadata"
 
@@ -98,26 +98,25 @@ export async function postPurchaseThreadNotification(
     paymentMethod,
   } = params
 
-  let conversation = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
+  let conversation = await getConversationForBuyerSellerListing(
+    supabase,
+    buyerId,
+    sellerId,
+    primaryListingId,
+  )
 
   if (!conversation) {
-    const { data: created, error: convError } = await supabase
-      .from("conversations")
-      .insert({
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        listing_id: primaryListingId,
-      })
-      .select("id")
-      .single()
-
-    if (convError || !created) {
-      console.error("[purchase notification] conversation insert failed:", convError)
+    const ensured = await ensureConversationForBuyerSellerListing(
+      supabase,
+      buyerId,
+      sellerId,
+      primaryListingId,
+    )
+    if (!ensured) {
+      console.error("[purchase notification] conversation insert failed")
       return
     }
-    conversation = { id: created.id, listing_id: primaryListingId }
-  } else {
-    await supabase.from("conversations").update({ listing_id: primaryListingId }).eq("id", conversation.id)
+    conversation = { id: ensured.id, listing_id: primaryListingId }
   }
 
   const content = buildPurchaseThreadPlainText({

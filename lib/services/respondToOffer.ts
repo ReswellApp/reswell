@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
@@ -91,7 +91,12 @@ export async function respondToOfferService(
     service = null
   }
 
-  const conv = await getConversationForBuyerSeller(supabase, offer.buyer_id, offer.seller_id)
+  const conv = await getConversationForBuyerSellerListing(
+    supabase,
+    offer.buyer_id,
+    offer.seller_id,
+    offer.listing_id,
+  )
 
   const title = ((listing.title ?? "") as string).trim() || "your listing"
 

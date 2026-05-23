@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 
 /**
@@ -31,24 +31,15 @@ export async function openMessagesDirectSupportConversationService(): Promise<
     }
   }
 
-  const existing = await getConversationForBuyerSeller(supabase, user.id, supportUserId)
+  const existing = await getConversationForBuyerSellerListing(supabase, user.id, supportUserId, null)
   if (existing) {
     return { success: true, conversation_id: existing.id }
   }
 
-  const { data: newConv, error: convError } = await supabase
-    .from("conversations")
-    .insert({
-      buyer_id: user.id,
-      seller_id: supportUserId,
-      listing_id: null,
-    })
-    .select("id")
-    .single()
-
-  if (convError || !newConv) {
+  const ensured = await ensureConversationBetweenBuyerAndSeller(supabase, user.id, supportUserId)
+  if (!ensured) {
     return { error: "Couldn’t open chat. Try again in a moment, or send a ticket instead." }
   }
 
-  return { success: true, conversation_id: newConv.id }
+  return { success: true, conversation_id: ensured.id }
 }

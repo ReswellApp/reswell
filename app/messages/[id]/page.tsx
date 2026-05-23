@@ -48,6 +48,8 @@ import { MessagesSupportDialog } from '@/components/features/messages/messages-s
 import { OpenMarketplacePdfButton } from '@/components/features/messages/open-marketplace-pdf-button'
 import { parseMarketplaceMessagePdfAttachment } from '@/lib/validations/marketplace-message-attachment'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
+import { ConversationListingSwitcher, type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
+import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
 import {
   createLocalPhonePolicyBlockMessage,
@@ -107,6 +109,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     Record<string, NonNullable<Conversation['listing']>>
   >({})
   const [listingOfferMinPct, setListingOfferMinPct] = useState(70)
+  const [listingThreads, setListingThreads] = useState<ListingThreadOption[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -123,15 +126,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     [messages],
   )
 
-  const threadPrimaryListingId = useMemo(
-    () =>
-      resolveThreadPrimaryListingId(
-        orderedMessages,
-        offersById,
-        conversation?.listing_id ?? null,
-      ),
-    [orderedMessages, offersById, conversation?.listing_id],
-  )
+  const threadPrimaryListingId = useMemo(() => {
+    if (conversation?.listing_id) return conversation.listing_id
+    return resolveThreadPrimaryListingId(
+      orderedMessages,
+      offersById,
+      conversation?.listing_id ?? null,
+    )
+  }, [orderedMessages, offersById, conversation?.listing_id])
 
   const displayListing = useMemo((): Conversation['listing'] | null => {
     if (!conversation) return null
@@ -179,6 +181,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     stickToBottomRef.current = true
     setThreadListingsById({})
+    setListingThreads([])
     setListingBannerImageReady(false)
     setOtherPartyProfile(null)
   }, [id])
@@ -297,6 +300,33 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       void loadOtherPartyProfile(supabase, otherUserId).then((snapshot) => {
         setOtherPartyProfile(snapshot)
       })
+
+      const { data: siblingRows } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          listing_id,
+          last_message_at,
+          listing:listings(id, title, listing_images(url, thumbnail_url, is_primary))
+        `)
+        .eq('buyer_id', nextConv.buyer_id)
+        .eq('seller_id', nextConv.seller_id)
+        .order('last_message_at', { ascending: false })
+
+      setListingThreads(
+        (siblingRows ?? []).map((row) => {
+          const listing = Array.isArray(row.listing) ? row.listing[0] : row.listing
+          return {
+            conversationId: row.id as string,
+            listingId: (row.listing_id as string | null) ?? null,
+            listingTitle: (listing as { title?: string | null } | null)?.title ?? null,
+            listingImages:
+              (listing as { listing_images?: ListingImageForCard[] | null } | null)?.listing_images ??
+              null,
+            lastMessageAt: row.last_message_at as string,
+          }
+        }),
+      )
     }
 
     const { data: msgData } = await supabase
@@ -639,6 +669,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   }
 
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
+  const otherUserId = getOtherUserIdFromConversation(conversation, currentUserId ?? '')
+  const backHref =
+    listingThreads.length > 1 ? `/messages/with/${otherUserId}` : '/messages'
+  const showListingSwitcher = listingThreads.length > 1
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-background">
@@ -646,7 +680,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         {/* Header */}
         <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:px-3">
           <div className="flex items-center gap-1 sm:gap-2">
-            <Link href="/messages" className="shrink-0">
+            <Link href={backHref} className="shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -665,7 +699,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 displayListing ? (
                   <Link
                     href={listingDetailPath(displayListing)}
-                    className="block truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground"
+                    className={cn(
+                      'block truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground',
+                      showListingSwitcher && 'hidden md:block',
+                    )}
                   >
                     {capitalizeWords(displayListing.title)}
                   </Link>
@@ -679,9 +716,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
         </header>
 
+        <ConversationListingSwitcher
+          threads={listingThreads}
+          activeConversationId={id}
+          counterpartyHref={`/messages/with/${otherUserId}`}
+        />
+
         <div className="relative flex min-h-0 flex-1 flex-col">
         {listingChromeLoading ? (
-          <div className="mb-4 flex gap-3 rounded-[18px] border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none">
+          <div
+            className={cn(
+              'mb-4 flex gap-3 rounded-[18px] border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none',
+              showListingSwitcher && 'hidden md:flex',
+            )}
+          >
             <Skeleton className="h-[72px] w-[72px] shrink-0 rounded-2xl" />
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
               <Skeleton className="h-5 w-[min(100%,14rem)]" />
@@ -692,7 +740,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         {displayListing ? (
           <Link
             href={listingDetailPath(displayListing)}
-            className="mb-4 block overflow-hidden rounded-[18px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-colors hover:bg-muted/40 active:bg-muted/55 dark:shadow-none"
+            className={cn(
+              'mb-4 block overflow-hidden rounded-[18px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-colors hover:bg-muted/40 active:bg-muted/55 dark:shadow-none',
+              showListingSwitcher && 'hidden md:block',
+            )}
           >
             <div className="flex gap-3 p-3">
               <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-muted">

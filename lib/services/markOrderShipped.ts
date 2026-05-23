@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 
@@ -10,6 +10,46 @@ type OrderShipContext = {
 }
 
 type MarkShippedFilter = "seller_match" | "order_id_only"
+
+async function postListingThreadMessage(
+  supabase: SupabaseClient,
+  buyerId: string,
+  sellerUserId: string,
+  listingId: string,
+  senderId: string,
+  content: string,
+): Promise<void> {
+  let conv = await getConversationForBuyerSellerListing(
+    supabase,
+    buyerId,
+    sellerUserId,
+    listingId,
+  )
+
+  if (!conv) {
+    const ensured = await ensureConversationForBuyerSellerListing(
+      supabase,
+      buyerId,
+      sellerUserId,
+      listingId,
+    )
+    if (ensured) {
+      conv = { id: ensured.id, listing_id: listingId }
+    }
+  }
+
+  if (!conv) return
+
+  await supabase.from("messages").insert({
+    conversation_id: conv.id,
+    sender_id: senderId,
+    content,
+  })
+  await supabase
+    .from("conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", conv.id)
+}
 
 async function applyMarkOrderShippedWithTracking(
   supabase: SupabaseClient,
@@ -66,22 +106,14 @@ async function applyMarkOrderShippedWithTracking(
     .filter((l) => l !== null)
     .join("\n")
 
-  const conv = await getConversationForBuyerSeller(supabase, ctx.buyer_id, sellerUserId)
-
-  if (conv) {
-    await supabase.from("messages").insert({
-      conversation_id: conv.id,
-      sender_id: sellerUserId,
-      content: msgContent,
-    })
-    await supabase
-      .from("conversations")
-      .update({
-        last_message_at: new Date().toISOString(),
-        listing_id: ctx.listing_id,
-      })
-      .eq("id", conv.id)
-  }
+  await postListingThreadMessage(
+    supabase,
+    ctx.buyer_id,
+    sellerUserId,
+    ctx.listing_id,
+    sellerUserId,
+    msgContent,
+  )
 
   let buyerEmail: string | null = null
   try {
@@ -173,22 +205,14 @@ export async function markOrderDispatchedBySeller(
     .filter((l) => l !== null)
     .join("\n")
 
-  const conv = await getConversationForBuyerSeller(supabase, ctx.buyer_id, sellerUserId)
-
-  if (conv) {
-    await supabase.from("messages").insert({
-      conversation_id: conv.id,
-      sender_id: sellerUserId,
-      content: msgContent,
-    })
-    await supabase
-      .from("conversations")
-      .update({
-        last_message_at: new Date().toISOString(),
-        listing_id: ctx.listing_id,
-      })
-      .eq("id", conv.id)
-  }
+  await postListingThreadMessage(
+    supabase,
+    ctx.buyer_id,
+    sellerUserId,
+    ctx.listing_id,
+    sellerUserId,
+    msgContent,
+  )
 
   let buyerEmail: string | null = null
   try {

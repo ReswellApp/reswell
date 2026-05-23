@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -294,7 +294,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   let adminPreparedLabelUrl: string | null = null
   adminPreparedLabelUrl = await getPreparedShippingLabelDownloadUrl(createServiceRoleClient(), id)
 
-  const convRow = await getConversationForBuyerSeller(supabase, sale.buyer_id, user.id)
+  const convRow = await getConversationForBuyerSellerListing(
+    supabase,
+    sale.buyer_id,
+    user.id,
+    sale.listing_id,
+  )
   const conversationId = convRow?.id ?? null
 
   let initialMessages: OrderThreadMessage[] = []
@@ -343,7 +348,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const showSellerOwnBuyerReviewUi = !!(existingSellerReviewOfBuyer || canSubmitBuyerReview)
 
   const reviewRequestAlreadySent = canAskBuyerForReview
-    ? await sellerReviewRequestAlreadySentForOrder(supabase, sale.buyer_id, user.id, id)
+    ? await sellerReviewRequestAlreadySentForOrder(supabase, sale.buyer_id, user.id, id, sale.listing_id)
     : false
 
   return (

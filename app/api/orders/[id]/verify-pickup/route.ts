@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { verifyOrderPickupForSeller } from "@/lib/services/orderPickupVerification"
 import type { OrderCompletedMessagePayload } from "@/lib/validations/order-completed-message-metadata"
@@ -62,7 +62,24 @@ export async function POST(
     listingTitle,
   }
 
-  const conv = await getConversationForBuyerSeller(supabase, result.buyerId, user.id)
+  let conv = await getConversationForBuyerSellerListing(
+    supabase,
+    result.buyerId,
+    user.id,
+    result.listingId,
+  )
+
+  if (!conv) {
+    const ensured = await ensureConversationForBuyerSellerListing(
+      supabase,
+      result.buyerId,
+      user.id,
+      result.listingId,
+    )
+    if (ensured) {
+      conv = { id: ensured.id, listing_id: result.listingId }
+    }
+  }
 
   if (conv) {
     await supabase.from("messages").insert({
@@ -73,7 +90,7 @@ export async function POST(
     })
     await supabase
       .from("conversations")
-      .update({ last_message_at: now, listing_id: result.listingId })
+      .update({ last_message_at: now })
       .eq("id", conv.id)
   }
 

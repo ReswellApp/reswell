@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
@@ -94,7 +94,12 @@ export async function respondToCounterOfferService(
     service = null
   }
 
-  const conv = await getConversationForBuyerSeller(supabase, offer.buyer_id, offer.seller_id)
+  const conv = await getConversationForBuyerSellerListing(
+    supabase,
+    offer.buyer_id,
+    offer.seller_id,
+    offer.listing_id,
+  )
 
   if (action === "decline") {
     const { error: upErr } = await supabase

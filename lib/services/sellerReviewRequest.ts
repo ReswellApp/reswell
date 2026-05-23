@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getConversationForBuyerSeller } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -45,8 +45,14 @@ export async function sellerReviewRequestAlreadySentForOrder(
   buyerId: string,
   sellerId: string,
   orderId: string,
+  listingId: string | null,
 ): Promise<boolean> {
-  const conversation = await getConversationForBuyerSeller(supabase, buyerId, sellerId)
+  const conversation = await getConversationForBuyerSellerListing(
+    supabase,
+    buyerId,
+    sellerId,
+    listingId,
+  )
   if (!conversation) return false
   return hasExistingReviewRequestInThread(supabase, conversation.id, orderId)
 }
@@ -138,23 +144,25 @@ export async function sendSellerReviewRequestForOrder(
     return { ok: false, error: "This buyer already left a review for this order." }
   }
 
-  let conversation = await getConversationForBuyerSeller(supabase, row.buyer_id, row.seller_id)
+  let conversation = await getConversationForBuyerSellerListing(
+    supabase,
+    row.buyer_id,
+    row.seller_id,
+    row.listing_id,
+  )
 
   if (!conversation) {
-    const { data: created, error: convError } = await supabase
-      .from("conversations")
-      .insert({
-        buyer_id: row.buyer_id,
-        seller_id: row.seller_id,
-        listing_id: row.listing_id,
-      })
-      .select("id")
-      .single()
+    const ensured = await ensureConversationForBuyerSellerListing(
+      supabase,
+      row.buyer_id,
+      row.seller_id,
+      row.listing_id,
+    )
 
-    if (convError || !created?.id) {
+    if (!ensured?.id) {
       return { ok: false, error: "Could not open a message thread with the buyer." }
     }
-    conversation = { id: created.id, listing_id: row.listing_id }
+    conversation = { id: ensured.id, listing_id: row.listing_id }
   }
 
   const dup = await hasExistingReviewRequestInThread(supabase, conversation.id, orderId)
