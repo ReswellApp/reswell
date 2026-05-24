@@ -2,9 +2,28 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Share2, Check, Loader2 } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+
+function ShareIosIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 4v9.5" />
+      <path d="M8.5 8.5 12 5l3.5 3.5" />
+      <path d="M5 15.5v3A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-3" />
+    </svg>
+  )
+}
 
 interface ShareButtonProps {
   title: string
@@ -58,7 +77,7 @@ export function ShareButton({ title, className, iconClassName }: ShareButtonProp
       ) : justCopied ? (
         <Check className={cn("h-4 w-4", iconClassName)} />
       ) : (
-        <Share2 className={cn("h-4 w-4", iconClassName)} />
+        <ShareIosIcon className={cn("h-4 w-4", iconClassName)} />
       )}
     </Button>
   )

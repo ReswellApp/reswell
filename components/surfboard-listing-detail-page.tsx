@@ -24,7 +24,7 @@ import {
 } from "@/lib/listing-detail-cache"
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
-import { Info, Hourglass, Flag, ShoppingCart } from "lucide-react"
+import { Hourglass, Flag, ShoppingCart } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -343,6 +343,23 @@ export async function SurfboardListingDetailPage({
   const showShareOnGalleryOverlay = isOwnListing || !favoriteNextToOffer
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
+  const aboutSellerSection = (
+    <ListingAboutSellerSection
+      profiles={board.profiles as AboutSellerProfilesProp}
+      sellerProfileHref={sellerProfileHref(board.profiles)}
+      messageHrefAuthenticated={`/messages/new?user=${board.user_id}&listing=${board.id}`}
+      messageHrefLoginRedirect={`/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`}
+      isLoggedIn={!!user}
+      isOwnListing={isOwnListing}
+      isSold={isSold}
+      avgRating={sellerAvgRating}
+      reviewCount={sellerReviewCount}
+      itemsSold={Number(board.profiles?.sales_count ?? 0)}
+      previewReviews={sellerReviewPreviews}
+      showTrustRibbon={false}
+    />
+  )
+
   return (
       <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
         <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
@@ -524,6 +541,9 @@ export async function SurfboardListingDetailPage({
                   />
                 </div>
               ) : null}
+              <div className="mt-5 border-t border-neutral-200/90 pt-5 dark:border-neutral-700/70 lg:hidden">
+                {aboutSellerSection}
+              </div>
             </div>
 
             {/* Details */}
@@ -640,21 +660,8 @@ export async function SurfboardListingDetailPage({
                 </div>
               )}
 
-              <div className="mt-5">
-                <ListingAboutSellerSection
-                  profiles={board.profiles as AboutSellerProfilesProp}
-                  sellerProfileHref={sellerProfileHref(board.profiles)}
-                  messageHrefAuthenticated={`/messages/new?user=${board.user_id}&listing=${board.id}`}
-                  messageHrefLoginRedirect={`/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`}
-                  isLoggedIn={!!user}
-                  isOwnListing={isOwnListing}
-                  isSold={isSold}
-                  avgRating={sellerAvgRating}
-                  reviewCount={sellerReviewCount}
-                  itemsSold={Number(board.profiles?.sales_count ?? 0)}
-                  previewReviews={sellerReviewPreviews}
-                  showTrustRibbon={false}
-                />
+              <div className="mt-5 hidden lg:block">
+                {aboutSellerSection}
               </div>
 
               {!isOwnListing ? (
@@ -760,34 +767,24 @@ export async function SurfboardListingDetailPage({
                   <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
                     Shipping &amp; pickup
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-0 pb-6 pt-0">
-                    <div>
-                      <p className="text-[14px] font-medium uppercase tracking-wide text-foreground">
-                        Location
-                      </p>
-                      <p className="mt-1.5 text-[16px] font-medium text-foreground">
+                  <AccordionContent className="pb-6 pt-0">
+                    <div className="space-y-3 text-[16px] leading-[1.65] text-foreground">
+                      <p className="font-medium">
                         {listingLocationLine ?? "Location not specified"}
                       </p>
+                      <p>
+                        {pickupOffered && shippingOffered &&
+                          "Pickup near this area, or the seller can ship to you at checkout."}
+                        {pickupOffered && !shippingOffered &&
+                          "Local pickup only — meet the seller near this area to inspect the board."}
+                        {!pickupOffered &&
+                          shippingOffered &&
+                          "Shipped to you after checkout. Confirm your address with the seller in messages."}
+                      </p>
+                      {pickupOffered ? (
+                        <p>Inspect for cracks, dings, or delamination before you pay.</p>
+                      ) : null}
                     </div>
-                    <p className="mt-4 text-[16px] leading-relaxed text-foreground">
-                      {pickupOffered && shippingOffered &&
-                        "Approximate area for pickup, or the seller can ship this board to you."}
-                      {pickupOffered && !shippingOffered &&
-                        "Approximate pickup area for meeting the seller and inspecting the board."}
-                      {!pickupOffered &&
-                        shippingOffered &&
-                        "Seller ships this board. Use checkout to pay, then confirm your shipping address in messages."}
-                    </p>
-                    <ul className="mt-4 space-y-2.5 text-[16px] leading-snug text-foreground">
-                      <li className="flex gap-2">
-                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-foreground" aria-hidden />
-                        <span>Check for cracks, dings, and delamination before you pay.</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-foreground" aria-hidden />
-                        <span>Bring a friend for local pickups when you can.</span>
-                      </li>
-                    </ul>
                   </AccordionContent>
                 </AccordionItem>
 
