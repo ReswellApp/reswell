@@ -160,7 +160,7 @@ export function OfferRow({
   const otherId = role === "buyer" ? offer.seller_id : offer.buyer_id
   const messagesHref = conversationId
     ? `/messages/${conversationId}`
-    : `/messages?user=${otherId}&listing=${offer.listing_id}`
+    : `/messages/new?user=${otherId}&listing=${offer.listing_id}`
 
   const showRespond =
     role === "seller" && offer.status === "PENDING" && Number.isFinite(listPrice) && listPrice > 0

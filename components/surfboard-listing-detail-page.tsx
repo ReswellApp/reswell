@@ -606,7 +606,7 @@ export async function SurfboardListingDetailPage({
                 <ListingAboutSellerSection
                   profiles={board.profiles as AboutSellerProfilesProp}
                   sellerProfileHref={sellerProfileHref(board.profiles)}
-                  messageHrefAuthenticated={`/messages?user=${board.user_id}&listing=${board.id}`}
+                  messageHrefAuthenticated={`/messages/new?user=${board.user_id}&listing=${board.id}`}
                   messageHrefLoginRedirect={`/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`}
                   isLoggedIn={!!user}
                   isOwnListing={isOwnListing}

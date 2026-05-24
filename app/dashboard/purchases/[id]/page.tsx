@@ -349,7 +349,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         refundedAt={order.refunded_at}
         listingTitle={title}
         sellerName={sellerName}
-        messagesHref={`/messages?user=${encodeURIComponent(order.seller_id)}&listing=${encodeURIComponent(order.listing_id)}`}
+        messagesHref={`/messages/new?user=${encodeURIComponent(order.seller_id)}&listing=${encodeURIComponent(order.listing_id)}`}
         canRequestCancel={order.status === "confirmed" && canSubmitCancelRequest(order)}
         canRequestRefundHelp={order.status === "confirmed" && canSubmitRefundHelpRequest(order)}
         sellerReview={{

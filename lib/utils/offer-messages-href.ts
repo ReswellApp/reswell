@@ -14,5 +14,5 @@ export function offerMessagesHref(
 ): string {
   if (conversationId) return `/messages/${conversationId}`
   const otherId = role === "buyer" ? offer.seller_id : offer.buyer_id
-  return `/messages?user=${otherId}&listing=${offer.listing_id}`
+  return `/messages/new?user=${otherId}&listing=${offer.listing_id}`
 }

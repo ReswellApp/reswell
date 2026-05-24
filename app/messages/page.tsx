@@ -28,6 +28,7 @@ import { ensureMarketplaceThread } from '@/app/actions/messages'
 import {
   groupConversationsByCounterparty,
   counterpartyInboxHref,
+  filterConversationsWithMessages,
   type InboxConversationRow,
 } from '@/lib/utils/messages-inbox-grouping'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
@@ -78,7 +79,7 @@ function sentOfferViewHref(
   buyerId: string,
 ): string {
   if (sent.conversationId) return `/messages/${sent.conversationId}`
-  return `/messages?user=${buyerId}&listing=${listingId}`
+  return `/messages/new?user=${buyerId}&listing=${listingId}`
 }
 
 function activityKindLabel(type: string | undefined) {
@@ -229,7 +230,7 @@ function MessagesContent() {
         }
         if (cancelled) return
 
-        // Open or create buyer↔seller thread (works when current user is buyer or listing owner)
+        // Open existing buyer↔seller thread, or compose when none exists yet
         if (userParam && listingParam && userParam !== user.id) {
           const opened = await ensureMarketplaceThread({
             listing_id: listingParam,
@@ -238,6 +239,12 @@ function MessagesContent() {
           if (cancelled) return
           if ('conversation_id' in opened && opened.conversation_id) {
             router.replace(`/messages/${opened.conversation_id}`)
+            return
+          }
+          if ('compose' in opened && opened.compose) {
+            router.replace(
+              `/messages/new?user=${encodeURIComponent(userParam)}&listing=${encodeURIComponent(listingParam)}`,
+            )
             return
           }
         }
@@ -274,7 +281,7 @@ function MessagesContent() {
         if (cancelled) return
 
         if (!error && data) {
-          setConversations(data as Conversation[])
+          setConversations(filterConversationsWithMessages(data as Conversation[]))
         }
         if (notifData) {
           setNotifications(notifData as unknown as Notification[])

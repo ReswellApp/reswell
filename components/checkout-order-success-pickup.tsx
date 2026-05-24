@@ -63,7 +63,7 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
 
   const messagesHref =
     data.sellerId && data.listingId
-      ? `/messages?user=${encodeURIComponent(data.sellerId)}&listing=${encodeURIComponent(data.listingId)}`
+      ? `/messages/new?user=${encodeURIComponent(data.sellerId)}&listing=${encodeURIComponent(data.listingId)}`
       : null
 
   return (

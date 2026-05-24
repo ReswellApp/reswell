@@ -54,6 +54,18 @@ export function getOtherUserIdFromConversation(
   return conv.buyer_id === currentUserId ? conv.seller_id : conv.buyer_id
 }
 
+export function conversationHasMessages(
+  conv: Pick<InboxConversationRow, "messages">,
+): boolean {
+  return (conv.messages?.length ?? 0) > 0
+}
+
+export function filterConversationsWithMessages(
+  conversations: InboxConversationRow[],
+): InboxConversationRow[] {
+  return conversations.filter(conversationHasMessages)
+}
+
 export function getLatestMessage(conv: InboxConversationRow): InboxConversationMessage | undefined {
   if (!conv.messages?.length) return undefined
   return [...conv.messages].sort(
@@ -86,7 +98,7 @@ export function groupConversationsByCounterparty(
 ): CounterpartyInboxGroup[] {
   const byUser = new Map<string, InboxConversationRow[]>()
 
-  for (const conv of conversations) {
+  for (const conv of filterConversationsWithMessages(conversations)) {
     if (!currentUserId) continue
     const otherUserId = getOtherUserIdFromConversation(conv, currentUserId)
     const bucket = byUser.get(otherUserId) ?? []

@@ -315,7 +315,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           id,
           listing_id,
           last_message_at,
-          listing:listings(id, title, listing_images(url, thumbnail_url, is_primary))
+          listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)),
+          messages(id)
         `)
         .eq('buyer_id', nextConv.buyer_id)
         .eq('seller_id', nextConv.seller_id)
@@ -323,7 +324,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       if (!isActive()) return
 
       setListingThreads(
-        (siblingRows ?? []).map((row) => {
+        (siblingRows ?? [])
+          .filter((row) => {
+            const messages = (row as { messages?: unknown[] }).messages
+            return Array.isArray(messages) && messages.length > 0
+          })
+          .map((row) => {
           const listing = Array.isArray(row.listing) ? row.listing[0] : row.listing
           return {
             conversationId: row.id as string,

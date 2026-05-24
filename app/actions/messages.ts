@@ -27,10 +27,117 @@ const sendSellerReviewRequestSchema = z.object({
   order_id: z.string().uuid(),
 })
 
-const ensureMarketplaceThreadSchema = z.object({
+const marketplaceListingThreadSchema = z.object({
   listing_id: z.string().uuid(),
   other_user_id: z.string().uuid(),
 })
+
+type MarketplaceListingThreadContext =
+  | {
+      ok: true
+      buyerId: string
+      sellerId: string
+      listingId: string
+      viewerIsSeller: boolean
+    }
+  | { ok: false; error: string }
+
+async function resolveMarketplaceListingThreadContext(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  listingId: string,
+  otherUserId: string,
+): Promise<MarketplaceListingThreadContext> {
+  if (otherUserId === userId) {
+    return { ok: false, error: "Invalid request." }
+  }
+
+  const { data: listing, error: listingErr } = await supabase
+    .from("listings")
+    .select("id, user_id")
+    .eq("id", listingId)
+    .maybeSingle()
+
+  if (listingErr || !listing) {
+    return { ok: false, error: "Listing not found." }
+  }
+
+  const sellerUserId = listing.user_id as string
+  const viewerIsSeller = sellerUserId === userId
+  const viewerIsBuyer = userId !== sellerUserId && otherUserId === sellerUserId
+
+  if (!viewerIsSeller && !viewerIsBuyer) {
+    return { ok: false, error: "You can’t open this conversation." }
+  }
+
+  if (viewerIsSeller && otherUserId === sellerUserId) {
+    return { ok: false, error: "Invalid request." }
+  }
+
+  return {
+    ok: true,
+    buyerId: viewerIsSeller ? otherUserId : userId,
+    sellerId: sellerUserId,
+    listingId,
+    viewerIsSeller,
+  }
+}
+
+async function ensureMarketplaceConversationOnSend(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ctx: Extract<MarketplaceListingThreadContext, { ok: true }>,
+): Promise<{ id: string } | null> {
+  const existing = await getConversationForBuyerSellerListing(
+    supabase,
+    ctx.buyerId,
+    ctx.sellerId,
+    ctx.listingId,
+  )
+  if (existing) {
+    return { id: existing.id }
+  }
+
+  if (!ctx.viewerIsSeller) {
+    const { data: created, error: createErr } = await supabase
+      .from("conversations")
+      .insert({
+        buyer_id: ctx.buyerId,
+        seller_id: ctx.sellerId,
+        listing_id: ctx.listingId,
+      })
+      .select("id")
+      .single()
+
+    if (createErr || !created) {
+      return null
+    }
+    return { id: created.id as string }
+  }
+
+  let service
+  try {
+    service = createServiceRoleClient()
+  } catch {
+    return null
+  }
+
+  const { data: created, error: svcErr } = await service
+    .from("conversations")
+    .insert({
+      buyer_id: ctx.buyerId,
+      seller_id: ctx.sellerId,
+      listing_id: ctx.listingId,
+    })
+    .select("id")
+    .single()
+
+  if (svcErr || !created) {
+    console.error("[ensureMarketplaceConversationOnSend] seller-first thread insert:", svcErr)
+    return null
+  }
+
+  return { id: created.id as string }
+}
 
 async function capturePolicyBlockedDmContent(row: {
   conversationId: string
@@ -54,11 +161,11 @@ async function capturePolicyBlockedDmContent(row: {
 }
 
 /**
- * Opens the single buyer↔seller thread for a listing, creating it if allowed.
- * Buyers create threads via RLS; sellers need a service-role insert when they go first.
+ * Resolves an existing buyer↔seller thread for a listing without creating one.
+ * New threads are created only when the user sends the first message.
  */
 export async function ensureMarketplaceThread(input: unknown) {
-  const parsed = ensureMarketplaceThreadSchema.safeParse(input)
+  const parsed = marketplaceListingThreadSchema.safeParse(input)
   if (!parsed.success) {
     return { error: "Invalid request." as const }
   }
@@ -74,82 +181,127 @@ export async function ensureMarketplaceThread(input: unknown) {
     return { error: "Unauthorized." as const }
   }
 
-  if (other_user_id === user.id) {
-    return { error: "Invalid request." as const }
+  const ctx = await resolveMarketplaceListingThreadContext(
+    supabase,
+    user.id,
+    listing_id,
+    other_user_id,
+  )
+  if (!ctx.ok) {
+    return { error: ctx.error as "Invalid request." | "Listing not found." | "You can’t open this conversation." }
   }
 
-  const { data: listing, error: listingErr } = await supabase
-    .from("listings")
-    .select("id, user_id")
-    .eq("id", listing_id)
-    .maybeSingle()
-
-  if (listingErr || !listing) {
-    return { error: "Listing not found." as const }
-  }
-
-  const sellerUserId = listing.user_id as string
-  const viewerIsSeller = sellerUserId === user.id
-  /** Buyer messaging the listing owner: `other_user_id` must be the seller. */
-  const viewerIsBuyer = user.id !== sellerUserId && other_user_id === sellerUserId
-
-  if (!viewerIsSeller && !viewerIsBuyer) {
-    return { error: "You can’t open this conversation." as const }
-  }
-
-  if (viewerIsSeller && other_user_id === sellerUserId) {
-    return { error: "Invalid request." as const }
-  }
-
-  const buyerId = viewerIsSeller ? other_user_id : user.id
-  const sellerId = sellerUserId
-
-  const existing = await getConversationForBuyerSellerListing(supabase, buyerId, sellerId, listing_id)
+  const existing = await getConversationForBuyerSellerListing(
+    supabase,
+    ctx.buyerId,
+    ctx.sellerId,
+    listing_id,
+  )
 
   if (existing) {
     return { conversation_id: existing.id as string }
   }
 
-  if (viewerIsBuyer) {
-    const { data: created, error: createErr } = await supabase
-      .from("conversations")
-      .insert({
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        listing_id,
-      })
-      .select("id")
-      .single()
+  return { compose: true as const }
+}
 
-    if (createErr || !created) {
-      return { error: "Could not start the conversation." as const }
-    }
-    return { conversation_id: created.id as string }
+/** Creates the listing thread on first send (buyer or seller). */
+export async function sendMarketplaceListingMessage(input: unknown) {
+  const parsed = marketplaceListingThreadSchema
+    .extend({ content: z.string().min(1).max(5000) })
+    .safeParse(input)
+  if (!parsed.success) {
+    return { error: "Invalid request." as const }
   }
 
-  let service
-  try {
-    service = createServiceRoleClient()
-  } catch {
-    return { error: "Messaging is temporarily unavailable." as const }
+  const { listing_id, other_user_id, content } = parsed.data
+  const body = content.trim()
+  if (!body) {
+    return { error: "Empty message" as const }
   }
 
-  const { data: created, error: svcErr } = await service
-    .from("conversations")
-    .insert({
-      buyer_id: buyerId,
-      seller_id: sellerId,
-      listing_id,
-    })
-    .select("id")
-    .single()
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (svcErr || !created) {
-    console.error("[ensureMarketplaceThread] seller-first thread insert:", svcErr)
+  if (!user) {
+    return { error: "Unauthorized" as const }
+  }
+
+  const ctx = await resolveMarketplaceListingThreadContext(
+    supabase,
+    user.id,
+    listing_id,
+    other_user_id,
+  )
+  if (!ctx.ok) {
+    return { error: ctx.error }
+  }
+
+  const conversation = await ensureMarketplaceConversationOnSend(supabase, ctx)
+  if (!conversation) {
     return { error: "Could not start the conversation." as const }
   }
 
-  return { conversation_id: created.id as string }
+  const receiverId = user.id === ctx.buyerId ? ctx.sellerId : ctx.buyerId
+
+  if (messageAppearsToSharePhoneNumber(body)) {
+    await capturePolicyBlockedDmContent({
+      conversationId: conversation.id,
+      senderId: user.id,
+      recipientId: receiverId,
+      listingId: listing_id,
+      content: body,
+    })
+    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+  }
+
+  const { data: inserted, error: msgError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversation.id,
+      sender_id: user.id,
+      content: body,
+    })
+    .select("id, content, sender_id, created_at, is_read")
+    .single()
+
+  if (msgError || !inserted) {
+    console.error("[sendMarketplaceListingMessage] message insert:", msgError)
+    return { error: "Failed to send message" as const }
+  }
+
+  await supabase
+    .from("conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", conversation.id)
+
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("display_name, shop_name, is_shop")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  void trackKlaviyoMessageSent({
+    senderUserId: user.id,
+    receiverUserId: receiverId,
+    message: body,
+    conversationId: conversation.id,
+    listingId: listing_id,
+    messageId: inserted.id,
+    sentAt: inserted.created_at,
+    sessionSender: {
+      email: user.email ?? null,
+      profile: senderProfile,
+    },
+  })
+
+  return {
+    success: true as const,
+    conversation_id: conversation.id,
+    message: inserted,
+  }
 }
 
 export async function sendListingMessage(input: {

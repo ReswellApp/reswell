@@ -15,6 +15,7 @@ import { CounterpartyThreadsSkeleton } from "@/components/features/messages/mess
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { cn } from "@/lib/utils"
 import {
+  filterConversationsWithMessages,
   getConversationLastActivityMs,
   getLatestMessage,
   getUnreadCountForConversation,
@@ -111,7 +112,7 @@ export default function CounterpartyThreadsPage({
         })
       }
 
-      const rows = (convData ?? []) as unknown as InboxConversationRow[]
+      const rows = filterConversationsWithMessages((convData ?? []) as unknown as InboxConversationRow[])
       const sorted = [...rows].sort(
         (a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a),
       )

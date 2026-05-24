@@ -35,7 +35,7 @@ export function MessageListingButton({
   if (currentUserId === sellerId) return null
 
   const href = currentUserId
-    ? `/messages?user=${sellerId}&listing=${listingId}`
+    ? `/messages/new?user=${sellerId}&listing=${listingId}`
     : `/auth/login?redirect=${encodeURIComponent(redirectPath)}`
 
   return (
