@@ -24,6 +24,12 @@ function hideFooter(pathname: string | null): boolean {
   return pathname === "/messages" || pathname.startsWith("/messages/")
 }
 
+/** Single listing thread: fill viewport; only the message list scrolls. */
+function lockMessageThreadViewport(pathname: string | null): boolean {
+  if (!pathname) return false
+  return /^\/messages\/[^/]+$/.test(pathname)
+}
+
 /**
  * Client shell: pathname gates chrome, mounts interactive header from server snapshot.
  */
@@ -51,7 +57,14 @@ export function SiteChromeClient({
     <AuthModalProvider>
       <PasswordResetRequiredDialog />
       <ProfileCompletionRequiredDialog />
-      <div className="flex min-h-dvh flex-col">
+      <div
+        className={cn(
+          "flex flex-col",
+          lockMessageThreadViewport(pathname)
+            ? "h-dvh max-h-dvh overflow-hidden"
+            : "min-h-dvh",
+        )}
+      >
         <RouteProgressBar />
         <div className="sticky top-0 z-50 isolate w-full bg-background pt-[env(safe-area-inset-top)]">
           <ImpersonationBanner />
@@ -62,6 +75,7 @@ export function SiteChromeClient({
         <div
           className={cn(
             "flex min-h-0 flex-1 flex-col",
+            lockMessageThreadViewport(pathname) && "overflow-hidden",
             hideFooter(pathname)
               ? "pb-[env(safe-area-inset-bottom)]"
               : "pb-10 sm:pb-12 md:pb-16",

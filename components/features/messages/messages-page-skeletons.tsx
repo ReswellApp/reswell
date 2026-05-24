@@ -135,12 +135,12 @@ export function MessagesOffersTabSkeleton({
 export function ConversationThreadSkeleton({ className }: { className?: string }) {
   return (
     <main
-      className={cn("flex min-h-0 flex-1 flex-col bg-background", className)}
+      className={cn("flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background", className)}
       aria-busy="true"
       aria-label="Loading conversation"
     >
-      <div className={threadContainerClass}>
-        <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:px-3">
+      <div className={cn(threadContainerClass, "h-full overflow-hidden pb-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]")}>
+        <header className="z-10 shrink-0 -mx-4 mb-2 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:mb-3 sm:px-3">
           <div className="flex items-center gap-1 sm:gap-2">
             <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
             <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
@@ -151,29 +151,31 @@ export function ConversationThreadSkeleton({ className }: { className?: string }
           </div>
         </header>
 
-        <Skeleton className="mb-4 h-[96px] w-full rounded-[18px]" />
+        <Skeleton className="mb-2 h-[72px] w-full shrink-0 rounded-[18px] sm:mb-4 sm:h-[96px]" />
 
-        <div
-          className={cn(
-            "flex shrink-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25",
-            "h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]",
-          )}
-        >
-          <div className="flex flex-1 flex-col justify-end gap-3 p-4 pb-8">
-            <div className="flex justify-start">
-              <Skeleton className="h-12 w-[min(72%,18rem)] rounded-[20px] rounded-bl-[6px]" />
-            </div>
-            <div className="flex justify-end">
-              <Skeleton className="h-11 w-[min(55%,14rem)] rounded-[20px] rounded-br-[6px]" />
-            </div>
-            <div className="flex justify-start">
-              <Skeleton className="h-24 w-[min(85%,20rem)] max-w-[min(100%,28rem)] rounded-2xl" />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25",
+              "sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]",
+            )}
+          >
+            <div className="flex flex-1 flex-col justify-end gap-3 p-4 pb-4">
+              <div className="flex justify-start">
+                <Skeleton className="h-12 w-[min(72%,18rem)] rounded-[20px] rounded-bl-[6px]" />
+              </div>
+              <div className="flex justify-end">
+                <Skeleton className="h-11 w-[min(55%,14rem)] rounded-[20px] rounded-br-[6px]" />
+              </div>
+              <div className="flex justify-start">
+                <Skeleton className="h-24 w-[min(85%,20rem)] max-w-[min(100%,28rem)] rounded-2xl" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-3 shrink-0">
-          <Skeleton className="h-[52px] w-full rounded-[24px]" />
+          <div className="mt-2 shrink-0 sm:mt-3">
+            <Skeleton className="h-[52px] w-full rounded-[24px]" />
+          </div>
         </div>
       </div>
     </main>

@@ -652,10 +652,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const showListingSwitcher = listingThreads.length > 1
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background">
-      <div className="container mx-auto flex min-h-0 max-w-2xl flex-1 flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
+    <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
+      <div className="container mx-auto flex h-full min-h-0 max-w-2xl flex-1 flex-col overflow-hidden px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
         {/* Header */}
-        <header className="sticky top-0 z-10 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:px-3">
+        <header className="z-10 shrink-0 -mx-4 mb-2 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:mb-3 sm:px-3">
           <div className="flex items-center gap-1 sm:gap-2">
             <Link href={backHref} className="shrink-0">
               <Button
@@ -698,9 +698,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           threads={listingThreads}
           activeConversationId={id}
           counterpartyHref={`/messages/with/${otherUserId}`}
+          className="shrink-0"
         />
 
-        <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {listingChromeLoading ? (
           <div
             className={cn(
@@ -760,8 +761,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         {/* Messages — bounded scroll window (thread does not grow with the page) */}
         <div
           className={cn(
-            'flex shrink-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
-            'h-[min(22rem,42svh)] max-h-[min(26rem,52svh)] sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
+            'flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
+            'sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
           )}
         >
           <div
@@ -777,7 +778,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 </p>
               </div>
             ) : (
-              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] pt-4 sm:px-4 sm:pb-28">
+              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-4 pt-4 sm:px-4 sm:pb-6">
                 {orderedMessages.map((message) => {
                   const isOwn = message.sender_id === currentUserId
                   const offer =
@@ -1018,7 +1019,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        <div className="mt-3 shrink-0 space-y-2">
+        <div className="relative z-10 mt-2 shrink-0 space-y-2 sm:mt-3">
           <div className="flex justify-end">
             <MessagesSupportDialog
               relatedConversationId={id}

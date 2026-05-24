@@ -32,19 +32,19 @@ export function ConversationListingSwitcher({
   )
 
   return (
-    <div className={cn("mb-3", className)}>
-      <div className="mb-2 flex items-center justify-between gap-2 px-1">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+    <div className={cn("mb-2 sm:mb-3", className)}>
+      <div className="mb-1.5 flex items-center justify-between gap-2 px-1 sm:mb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:text-[12px]">
           Conversations by listing
         </p>
         <Link
           href={counterpartyHref}
-          className="text-[12px] font-medium text-foreground underline decoration-foreground/25 underline-offset-2 hover:decoration-foreground/60"
+          className="text-[10px] font-medium text-foreground underline decoration-foreground/25 underline-offset-2 hover:decoration-foreground/60 sm:text-[12px]"
         >
           View all ({threads.length})
         </Link>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5 sm:gap-2 sm:pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {sorted.map((thread) => {
           const active = thread.conversationId === activeConversationId
           const title = thread.listingTitle
@@ -59,25 +59,31 @@ export function ConversationListingSwitcher({
               key={thread.conversationId}
               href={`/messages/${thread.conversationId}`}
               className={cn(
-                "flex min-w-[9.5rem] max-w-[11rem] shrink-0 flex-col overflow-hidden rounded-xl border transition-colors",
+                "flex min-w-[5.25rem] max-w-[6rem] shrink-0 flex-col overflow-hidden rounded-lg border transition-colors sm:min-w-[9.5rem] sm:max-w-[11rem] sm:rounded-xl",
                 active
                   ? "border-foreground/25 bg-card shadow-sm ring-1 ring-foreground/10"
                   : "border-border/60 bg-muted/20 hover:border-border hover:bg-muted/35",
               )}
             >
-              <div className="relative aspect-[4/3] w-full bg-muted">
+              <div className="relative aspect-square w-full bg-muted sm:aspect-[4/3]">
                 {thumb ? (
-                  <Image src={thumb} alt={title} fill sizes="120px" className="object-cover" />
+                  <Image
+                    src={thumb}
+                    alt={title}
+                    fill
+                    sizes="(max-width: 640px) 72px, 120px"
+                    className="object-cover"
+                  />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-[10px] font-medium text-muted-foreground">
+                  <div className="flex h-full w-full items-center justify-center text-[9px] font-medium text-muted-foreground sm:text-[10px]">
                     Chat
                   </div>
                 )}
               </div>
-              <div className="px-2 py-2">
+              <div className="px-1.5 py-1 sm:px-2 sm:py-2">
                 <p
                   className={cn(
-                    "line-clamp-2 text-[12px] leading-snug",
+                    "truncate text-[10px] leading-snug sm:line-clamp-2 sm:text-[12px]",
                     active ? "font-semibold text-foreground" : "font-medium text-foreground/85",
                   )}
                 >
