@@ -19,11 +19,13 @@ interface ImageGalleryProps {
   title: string
   /** Sold listings: muted imagery + SOLD badge (no change to carousel behavior). */
   sold?: boolean
+  /** Mobile PDP: shorter hero frame so title + image fit above the fold. */
+  compactMobile?: boolean
 }
 
 const SWIPE_MIN_PX = 48
 
-export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
+export function ImageGallery({ images, title, sold, compactMobile }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -101,7 +103,7 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
   }
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-full space-y-5">
+    <div className={cn("mx-auto w-full min-w-0 max-w-full", compactMobile ? "max-lg:space-y-0 lg:space-y-5" : "space-y-5")}>
       <ListingImageLightbox
         open={lightboxOpen}
         onOpenChange={(o) => {
@@ -118,8 +120,13 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
       {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
       <div
-        className="relative w-full overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] select-none touch-pan-y dark:bg-muted dark:ring-white/[0.06]"
-        style={{ paddingBottom: "133.33%" }}
+        className={cn(
+          "relative w-full overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] select-none touch-pan-y dark:bg-muted dark:ring-white/[0.06]",
+          compactMobile
+            ? "max-lg:aspect-[5/6] max-lg:max-h-[min(52dvh,28rem)] max-lg:h-auto lg:aspect-[3/4] lg:h-auto"
+            : "",
+        )}
+        style={compactMobile ? undefined : { paddingBottom: "133.33%" }}
         onTouchStart={(e) => {
           if (images.length <= 1) return
           const t = e.touches[0]
@@ -241,7 +248,12 @@ export function ImageGallery({ images, title, sold }: ImageGalleryProps) {
 
       {/* Thumbnails - explicit 3:4 box (padding-bottom) so fill Image has a defined size */}
       {images.length > 1 && (
-        <div className="flex max-w-full min-w-0 gap-2.5 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
+        <div
+          className={cn(
+            "flex max-w-full min-w-0 gap-2.5 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]",
+            compactMobile && "max-lg:hidden",
+          )}
+        >
           {images.map((image, index) => (
             <button
               key={image.id}
