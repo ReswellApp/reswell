@@ -44,7 +44,15 @@ export async function POST(
 
   const result = await createListingOffer(supabase, user.id, listingId, parsed.data)
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: result.status })
+    return NextResponse.json(
+      {
+        error: result.error,
+        ...(result.code ? { code: result.code } : {}),
+        ...(result.offerId ? { offerId: result.offerId } : {}),
+        ...(result.conversationId !== undefined ? { conversationId: result.conversationId } : {}),
+      },
+      { status: result.status },
+    )
   }
 
   revalidatePath("/dashboard/offers")

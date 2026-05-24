@@ -39,7 +39,14 @@ function composeOfferNote(input: CreateListingOfferBody): string | null {
 
 export type CreateListingOfferResult =
   | { ok: true; offerId: string }
-  | { ok: false; status: number; error: string }
+  | {
+      ok: false
+      status: number
+      error: string
+      code?: "offer_already_open"
+      offerId?: string
+      conversationId?: string | null
+    }
 
 /**
  * Creates a buyer offer and initial thread message. Sends seller notification via service role.
@@ -112,7 +119,10 @@ export async function createListingOffer(
     return {
       ok: false,
       status: 409,
-      error: "You already have an open offer on this listing. Check your messages or wait for the seller to respond.",
+      code: "offer_already_open",
+      error: "Offer already pending on this listing.",
+      offerId: pending.id,
+      conversationId: repaired.ok ? repaired.conversationId : null,
     }
   }
 
@@ -170,18 +180,6 @@ export async function createListingOffer(
 
   const title = (listing.title ?? "your listing").trim() || "your listing"
 
-  void trackKlaviyoOfferMade({
-    offerId,
-    listingId,
-    listingTitle: title,
-    listingSlug: listing.slug?.trim() ? listing.slug : null,
-    listingSection: listing.section,
-    listPrice: listPrice,
-    offerAmount: amount,
-    buyerUserId: buyerId,
-    sellerUserId: listing.user_id,
-  })
-
   let service
   try {
     service = createServiceRoleClient()
@@ -200,6 +198,28 @@ export async function createListingOffer(
 
   if (notifErr) {
     console.error("[createListingOffer] notification:", notifErr)
+  }
+
+  try {
+    await trackKlaviyoOfferMade({
+      offerId,
+      listingId,
+      listingTitle: title,
+      listingSlug: listing.slug?.trim() ? listing.slug : null,
+      listingSection: listing.section,
+      listPrice,
+      offerAmount: amount,
+      buyerUserId: buyerId,
+      sellerUserId: listing.user_id,
+      offerNote: note,
+      fulfillment: body.fulfillment,
+      shippingRegion: body.fulfillment === "shipping" ? body.shippingRegion : null,
+      shipZip: body.fulfillment === "shipping" ? body.shipZip ?? null : null,
+      conversationId: threadResult.ok ? threadResult.conversationId : null,
+      listingImages: listing.listing_images ?? null,
+    })
+  } catch (e) {
+    console.error("[createListingOffer] klaviyo Offer Made:", e)
   }
 
   return { ok: true, offerId }
