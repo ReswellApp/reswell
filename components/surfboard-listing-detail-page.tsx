@@ -619,9 +619,17 @@ export async function SurfboardListingDetailPage({
                 />
               </div>
 
+              {!isOwnListing ? (
+                <ListingBuyerProtectionTrustRibbon className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:hidden" />
+              ) : null}
+
               <ListingProtectionTrustRibbon
                 viewerRole={isOwnListing ? "seller" : "buyer"}
-                className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
+                className={
+                  isOwnListing
+                    ? "mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
+                    : "mt-5 hidden border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:block"
+                }
               />
 
               <ReswellPlatformRatingWidget
@@ -766,7 +774,7 @@ export async function SurfboardListingDetailPage({
                 ) : null}
               </Accordion>
               {!isOwnListing ? (
-                <div className="mt-10 w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
+                <div className="mt-10 hidden w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70 lg:block">
                   <ListingBuyerProtectionTrustRibbon />
                 </div>
               ) : null}
