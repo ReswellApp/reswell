@@ -353,21 +353,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     if (offerIds.length > 0) {
       const { data: orows } = await supabase
         .from('offers')
-        .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at')
+        .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline')
         .in('id', offerIds)
       if (!isActive()) return
       offerRows = (orows ?? []) as OfferRowLite[]
       if (offerRows.length) {
-        const next: Record<string, OfferRowLite> = {}
-        for (const o of offerRows) {
-          next[o.id as string] = o
-        }
-        setOffersById(next)
-      } else {
-        setOffersById({})
+        setOffersById((prev) => {
+          const next = { ...prev }
+          for (const o of offerRows) {
+            next[o.id as string] = o
+          }
+          return next
+        })
       }
-    } else {
-      setOffersById({})
     }
 
     const offerListingIds = [
@@ -439,7 +437,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           if (msg.offer_id) {
             void supabase
               .from('offers')
-              .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at')
+              .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline')
               .eq('id', msg.offer_id)
               .maybeSingle()
               .then(({ data: o }) => {
@@ -816,6 +814,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                           minOfferPct={listingOfferMinPct}
                           createdAt={message.created_at}
                           onThreadRefresh={loadThread}
+                        />
+                      </div>
+                    )
+                  }
+
+                  if (message.offer_id && message.content.trim()) {
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
+                      >
+                        <OfferLegacyMirrorCard
+                          content={message.content}
+                          createdAt={message.created_at}
                         />
                       </div>
                     )

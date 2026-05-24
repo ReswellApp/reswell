@@ -55,3 +55,21 @@ export function latestSellerCounterNoteFromTimeline(raw: unknown): string | null
 export function firstBuyerOfferFromTimeline(raw: unknown): OfferTimelineEntry | undefined {
   return parseOfferTimeline(raw).find((e) => e.action === "OFFER" && e.sender_role === "BUYER")
 }
+
+/** Note attached to the opening offer row linked by `messages.offer_id`. */
+export function openingOfferNoteFromTimeline(
+  raw: unknown,
+  options?: { sellerInitiated?: boolean },
+): string | null {
+  const timeline = parseOfferTimeline(raw)
+  if (options?.sellerInitiated) {
+    const sellerOpen = timeline.find((e) => e.sender_role === "SELLER" && e.action === "COUNTER")
+    return sellerOpen?.note ?? null
+  }
+  const buyerOpen = firstBuyerOfferFromTimeline(raw)
+  if (buyerOpen?.note) return buyerOpen.note
+  for (const entry of timeline) {
+    if (entry.note) return entry.note
+  }
+  return null
+}

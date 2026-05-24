@@ -2,6 +2,8 @@
  * Detects system negotiation lines appended by offer services (plain `messages` rows, no `offer_id`).
  * Keep in sync with strings in `lib/services/respondToOffer.ts`, `createSellerInitiatedOffer.ts`, and `respondToCounterOffer.ts`.
  */
+import { openingOfferNoteFromTimeline } from "@/lib/utils/offer-timeline"
+
 export type OfferNegotiationKind = "declined" | "accepted" | "counter" | "seller_offer"
 
 export function parseOfferNegotiationMessage(content: string): OfferNegotiationKind | null {
@@ -30,4 +32,16 @@ export function parseCounterofferNoteFromThread(content: string): string | null 
     }
   }
   return null
+}
+
+/** Prefer mirrored thread text; fall back to structured `offer_timeline` note. */
+export function resolveOfferThreadNote(
+  messageContent: string,
+  offerTimeline?: unknown,
+  options?: { sellerInitiated?: boolean },
+): string | null {
+  const fromContent = parseCounterofferNoteFromThread(messageContent)
+  if (fromContent) return fromContent
+  if (offerTimeline === undefined) return null
+  return openingOfferNoteFromTimeline(offerTimeline, options)
 }

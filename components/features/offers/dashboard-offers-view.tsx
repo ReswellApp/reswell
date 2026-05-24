@@ -187,6 +187,7 @@ export function DashboardOffersView({
           listPrice={listPriceNum}
           minOfferAmount={minOfferAmount}
           minOfferPct={minPct}
+          buyerNote={dialogOffer?.buyer_note}
           onCompleted={async () => {
             router.refresh()
           }}

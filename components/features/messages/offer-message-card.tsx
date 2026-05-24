@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { BuyerCounterOfferDialog, type BuyerCounterOfferRow } from "@/components/features/offers/buyer-counter-offer-dialog"
-import { parseCounterofferNoteFromThread } from "@/lib/utils/parse-offer-negotiation-message"
+import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-message"
+import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { buildOfferMessageDisplay } from "@/lib/utils/offer-message-display"
 import { SellerOfferResponseDialog, type OfferRowLite } from "./seller-offer-response-dialog"
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
@@ -92,7 +93,11 @@ export function OfferMessageCard({
         status: offer.status,
         initial_amount: offer.initial_amount ?? offer.current_amount,
         current_amount: offer.current_amount,
-        seller_counter_note: parseCounterofferNoteFromThread(messageContent),
+        seller_counter_note:
+          latestSellerCounterNoteFromTimeline(offer.offer_timeline) ??
+          resolveOfferThreadNote(messageContent, offer.offer_timeline, {
+            sellerInitiated: sellerInitiated,
+          }),
         seller_initiated: sellerInitiated,
         expires_at: offer.expires_at ?? null,
       }
@@ -247,6 +252,7 @@ export function OfferMessageCard({
         listPrice={listPrice}
         minOfferAmount={minOfferAmount}
         minOfferPct={minOfferPct}
+        buyerNote={display.note}
         onCompleted={onThreadRefresh}
       />
 

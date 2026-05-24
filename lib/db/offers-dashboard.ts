@@ -3,7 +3,7 @@ import type {
   DashboardOfferRow,
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
-import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
+import { latestSellerCounterNoteFromTimeline, openingOfferNoteFromTimeline } from "@/lib/utils/offer-timeline"
 
 function mapProfiles(
   profiles: DashboardProfileLite[] | null,
@@ -15,7 +15,7 @@ function mapProfiles(
   return map
 }
 
-type OfferDashboardRowRaw = Omit<DashboardOfferRow, "seller_counter_note"> & {
+type OfferDashboardRowRaw = Omit<DashboardOfferRow, "seller_counter_note" | "buyer_note"> & {
   offer_timeline?: unknown
 }
 
@@ -24,6 +24,7 @@ function withSellerCounterNotes(rows: OfferDashboardRowRaw[]): DashboardOfferRow
     ...rest,
     seller_counter_note:
       rest.status === "COUNTERED" ? latestSellerCounterNoteFromTimeline(offer_timeline) : null,
+    buyer_note: openingOfferNoteFromTimeline(offer_timeline, { sellerInitiated: false }),
   }))
 }
 

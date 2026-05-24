@@ -4,7 +4,10 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format, isToday, isYesterday } from "date-fns"
-import type { OfferNegotiationKind } from "@/lib/utils/parse-offer-negotiation-message"
+import {
+  parseCounterofferNoteFromThread,
+  type OfferNegotiationKind,
+} from "@/lib/utils/parse-offer-negotiation-message"
 
 function formatThreadTime(dateStr: string) {
   const date = new Date(dateStr)
@@ -54,6 +57,12 @@ function formatNegotiationBody(kind: OfferNegotiationKind, content: string): str
     const amountMatch = /^Offer from seller:\s*(\$[\d,]+(?:\.\d{2})?)/i.exec(trimmed)
     if (amountMatch?.[1]) {
       return `Offer from seller: ${amountMatch[1]}`
+    }
+  }
+  if (kind === "counter") {
+    const amountMatch = /^Counteroffer:\s*(\$[\d,]+(?:\.\d{2})?)/i.exec(trimmed)
+    if (amountMatch?.[1]) {
+      return `Counteroffer: ${amountMatch[1]}`
     }
   }
   return trimmed
@@ -119,6 +128,10 @@ export function OfferNegotiationEventCard({
   const { label, variant } = statusBadge(kind)
   const hint = footerHint(kind, isOwn)
   const body = formatNegotiationBody(kind, content)
+  const note =
+    kind === "seller_offer" || kind === "counter"
+      ? parseCounterofferNoteFromThread(content)
+      : null
 
   return (
     <div
@@ -144,8 +157,11 @@ export function OfferNegotiationEventCard({
         </p>
       </div>
       <div className="px-3.5 py-3">
+        {note ? (
+          <p className="text-[14px] leading-snug text-foreground/90">&ldquo;{note}&rdquo;</p>
+        ) : null}
         {showSellerDashboardLink && (
-          <p className="text-[12px] leading-snug text-muted-foreground">
+          <p className={cn("text-[12px] leading-snug text-muted-foreground", note && "mt-2")}>
             <Link
               href="/messages?tab=offers"
               className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
@@ -155,7 +171,7 @@ export function OfferNegotiationEventCard({
           </p>
         )}
         {hint && (
-          <p className={cn("text-[12px] leading-snug text-muted-foreground", showSellerDashboardLink && "mt-2")}>
+          <p className={cn("text-[12px] leading-snug text-muted-foreground", (showSellerDashboardLink || note) && "mt-2")}>
             {hint}
           </p>
         )}

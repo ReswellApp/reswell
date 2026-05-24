@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { respondToOfferAction } from "@/lib/actions/offerRespond"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { openingOfferNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { cn } from "@/lib/utils"
 
 export type OfferRowLite = {
@@ -28,6 +29,7 @@ export type OfferRowLite = {
   listing_id?: string
   seller_initiated?: boolean | null
   expires_at?: string | null
+  offer_timeline?: unknown
 }
 
 function parseMoney(v: unknown): number {
@@ -43,6 +45,7 @@ export function SellerOfferResponseDialog({
   listPrice,
   minOfferAmount,
   minOfferPct,
+  buyerNote,
   onCompleted,
 }: {
   open: boolean
@@ -52,6 +55,8 @@ export function SellerOfferResponseDialog({
   listPrice: number
   minOfferAmount: number
   minOfferPct: number
+  /** Buyer's opening offer message (thread or timeline). */
+  buyerNote?: string | null
   onCompleted: () => void | Promise<void>
 }) {
   const [counterAmount, setCounterAmount] = useState("")
@@ -106,6 +111,11 @@ export function SellerOfferResponseDialog({
     counterNum <= listPrice &&
     counterNum >= minOfferAmount
 
+  const resolvedBuyerNote =
+    buyerNote?.trim() ||
+    openingOfferNoteFromTimeline(offer.offer_timeline, { sellerInitiated: false }) ||
+    null
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
@@ -132,6 +142,17 @@ export function SellerOfferResponseDialog({
               {minOfferPct}%)
             </p>
           </div>
+
+          {resolvedBuyerNote ? (
+            <div className="rounded-2xl border border-border/50 bg-card px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Message from buyer
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-[15px] leading-snug text-foreground">
+                {resolvedBuyerNote}
+              </p>
+            </div>
+          ) : null}
 
           <div className="grid gap-2 sm:grid-cols-2">
             <Button

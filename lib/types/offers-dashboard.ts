@@ -37,4 +37,6 @@ export type DashboardOfferRow = {
   listings: DashboardListingEmbed | DashboardListingEmbed[] | null
   /** Latest seller counter note when status is COUNTERED (offers you made). */
   seller_counter_note?: string | null
+  /** Buyer's opening offer message when status is PENDING (offers on your listings). */
+  buyer_note?: string | null
 }

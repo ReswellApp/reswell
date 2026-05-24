@@ -1,5 +1,5 @@
 import type { OfferRowLite } from "@/components/features/messages/seller-offer-response-dialog"
-import { parseCounterofferNoteFromThread } from "@/lib/utils/parse-offer-negotiation-message"
+import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-message"
 
 function parseMoney(v: unknown): number {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? "0"))
@@ -21,7 +21,10 @@ export function buildOfferMessageDisplay(
 ): OfferMessageDisplay {
   const current = parseMoney(offer.current_amount)
   const initial = parseMoney(offer.initial_amount ?? offer.current_amount)
-  const note = parseCounterofferNoteFromThread(messageContent) ?? undefined
+  const note =
+    resolveOfferThreadNote(messageContent, offer.offer_timeline, {
+      sellerInitiated: !!offer.seller_initiated,
+    }) ?? undefined
   const amount = `$${current.toFixed(2)}`
   const sellerInitiated = !!offer.seller_initiated
 

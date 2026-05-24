@@ -10,7 +10,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { MessagesOffersTabSkeleton } from "@/components/features/messages/messages-page-skeletons"
 import { cn } from "@/lib/utils"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
-import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
+import { latestSellerCounterNoteFromTimeline, openingOfferNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import type {
   DashboardOfferRow,
   DashboardProfileLite,
@@ -21,7 +21,7 @@ import { offerConversationKey } from "@/lib/utils/offer-messages-href"
 
 type OfferSubTab = "sent" | "received"
 
-type OfferDashboardRowRaw = Omit<DashboardOfferRow, "seller_counter_note"> & {
+type OfferDashboardRowRaw = Omit<DashboardOfferRow, "seller_counter_note" | "buyer_note"> & {
   offer_timeline?: unknown
 }
 
@@ -30,6 +30,7 @@ function withSellerCounterNotes(rows: OfferDashboardRowRaw[]): DashboardOfferRow
     ...rest,
     seller_counter_note:
       rest.status === "COUNTERED" ? latestSellerCounterNoteFromTimeline(offer_timeline) : null,
+    buyer_note: openingOfferNoteFromTimeline(offer_timeline, { sellerInitiated: false }),
   }))
 }
 
@@ -370,6 +371,7 @@ export function MessagesOffersTab({
           listPrice={listPriceNum}
           minOfferAmount={minOfferAmount}
           minOfferPct={minPct}
+          buyerNote={dialogOffer?.buyer_note}
           onCompleted={loadOffers}
         />
       )}
