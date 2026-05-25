@@ -1,10 +1,9 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
+  MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET,
   marketplaceMessageAttachmentMetadataSchema,
   type MarketplaceMessagePdfAttachment,
 } from "@/lib/validations/marketplace-message-attachment"
-
-export const MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET = "marketplace-message-attachments"
 
 /** Hard cap aligned with storage bucket file_size_limit. */
 export const MARKETPLACE_MESSAGE_PDF_MAX_BYTES = 12 * 1024 * 1024
@@ -127,7 +126,7 @@ export async function adminSendMarketplacePdfMessage(input: {
       sender_id: inserted.sender_id as string,
       content: inserted.content as string,
       created_at: inserted.created_at as string,
-      metadata: att.data,
+      metadata: att.data as { attachment: MarketplaceMessagePdfAttachment },
     },
   }
 }

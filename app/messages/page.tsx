@@ -34,6 +34,7 @@ import {
 } from '@/lib/utils/messages-inbox-grouping'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
+import { formatMessageMediaPreviewText } from '@/lib/utils/message-media-preview-text'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 
 interface Notification {
@@ -371,6 +372,15 @@ function MessagesContent() {
       const hint = you ? 'You shared a location' : 'Shared a location'
       if (listing) return `${listing} · ${hint}`
       return hint
+    }
+    const mediaPreview = formatMessageMediaPreviewText({
+      metadata: lastMessage?.metadata,
+      senderId: lastMessage?.sender_id ?? '',
+      currentUserId: currentId,
+    })
+    if (mediaPreview && lastMessage) {
+      if (listing) return `${listing} · ${mediaPreview}`
+      return mediaPreview
     }
     if (!lastMessage?.content?.trim()) {
       return listing || 'No messages yet'

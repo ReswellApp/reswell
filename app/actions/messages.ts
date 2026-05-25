@@ -14,6 +14,8 @@ import {
   composeLocationShareMessageBody,
   messageLocationMetadataSchema,
 } from "@/lib/validations/message-location-metadata"
+import { marketplaceMessageAttachmentInputSchema } from "@/lib/validations/marketplace-message-attachment"
+import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
 
 const sendConversationLocationReplySchema = z.object({
   conversation_id: z.string().uuid(),
@@ -25,6 +27,12 @@ const sendConversationLocationReplySchema = z.object({
 
 const sendSellerReviewRequestSchema = z.object({
   order_id: z.string().uuid(),
+})
+
+const sendConversationMediaReplySchema = z.object({
+  conversation_id: z.string().uuid(),
+  attachment: marketplaceMessageAttachmentInputSchema,
+  caption: z.string().max(5000).optional(),
 })
 
 const marketplaceListingThreadSchema = z.object({
@@ -508,6 +516,35 @@ export async function sendConversationReply(input: {
   }
 
   return { success: true as const, message: inserted }
+}
+
+export async function sendConversationMediaReply(input: unknown) {
+  const parsed = sendConversationMediaReplySchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: "Invalid attachment" as const }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" as const }
+  }
+
+  const result = await sendMarketplaceMediaMessage({
+    conversationId: parsed.data.conversation_id,
+    senderId: user.id,
+    attachment: parsed.data.attachment,
+    caption: parsed.data.caption,
+  })
+
+  if (!result.ok) {
+    return { error: result.error }
+  }
+
+  return { success: true as const, message: result.message }
 }
 
 export async function sendConversationLocationReply(input: unknown) {

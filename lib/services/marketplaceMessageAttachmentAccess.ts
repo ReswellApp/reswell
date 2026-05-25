@@ -1,18 +1,28 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
-import { marketplaceMessageAttachmentMetadataSchema } from "@/lib/validations/marketplace-message-attachment"
+import {
+  marketplaceMessageAttachmentMetadataSchema,
+  type MarketplaceMessageAttachment,
+} from "@/lib/validations/marketplace-message-attachment"
 
-export type MarketplacePdfDownloadAuthResult =
-  | { ok: true; bucket: string; path: string; fileName: string }
+export type MarketplaceAttachmentDownloadAuthResult =
+  | {
+      ok: true
+      bucket: string
+      path: string
+      fileName: string
+      mimeType: string
+      attachmentKind: MarketplaceMessageAttachment["kind"]
+    }
   | { ok: false; error: string; status: number }
 
 /**
- * Verifies the session may read the PDF for this message and returns storage coordinates.
+ * Verifies the session may read the attachment for this message and returns storage coordinates.
  * Does not expose Supabase URLs — serve bytes via `/api/messages/[messageId]/attachment`.
  */
-export async function authorizeMarketplacePdfAttachmentDownload(
+export async function authorizeMarketplaceAttachmentDownload(
   messageId: string,
-): Promise<MarketplacePdfDownloadAuthResult> {
+): Promise<MarketplaceAttachmentDownloadAuthResult> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -34,10 +44,10 @@ export async function authorizeMarketplacePdfAttachmentDownload(
 
   const meta = marketplaceMessageAttachmentMetadataSchema.safeParse(msg.metadata)
   if (!meta.success) {
-    return { ok: false, error: "Not a PDF attachment", status: 400 }
+    return { ok: false, error: "Not an attachment", status: 400 }
   }
 
-  const { bucket, path, file_name: fileName } = meta.data.attachment
+  const { bucket, path, file_name: fileName, mime_type: mimeType, kind } = meta.data.attachment
 
   const { data: conv } = await supabase
     .from("conversations")
@@ -52,5 +62,10 @@ export async function authorizeMarketplacePdfAttachmentDownload(
     }
   }
 
-  return { ok: true, bucket, path, fileName }
+  return { ok: true, bucket, path, fileName, mimeType, attachmentKind: kind }
+}
+
+/** @deprecated Use authorizeMarketplaceAttachmentDownload */
+export async function authorizeMarketplacePdfAttachmentDownload(messageId: string) {
+  return authorizeMarketplaceAttachmentDownload(messageId)
 }

@@ -47,8 +47,9 @@ import type { GoogleFullPlaceResolved } from '@/components/features/checkout/goo
 import { MessageLocationSendPopover } from '@/components/features/messages/message-location-send-popover'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
-import { OpenMarketplacePdfButton } from '@/components/features/messages/open-marketplace-pdf-button'
-import { parseMarketplaceMessagePdfAttachment } from '@/lib/validations/marketplace-message-attachment'
+import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
+import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
+import { parseMarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { ConversationListingSwitcher, type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
@@ -552,6 +553,18 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  const handleMediaSent = useCallback(
+    (inserted: Message) => {
+      stickToBottomRef.current = true
+      setNewMessage('')
+      setMessages((prev) => {
+        const withoutDup = prev.filter((m) => m.id !== inserted.id)
+        return [...withoutDup, inserted]
+      })
+    },
+    [],
+  )
+
   const sendLocationPin = useCallback(
     async (place: GoogleFullPlaceResolved): Promise<{ ok: boolean }> => {
       if (!currentUserId || !conversation) return { ok: false }
@@ -917,47 +930,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                     )
                   }
 
-                  const pdfAtt = parseMarketplaceMessagePdfAttachment(message.metadata)
-                  if (pdfAtt) {
-                    const redundantCaption =
-                      message.content.trim() === `Attachment: ${pdfAtt.file_name}`
+                  const mediaAtt = parseMarketplaceMessageAttachment(message.metadata)
+                  if (mediaAtt) {
                     return (
                       <div
                         key={message.id}
                         className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
                       >
-                        <div
-                          className={cn(
-                            'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]',
-                            isOwn
-                              ? 'rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]'
-                              : 'rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm',
-                          )}
-                        >
-                          <OpenMarketplacePdfButton
-                            messageId={message.id}
-                            fileName={pdfAtt.file_name}
-                            variant="secondary"
-                            className={cn(
-                              'w-full justify-start',
-                              isOwn &&
-                                'border-white/35 bg-white/15 text-white hover:bg-white/25',
-                            )}
-                          />
-                          {!redundantCaption && message.content?.trim() ? (
-                            <p className="mt-2 whitespace-pre-wrap break-words text-[17px] leading-[1.35] tracking-[-0.01em]">
-                              {message.content}
-                            </p>
-                          ) : null}
-                          <p
-                            className={cn(
-                              'mt-1 text-[11px] tabular-nums leading-none',
-                              isOwn ? 'text-white/55' : 'text-muted-foreground',
-                            )}
-                          >
-                            {formatMessageDate(message.created_at)}
-                          </p>
-                        </div>
+                        <MessageMediaAttachmentCard
+                          messageId={message.id}
+                          metadata={message.metadata}
+                          content={message.content}
+                          isOwn={isOwn}
+                          formattedTime={formatMessageDate(message.created_at)}
+                        />
                       </div>
                     )
                   }
@@ -1050,6 +1036,23 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               autoComplete="off"
               aria-label="Message text"
               className="min-h-touch min-w-0 flex-1 border-0 bg-transparent px-3 text-[17px] shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <MessageMediaSendButton
+              conversationId={id}
+              disabled={sending || !currentUserId || !conversation}
+              caption={newMessage}
+              onSent={handleMediaSent}
+              onBlockedPhone={(originalContent) => {
+                if (!currentUserId) return
+                setMessages((prev) => [
+                  ...prev,
+                  createLocalPhonePolicyBlockMessage({
+                    senderId: currentUserId,
+                    originalContent,
+                  }),
+                ])
+                setNewMessage('')
+              }}
             />
             <MessageLocationSendPopover
               disabled={sending || !currentUserId || !conversation}

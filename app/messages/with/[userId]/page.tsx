@@ -24,6 +24,7 @@ import {
 } from "@/lib/utils/messages-inbox-grouping"
 import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
 import { parseMessageLocationMetadata } from "@/lib/validations/message-location-metadata"
+import { formatMessageMediaPreviewText } from "@/lib/utils/message-media-preview-text"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 
 type ProfileLite = {
@@ -46,6 +47,12 @@ function formatThreadPreview(
   if (sharedLoc) {
     return lastMessage.sender_id === currentUserId ? "You shared a location" : "Shared a location"
   }
+  const mediaPreview = formatMessageMediaPreviewText({
+    metadata: lastMessage.metadata,
+    senderId: lastMessage.sender_id,
+    currentUserId,
+  })
+  if (mediaPreview) return mediaPreview
   const body = lastMessage.content.trim()
   return lastMessage.sender_id === currentUserId ? `You · ${body}` : body
 }
