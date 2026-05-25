@@ -51,8 +51,7 @@ export function SellerTrackingForm({
   }, [existingTrackingNumber, existingTrackingCarrier])
 
   if (deliveryStatus !== "pending") return null
-
-  const isUpdate = Boolean(existingTrackingNumber?.trim())
+  if (existingTrackingNumber?.trim()) return null
 
   const submit = async () => {
     if (!trackingNumber.trim()) {
@@ -75,9 +74,7 @@ export function SellerTrackingForm({
         return
       }
       toast.success(
-        isUpdate
-          ? "Tracking updated. Confirm shipment below when you drop the package off — the buyer is notified once then."
-          : "Tracking saved. The buyer can see it on their purchase. Confirm shipment when you drop the package off.",
+        "Tracking saved. The buyer can see it on their purchase. Confirm shipment when you drop the package off.",
       )
       router.refresh()
     } catch {
@@ -94,7 +91,7 @@ export function SellerTrackingForm({
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
             <Truck className="h-4 w-4 text-primary" />
           </div>
-          {isUpdate ? "Update tracking" : "Add tracking"}
+          Add tracking
         </CardTitle>
         <CardDescription className="text-xs">
           Save your carrier tracking here — both you and the buyer can reference it on your order pages. When you drop
@@ -115,7 +112,7 @@ export function SellerTrackingForm({
         />
         <Button onClick={submit} disabled={busy} className="w-full gap-2">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
-          {isUpdate ? "Update tracking" : "Save tracking"}
+          Save tracking
         </Button>
       </CardContent>
     </Card>
@@ -158,10 +155,10 @@ export function SellerConfirmShipmentButton({
   }
 
   return (
-    <Card className="border-emerald-500/25 bg-emerald-500/[0.03]">
+    <Card className="border-blue-200/80 bg-blue-50/80 dark:border-blue-900/50 dark:bg-blue-950/20">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          <Truck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           Ready to ship?
         </CardTitle>
         <CardDescription className="text-xs">
@@ -538,7 +535,7 @@ export function TrackingInfo({
     <Card
       className={
         isSeller
-          ? "border-emerald-500/30 bg-emerald-500/[0.04]"
+          ? "border-blue-200/80 bg-blue-50/80 dark:border-blue-900/50 dark:bg-blue-950/20"
           : undefined
       }
     >
@@ -546,12 +543,12 @@ export function TrackingInfo({
         <div
           className={
             isSeller
-              ? "flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 shrink-0"
+              ? "flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15 shrink-0"
               : "flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0"
           }
         >
           {isSeller ? (
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           ) : (
             <Truck className="h-5 w-5 text-muted-foreground" />
           )}
