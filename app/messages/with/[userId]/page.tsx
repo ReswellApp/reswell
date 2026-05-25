@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { CounterpartyThreadsSkeleton } from "@/components/features/messages/messages-page-skeletons"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { cn } from "@/lib/utils"
@@ -216,6 +217,7 @@ export default function CounterpartyThreadsPage({
                         fill
                         sizes="64px"
                         className="object-cover"
+                        unoptimized={listingImageShouldBypassOptimization(thumb)}
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-[11px] font-medium text-muted-foreground">

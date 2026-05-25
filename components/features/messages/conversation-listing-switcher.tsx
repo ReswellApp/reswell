@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
 export type ListingThreadOption = {
@@ -73,6 +74,7 @@ export function ConversationListingSwitcher({
                     fill
                     sizes="(max-width: 640px) 72px, 120px"
                     className="object-cover"
+                    unoptimized={listingImageShouldBypassOptimization(thumb)}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-[9px] font-medium text-muted-foreground sm:text-[10px]">

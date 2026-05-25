@@ -516,6 +516,7 @@ export default function AdminListingsPage() {
                               alt=""
                               fill
                               className="object-cover object-center"
+                              unoptimized
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

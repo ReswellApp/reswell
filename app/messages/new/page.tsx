@@ -18,6 +18,7 @@ import {
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listing-image-display'
+import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import { sendMarketplaceListingMessage } from '@/app/actions/messages'
 import { MESSAGE_BLOCKED_PHONE_ERROR } from '@/lib/messages/policy-errors'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
@@ -246,6 +247,7 @@ function NewMessageComposeContent() {
                     fill
                     sizes="72px"
                     className="object-cover object-center"
+                    unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                     onLoad={() => setListingBannerImageReady(true)}
                   />
                 </>

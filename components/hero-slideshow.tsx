@@ -3,6 +3,7 @@
 import Image from "next/image"
 import * as React from "react"
 import { wideShimmer } from "@/lib/image-shimmer"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
 /** Default hero art when there are no recent listing images to show. */
@@ -121,6 +122,7 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
                 alt=""
                 fill
                 quality={isFirstFrame ? 80 : 72}
+                unoptimized={listingImageShouldBypassOptimization(src)}
                 sizes="100vw"
                 className="object-cover object-center"
                 placeholder="blur"

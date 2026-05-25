@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { cn } from "@/lib/utils"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -251,6 +252,7 @@ export function MakeOfferDialog({
                       fill
                       className="object-cover"
                       sizes="64px"
+                      unoptimized={listingImageShouldBypassOptimization(primaryImageUrl)}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-muted-foreground">

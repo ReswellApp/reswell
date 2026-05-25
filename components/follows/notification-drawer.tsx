@@ -198,6 +198,7 @@ export function NotificationDrawer() {
                           fill
                           className="object-cover"
                           sizes="56px"
+                          unoptimized
                         />
                       </Link>
                     )}

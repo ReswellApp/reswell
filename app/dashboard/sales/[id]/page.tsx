@@ -33,6 +33,7 @@ import {
 } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import {
@@ -436,7 +437,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     <div key={lineListing.id} className="flex gap-4 p-6">
                       <div className="relative h-20 w-20 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
                         {rowImg ? (
-                          <Image src={rowImg} alt={rowTitle} fill className="object-cover" sizes="80px" />
+                          <Image src={rowImg} alt={rowTitle} fill className="object-cover" sizes="80px" unoptimized={listingImageShouldBypassOptimization(rowImg)} />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             <Package className="h-6 w-6 text-muted-foreground" />

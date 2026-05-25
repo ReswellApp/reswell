@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -244,7 +245,7 @@ export function BuyerPurchasesTab() {
               >
                 <div className="relative h-12 w-12 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
                   {img ? (
-                    <Image src={img} alt="" fill className="object-cover" sizes="48px" />
+                    <Image src={img} alt="" fill className="object-cover" sizes="48px" unoptimized={listingImageShouldBypassOptimization(img)} />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <Package className="h-5 w-5 text-muted-foreground" />

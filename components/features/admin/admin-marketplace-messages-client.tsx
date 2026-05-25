@@ -215,6 +215,7 @@ export function AdminMarketplaceMessagesClient() {
                             alt={listingTitle || "Listing"}
                             fill
                             className="object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">

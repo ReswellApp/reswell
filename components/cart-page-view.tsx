@@ -14,6 +14,7 @@ import {
 } from "@/app/actions/cart"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { formatBoardType, formatCondition, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -279,6 +280,7 @@ export function CartPageView({
                             fill
                             className="object-cover"
                             sizes="120px"
+                            unoptimized={listingImageShouldBypassOptimization(img)}
                           />
                         ) : (
                           <div className="flex h-full min-h-[100px] items-center justify-center text-[11px] text-neutral-400">

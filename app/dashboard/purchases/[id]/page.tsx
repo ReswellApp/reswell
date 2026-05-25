@@ -18,6 +18,7 @@ import {
 } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import {
   BuyerConfirmDelivery,
@@ -395,7 +396,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
                 <div key={lineListing.id} className="flex gap-4">
                   <div className="relative h-24 w-24 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
                     {rowImg ? (
-                      <Image src={rowImg} alt="" fill className="object-cover" sizes="96px" />
+                      <Image src={rowImg} alt="" fill className="object-cover" sizes="96px" unoptimized={listingImageShouldBypassOptimization(rowImg)} />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
                         <Package className="h-8 w-8 text-muted-foreground" />

@@ -400,6 +400,7 @@ export async function FollowersDashboardPanels() {
                                       fill
                                       className="object-cover"
                                       sizes="36px"
+                                      unoptimized
                                     />
                                   </div>
                                 )}

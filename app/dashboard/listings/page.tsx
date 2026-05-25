@@ -187,6 +187,7 @@ export default function MyListingsPage() {
                   alt={capitalizeWords(listing.title)}
                   fill
                   className="object-cover object-center"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

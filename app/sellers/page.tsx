@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
 import { SellersDirectoryAdminBar } from "@/components/sellers/sellers-directory-admin-bar"
@@ -287,6 +288,7 @@ export default async function SellersPage({
                                         fill
                                         sizes="(max-width: 640px) 33vw, 120px"
                                         className="object-cover transition group-hover:scale-[1.03]"
+                                        unoptimized={listingImageShouldBypassOptimization(src)}
                                         placeholder="blur"
                                         blurDataURL={wideShimmer}
                                       />

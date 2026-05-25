@@ -17,6 +17,7 @@ import {
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
@@ -289,7 +290,7 @@ export default async function PurchasesPage() {
                   <div className="flex gap-3">
                     <div className="relative h-16 w-16 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
                       {img ? (
-                        <Image src={img} alt="" fill className="object-cover" sizes="64px" />
+                        <Image src={img} alt="" fill className="object-cover" sizes="64px" unoptimized={listingImageShouldBypassOptimization(img)} />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <Package className="h-6 w-6 text-muted-foreground" />

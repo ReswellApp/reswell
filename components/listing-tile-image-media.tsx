@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
 const hoverRevealNav =
@@ -98,6 +99,7 @@ export function ListingTileImageMedia({
               fill
               sizes={imageSizes}
               quality={90}
+              unoptimized={listingImageShouldBypassOptimization(u)}
               aria-hidden={!active}
               className={cn(
                 "absolute inset-0 transition-opacity duration-[280ms] ease-in-out",

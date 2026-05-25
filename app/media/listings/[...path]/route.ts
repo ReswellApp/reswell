@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { evaluateListingMediaAccess } from "@/lib/listing-media-crawler-guard"
 import { isValidListingMediaObjectPath } from "@/lib/listing-media-proxy-path-validation"
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"
@@ -10,9 +11,17 @@ function contentTypeFallback(filename: string): string {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ path: string[] }> },
 ) {
+  const access = evaluateListingMediaAccess(request)
+  if (!access.allowed) {
+    return new NextResponse(access.message, {
+      status: access.status,
+      headers: { "Cache-Control": "no-store" },
+    })
+  }
+
   const { path: segments } = await ctx.params
   if (!segments?.length) {
     return new NextResponse("Not found", { status: 404 })

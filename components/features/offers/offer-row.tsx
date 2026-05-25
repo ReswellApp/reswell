@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { portraitShimmer } from "@/lib/image-shimmer"
 import { homeListingScrollImageSizes } from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
@@ -197,6 +198,7 @@ export function OfferRow({
               alt={listingTitle ? capitalizeWords(listingTitle) : "Listing"}
               fill
               sizes={homeListingScrollImageSizes}
+              unoptimized={listingImageShouldBypassOptimization(imageSrc)}
               placeholder="blur"
               blurDataURL={portraitShimmer}
               className="object-cover transition-transform duration-300 group-hover:scale-105"

@@ -467,6 +467,7 @@ export default async function DashboardPage() {
                           alt={capitalizeWords(listing.title)}
                           fill
                           className="object-cover object-center group-hover:scale-105 transition-transform"
+                          unoptimized
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -532,6 +533,7 @@ export default async function DashboardPage() {
                           alt={capitalizeWords(listing.title)}
                           fill
                           className="object-cover object-center group-hover:scale-105 transition-transform"
+                          unoptimized
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

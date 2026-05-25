@@ -1,3 +1,18 @@
+/** Same-origin listing photo proxy — see `app/media/listings/[...path]/route.ts`. */
+export const LISTING_MEDIA_PROXY_PATH_PREFIX = "/media/listings/" as const
+
+export function isProxiedListingMediaSrc(src: string | null | undefined): boolean {
+  return typeof src === "string" && src.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)
+}
+
+/**
+ * Listing photos are pre-sized WebP in Supabase; skip Vercel Image Optimization for
+ * same-origin proxy URLs to avoid transformation + cache-write charges.
+ */
+export function listingImageShouldBypassOptimization(src: string | null | undefined): boolean {
+  return isProxiedListingMediaSrc(src)
+}
+
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"
 
 function isOurListingStorageHost(hostname: string): boolean {
@@ -35,5 +50,5 @@ export function proxiedListingImageSrc(url: string | null | undefined): string {
   if (!t) return ""
   const path = listingStorageObjectPathFromUrl(t)
   if (!path) return t
-  return `/media/listings/${path}`
+  return `${LISTING_MEDIA_PROXY_PATH_PREFIX}${path}`
 }

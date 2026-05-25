@@ -264,6 +264,7 @@ export function SellerHoverCard({
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-200"
                         sizes="72px"
+                        unoptimized
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-[10px]">

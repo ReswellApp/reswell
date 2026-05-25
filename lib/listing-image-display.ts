@@ -1,6 +1,6 @@
 /**
  * - `listingCardImageSrc` — marketplace tiles (`ListingTile` and similar): prefer full `url`
- *   so `next/image` can downscale from a sharp source; fall back to `thumbnail_url`.
+ *   via the same-origin media proxy; served with `unoptimized` to skip Vercel Image Optimization.
  * - `listingTileCarouselImageUrls` — ordered proxied URLs for multi-photo tiles (primary first).
  * - `listingTitleThumbnailSrc` — compact “thumb + title” rows (cart, checkout, orders):
  *   prefer `thumbnail_url` for bandwidth; fall back to `url`.

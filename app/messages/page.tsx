@@ -21,6 +21,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailHref } from '@/lib/listing-href'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from '@/lib/utils'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { SellerMakeOfferToBuyerDialog } from '@/components/features/messages/seller-make-offer-to-buyer-dialog'
@@ -755,6 +756,7 @@ function MessagesContent() {
                                     fill
                                     sizes="60px"
                                     className="object-cover"
+                                    unoptimized={listingImageShouldBypassOptimization(thumb)}
                                   />
                                   <span className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/95 shadow-md ring-1 ring-border/40">
                                     <Heart
