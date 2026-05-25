@@ -41,7 +41,9 @@ function parentheticalDenseDigitBlock(original: string): boolean {
 
 /** NANP-ish grouped forms: (949) 689-0987, 949-689-0987, 949.689.0987 */
 function groupedNanpLike(original: string): boolean {
-  return /\b(?:\+?\s*1\s*[\s.)-]*)?(?:\(\s*\d{3}\s*\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}\b/.test(original)
+  return /(?:^|[^\d\w])(?:\+?\s*1\s*[\s.)-]*)?(?:\(\s*\d{3}\s*\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}(?:\D|$)/.test(
+    original,
+  )
 }
 
 /** International-style +1 with grouped remainder. */
@@ -54,9 +56,19 @@ function isolatedTenDigit(original: string): boolean {
   return /(?:^|\D)(\d{10})(?:\D|$)/.test(original)
 }
 
-function expandedDigitScan(expandedFromSpelled: string): boolean {
-  const digitsOnly = expandedFromSpelled.replace(/\D/g, "")
-  return /\d{10}/.test(digitsOnly)
+/**
+ * True when a localized run (digits + phone separators only, bounded by words/punctuation)
+ * contains ≥10 digits — e.g. spelled-out streams, without merging unrelated prices.
+ */
+function localizedDenseDigitRun(text: string): boolean {
+  const segments = text.split(/[^\d\s().-]+/)
+  for (const segment of segments) {
+    const trimmed = segment.trim()
+    if (!trimmed) continue
+    const digits = trimmed.replace(/\D/g, "")
+    if (digits.length >= 10) return true
+  }
+  return false
 }
 
 /**
@@ -72,7 +84,12 @@ export function messageAppearsToSharePhoneNumber(text: string): boolean {
   if (isolatedTenDigit(t)) return true
 
   const expanded = expandSpelledDigitWords(t)
-  if (expandedDigitScan(expanded)) return true
+  if (expanded !== t) {
+    if (groupedNanpLike(expanded)) return true
+    if (plusOneGrouped(expanded)) return true
+    if (isolatedTenDigit(expanded)) return true
+    if (localizedDenseDigitRun(expanded)) return true
+  }
 
   return false
 }
