@@ -435,31 +435,33 @@ export async function SurfboardListingDetailPage({
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
               <div className="relative isolate">
-                <div className="absolute right-2 top-2 z-[15] flex items-start gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
-                  {showShareOnGalleryOverlay ? (
-                    <ShareButton
-                      title={listingTitle}
-                      className="size-11 rounded-full border border-border/55 bg-background/90 shadow-sm backdrop-blur-md hover:bg-muted/40"
-                      iconClassName="h-[18px] w-[18px]"
-                    />
-                  ) : null}
-                  {showFavoriteOnGalleryOverlay ? (
-                    <div className="group/favorite flex h-14 w-14 shrink-0 items-start justify-end">
-                      <FavoriteButton
-                        listingId={board.id}
-                        redirectPath={listingDetailHref(board)}
-                        initialFavorited={isFavorited}
-                        isLoggedIn={!!user}
-                        refreshAfterToggle
-                      />
-                    </div>
-                  ) : null}
-                </div>
                 <ImageGallery
                   images={images}
                   title={capitalizeWords(board.title)}
                   sold={isSold}
                   compactMobile
+                  heroOverlay={
+                    <>
+                      {showShareOnGalleryOverlay ? (
+                        <ShareButton
+                          title={listingTitle}
+                          className="size-11 rounded-full border border-border/55 bg-background/90 shadow-sm backdrop-blur-md hover:bg-muted/40"
+                          iconClassName="h-[18px] w-[18px]"
+                        />
+                      ) : null}
+                      {showFavoriteOnGalleryOverlay ? (
+                        <div className="group/favorite flex h-14 w-14 shrink-0 items-start justify-end">
+                          <FavoriteButton
+                            listingId={board.id}
+                            redirectPath={listingDetailHref(board)}
+                            initialFavorited={isFavorited}
+                            isLoggedIn={!!user}
+                            refreshAfterToggle
+                          />
+                        </div>
+                      ) : null}
+                    </>
+                  }
                 />
               </div>
               <h1 className="mt-3 min-w-0 text-balance text-[1.375rem] font-bold leading-snug tracking-[-0.02em] text-foreground max-lg:line-clamp-2 lg:hidden">

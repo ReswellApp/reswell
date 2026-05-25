@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
@@ -21,16 +21,22 @@ interface ImageGalleryProps {
   sold?: boolean
   /** Mobile PDP: shorter hero frame so title + image fit above the fold. */
   compactMobile?: boolean
+  /** Share / favorite controls — rendered on the hero tile so they track its bounds. */
+  heroOverlay?: ReactNode
 }
 
 const SWIPE_MIN_PX = 48
 
-export function ImageGallery({ images, title, sold, compactMobile }: ImageGalleryProps) {
+export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
+  const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
+
+  const mobileHeroAspectRatio = imageAspectRatios[selectedIndex] ?? 3 / 4
 
   /** One URL per gallery slide (same order as `images`) so lightbox index stays aligned. */
   const proxiedUrls = useMemo(
@@ -117,15 +123,19 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
         onIndexChange={setLightboxIndex}
       />
 
-      {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
+      {/* Main Image — desktop: 3:4 frame with cover; mobile compact: natural ratio, no crop */}
       <div
         className={cn(
-          "relative w-full overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] select-none touch-pan-y dark:bg-muted dark:ring-white/[0.06]",
+          "relative overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] select-none touch-pan-y dark:bg-muted dark:ring-white/[0.06]",
           compactMobile
-            ? "max-lg:aspect-[5/6] max-lg:max-h-[min(52dvh,28rem)] max-lg:h-auto lg:aspect-[3/4] lg:h-auto"
-            : "",
+            ? "max-lg:mx-auto max-lg:h-auto max-lg:max-h-[min(52dvh,28rem)] max-lg:w-[min(100%,calc(min(52dvh,28rem)*var(--hero-aspect,0.75)))] max-lg:max-w-full max-lg:[aspect-ratio:var(--hero-aspect,3/4)] lg:aspect-[3/4] lg:h-auto lg:w-full"
+            : "w-full",
         )}
-        style={compactMobile ? undefined : { paddingBottom: "133.33%" }}
+        style={
+          compactMobile
+            ? ({ "--hero-aspect": mobileHeroAspectRatio } as CSSProperties)
+            : { paddingBottom: "133.33%" }
+        }
         onTouchStart={(e) => {
           if (images.length <= 1) return
           const t = e.touches[0]
@@ -153,6 +163,12 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
           touchStartRef.current = null
         }}
       >
+        {heroOverlay ? (
+          <div className="absolute right-2 top-2 z-[15] flex items-start gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
+            {heroOverlay}
+          </div>
+        ) : null}
+
         <div className="pointer-events-none absolute bottom-3 left-3 z-[8] rounded-full bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-md tabular-nums">
           <span className="inline-flex items-center gap-1.5">
             <Maximize2 className="size-3.5 shrink-0 opacity-70" aria-hidden />
@@ -188,7 +204,7 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
                 fill
                 unoptimized
                 className={cn(
-                  "object-cover object-center absolute inset-0 transition-opacity transition-duration-[420ms] ease-in-out",
+                  "absolute inset-0 object-cover object-center transition-opacity transition-duration-[420ms] ease-in-out",
                   isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
                 )}
                 priority={i === 0}
@@ -197,6 +213,14 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
                 placeholder="blur"
                 blurDataURL={portraitShimmer}
                 aria-hidden={!isSelected}
+                onLoadingComplete={({ naturalWidth, naturalHeight }) => {
+                  if (naturalWidth <= 0 || naturalHeight <= 0) return
+                  const ratio = naturalWidth / naturalHeight
+                  setImageAspectRatios((prev) => {
+                    if (prev[i] === ratio) return prev
+                    return { ...prev, [i]: ratio }
+                  })
+                }}
               />
             )
           })}
