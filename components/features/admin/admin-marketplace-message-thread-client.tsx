@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
-import { ArrowLeft, Loader2, MessageCircle, Paperclip, Trash2 } from "lucide-react"
+import { ArrowLeft, Loader2, MessageCircle, MessageSquarePlus, MoreVertical, Paperclip, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { getAdminSession } from "@/app/actions/account"
 import type { AdminConversationHeaderRow } from "@/lib/db/adminConversations"
@@ -22,6 +22,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { OpenMarketplacePdfButton } from "@/components/features/messages/open-marketplace-pdf-button"
+import {
+  AdminSendUserMessageDialog,
+  type AdminMessageParticipantOption,
+} from "@/components/features/admin/admin-start-user-conversation-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type ThreadProps = {
   conversationId: string
@@ -54,6 +64,7 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
   const [caption, setCaption] = useState("")
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [sendUserOpen, setSendUserOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragDepthRef = useRef(0)
 
@@ -170,6 +181,26 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
     }
   }
 
+  const sendParticipants: { buyer: AdminMessageParticipantOption; seller: AdminMessageParticipantOption } | null =
+    header
+      ? {
+          buyer: {
+            id: header.buyer_id,
+            display_name: header.buyer?.display_name ?? null,
+            email: null,
+            avatar_url: null,
+            roleLabel: "Buyer",
+          },
+          seller: {
+            id: header.seller_id,
+            display_name: header.seller?.display_name ?? null,
+            email: null,
+            avatar_url: null,
+            roleLabel: "Seller",
+          },
+        }
+      : null
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-muted-foreground">
@@ -195,26 +226,51 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3">
-        <Button variant="ghost" size="sm" asChild className="w-fit gap-1 pl-0">
-          <Link href="/admin/messages">
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            All messages
-          </Link>
-        </Button>
-        {header ? (
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Conversation</h1>
-            <p className="text-muted-foreground">{participantLabel(header)}</p>
-            {header.listing?.title ? (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Listing: <span className="text-foreground">{header.listing.title}</span>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Button variant="ghost" size="sm" asChild className="mb-2 w-fit gap-1 pl-0">
+            <Link href="/admin/messages">
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              All messages
+            </Link>
+          </Button>
+          {header ? (
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Conversation</h1>
+              <p className="text-muted-foreground">{participantLabel(header)}</p>
+              {header.listing?.title ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Listing: <span className="text-foreground">{header.listing.title}</span>
+                </p>
+              ) : null}
+              <p className="mt-2 font-mono text-xs text-muted-foreground">
+                conversation_id: {header.id}
               </p>
-            ) : null}
-            <p className="mt-2 font-mono text-xs text-muted-foreground">
-              conversation_id: {header.id}
-            </p>
-          </div>
+            </div>
+          ) : null}
+        </div>
+        {sendParticipants ? (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" aria-label="Conversation actions">
+                  <MoreVertical className="h-4 w-4" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setSendUserOpen(true)}>
+                  <MessageSquarePlus className="mr-2 h-4 w-4" aria-hidden />
+                  Send user a message
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <AdminSendUserMessageDialog
+              open={sendUserOpen}
+              onOpenChange={setSendUserOpen}
+              participants={sendParticipants}
+              trigger={null}
+            />
+          </>
         ) : null}
       </div>
 

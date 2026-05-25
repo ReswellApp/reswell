@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
-import { Loader2, MessageCircle, Search } from "lucide-react"
+import { Loader2, MessageCircle, MessageSquarePlus, MoreVertical, Search } from "lucide-react"
 import type { AdminMarketplaceConversationListRow } from "@/lib/db/adminMarketplaceMessages"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +12,16 @@ import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { AdminStartUserConversationDialog } from "@/components/features/admin/admin-start-user-conversation-dialog"
+import {
+  AdminSendUserMessageDialog,
+  type AdminMessageParticipantOption,
+} from "@/components/features/admin/admin-start-user-conversation-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 50
@@ -53,6 +62,12 @@ export function AdminMarketplaceMessagesClient() {
   const [searchInput, setSearchInput] = useState("")
   const [appliedSearch, setAppliedSearch] = useState("")
   const [offset, setOffset] = useState(0)
+  const [globalSendOpen, setGlobalSendOpen] = useState(false)
+  const [participantSendOpen, setParticipantSendOpen] = useState(false)
+  const [participantSendTargets, setParticipantSendTargets] = useState<{
+    buyer: AdminMessageParticipantOption
+    seller: AdminMessageParticipantOption
+  } | null>(null)
 
   const fetchRows = useCallback(async () => {
     setLoading(true)
@@ -102,9 +117,8 @@ export function AdminMarketplaceMessagesClient() {
         <h1 className="text-2xl font-bold text-foreground">Marketplace messages</h1>
         <p className="text-muted-foreground">
           One row per buyer↔seller thread, newest first. Open a thread to read messages, send PDFs,
-          or use{" "}
-          <span className="font-medium text-foreground">Message a user</span> to start a chat with
-          any member.
+          or use the menu to{" "}
+          <span className="font-medium text-foreground">Send user a message</span> to any member.
         </p>
       </div>
 
@@ -123,7 +137,24 @@ export function AdminMarketplaceMessagesClient() {
             Search
           </Button>
         </form>
-        <AdminStartUserConversationDialog />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" aria-label="More actions">
+              <MoreVertical className="h-4 w-4" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem onClick={() => setGlobalSendOpen(true)}>
+              <MessageSquarePlus className="mr-2 h-4 w-4" aria-hidden />
+              Send user a message
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <AdminSendUserMessageDialog
+          open={globalSendOpen}
+          onOpenChange={setGlobalSendOpen}
+          trigger={null}
+        />
       </div>
 
       <Card>
@@ -148,76 +179,132 @@ export function AdminMarketplaceMessagesClient() {
                 const thumb = conv.listing?.listing_images?.[0]?.url
                 const preview = formatThreadPreview(conv)
 
+                const openParticipantSend = () => {
+                  setParticipantSendTargets({
+                    buyer: {
+                      id: conv.buyer_id,
+                      display_name: conv.buyer?.display_name ?? null,
+                      email: null,
+                      avatar_url: conv.buyer?.avatar_url ?? null,
+                      roleLabel: "Buyer",
+                    },
+                    seller: {
+                      id: conv.seller_id,
+                      display_name: conv.seller?.display_name ?? null,
+                      email: null,
+                      avatar_url: conv.seller?.avatar_url ?? null,
+                      roleLabel: "Seller",
+                    },
+                  })
+                  setParticipantSendOpen(true)
+                }
+
                 return (
-                  <Link
+                  <div
                     key={conv.id}
-                    href={`/admin/messages/${conv.id}`}
-                    className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/35 active:bg-muted/55 sm:px-5"
+                    className="flex items-center gap-2 px-2 py-2 transition-colors hover:bg-muted/35 active:bg-muted/55 sm:px-3"
                   >
-                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border/35">
-                      {thumb ? (
-                        <Image
-                          src={proxiedListingImageSrc(thumb)}
-                          alt={listingTitle || "Listing"}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <MessageCircle
-                            className="h-6 w-6 text-muted-foreground/70"
-                            strokeWidth={1.5}
-                            aria-hidden
+                    <Link
+                      href={`/admin/messages/${conv.id}`}
+                      className="flex min-w-0 flex-1 items-center gap-4 px-2 py-2 sm:px-2"
+                    >
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border/35">
+                        {thumb ? (
+                          <Image
+                            src={proxiedListingImageSrc(thumb)}
+                            alt={listingTitle || "Listing"}
+                            fill
+                            className="object-cover"
                           />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                          <span className="truncate text-[15px] font-semibold leading-tight text-foreground sm:text-[16px]">
-                            {conv.buyer?.display_name?.trim() || "Buyer"}
-                          </span>
-                          {conv.buyer?.shop_verified ? (
-                            <span className="shrink-0">
-                              <VerifiedBadge size="sm" />
-                            </span>
-                          ) : null}
-                          <span className="shrink-0 text-muted-foreground" aria-hidden>
-                            ·
-                          </span>
-                          <span className="truncate text-[15px] font-semibold leading-tight text-foreground sm:text-[16px]">
-                            {conv.seller?.display_name?.trim() || "Seller"}
-                          </span>
-                          {conv.seller?.shop_verified ? (
-                            <span className="shrink-0">
-                              <VerifiedBadge size="sm" />
-                            </span>
-                          ) : null}
-                        </div>
-                        {lastMs > 0 ? (
-                          <time
-                            className="shrink-0 text-[13px] tabular-nums text-muted-foreground"
-                            dateTime={new Date(lastMs).toISOString()}
-                          >
-                            {formatDistanceToNow(new Date(lastMs), { addSuffix: true })}
-                          </time>
-                        ) : null}
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <MessageCircle
+                              className="h-6 w-6 text-muted-foreground/70"
+                              strokeWidth={1.5}
+                              aria-hidden
+                            />
+                          </div>
+                        )}
                       </div>
-                      <p
-                        className="mt-1 truncate text-[14px] leading-snug text-muted-foreground sm:text-[15px]"
-                        title={preview}
-                      >
-                        {preview}
-                      </p>
-                    </div>
-                  </Link>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <span className="truncate text-[15px] font-semibold leading-tight text-foreground sm:text-[16px]">
+                              {conv.buyer?.display_name?.trim() || "Buyer"}
+                            </span>
+                            {conv.buyer?.shop_verified ? (
+                              <span className="shrink-0">
+                                <VerifiedBadge size="sm" />
+                              </span>
+                            ) : null}
+                            <span className="shrink-0 text-muted-foreground" aria-hidden>
+                              ·
+                            </span>
+                            <span className="truncate text-[15px] font-semibold leading-tight text-foreground sm:text-[16px]">
+                              {conv.seller?.display_name?.trim() || "Seller"}
+                            </span>
+                            {conv.seller?.shop_verified ? (
+                              <span className="shrink-0">
+                                <VerifiedBadge size="sm" />
+                              </span>
+                            ) : null}
+                          </div>
+                          {lastMs > 0 ? (
+                            <time
+                              className="shrink-0 text-[13px] tabular-nums text-muted-foreground"
+                              dateTime={new Date(lastMs).toISOString()}
+                            >
+                              {formatDistanceToNow(new Date(lastMs), { addSuffix: true })}
+                            </time>
+                          ) : null}
+                        </div>
+                        <p
+                          className="mt-1 truncate text-[14px] leading-snug text-muted-foreground sm:text-[15px]"
+                          title={preview}
+                        >
+                          {preview}
+                        </p>
+                      </div>
+                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          aria-label="Conversation actions"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <DropdownMenuItem onClick={openParticipantSend}>
+                          <MessageSquarePlus className="mr-2 h-4 w-4" aria-hidden />
+                          Send user a message
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 )
               })}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {participantSendTargets ? (
+        <AdminSendUserMessageDialog
+          open={participantSendOpen}
+          onOpenChange={(next) => {
+            setParticipantSendOpen(next)
+            if (!next) setParticipantSendTargets(null)
+          }}
+          participants={participantSendTargets}
+          trigger={null}
+        />
+      ) : null}
 
       {total > PAGE_SIZE && (
         <div className="flex items-center justify-between">
