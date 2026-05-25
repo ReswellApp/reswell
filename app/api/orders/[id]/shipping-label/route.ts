@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { markOrderShippedWithTracking } from "@/lib/services/markOrderShipped"
+import { saveOrderTracking } from "@/lib/services/markOrderShipped"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
 import {
   fetchRatesForSurfboardOrder,
@@ -300,9 +300,9 @@ export async function POST(
     return NextResponse.json({ error: purchased.error }, { status: purchased.status })
   }
 
-  const marked = await markOrderShippedWithTracking(
+  const marked = await saveOrderTracking(
     supabase,
-    { id: o.id, buyer_id: o.buyer_id, listing_id: o.listing_id },
+    o.id,
     user.id,
     purchased.result.trackingNumber,
     purchased.result.trackingCarrier,

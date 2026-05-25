@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,18 +33,26 @@ export function SellerTrackingForm({
   orderId,
   deliveryStatus,
   existingTrackingNumber,
+  existingTrackingCarrier,
 }: {
   orderId: string
   deliveryStatus: string
   existingTrackingNumber?: string | null
+  existingTrackingCarrier?: string | null
 }) {
   const router = useRouter()
-  const [trackingNumber, setTrackingNumber] = useState("")
-  const [carrier, setCarrier] = useState("")
+  const [trackingNumber, setTrackingNumber] = useState(existingTrackingNumber?.trim() ?? "")
+  const [carrier, setCarrier] = useState(existingTrackingCarrier?.trim() ?? "")
   const [busy, setBusy] = useState(false)
 
+  useEffect(() => {
+    setTrackingNumber(existingTrackingNumber?.trim() ?? "")
+    setCarrier(existingTrackingCarrier?.trim() ?? "")
+  }, [existingTrackingNumber, existingTrackingCarrier])
+
   if (deliveryStatus !== "pending") return null
-  if (existingTrackingNumber?.trim()) return null
+
+  const isUpdate = Boolean(existingTrackingNumber?.trim())
 
   const submit = async () => {
     if (!trackingNumber.trim()) {
@@ -66,7 +74,11 @@ export function SellerTrackingForm({
         toast.error(data.error ?? "Could not add tracking")
         return
       }
-      toast.success("Tracking saved. The buyer can see it on their purchase and in Messages.")
+      toast.success(
+        isUpdate
+          ? "Tracking updated. Confirm shipment below when you drop the package off — the buyer is notified once then."
+          : "Tracking saved. The buyer can see it on their purchase. Confirm shipment when you drop the package off.",
+      )
       router.refresh()
     } catch {
       toast.error("Something went wrong")
@@ -82,11 +94,12 @@ export function SellerTrackingForm({
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
             <Truck className="h-4 w-4 text-primary" />
           </div>
-          Add tracking
+          {isUpdate ? "Update tracking" : "Add tracking"}
         </CardTitle>
         <CardDescription className="text-xs">
-          Add tracking after you ship. Payout stays on hold until the buyer confirms delivery on Reswell and a Reswell
-          admin approves your payout.
+          Save your carrier tracking here — both you and the buyer can reference it on your order pages. When you drop
+          the package off, confirm shipment below; the buyer gets one message with tracking then. Payout stays on hold
+          until they confirm delivery and a Reswell admin approves your payout.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 pt-2">
@@ -102,7 +115,7 @@ export function SellerTrackingForm({
         />
         <Button onClick={submit} disabled={busy} className="w-full gap-2">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
-          Submit tracking
+          {isUpdate ? "Update tracking" : "Save tracking"}
         </Button>
       </CardContent>
     </Card>
@@ -558,8 +571,13 @@ export function TrackingInfo({
             </p>
           ) : isSeller ? (
             <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
-              Confirm shipment below when you’ve handed the package to the carrier — the buyer will be
-              notified then.
+              The buyer can already see this on their purchase page. Confirm shipment below when you’ve
+              handed the package to the carrier — they’ll get one message with tracking then.
+            </p>
+          ) : !isSeller && deliveryStatus === "pending" ? (
+            <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+              The seller saved this tracking for your order. You’ll get a message when they confirm the
+              package was handed to the carrier.
             </p>
           ) : null}
         </div>

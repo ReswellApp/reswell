@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
+import { parseOrderShippedMessageMetadata } from "@/lib/validations/order-shipped-message-metadata"
+import type { OrderShippedMessagePayload } from "@/lib/validations/order-shipped-message-metadata"
 
 type OrderShipContext = {
   id: string
@@ -11,14 +13,12 @@ type OrderShipContext = {
 
 type MarkShippedFilter = "seller_match" | "order_id_only"
 
-async function postListingThreadMessage(
+async function resolveListingThread(
   supabase: SupabaseClient,
   buyerId: string,
   sellerUserId: string,
   listingId: string,
-  senderId: string,
-  content: string,
-): Promise<void> {
+): Promise<{ id: string; listing_id: string } | null> {
   let conv = await getConversationForBuyerSellerListing(
     supabase,
     buyerId,
@@ -38,17 +38,207 @@ async function postListingThreadMessage(
     }
   }
 
+  return conv
+}
+
+async function orderShippedNotificationAlreadySent(
+  supabase: SupabaseClient,
+  conversationId: string,
+  orderId: string,
+): Promise<boolean> {
+  const { data: rows } = await supabase
+    .from("messages")
+    .select("metadata")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(40)
+
+  for (const row of rows ?? []) {
+    const parsed = parseOrderShippedMessageMetadata(row.metadata)
+    if (parsed?.orderId === orderId) return true
+  }
+  return false
+}
+
+async function postOrderShippedNotification(
+  supabase: SupabaseClient,
+  ctx: OrderShipContext,
+  sellerUserId: string,
+  trackingNumber: string,
+  trackingCarrier: string | null,
+  listingTitle: string,
+): Promise<void> {
+  const conv = await resolveListingThread(
+    supabase,
+    ctx.buyer_id,
+    sellerUserId,
+    ctx.listing_id,
+  )
   if (!conv) return
+
+  const alreadySent = await orderShippedNotificationAlreadySent(supabase, conv.id, ctx.id)
+  if (alreadySent) return
+
+  const carrier = trackingCarrier?.trim() || null
+  const msgContent = [
+    `Shipped — tracking for "${listingTitle}":`,
+    carrier ? `Carrier: ${carrier}` : null,
+    `Tracking #: ${trackingNumber}`,
+    "",
+    "Funds stay on hold until the buyer confirms delivery on Reswell and a Reswell admin approves your payout.",
+  ]
+    .filter((l) => l !== null)
+    .join("\n")
+
+  const metadata: OrderShippedMessagePayload = {
+    kind: "order_shipped",
+    orderId: ctx.id,
+  }
 
   await supabase.from("messages").insert({
     conversation_id: conv.id,
-    sender_id: senderId,
-    content,
+    sender_id: sellerUserId,
+    content: msgContent,
+    metadata,
   })
   await supabase
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conv.id)
+
+  let buyerEmail: string | null = null
+  try {
+    const svc = createServiceRoleClient()
+    const { data: buyerAuth } = await svc.auth.admin.getUserById(ctx.buyer_id)
+    buyerEmail = buyerAuth?.user?.email ?? null
+  } catch {
+    /* non-critical */
+  }
+
+  void trackKlaviyoOrderShipped({
+    buyerUserId: ctx.buyer_id,
+    buyerEmail,
+    orderId: ctx.id,
+    listingTitle,
+    trackingNumber,
+    trackingCarrier: carrier,
+  })
+}
+
+/**
+ * Seller saves carrier tracking on a pending shipping order.
+ * Does not change delivery_status or notify the buyer — use confirm-shipment for that.
+ */
+export async function saveOrderTracking(
+  supabase: SupabaseClient,
+  orderId: string,
+  sellerUserId: string,
+  trackingNumber: string,
+  trackingCarrier: string | null,
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const trimmed = trackingNumber.trim()
+  if (!trimmed) {
+    return { ok: false, error: "Tracking number is required", status: 400 }
+  }
+
+  const carrier = trackingCarrier?.trim() || null
+
+  const { data, error: rpcErr } = await supabase.rpc("save_order_tracking_for_seller", {
+    p_order_id: orderId,
+    p_tracking_number: trimmed,
+    p_tracking_carrier: carrier,
+  })
+
+  if (!rpcErr && data) {
+    const result = data as {
+      ok: boolean
+      error?: string
+      tracking_number?: string
+    }
+
+    if (result.ok && result.tracking_number?.trim()) {
+      return { ok: true }
+    }
+
+    if (!result.ok) {
+      const mapped: Record<string, { error: string; status: number }> = {
+        unauthorized: { error: "Unauthorized", status: 401 },
+        tracking_required: { error: "Tracking number is required", status: 400 },
+        not_found: { error: "Order not found", status: 404 },
+        not_shipping: { error: "Tracking only applies to shipping orders", status: 400 },
+        not_pending: {
+          error: "Tracking can only be updated while the order is awaiting shipment.",
+          status: 409,
+        },
+      }
+      const fallback = { error: "Failed to save tracking", status: 500 }
+      const out = mapped[result.error ?? ""] ?? fallback
+      return { ok: false, ...out }
+    }
+  }
+
+  const rpcMissing =
+    rpcErr &&
+    (rpcErr.code === "PGRST202" ||
+      rpcErr.message?.includes("save_order_tracking_for_seller") ||
+      rpcErr.message?.includes("Could not find the function"))
+
+  if (rpcErr && !rpcMissing) {
+    console.error("[saveOrderTracking] rpc error:", rpcErr)
+    return { ok: false, error: "Failed to save tracking", status: 500 }
+  }
+
+  if (rpcMissing) {
+    console.warn("[saveOrderTracking] RPC missing — falling back to direct update")
+  }
+
+  const { data: ord, error: fetchErr } = await supabase
+    .from("orders")
+    .select("fulfillment_method, delivery_status")
+    .eq("id", orderId)
+    .eq("seller_id", sellerUserId)
+    .maybeSingle()
+
+  if (fetchErr || !ord) {
+    return { ok: false, error: "Order not found", status: 404 }
+  }
+
+  if ((ord as { fulfillment_method: string | null }).fulfillment_method !== "shipping") {
+    return { ok: false, error: "Tracking only applies to shipping orders", status: 400 }
+  }
+
+  if ((ord as { delivery_status: string }).delivery_status !== "pending") {
+    return {
+      ok: false,
+      error: "Tracking can only be updated while the order is awaiting shipment.",
+      status: 409,
+    }
+  }
+
+  const { data: updated, error: updateErr } = await supabase
+    .from("orders")
+    .update({
+      tracking_number: trimmed,
+      tracking_carrier: carrier,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .eq("seller_id", sellerUserId)
+    .eq("delivery_status", "pending")
+    .select("id, tracking_number")
+    .maybeSingle()
+
+  if (updateErr) {
+    console.error("[saveOrderTracking] order update:", updateErr)
+    return { ok: false, error: "Failed to save tracking", status: 500 }
+  }
+
+  if (!updated?.tracking_number?.trim()) {
+    console.error("[saveOrderTracking] update matched no rows or tracking not persisted")
+    return { ok: false, error: "Failed to save tracking", status: 500 }
+  }
+
+  return { ok: true }
 }
 
 async function applyMarkOrderShippedWithTracking(
@@ -95,43 +285,15 @@ async function applyMarkOrderShippedWithTracking(
     .maybeSingle()
 
   const title = listing?.title ?? "your item"
-  const carrier = trackingCarrier?.trim() || null
-  const msgContent = [
-    `Tracking added for "${title}":`,
-    carrier ? `Carrier: ${carrier}` : null,
-    `Tracking #: ${trackingNumber}`,
-    "",
-    "Funds stay on hold until the buyer receives the item and a Reswell admin approves your payout after verifying delivery.",
-  ]
-    .filter((l) => l !== null)
-    .join("\n")
 
-  await postListingThreadMessage(
+  await postOrderShippedNotification(
     supabase,
-    ctx.buyer_id,
+    ctx,
     sellerUserId,
-    ctx.listing_id,
-    sellerUserId,
-    msgContent,
-  )
-
-  let buyerEmail: string | null = null
-  try {
-    const svc = createServiceRoleClient()
-    const { data: buyerAuth } = await svc.auth.admin.getUserById(ctx.buyer_id)
-    buyerEmail = buyerAuth?.user?.email ?? null
-  } catch {
-    /* non-critical */
-  }
-
-  void trackKlaviyoOrderShipped({
-    buyerUserId: ctx.buyer_id,
-    buyerEmail,
-    orderId: ctx.id,
-    listingTitle: title,
     trackingNumber,
-    trackingCarrier: carrier,
-  })
+    trackingCarrier,
+    title,
+  )
 
   return { ok: true }
 }
@@ -194,50 +356,22 @@ export async function markOrderDispatchedBySeller(
     .maybeSingle()
 
   const title = listing?.title ?? "your item"
-  const carrier = trackingCarrier?.trim() || null
-  const msgContent = [
-    `Shipped — tracking for "${title}" is live:`,
-    carrier ? `Carrier: ${carrier}` : null,
-    `Tracking #: ${tn}`,
-    "",
-    "Funds stay on hold until the buyer confirms delivery on Reswell and a Reswell admin approves your payout.",
-  ]
-    .filter((l) => l !== null)
-    .join("\n")
 
-  await postListingThreadMessage(
+  await postOrderShippedNotification(
     supabase,
-    ctx.buyer_id,
+    ctx,
     sellerUserId,
-    ctx.listing_id,
-    sellerUserId,
-    msgContent,
+    tn,
+    trackingCarrier,
+    title,
   )
-
-  let buyerEmail: string | null = null
-  try {
-    const svc = createServiceRoleClient()
-    const { data: buyerAuth } = await svc.auth.admin.getUserById(ctx.buyer_id)
-    buyerEmail = buyerAuth?.user?.email ?? null
-  } catch {
-    /* non-critical */
-  }
-
-  void trackKlaviyoOrderShipped({
-    buyerUserId: ctx.buyer_id,
-    buyerEmail,
-    orderId: ctx.id,
-    listingTitle: title,
-    trackingNumber: tn,
-    trackingCarrier: carrier,
-  })
 
   return { ok: true }
 }
 
 /**
- * Seller adds carrier tracking; updates order, payout hold, buyer thread, Klaviyo.
- * Used by manual tracking POST and ShipEngine label purchase.
+ * Marks order shipped with tracking and notifies buyer (admin / legacy flows).
+ * Manual seller tracking uses {@link saveOrderTracking} + {@link markOrderDispatchedBySeller}.
  */
 export async function markOrderShippedWithTracking(
   supabase: SupabaseClient,

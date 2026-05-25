@@ -375,6 +375,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         <TrackingInfo
           trackingNumber={order.tracking_number}
           trackingCarrier={order.tracking_carrier}
+          deliveryStatus={order.delivery_status}
         />
       )}
 

@@ -582,9 +582,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 </Card>
               ) : null}
               <SellerTrackingForm
+                key={`${sale.tracking_number ?? ""}:${sale.tracking_carrier ?? ""}:${sale.delivery_status}`}
                 orderId={sale.id}
                 deliveryStatus={sale.delivery_status}
                 existingTrackingNumber={sale.tracking_number}
+                existingTrackingCarrier={sale.tracking_carrier}
               />
               <SellerConfirmShipmentButton
                 orderId={sale.id}
@@ -627,7 +629,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             <SellerPickupVerify orderId={sale.id} deliveryStatus={sale.delivery_status} />
           )}
 
-          {/* Tracking info when already added */}
+          {/* Saved tracking — visible to seller as soon as it is stored */}
           {sale.tracking_number && (
             <TrackingInfo
               trackingNumber={sale.tracking_number}
