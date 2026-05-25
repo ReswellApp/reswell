@@ -9,13 +9,30 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
+const CART_LOAD_TIMEOUT_MS = 8_000
+
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((resolve) => {
+      setTimeout(() => resolve(fallback), ms)
+    }),
+  ])
+}
+
 export function CartHeaderLink({
   showOnNarrowScreens = false,
   /** Primary cart control in the desktop (`lg+`) main nav row. */
   showOnDesktopNav = false,
+  /** Header auth snapshot resolved — guests can show cart without another `getUser()`. */
+  authResolved = false,
+  /** When set (including `null` for guests), skips `auth.getUser()` in the nav. */
+  userId,
 }: {
   showOnNarrowScreens?: boolean
   showOnDesktopNav?: boolean
+  authResolved?: boolean
+  userId?: string | null
 }) {
   const [count, setCount] = useState<number | null>(null)
   const visibility = showOnNarrowScreens
@@ -25,25 +42,40 @@ export function CartHeaderLink({
       : "hidden sm:inline-flex lg:hidden"
 
   useEffect(() => {
+    if (authResolved && userId === null) {
+      setCount(0)
+      return
+    }
+
+    let cancelled = false
     const supabase = createClient()
 
     async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setCount(0)
+      let resolvedUserId = userId
+      if (resolvedUserId === undefined) {
+        const { data } = await withTimeout(
+          supabase.auth.getSession(),
+          CART_LOAD_TIMEOUT_MS,
+          { data: { session: null } },
+        )
+        resolvedUserId = data.session?.user?.id ?? null
+      }
+
+      if (!resolvedUserId) {
+        if (!cancelled) setCount(0)
         return
       }
-      const { count: n, error } = await supabase
-        .from("cart_items")
-        .select("*", { count: "exact", head: true })
-        .eq("profile_id", user.id)
-      if (error) {
-        setCount(0)
-        return
-      }
-      setCount(n ?? 0)
+
+      const { count: n, error } = await withTimeout(
+        supabase
+          .from("cart_items")
+          .select("*", { count: "exact", head: true })
+          .eq("profile_id", resolvedUserId),
+        CART_LOAD_TIMEOUT_MS,
+        { count: 0, error: null },
+      )
+
+      if (!cancelled) setCount(error ? 0 : (n ?? 0))
     }
 
     void load()
@@ -52,8 +84,11 @@ export function CartHeaderLink({
       void load()
     }
     window.addEventListener("cartUpdated", onCartUpdated)
-    return () => window.removeEventListener("cartUpdated", onCartUpdated)
-  }, [])
+    return () => {
+      cancelled = true
+      window.removeEventListener("cartUpdated", onCartUpdated)
+    }
+  }, [authResolved, userId])
 
   if (count === null) {
     return (

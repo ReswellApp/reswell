@@ -792,10 +792,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     queueMicrotask(() => setMobileMenuOpen(false))
   }, [])
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
+  function handleSignOut() {
     setUser(null)
-    window.location.href = "/"
+    setAuthLoaded(true)
+    window.location.assign("/")
+    void supabase.auth.signOut().catch(() => {})
   }
 
   /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
@@ -885,7 +886,13 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             </>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut} className="text-foreground">
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault()
+              handleSignOut()
+            }}
+            className="text-foreground"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </DropdownMenuItem>
@@ -1047,7 +1054,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         </Link>
                       </Button>
                       <div className="shrink-0">{accountDropdown}</div>
-                      <CartHeaderLink showOnNarrowScreens />
+                      <CartHeaderLink
+                        showOnNarrowScreens
+                        authResolved={authLoaded}
+                        userId={user?.id ?? null}
+                      />
                     </>
                   ) : (
                     <>
@@ -1071,7 +1082,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                           <Clock className={recentlySoldNavIconClassName} />
                         </Button>
                       </Link>
-                      <CartHeaderLink showOnNarrowScreens />
+                      <CartHeaderLink
+                        showOnNarrowScreens
+                        authResolved={authLoaded}
+                        userId={user?.id ?? null}
+                      />
                     </>
                   )}
                 </div>
@@ -1221,11 +1236,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Button>
             </Link>
 
-            <CartHeaderLink showOnDesktopNav />
+            <CartHeaderLink
+              showOnDesktopNav
+              authResolved={authLoaded}
+              userId={user?.id ?? null}
+            />
 
             {user ? (
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
-                <CartHeaderLink />
+                <CartHeaderLink authResolved={authLoaded} userId={user.id} />
                 <Link href="/messages" className="relative inline-flex shrink-0">
                   <Button variant="ghost" size="icon" className="text-foreground">
                     <MessageSquare className="h-6 w-6" />
