@@ -30,6 +30,9 @@ export type OfferRowLite = {
   seller_initiated?: boolean | null
   expires_at?: string | null
   offer_timeline?: unknown
+  fulfillment?: "pickup" | "shipping" | null
+  shipping_amount?: number | string | null
+  line_items?: unknown
 }
 
 function parseMoney(v: unknown): number {

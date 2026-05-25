@@ -886,6 +886,7 @@ function MessagesContent() {
           }}
           listingId={sellerOfferDraft.listingId}
           buyerUserId={sellerOfferDraft.buyerUserId}
+          sellerUserId={currentUserId ?? ''}
           listingTitle={sellerOfferDraft.listingTitle}
           listPrice={sellerOfferDraft.listPrice}
           primaryImageUrl={sellerOfferDraft.primaryImageUrl}

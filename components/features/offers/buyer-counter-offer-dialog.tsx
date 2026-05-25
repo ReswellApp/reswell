@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { respondToCounterOfferAction } from "@/lib/actions/offerCounterRespond"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { formatDistanceToNow } from "date-fns"
+import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 
 export type BuyerCounterOfferRow = {
   id: string
@@ -24,6 +25,9 @@ export type BuyerCounterOfferRow = {
   /** True when the seller opened negotiation (proactive offer); copy differs from a true counter. */
   seller_initiated?: boolean | null
   expires_at?: string | null
+  fulfillment?: "pickup" | "shipping" | null
+  shipping_amount?: number | string | null
+  line_items?: unknown
 }
 
 function parseMoney(v: unknown): number {
@@ -72,6 +76,13 @@ export function BuyerCounterOfferDialog({
 
   const yourOffer = parseMoney(offer.initial_amount)
   const counter = parseMoney(offer.current_amount)
+  const lineItems = parseOfferLineItems(offer.line_items) ?? []
+  const shippingAmount =
+    offer.shipping_amount != null ? parseMoney(offer.shipping_amount) : null
+  const total =
+    offer.fulfillment === "shipping" && shippingAmount != null
+      ? counter + shippingAmount
+      : counter
   const note = offer.seller_counter_note?.trim()
   const sellerOpened = !!offer.seller_initiated
 
@@ -101,8 +112,16 @@ export function BuyerCounterOfferDialog({
               {sellerOpened ? "Their price" : "Seller&apos;s counter"}
             </p>
             <p className="mt-1 text-[28px] font-semibold tabular-nums tracking-tight text-foreground">
-              ${counter.toFixed(2)}
+              ${total.toFixed(2)}
             </p>
+            {offer.fulfillment === "shipping" && shippingAmount != null && shippingAmount > 0 ? (
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                ${counter.toFixed(2)} items + ${shippingAmount.toFixed(2)} shipping
+              </p>
+            ) : null}
+            {offer.fulfillment === "pickup" ? (
+              <p className="mt-1 text-[13px] text-muted-foreground">Local pickup</p>
+            ) : null}
             {!sellerOpened ? (
               <p className="mt-2 text-[13px] text-muted-foreground">
                 Your offer was ${yourOffer.toFixed(2)}
@@ -114,6 +133,19 @@ export function BuyerCounterOfferDialog({
               <p className="mt-2 text-[13px] text-muted-foreground">List ${listPrice.toFixed(2)}</p>
             ) : null}
           </div>
+
+          {lineItems.length > 1 ? (
+            <ul className="space-y-1.5 rounded-2xl border border-border/50 bg-muted/20 px-4 py-3">
+              {lineItems.map((row) => (
+                <li key={row.listing_id} className="flex justify-between gap-2 text-[14px]">
+                  <span className="min-w-0 truncate text-foreground/90">
+                    {row.title?.trim() || "Listing"}
+                  </span>
+                  <span className="shrink-0 tabular-nums font-medium">${row.amount.toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
           {note ? (
             <div className="rounded-2xl border border-border/50 bg-card px-4 py-3">

@@ -49,6 +49,7 @@ import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/loca
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
+import { MessageSellerOfferButton } from '@/components/features/messages/message-seller-offer-button'
 import { parseMarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { ConversationListingSwitcher, type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
@@ -361,7 +362,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     if (offerIds.length > 0) {
       const { data: orows } = await supabase
         .from('offers')
-        .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline')
+        .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items')
         .in('id', offerIds)
       if (!isActive()) return
       offerRows = (orows ?? []) as OfferRowLite[]
@@ -445,7 +446,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           if (msg.offer_id) {
             void supabase
               .from('offers')
-              .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline')
+              .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items')
               .eq('id', msg.offer_id)
               .maybeSingle()
               .then(({ data: o }) => {
@@ -667,6 +668,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
   const otherUserId = getOtherUserIdFromConversation(conversation, currentUserId ?? '')
+  const isSellerViewer = currentUserId === conversation.seller_id
+  const canMakeSellerOffer =
+    isSellerViewer &&
+    !!conversation.listing_id &&
+    !!displayListing &&
+    displayListing.section === 'surfboards'
   const backHref =
     listingThreads.length > 1 ? `/messages/with/${otherUserId}` : '/messages'
   const showListingSwitcher = listingThreads.length > 1
@@ -1054,6 +1061,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 setNewMessage('')
               }}
             />
+            {canMakeSellerOffer && conversation.listing_id ? (
+              <MessageSellerOfferButton
+                conversationId={id}
+                listingId={conversation.listing_id}
+                buyerUserId={conversation.buyer_id}
+                sellerUserId={conversation.seller_id}
+                listingTitle={displayListing?.title ?? ''}
+                listPrice={listPriceNum}
+                primaryImageUrl={threadListingThumbSrc || null}
+                disabled={sending}
+                onOfferSent={loadThread}
+              />
+            ) : null}
             <MessageLocationSendPopover
               disabled={sending || !currentUserId || !conversation}
               onSend={sendLocationPin}

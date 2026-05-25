@@ -100,6 +100,9 @@ export function OfferMessageCard({
           }),
         seller_initiated: sellerInitiated,
         expires_at: offer.expires_at ?? null,
+        fulfillment: offer.fulfillment ?? null,
+        shipping_amount: offer.shipping_amount ?? null,
+        line_items: offer.line_items,
       }
     : null
 
@@ -132,9 +135,38 @@ export function OfferMessageCard({
           {display.contextLine ? (
             <p className="mt-1.5 text-[12px] text-muted-foreground">{display.contextLine}</p>
           ) : null}
+          {display.fulfillmentLabel ? (
+            <p className="mt-1.5 text-[12px] text-muted-foreground">{display.fulfillmentLabel}</p>
+          ) : null}
         </div>
 
         <div className="px-3.5 py-3">
+          {display.lineItems && display.lineItems.length > 1 ? (
+            <ul className="mb-3 space-y-1.5 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5">
+              {display.lineItems.map((row) => (
+                <li
+                  key={row.listing_id}
+                  className="flex items-start justify-between gap-2 text-[13px] leading-snug"
+                >
+                  <span className="min-w-0 flex-1 text-foreground/90">
+                    {row.title?.trim() || "Listing"}
+                  </span>
+                  <span className="shrink-0 tabular-nums font-medium text-foreground">
+                    ${row.amount.toFixed(2)}
+                  </span>
+                </li>
+              ))}
+              {display.itemsSubtotal || display.shippingAmount ? (
+                <li className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 text-[12px] text-muted-foreground">
+                  <span>
+                    {display.itemsSubtotal ? `${display.itemsSubtotal}` : null}
+                    {display.shippingAmount ? ` · Shipping ${display.shippingAmount}` : null}
+                  </span>
+                </li>
+              ) : null}
+            </ul>
+          ) : null}
+
           {display.note ? (
             <p className="text-[14px] leading-snug text-foreground/90">&ldquo;{display.note}&rdquo;</p>
           ) : null}
