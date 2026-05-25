@@ -632,6 +632,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             <TrackingInfo
               trackingNumber={sale.tracking_number}
               trackingCarrier={sale.tracking_carrier}
+              variant="seller"
+              deliveryStatus={sale.delivery_status}
             />
           )}
 

@@ -66,6 +66,7 @@ export function SellerTrackingForm({
         toast.error(data.error ?? "Could not add tracking")
         return
       }
+      toast.success("Tracking saved. The buyer can see it on their purchase and in Messages.")
       router.refresh()
     } catch {
       toast.error("Something went wrong")
@@ -509,22 +510,58 @@ export function SellerRefundInProgressBanner({
 export function TrackingInfo({
   trackingNumber,
   trackingCarrier,
+  variant = "buyer",
+  deliveryStatus,
 }: {
   trackingNumber: string
   trackingCarrier?: string | null
+  variant?: "buyer" | "seller"
+  deliveryStatus?: string
 }) {
+  const isSeller = variant === "seller"
+  const buyerNotified = !isSeller || deliveryStatus !== "pending"
+
   return (
-    <Card>
-      <CardContent className="flex items-center gap-4 p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0">
-          <Truck className="h-5 w-5 text-muted-foreground" />
+    <Card
+      className={
+        isSeller
+          ? "border-emerald-500/30 bg-emerald-500/[0.04]"
+          : undefined
+      }
+    >
+      <CardContent className="flex items-start gap-4 p-5">
+        <div
+          className={
+            isSeller
+              ? "flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 shrink-0"
+              : "flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0"
+          }
+        >
+          {isSeller ? (
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          ) : (
+            <Truck className="h-5 w-5 text-muted-foreground" />
+          )}
         </div>
-        <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="text-sm font-medium">Tracking added</p>
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="text-sm font-medium">
+            {isSeller ? "Tracking saved" : "Tracking added"}
+          </p>
           <p className="text-sm text-muted-foreground truncate">
             {trackingCarrier && <span>{trackingCarrier} · </span>}
             <span className="font-mono">{trackingNumber}</span>
           </p>
+          {isSeller && buyerNotified ? (
+            <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+              The buyer can see this on their purchase page and in Messages. They also receive an email
+              with the tracking number.
+            </p>
+          ) : isSeller ? (
+            <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+              Confirm shipment below when you’ve handed the package to the carrier — the buyer will be
+              notified then.
+            </p>
+          ) : null}
         </div>
       </CardContent>
     </Card>
