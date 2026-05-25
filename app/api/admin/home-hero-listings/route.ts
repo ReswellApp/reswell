@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import { adminHomeHeroListingBodySchema } from "@/lib/validations/home-hero-listings"
 import {
   addHomeHeroListingService,
@@ -40,7 +40,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
   return NextResponse.json({ data: { id: result.id } }, { status: 201 })
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import { deleteHomeTrendingBrandService } from "@/lib/services/homeTrendingBrands"
 
 const ROW_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -20,7 +20,6 @@ export async function DELETE(_request: Request, ctx: { params: Promise<{ id: str
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
   return NextResponse.json({ data: { deleted: true } }, { status: 200 })
 }

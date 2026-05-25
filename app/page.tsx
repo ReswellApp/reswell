@@ -1,12 +1,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { wideShimmer } from "@/lib/image-shimmer"
-import { FALLBACK_HOME_HERO_SLIDE_PATHS, HeroSlideshow } from "@/components/hero-slideshow"
+import { HeroSlideshow } from "@/components/hero-slideshow"
 import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
-import { normalizeHeroSlideUrl } from "@/lib/home-hero-slide-urls"
-import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
-import { listHowItWorksBuyerListingImageUrls } from "@/lib/db/home-how-it-works-buyer-images"
-import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,11 +21,7 @@ import {
   HomePeerListingScrollTile,
   TrendingBrandsSection,
 } from "@/components/features/home"
-import type { HomePeerScrollListing } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { HomeRecentSectionListingCurator } from "@/components/home-recent-section-listing-curator"
-import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
-import { loadHomeFeaturedShortboardRows, loadHomeFeaturedSurfboardRows } from "@/lib/services/homeFeaturedPeerSections"
-import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 import {
   marketingCtaBannerCtaLabelClassName,
@@ -39,6 +31,10 @@ import {
   marketingCtaBannerTitleClassName,
 } from "@/components/marketing-cta-banners"
 import { pageSeoMetadata } from "@/lib/site-metadata"
+import {
+  getCachedHomeRecentlySoldCatalog,
+  getCachedHomeStableCatalog,
+} from "@/lib/cache/home-public-catalog"
 
 export const metadata = pageSeoMetadata({
   title: "Reswell — Buy & sell surfboards",
@@ -47,142 +43,36 @@ export const metadata = pageSeoMetadata({
   path: "/",
 })
 
-const profilePublicFields =
-  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
-
-const featuredNewSelect = `
-  id,
-  slug,
-  title,
-  price,
-  listing_images (url, thumbnail_url, sort_order, is_primary),
-  stock_quantity,
-  categories (name)
-`
-
-export const dynamic = "force-dynamic"
+/** Page ISR matches recently sold strip TTL; stable sections use a longer `unstable_cache` TTL. */
+export const revalidate = 3600
 
 export default async function HomePage() {
-  const supabase = await createClient()
-
-  // Admins can curate specific listings in `home_hero_listings`. When any curated rows exist,
-  // the hero uses ONLY those images (already filtered to active + visible). Otherwise, fall
-  // back to the most-recent active surfboard listings, then to static assets.
-  const [
-    curatedHeroUrls,
-    homeTrendingBrandRows,
-    featuredShopsRes,
-    surfboardFeaturedRows,
-    shortboardFeaturedRows,
-    recentlySoldFeaturedRows,
-    newGearRes,
-    authRes,
-    howItWorksBuyerImageUrls,
-  ] = await Promise.all([
-    listHomeHeroCuratedSlideUrls(supabase),
-    listHomeTrendingBrandsForPublicService(supabase),
-    supabase
-      .from("profiles")
-      .select(profilePublicFields)
-      .eq("is_shop", true)
-      .order("sales_count", { ascending: false })
-      .order("shop_verified", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(4),
-    loadHomeFeaturedSurfboardRows(supabase),
-    loadHomeFeaturedShortboardRows(supabase),
-    loadHomeRecentlySoldSurfboardRows(supabase),
-    supabase
-      .from("listings")
-      .select(featuredNewSelect)
-      .eq("section", "new")
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
-      .eq("hidden_from_homepage", false)
-      .order("created_at", { ascending: false })
-      .limit(12),
-    supabase.auth.getUser(),
-    listHowItWorksBuyerListingImageUrls(supabase),
+  const [stableCatalog, recentlySoldCatalog] = await Promise.all([
+    getCachedHomeStableCatalog(),
+    getCachedHomeRecentlySoldCatalog(),
   ])
 
-  const howItWorksBuyerHighlightImages = {
-    shortboard: howItWorksBuyerImageUrls.shortboard ?? "/images/home/hero-slide-5.png",
-    hybrid: howItWorksBuyerImageUrls.hybrid ?? "/images/home/hero-slide-6.png",
-    longboard: howItWorksBuyerImageUrls.longboard ?? "/images/home/hero-slide-4.png",
-  }
-
-  const useCuratedHeroOnly = curatedHeroUrls.length > 0
-  const heroListingsRes = useCuratedHeroOnly
-    ? { data: null as { listing_images: unknown }[] | null }
-    : await supabase
-        .from("listings")
-        .select("listing_images (url, is_primary)")
-        .eq("status", "active")
-        .eq("section", "surfboards")
-        .eq("hidden_from_site", false)
-        .eq("hidden_from_homepage", false)
-        .order("created_at", { ascending: false })
-        .limit(24)
-
-  const { data: featuredShops } = featuredShopsRes
-  const rawFeaturedBoards = surfboardFeaturedRows as HomePeerScrollListing[]
-  const rawFeaturedShortboards = shortboardFeaturedRows as HomePeerScrollListing[]
-  const rawRecentlySoldSurfboards = recentlySoldFeaturedRows as HomePeerScrollListing[]
-  const { data: rawFeaturedNew } = newGearRes
   const {
-    data: { user },
-  } = authRes
+    heroSlideUrls,
+    homeTrendingBrandRows,
+    featuredShops,
+    featuredBoards,
+    featuredShortboards,
+    featuredNew,
+    howItWorksBuyerHighlightImages,
+  } = stableCatalog
 
-  const heroSlideUrls: string[] = []
-  if (useCuratedHeroOnly) {
-    const heroSeen = new Set<string>()
-    for (const src of curatedHeroUrls) {
-      const key = normalizeHeroSlideUrl(src)
-      if (!key || heroSeen.has(key)) continue
-      heroSeen.add(key)
-      heroSlideUrls.push(src)
-    }
-  } else {
-    const heroListingCandidates = heroListingsRes.data
-    const heroSeen = new Set<string>()
-    for (const row of heroListingCandidates ?? []) {
-      const src = listingHeroSlideSrc(row.listing_images as ListingImageForCard[] | null)
-      if (!src) continue
-      const key = normalizeHeroSlideUrl(src)
-      if (!key || heroSeen.has(key)) continue
-      heroSeen.add(key)
-      heroSlideUrls.push(src)
-      if (heroSlideUrls.length >= 5) break
-    }
-  }
-  if (heroSlideUrls.length === 0) {
-    heroSlideUrls.push(...FALLBACK_HOME_HERO_SLIDE_PATHS)
-  }
-
-  const featuredBoards = rawFeaturedBoards.length > 0 ? rawFeaturedBoards : null
-
-  const featuredShortboards = rawFeaturedShortboards.length > 0 ? rawFeaturedShortboards : null
-
-  const featuredRecentlySold =
-    rawRecentlySoldSurfboards.length > 0 ? rawRecentlySoldSurfboards : null
-
-  const featuredNew =
-    rawFeaturedNew
-      ?.map((l) => {
-        const qty = Number((l as { stock_quantity?: number }).stock_quantity) || 0
-        const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
-        const catRow = Array.isArray(cat) ? cat[0] : cat
-        return { listing: l, stockQuantity: qty, categoryName: catRow?.name ?? null }
-      })
-      .filter((x) => x.stockQuantity > 0)
-      .slice(0, 4) ?? []
+  const { featuredRecentlySold } = recentlySoldCatalog
 
   const featuredListingIds = [
-    ...(featuredBoards ?? []).map((b) => b.id),
-    ...(featuredShortboards ?? []).map((b) => b.id),
-    ...(featuredRecentlySold ?? []).map((b) => b.id),
-    ...featuredNew.map(({ listing: l }) => l.id),
+    ...stableCatalog.featuredListingIds,
+    ...recentlySoldCatalog.featuredListingIds,
   ]
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const [favoritesRes, adminRes] = await Promise.all([
     user && featuredListingIds.length > 0
@@ -517,13 +407,7 @@ export default async function HomePage() {
                   <ShopNewListingStandardTile
                     key={listing.id}
                     layout="homeScroll"
-                    listing={{
-                      id: listing.id,
-                      slug: listing.slug,
-                      title: listing.title,
-                      price: Number(listing.price),
-                      listing_images: listing.listing_images,
-                    }}
+                    listing={listing}
                     stockQuantity={stockQuantity}
                     userId={user?.id ?? null}
                     isFavorited={favoritedIds.includes(listing.id)}

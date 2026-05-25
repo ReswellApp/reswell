@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import {
   adminHomeRecentSectionParamSchema,
   homeRecentSectionKeyFromParam,
@@ -30,7 +30,6 @@ export async function DELETE(_request: NextRequest, ctx: { params: Promise<{ sec
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
   return NextResponse.json({ data: { deleted: true } }, { status: 200 })
 }

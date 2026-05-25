@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateHomePublicCatalog, revalidateHomeRecentlySoldCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import { listingHomepageVisibilityBodySchema } from "@/lib/validations/listing-homepage-visibility"
 import { setListingHomepageVisibility } from "@/lib/services/listingHomepageVisibility"
 
@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
     return NextResponse.json({ error: result.message }, { status: 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
+  revalidateHomeRecentlySoldCatalog()
   return NextResponse.json({ success: true }, { status: 200 })
 }

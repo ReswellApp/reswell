@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import {
   adminHowItWorksBuyerBodySchema,
   adminHowItWorksBuyerDeleteQuerySchema,
@@ -49,8 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
   return NextResponse.json({ data: { updated: true } }, { status: 200 })
 }
 
@@ -73,7 +72,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
   return NextResponse.json({ data: { deleted: true } }, { status: 200 })
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import {
   adminHomeRecentSectionListingBodySchema,
   adminHomeRecentSectionParamSchema,
@@ -65,8 +65,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ section: s
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
   return NextResponse.json({ data: { id: result.id } }, { status: 201 })
 }
 
@@ -100,7 +99,6 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ section: 
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/", "layout")
-  revalidatePath("/", "page")
+  revalidateHomePublicCatalog()
   return NextResponse.json({ data: { reordered: true } }, { status: 200 })
 }
