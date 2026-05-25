@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
+import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import { BuyerCounterOfferDialog, type BuyerCounterOfferRow } from "@/components/features/offers/buyer-counter-offer-dialog"
 import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-message"
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
@@ -86,6 +88,8 @@ export function OfferMessageCard({
   const showSellerActions = isSeller && pending
   const showBuyerCounterActions = !isSeller && countered && !counterExpired
   const sellerInitiated = !!offer.seller_initiated
+  const offerLineItems = parseOfferLineItems(offer.line_items) ?? []
+  const isBundleOffer = offerLineItems.length > 1
   const display = buildOfferMessageDisplay(offer, messageContent, isSeller)
   const buyerDialogOffer: BuyerCounterOfferRow | null = showBuyerCounterActions
     ? {
@@ -218,9 +222,25 @@ export function OfferMessageCard({
           ) : null}
 
           {!isSeller && offer.status === "ACCEPTED" && (
-            <p className={cn("text-[12px] text-muted-foreground", display.note && "mt-2")}>
-              You accepted this price. Use Buy now on the listing to pay (shipping may apply).
-            </p>
+            <div className={cn("mt-3 space-y-2", display.note && "mt-2")}>
+              <Button
+                type="button"
+                size="sm"
+                className="h-10 w-full rounded-xl text-[14px] font-semibold"
+                asChild
+              >
+                <Link href={acceptedOfferCheckoutHref(offer.id)}>
+                  {isBundleOffer
+                    ? `Checkout all ${offerLineItems.length} boards`
+                    : "Checkout now"}
+                </Link>
+              </Button>
+              <p className="text-[12px] text-muted-foreground">
+                {isBundleOffer
+                  ? "Pay for every board in this bundle in one checkout at your agreed prices."
+                  : "Pay at your agreed price (shipping may apply if you choose shipping)."}
+              </p>
+            </div>
           )}
 
           {!isSeller && pending && (

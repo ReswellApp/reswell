@@ -9,6 +9,7 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
+import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
     listing_ids?: unknown
     fulfillment?: string | null
     address_id?: string | null
+    offer_id?: string | null
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -116,32 +118,60 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
   }
 
-  /** Multi-board payment intents must pull every listing from this buyer's cart (same seller checked below). */
+  /** Multi-board payment intents must pull every listing from this buyer's cart (same seller),
+   * unless paying via an accepted offer bundle (`offer_id`). */
+  const offerIdParam = body.offer_id?.trim() || null
+  let validatedOfferId: string | null = null
+
   if (listingIdsOrdered.length > 1) {
-    const { data: cartRows, error: cartVerifyErr } = await supabase
-      .from("cart_items")
-      .select("listing_id")
-      .eq("profile_id", user.id)
-      .in("listing_id", listingIdsOrdered)
+    if (offerIdParam) {
+      const offerCheck = await validateAcceptedOfferForPaymentIntent(
+        supabase,
+        user.id,
+        offerIdParam,
+        listingIdsOrdered,
+      )
+      if (!offerCheck.ok) {
+        return NextResponse.json({ error: offerCheck.error }, { status: 400 })
+      }
+      validatedOfferId = offerIdParam
+    } else {
+      const { data: cartRows, error: cartVerifyErr } = await supabase
+        .from("cart_items")
+        .select("listing_id")
+        .eq("profile_id", user.id)
+        .in("listing_id", listingIdsOrdered)
 
-    if (cartVerifyErr) {
-      return NextResponse.json({ error: "Could not verify cart" }, { status: 500 })
-    }
+      if (cartVerifyErr) {
+        return NextResponse.json({ error: "Could not verify cart" }, { status: 500 })
+      }
 
-    const inBuyerCart = new Set(
-      (cartRows ?? []).map((r) => String((r as { listing_id?: string }).listing_id ?? "").trim()),
-    )
-    for (const id of listingIdsOrdered) {
-      if (!inBuyerCart.has(id)) {
-        return NextResponse.json(
-          {
-            error:
-              "Checking out multiple boards together only works when every board is in your cart from the same seller.",
-          },
-          { status: 400 },
-        )
+      const inBuyerCart = new Set(
+        (cartRows ?? []).map((r) => String((r as { listing_id?: string }).listing_id ?? "").trim()),
+      )
+      for (const id of listingIdsOrdered) {
+        if (!inBuyerCart.has(id)) {
+          return NextResponse.json(
+            {
+              error:
+                "Checking out multiple boards together only works when every board is in your cart from the same seller, or when checking out an accepted offer bundle.",
+            },
+            { status: 400 },
+          )
+        }
       }
     }
+  } else if (offerIdParam) {
+    const offerCheck = await validateAcceptedOfferForPaymentIntent(
+      supabase,
+      user.id,
+      offerIdParam,
+      listingIdsOrdered,
+    )
+    if (!offerCheck.ok) {
+      return NextResponse.json({ error: offerCheck.error }, { status: 400 })
+    }
+    validatedOfferId = offerIdParam
   }
 
   const bundleSellerId = listingsOrdered[0]!.user_id
@@ -239,6 +269,7 @@ export async function POST(request: NextRequest) {
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         bundle_line_count: String(listingIdsOrdered.length),
+        ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),
         ...(bundle.anyUsedReswellQuote
           ? {

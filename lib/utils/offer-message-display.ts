@@ -30,10 +30,11 @@ function fulfillmentSummary(
 ): string | undefined {
   if (fulfillment === "pickup") return "Local pickup"
   if (fulfillment === "shipping") {
+    if (shippingAmount === 0) return "Free shipping"
     if (shippingAmount != null && shippingAmount > 0) {
       return `Shipping (+$${shippingAmount.toFixed(2)})`
     }
-    return "Shipping"
+    return "Shipping (rate at checkout)"
   }
   return undefined
 }

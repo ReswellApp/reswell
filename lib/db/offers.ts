@@ -14,6 +14,7 @@ export type ListingRowForOffer = {
   shipping_available: boolean | null
   local_pickup: boolean | null
   shipping_price: string | number | null
+  board_shipping_cost_mode?: string | null
   listing_images?: {
     url: string
     thumbnail_url?: string | null
@@ -28,7 +29,7 @@ export async function fetchListingForOffer(
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, shipping_available, local_pickup, shipping_price, listing_images(url, thumbnail_url, is_primary)",
+      "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)",
     )
     .eq("id", listingId)
     .maybeSingle()

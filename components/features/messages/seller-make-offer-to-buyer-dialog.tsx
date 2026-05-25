@@ -21,6 +21,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 
 function roundMoney(n: number): number {
@@ -331,6 +332,12 @@ export function SellerMakeOfferToBuyerDialog({
   )
 
   const isBundle = orderedSelectedListings.length > 1
+  const singleListing = orderedSelectedListings.length === 1 ? orderedSelectedListings[0] : null
+  const shippingMode =
+    singleListing && !isBundle ? effectiveBoardShippingMode(singleListing) : null
+  const isReswellShipping = fulfillment === "shipping" && shippingMode === "reswell"
+  const isFreeShipping = fulfillment === "shipping" && shippingMode === "free"
+  const usesFlatShippingInput = fulfillment === "shipping" && shippingMode === "flat"
 
   const bundleFulfillmentMode = useMemo(() => {
     if (orderedSelectedListings.length === 0) return "pickup_only" as const
@@ -357,8 +364,11 @@ export function SellerMakeOfferToBuyerDialog({
     if (fulfillment !== "shipping" || orderedSelectedListings.length !== 1) return
     const listing = orderedSelectedListings[0]
     if (!listing) return
-    if (listing.board_shipping_cost_mode === "free") {
+    const mode = effectiveBoardShippingMode(listing)
+    if (mode === "free") {
       setShippingAmountInput("0")
+    } else if (mode === "reswell") {
+      setShippingAmountInput("")
     } else if (listing.shipping_price != null && listing.shipping_price > 0) {
       setShippingAmountInput(listing.shipping_price.toFixed(2))
     } else {
@@ -414,16 +424,23 @@ export function SellerMakeOfferToBuyerDialog({
 
   const shippingAmount = useMemo(() => {
     if (fulfillment !== "shipping") return 0
+    if (isFreeShipping) return 0
+    if (isReswellShipping) return null
     const parsed = parseAmountInput(shippingAmountInput)
     return parsed ?? 0
-  }, [fulfillment, shippingAmountInput])
+  }, [fulfillment, isFreeShipping, isReswellShipping, shippingAmountInput])
 
   const shippingValid =
-    fulfillment !== "shipping" || parseAmountInput(shippingAmountInput) !== null
+    fulfillment !== "shipping" ||
+    isReswellShipping ||
+    isFreeShipping ||
+    parseAmountInput(shippingAmountInput) !== null
 
   const totalPreview =
     itemsSubtotal != null
-      ? roundMoney(itemsSubtotal + (fulfillment === "shipping" ? shippingAmount : 0))
+      ? isReswellShipping
+        ? itemsSubtotal
+        : roundMoney(itemsSubtotal + (fulfillment === "shipping" ? (shippingAmount ?? 0) : 0))
       : null
 
   function addListing(id: string) {
@@ -462,7 +479,8 @@ export function SellerMakeOfferToBuyerDialog({
         body: JSON.stringify({
           buyerUserId,
           fulfillment,
-          shippingAmount: fulfillment === "shipping" ? shippingAmount : undefined,
+          shippingAmount:
+            fulfillment === "shipping" && !isReswellShipping ? (shippingAmount ?? 0) : undefined,
           lineItems: lineItems.map((row) => ({
             listingId: row.listingId,
             amount: row.amount,
@@ -665,24 +683,38 @@ export function SellerMakeOfferToBuyerDialog({
             </div>
 
             {fulfillment === "shipping" && !isBundle ? (
-              <div className="space-y-1.5">
-                <Label className="text-sm font-semibold">Shipping price</Label>
-                <p className="text-xs text-muted-foreground">
-                  Flat shipping amount for this offer (buyer pays item + shipping).
-                </p>
-                <div className="relative max-w-[12rem]">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    $
-                  </span>
-                  <Input
-                    className="h-10 pl-7"
-                    placeholder="0.00"
-                    inputMode="decimal"
-                    value={shippingAmountInput}
-                    onChange={(e) => setShippingAmountInput(e.target.value)}
-                  />
+              isReswellShipping ? (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Shipping</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Reswell shipping — carrier rate calculated at checkout (buyer pays item + shipping).
+                  </p>
                 </div>
-              </div>
+              ) : usesFlatShippingInput ? (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Shipping price</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Flat shipping amount for this offer (buyer pays item + shipping).
+                  </p>
+                  <div className="relative max-w-[12rem]">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      $
+                    </span>
+                    <Input
+                      className="h-10 pl-7"
+                      placeholder="0.00"
+                      inputMode="decimal"
+                      value={shippingAmountInput}
+                      onChange={(e) => setShippingAmountInput(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : isFreeShipping ? (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Shipping</Label>
+                  <p className="text-xs text-muted-foreground">Free shipping included in this offer.</p>
+                </div>
+              ) : null
             ) : null}
 
             {totalPreview != null ? (
@@ -701,9 +733,15 @@ export function SellerMakeOfferToBuyerDialog({
                   ) : null}
                 </div>
                 {fulfillment === "shipping" && itemsSubtotal != null ? (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    ${itemsSubtotal.toFixed(2)} items + ${shippingAmount.toFixed(2)} shipping
-                  </p>
+                  isReswellShipping ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      ${itemsSubtotal.toFixed(2)} items + shipping at checkout
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      ${itemsSubtotal.toFixed(2)} items + ${(shippingAmount ?? 0).toFixed(2)} shipping
+                    </p>
+                  )
                 ) : isBundle && itemsSubtotal != null ? (
                   <p className="mt-1 text-xs text-muted-foreground">
                     ${itemsSubtotal.toFixed(2)} for {orderedSelectedListings.length} boards (list $

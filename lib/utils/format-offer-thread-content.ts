@@ -14,10 +14,11 @@ function formatMoney(n: number): string {
 
 function fulfillmentLabel(fulfillment: "pickup" | "shipping", shippingAmount: number | null): string {
   if (fulfillment === "pickup") return "Local pickup"
+  if (shippingAmount === 0) return "Free shipping"
   if (shippingAmount != null && shippingAmount > 0) {
     return `Shipping (+${formatMoney(shippingAmount)})`
   }
-  return "Shipping"
+  return "Shipping (rate at checkout)"
 }
 
 function bundleSummary(lineItems: OfferLineItem[]): string {

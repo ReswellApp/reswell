@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
+import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
 
 function roundMoney(n: number): number {
@@ -41,7 +42,7 @@ export async function respondToCounterOfferService(
 
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
-    .select("id, listing_id, buyer_id, seller_id, status, current_amount, expires_at")
+    .select("id, listing_id, buyer_id, seller_id, status, current_amount, expires_at, line_items")
     .eq("id", offerId)
     .maybeSingle()
 
@@ -175,12 +176,25 @@ export async function respondToCounterOfferService(
     console.error("[respondToCounterOffer] accept offer_timeline append failed")
   }
 
-  await appendNegotiationLine(
-    supabase,
-    offer,
-    buyerUserId,
-    `Counteroffer accepted — $${current.toFixed(2)} for “${title}”. You can purchase at this price from messages or the listing when you choose; you’re not required to.`,
-  )
+  const lineItems = parseOfferLineItems((offer as { line_items?: unknown }).line_items)
+  if (lineItems && lineItems.length > 1) {
+    for (const row of lineItems) {
+      const { error: cartErr } = await supabase.from("cart_items").insert({
+        profile_id: buyerUserId,
+        listing_id: row.listing_id,
+      })
+      if (cartErr && cartErr.code !== "23505") {
+        console.error("[respondToCounterOffer] bundle cart sync:", cartErr)
+      }
+    }
+  }
+
+  const acceptText =
+    lineItems && lineItems.length > 1
+      ? `Offer accepted — $${current.toFixed(2)} for ${lineItems.length} boards. You can check out the full bundle in one payment from messages or Offers.`
+      : `Counteroffer accepted — $${current.toFixed(2)} for “${title}”. You can purchase at this price from messages or the listing when you choose; you’re not required to.`
+
+  await appendNegotiationLine(supabase, offer, buyerUserId, acceptText)
 
   if (service) {
     await service.from("notifications").insert({

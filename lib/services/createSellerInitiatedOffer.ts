@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { fetchListingForOffer, type ListingRowForOffer } from "@/lib/db/offers"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
@@ -197,10 +198,14 @@ export async function createSellerInitiatedOffer(
   let shippingAmount: number | null = null
   if (fulfillment === "shipping") {
     const singleListing = listingsById.get(normalizedLineItems[0]!.listingId)!
-    shippingAmount =
-      body.shippingAmount != null
-        ? roundMoney(body.shippingAmount)
-        : defaultShippingAmount(singleListing)
+    const shippingMode = effectiveBoardShippingMode(singleListing)
+    if (shippingMode === "reswell") {
+      shippingAmount = null
+    } else if (body.shippingAmount != null) {
+      shippingAmount = roundMoney(body.shippingAmount)
+    } else {
+      shippingAmount = defaultShippingAmount(singleListing)
+    }
   }
 
   const primaryListingId = normalizedLineItems[0]!.listingId

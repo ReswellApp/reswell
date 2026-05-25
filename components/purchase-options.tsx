@@ -12,6 +12,8 @@ interface PurchaseOptionsProps {
   fulfillment?: "pickup" | "shipping" | null
   /** Required on server when fulfillment is shipping. */
   shippingAddressId?: string | null
+  /** When set, server validates against this accepted offer (bundle checkout). */
+  offerId?: string | null
   /** When false, card checkout stays disabled until purchase details are complete. */
   purchaseDetailsReady?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
@@ -28,6 +30,7 @@ export function PurchaseOptions({
   price,
   fulfillment,
   shippingAddressId,
+  offerId,
   purchaseDetailsReady = true,
   needsShipping = false,
   submitButtonLabel,
@@ -56,6 +59,7 @@ export function PurchaseOptions({
         price={price}
         fulfillment={fulfillment ?? null}
         shippingAddressId={shippingAddressId ?? null}
+        offerId={offerId ?? null}
         purchaseDetailsReady={purchaseDetailsReady}
         needsShipping={needsShipping}
         submitButtonLabel={submitButtonLabel}

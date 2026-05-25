@@ -23,3 +23,10 @@ export function peerListingCheckoutHref(_listingSection: string, listingSlugOrId
   params.set("listing", listingSlugOrId)
   return `/checkout?${params.toString()}`
 }
+
+/** Checkout all listings from an accepted offer (single or bundled). */
+export function acceptedOfferCheckoutHref(offerId: string): string {
+  const params = new URLSearchParams()
+  params.set("offer", offerId)
+  return `/checkout?${params.toString()}`
+}

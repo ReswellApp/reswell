@@ -30,6 +30,8 @@ interface CheckoutClientProps {
   buyerEmail?: string | null
   initialAddresses: ProfileAddressRow[]
   seller?: CheckoutSeller | null
+  /** When paying an accepted offer bundle, bypasses cart verification at payment. */
+  offerId?: string | null
 }
 
 export function CheckoutClient({
@@ -38,6 +40,7 @@ export function CheckoutClient({
   buyerEmail,
   initialAddresses,
   seller,
+  offerId = null,
 }: CheckoutClientProps) {
   const bundlePickupOnly = listings.length > 1
 
@@ -373,6 +376,7 @@ export function CheckoutClient({
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
                   needsShipping={needsShipping}
+                  offerId={offerId}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter

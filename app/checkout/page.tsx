@@ -25,17 +25,24 @@ import {
   fetchCheckoutCartListingsForSeller,
   inferPeerCartSellerIdFromBuyerCart,
 } from "@/lib/db/checkout-cart-bundle"
-import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
+import {
+  fetchAcceptedOfferById,
+  findAcceptedOfferMatchingListings,
+  loadAcceptedOfferCheckoutListings,
+} from "@/lib/services/acceptedOfferCheckout"
+import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
+import type { PeerSurfboardCheckoutListingRow } from "@/lib/services/peerListingShippingQuote"
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 
 export const dynamic = "force-dynamic"
 
 export async function generateMetadata(props: {
-  searchParams: Promise<{ listing?: string; from_cart?: string }>
+  searchParams: Promise<{ listing?: string; from_cart?: string; offer?: string }>
 }): Promise<Metadata> {
   const sp = await props.searchParams
-  const path =
-    sp.from_cart === "1"
+  const path = sp.offer?.trim()
+    ? `/checkout?offer=${encodeURIComponent(sp.offer.trim())}`
+    : sp.from_cart === "1"
       ? "/checkout?from_cart=1"
       : sp.listing?.trim()
         ? `/checkout?listing=${encodeURIComponent(sp.listing.trim())}`
@@ -56,16 +63,117 @@ function rowToCheckoutListing(row: Record<string, unknown>): CheckoutListing {
 }
 
 export default async function CheckoutPage(props: {
-  searchParams: Promise<{ listing?: string; from_cart?: string; seller_id?: string }>
+  searchParams: Promise<{ listing?: string; from_cart?: string; seller_id?: string; offer?: string }>
 }) {
   const searchParams = await props.searchParams
   const fromCart = searchParams.from_cart === "1"
+  const offerParam = searchParams.offer?.trim()
 
   const supabase = await createClient()
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  if (offerParam) {
+    const checkoutReturnPath = `/checkout?offer=${encodeURIComponent(offerParam)}`
+
+    if (!user || isAnonymousSupabaseUser(user)) {
+      redirect(`/auth/login?redirect=${encodeURIComponent(checkoutReturnPath)}`)
+    }
+
+    const offer = await fetchAcceptedOfferById(supabase, offerParam)
+    if (!offer || offer.buyer_id !== user.id) {
+      redirect("/messages?tab=offers")
+    }
+
+    const loaded = await loadAcceptedOfferCheckoutListings(supabase, offer)
+    if (!loaded.ok) {
+      redirect("/messages?tab=offers")
+    }
+
+    const checkoutListings = loaded.listings.map(rowToCheckoutListing)
+
+    if (checkoutListings.some((l) => l.user_id === user.id)) {
+      redirect("/messages?tab=offers")
+    }
+
+    const sellerId = offer.seller_id
+    const { data: sellerRow } = await supabase
+      .from("profiles")
+      .select("display_name, avatar_url, seller_slug, shop_name, is_shop")
+      .eq("id", sellerId)
+      .maybeSingle()
+
+    const seller: CheckoutSeller | null = sellerRow
+      ? {
+          display_name: sellerRow.display_name,
+          avatar_url: sellerRow.avatar_url,
+          seller_slug: sellerRow.seller_slug,
+          shop_name: sellerRow.shop_name,
+          is_shop: sellerRow.is_shop,
+        }
+      : null
+
+    const { addresses: initialAddresses, error: addressesError } = await getProfileAddresses()
+    const { data: profileRow } = await supabase.from("profiles").select("email").eq("id", user.id).maybeSingle()
+    const buyerEmail =
+      user.email?.trim() ||
+      (typeof profileRow?.email === "string" ? profileRow.email.trim() : "") ||
+      null
+
+    const isBundle = checkoutListings.length > 1
+    const copy: CheckoutCopy | undefined = isBundle
+      ? {
+          itemLineLabel: "Boards",
+          inspectNoun: "boards",
+          priceContextNoun: "bundle",
+        }
+      : undefined
+
+    return (
+      <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+        <Suspense fallback={null}>
+          <KlaviyoCheckoutStartedTracker />
+        </Suspense>
+        <div className="container mx-auto max-w-2xl lg:max-w-6xl">
+          <h1 className="sr-only">Checkout</h1>
+          <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <Breadcrumb>
+                <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/">Home</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/messages?tab=offers">Offers</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="font-normal text-[#5c6b89]">Checkout</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </div>
+
+          <CheckoutClient
+            listings={checkoutListings}
+            copy={copy}
+            buyerEmail={buyerEmail}
+            initialAddresses={addressesError ? [] : initialAddresses}
+            seller={seller}
+            offerId={offer.id}
+          />
+        </div>
+      </main>
+    )
+  }
 
   if (fromCart) {
     const sellerIdParam = searchParams.seller_id?.trim()
@@ -94,7 +202,14 @@ export default async function CheckoutPage(props: {
       redirect("/cart")
     }
 
-    const checkoutListings = bundle.listings.map(rowToCheckoutListing)
+    let checkoutListings = bundle.listings.map(rowToCheckoutListing)
+
+    const pricedRows = await applyAcceptedOfferToPeerCheckoutListings(
+      supabase,
+      user.id,
+      checkoutListings as unknown as PeerSurfboardCheckoutListingRow[],
+    )
+    checkoutListings = pricedRows.map(rowToCheckoutListing)
 
     const bundleSellerUid = checkoutListings[0]?.user_id?.trim()
     if (
@@ -136,6 +251,13 @@ export default async function CheckoutPage(props: {
 
     const copy: CheckoutCopy | undefined = undefined
 
+    const matchedOffer = await findAcceptedOfferMatchingListings(
+      supabase,
+      user.id,
+      checkoutListings.map((l) => l.id),
+      sellerId,
+    )
+
     return (
       <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
         <Suspense fallback={null}>
@@ -173,6 +295,7 @@ export default async function CheckoutPage(props: {
             buyerEmail={buyerEmail}
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
+            offerId={matchedOffer?.id ?? null}
           />
         </div>
       </main>
@@ -245,12 +368,11 @@ export default async function CheckoutPage(props: {
   let checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
 
   if (user && !isAnonymousSupabaseUser(user) && listing.user_id !== user.id) {
-    const acceptedOffer = await fetchAcceptedOfferForBuyerListing(supabase, user.id, listing.id)
-    if (acceptedOffer && acceptedOffer.seller_id === listing.user_id) {
-      const agreed = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
-      if (Number.isFinite(agreed) && agreed > 0) {
-        checkoutListing = { ...checkoutListing, price: agreed }
-      }
+    const priced = await applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, [
+      checkoutListing as unknown as PeerSurfboardCheckoutListingRow,
+    ])
+    if (priced[0]) {
+      checkoutListing = rowToCheckoutListing(priced[0] as unknown as Record<string, unknown>)
     }
   }
 
