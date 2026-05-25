@@ -37,6 +37,7 @@ export function LocaleProvider({
   initialLocale,
 }: {
   children: React.ReactNode
+  /** Optional override; omit in root layout so locale is read from the cookie on the client (keeps layout static). */
   initialLocale?: Locale
 }) {
   const [locale, setLocaleState] = useState<Locale>(() => {

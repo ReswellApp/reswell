@@ -1,6 +1,5 @@
 import React, { Suspense } from "react"
 import type { Metadata, Viewport } from 'next'
-import { cookies } from 'next/headers'
 import localFont from 'next/font/local'
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
@@ -8,8 +7,7 @@ import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChrome } from '@/components/site-chrome'
 import { AbortErrorSuppressor } from '@/components/abort-error-suppressor'
 import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
-import { LOCALE_COOKIE_NAME } from '@/lib/translations'
-import type { Locale } from '@/lib/translations'
+import { DEFAULT_LOCALE } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
 import { GoogleAdsGtag } from '@/components/google-ads-gtag'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
@@ -58,22 +56,18 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const cookieStore = await cookies()
-  const localeCookie = cookieStore.get(LOCALE_COOKIE_NAME)?.value
-  const locale: Locale = localeCookie === 'es' ? 'es' : 'en'
-
   return (
-    <html lang={locale} className="overflow-x-clip" data-scroll-behavior="smooth">
+    <html lang={DEFAULT_LOCALE} className="overflow-x-clip" data-scroll-behavior="smooth">
       <body className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}>
         <AbortErrorSuppressor />
         <GoogleAdsGtag />
         <MetaPixel />
-        <LocaleProvider initialLocale={locale}>
+        <LocaleProvider>
           <Suspense fallback={null}>
             <KlaviyoPageViewTracker />
             <MetaPixelPageViewTracker />
