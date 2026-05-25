@@ -17,7 +17,7 @@ interface ImageGalleryProps {
     thumbnail_url?: string | null
   }>
   title: string
-  /** Sold listings: muted imagery + SOLD badge (no change to carousel behavior). */
+  /** Sold listings: SOLD badge on the hero (full-color photos; grayscale is for feed tiles only). */
   sold?: boolean
   /** Mobile PDP: shorter hero frame so title + image fit above the fold. */
   compactMobile?: boolean
@@ -115,7 +115,6 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
         title={title}
         index={lightboxIndex}
         onIndexChange={setLightboxIndex}
-        sold={sold}
       />
 
       {/* Main Image - 3:4 frame; image scales to fill (may crop edges) */}
@@ -191,7 +190,6 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
                 className={cn(
                   "object-cover object-center absolute inset-0 transition-opacity transition-duration-[420ms] ease-in-out",
                   isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
-                  sold && "[filter:grayscale(30%)]",
                 )}
                 priority={i === 0}
                 fetchPriority={i === 0 ? "high" : "auto"}
@@ -203,14 +201,11 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
             )
           })}
         </div>
-        {sold && (
-          <>
-            <div className="pointer-events-none absolute inset-0 z-[5] bg-black/[0.08]" aria-hidden />
-            <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full bg-foreground px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-background">
-              Sold
-            </div>
-          </>
-        )}
+        {sold ? (
+          <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full bg-foreground px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-background">
+            Sold
+          </div>
+        ) : null}
 
         {/* Navigation arrows */}
         {images.length > 1 && (
@@ -282,7 +277,7 @@ export function ImageGallery({ images, title, sold, compactMobile }: ImageGaller
                     fill
                     unoptimized
                     loading="eager"
-                    className={cn("object-cover object-center", sold && "[filter:grayscale(30%)]")}
+                    className="object-cover object-center"
                     sizes="64px"
                     placeholder="blur"
                     blurDataURL={squareShimmer}

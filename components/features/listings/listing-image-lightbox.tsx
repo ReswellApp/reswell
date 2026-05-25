@@ -40,7 +40,6 @@ interface ListingImageLightboxProps {
   /** Index controlled by parent (opening slide). */
   index: number
   onIndexChange: (next: number) => void
-  sold?: boolean
 }
 
 export function ListingImageLightbox({
@@ -50,7 +49,6 @@ export function ListingImageLightbox({
   title,
   index,
   onIndexChange,
-  sold,
 }: ListingImageLightboxProps) {
   const [scale, setScale] = useState(1)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
@@ -199,10 +197,7 @@ export function ListingImageLightbox({
                       height={3200}
                       unoptimized
                       draggable={false}
-                      className={cn(
-                        "max-h-[min(88dvh,100%)] w-auto max-w-full object-contain select-none",
-                        sold && "[filter:grayscale(30%)]",
-                      )}
+                      className="max-h-[min(88dvh,100%)] w-auto max-w-full object-contain select-none"
                       sizes="100vw"
                       priority
                     />
