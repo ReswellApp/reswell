@@ -366,6 +366,7 @@ export default async function CheckoutPage(props: {
   const listingTitle = capitalizeWords(listing.title)
 
   let checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
+  let matchedOfferId: string | null = null
 
   if (user && !isAnonymousSupabaseUser(user) && listing.user_id !== user.id) {
     const priced = await applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, [
@@ -374,6 +375,13 @@ export default async function CheckoutPage(props: {
     if (priced[0]) {
       checkoutListing = rowToCheckoutListing(priced[0] as unknown as Record<string, unknown>)
     }
+    const matchedOffer = await findAcceptedOfferMatchingListings(
+      supabase,
+      user.id,
+      [checkoutListing.id],
+      listing.user_id,
+    )
+    matchedOfferId = matchedOffer?.id ?? null
   }
 
   const previewImpliedFulfillment: "pickup" | "shipping" = lp && sa ? "pickup" : !lp && sa ? "shipping" : "pickup"
@@ -506,6 +514,7 @@ export default async function CheckoutPage(props: {
           buyerEmail={buyerEmail}
           initialAddresses={addressesError ? [] : initialAddresses}
           seller={seller}
+          offerId={matchedOfferId}
         />
       </div>
     </main>

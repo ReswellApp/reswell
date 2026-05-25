@@ -2,10 +2,12 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import {
   computePeerCheckoutTotalsUsd,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerListingForShippingQuote,
+  type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 
 export const dynamic = "force-dynamic"
@@ -68,10 +70,19 @@ export async function POST(request: Request) {
   }
 
   /** Runtime select fragment loses Supabase's row inference; cast through `unknown` once. */
-  const listingRow = listing as unknown as PeerListingForShippingQuote & {
+  let listingRow = listing as unknown as PeerListingForShippingQuote & {
     id: string
     user_id: string
     price: number | string
+  }
+
+  const [pricedListing] = await applyAcceptedOfferToPeerCheckoutListings(
+    supabase,
+    user.id,
+    [listingRow as PeerSurfboardCheckoutListingRow],
+  )
+  if (pricedListing) {
+    listingRow = pricedListing as typeof listingRow
   }
 
   if (listingRow.user_id === user.id) {

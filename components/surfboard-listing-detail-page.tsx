@@ -52,6 +52,7 @@ import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-pe
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
 import { fetchSimilarSurfboardsForListingPdp } from "@/lib/db/listing-detail-similar-surfboards"
 import {
@@ -207,6 +208,8 @@ export async function SurfboardListingDetailPage({
 
   const listPriceNum =
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
+  /** Public sold/browse price — always original list price, never negotiated offer amounts. */
+  const publicListPriceUsd = publicListingListPriceUsd(board.price)
   const buyerOffersOn =
     (board as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false
   const offerPct = effectiveMinimumOfferPct(
@@ -467,7 +470,7 @@ export async function SurfboardListingDetailPage({
             <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
               {isSold ? (
                 <p className="mt-2 font-headline text-3xl font-semibold tracking-tight text-[#163060] tabular-nums">
-                  Sold for ${board.price.toFixed(2)}
+                  Sold for ${publicListPriceUsd.toFixed(2)}
                 </p>
               ) : (
                 <div className="mt-2">
@@ -564,7 +567,7 @@ export async function SurfboardListingDetailPage({
                 </div>
                 {isSold ? (
                   <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-[#163060] tabular-nums xl:text-[2.5rem]">
-                    Sold for ${board.price.toFixed(2)}
+                    Sold for ${publicListPriceUsd.toFixed(2)}
                   </p>
                 ) : (
                   <>

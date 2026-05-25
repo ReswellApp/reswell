@@ -220,6 +220,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not record purchase" }, { status: 500 })
   }
 
+  // Mark sold only — never mutate listings.price (offer discounts stay private).
   const { error: listingErr } = await serviceSupabase
     .from("listings")
     .update({ status: "sold" })

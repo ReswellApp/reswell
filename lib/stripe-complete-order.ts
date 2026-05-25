@@ -594,6 +594,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  // Mark sold only — never mutate listings.price (offer discounts stay private; public sold surfaces use list price).
   const { error: listingErr } = await serviceSupabase
     .from("listings")
     .update({ status: "sold" })

@@ -5,6 +5,7 @@ import { fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering } from "@/lib/db/h
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { RecentlySoldPageClient, type SoldFeedListing } from "./sold-page-client"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
@@ -25,10 +26,7 @@ function mapSoldRow(
   const boardLength = boardLengthLabelFromDimensionsColumn(dimStr) ?? null
   const soldAtRaw = saleConfirmedAtIso ?? row.sold_at ?? row.updated_at
   const soldAt = soldAtRaw ? String(soldAtRaw) : new Date().toISOString()
-  const listPrice = Number(row.price ?? 0)
-  const soldPriceRaw = row.sold_price
-  const soldPrice =
-    soldPriceRaw != null && soldPriceRaw !== "" ? Number(soldPriceRaw) : listPrice
+  const listPrice = publicListingListPriceUsd(row.price as string | number | null | undefined)
 
   return {
     id: String(row.id),
@@ -36,7 +34,8 @@ function mapSoldRow(
     user_id: String(row.user_id),
     title: String(row.title ?? ""),
     price: listPrice,
-    soldPrice: Number.isFinite(soldPrice) ? soldPrice : listPrice,
+    /** Always original list price — offer discounts are private to buyer/seller. */
+    soldPrice: listPrice,
     condition: String(row.condition ?? ""),
     section: String(row.section ?? "surfboards"),
     city: row.city != null ? String(row.city) : null,

@@ -147,7 +147,7 @@ export async function respondToCounterOfferService(
     return { ok: true, conversationId: conv?.id ?? null }
   }
 
-  // accept
+  // accept — offer price is stored on offers only; listings.price stays at the original list price.
   const { error: upErr } = await supabase
     .from("offers")
     .update({
