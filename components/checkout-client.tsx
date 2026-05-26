@@ -13,6 +13,7 @@ import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -106,6 +107,10 @@ export function CheckoutClient({
   } | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void prefetchStripeCheckout()
+  }, [])
 
   useEffect(() => {
     if (!needsShipping) {

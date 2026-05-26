@@ -10,8 +10,9 @@ import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
+import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
 
-const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? ""
+const publishableKey = stripePublishableKey()
 
 /** Stripe.js errors sometimes omit enumerable fields; devtools then show `{}` for plain object logs. */
 function formatStripeConfirmError(error: unknown): string {
@@ -32,6 +33,11 @@ function getStripeBrowser() {
   if (!publishableKey) return null
   stripePromise ??= loadStripe(publishableKey)
   return stripePromise
+}
+
+/** Start loading Stripe.js from the CDN before the payment form mounts. */
+export function prefetchStripeJs(): void {
+  void getStripeBrowser()
 }
 
 /**
@@ -351,8 +357,4 @@ export function StripeCardCheckout({
       />
     </Elements>
   )
-}
-
-export function stripeCardCheckoutEnabled(): boolean {
-  return Boolean(publishableKey)
 }

@@ -1,7 +1,25 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Link from "next/link"
-import { StripeCardCheckout, stripeCardCheckoutEnabled } from "@/components/stripe-card-checkout"
+import { Loader2 } from "lucide-react"
+import { stripeCardCheckoutEnabled } from "@/lib/stripe/client-checkout-enabled"
+
+const StripeCardCheckout = dynamic(
+  () =>
+    import("@/components/stripe-card-checkout").then((m) => ({
+      default: m.StripeCardCheckout,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center gap-2 rounded-lg border bg-card py-8 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading secure checkout…
+      </div>
+    ),
+  },
+)
 
 interface PurchaseOptionsProps {
   listingIds: string[]
@@ -22,6 +40,13 @@ interface PurchaseOptionsProps {
   submitButtonClassName?: string
   /** Hide the default one-line Stripe footer (when the parent already shows secure copy). */
   hideStripeFooter?: boolean
+}
+
+function purchaseDetailsPlaceholder(needsShipping: boolean): string {
+  if (needsShipping) {
+    return "Save a shipping address above to continue to payment."
+  }
+  return "Complete purchase details above to pay with your card."
 }
 
 export function PurchaseOptions({
@@ -51,6 +76,17 @@ export function PurchaseOptions({
     )
   }
 
+  const canMountStripe =
+    purchaseDetailsReady && (!needsShipping || Boolean(shippingAddressId?.trim()))
+
+  if (!canMountStripe) {
+    return (
+      <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+        {purchaseDetailsPlaceholder(needsShipping)}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       <StripeCardCheckout
@@ -60,7 +96,7 @@ export function PurchaseOptions({
         fulfillment={fulfillment ?? null}
         shippingAddressId={shippingAddressId ?? null}
         offerId={offerId ?? null}
-        purchaseDetailsReady={purchaseDetailsReady}
+        purchaseDetailsReady
         needsShipping={needsShipping}
         submitButtonLabel={submitButtonLabel}
         submitButtonClassName={submitButtonClassName}
