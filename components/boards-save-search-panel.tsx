@@ -23,6 +23,8 @@ import {
   boardSavedSearchCriteriaSummary,
   boardSavedSearchCriteriaToBrowseHref,
 } from "@/lib/utils/board-saved-search-browse-url"
+import { siteFilterSelectTriggerClassName } from "@/components/site-search-bar"
+import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { Bookmark, Loader2, Mail, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -49,10 +51,13 @@ function boardsCriteriaFromSearchParams(sp: URLSearchParams): BoardSavedSearchCr
 export function BoardsSaveSearchPanel({
   className,
   criteria: criteriaProp,
+  variant = "panel",
 }: {
   className?: string
   /** Live filter state; falls back to URL when omitted. */
   criteria?: BoardSavedSearchCriteria
+  /** Compact horizontal pills for the mobile advanced filter slider. */
+  variant?: "panel" | "slider"
 }) {
   const sp = useSearchParams()
   const { toast } = useToast()
@@ -73,13 +78,21 @@ export function BoardsSaveSearchPanel({
 
   const refreshSavedSearches = useCallback(async () => {
     setSavedLoading(true)
-    const res = await listBoardSavedSearchesAction()
-    setSavedLoading(false)
-    if ("error" in res) {
+    try {
+      const res = await listBoardSavedSearchesAction()
+      if ("error" in res) {
+        setSavedSearches([])
+        return
+      }
+      setSavedSearches(res.data)
+    } catch (err) {
       setSavedSearches([])
-      return
+      if (!isBenignClientFetchError(err)) {
+        console.error("Could not load saved searches:", err)
+      }
+    } finally {
+      setSavedLoading(false)
     }
-    setSavedSearches(res.data)
   }, [])
 
   useEffect(() => {
@@ -138,6 +151,124 @@ export function BoardsSaveSearchPanel({
     }
     toast({ title: "Saved search removed" })
     await refreshSavedSearches()
+  }
+
+  if (variant === "slider") {
+    const emailOptInDisabled = !canSave || atSavedLimit || !isSignedIn
+
+    return (
+      <>
+        <div
+          className={cn(
+            siteFilterSelectTriggerClassName(),
+            "inline-flex w-auto shrink-0 items-center gap-2 px-3",
+            emailOptInDisabled && "opacity-60",
+          )}
+        >
+          <Checkbox
+            id="board-save-email-opt-in-slider"
+            checked={emailOptIn}
+            onCheckedChange={(v) => setEmailOptIn(v === true)}
+            disabled={emailOptInDisabled}
+            aria-label="Email me when a board matches"
+          />
+          <Label
+            htmlFor="board-save-email-opt-in-slider"
+            className={cn(
+              "whitespace-nowrap text-sm font-normal leading-none",
+              emailOptInDisabled ? "cursor-not-allowed" : "cursor-pointer",
+            )}
+          >
+            Email alerts
+          </Label>
+        </div>
+
+        {!isSignedIn ? (
+          <Link
+            href="/auth/login?redirect=%2Fboards"
+            className={cn(
+              siteFilterSelectTriggerClassName(),
+              "inline-flex w-auto shrink-0 items-center justify-center px-4 text-sm no-underline",
+            )}
+          >
+            Sign in to save
+          </Link>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(siteFilterSelectTriggerClassName(), "w-auto shrink-0 px-4 text-sm")}
+            disabled={pending || !canSave || atSavedLimit}
+            onClick={() => void handleSave()}
+            title={canSave ? summary : "Add filters to save this search"}
+          >
+            {pending ? (
+              <>
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+                Saving…
+              </>
+            ) : atSavedLimit ? (
+              "3 saved max"
+            ) : (
+              "Save search"
+            )}
+          </Button>
+        )}
+
+        {savedLoading ? (
+          <span
+            className={cn(
+              siteFilterSelectTriggerClassName(),
+              "inline-flex w-auto shrink-0 items-center px-4 text-sm text-muted-foreground",
+            )}
+          >
+            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+            Loading…
+          </span>
+        ) : (
+          savedSearches.map((saved) => {
+            const label = saved.label?.trim() || boardSavedSearchCriteriaSummary(saved.criteria)
+            const href = boardSavedSearchCriteriaToBrowseHref(saved.criteria)
+            return (
+              <div key={saved.id} className="flex shrink-0 items-center gap-1">
+                <Link
+                  href={href}
+                  className={cn(
+                    siteFilterSelectTriggerClassName(),
+                    "inline-flex w-auto max-w-[12rem] items-center gap-2 px-3 text-sm no-underline",
+                  )}
+                  title={label}
+                >
+                  <Bookmark className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                  <span className="truncate">{label}</span>
+                  {saved.emailNotificationsEnabled ? (
+                    <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                  ) : null}
+                </Link>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    siteFilterSelectTriggerClassName(),
+                    "w-12 shrink-0 px-0 text-muted-foreground hover:text-destructive",
+                  )}
+                  aria-label={`Remove saved search: ${label}`}
+                  disabled={deletingId === saved.id}
+                  onClick={() => void handleDelete(saved.id)}
+                >
+                  {deletingId === saved.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  )}
+                </Button>
+              </div>
+            )
+          })
+        )}
+      </>
+    )
   }
 
   return (

@@ -55,6 +55,11 @@ export type SurfboardModelCatalogInputProps = {
    * Defaults to true.
    */
   catalogSuggestionsEnabled?: boolean
+  /**
+   * Portal the dropdown to `document.body` (needed inside horizontal overflow filter bars
+   * where an in-flow mobile dropdown would be clipped).
+   */
+  portaledDropdown?: boolean
 }
 
 /**
@@ -73,6 +78,7 @@ export function SurfboardModelCatalogInput({
   models,
   onRequestCatalogAdd,
   catalogSuggestionsEnabled = true,
+  portaledDropdown = false,
 }: SurfboardModelCatalogInputProps) {
   const isMobile = useIsMobile()
   const [open, setOpen] = React.useState(false)
@@ -107,13 +113,14 @@ export function SurfboardModelCatalogInput({
     setHighlight((h) => Math.min(h, Math.max(filtered.length - 1, 0)))
   }, [filtered.length])
 
-  const portalVisible = open && canUseSuggest && q.length >= 1
+  const portalVisible = open && canUseSuggest && filtered.length > 0
   /** Fixed portals mis-track the field when the mobile keyboard/visual viewport shifts — anchor in-flow below the input instead. */
-  const anchoredBelowInputMobile = portalVisible && isMobile
-  const portaledDesktopDropdown = portalVisible && !isMobile
+  const usePortaledDropdown = portaledDropdown || !isMobile
+  const anchoredBelowInputMobile = portalVisible && isMobile && !portaledDropdown
+  const portaledSuggestDropdown = portalVisible && usePortaledDropdown
 
   React.useLayoutEffect(() => {
-    if (!portaledDesktopDropdown || !containerRef.current || typeof document === "undefined") {
+    if (!portaledSuggestDropdown || !containerRef.current || typeof document === "undefined") {
       setDropdownRect(null)
       return
     }
@@ -137,7 +144,7 @@ export function SurfboardModelCatalogInput({
         vv.removeEventListener("scroll", update)
       }
     }
-  }, [portaledDesktopDropdown, value, filtered.length])
+  }, [portaledSuggestDropdown, value, filtered.length])
 
   React.useEffect(() => {
     if (!open) return
@@ -164,8 +171,8 @@ export function SurfboardModelCatalogInput({
   const dropdownShellClassName = cn(
     "overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md",
     anchoredBelowInputMobile
-      ? "absolute left-0 right-0 top-full z-[200] mt-1 flex max-h-[min(42dvh,280px)] w-full flex-col"
-      : "fixed z-[200]",
+      ? "absolute left-0 right-0 top-full z-[400] mt-1 flex max-h-[min(42dvh,280px)] w-full flex-col"
+      : "fixed z-[400]",
   )
 
   const dropdownPanel = (
@@ -176,7 +183,7 @@ export function SurfboardModelCatalogInput({
       aria-label="Catalog models"
       className={dropdownShellClassName}
       style={
-        portaledDesktopDropdown && dropdownRect
+        portaledSuggestDropdown && dropdownRect
           ? {
               top: dropdownRect.top,
               left: dropdownRect.left,
@@ -238,7 +245,7 @@ export function SurfboardModelCatalogInput({
   )
 
   const dropdownPortal =
-    portaledDesktopDropdown && dropdownRect && canUseSuggest && typeof document !== "undefined"
+    portaledSuggestDropdown && dropdownRect && canUseSuggest && typeof document !== "undefined"
       ? createPortal(dropdownPanel, document.body)
       : null
 
@@ -253,10 +260,10 @@ export function SurfboardModelCatalogInput({
         maxLength={LISTING_BOARD_MODEL_MAX_LENGTH}
         aria-autocomplete="list"
         aria-expanded={Boolean(
-          (anchoredBelowInputMobile || (portaledDesktopDropdown && dropdownRect)) && canUseSuggest,
+          (anchoredBelowInputMobile || (portaledSuggestDropdown && dropdownRect)) && canUseSuggest,
         )}
         aria-controls={
-          anchoredBelowInputMobile || (portaledDesktopDropdown && dropdownRect) ? listId : undefined
+          anchoredBelowInputMobile || (portaledSuggestDropdown && dropdownRect) ? listId : undefined
         }
         autoComplete="off"
         onChange={(e) => {
@@ -264,7 +271,7 @@ export function SurfboardModelCatalogInput({
           if (canUseSuggest) setOpen(true)
         }}
         onFocus={() => {
-          if (canUseSuggest && value.trim().length >= 1) setOpen(true)
+          if (canUseSuggest) setOpen(true)
         }}
         onKeyDown={(e) => {
           if (!canUseSuggest) {

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SlidersHorizontal, Tag, Package, Type, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
 import { searchBrandsCatalogSuggest, searchSuggest, type SearchSuggestBrandChip } from "@/app/actions/marketplace"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
@@ -283,21 +284,34 @@ async function fetchSearchSuggestionsJson(
   q: string,
   section: string,
 ): Promise<{ data: SuggestResult; hasAny: boolean }> {
-  const res = await searchSuggest(q, section)
-  const listings = res.listings ?? []
-  const data: SuggestResult = {
-    titles: res.titles,
-    categories: res.categories,
-    brands: res.brands,
-    listings,
-    meta: res.meta,
+  const empty: SuggestResult = {
+    titles: [],
+    categories: [],
+    brands: [],
+    listings: [],
   }
-  const hasAny =
-    listings.length > 0 ||
-    (data.titles?.length ?? 0) > 0 ||
-    (data.categories?.length ?? 0) > 0 ||
-    (data.brands?.length ?? 0) > 0
-  return { data, hasAny }
+  try {
+    const res = await searchSuggest(q, section)
+    const listings = res.listings ?? []
+    const data: SuggestResult = {
+      titles: res.titles,
+      categories: res.categories,
+      brands: res.brands,
+      listings,
+      meta: res.meta,
+    }
+    const hasAny =
+      listings.length > 0 ||
+      (data.titles?.length ?? 0) > 0 ||
+      (data.categories?.length ?? 0) > 0 ||
+      (data.brands?.length ?? 0) > 0
+    return { data, hasAny }
+  } catch (err) {
+    if (!isBenignClientFetchError(err)) {
+      console.error("Search suggest failed:", err)
+    }
+    return { data: empty, hasAny: false }
+  }
 }
 
 export function SearchInputWithSuggest({
@@ -465,6 +479,7 @@ export function SearchInputWithSuggest({
         if (generation !== suggestGenerationRef.current) return
         if (q.length < minLength) return
         setLoading(true)
+        setBrandRows(null)
         if (isSearchInputFocused()) setOpen(true)
         try {
           const { rows, meta } = await searchBrandsCatalogSuggest(q)
@@ -481,6 +496,13 @@ export function SearchInputWithSuggest({
             return
           }
           setOpen(isSearchInputFocused())
+        } catch (err) {
+          if (generation !== suggestGenerationRef.current) return
+          setBrandRows([])
+          setOpen(false)
+          if (!isBenignClientFetchError(err)) {
+            console.error("Brand catalog suggest failed:", err)
+          }
         } finally {
           if (generation === suggestGenerationRef.current) setLoading(false)
         }
@@ -1293,6 +1315,13 @@ export function SearchInputWithSuggest({
                     setOpen(isSearchInputFocused())
                   } else {
                     setOpen(false)
+                  }
+                } catch (err) {
+                  if (gen !== suggestGenerationRef.current) return
+                  setBrandRows([])
+                  setOpen(false)
+                  if (!isBenignClientFetchError(err)) {
+                    console.error("Brand catalog suggest failed:", err)
                   }
                 } finally {
                   if (gen === suggestGenerationRef.current) setLoading(false)

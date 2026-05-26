@@ -32,8 +32,8 @@ type BoardDimensionsInputFieldsProps = {
   className?: string
   idPrefix?: string
   onEnter?: () => void
-  /** Sell flow styling (centered, compact). Filter variant matches /boards advanced filters. */
-  variant?: "sell" | "filter"
+  /** Sell flow styling (centered, compact). Filter variant matches /boards advanced filters. Slider: horizontal pill row. */
+  variant?: "sell" | "filter" | "slider"
 }
 
 function filterFieldLabelClassName() {
@@ -70,6 +70,63 @@ export function BoardDimensionsInputFields({
       e.preventDefault()
       onEnter?.()
     }
+  }
+
+  if (variant === "slider") {
+    const sliderFields = [
+      {
+        id: `${idPrefix}-length`,
+        placeholder: "6'2",
+        label: "Board length",
+        value: values.boardLength,
+        onChange: (raw: string) => onChange({ boardLength: normalizeBoardLengthInput(raw) }),
+      },
+      {
+        id: `${idPrefix}-width`,
+        placeholder: '19 1/4"',
+        label: "Board width",
+        value: values.boardWidthInches,
+        onChange: (raw: string) =>
+          onChange({ boardWidthInches: normalizeTapeStyleInchesInput(raw) }),
+      },
+      {
+        id: `${idPrefix}-thickness`,
+        placeholder: '2 3/8"',
+        label: "Board thickness",
+        value: values.boardThicknessInches,
+        onChange: (raw: string) =>
+          onChange({ boardThicknessInches: normalizeTapeStyleInchesInput(raw) }),
+      },
+      {
+        id: `${idPrefix}-volume`,
+        placeholder: "30.4 L",
+        label: "Board volume",
+        value: values.boardVolumeL,
+        onChange: (raw: string) => onChange({ boardVolumeL: normalizeVolumeLitersInput(raw) }),
+      },
+    ] as const
+
+    return (
+      <>
+        {sliderFields.map((field) => (
+          <div key={field.id} className={cn("w-[8.75rem] shrink-0", className)}>
+            <Input
+              id={field.id}
+              type="text"
+              inputMode="text"
+              placeholder={field.placeholder}
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              onKeyDown={handleEnterKey}
+              className={filterInputClassName()}
+              autoComplete="off"
+              spellCheck={false}
+              aria-label={field.label}
+            />
+          </div>
+        ))}
+      </>
+    )
   }
 
   if (variant === "filter") {

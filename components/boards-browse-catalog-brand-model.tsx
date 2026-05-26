@@ -23,11 +23,79 @@ export type BoardsBrowseCatalogBrandModelProps = {
   field?: "brand" | "model" | "both"
   /** Show field labels (advanced filters panel). */
   showLabels?: boolean
+  /** Portal model dropdown to body (required inside horizontal overflow filter bars). */
+  portaledModelDropdown?: boolean
 }
 
 /**
  * Advanced /boards filters: typeahead against `public.brands` and `public.brand_models` (same sources as /sell).
  */
+
+let cachedModels: SellBrandModelCatalogRow[] | null = null
+let cachedLoadError: string | null = null
+let loadPromise: Promise<void> | null = null
+const catalogSubscribers = new Set<() => void>()
+
+function notifyCatalogSubscribers() {
+  catalogSubscribers.forEach((listener) => listener())
+}
+
+function ensureBoardsBrowseBrandModelsCatalog(): Promise<void> {
+  if (cachedModels !== null || cachedLoadError !== null) {
+    return Promise.resolve()
+  }
+  if (loadPromise) return loadPromise
+
+  loadPromise = getBrandModelsCatalogForSellForm()
+    .then((res) => {
+      if (res.ok) {
+        cachedModels = res.models
+        cachedLoadError = null
+      } else {
+        cachedModels = []
+        cachedLoadError = res.error
+      }
+    })
+    .catch(() => {
+      cachedModels = []
+      cachedLoadError = "Could not load model catalog."
+    })
+    .finally(() => {
+      loadPromise = null
+      notifyCatalogSubscribers()
+    })
+
+  return loadPromise
+}
+
+/** Warm the shared catalog cache as soon as /boards filters mount. */
+export function prefetchBoardsBrowseBrandModelsCatalog(): void {
+  void ensureBoardsBrowseBrandModelsCatalog()
+}
+
+function useBoardsBrowseBrandModelsCatalog() {
+  const [catalogState, setCatalogState] = useState(() => ({
+    models: cachedModels ?? [],
+    ready: cachedModels !== null || cachedLoadError !== null,
+  }))
+
+  useEffect(() => {
+    const sync = () => {
+      setCatalogState({
+        models: cachedModels ?? [],
+        ready: cachedModels !== null || cachedLoadError !== null,
+      })
+    }
+    catalogSubscribers.add(sync)
+    void ensureBoardsBrowseBrandModelsCatalog().then(sync)
+    return () => {
+      catalogSubscribers.delete(sync)
+    }
+  }, [])
+
+  return catalogState
+}
+
 export function BoardsBrowseCatalogBrandModel({
   brandText,
   catalogBrandId,
@@ -38,41 +106,42 @@ export function BoardsBrowseCatalogBrandModel({
   onCatalogModelPicked,
   field = "both",
   showLabels = false,
+  portaledModelDropdown = false,
 }: BoardsBrowseCatalogBrandModelProps) {
-  const [models, setModels] = useState<SellBrandModelCatalogRow[]>([])
-  const [catalogReady, setCatalogReady] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    void getBrandModelsCatalogForSellForm().then((res) => {
-      if (cancelled) return
-      if (!res.ok) {
-        setModels([])
-        setCatalogReady(true)
-        return
-      }
-      setModels(res.models)
-      setCatalogReady(true)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const { models, ready: catalogReady } = useBoardsBrowseBrandModelsCatalog()
 
   const modelsForPicker = useMemo(() => {
     const id = catalogBrandId.trim()
-    if (!id) return models
-    return models.filter((m) => m.brandId === id)
-  }, [models, catalogBrandId])
+    if (id) return models.filter((m) => m.brandId === id)
+
+    const brandQuery = brandText.trim().toLowerCase()
+    if (brandQuery.length >= 1) {
+      const narrowed = models.filter((m) => {
+        const brandName = m.brandName.toLowerCase()
+        const brandSlug = m.brandSlug.toLowerCase()
+        return (
+          brandName.includes(brandQuery) ||
+          brandSlug.includes(brandQuery) ||
+          brandName.split(/[\s\-'/.]+/).some((token) => token.startsWith(brandQuery))
+        )
+      })
+      if (narrowed.length > 0) return narrowed
+    }
+
+    return models
+  }, [models, catalogBrandId, brandText])
 
   const brandDirectoryId = catalogBrandId.trim()
 
   const modelPlaceholder = (() => {
-    if (!catalogReady) return "Loading models…"
     if (brandDirectoryId) {
-      return modelsForPicker.length > 0 ? "Search catalog models…" : "No catalog models for this brand — type to filter"
+      return modelsForPicker.length > 0
+        ? "Search catalog models…"
+        : "No catalog models for this brand — type to filter"
     }
-    return models.length > 0 ? "Search catalog models (pick a brand to narrow)" : "Search or type a model name"
+    return models.length > 0
+      ? "Search catalog models (pick a brand to narrow)"
+      : "Search or type a model name"
   })()
 
   const brandInput = (
@@ -108,13 +177,13 @@ export function BoardsBrowseCatalogBrandModel({
       <SurfboardModelCatalogInput
         id="boards-advanced-model-catalog"
         placeholder={modelPlaceholder}
-        disabled={!catalogReady}
         catalogReady={catalogReady}
         value={modelText}
         onFreeTextChange={onModelTextChange}
         onPickCatalogRow={onCatalogModelPicked}
         models={catalogReady ? modelsForPicker : []}
-        catalogSuggestionsEnabled
+        catalogSuggestionsEnabled={catalogReady}
+        portaledDropdown={portaledModelDropdown}
         className={cn(siteFilterBorderedInputClassName(), "rounded-full")}
       />
     </div>

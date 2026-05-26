@@ -19,14 +19,22 @@ import {
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
+import { prefetchBoardsBrowseBrandModelsCatalog } from "@/components/boards-browse-catalog-brand-model"
 import { useToast } from "@/hooks/use-toast"
 import { listingConditionFilterRows } from "@/lib/listing-labels"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
-import { BoardsAdvancedFiltersPanel } from "@/components/boards-advanced-filters-panel"
-import { hasActiveAdvancedBrowseFilters } from "@/lib/utils/board-saved-search-criteria"
+import {
+  BoardsAdvancedFiltersMobileSlider,
+  BoardsAdvancedFiltersPanel,
+  BoardsAdvancedFiltersTrigger,
+  type BoardsAdvancedFiltersPanelProps,
+} from "@/components/boards-advanced-filters-panel"
 import type { BoardsBrowseFilterFields } from "@/lib/utils/board-saved-search-criteria"
+import {
+  hasActiveAdvancedBrowseFilters,
+} from "@/lib/utils/board-saved-search-criteria"
 import {
   appendBoardDimensionBrowseParams,
 } from "@/lib/utils/board-dimension-browse-filter"
@@ -184,6 +192,10 @@ export function BoardsListingsFilters({
       maxPrice: initialMaxPrice,
     }),
   )
+
+  useEffect(() => {
+    prefetchBoardsBrowseBrandModelsCatalog()
+  }, [])
 
   const browseFilterFields = useMemo<BoardsBrowseFilterFields>(
     () => ({
@@ -479,7 +491,7 @@ export function BoardsListingsFilters({
     [pathname, router, startTransition],
   )
 
-  // Keyword + location: debounced URL sync (live results). Submit still applies immediately.
+  // Keyword, location, brand, model, dimensions, price: debounced URL sync (live results).
   useEffect(() => {
     if (skipTextDebounceRef.current) {
       skipTextDebounceRef.current = false
@@ -587,83 +599,137 @@ export function BoardsListingsFilters({
     })
   }
 
-  return (
-    <>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          void pushSearchParams()
-        }}
-        className={cn(
-          "grid w-full min-w-0 max-w-full grid-cols-2 gap-2 items-center",
-          "md:flex md:flex-nowrap md:gap-2 md:overflow-x-auto md:pb-0.5 [scrollbar-width:thin]",
-        )}
-      >
-      <div className="order-2 col-span-2 flex max-w-full min-w-0 items-center gap-2 min-w-[200px] md:order-1 md:col-auto md:shrink-0 md:w-[min(24rem,34vw)] md:min-w-[19rem]">
-        <div className="relative min-w-0 flex-1">
-          <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <LocationInputSuggest
-            name="location"
-            placeholder="City or ZIP"
-            value={location}
-            onChange={(v) => {
-              setLocation(v)
-              setUserLat(null)
-              setUserLng(null)
-              if (!v.trim()) setRadiusMi("any")
-            }}
-            onPickSuggestion={(place) => {
-              setLocation(place.label)
-              setUserLat(place.lat)
-              setUserLng(place.lng)
-              void pushSearchParams({
-                location: place.label,
-                userLat: place.lat,
-                userLng: place.lng,
-              })
-            }}
-            listboxId="boards-location-suggest"
-            endSlot={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0 rounded-full text-foreground hover:bg-muted"
-                title="Use my location"
-                aria-label="Use my location"
-                disabled={locationLoading}
-                onClick={handleUseMyLocation}
-              >
-                <LocateFixed className={cn("h-4 w-4", userLat != null && "text-primary")} />
-              </Button>
-            }
-          />
-        </div>
-        <Select name="radius" value={radiusMi} onValueChange={setRadiusMi}>
-          <SelectTrigger
-            aria-label="Search radius (miles from location)"
-            className={cn(siteFilterSelectTriggerClassName(), "w-[8.5rem] shrink-0")}
-          >
-            <SelectValue placeholder="Radius" />
-          </SelectTrigger>
-          <SelectContent>
-            {boardRadiusOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+  const advancedFilterProps: BoardsAdvancedFiltersPanelProps = {
+    open: advancedOpen,
+    onOpenChange: setAdvancedOpen,
+    filterFields: browseFilterFields,
+    dimensionFields,
+    minPrice,
+    maxPrice,
+    brand,
+    catalogBrandId,
+    model,
+    isPending,
+    onDimensionFieldsChange: (patch) =>
+      setDimensionFields((prev) => ({ ...prev, ...patch })),
+    onMinPriceChange: setMinPrice,
+    onMaxPriceChange: setMaxPrice,
+    onBrandTextChange: (v) => {
+      setBrand(v)
+      setCatalogBrandId("")
+      setCatalogBrandModelId("")
+      setModel("")
+    },
+    onCatalogBrandPicked: (b) => {
+      setBrand(b.name)
+      setCatalogBrandId(b.id)
+      setCatalogBrandModelId("")
+      setModel("")
+      void pushSearchParams({
+        catalogBrandId: b.id,
+        catalogBrandModelId: "",
+        brand: b.name,
+        model: "",
+      })
+    },
+    onModelTextChange: (v) => {
+      setModel(v)
+      setCatalogBrandModelId("")
+    },
+    onCatalogModelPicked: (row) => {
+      setBrand(row.brandName)
+      setCatalogBrandId(row.brandId)
+      setCatalogBrandModelId(row.id)
+      setModel(row.name)
+      void pushSearchParams({
+        catalogBrandModelId: row.id,
+        catalogBrandId: row.brandId,
+        brand: row.brandName,
+        model: row.name,
+      })
+    },
+    onApplyFilters: () => {
+      skipTextDebounceRef.current = true
+      void pushSearchParams()
+    },
+    onClearAdvanced: clearAdvancedFilters,
+  }
+
+  const renderLocationRadius = (wrapperClassName: string, locationInnerClassName: string) => (
+    <div className={wrapperClassName}>
+      <div className={cn("relative", locationInnerClassName)}>
+        <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <LocationInputSuggest
+          name="location"
+          placeholder="City or ZIP"
+          value={location}
+          onChange={(v) => {
+            setLocation(v)
+            setUserLat(null)
+            setUserLng(null)
+            if (!v.trim()) setRadiusMi("any")
+          }}
+          onPickSuggestion={(place) => {
+            setLocation(place.label)
+            setUserLat(place.lat)
+            setUserLng(place.lng)
+            void pushSearchParams({
+              location: place.label,
+              userLat: place.lat,
+              userLng: place.lng,
+            })
+          }}
+          listboxId="boards-location-suggest"
+          endSlot={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0 rounded-full text-foreground hover:bg-muted"
+              title="Use my location"
+              aria-label="Use my location"
+              disabled={locationLoading}
+              onClick={handleUseMyLocation}
+            >
+              <LocateFixed className={cn("h-4 w-4", userLat != null && "text-primary")} />
+            </Button>
+          }
+        />
       </div>
-      <div
-        className={cn(
-          "order-3 col-span-2 grid w-full min-w-0 grid-cols-3 gap-2",
-          "md:order-2 md:flex md:w-auto md:shrink-0 md:flex-nowrap md:gap-2",
-        )}
-      >
+      <Select name="radius" value={radiusMi} onValueChange={setRadiusMi}>
+        <SelectTrigger
+          aria-label="Search radius (miles from location)"
+          className={cn(siteFilterSelectTriggerClassName(), "w-[8.5rem] shrink-0")}
+        >
+          <SelectValue placeholder="Radius" />
+        </SelectTrigger>
+        <SelectContent>
+          {boardRadiusOptions.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+
+  const renderTypeConditionSort = (
+    wrapperClassName: string,
+    mobile = false,
+  ) => {
+    const triggerClassName = mobile ? "w-auto shrink-0" : undefined
+    const triggerWidths = mobile
+      ? ["min-w-[9.5rem]", "min-w-[8.5rem]", "min-w-[8rem]"]
+      : [undefined, undefined, undefined]
+
+    return (
+      <div className={wrapperClassName}>
         <div className="min-w-0 md:w-[200px] md:shrink-0">
           <Select name="type" value={type} onValueChange={setType}>
-            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+            <SelectTrigger
+              className={cn(siteFilterSelectTriggerClassName(), triggerClassName, triggerWidths[0])}
+            >
               <SelectValue placeholder="Board type" />
             </SelectTrigger>
             <SelectContent>
@@ -677,7 +743,9 @@ export function BoardsListingsFilters({
         </div>
         <div className="min-w-0 md:w-[120px] md:shrink-0">
           <Select name="condition" value={condition} onValueChange={setCondition}>
-            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+            <SelectTrigger
+              className={cn(siteFilterSelectTriggerClassName(), triggerClassName, triggerWidths[1])}
+            >
               <SelectValue placeholder="Condition Any" />
             </SelectTrigger>
             <SelectContent>
@@ -691,7 +759,9 @@ export function BoardsListingsFilters({
         </div>
         <div className="min-w-0 md:w-[140px] md:shrink-0">
           <Select name="sort" value={sort} onValueChange={setSort}>
-            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+            <SelectTrigger
+              className={cn(siteFilterSelectTriggerClassName(), triggerClassName, triggerWidths[2])}
+            >
               <SelectValue placeholder="Sort order" />
             </SelectTrigger>
             <SelectContent>
@@ -704,77 +774,71 @@ export function BoardsListingsFilters({
           </Select>
         </div>
       </div>
-      <div className="order-1 col-span-2 w-full min-w-0 md:order-5 md:col-auto md:min-w-[12rem] md:flex-1">
-        <SiteSearchShell
-          actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
-        >
-          <BoardsListingsSearchField
-            value={q}
-            onChange={setQ}
-            name="q"
-            className="w-full"
-            inputClassName={siteSearchInputClassName()}
-          />
-        </SiteSearchShell>
-      </div>
-    </form>
+    )
+  }
 
-      <BoardsAdvancedFiltersPanel
-        open={advancedOpen}
-        onOpenChange={setAdvancedOpen}
-        filterFields={browseFilterFields}
-        dimensionFields={dimensionFields}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
-        brand={brand}
-        catalogBrandId={catalogBrandId}
-        model={model}
-        isPending={isPending}
-        onDimensionFieldsChange={(patch) =>
-          setDimensionFields((prev) => ({ ...prev, ...patch }))
-        }
-        onMinPriceChange={setMinPrice}
-        onMaxPriceChange={setMaxPrice}
-        onBrandTextChange={(v) => {
-          setBrand(v)
-          setCatalogBrandId("")
-          setCatalogBrandModelId("")
-          setModel("")
-        }}
-        onCatalogBrandPicked={(b) => {
-          setBrand(b.name)
-          setCatalogBrandId(b.id)
-          setCatalogBrandModelId("")
-          setModel("")
-          void pushSearchParams({
-            catalogBrandId: b.id,
-            catalogBrandModelId: "",
-            brand: b.name,
-            model: "",
-          })
-        }}
-        onModelTextChange={(v) => {
-          setModel(v)
-          setCatalogBrandModelId("")
-        }}
-        onCatalogModelPicked={(row) => {
-          setBrand(row.brandName)
-          setCatalogBrandId(row.brandId)
-          setCatalogBrandModelId(row.id)
-          setModel(row.name)
-          void pushSearchParams({
-            catalogBrandModelId: row.id,
-            catalogBrandId: row.brandId,
-            brand: row.brandName,
-            model: row.name,
-          })
-        }}
-        onApplyFilters={() => {
-          skipTextDebounceRef.current = true
+  const renderSearchField = (wrapperClassName: string) => (
+    <div className={wrapperClassName}>
+      <SiteSearchShell
+        actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
+      >
+        <BoardsListingsSearchField
+          value={q}
+          onChange={setQ}
+          name="q"
+          className="w-full"
+          inputClassName={siteSearchInputClassName()}
+        />
+      </SiteSearchShell>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Desktop: original filter bar — unchanged from pre-mobile work */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
           void pushSearchParams()
         }}
-        onClearAdvanced={clearAdvancedFilters}
-      />
+        className={cn(
+          "hidden w-full min-w-0 max-w-full items-center gap-2 md:flex md:flex-nowrap md:overflow-x-auto md:pb-0.5 [scrollbar-width:thin]",
+        )}
+      >
+        {renderLocationRadius(
+          "flex max-w-full min-w-[200px] shrink-0 items-center gap-2 md:w-[min(24rem,34vw)] md:min-w-[19rem]",
+          "min-w-0 flex-1",
+        )}
+        {renderTypeConditionSort("flex w-auto shrink-0 flex-nowrap gap-2")}
+        {renderSearchField("w-full min-w-[12rem] flex-1")}
+      </form>
+
+      {/* Mobile: search on top + horizontal filter slider */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void pushSearchParams()
+        }}
+        className="flex w-full min-w-0 max-w-full flex-col gap-2 md:hidden"
+      >
+        {renderSearchField("w-full min-w-0")}
+        <div
+          className={cn(
+            "-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 sm:-mx-2 sm:px-2",
+            "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          )}
+        >
+          {renderLocationRadius(
+            "flex shrink-0 items-center gap-2",
+            "w-[min(14rem,58vw)] shrink-0",
+          )}
+          {renderTypeConditionSort("flex shrink-0 items-center gap-2", true)}
+          <BoardsAdvancedFiltersTrigger {...advancedFilterProps} />
+        </div>
+      </form>
+
+      <BoardsAdvancedFiltersMobileSlider {...advancedFilterProps} />
+      <BoardsAdvancedFiltersPanel {...advancedFilterProps} />
     </>
   )
 }

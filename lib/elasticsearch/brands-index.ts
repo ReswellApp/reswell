@@ -139,15 +139,8 @@ export function brandRowToSearchDoc(row: {
 /**
  * Relevance-ordered brand ids for the directory typeahead.
  *
- * Avoid fuzzy `multi_match` over long text fields (`short_description`, location, bios):
- * trivial tokens like "and" match thousands of prose blobs and swamp real brand/name matches
- * ("Gato Heroi" appearing for "and", etc.).
- *
- * Strategy:
- * - Substring-ish behavior on canonical labels via `wildcard` on `name.keyword` / `slug.keyword`
- *   (mirrors Supabase `%q%`).
- * - `bool_prefix` on analyzed name/slug/shaper so "and" aligns with "Andrew" but not unrelated blurbs.
- * - Optional typo tolerance (`fuzziness: AUTO`) only on name/slug for queries ≥4 chars.
+ * Short queries (<4 chars) use prefix matching only so "ch" matches "Channel", not
+ * "Doug Schroedel" (substring inside "Schroedel"). Longer queries allow substring + fuzziness.
  */
 export async function searchBrandIdsFromElasticsearch(
   rawQuery: string,
@@ -162,27 +155,37 @@ export async function searchBrandIdsFromElasticsearch(
   try {
     await ensureBrandsIndex()
     const w = escapeElasticsearchWildcard(q.toLowerCase())
+    const usePrefixOnly = q.length < 4
 
     const should: object[] = [
       {
         wildcard: {
-          "name.keyword": { value: `*${w}*`, case_insensitive: true },
+          "name.keyword": {
+            value: usePrefixOnly ? `${w}*` : `*${w}*`,
+            case_insensitive: true,
+          },
         },
       },
       {
         wildcard: {
-          "slug.keyword": { value: `*${w}*`, case_insensitive: true },
+          "slug.keyword": {
+            value: usePrefixOnly ? `${w}*` : `*${w}*`,
+            case_insensitive: true,
+          },
         },
       },
-      {
+    ]
+
+    if (!usePrefixOnly) {
+      should.push({
         multi_match: {
           query: q,
           fields: ["name^3", "slug^2", "lead_shaper_name"],
           type: "bool_prefix",
           operator: "or",
         },
-      },
-    ]
+      })
+    }
 
     if (q.length >= 4) {
       should.push({

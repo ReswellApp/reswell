@@ -37,8 +37,21 @@ function messageLooksAborted(value: string): boolean {
     message.includes("signal is aborted") ||
     message.includes("aborted without reason") ||
     message.includes("the user aborted") ||
-    message.includes("the operation was aborted")
+    message.includes("the operation was aborted") ||
+    message.includes("failed to fetch")
   )
+}
+
+/** Navigation / HMR often aborts in-flight server actions as TypeError: Failed to fetch. */
+export function isBenignClientFetchError(err: unknown, depth = 0): boolean {
+  if (isAbortError(err, depth)) return true
+  if (err instanceof TypeError && err.message === "Failed to fetch") return true
+  if (err instanceof Error && err.message === "Failed to fetch") return true
+  if (typeof err === "object" && err !== null) {
+    const message = (err as { message?: unknown }).message
+    if (typeof message === "string" && message === "Failed to fetch") return true
+  }
+  return false
 }
 
 function stringifyAbortCandidate(value: unknown): string {
@@ -55,7 +68,7 @@ function stringifyAbortCandidate(value: unknown): string {
 /** Match abort errors even when Next.js wraps them in console.error strings. */
 export function containsAbortErrorSignal(...values: unknown[]): boolean {
   for (const value of values) {
-    if (isAbortError(value)) return true
+    if (isAbortError(value) || isBenignClientFetchError(value)) return true
   }
 
   const combined = values.map(stringifyAbortCandidate).join(" ")

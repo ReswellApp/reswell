@@ -35,11 +35,41 @@ export type DirectoryBrandMini = {
 
 const MAX_BRAND_CATALOG_SUGGEST = 20
 
+/** Substring `%q%` matches inside unrelated tokens (e.g. "ch" → "Doug Schroedel"). Use prefix until 4 chars. */
+const BRAND_CATALOG_SUBSTRING_MIN_LEN = 4
+
 const BRAND_CATALOG_SELECT =
   "id, name, slug, short_description, logo_url, location_label, lead_shaper_name" as const
 
 function escapeIlikeToken(q: string): string {
   return q.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+}
+
+function brandCatalogIlikePattern(q: string): string {
+  const safe = escapeIlikeToken(q)
+  return q.length < BRAND_CATALOG_SUBSTRING_MIN_LEN ? `"${safe}%"` : `"%${safe}%"`
+}
+
+async function queryBrandsCatalogByIlike(
+  supabase: SupabaseClient,
+  q: string,
+): Promise<BrandCatalogSuggestRow[]> {
+  const pattern = brandCatalogIlikePattern(q)
+  const { data, error } = await supabase
+    .from("brands")
+    .select(BRAND_CATALOG_SELECT)
+    .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    .order("name", { ascending: true })
+    .limit(MAX_BRAND_CATALOG_SUGGEST)
+
+  if (error || !data) {
+    if (error && process.env.NODE_ENV === "development") {
+      console.error("[searchBrandsCatalogSuggest]", error)
+    }
+    return []
+  }
+
+  return data as BrandCatalogSuggestRow[]
 }
 
 /**
@@ -84,37 +114,13 @@ export async function searchBrandsCatalogSuggestWithClient(
     }
   }
 
-  const safe = escapeIlikeToken(q)
-  const pattern = `"%${safe}%"`
-
-  const { data, error } = await supabase
-    .from("brands")
-    .select(BRAND_CATALOG_SELECT)
-    .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
-    .order("name", { ascending: true })
-    .limit(MAX_BRAND_CATALOG_SUGGEST)
-
-  if (error || !data) {
-    if (error && process.env.NODE_ENV === "development") {
-      console.error("[searchBrandsCatalogSuggest]", error)
-    }
-    return { rows: [], meta: { backend: "supabase" } }
-  }
-
-  let rows = data as BrandCatalogSuggestRow[]
+  let rows = await queryBrandsCatalogByIlike(supabase, q)
   if (rows.length === 0) {
     for (const candidate of marketplaceBrandQueryCandidates(q)) {
       if (candidate.toLowerCase() === q.toLowerCase()) continue
-      const safeCandidate = escapeIlikeToken(candidate)
-      const candidatePattern = `"%${safeCandidate}%"`
-      const { data: retryData } = await supabase
-        .from("brands")
-        .select(BRAND_CATALOG_SELECT)
-        .or(`name.ilike.${candidatePattern},slug.ilike.${candidatePattern}`)
-        .order("name", { ascending: true })
-        .limit(MAX_BRAND_CATALOG_SUGGEST)
-      if (retryData?.length) {
-        rows = retryData as BrandCatalogSuggestRow[]
+      const retryRows = await queryBrandsCatalogByIlike(supabase, candidate)
+      if (retryRows.length > 0) {
+        rows = retryRows
         break
       }
     }

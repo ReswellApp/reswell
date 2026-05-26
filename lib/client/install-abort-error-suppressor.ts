@@ -1,4 +1,4 @@
-import { containsAbortErrorSignal, isAbortError } from "@/lib/utils/is-abort-error"
+import { containsAbortErrorSignal, isAbortError, isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 
 declare global {
   interface Window {
@@ -41,7 +41,7 @@ export function installAbortErrorSuppressor(): void {
   const reportError = window.reportError?.bind(window)
   if (reportError) {
     window.reportError = (error: unknown) => {
-      if (isAbortError(error)) return
+      if (isAbortError(error) || isBenignClientFetchError(error)) return
       reportError(error)
     }
   }
