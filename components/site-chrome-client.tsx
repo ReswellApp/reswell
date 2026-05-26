@@ -1,8 +1,10 @@
 "use client"
 
-import { Suspense } from "react"
+import { useEffect } from "react"
 import { usePathname } from "next/navigation"
+import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { Header } from "@/components/header"
+import { SiteHeaderShell } from "@/components/site-header-shell"
 import { Footer } from "@/components/footer"
 import { NavigationPageGate } from "@/components/navigation-page-gate"
 import { RouteProgressBar } from "@/components/route-progress-bar"
@@ -41,6 +43,18 @@ export function SiteChromeClient({
   headerAuth: SiteChromeAuthPayload
 }) {
   const pathname = usePathname()
+
+  useEffect(() => {
+    forceReleaseBodyScrollLock()
+  }, [pathname])
+
+  useEffect(() => {
+    forceReleaseBodyScrollLock()
+    const onPageShow = () => forceReleaseBodyScrollLock()
+    window.addEventListener("pageshow", onPageShow)
+    return () => window.removeEventListener("pageshow", onPageShow)
+  }, [])
+
   if (hideSiteChrome(pathname)) {
     return (
       <AuthModalProvider>
@@ -66,15 +80,13 @@ export function SiteChromeClient({
         )}
       >
         <RouteProgressBar />
-        <div className="sticky top-0 z-50 isolate w-full bg-background pt-[env(safe-area-inset-top)]">
+        <SiteHeaderShell>
           <ImpersonationBanner />
-          <Suspense fallback={<header className="min-h-[56px] border-b border-border bg-background shadow-sm" aria-hidden />}>
-            <Header serverHeaderAuth={headerAuth} />
-          </Suspense>
-        </div>
+          <Header serverHeaderAuth={headerAuth} />
+        </SiteHeaderShell>
         <div
           className={cn(
-            "flex min-h-0 flex-1 flex-col",
+            "flex min-h-0 flex-1 flex-col pt-[var(--site-header-height,4rem)]",
             lockMessageThreadViewport(pathname) && "overflow-hidden",
             hideFooter(pathname)
               ? "pb-[env(safe-area-inset-bottom)]"

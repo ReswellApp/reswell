@@ -1,6 +1,7 @@
 "use client"
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
@@ -137,7 +138,7 @@ export function HeaderNavSearch({
 } = {}) {
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const searchParams = useClientSearchParams()
   const [query, setQuery] = useState("")
   const prevPathnameRef = useRef(pathname)
 

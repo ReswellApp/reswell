@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   useState,
   useEffect,
@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -29,7 +28,6 @@ import {
   Search,
   MessageSquare,
   User,
-  LogOut,
   Heart,
   Plus,
   ChevronDown,
@@ -41,7 +39,8 @@ import { HeaderNavSearch } from "@/components/header-nav-search"
 import { SiteSearchBar, siteSearchInputClassName, SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
+import { forceReleaseBodyScrollLock, useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
@@ -64,8 +63,8 @@ import {
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
-import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
 import { CartHeaderLink } from "@/components/cart-header-link"
+import { HeaderAccountMenu } from "@/components/header-account-menu"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { HeaderMobileCategoryBar } from "@/components/header-mobile-category-bar"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -377,7 +376,7 @@ function HeaderDesktopCategoryBar({
               ))}
 
           {showMore ? (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger className="cat-link flex shrink-0 items-center gap-1 py-4 text-[15px] transition-colors duration-smooth focus:outline-none">
                 More
                 <ChevronDown className="h-4 w-4" aria-hidden />
@@ -441,15 +440,24 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   /** When the image URL is set but fails to load (403, blocked, bad URL), hide img so fallback letter shows. */
   const [avatarImageFailed, setAvatarImageFailed] = useState(false)
   const headerMainRowRef = useRef<HTMLDivElement>(null)
+  const headerShellRef = useRef<HTMLElement>(null)
   const [headerRowCompact, setHeaderRowCompact] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const headerSearchParams = useSearchParams()
+  const headerSearchParams = useClientSearchParams()
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     setMobileMenuOpen(false)
-  }, [pathname])
+    forceReleaseBodyScrollLock()
+  }, [pathname, headerSearchParams.toString()])
+
+  const onHeaderShellClick = useCallback((event: MouseEvent<HTMLElement>) => {
+    const anchor = (event.target as HTMLElement).closest("a")
+    if (!anchor || !headerShellRef.current?.contains(anchor)) return
+    setMobileMenuOpen(false)
+    forceReleaseBodyScrollLock()
+  }, [])
 
   const { openLogin } = useAuthModal()
   const isMobileViewport = useIsMobile()
@@ -757,6 +765,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   useBodyScrollLock(mobileMenuOpen)
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileMenuOpen(false)
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [mobileMenuOpen])
+
   /** Hamburger + slide-out are lg-only; close when crossing desktop width so scroll lock cannot stick. */
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -782,22 +799,34 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     return () => ro.disconnect()
   }, [])
 
-  /**
-   * Close the drawer after Next `<Link>` runs its own navigation (`linkClicked`).
-   * We must not `preventDefault` here — that skips Link's handler. Defer closing so the drawer
-   * stays mounted until navigation has started.
-   */
+  /** Close drawer immediately so scroll-lock cleanup runs before route transition. */
   const onMobileDrawerLinkClick = useCallback((e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-    queueMicrotask(() => setMobileMenuOpen(false))
+    setMobileMenuOpen(false)
   }, [])
 
   function handleSignOut() {
     setUser(null)
     setAuthLoaded(true)
+    forceReleaseBodyScrollLock()
     window.location.assign("/")
     void supabase.auth.signOut().catch(() => {})
   }
+
+  const accountMenu =
+    user ? (
+      <HeaderAccountMenu
+        user={user}
+        profileAvatarUrl={profileAvatarUrl}
+        avatarImageFailed={avatarImageFailed}
+        onAvatarImageFailed={() => setAvatarImageFailed(true)}
+        resolvedInitial={resolvedInitial}
+        resolvedDisplayName={resolvedDisplayName}
+        walletBalance={walletBalance}
+        isAdmin={isAdmin}
+        onSignOut={handleSignOut}
+      />
+    ) : null
 
   /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
   const isMinimalNavChrome =
@@ -806,99 +835,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       pathname.startsWith("/sell/") ||
       pathname === "/checkout" ||
       pathname.startsWith("/checkout/"))
-
-  const accountDropdown =
-    user ? (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="text-foreground">
-            <Avatar className="h-9 w-9">
-              {profileAvatarUrl && !avatarImageFailed ? (
-                <AvatarImage
-                  src={profileAvatarUrl}
-                  alt="Profile"
-                  onLoadingStatusChange={(status) => {
-                    if (status === "error") setAvatarImageFailed(true)
-                  }}
-                />
-              ) : null}
-              <AvatarFallback className="text-foreground">{resolvedInitial}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="flex items-center gap-3 px-2 py-2">
-            <Avatar className="h-10 w-10 shrink-0 border border-border">
-              {profileAvatarUrl && !avatarImageFailed ? (
-                <AvatarImage
-                  src={profileAvatarUrl}
-                  alt=""
-                  onLoadingStatusChange={(status) => {
-                    if (status === "error") setAvatarImageFailed(true)
-                  }}
-                />
-              ) : null}
-              <AvatarFallback className="text-sm text-foreground">{resolvedInitial}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{resolvedDisplayName}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-            </div>
-          </div>
-          <DropdownMenuSeparator />
-          {DASHBOARD_NAV_LINKS.map((link) => {
-            const Icon = link.icon
-            if (link.href === "/dashboard/earnings") {
-              return (
-                <DropdownMenuItem key={link.href} asChild>
-                  <Link href={link.href} className="flex items-center justify-between">
-                    <span className="flex items-center">
-                      <Icon className="mr-2 h-4 w-4" />
-                      {link.name}
-                    </span>
-                    {walletBalance !== null && (
-                      <span className="text-xs font-medium text-foreground dark:text-white ml-2 tabular-nums">
-                        ${walletBalance.toFixed(2)}
-                      </span>
-                    )}
-                  </Link>
-                </DropdownMenuItem>
-              )
-            }
-            return (
-              <DropdownMenuItem key={link.href} asChild>
-                <Link href={link.href} className="flex items-center">
-                  <Icon className="mr-2 h-4 w-4" />
-                  {link.name}
-                </Link>
-              </DropdownMenuItem>
-            )
-          })}
-          {isAdmin && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/admin" className="flex items-center text-foreground">
-                  <User className="mr-2 h-4 w-4" />
-                  Admin Panel
-                </Link>
-              </DropdownMenuItem>
-            </>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault()
-              handleSignOut()
-            }}
-            className="text-foreground"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ) : null
 
   const headerSearchOverlayForm = (
     <SiteSearchBar
@@ -967,14 +903,18 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   if (isMinimalNavChrome) {
     return (
-      <header className="relative z-50 w-full border-b border-border bg-background shadow-sm">
+      <header
+        ref={headerShellRef}
+        onClick={onHeaderShellClick}
+        className="relative z-50 w-full border-b border-border bg-background shadow-sm"
+      >
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <SiteWordmarkLink />
           <div className="flex shrink-0 items-center justify-end">
             {!authLoaded ? (
               <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
-            ) : user && accountDropdown ? (
-              accountDropdown
+            ) : user && accountMenu ? (
+              accountMenu
             ) : authLoaded ? (
               <Button
                 variant="ghost"
@@ -997,6 +937,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
       <header
+        ref={headerShellRef}
+        onClick={onHeaderShellClick}
         className="relative z-50 w-full border-b border-border bg-background shadow-sm"
       >
         <div
@@ -1053,7 +995,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                           <Plus className="h-[22px] w-[22px]" aria-hidden />
                         </Link>
                       </Button>
-                      <div className="shrink-0">{accountDropdown}</div>
+                      <div className="shrink-0">{accountMenu}</div>
                       <CartHeaderLink
                         showOnNarrowScreens
                         authResolved={authLoaded}
@@ -1197,12 +1139,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Button>
             ) : null}
 
-            <Link
-              href="/about"
-              className="hidden lg:inline-flex text-[15px] font-medium text-foreground/80 transition-colors hover:text-cerulean px-3 py-2"
-            >
-              About
-            </Link>
+            {!user ? (
+              <Link
+                href="/about"
+                className="hidden lg:inline-flex text-[15px] font-medium text-foreground/80 transition-colors hover:text-cerulean px-3 py-2"
+              >
+                About
+              </Link>
+            ) : null}
 
             {!user ? (
               <Link href="/sold" className="hidden lg:inline-flex" title="Recently sold">
@@ -1254,7 +1198,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 </Link>
 
                 <div className="ml-2 shrink-0 sm:ml-3 md:ml-4 max-[360px]:hidden">
-                  {accountDropdown}
+                  {accountMenu}
                 </div>
               </div>
             ) : (
@@ -1346,7 +1290,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                   e.preventDefault()
                   openLogin()
-                  queueMicrotask(() => setMobileMenuOpen(false))
+                  setMobileMenuOpen(false)
                 }}
                 className="mb-6 flex min-h-touch items-center justify-center rounded-lg bg-primary px-4 py-3 text-base font-medium text-primary-foreground no-underline transition-colors hover:bg-primary/90 hover:no-underline"
               >

@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
+import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 
 /**
  * Scrolls to top and applies a CSS fade+slide entrance animation on client-side
@@ -21,6 +22,7 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
     if (prevPathRef.current === pathname) return
     prevPathRef.current = pathname
 
+    forceReleaseBodyScrollLock()
     window.scrollTo({ top: 0, left: 0, behavior: "instant" })
     setNavCount((c) => c + 1)
   }, [pathname])

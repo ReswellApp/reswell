@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { cn } from "@/lib/utils"
 import {
   boardBrowseNavItemIsActive,
@@ -17,7 +18,7 @@ import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
  */
 export function HeaderMobileCategoryBar() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const searchParams = useClientSearchParams()
 
   const chipBase =
     "inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1.5 text-center text-xs font-medium leading-tight text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:border-cerulean/40 focus-visible:ring-2 focus-visible:ring-cerulean/15 focus-visible:ring-offset-0"
