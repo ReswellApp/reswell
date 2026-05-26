@@ -10,6 +10,11 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
+import {
+  ConversationThreadHeaderChip,
+  conversationThreadHeaderChipClassName,
+  conversationThreadHeaderChipThumbClassName,
+} from "@/components/features/messages/conversation-thread-header-chip"
 import type {
   OtherPartyProfileSummary,
   ProfileReviewItem,
@@ -64,6 +69,31 @@ export function ConversationPartyProfile({
     />
   )
 
+  const MobileAvatar = (
+    <MessageProfileAvatar
+      avatarUrl={avatarUrl}
+      displayName={displayName}
+      pending={pending}
+      size="xs"
+      className="rounded-md"
+      imageClassName="rounded-md"
+    />
+  )
+
+  const mobileChip = (
+    <ConversationThreadHeaderChip
+      href={linkToSellerPage ? sellerHref : undefined}
+      ariaLabel={
+        linkToSellerPage
+          ? `Open ${displayName}'s seller profile`
+          : `${displayName}'s profile`
+      }
+      thumb={MobileAvatar}
+      primary={displayName}
+      className="sm:hidden"
+    />
+  )
+
   const NameRow = (
     <div className="flex min-w-0 items-center gap-1.5">
       <p
@@ -82,8 +112,32 @@ export function ConversationPartyProfile({
     </div>
   )
 
+  if (pending) {
+    return (
+      <>
+        <div
+          className={cn(conversationThreadHeaderChipClassName, "sm:hidden")}
+          aria-hidden
+        >
+          <div className={conversationThreadHeaderChipThumbClassName}>
+            <MessageProfileAvatar pending size="xs" className="rounded-md" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="h-3.5 w-[4.5rem] rounded bg-muted" />
+          </div>
+        </div>
+        <div className="hidden min-w-0 flex-1 items-center gap-2 sm:flex sm:gap-3">
+          <MessageProfileAvatar pending size="sm" />
+          <div className="h-4 w-24 rounded bg-muted" />
+        </div>
+      </>
+    )
+  }
+
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+    <>
+      {mobileChip}
+      <div className="hidden min-w-0 flex-1 items-center gap-2 sm:flex sm:gap-3">
       {linkToSellerPage ? (
         <Link
           href={sellerHref}
@@ -120,7 +174,8 @@ export function ConversationPartyProfile({
           sellerHref={linkToSellerPage ? sellerHref : null}
         />
       ) : null}
-    </div>
+      </div>
+    </>
   )
 }
 

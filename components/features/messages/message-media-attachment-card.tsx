@@ -4,13 +4,24 @@ import { useState } from "react"
 import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { MessageMediaImageLightbox } from "@/components/features/messages/message-media-image-lightbox"
 import { OpenMarketplacePdfButton } from "@/components/features/messages/open-marketplace-pdf-button"
+import {
+  MessageMediaVideoLightbox,
+  MessageMediaVideoPreviewOverlay,
+} from "@/components/features/messages/message-media-video-lightbox"
 import {
   composeMediaAttachmentMessageBody,
   parseMarketplaceMessageImageAttachment,
   parseMarketplaceMessagePdfAttachment,
   parseMarketplaceMessageVideoAttachment,
 } from "@/lib/validations/marketplace-message-attachment"
+
+const messageMediaShellClass =
+  "max-w-[min(100%,12.5rem)] sm:max-w-[min(100%,14rem)] md:max-w-[min(100%,17rem)]"
+const messageMediaFrameClass =
+  "overflow-hidden rounded-[20px] shadow-[0_1px_3px_rgba(17,17,17,0.12)]"
+const messageMediaMaxSizeClass = "max-h-[min(42vh,15rem)] w-auto max-w-full object-contain"
 
 function MessageMediaAttachmentImage({
   messageId,
@@ -24,43 +35,48 @@ function MessageMediaAttachmentImage({
   const attachmentPath = `/api/messages/${messageId}/attachment`
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
       {!loaded && !failed ? (
-        <div className="flex aspect-[4/3] w-full min-w-[12rem] items-center justify-center bg-muted/30">
+        <div className="flex aspect-[4/3] w-full min-w-[8rem] items-center justify-center bg-muted/30">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
         </div>
       ) : null}
       {failed ? (
-        <div className="flex aspect-[4/3] w-full min-w-[12rem] items-center justify-center bg-muted/30 px-3 text-center text-sm text-muted-foreground">
+        <div className="flex aspect-[4/3] w-full min-w-[8rem] items-center justify-center bg-muted/30 px-3 text-center text-sm text-muted-foreground">
           Could not load photo
         </div>
       ) : (
-        <a
-          href={attachmentPath}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-          aria-label={`Open photo: ${fileName}`}
-        >
-          <Image
+        <>
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="block cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label={`View photo: ${fileName}`}
+          >
+            <Image
+              src={attachmentPath}
+              alt={fileName}
+              width={320}
+              height={240}
+              unoptimized
+              className={cn(messageMediaMaxSizeClass, !loaded && "absolute inset-0 opacity-0")}
+              onLoad={() => setLoaded(true)}
+              onError={() => {
+                setFailed(true)
+                setLoaded(true)
+              }}
+            />
+          </button>
+          <MessageMediaImageLightbox
+            open={lightboxOpen}
+            onOpenChange={setLightboxOpen}
             src={attachmentPath}
-            alt={fileName}
-            width={480}
-            height={360}
-            unoptimized
-            className={cn(
-              "max-h-[min(60vh,28rem)] w-auto max-w-full object-contain",
-              !loaded && "absolute inset-0 opacity-0",
-            )}
-            onLoad={() => setLoaded(true)}
-            onError={() => {
-              setFailed(true)
-              setLoaded(true)
-            }}
+            title={fileName}
           />
-        </a>
+        </>
       )}
     </div>
   )
@@ -76,21 +92,37 @@ function MessageMediaAttachmentVideo({
   className?: string
 }) {
   const attachmentPath = `/api/messages/${messageId}/attachment`
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   return (
-    <video
-      controls
-      playsInline
-      preload="metadata"
-      className={cn(
-        "max-h-[min(60vh,28rem)] w-full max-w-full object-contain",
-        className,
-      )}
-      aria-label={`Video: ${fileName}`}
-    >
-      <source src={attachmentPath} />
-      Your browser does not support embedded video.
-    </video>
+    <>
+      <button
+        type="button"
+        onClick={() => setLightboxOpen(true)}
+        className={cn(
+          "relative block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          className,
+        )}
+        aria-label={`Play video: ${fileName}`}
+      >
+        <video
+          playsInline
+          preload="metadata"
+          muted
+          className={messageMediaMaxSizeClass}
+          aria-hidden
+        >
+          <source src={attachmentPath} />
+        </video>
+        <MessageMediaVideoPreviewOverlay />
+      </button>
+      <MessageMediaVideoLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        src={attachmentPath}
+        fileName={fileName}
+      />
+    </>
   )
 }
 
@@ -142,25 +174,21 @@ export function MessageMediaAttachmentCard({
   const redundantCaption =
     defaultBody != null && content.trim() === defaultBody
 
-  const mediaShellClass =
-    "max-w-[min(100%,18.5rem)] sm:max-w-[min(100%,20rem)] md:max-w-[min(100%,28rem)]"
-  const mediaFrameClass = "overflow-hidden rounded-[20px] shadow-[0_1px_3px_rgba(17,17,17,0.12)]"
-
   if (imageAtt || videoAtt) {
     return (
-      <div className={cn("flex flex-col gap-1.5", mediaShellClass, isOwn && "items-end")}>
+      <div className={cn("flex flex-col gap-1.5", messageMediaShellClass, isOwn && "items-end")}>
         {imageAtt ? (
           <MessageMediaAttachmentImage
             messageId={messageId}
             fileName={imageAtt.file_name}
-            className={mediaFrameClass}
+            className={messageMediaFrameClass}
           />
         ) : null}
         {videoAtt ? (
           <MessageMediaAttachmentVideo
             messageId={messageId}
             fileName={videoAtt.file_name}
-            className={mediaFrameClass}
+            className={messageMediaFrameClass}
           />
         ) : null}
         {!redundantCaption && content.trim() ? (

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 const sizeClasses = {
+  xs: "h-9 w-9",
   sm: "h-11 w-11",
   md: "h-12 w-12",
   lg: "h-16 w-16",
@@ -13,6 +14,7 @@ const sizeClasses = {
 } as const
 
 const imageSizes = {
+  xs: "36px",
   sm: "44px",
   md: "48px",
   lg: "64px",

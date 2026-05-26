@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { ConversationThreadSkeleton } from '@/components/features/messages/messages-page-skeletons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
+import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
 import {
   loadOtherPartyProfile,
   type OtherPartyProfileSummary,
@@ -52,7 +53,7 @@ import { MessageMediaAttachmentCard } from '@/components/features/messages/messa
 import { MessageSellerOfferButton } from '@/components/features/messages/message-seller-offer-button'
 import { parseMarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
-import { ConversationListingSwitcher, type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
+import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
 import {
@@ -682,7 +683,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
       <div className="container mx-auto flex h-full min-h-0 max-w-2xl flex-1 flex-col overflow-hidden px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
         {/* Header */}
-        <header className="z-10 shrink-0 -mx-4 mb-2 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:mb-3 sm:px-3">
+        <header className="relative z-20 shrink-0 -mx-4 mb-2 border-b border-border/60 bg-background px-2 py-2 sm:-mx-5 sm:mb-3 sm:bg-background/85 sm:px-3 sm:backdrop-blur-md supports-[backdrop-filter]:sm:bg-background/70">
           <div className="flex items-center gap-1 sm:gap-2">
             <Link href={backHref} className="shrink-0">
               <Button
@@ -694,52 +695,83 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 <ArrowLeft className="h-[22px] w-[22px]" strokeWidth={2} />
               </Button>
             </Link>
-            <ConversationPartyProfile
-              displayName={otherUser?.display_name ?? ''}
-              avatarUrl={otherUser?.avatar_url ?? null}
-              shopVerified={!!otherUser?.shop_verified}
-              profile={otherPartyProfile}
-              pending={!otherUser?.display_name && !otherUser?.avatar_url}
-              secondaryLine={
-                displayListing ? (
-                  <Link
-                    href={listingDetailPath(displayListing)}
-                    className={cn(
-                      'block truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground',
-                      showListingSwitcher && 'hidden md:block',
-                    )}
-                  >
-                    {capitalizeWords(displayListing.title)}
-                  </Link>
-                ) : listingChromeLoading ? (
-                  <p className="truncate text-[15px] text-muted-foreground">
-                    Updating listing…
-                  </p>
-                ) : null
-              }
-            />
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:contents">
+              <ConversationPartyProfile
+                displayName={otherUser?.display_name ?? ''}
+                avatarUrl={otherUser?.avatar_url ?? null}
+                shopVerified={!!otherUser?.shop_verified}
+                profile={otherPartyProfile}
+                pending={!otherUser?.display_name && !otherUser?.avatar_url}
+                secondaryLine={
+                  displayListing ? (
+                    <Link
+                      href={listingDetailPath(displayListing)}
+                      className={cn(
+                        'hidden truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground',
+                        showListingSwitcher ? 'md:block' : 'sm:block',
+                      )}
+                    >
+                      {capitalizeWords(displayListing.title)}
+                    </Link>
+                  ) : listingChromeLoading ? (
+                    <p className="hidden truncate text-[15px] text-muted-foreground sm:block">
+                      Updating listing…
+                    </p>
+                  ) : null
+                }
+              />
+              {listingChromeLoading ? (
+                <ConversationThreadHeaderChip
+                  ariaLabel="Loading listing"
+                  thumb={<Skeleton className="h-full w-full rounded-md" />}
+                  primary={<Skeleton className="h-3 w-16" />}
+                  secondary={<Skeleton className="h-3.5 w-12" />}
+                  className="sm:hidden"
+                />
+              ) : displayListing ? (
+                <ConversationThreadHeaderChip
+                  href={listingDetailPath(displayListing)}
+                  ariaLabel={`View listing: ${capitalizeWords(displayListing.title)}`}
+                  thumb={
+                    threadListingThumbSrc ? (
+                      <>
+                        {!listingBannerImageReady ? (
+                          <Skeleton className="absolute inset-0 z-10 h-full w-full rounded-md" aria-hidden />
+                        ) : null}
+                        <Image
+                          key={threadListingThumbSrc}
+                          src={threadListingThumbSrc}
+                          alt=""
+                          fill
+                          sizes="36px"
+                          className="object-cover object-center"
+                          unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
+                          onLoad={() => setListingBannerImageReady(true)}
+                        />
+                      </>
+                    ) : null
+                  }
+                  primary={capitalizeWords(displayListing.title)}
+                  secondary={`$${displayListing.price}`}
+                  className="sm:hidden"
+                />
+              ) : null}
+            </div>
           </div>
         </header>
-
-        <ConversationListingSwitcher
-          threads={listingThreads}
-          activeConversationId={id}
-          counterpartyHref={`/messages/with/${otherUserId}`}
-          className="shrink-0"
-        />
 
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {listingChromeLoading ? (
           <div
             className={cn(
-              'mb-4 flex gap-3 rounded-[18px] border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none',
-              showListingSwitcher && 'hidden md:flex',
+              'mb-2 hidden gap-2 rounded-2xl border border-border/70 bg-card p-2 shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none sm:mb-4 sm:gap-3 sm:rounded-[18px] sm:p-3',
+              showListingSwitcher ? 'md:flex' : 'sm:flex',
             )}
           >
-            <Skeleton className="h-[72px] w-[72px] shrink-0 rounded-2xl" />
-            <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-              <Skeleton className="h-5 w-[min(100%,14rem)]" />
-              <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-14 w-14 shrink-0 rounded-xl sm:h-[72px] sm:w-[72px] sm:rounded-2xl" />
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 sm:gap-2">
+              <Skeleton className="h-4 w-[min(100%,12rem)] sm:h-5 sm:w-[min(100%,14rem)]" />
+              <Skeleton className="h-5 w-20 sm:h-6 sm:w-24" />
             </div>
           </div>
         ) : null}
@@ -747,17 +779,17 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           <Link
             href={listingDetailPath(displayListing)}
             className={cn(
-              'mb-4 block overflow-hidden rounded-[18px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-colors hover:bg-muted/40 active:bg-muted/55 dark:shadow-none',
-              showListingSwitcher && 'hidden md:block',
+              'mb-2 hidden overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-colors hover:bg-muted/40 active:bg-muted/55 dark:shadow-none sm:mb-4 sm:rounded-[18px]',
+              showListingSwitcher ? 'md:block' : 'sm:block',
             )}
           >
-            <div className="flex gap-3 p-3">
-              <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-muted">
+            <div className="flex gap-2 p-2 sm:gap-3 sm:p-3">
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-[72px] sm:w-[72px] sm:rounded-2xl">
                 {threadListingThumbSrc ? (
                   <>
                     {!listingBannerImageReady ? (
                       <Skeleton
-                        className="absolute inset-0 z-10 h-full w-full rounded-2xl"
+                        className="absolute inset-0 z-10 h-full w-full rounded-xl sm:rounded-2xl"
                         aria-hidden
                       />
                     ) : null}
@@ -766,7 +798,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       src={threadListingThumbSrc}
                       alt={capitalizeWords(displayListing.title)}
                       fill
-                      sizes="72px"
+                      sizes="(max-width: 640px) 56px, 72px"
                       className="object-cover object-center"
                       unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                       onLoad={() => setListingBannerImageReady(true)}
@@ -775,10 +807,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 ) : null}
               </div>
               <div className="min-w-0 flex flex-col justify-center">
-                <p className="text-[17px] font-semibold leading-snug text-foreground">
+                <p className="text-[14px] font-semibold leading-snug text-foreground sm:text-[17px]">
                   {capitalizeWords(displayListing.title)}
                 </p>
-                <p className="mt-1 text-[20px] font-semibold tabular-nums tracking-tight text-foreground">
+                <p className="mt-0.5 text-[15px] font-semibold tabular-nums tracking-tight text-foreground sm:mt-1 sm:text-[20px]">
                   ${displayListing.price}
                 </p>
               </div>
@@ -789,13 +821,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         {/* Messages — bounded scroll window (thread does not grow with the page) */}
         <div
           className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
+            'relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
             'sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
           )}
         >
           <div
             ref={messagesScrollRef}
-            className="h-full min-h-0 overflow-y-auto overscroll-contain touch-pan-y"
+            className="h-full min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y"
             aria-label="Message thread"
           >
             {messages.length === 0 ? (
@@ -806,7 +838,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 </p>
               </div>
             ) : (
-              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-4 pt-4 sm:px-4 sm:pb-6">
+              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-14 pt-4 sm:px-4 sm:pb-16 sm:pt-4">
                 {orderedMessages.map((message) => {
                   const isOwn = message.sender_id === currentUserId
                   const offer =
@@ -1018,16 +1050,16 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               </div>
             )}
           </div>
-        </div>
-
-        <div className="relative z-10 mt-2 shrink-0 space-y-2 sm:mt-3">
-          <div className="flex justify-end">
+          <div className="pointer-events-none absolute bottom-3 right-3 z-10 sm:bottom-4 sm:right-4">
             <MessagesSupportDialog
               relatedConversationId={id}
               triggerMode="floating"
-              floatingTriggerClassName="pointer-events-auto relative"
+              floatingTriggerClassName="pointer-events-auto"
             />
           </div>
+        </div>
+
+        <div className="relative z-10 mt-1 shrink-0 sm:mt-2">
           <form
             onSubmit={(e) => {
               e.preventDefault()
