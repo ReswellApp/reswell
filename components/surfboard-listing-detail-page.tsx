@@ -64,10 +64,14 @@ import { ListingPdpRecentSections } from "@/components/features/listings/listing
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
+import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { getReswellPlatformReviewSummary } from "@/lib/db/reswellPlatformReviews"
 import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
+
+const SELLER_BOARDS_PDP_LIMIT = 12
 
 export async function SurfboardListingDetailPage({
   listingParam,
@@ -109,47 +113,41 @@ export async function SurfboardListingDetailPage({
     }
   }
 
-  const { data: sellerReviewRatings } = await supabase
-    .from("reviews")
-    .select("rating")
-    .eq("reviewed_id", board.user_id)
+  const sellerId = board.user_id
 
-  const reviewRatings = (sellerReviewRatings ?? []).map((r) => r.rating)
-  const sellerReviewCount = reviewRatings.length
-  const sellerAvgRating =
-    sellerReviewCount > 0
-      ? reviewRatings.reduce((sum, r) => sum + r, 0) / sellerReviewCount
-      : 0
+  const [
+    sellerReviewSummaryRes,
+    sellerReviewPreviewRes,
+    reswellPlatformReviewSummaryRes,
+    sellerBoardsRes,
+  ] = await Promise.all([
+    getSellerReviewSummary(supabase, sellerId),
+    supabase
+      .from("reviews")
+      .select(
+        "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name )",
+      )
+      .eq("reviewed_id", sellerId)
+      .order("created_at", { ascending: false })
+      .limit(8),
+    getReswellPlatformReviewSummary(supabase),
+    supabase
+      .from("listings")
+      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
+      .eq("user_id", sellerId)
+      .eq("status", "active")
+      .eq("section", "surfboards")
+      .eq("hidden_from_site", false)
+      .neq("id", board.id)
+      .order("created_at", { ascending: false })
+      .limit(SELLER_BOARDS_PDP_LIMIT),
+  ])
 
-  const { data: sellerReviewPreviewRows } = await supabase
-    .from("reviews")
-    .select(
-      "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name )",
-    )
-    .eq("reviewed_id", board.user_id)
-    .order("created_at", { ascending: false })
-    .limit(8)
-
-  const sellerReviewPreviews = sellerReviewPreviewRows ?? []
-
-  const { data: reswellPlatformReviewSummary } = await getReswellPlatformReviewSummary(supabase)
-
-  // Get seller's other boards (same fields as standard peer tiles)
-  const { data: sellerBoards } = await supabase
-    .from("listings")
-    .select(
-      `
-      *,
-      listing_images (url, thumbnail_url, sort_order, is_primary),
-      categories (name)
-    `,
-    )
-    .eq("user_id", board.user_id)
-    .eq("status", "active")
-    .eq("section", "surfboards")
-    .eq("hidden_from_site", false)
-    .neq("id", board.id)
-    .order("created_at", { ascending: false })
+  const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
+    sellerReviewSummaryRes.data
+  const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
+  const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
+  const sellerBoards = sellerBoardsRes.data
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

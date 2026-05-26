@@ -195,6 +195,7 @@ export function ListingAboutSellerSection({
   const displayName = getPublicSellerDisplayName(profiles)
   const avatarSrc = profiles?.avatar_url ?? ""
   const locationLine = profiles?.location?.trim() || null
+  const effectiveReviewCount = Math.max(reviewCount, previewReviews.length)
 
   let joinYear = ""
   if (profiles?.created_at) {
@@ -273,12 +274,12 @@ export function ListingAboutSellerSection({
         <AccordionItem value="reviews" className="border-neutral-200/90 dark:border-neutral-700/70">
           <AccordionTrigger className="items-center py-4 text-left hover:no-underline [&>svg]:shrink-0">
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-4">
-              <span className="text-[16px] font-bold text-foreground">Seller reviews ({reviewCount})</span>
-              <StarRowAvg value={reviewCount > 0 ? avgRating : 0} size="md" />
+              <span className="text-[16px] font-bold text-foreground">Seller reviews ({effectiveReviewCount})</span>
+              <StarRowAvg value={effectiveReviewCount > 0 ? avgRating : 0} size="md" />
             </span>
           </AccordionTrigger>
           <AccordionContent className="pb-5 pt-1">
-            {reviewCount === 0 ? (
+            {effectiveReviewCount === 0 ? (
               <p className="text-[15px] text-muted-foreground">
                 No reviews yet. After a purchase completes, buyers may leave seller feedback—check back soon.
               </p>
@@ -321,7 +322,7 @@ export function ListingAboutSellerSection({
                 <li className="pt-2 text-[15px] text-muted-foreground">
                   Items sold ·{" "}
                   <span className="font-semibold tabular-nums text-foreground/90">{itemsSold}</span>
-                  {reviewCount > previewReviews.length ? (
+                  {effectiveReviewCount > previewReviews.length ? (
                     <>
                       {" "}
                       ·{" "}

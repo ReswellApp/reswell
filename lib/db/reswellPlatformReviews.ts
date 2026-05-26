@@ -18,22 +18,44 @@ export type ReswellPlatformReviewSummary = {
 export async function getReswellPlatformReviewSummary(
   supabase: SupabaseClient,
 ): Promise<{ data: ReswellPlatformReviewSummary; error: Error | null }> {
+  const { data, error } = await supabase.rpc("reswell_platform_review_summary")
+
+  if (error) {
+    const legacy = await getReswellPlatformReviewSummaryLegacy(supabase)
+    return { data: legacy, error: null }
+  }
+
+  const row = Array.isArray(data) ? data[0] : data
+  const reviewCount = Number((row as { review_count?: number | string | null } | null)?.review_count ?? 0)
+  if (!Number.isFinite(reviewCount) || reviewCount <= 0) {
+    return { data: { avgRating: 0, reviewCount: 0 }, error: null }
+  }
+
+  const avgRaw = Number((row as { avg_rating?: number | string | null } | null)?.avg_rating ?? 0)
+  const avgRating = Number.isFinite(avgRaw) ? Math.round(avgRaw * 10) / 10 : 0
+
+  return { data: { avgRating, reviewCount }, error: null }
+}
+
+async function getReswellPlatformReviewSummaryLegacy(
+  supabase: SupabaseClient,
+): Promise<ReswellPlatformReviewSummary> {
   const { data, error } = await supabase.from("reswell_platform_reviews").select("rating")
 
   if (error) {
-    return { data: { avgRating: 0, reviewCount: 0 }, error: new Error(error.message) }
+    console.error("[getReswellPlatformReviewSummary] legacy fallback:", error.message)
+    return { avgRating: 0, reviewCount: 0 }
   }
 
   const rows = (data ?? []) as { rating: number }[]
   const reviewCount = rows.length
   if (reviewCount === 0) {
-    return { data: { avgRating: 0, reviewCount: 0 }, error: null }
+    return { avgRating: 0, reviewCount: 0 }
   }
 
   const total = rows.reduce((sum, row) => sum + Number(row.rating), 0)
   const avgRating = Math.round((total / reviewCount) * 10) / 10
-
-  return { data: { avgRating, reviewCount }, error: null }
+  return { avgRating, reviewCount }
 }
 
 export async function getReswellPlatformReviewByUserId(
