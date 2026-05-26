@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { patchListingPriceByOwner } from "@/lib/db/listings"
 
 const QUICK_PRICE_ALLOWED_STATUSES = ["active", "pending_sale", "pending", "draft"] as const
@@ -98,6 +99,8 @@ export async function updateSellerListingQuickPrice(
   } catch {
     // ES optional
   }
+
+  void syncListingToGoogleMerchantBestEffort(supabase, listingId)
 
   return { ok: true, priceUsd: nextUsd }
 }

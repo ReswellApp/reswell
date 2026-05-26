@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 
 /**
  * Re-activate a listing after a full refund.
@@ -19,5 +20,8 @@ export async function relistAfterRefund(
       listingId,
       error,
     })
+    return
   }
+
+  void syncListingToGoogleMerchantBestEffort(supabase, listingId)
 }

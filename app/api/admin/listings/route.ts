@@ -10,6 +10,7 @@ import {
 } from '@/lib/listing-dimensions-display'
 import { applyCanonicalSurfboardCategoryToListingRow } from '@/lib/surfboard-category-display'
 import { deleteListingDocument } from '@/lib/elasticsearch/listings-index'
+import { syncListingToGoogleMerchantBestEffort } from '@/lib/services/googleMerchantSync'
 import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
@@ -378,6 +379,8 @@ export async function DELETE(request: NextRequest) {
   } catch {
     /* ES optional */
   }
+
+  void syncListingToGoogleMerchantBestEffort(service, listingId)
 
   try {
     await removeListingImageFilesFromStorage(service, imageUrls)

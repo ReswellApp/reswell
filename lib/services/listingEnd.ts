@@ -3,6 +3,7 @@ import {
   deleteListingDocument,
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
@@ -118,6 +119,8 @@ export async function deleteSellerDraftListing(
     // ES optional
   }
 
+  void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+
   try {
     await removeListingImageFilesFromStorage(supabase, imageUrls)
   } catch {
@@ -156,6 +159,8 @@ export async function endSellerListing(
       // ES optional
     }
 
+    void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+
     return { ok: true, mode: "archive" }
   }
 
@@ -178,6 +183,7 @@ export async function endSellerListing(
       } catch {
         // ES optional
       }
+      void syncListingToGoogleMerchantBestEffort(supabase, listingId)
       return {
         ok: true,
         mode: "archive",
@@ -192,6 +198,8 @@ export async function endSellerListing(
   } catch {
     // ES optional
   }
+
+  void syncListingToGoogleMerchantBestEffort(supabase, listingId)
 
   try {
     await removeListingImageFilesFromStorage(supabase, imageUrls)

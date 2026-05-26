@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { setAdminListingCategory } from "@/lib/services/adminListingCategory"
 import { adminListingCategoryBodySchema } from "@/lib/validations/admin-listing-category"
 
@@ -69,6 +70,7 @@ export async function PATCH(
 
   const supabaseForEs = await createClient()
   await syncListingToIndex(supabaseForEs, listingId.trim())
+  void syncListingToGoogleMerchantBestEffort(supabaseForEs, listingId.trim())
 
   const { data: listingRow } = await supabaseForEs
     .from("listings")

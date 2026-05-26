@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
+import { syncListingToGoogleMerchantBestEffort } from '@/lib/services/googleMerchantSync'
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
@@ -201,6 +202,8 @@ export async function POST(request: NextRequest) {
   } catch {
     // ES optional; listing still created
   }
+
+  void syncListingToGoogleMerchantBestEffort(supabase, listing.id)
 
   const firstEntry = images[0] as
     | string

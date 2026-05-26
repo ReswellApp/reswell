@@ -10,6 +10,7 @@ import {
 } from "@/lib/listing-dimensions-display"
 import { revalidatePath } from "next/cache"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
 export async function POST(request: NextRequest) {
@@ -183,6 +184,7 @@ export async function POST(request: NextRequest) {
     photoUrl,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void syncListingToGoogleMerchantBestEffort(service, listing.id)
 
   revalidatePath(`/l/${listing.slug}`, "page")
 

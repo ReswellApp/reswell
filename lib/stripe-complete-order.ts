@@ -23,6 +23,7 @@ import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notificati
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { autoPurchaseReswellShippingLabelForOrder } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -606,6 +607,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   if (listingErr) {
     console.error("[stripe-complete-order] listing update:", listingErr)
     return { ok: false, error: "Could not mark listing sold", status: 500 }
+  }
+
+  for (const listingId of listingIdsOrdered) {
+    void syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
   }
 
   for (const line of bundle.lines) {

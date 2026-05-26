@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { listingDetailHref } from "@/lib/listing-href"
-import { createClient } from "@/lib/supabase/server"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
 const listingMutationRevalidateSchema = z.object({
   listingId: z.string().uuid(),
@@ -64,5 +65,13 @@ export async function revalidateListingDetailAfterListingMutation(
   }
 
   revalidateListingDetailPaths(listingId, slug ?? null)
+
+  try {
+    const serviceSupabase = createServiceRoleClient()
+    await syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
+  } catch {
+    // Service role optional in local dev; GMC sync also runs via DB webhook when configured.
+  }
+
   return { ok: true }
 }

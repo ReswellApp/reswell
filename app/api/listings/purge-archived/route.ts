@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { deleteListingDocument } from "@/lib/elasticsearch/listings-index"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
     } catch {
       /* ES optional */
     }
+    void syncListingToGoogleMerchantBestEffort(supabase, id)
   }
 
   try {
