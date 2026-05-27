@@ -94,7 +94,7 @@ export function ListingImageLightbox({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="touch-none bg-black/90 backdrop-blur-md" />
+        <DialogOverlay className="z-[70] touch-none bg-black/90 backdrop-blur-md" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           onPointerDownOutside={(e) => {
@@ -104,7 +104,8 @@ export function ListingImageLightbox({
             if (!isZoomedOut) e.preventDefault()
           }}
           className={cn(
-            "fixed inset-0 z-50 flex min-h-0 min-w-0 flex-col outline-none",
+            // Above `SiteHeaderShell` (z-[60]) so close + overlay cover the marketplace nav on /l
+            "fixed inset-0 z-[70] flex min-h-0 min-w-0 flex-col outline-none",
             "duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           )}
@@ -197,7 +198,7 @@ export function ListingImageLightbox({
                       height={3200}
                       unoptimized
                       draggable={false}
-                      className="block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-[min(calc(100vw-1rem),100%)] object-contain select-none"
+                      className="block h-auto max-h-full w-auto max-w-full object-contain select-none"
                       sizes="100vw"
                       priority
                       onLoadingComplete={() => {
