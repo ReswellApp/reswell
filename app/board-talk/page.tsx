@@ -8,6 +8,7 @@ import { MessageSquare, Heart, Plus } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { pageSeoMetadata } from "@/lib/site-metadata"
+import { BoardTalkSearch } from "@/components/forum/board-talk-search"
 
 type ThreadRow = {
   id: string
@@ -44,16 +45,46 @@ function countTopLevelComments(
   return out
 }
 
-export default async function ThreadsPage() {
+function escapeIlikeToken(q: string): string {
+  return q.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+}
+
+export default async function ThreadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const { q: rawQ } = await searchParams
+  const q = rawQ?.trim() ?? ""
+
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: threads, error } = await supabase
+  let threadsQuery = supabase
     .from("forum_threads")
     .select("id, title, slug, created_at, updated_at, user_id")
     .order("updated_at", { ascending: false })
+
+  if (q) {
+    const safe = escapeIlikeToken(q)
+    const pattern = `%${safe}%`
+
+    const { data: authorProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .or(`display_name.ilike.${pattern},shop_name.ilike.${pattern}`)
+
+    const authorIds = (authorProfiles ?? []).map((p) => p.id)
+    const orParts = [`title.ilike.${pattern}`, `body.ilike.${pattern}`]
+    if (authorIds.length > 0) {
+      orParts.push(`user_id.in.(${authorIds.join(",")})`)
+    }
+    threadsQuery = threadsQuery.or(orParts.join(","))
+  }
+
+  const { data: threads, error } = await threadsQuery
 
   if (error) {
     return (
@@ -125,11 +156,28 @@ export default async function ThreadsPage() {
           </div>
         </header>
 
+        <BoardTalkSearch defaultValue={q} className="mt-10 sm:mt-12" />
+
+        {q ? (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">
+              {list.length} post{list.length !== 1 ? "s" : ""} found for &ldquo;{q}&rdquo;
+            </p>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/board-talk">Clear</Link>
+            </Button>
+          </div>
+        ) : null}
+
         {list.length === 0 && (
           <Card className="mt-10 sm:mt-12">
             <CardContent className="px-6 py-14 text-center text-muted-foreground sm:px-8">
-              <p>No posts yet.</p>
-              {user ? (
+              <p>{q ? "No posts match your search." : "No posts yet."}</p>
+              {q ? (
+                <Button variant="outline" asChild className="mt-6">
+                  <Link href="/board-talk">View all posts</Link>
+                </Button>
+              ) : user ? (
                 <Button asChild className="mt-6">
                   <Link href="/board-talk/new">Create the first post</Link>
                 </Button>
@@ -138,6 +186,7 @@ export default async function ThreadsPage() {
           </Card>
         )}
 
+        {list.length > 0 ? (
         <ul className="mt-10 space-y-6 sm:mt-12 sm:space-y-8">
           {list.map((t) => {
             const comments = commentCountByThread[t.id] ?? 0
@@ -177,6 +226,7 @@ export default async function ThreadsPage() {
             )
           })}
         </ul>
+        ) : null}
       </div>
     </main>
   )
