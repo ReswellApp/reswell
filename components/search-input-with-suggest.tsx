@@ -283,15 +283,25 @@ function BrandsSuggestPanelSkeleton() {
 async function fetchSearchSuggestionsJson(
   q: string,
   section: string,
+  options?: { useNavCache?: boolean },
 ): Promise<{ data: SuggestResult; hasAny: boolean }> {
   const empty: SuggestResult = {
     titles: [],
     categories: [],
     brands: [],
     listings: [],
+    meta: { listingsBackend: "supabase" },
   }
   try {
-    const res = await searchSuggest(q, section)
+    const res = options?.useNavCache
+      ? await fetch(
+          `/api/nav/search-suggest?${new URLSearchParams({ q, section: section || "" }).toString()}`,
+        ).then(async (r) => {
+          if (!r.ok) throw new Error("Nav search suggest failed")
+          const json = (await r.json()) as { data?: SuggestResult }
+          return json.data ?? empty
+        })
+      : await searchSuggest(q, section)
     const listings = res.listings ?? []
     const data: SuggestResult = {
       titles: res.titles,
@@ -440,7 +450,9 @@ export function SearchInputWithSuggest({
         setLoading(true)
         if (isSearchInputFocused()) setOpen(true)
         try {
-          const { data, hasAny } = await fetchSearchSuggestionsJson(q, section)
+          const { data, hasAny } = await fetchSearchSuggestionsJson(q, section, {
+            useNavCache: analyticsSurface === "header_nav",
+          })
           if (generation !== suggestGenerationRef.current) return
           applySuggestFetchResult(generation, data, hasAny, "valueEffect")
         } finally {
@@ -460,6 +472,7 @@ export function SearchInputWithSuggest({
     autoOpenDropdownOnFetch,
     suggestSource,
     showTextSuggestions,
+    analyticsSurface,
   ])
 
   useEffect(() => {
@@ -1349,7 +1362,9 @@ export function SearchInputWithSuggest({
               setLoading(true)
               setOpen(true)
               try {
-                const { data, hasAny } = await fetchSearchSuggestionsJson(q, section)
+                const { data, hasAny } = await fetchSearchSuggestionsJson(q, section, {
+                  useNavCache: analyticsSurface === "header_nav",
+                })
                 if (gen !== suggestGenerationRef.current) return
                 applySuggestFetchResult(gen, data, hasAny, "focus")
               } finally {

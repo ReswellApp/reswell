@@ -20,11 +20,23 @@ export function isListingMediaBulkCrawler(userAgent: string | null | undefined):
 }
 
 const RATE_LIMIT_WINDOW_MS = 60_000
-const RATE_LIMIT_MAX_REQUESTS = 180
+const PRODUCTION_RATE_LIMIT_MAX_REQUESTS = 180
+const DEVELOPMENT_RATE_LIMIT_MAX_REQUESTS = 5_000
 
 type RateBucket = { count: number; resetAt: number }
 
 const rateBuckets = new Map<string, RateBucket>()
+
+function listingMediaRateLimitMax(): number {
+  const raw = process.env.LISTING_MEDIA_RATE_LIMIT_MAX_REQUESTS?.trim()
+  if (raw) {
+    const parsed = Number.parseInt(raw, 10)
+    if (Number.isFinite(parsed) && parsed > 0) return parsed
+  }
+  return process.env.NODE_ENV === "development"
+    ? DEVELOPMENT_RATE_LIMIT_MAX_REQUESTS
+    : PRODUCTION_RATE_LIMIT_MAX_REQUESTS
+}
 
 function clientIpFromRequest(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")
@@ -37,10 +49,21 @@ function clientIpFromRequest(request: Request): string {
   return "unknown"
 }
 
+/** `<img>` / CSS background loads from real browsers (not bulk crawlers). */
+export function isBrowserListingMediaImageRequest(request: Request): boolean {
+  const dest = request.headers.get("sec-fetch-dest")
+  if (dest === "image") return true
+  const accept = request.headers.get("accept") ?? ""
+  return accept.startsWith("image/")
+}
+
 /** Best-effort per-instance throttle for abusive clients (serverless-safe, not global). */
 export function isListingMediaRateLimited(request: Request): boolean {
+  if (isBrowserListingMediaImageRequest(request)) return false
+
   const ip = clientIpFromRequest(request)
   const now = Date.now()
+  const maxRequests = listingMediaRateLimitMax()
   const bucket = rateBuckets.get(ip)
 
   if (!bucket || now >= bucket.resetAt) {
@@ -54,7 +77,7 @@ export function isListingMediaRateLimited(request: Request): boolean {
   }
 
   bucket.count += 1
-  return bucket.count > RATE_LIMIT_MAX_REQUESTS
+  return bucket.count > maxRequests
 }
 
 export type ListingMediaAccessDecision =

@@ -18,10 +18,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
-import { createClient } from "@/lib/supabase/client"
+import type { NavSuggestedSurfboardPoolRow } from "@/lib/types/nav-suggested-surfboards"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 import {
@@ -47,32 +46,6 @@ type SuggestedListing = {
 
 /** `popular` ranks by `listings.views` and boosts boards opened from this browser via nav suggestions / typeahead. */
 export type HeaderNavSuggestedSurfboardsMode = "popular" | "newest"
-
-type SuggestedListingPoolRow = {
-  id: string
-  slug: string | null
-  title: string
-  price: number
-  views: number | null
-  created_at: string
-  imageUrl: string | null
-}
-
-const SUGGESTED_POOL_SELECT =
-  "id, slug, title, price, views, created_at, listing_images (url, thumbnail_url, is_primary)"
-
-function listingRecordToSuggestedPoolRow(l: Record<string, unknown>): SuggestedListingPoolRow {
-  const imgs = (l.listing_images as ListingImageForCard[] | null) ?? []
-  return {
-    id: l.id as string,
-    slug: (l.slug as string | null) ?? null,
-    title: l.title as string,
-    price: Number(l.price),
-    views: l.views != null ? Number(l.views) : null,
-    created_at: l.created_at as string,
-    imageUrl: listingTitleThumbnailSrc(imgs) || null,
-  }
-}
 
 function getRecentSearches(): string[] {
   if (typeof window === "undefined") return []
@@ -144,7 +117,7 @@ export function HeaderNavSearch({
 
   const [idleOpen, setIdleOpen] = useState(false)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
-  const [suggestedPool, setSuggestedPool] = useState<SuggestedListingPoolRow[]>([])
+  const [suggestedPool, setSuggestedPool] = useState<NavSuggestedSurfboardPoolRow[]>([])
   const [suggestedLoaded, setSuggestedLoaded] = useState(false)
   const [suggestedRankTick, setSuggestedRankTick] = useState(0)
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
@@ -197,9 +170,6 @@ export function HeaderNavSearch({
   const fetchSuggested = useCallback(async () => {
     if (suggestedLoaded) return
     try {
-      const supabase = createClient()
-      const poolLimit = suggestedSurfboardsMode === "popular" ? 24 : 3
-
       const engagedIdsSorted =
         suggestedSurfboardsMode === "popular"
           ? Object.entries(readNavSuggestedListingEngagement())
@@ -209,38 +179,27 @@ export function HeaderNavSearch({
               .slice(0, 12)
           : []
 
-      let q = supabase
-        .from("listings")
-        .select(SUGGESTED_POOL_SELECT)
-        .eq("status", "active")
-        .eq("section", "surfboards")
-        .eq("hidden_from_site", false)
-      if (suggestedSurfboardsMode === "popular") {
-        q = q
-          .order("views", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false })
-      } else {
-        q = q.order("created_at", { ascending: false })
-      }
-      const { data } = await q.limit(poolLimit)
-      let merged: SuggestedListingPoolRow[] = (data ?? []).map((l) =>
-        listingRecordToSuggestedPoolRow(l as Record<string, unknown>),
+      const res = await fetch(
+        `/api/nav/suggested-surfboards?mode=${encodeURIComponent(suggestedSurfboardsMode)}`,
       )
+      if (!res.ok) throw new Error("Failed to load suggested surfboards")
+      const json = (await res.json()) as {
+        data?: { rows?: NavSuggestedSurfboardPoolRow[] }
+      }
+      let merged: NavSuggestedSurfboardPoolRow[] = json.data?.rows ?? []
 
       if (suggestedSurfboardsMode === "popular" && engagedIdsSorted.length > 0) {
         const poolIds = new Set(merged.map((r) => r.id))
         const missingEngaged = engagedIdsSorted.filter((id) => !poolIds.has(id))
         if (missingEngaged.length > 0) {
-          const { data: extra } = await supabase
-            .from("listings")
-            .select(SUGGESTED_POOL_SELECT)
-            .in("id", missingEngaged)
-            .eq("status", "active")
-            .eq("section", "surfboards")
-            .eq("hidden_from_site", false)
-          if (extra?.length) {
-            for (const raw of extra) {
-              const row = listingRecordToSuggestedPoolRow(raw as Record<string, unknown>)
+          const extraRes = await fetch(
+            `/api/nav/suggested-surfboards/by-ids?ids=${encodeURIComponent(missingEngaged.join(","))}`,
+          )
+          if (extraRes.ok) {
+            const extraJson = (await extraRes.json()) as {
+              data?: { rows?: NavSuggestedSurfboardPoolRow[] }
+            }
+            for (const row of extraJson.data?.rows ?? []) {
               if (!poolIds.has(row.id)) {
                 poolIds.add(row.id)
                 merged.push(row)
@@ -259,19 +218,18 @@ export function HeaderNavSearch({
 
   const mergeFetchedListingIntoSuggestedPool = useCallback(async (listingId: string) => {
     try {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from("listings")
-        .select(SUGGESTED_POOL_SELECT)
-        .eq("id", listingId)
-        .eq("status", "active")
-        .eq("section", "surfboards")
-        .eq("hidden_from_site", false)
-        .maybeSingle()
-      if (!data) return
+      const res = await fetch(
+        `/api/nav/suggested-surfboards/by-ids?ids=${encodeURIComponent(listingId)}`,
+      )
+      if (!res.ok) return
+      const json = (await res.json()) as {
+        data?: { rows?: NavSuggestedSurfboardPoolRow[] }
+      }
+      const row = json.data?.rows?.[0]
+      if (!row) return
       setSuggestedPool((prev) => {
         if (prev.some((r) => r.id === listingId)) return prev
-        return [...prev, listingRecordToSuggestedPoolRow(data as Record<string, unknown>)]
+        return [...prev, row]
       })
     } catch {
       /* ignore */

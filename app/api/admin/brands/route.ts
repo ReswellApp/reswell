@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { listBrands } from "@/lib/brands/server"
@@ -169,6 +170,7 @@ export async function POST(request: Request) {
 
   revalidatePath(BRANDS_BASE)
   revalidatePath(`${BRANDS_BASE}/${data.slug}`)
+  revalidateNavSearchSuggest()
   void syncBrandToIndex(supabase, data.id)
   return NextResponse.json({ slug: data.slug, id: data.id })
 }

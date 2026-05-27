@@ -126,6 +126,7 @@ import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
+import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
@@ -2095,6 +2096,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     setPublishValidationBanner(null)
 
     let retainPublishOverlayUntilNavigation = false
+    const revalidateNavSearchOnSuccess = !editId || listingIsDraft
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -2603,6 +2605,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               console.warn("[sell] listing-detail cache revalidation:", err)
             }
           })
+          if (revalidateNavSearchOnSuccess) {
+            void revalidateNavSearchSuggestAfterListingPublished().catch((err) => {
+              if (process.env.NODE_ENV === "development") {
+                console.warn("[sell] nav search suggest cache revalidation:", err)
+              }
+            })
+          }
           retainPublishOverlayUntilNavigation = true
           router.push(detailPath)
           return
@@ -2628,6 +2637,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             console.warn("[sell] listing-detail cache revalidation:", err)
           }
         })
+        if (revalidateNavSearchOnSuccess) {
+          void revalidateNavSearchSuggestAfterListingPublished().catch((err) => {
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[sell] nav search suggest cache revalidation:", err)
+            }
+          })
+        }
       }
       retainPublishOverlayUntilNavigation = true
       router.push(detailPath)

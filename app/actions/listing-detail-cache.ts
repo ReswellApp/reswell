@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
 import { listingDetailHref } from "@/lib/listing-href"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -67,6 +68,7 @@ export async function revalidateListingDetailAfterListingMutation(
 
   revalidateListingDetailPaths(listingId, slug ?? null)
   revalidateBoardsBrowseCatalog()
+  revalidateNavSuggestedSurfboards()
 
   try {
     const serviceSupabase = createServiceRoleClient()
