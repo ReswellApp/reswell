@@ -109,7 +109,12 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   }
 
   return (
-    <div className={cn("mx-auto w-full min-w-0 max-w-full", compactMobile ? "max-lg:space-y-0 lg:space-y-5" : "space-y-5")}>
+    <div
+      className={cn(
+        "mx-auto w-full min-w-0 max-w-full",
+        compactMobile ? "max-md:space-y-0 md:space-y-5" : "space-y-5",
+      )}
+    >
       <ListingImageLightbox
         open={lightboxOpen}
         onOpenChange={(o) => {
@@ -123,12 +128,12 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
         onIndexChange={setLightboxIndex}
       />
 
-      {/* Main Image — desktop: 3:4 frame with cover; mobile compact: natural ratio, no crop */}
+      {/* Main Image — tablet/desktop: stable 3:4 frame; phone (compactMobile): shorter natural-ratio hero */}
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] select-none touch-pan-y dark:bg-muted dark:ring-white/[0.06]",
           compactMobile
-            ? "max-lg:mx-auto max-lg:h-auto max-lg:max-h-[min(52dvh,28rem)] max-lg:w-[min(100%,calc(min(52dvh,28rem)*var(--hero-aspect,0.75)))] max-lg:max-w-full max-lg:[aspect-ratio:var(--hero-aspect,3/4)] lg:aspect-[3/4] lg:h-auto lg:w-full"
+            ? "max-md:mx-auto max-md:h-auto max-md:max-h-[min(52dvh,28rem)] max-md:w-[min(100%,calc(min(52dvh,28rem)*var(--hero-aspect,0.75)))] max-md:max-w-full max-md:[aspect-ratio:var(--hero-aspect,3/4)] md:mx-0 md:aspect-[3/4] md:max-h-none md:h-auto md:w-full"
             : "w-full",
         )}
         style={
@@ -270,7 +275,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
         <div
           className={cn(
             "flex max-w-full min-w-0 gap-2.5 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]",
-            compactMobile && "max-lg:hidden",
+            compactMobile && "max-md:hidden",
           )}
         >
           {images.map((image, index) => (

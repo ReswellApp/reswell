@@ -104,7 +104,7 @@ export function ListingImageLightbox({
             if (!isZoomedOut) e.preventDefault()
           }}
           className={cn(
-            "fixed inset-0 z-50 flex flex-col outline-none",
+            "fixed inset-0 z-50 flex min-h-0 min-w-0 flex-col outline-none",
             "duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           )}
@@ -135,7 +135,7 @@ export function ListingImageLightbox({
           </div>
 
           <div
-            className="relative flex min-h-0 flex-1 flex-col px-2 sm:px-4"
+            className="relative flex min-h-0 min-w-0 flex-1 flex-col px-2 sm:px-4"
             onTouchStart={(e) => {
               if (!isZoomedOut || count <= 1) return
               const t = e.touches[0]
@@ -159,7 +159,7 @@ export function ListingImageLightbox({
               touchStartRef.current = null
             }}
           >
-            <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl sm:rounded-2xl">
+            <div className="relative grid min-h-0 min-w-0 flex-1 place-items-center overflow-hidden rounded-xl sm:rounded-2xl">
               {src ? (
                 <TransformWrapper
                   key={`${index}-${src}`}
@@ -187,8 +187,8 @@ export function ListingImageLightbox({
                   }}
                 >
                   <TransformComponent
-                    wrapperClass="!w-full !h-full"
-                    contentClass="!w-full !h-full flex items-center justify-center"
+                    wrapperClass="!h-fit !w-fit !max-h-full !max-w-full"
+                    contentClass="!h-fit !w-fit !max-h-full !max-w-full"
                   >
                     <Image
                       src={src}
@@ -197,9 +197,14 @@ export function ListingImageLightbox({
                       height={3200}
                       unoptimized
                       draggable={false}
-                      className="max-h-[min(88dvh,100%)] w-auto max-w-full object-contain select-none"
+                      className="block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-[min(calc(100vw-1rem),100%)] object-contain select-none"
                       sizes="100vw"
                       priority
+                      onLoadingComplete={() => {
+                        requestAnimationFrame(() => {
+                          pinchRef.current?.centerView(1, 0)
+                        })
+                      }}
                     />
                   </TransformComponent>
                 </TransformWrapper>
