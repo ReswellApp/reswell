@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Heart, ShieldCheck } from "lucide-react"
+import { Heart, Instagram, ShieldCheck } from "lucide-react"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
@@ -24,6 +24,15 @@ export function Footer() {
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">
               The peer-to-peer marketplace for surfing enthusiasts. Buy, sell, and discover amazing surf gear.
             </p>
+            <a
+              href="https://www.instagram.com/reswellll/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Reswell on Instagram"
+              className="mt-4 inline-flex text-white/75 transition-colors duration-smooth hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-listingHeart rounded-sm"
+            >
+              <Instagram className="h-5 w-5" aria-hidden />
+            </a>
           </div>
 
           {/* Marketplace */}
