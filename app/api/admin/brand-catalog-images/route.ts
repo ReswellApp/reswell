@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const parsed = adminBrandCatalogImagesQuerySchema.safeParse({
     brand_id: sp.get("brand_id") ?? undefined,
     focus_brand_model_id: sp.get("focus_brand_model_id") || null,
+    source: sp.get("source") || "catalog",
   })
   if (!parsed.success) {
     const err = parsed.error.flatten().formErrors.join(", ") || "Invalid query"
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
   const result = await listBrandCatalogImagesPickerService(gate.ctx.supabase, {
     brand_id: parsed.data.brand_id,
     focus_brand_model_id: parsed.data.focus_brand_model_id ?? null,
+    source: parsed.data.source,
   })
 
   if (!result.ok) {
