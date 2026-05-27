@@ -29,7 +29,15 @@ export function formatBrandModelDimensionLabel(row: {
   thickness_label: string
   volume_label: string
 }): string {
-  return `${row.length_label.trim()} × ${row.width_label.trim()} × ${row.thickness_label.trim()} · ${row.volume_label.trim()}`
+  const l = row.length_label.trim()
+  const w = row.width_label.trim()
+  const t = row.thickness_label.trim()
+  const v = row.volume_label.trim()
+  const dimParts = [l, w, t].filter(Boolean)
+  if (dimParts.length === 0 && !v) return "Size not set"
+  const dims = dimParts.join(" × ")
+  if (dims && v) return `${dims} · ${v}`
+  return dims || v
 }
 
 function finPlugsDisplayName(f: FinBoxType): string {

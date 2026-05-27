@@ -68,12 +68,14 @@ export function BrandModelVariantsEditor({
   brandModelId,
   modelName,
   disabled,
+  portalContainer,
   onReload,
 }: {
   brandId: string
   brandModelId: string
   modelName: string
   disabled?: boolean
+  portalContainer?: HTMLElement | null
   onReload: () => Promise<void>
 }) {
   const [loading, setLoading] = React.useState(true)
@@ -185,14 +187,6 @@ export function BrandModelVariantsEditor({
 
   async function saveEditing() {
     if (!editDraft) return
-    const L = editDraft.length_label.trim()
-    const W = editDraft.width_label.trim()
-    const T = editDraft.thickness_label.trim()
-    const V = editDraft.volume_label.trim()
-    if (!L || !W || !T || !V) {
-      toast.error("Length, width, thickness, and volume are required")
-      return
-    }
 
     const priceParsed = parseOptionalPriceInput(editDraft.priceText)
     if (!priceParsed.ok) {
@@ -207,10 +201,10 @@ export function BrandModelVariantsEditor({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          length_label: L,
-          width_label: W,
-          thickness_label: T,
-          volume_label: V,
+          length_label: editDraft.length_label.trim(),
+          width_label: editDraft.width_label.trim(),
+          thickness_label: editDraft.thickness_label.trim(),
+          volume_label: editDraft.volume_label.trim(),
           fin_box_type: editDraft.fin_box_type,
           fin_boxes: editDraft.fin_boxes,
           material: editDraft.material,
@@ -258,14 +252,6 @@ export function BrandModelVariantsEditor({
 
   async function handleAddVariant(e: React.FormEvent) {
     e.preventDefault()
-    const L = lengthLabel.trim()
-    const W = widthLabel.trim()
-    const T = thicknessLabel.trim()
-    const V = volumeLabel.trim()
-    if (!L || !W || !T || !V) {
-      toast.error("Length, width, thickness, and volume are required")
-      return
-    }
 
     const priceParsed = parseOptionalPriceInput(priceText)
     if (!priceParsed.ok) {
@@ -292,10 +278,10 @@ export function BrandModelVariantsEditor({
         body: JSON.stringify({
           brand_id: brandId,
           brand_model_id: brandModelId,
-          length_label: L,
-          width_label: W,
-          thickness_label: T,
-          volume_label: V,
+          length_label: lengthLabel.trim(),
+          width_label: widthLabel.trim(),
+          thickness_label: thicknessLabel.trim(),
+          volume_label: volumeLabel.trim(),
           fin_box_type: finBoxType,
           fin_boxes: finBoxes,
           material: foamMaterial,
@@ -373,8 +359,8 @@ export function BrandModelVariantsEditor({
         <div>
           <p className="text-sm font-semibold text-foreground">Variants · {modelName}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            Each row is one size, plugs, fin layout, foam, and condition. Duplicate dimensions are fine when plugs,
-            layout, foam, or condition differ.
+            Each row is one size, plugs, fin layout, foam, and condition. Dimension labels are optional — fill what
+            you have. Duplicate dimensions are fine when plugs, layout, foam, or condition differ.
           </p>
         </div>
         {!loading ? (
@@ -434,7 +420,7 @@ export function BrandModelVariantsEditor({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1.5">
             <Label htmlFor={`var-l-${brandModelId}`} className="text-xs">
-              Length
+              Length (optional)
             </Label>
             <Input
               id={`var-l-${brandModelId}`}
@@ -448,7 +434,7 @@ export function BrandModelVariantsEditor({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor={`var-w-${brandModelId}`} className="text-xs">
-              Width
+              Width (optional)
             </Label>
             <Input
               id={`var-w-${brandModelId}`}
@@ -462,7 +448,7 @@ export function BrandModelVariantsEditor({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor={`var-t-${brandModelId}`} className="text-xs">
-              Thickness
+              Thickness (optional)
             </Label>
             <Input
               id={`var-t-${brandModelId}`}
@@ -476,7 +462,7 @@ export function BrandModelVariantsEditor({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor={`var-v-${brandModelId}`} className="text-xs">
-              Volume
+              Volume (optional)
             </Label>
             <Input
               id={`var-v-${brandModelId}`}
@@ -605,15 +591,43 @@ export function BrandModelVariantsEditor({
               <BrandCatalogImagePickButton
                 brandId={brandId}
                 focusBrandModelId={brandModelId}
+                portalContainer={portalContainer}
                 disabled={addFormDisabled}
                 title={`Choose a catalog photo for ${modelName}`}
+                label="Catalog"
                 onSelected={(url) => {
                   setStagedImageUrl(url)
                   if (dimImageInputRef.current) dimImageInputRef.current.value = ""
+                  toast.message("Photo selected", {
+                    description: "Click Add variant to save this size with the chosen image.",
+                  })
                 }}
                 className="w-full shrink-0 sm:w-auto"
               />
             </div>
+            {stagedImageUrl && !duplicateDraft ? (
+              <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-2">
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-border/40">
+                  <Image src={stagedImageUrl} alt="" fill className="object-cover" sizes="48px" />
+                </div>
+                <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                  Catalog photo selected. Upload a file above to replace, then click Add variant.
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 shrink-0 text-xs"
+                  disabled={addFormDisabled}
+                  onClick={() => {
+                    setStagedImageUrl(null)
+                    if (dimImageInputRef.current) dimImageInputRef.current.value = ""
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
         <Button type="submit" size="sm" className="gap-1.5" disabled={addFormDisabled}>
@@ -627,7 +641,7 @@ export function BrandModelVariantsEditor({
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saved variants</p>
         {!loading && rows.length === 0 ? (
           <p className="mt-3 rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-6 text-center text-xs text-muted-foreground">
-            No variants yet. Add dimensions, fin plugs, boxes, material, and condition above.
+            No variants yet. Add fin setup, optional dimensions, and condition above.
           </p>
         ) : null}
         {!loading && rows.length > 0 ? (
@@ -933,6 +947,7 @@ export function BrandModelVariantsEditor({
                             <BrandCatalogImagePickButton
                               brandId={brandId}
                               focusBrandModelId={brandModelId}
+                              portalContainer={portalContainer}
                               disabled={rowBusy || !!editDraft}
                               title={`Choose a catalog photo for ${modelName}`}
                               label="Catalog"

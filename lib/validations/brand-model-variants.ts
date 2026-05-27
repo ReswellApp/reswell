@@ -2,7 +2,10 @@ import { z } from "zod"
 
 const uuid = z.string().trim().uuid()
 
-const dimLabel80 = z.string().trim().min(1, "Required").max(80)
+/** Admin / snapshot flows: empty labels allowed (stored as trimmed text, may be ""). */
+export const adminOptionalDimLabelSchema = z.string().trim().max(80)
+
+const optionalDimLabel80 = adminOptionalDimLabelSchema
 
 export const finBoxTypeSchema = z.enum(["futures", "fcs", "single_fin"])
 
@@ -79,10 +82,10 @@ export const adminBrandModelVariantCreateBodySchema = z.object({
   brand_model_id: uuid,
   /** Denormalized; DB trigger overwrites from parent model if mismatched. */
   brand_id: uuid,
-  length_label: dimLabel80,
-  width_label: dimLabel80,
-  thickness_label: dimLabel80,
-  volume_label: dimLabel80,
+  length_label: optionalDimLabel80,
+  width_label: optionalDimLabel80,
+  thickness_label: optionalDimLabel80,
+  volume_label: optionalDimLabel80,
   fin_box_type: finBoxTypeSchema,
   fin_boxes: finBoxesSchema.optional(),
   material: brandModelVariantMaterialSchema.optional(),
@@ -95,10 +98,10 @@ export const adminBrandModelVariantCreateBodySchema = z.object({
 export type AdminBrandModelVariantCreateBody = z.infer<typeof adminBrandModelVariantCreateBodySchema>
 
 export const adminBrandModelVariantPatchBodySchema = z.object({
-  length_label: dimLabel80.optional(),
-  width_label: dimLabel80.optional(),
-  thickness_label: dimLabel80.optional(),
-  volume_label: dimLabel80.optional(),
+  length_label: optionalDimLabel80.optional(),
+  width_label: optionalDimLabel80.optional(),
+  thickness_label: optionalDimLabel80.optional(),
+  volume_label: optionalDimLabel80.optional(),
   fin_box_type: finBoxTypeSchema.optional(),
   fin_boxes: finBoxesSchema.optional(),
   material: brandModelVariantMaterialSchema.optional(),

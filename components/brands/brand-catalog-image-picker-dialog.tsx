@@ -128,6 +128,7 @@ export function BrandCatalogImagePickerDialog({
   brandId,
   focusBrandModelId,
   title = "Choose from catalog",
+  portalContainer,
   onSelected,
 }: {
   open: boolean
@@ -135,8 +136,11 @@ export function BrandCatalogImagePickerDialog({
   brandId: string
   focusBrandModelId?: string | null
   title?: string
+  /** When set, portal inside a parent dialog so the picker stays interactive above it. */
+  portalContainer?: HTMLElement | null
   onSelected: (imageUrl: string) => void
 }) {
+  const isNested = Boolean(portalContainer)
   const showListingSources = Boolean(focusBrandModelId?.trim())
   const [source, setSource] = React.useState<PickerSource>("catalog")
   const [loading, setLoading] = React.useState(false)
@@ -213,18 +217,23 @@ export function BrandCatalogImagePickerDialog({
   )
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
+    <Dialog.Root open={open} onOpenChange={onOpenChange} modal={!isNested}>
+      <Dialog.Portal container={portalContainer ?? undefined}>
         <Dialog.Overlay
           className={cn(
-            "fixed inset-0 z-[100] touch-none bg-black/80",
+            isNested ? "absolute inset-0 z-[120]" : "fixed inset-0 z-[100]",
+            "touch-none bg-black/80",
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           )}
         />
         <Dialog.Content
           data-brand-catalog-image-picker
+          onOpenAutoFocus={(e) => {
+            if (isNested) e.preventDefault()
+          }}
           className={cn(
-            "fixed left-[50%] top-[50%] z-[101] grid max-h-[min(90dvh,720px)] w-[min(100vw-1.5rem,42rem)] translate-x-[-50%] translate-y-[-50%]",
+            isNested ? "absolute left-[50%] top-[50%] z-[121]" : "fixed left-[50%] top-[50%] z-[101]",
+            "grid max-h-[min(90dvh,720px)] w-[min(100vw-1.5rem,42rem)] translate-x-[-50%] translate-y-[-50%]",
             "gap-0 overflow-hidden rounded-xl border bg-background p-0 shadow-lg duration-200",
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -312,6 +321,7 @@ export function BrandCatalogImagePickButton({
   focusBrandModelId,
   title,
   label = "Pick from catalog",
+  portalContainer,
   onSelected,
   size = "sm",
   className,
@@ -321,6 +331,7 @@ export function BrandCatalogImagePickButton({
   focusBrandModelId?: string | null
   title?: string
   label?: string
+  portalContainer?: HTMLElement | null
   onSelected: (imageUrl: string) => void
   size?: "sm" | "default"
   className?: string
@@ -345,6 +356,7 @@ export function BrandCatalogImagePickButton({
         brandId={brandId}
         focusBrandModelId={focusBrandModelId}
         title={title}
+        portalContainer={portalContainer}
         onSelected={onSelected}
       />
     </>

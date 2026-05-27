@@ -241,14 +241,6 @@ export function BrandModelEditorDialog({
 
   function handleQueueCreateVariation(e: React.MouseEvent) {
     e.preventDefault()
-    const L = createDimL.trim()
-    const W = createDimW.trim()
-    const T = createDimT.trim()
-    const V = createDimV.trim()
-    if (!L || !W || !T || !V) {
-      toast.error("Fill length, width, thickness, and volume to add a size")
-      return
-    }
     const priceParsed = parseOptionalPriceInput(createPrice)
     if (!priceParsed.ok) {
       toast.error(priceParsed.message)
@@ -268,10 +260,10 @@ export function BrandModelEditorDialog({
         ...prev,
         {
           clientId: crypto.randomUUID(),
-          length_label: L,
-          width_label: W,
-          thickness_label: T,
-          volume_label: V,
+          length_label: createDimL.trim(),
+          width_label: createDimW.trim(),
+          thickness_label: createDimT.trim(),
+          volume_label: createDimV.trim(),
           fin_box_type: createFinBoxType,
           fin_boxes: createFinBoxes,
           material: createFoamMaterial,
@@ -606,6 +598,7 @@ export function BrandModelEditorDialog({
               />
               <BrandCatalogImagePickButton
                 brandId={brandId}
+                portalContainer={dialogSurfaceEl}
                 disabled={saving || !brandId}
                 title="Choose a model or variant photo from this brand"
                 onSelected={(url) => {
@@ -821,6 +814,7 @@ export function BrandModelEditorDialog({
                 />
                 <BrandCatalogImagePickButton
                   brandId={brandId}
+                  portalContainer={dialogSurfaceEl}
                   disabled={saving || !brandId}
                   title="Choose a photo from this brand’s catalog"
                   onSelected={(url) => {
@@ -1085,6 +1079,7 @@ export function BrandModelEditorDialog({
                               <BrandCatalogImagePickButton
                                 brandId={m.brand_id}
                                 focusBrandModelId={m.id}
+                                portalContainer={dialogSurfaceEl}
                                 disabled={imagePatchingId === m.id || deletingId === m.id}
                                 title={`Choose a catalog photo for ${m.name}`}
                                 label="Catalog"
@@ -1130,6 +1125,7 @@ export function BrandModelEditorDialog({
                               brandId={m.brand_id}
                               brandModelId={m.id}
                               modelName={m.name}
+                              portalContainer={dialogSurfaceEl}
                               disabled={deletingId === m.id || imagePatchingId === m.id}
                               onReload={async () => {
                                 await loadModels(brandId)
