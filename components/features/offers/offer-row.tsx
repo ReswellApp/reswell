@@ -21,7 +21,7 @@ import type {
   DashboardOfferRow,
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
-import { dashboardListingForOffer } from "@/lib/utils/offers-dashboard-display"
+import { dashboardListingForOffer, offerIsSoldPresentation } from "@/lib/utils/offers-dashboard-display"
 
 function money(n: unknown): string {
   const v = typeof n === "number" ? n : parseFloat(String(n ?? "0"))
@@ -154,6 +154,7 @@ export function OfferRow({
   conversationId?: string | null
 }) {
   const listing = dashboardListingForOffer(offer)
+  const isSold = offerIsSoldPresentation(offer)
   const href = listing ? listingDetailHref(listing) : "#"
   const imageSrc = listingCardImageSrc(listing?.listing_images ?? null)
   const hasListingImage = Boolean(imageSrc)
@@ -164,9 +165,14 @@ export function OfferRow({
     : `/messages/new?user=${otherId}&listing=${offer.listing_id}`
 
   const showRespond =
-    role === "seller" && offer.status === "PENDING" && Number.isFinite(listPrice) && listPrice > 0
+    !isSold &&
+    role === "seller" &&
+    offer.status === "PENDING" &&
+    Number.isFinite(listPrice) &&
+    listPrice > 0
 
   const showViewCounter =
+    !isSold &&
     role === "buyer" &&
     offer.status === "COUNTERED" &&
     typeof onViewCounterOpen === "function" &&
@@ -225,8 +231,19 @@ export function OfferRow({
                 <span className="font-medium text-foreground/90">{displayName(counterparty)}</span>
               </p>
             </div>
-            <span className="shrink-0 rounded-full bg-muted/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground ring-1 ring-border/40">
-              {role === "buyer" ? buyerMadeOfferStatusLabel(offer) : statusLabel(offer.status)}
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                isSold
+                  ? "bg-neutral-200 text-neutral-900 ring-neutral-300/60 dark:bg-neutral-700 dark:text-neutral-100 dark:ring-neutral-600/50"
+                  : "bg-muted/80 text-muted-foreground ring-border/40",
+              )}
+            >
+              {isSold
+                ? "Sold"
+                : role === "buyer"
+                  ? buyerMadeOfferStatusLabel(offer)
+                  : statusLabel(offer.status)}
             </span>
           </div>
 
@@ -264,11 +281,15 @@ export function OfferRow({
               <Clock className="h-3 w-3 shrink-0 opacity-65" aria-hidden />
               Updated {formatDistanceToNow(new Date(offer.updated_at), { addSuffix: true })}
             </span>
-            <span className="hidden h-2.5 w-px bg-border sm:block" aria-hidden />
-            <span className="inline-flex items-center gap-1">
-              <Timer className="h-3 w-3 shrink-0 opacity-65" aria-hidden />
-              Expires {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}
-            </span>
+            {!isSold && offer.status !== "COMPLETED" && (
+              <>
+                <span className="hidden h-2.5 w-px bg-border sm:block" aria-hidden />
+                <span className="inline-flex items-center gap-1">
+                  <Timer className="h-3 w-3 shrink-0 opacity-65" aria-hidden />
+                  Expires {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}
+                </span>
+              </>
+            )}
           </div>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/40 pt-2.5">

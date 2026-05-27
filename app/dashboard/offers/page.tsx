@@ -2,15 +2,12 @@ import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { DashboardOffersView } from "@/components/features/offers/dashboard-offers-view"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
-import {
-  fetchOffersMadeForDashboard,
-  fetchOffersReceivedForDashboard,
-} from "@/lib/db/offers-dashboard"
+import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 
 export const metadata = privatePageMetadata({
   title: "Offers — Reswell",
-  description: "Review offers you made and offers buyers sent on your surfboard listings.",
+  description: "Review offers you sent and offers others sent you.",
   path: "/dashboard/offers",
 })
 
@@ -27,15 +24,13 @@ export default async function DashboardOffersPage({
     redirect("/auth/login?redirect=/dashboard/offers")
   }
 
-  const [madeRes, receivedRes] = await Promise.all([
-    fetchOffersMadeForDashboard(supabase, user.id),
-    fetchOffersReceivedForDashboard(supabase, user.id),
-  ])
+  const { sent, received, sellersById, buyersById, fetchError } =
+    await fetchDashboardOffersPartitioned(supabase, user.id)
 
   const listingIds = [
     ...new Set([
-      ...madeRes.offers.map((o) => o.listing_id),
-      ...receivedRes.offers.map((o) => o.listing_id),
+      ...sent.map((o) => o.listing_id),
+      ...received.map((o) => o.listing_id),
     ]),
   ]
 
@@ -56,11 +51,8 @@ export default async function DashboardOffersPage({
     }
   }
 
-  const devFetchErrors = [...new Set(
-    [madeRes.fetchError, receivedRes.fetchError].filter(
-      (e): e is string => typeof e === "string" && e.length > 0,
-    ),
-  )]
+  const devFetchErrors =
+    typeof fetchError === "string" && fetchError.length > 0 ? [fetchError] : []
 
   return (
     <div className="space-y-6">
@@ -88,11 +80,12 @@ export default async function DashboardOffersPage({
         </div>
       )}
       <DashboardOffersView
+        userId={user.id}
         defaultTab={defaultTab}
-        made={madeRes.offers}
-        received={receivedRes.offers}
-        sellersById={madeRes.sellersById}
-        buyersById={receivedRes.buyersById}
+        made={sent}
+        received={received}
+        sellersById={sellersById}
+        buyersById={buyersById}
         minPctByListingId={minPctByListingId}
       />
     </div>

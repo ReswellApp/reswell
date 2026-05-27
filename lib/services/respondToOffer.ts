@@ -4,6 +4,7 @@ import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-m
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
+import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import type { RespondToOfferInput } from "@/lib/validations/respond-to-offer"
 
@@ -101,18 +102,6 @@ export async function respondToOfferService(
   const title = ((listing.title ?? "") as string).trim() || "your listing"
 
   if (action === "decline") {
-    const { error: upErr } = await supabase
-      .from("offers")
-      .update({ status: "DECLINED", updated_at: new Date().toISOString() })
-      .eq("id", offerId)
-      .eq("seller_id", sellerUserId)
-      .eq("status", "PENDING")
-
-    if (upErr) {
-      console.error("[respondToOffer] decline:", upErr)
-      return { ok: false, error: "Could not decline the offer. Try again." }
-    }
-
     const appended = await appendOfferTimelineEntry(offerId, {
       senderId: sellerUserId,
       senderRole: "SELLER",
@@ -140,6 +129,17 @@ export async function respondToOfferService(
         actor_id: sellerUserId,
         message: `${title}: your offer was declined.`,
       })
+    }
+
+    const deleteClient = service ?? (() => {
+      try {
+        return createServiceRoleClient()
+      } catch {
+        return null
+      }
+    })()
+    if (deleteClient) {
+      await deleteOfferRecord(deleteClient, offerId)
     }
 
     return { ok: true, conversationId: conv?.id ?? null }

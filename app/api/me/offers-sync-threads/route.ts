@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { purgeStaleOffers } from "@/lib/services/offerCleanup"
 import { syncAllPendingOfferThreadsForUser } from "@/lib/services/syncOfferMessagesThread"
 
 /**
@@ -17,5 +18,13 @@ export async function POST() {
   }
 
   const result = await syncAllPendingOfferThreadsForUser(user.id)
+
+  try {
+    const service = createServiceRoleClient()
+    void purgeStaleOffers(service)
+  } catch {
+    // Best-effort; hourly cron is the primary purge path.
+  }
+
   return NextResponse.json({ data: result }, { status: 200 })
 }

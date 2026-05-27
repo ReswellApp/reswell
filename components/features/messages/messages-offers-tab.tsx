@@ -15,7 +15,12 @@ import type {
   DashboardOfferRow,
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
-import { dashboardListingForOffer } from "@/lib/utils/offers-dashboard-display"
+import {
+  dashboardListingForOffer,
+  partitionOffersByDirection,
+  shouldShowOfferInMessagesTab,
+  userParticipationRole,
+} from "@/lib/utils/offers-dashboard-display"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 import { offerConversationKey } from "@/lib/utils/offer-messages-href"
 
@@ -111,16 +116,25 @@ export function MessagesOffersTab({
       ])
       if (!isActive()) return
 
-      const madeOffers = withSellerCounterNotes((madeData ?? []) as OfferDashboardRowRaw[])
-      const receivedOffers = withSellerCounterNotes((receivedData ?? []) as OfferDashboardRowRaw[])
-      setSent(madeOffers)
+      const byId = new Map<string, OfferDashboardRowRaw>()
+      for (const row of [...(madeData ?? []), ...(receivedData ?? [])]) {
+        byId.set(row.id as string, row as OfferDashboardRowRaw)
+      }
+      const visible = withSellerCounterNotes([...byId.values()]).filter(
+        shouldShowOfferInMessagesTab,
+      )
+      const { sent: sentOffers, received: receivedOffers } = partitionOffersByDirection(
+        visible,
+        userId,
+      )
+      setSent(sentOffers)
       setReceived(receivedOffers)
 
-      const allOffers = [...madeOffers, ...receivedOffers]
+      const allOffers = [...sentOffers, ...receivedOffers]
       const listingIds = [...new Set(allOffers.map((o) => o.listing_id))]
 
-      const sellerIds = [...new Set(madeOffers.map((o) => o.seller_id))]
-      const buyerIds = [...new Set(receivedOffers.map((o) => o.buyer_id))]
+      const sellerIds = [...new Set(allOffers.map((o) => o.seller_id))]
+      const buyerIds = [...new Set(allOffers.map((o) => o.buyer_id))]
 
       const [profilesResult, listingMinResult, conversationsResult] = await Promise.all([
         Promise.all([
@@ -323,8 +337,8 @@ export function MessagesOffersTab({
           </h3>
           <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
             {subTab === "sent"
-              ? "When you make an offer on a listing, it will show here with status and amounts."
-              : "When a buyer makes an offer on your listing, you can review and respond here."}
+              ? "Offers you started — as a buyer on a listing or as a seller offering to a buyer."
+              : "Offers sent to you — from buyers on your listings or from sellers on boards you want."}
           </p>
         </div>
       ) : activeOffers.length === 0 ? (
@@ -334,7 +348,7 @@ export function MessagesOffersTab({
       ) : (
         <div className={cn("space-y-3", shellClassName)}>
           {activeOffers.map((o) => {
-            const role = subTab === "sent" ? "buyer" : "seller"
+            const role = userParticipationRole(o, userId) ?? "buyer"
             const conversationId =
               conversationIdByOfferKey[
                 offerConversationKey(o.listing_id, o.buyer_id, o.seller_id)
@@ -350,7 +364,7 @@ export function MessagesOffersTab({
               }
               listingTitle={dashboardListingForOffer(o)?.title ?? ""}
               onRespondOpen={openRespond}
-              onViewCounterOpen={subTab === "sent" ? openBuyerCounter : undefined}
+              onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
               conversationId={conversationId}
               compact
             />

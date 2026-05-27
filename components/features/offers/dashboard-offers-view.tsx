@@ -13,9 +13,22 @@ import type {
   DashboardOfferRow,
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
-import { dashboardListingForOffer } from "@/lib/utils/offers-dashboard-display"
+import {
+  dashboardListingForOffer,
+  userParticipationRole,
+} from "@/lib/utils/offers-dashboard-display"
+
+function counterpartyForOffer(
+  offer: DashboardOfferRow,
+  role: "buyer" | "seller",
+  sellersById: Record<string, DashboardProfileLite>,
+  buyersById: Record<string, DashboardProfileLite>,
+): DashboardProfileLite | undefined {
+  return role === "buyer" ? sellersById[offer.seller_id] : buyersById[offer.buyer_id]
+}
 
 export function DashboardOffersView({
+  userId,
   made,
   received,
   sellersById,
@@ -23,6 +36,7 @@ export function DashboardOffersView({
   minPctByListingId,
   defaultTab,
 }: {
+  userId: string
   made: DashboardOfferRow[]
   received: DashboardOfferRow[]
   sellersById: Record<string, DashboardProfileLite>
@@ -101,7 +115,7 @@ export function DashboardOffersView({
           </h1>
         </div>
         <p className="max-w-xl text-sm leading-snug text-muted-foreground">
-          Offers you&apos;ve made and offers on your listings. Respond here or in Messages.
+          Sent offers you started and received offers waiting on you. Completed sales stay here after a board sells.
         </p>
       </header>
 
@@ -116,7 +130,7 @@ export function DashboardOffersView({
       >
         <TabsList className="grid h-9 w-full max-w-md grid-cols-2 rounded-lg border border-border/50 bg-muted/50 p-0.5">
           <TabsTrigger value="made" className="rounded-md text-xs font-medium sm:text-sm">
-            I made
+            Sent
             {madeCount > 0 && (
               <span className="ml-1 tabular-nums text-[11px] font-normal text-muted-foreground sm:text-xs">
                 ({madeCount})
@@ -124,7 +138,7 @@ export function DashboardOffersView({
             )}
           </TabsTrigger>
           <TabsTrigger value="received" className="rounded-md text-xs font-medium sm:text-sm">
-            On my listings
+            Received
             {receivedCount > 0 && (
               <span className="ml-1 tabular-nums text-[11px] font-normal text-muted-foreground sm:text-xs">
                 ({receivedCount})
@@ -136,41 +150,48 @@ export function DashboardOffersView({
         <TabsContent value="made" className="mt-4 space-y-3 focus-visible:outline-none">
           {made.length === 0 ? (
             <EmptyOffers
-              title="No offers yet"
-              body="When you make an offer on a listing, it will show up here with status and amounts."
+              title="No sent offers"
+              body="Offers you make on a listing or send to a buyer from Messages appear here."
             />
           ) : (
-            made.map((o) => (
-              <OfferRow
-                key={o.id}
-                offer={o}
-                role="buyer"
-                counterparty={sellersById[o.seller_id]}
-                listingTitle={dashboardListingForOffer(o)?.title ?? ""}
-                onRespondOpen={openRespond}
-                onViewCounterOpen={openBuyerCounter}
-              />
-            ))
+            made.map((o) => {
+              const role = userParticipationRole(o, userId) ?? "buyer"
+              return (
+                <OfferRow
+                  key={o.id}
+                  offer={o}
+                  role={role}
+                  counterparty={counterpartyForOffer(o, role, sellersById, buyersById)}
+                  listingTitle={dashboardListingForOffer(o)?.title ?? ""}
+                  onRespondOpen={openRespond}
+                  onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
+                />
+              )
+            })
           )}
         </TabsContent>
 
         <TabsContent value="received" className="mt-4 space-y-3 focus-visible:outline-none">
           {received.length === 0 ? (
             <EmptyOffers
-              title="No incoming offers"
-              body="When a buyer makes an offer on one of your listings, you can review and respond here."
+              title="No received offers"
+              body="Buyer offers on your listings and seller offers sent to you appear here."
             />
           ) : (
-            received.map((o) => (
-              <OfferRow
-                key={o.id}
-                offer={o}
-                role="seller"
-                counterparty={buyersById[o.buyer_id]}
-                listingTitle={dashboardListingForOffer(o)?.title ?? ""}
-                onRespondOpen={openRespond}
-              />
-            ))
+            received.map((o) => {
+              const role = userParticipationRole(o, userId) ?? "seller"
+              return (
+                <OfferRow
+                  key={o.id}
+                  offer={o}
+                  role={role}
+                  counterparty={counterpartyForOffer(o, role, sellersById, buyersById)}
+                  listingTitle={dashboardListingForOffer(o)?.title ?? ""}
+                  onRespondOpen={openRespond}
+                  onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
+                />
+              )
+            })
           )}
         </TabsContent>
       </Tabs>

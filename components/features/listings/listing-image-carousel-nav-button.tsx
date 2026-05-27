@@ -13,9 +13,11 @@ export interface ListingImageCarouselNavButtonProps {
   direction: "prev" | "next"
   variant: ListingImageCarouselNavVariant
   /** Horizontal offset, e.g. `left-2` or `left-1 sm:left-3` */
-  sideClassName: string
+  sideClassName?: string
   onClick: MouseEventHandler<HTMLButtonElement>
   srLabel: string
+  /** When true, skip absolute centering so the parent can place the control. */
+  staticPosition?: boolean
 }
 
 export function ListingImageCarouselNavButton({
@@ -24,6 +26,7 @@ export function ListingImageCarouselNavButton({
   sideClassName,
   onClick,
   srLabel,
+  staticPosition = false,
 }: ListingImageCarouselNavButtonProps) {
   const Icon = direction === "prev" ? ChevronLeft : ChevronRight
   const isEmbed = variant === "embed"
@@ -35,7 +38,8 @@ export function ListingImageCarouselNavButton({
       size="icon"
       onClick={onClick}
       className={cn(
-        "absolute top-1/2 h-8 w-8 -translate-y-1/2 rounded-full",
+        "h-8 w-8 rounded-full",
+        staticPosition ? "relative shrink-0" : "absolute top-1/2 -translate-y-1/2",
         sideClassName,
         isEmbed &&
           "z-10 opacity-80 hover:opacity-100",

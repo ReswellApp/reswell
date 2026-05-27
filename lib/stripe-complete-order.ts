@@ -25,6 +25,7 @@ import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-m
 import { autoPurchaseReswellShippingLabelForOrder } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -611,6 +612,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   revalidateBoardsBrowseCatalog()
+
+  void completeAcceptedOfferOnPurchase(
+    serviceSupabase,
+    buyerId,
+    listingIdsOrdered,
+    bundleSellerId,
+  )
 
   for (const listingId of listingIdsOrdered) {
     void syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)

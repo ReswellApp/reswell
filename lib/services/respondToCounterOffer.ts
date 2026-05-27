@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
+import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
 
@@ -103,18 +104,6 @@ export async function respondToCounterOfferService(
   )
 
   if (action === "decline") {
-    const { error: upErr } = await supabase
-      .from("offers")
-      .update({ status: "DECLINED", updated_at: new Date().toISOString() })
-      .eq("id", offerId)
-      .eq("buyer_id", buyerUserId)
-      .eq("status", "COUNTERED")
-
-    if (upErr) {
-      console.error("[respondToCounterOffer] decline:", upErr)
-      return { ok: false, error: "Could not decline the counteroffer. Try again." }
-    }
-
     const appended = await appendOfferTimelineEntry(offerId, {
       senderId: buyerUserId,
       senderRole: "BUYER",
@@ -142,6 +131,17 @@ export async function respondToCounterOfferService(
         actor_id: buyerUserId,
         message: `${title}: the buyer declined your counter of $${current.toFixed(2)}.`,
       })
+    }
+
+    const deleteClient = service ?? (() => {
+      try {
+        return createServiceRoleClient()
+      } catch {
+        return null
+      }
+    })()
+    if (deleteClient) {
+      await deleteOfferRecord(deleteClient, offerId)
     }
 
     return { ok: true, conversationId: conv?.id ?? null }

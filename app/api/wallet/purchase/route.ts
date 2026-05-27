@@ -13,6 +13,7 @@ import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -234,6 +235,8 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateBoardsBrowseCatalog()
+
+  void completeAcceptedOfferOnPurchase(serviceSupabase, user.id, [listing.id], listing.user_id)
 
   void syncListingToGoogleMerchantBestEffort(serviceSupabase, listing.id)
 
