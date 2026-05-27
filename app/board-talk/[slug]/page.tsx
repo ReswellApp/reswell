@@ -11,6 +11,8 @@ import { ThreadDeleteButton } from "@/components/forum/thread-delete-button"
 import { AdminThreadEditor } from "@/components/forum/admin-thread-editor"
 import { absoluteUrl } from "@/lib/site-metadata"
 
+const RESERVED_THREAD_SLUGS = new Set(["new", "reviews", "whats-new", "forums"])
+
 type ThreadCore = {
   id: string
   user_id: string
@@ -71,6 +73,10 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 
 export default async function ThreadDetailPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params
+  if (RESERVED_THREAD_SLUGS.has(slug)) {
+    notFound()
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -84,21 +90,19 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
 
   if (error) {
     return (
-      <main className="flex-1">
-        <div className="container mx-auto max-w-3xl py-10 px-4">
-          <p className="text-sm text-destructive">
-            Could not load this post. Confirm{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/032_forum_threads.sql</code> and{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/036_forum_comment_parent_replies.sql</code>{" "}
-            ran and reload
-            the API schema in Supabase if needed.
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground font-mono break-all">{error.message}</p>
-          <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
-            ← Board Talk
-          </Link>
-        </div>
-      </main>
+      <>
+        <p className="text-sm text-destructive">
+          Could not load this post. Confirm{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/032_forum_threads.sql</code> and{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/036_forum_comment_parent_replies.sql</code>{" "}
+          ran and reload
+          the API schema in Supabase if needed.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground font-mono break-all">{error.message}</p>
+        <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
+          ← Board Talk
+        </Link>
+      </>
     )
   }
 
@@ -122,20 +126,18 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
 
   const { data: commentsRaw, error: commentsError } = await supabase
     .from("forum_comments")
-    .select("id, body, created_at, user_id, parent_id")
+    .select("id, body, created_at, user_id, parent_id, metadata")
     .eq("thread_id", t.id)
     .order("created_at", { ascending: true })
 
   if (commentsError) {
     return (
-      <main className="flex-1">
-        <div className="container mx-auto max-w-3xl py-10 px-4">
-          <p className="text-sm text-destructive">Could not load comments: {commentsError.message}</p>
-          <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
-            ← Board Talk
-          </Link>
-        </div>
-      </main>
+      <>
+        <p className="text-sm text-destructive">Could not load comments: {commentsError.message}</p>
+        <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
+          ← Board Talk
+        </Link>
+      </>
     )
   }
 
@@ -161,6 +163,7 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
     created_at: c.created_at,
     user_id: c.user_id,
     parent_id: c.parent_id ?? null,
+    metadata: (c as { metadata?: unknown }).metadata ?? null,
     profiles: profileById[c.user_id] ?? null,
     forum_comment_likes: [{ count: likeCountByComment[c.id] ?? 0 }],
   }))
@@ -197,13 +200,12 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
   const canDeleteThread = isAdmin
 
   return (
-    <main className="flex-1">
-      <div className="container mx-auto max-w-3xl py-10 px-4">
-        <Link href="/board-talk" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-          ← Board Talk
-        </Link>
+    <>
+      <Link href="/board-talk" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+        ← Board Talk
+      </Link>
 
-        <article className="relative mt-6 rounded-lg border border-border bg-card p-5 sm:p-6">
+      <article className="relative mt-6 rounded-lg border border-border bg-card p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex gap-3 min-w-0">
               <Avatar className="h-11 w-11 shrink-0">
@@ -239,14 +241,15 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
           <div className="mt-6">
             <ThreadCommentsPanel
               threadId={t.id}
+              threadSlug={t.slug}
               initialComments={comments}
               currentUserId={user?.id ?? null}
               isLoggedIn={!!user}
+              isAdmin={isAdmin}
               likedCommentIds={likedCommentIds}
             />
           </div>
         </article>
-      </div>
-    </main>
+    </>
   )
 }

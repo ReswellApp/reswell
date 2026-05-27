@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
+import { deleteForumThreadAction } from "@/app/actions/forum"
 
 type Props = {
   threadId: string
@@ -15,15 +16,17 @@ export function ThreadDeleteButton({ threadId }: Props) {
   const [loading, setLoading] = useState(false)
 
   async function remove() {
-    if (!confirm("Delete this entire post and all comments? (Admin only — cannot be undone.)")) return
+    if (!confirm("Delete this entire post and all comments? This cannot be undone.")) return
     setLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase.from("forum_threads").delete().eq("id", threadId)
+    const result = await deleteForumThreadAction(threadId)
     setLoading(false)
-    if (!error) {
+    if ("success" in result && result.success) {
+      toast.success("Post deleted")
       router.push("/board-talk")
       router.refresh()
+      return
     }
+    toast.error("error" in result ? result.error : "Could not delete this post.")
   }
 
   return (
@@ -36,7 +39,7 @@ export function ThreadDeleteButton({ threadId }: Props) {
       onClick={() => void remove()}
     >
       <Trash2 className="h-4 w-4" />
-      Delete
+      {loading ? "Deleting…" : "Delete"}
     </Button>
   )
 }

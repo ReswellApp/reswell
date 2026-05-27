@@ -60,6 +60,93 @@ export async function listBrandModelsForPublicCatalogByBrandId(
   }))
 }
 
+function escapeIlikeToken(q: string): string {
+  return q.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+}
+
+export type BrandModelSuggestRow = {
+  id: string
+  name: string
+  brandId: string
+  brandName: string
+  brandSlug: string
+}
+
+/** Typeahead rows from `brand_models` joined to `brands`. */
+export async function searchBrandModelsWithBrandsForSuggest(
+  supabase: SupabaseClient,
+  qRaw: string,
+  limit = 15,
+): Promise<BrandModelSuggestRow[]> {
+  const q = qRaw.trim()
+  if (q.length < 1) return []
+
+  const safe = escapeIlikeToken(q)
+  const pattern = q.length < 4 ? `${safe}%` : `%${safe}%`
+
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select(LIST_SELECT)
+    .ilike("name", pattern)
+    .order("name", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("searchBrandModelsWithBrandsForSuggest:", error.message)
+    return []
+  }
+
+  const rows = (data ?? []) as RawBrandModelRow[]
+  const out: BrandModelSuggestRow[] = []
+  for (const row of rows) {
+    const b = pickJoinedBrand(row.brands)
+    if (!b?.id || !b.slug?.trim()) continue
+    out.push({
+      id: row.id,
+      name: row.name.trim(),
+      brandId: b.id,
+      brandName: b.name.trim(),
+      brandSlug: b.slug.trim(),
+    })
+  }
+  return out
+}
+
+export async function listBrandModelsWithBrandsForBrandIds(
+  supabase: SupabaseClient,
+  brandIds: string[],
+  limit = 15,
+): Promise<BrandModelSuggestRow[]> {
+  if (brandIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select(LIST_SELECT)
+    .in("brand_id", brandIds)
+    .order("name", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("listBrandModelsWithBrandsForBrandIds:", error.message)
+    return []
+  }
+
+  const rows = (data ?? []) as RawBrandModelRow[]
+  const out: BrandModelSuggestRow[] = []
+  for (const row of rows) {
+    const b = pickJoinedBrand(row.brands)
+    if (!b?.id || !b.slug?.trim()) continue
+    out.push({
+      id: row.id,
+      name: row.name.trim(),
+      brandId: b.id,
+      brandName: b.name.trim(),
+      brandSlug: b.slug.trim(),
+    })
+  }
+  return out
+}
+
 /** Brand slug + `brand_models` rows for the sell form (no variants). */
 export async function getBrandModelsCatalogOptionsForSell(
   supabase: SupabaseClient,

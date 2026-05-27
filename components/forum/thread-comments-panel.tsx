@@ -4,6 +4,13 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Reply, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { deleteForumCommentAction } from "@/app/actions/forum"
+import { ForumCommentMediaCard } from "@/components/features/forum/forum-comment-media-card"
+import { ForumCommentMediaSendButton } from "@/components/features/forum/forum-comment-media-send-button"
+import {
+  parseForumCommentImageAttachment,
+  type SentForumCommentMedia,
+} from "@/lib/validations/forum-comment-attachment"
 import { createClient } from "@/lib/supabase/client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { CommentLikeButton } from "@/components/forum/comment-like-button"
@@ -20,15 +27,18 @@ export type ThreadCommentRow = {
   created_at: string
   user_id: string
   parent_id: string | null
+  metadata?: unknown
   profiles: { display_name: string | null; avatar_url: string | null } | null
   forum_comment_likes?: { count: number }[] | null
 }
 
 type Props = {
   threadId: string
+  threadSlug: string
   initialComments: ThreadCommentRow[]
   currentUserId: string | null
   isLoggedIn: boolean
+  isAdmin: boolean
   likedCommentIds: string[]
 }
 
@@ -68,9 +78,11 @@ function scrollPostedCommentIntoView(
 
 export function ThreadCommentsPanel({
   threadId,
+  threadSlug,
   initialComments,
   currentUserId,
   isLoggedIn,
+  isAdmin,
   likedCommentIds: initialLikedIds,
 }: Props) {
   const [impersonation, setImpersonation] = useState<ReturnType<typeof getImpersonation>>(null)
@@ -172,6 +184,84 @@ export function ThreadCommentsPanel({
   function openReplyTo(commentId: string) {
     setReplyingToId((prev) => (prev === commentId ? null : commentId))
     setReplyBody("")
+  }
+
+  function appendCommentFromMedia(
+    comment: SentForumCommentMedia,
+    profile: { display_name: string | null; avatar_url: string | null } | null,
+  ) {
+    setComments((prev) => [
+      ...prev,
+      {
+        id: comment.id,
+        body: comment.body,
+        created_at: comment.created_at,
+        user_id: comment.user_id,
+        parent_id: comment.parent_id,
+        metadata: comment.metadata,
+        profiles: profile,
+        forum_comment_likes: [{ count: 0 }],
+      },
+    ])
+  }
+
+  async function handleMediaSent(comment: SentForumCommentMedia, parentId: string | null) {
+    const supabase = createClient()
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name, avatar_url")
+      .eq("id", comment.user_id)
+      .maybeSingle()
+
+    appendCommentFromMedia(comment, profile ?? { display_name: null, avatar_url: null })
+
+    if (parentId) {
+      setReplyBody("")
+      setReplyingToId(null)
+      flashPosted("Reply posted")
+    } else {
+      setBody("")
+      flashPosted("Posted")
+    }
+
+    scrollPostedCommentIntoView(comment.id, composerBarRef.current)
+  }
+
+  function renderCommentBody(comment: ThreadCommentRow) {
+    const imageAtt = parseForumCommentImageAttachment(comment.metadata)
+    if (imageAtt) {
+      return (
+        <ForumCommentMediaCard
+          commentId={comment.id}
+          fileName={imageAtt.file_name}
+          body={comment.body}
+        />
+      )
+    }
+    return (
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-[15px]">
+        {comment.body}
+      </p>
+    )
+  }
+
+  function renderReplyBody(comment: ThreadCommentRow) {
+    const imageAtt = parseForumCommentImageAttachment(comment.metadata)
+    if (imageAtt) {
+      return (
+        <ForumCommentMediaCard
+          commentId={comment.id}
+          fileName={imageAtt.file_name}
+          body={comment.body}
+          className="mt-1.5"
+        />
+      )
+    }
+    return (
+      <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+        {comment.body}
+      </p>
+    )
   }
 
   async function submitTopLevel(e?: React.FormEvent) {
@@ -378,11 +468,14 @@ export function ThreadCommentsPanel({
     }
   }
 
-  async function deleteComment(commentId: string) {
-    if (!confirm("Delete this comment?")) return
-    const supabase = createClient()
-    const { error } = await supabase.from("forum_comments").delete().eq("id", commentId)
-    if (!error) {
+  async function deleteComment(commentId: string, isOwnComment: boolean) {
+    const message = isOwnComment
+      ? "Delete this comment?"
+      : "Delete this comment as an admin? This cannot be undone."
+    if (!confirm(message)) return
+
+    const result = await deleteForumCommentAction(commentId, threadSlug)
+    if ("success" in result && result.success) {
       setComments((prev) => {
         const target = prev.find((c) => c.id === commentId)
         if (!target) return prev
@@ -400,9 +493,17 @@ export function ThreadCommentsPanel({
         setReplyingToId(null)
         setReplyBody("")
       }
-    } else {
-      toast.error("Couldn’t delete that comment.")
+      toast.success("Comment deleted")
+      return
     }
+
+    toast.error("error" in result ? result.error : "Couldn’t delete that comment.")
+  }
+
+  function canDeleteComment(userId: string | null | undefined): boolean {
+    if (!currentUserId) return false
+    if (isAdmin) return true
+    return userId === currentUserId
   }
 
   const mainRemaining = MAX_LEN - body.length
@@ -443,6 +544,7 @@ export function ThreadCommentsPanel({
                 const name = displayName(c)
                 const initial = name.charAt(0).toUpperCase()
                 const mine = currentUserId != null && c.user_id === currentUserId
+                const showDelete = canDeleteComment(c.user_id)
                 const nested = repliesByParent.get(c.id) ?? []
                 return (
                   <li
@@ -469,9 +571,7 @@ export function ThreadCommentsPanel({
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-[15px]">
-                          {c.body}
-                        </p>
+                        {renderCommentBody(c)}
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <CommentLikeButton
                             commentId={c.id}
@@ -492,13 +592,13 @@ export function ThreadCommentsPanel({
                               Reply
                             </Button>
                           )}
-                          {mine && (
+                          {showDelete && (
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               className="h-8 gap-1 rounded-full px-3 text-xs text-muted-foreground hover:text-destructive"
-                              onClick={() => void deleteComment(c.id)}
+                              onClick={() => void deleteComment(c.id, mine)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                               Delete
@@ -530,6 +630,15 @@ export function ThreadCommentsPanel({
                               >
                                 {replyRemaining} left
                               </span>
+                              <ForumCommentMediaSendButton
+                                threadId={threadId}
+                                threadSlug={threadSlug}
+                                parentId={c.id}
+                                caption={replyBody}
+                                disabled={replySubmitting}
+                                onSent={(comment) => void handleMediaSent(comment, c.id)}
+                                className="h-8 w-8"
+                              />
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -561,6 +670,7 @@ export function ThreadCommentsPanel({
                               const rname = displayName(r)
                               const rinitial = rname.charAt(0).toUpperCase()
                               const rmine = currentUserId != null && r.user_id === currentUserId
+                              const showReplyDelete = canDeleteComment(r.user_id)
                               return (
                                 <li key={r.id} id={`comment-${r.id}`} className="scroll-mt-16">
                                   <div className="flex gap-2.5">
@@ -575,9 +685,7 @@ export function ThreadCommentsPanel({
                                           {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                                         </span>
                                       </div>
-                                      <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                                        {r.body}
-                                      </p>
+                                      {renderReplyBody(r)}
                                       <div className="mt-2 flex flex-wrap items-center gap-2">
                                         <CommentLikeButton
                                           commentId={r.id}
@@ -586,13 +694,13 @@ export function ThreadCommentsPanel({
                                           isLoggedIn={isLoggedIn}
                                           compact
                                         />
-                                        {rmine && (
+                                        {showReplyDelete && (
                                           <Button
                                             type="button"
                                             variant="ghost"
                                             size="sm"
                                             className="h-7 gap-1 rounded-full px-2 text-xs text-muted-foreground hover:text-destructive"
-                                            onClick={() => void deleteComment(r.id)}
+                                            onClick={() => void deleteComment(r.id, rmine)}
                                           >
                                             <Trash2 className="h-3 w-3" />
                                             Delete
@@ -671,13 +779,22 @@ export function ThreadCommentsPanel({
                     </span>
                   </div>
                 </div>
-                <Button
-                  type="submit"
-                  disabled={submitting || !body.trim()}
-                  className="h-10 w-full shrink-0 rounded-full px-6 sm:h-10 sm:w-auto"
-                >
-                  {submitting ? "Posting…" : "Post comment"}
-                </Button>
+                <div className="flex w-full shrink-0 items-end gap-2 sm:w-auto">
+                  <ForumCommentMediaSendButton
+                    threadId={threadId}
+                    threadSlug={threadSlug}
+                    caption={body}
+                    disabled={submitting}
+                    onSent={(comment) => void handleMediaSent(comment, null)}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={submitting || !body.trim()}
+                    className="h-10 w-full shrink-0 rounded-full px-6 sm:h-10 sm:w-auto"
+                  >
+                    {submitting ? "Posting…" : "Post comment"}
+                  </Button>
+                </div>
                 {postedHint ? (
                   <p
                     className="w-full basis-full text-xs font-medium text-emerald-600 dark:text-emerald-400"
