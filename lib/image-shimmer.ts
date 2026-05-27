@@ -26,10 +26,10 @@ export function shimmerDataUrl(w = 700, h = 700): string {
   return `data:image/svg+xml;base64,${toBase64(shimmerSvg(w, h))}`
 }
 
-/** Pre-built square shimmer — use as blurDataURL for listing card thumbnails. */
+/** Pre-built square shimmer — use as blurDataURL for non-tile imagery (gallery, heroes, etc.). */
 export const squareShimmer = shimmerDataUrl(700, 700)
 
-/** Pre-built portrait shimmer (3:4) — use for surfboard / portrait listing images. */
+/** Pre-built portrait shimmer (3:4) — listing tiles use CSS wave shimmer in {@link ListingTileImageMedia} instead. */
 export const portraitShimmer = shimmerDataUrl(600, 800)
 
 /** Pre-built wide shimmer — use for banner / hero images. */

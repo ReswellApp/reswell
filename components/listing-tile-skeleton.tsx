@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton"
+import { ListingTileShimmer } from "@/components/ui/skeleton"
 import {
   homePeerListingGridCardClass,
   homeUniformScrollBodyClass,
@@ -41,19 +41,19 @@ export function ListingTileSkeleton({
 
   return (
     <div className={cn(cardClass, className)} aria-hidden>
-      <Skeleton className="aspect-[3/4] w-full shrink-0 rounded-none" />
+      <ListingTileShimmer className="aspect-[3/4] w-full shrink-0 rounded-none" />
       <div className={cn(homeUniformScrollBodyClass, "gap-1.5")}>
-        <Skeleton className={cn("h-4", titleWidth)} />
-        <Skeleton className="h-3 w-24" />
+        <ListingTileShimmer className={cn("h-4", titleWidth)} />
+        <ListingTileShimmer className="h-3 w-24" />
         <div className={homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
-            <Skeleton className="h-6 w-20" />
-            <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
+            <ListingTileShimmer className="h-6 w-20" />
+            <ListingTileShimmer className="h-9 w-9 shrink-0 rounded-md" />
           </div>
           {footerTrailingLines >= 2 ? (
             <>
-              <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-3 w-36" />
+              <ListingTileShimmer className="h-3 w-28" />
+              <ListingTileShimmer className="h-3 w-36" />
             </>
           ) : null}
         </div>

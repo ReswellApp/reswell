@@ -89,6 +89,51 @@
   border-radius: 0.5rem;
 }
 
+/* ─── Listing tile shimmer (PangoBooks-style wave on images + skeleton bars) ─ */
+@keyframes listing-tile-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.listing-tile-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(243 244 246) 0%,
+    rgb(229 231 235) 50%,
+    rgb(243 244 246) 100%
+  );
+  background-size: 200% 100%;
+  animation: listing-tile-shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .listing-tile-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(55 65 81) 0%,
+    rgb(75 85 99) 50%,
+    rgb(55 65 81) 100%
+  );
+}
+
+.listing-tile-shimmer-overlay {
+  transition: opacity 0.25s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listing-tile-shimmer {
+    animation: none;
+    background: rgb(243 244 246);
+  }
+
+  .dark .listing-tile-shimmer {
+    background: rgb(55 65 81);
+  }
+}
+
 /* ─── Scroll fade-in ───────────────────────────────────────────────────────── */
 @keyframes fade-up-in {
   from {

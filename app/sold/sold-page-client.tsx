@@ -84,7 +84,6 @@ function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={homePeerListingGridCardClass}
       cardContentClassName={homeUniformScrollBodyClass}
-      useBlurPlaceholder={false}
       imageGrayscale
       showFavorites={false}
       favorites={null}

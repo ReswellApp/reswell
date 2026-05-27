@@ -12,4 +12,17 @@ function Skeleton({
   )
 }
 
-export { Skeleton }
+/** Wave shimmer placeholder — matches listing tile / PangoBooks-style loading. */
+function ListingTileShimmer({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn('listing-tile-shimmer rounded-md', className)}
+      {...props}
+    />
+  )
+}
+
+export { Skeleton, ListingTileShimmer }

@@ -7,6 +7,7 @@ import {
   useState,
   type MouseEventHandler,
   type ReactNode,
+  type SyntheticEvent,
 } from "react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -22,8 +23,6 @@ export interface ListingTileImageMediaProps {
   aspectClass: string
   imageAspect: "portrait" | "square"
   linkLayoutUnified: boolean
-  useBlurPlaceholder: boolean
-  blurDataURL: string
   imageFit: "cover" | "contain"
   imageClassName?: string
   imageGrayscale?: boolean
@@ -33,6 +32,7 @@ export interface ListingTileImageMediaProps {
   overlayFull?: ReactNode
 }
 
+/** Listing tile imagery — wave shimmer overlay while photos load (default for all {@link ListingTile} usage). */
 export function ListingTileImageMedia({
   urls,
   imageAlt,
@@ -40,8 +40,6 @@ export function ListingTileImageMedia({
   aspectClass,
   imageAspect,
   linkLayoutUnified,
-  useBlurPlaceholder,
-  blurDataURL,
   imageFit,
   imageClassName,
   imageGrayscale,
@@ -51,6 +49,18 @@ export function ListingTileImageMedia({
 }: ListingTileImageMediaProps) {
   const count = urls.length
   const [index, setIndex] = useState(0)
+  const [loadedByUrl, setLoadedByUrl] = useState<Record<string, true>>({})
+
+  const markImageLoaded = useCallback((url: string) => {
+    setLoadedByUrl((prev) => (prev[url] ? prev : { ...prev, [url]: true }))
+  }, [])
+
+  const handleImageLoad = useCallback(
+    (url: string) => (_event: SyntheticEvent<HTMLImageElement>) => {
+      markImageLoaded(url)
+    },
+    [markImageLoaded],
+  )
 
   const goPrev = useCallback<MouseEventHandler<HTMLButtonElement>>(
     (e) => {
@@ -78,6 +88,8 @@ export function ListingTileImageMedia({
       : ({ objectFit: "cover" } as const)
 
   const hasImage = count > 0
+  const activeUrl = urls[index] ?? ""
+  const showImageShimmer = hasImage && !loadedByUrl[activeUrl]
 
   return (
     <div
@@ -111,7 +123,8 @@ export function ListingTileImageMedia({
                 imageClassName,
               )}
               style={objectStyle}
-              {...(useBlurPlaceholder ? { placeholder: "blur" as const, blurDataURL } : {})}
+              onLoad={handleImageLoad(u)}
+              onError={handleImageLoad(u)}
               priority={i === 0}
             />
           )
@@ -121,6 +134,16 @@ export function ListingTileImageMedia({
           No Image
         </div>
       )}
+
+      {hasImage ? (
+        <div
+          className={cn(
+            "listing-tile-shimmer listing-tile-shimmer-overlay absolute inset-0 z-[3]",
+            !showImageShimmer && "pointer-events-none opacity-0",
+          )}
+          aria-hidden
+        />
+      ) : null}
 
       {[
         overlayTopLeft != null ? (

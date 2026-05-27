@@ -8,7 +8,6 @@ import {
   listingTileCarouselImageUrls,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
-import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { ListingTileImageMedia } from "@/components/listing-tile-image-media"
 import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill"
@@ -86,9 +85,6 @@ export interface ListingTileProps {
   imageClassName?: string
   imageGrayscale?: boolean
 
-  useBlurPlaceholder?: boolean
-  blurDataURL?: string
-
   cardClassName?: string
   linkLayout?: ListingTileLinkLayout
   linkClassName?: string
@@ -159,9 +155,6 @@ export function ListingTile({
   imageFit = "cover",
   imageClassName,
   imageGrayscale,
-  /** `false` avoids Next.js blurred shimmer over the photo while loading (cards stay crisp once painted). */
-  useBlurPlaceholder = false,
-  blurDataURL,
   cardClassName = listingProductCardGridClassName,
   linkLayout = "split",
   linkClassName,
@@ -188,8 +181,6 @@ export function ListingTile({
   const carouselProxiedUrls = listingTileCarouselImageUrls(listingImages ?? null)
   const tileImageUrls =
     carouselProxiedUrls.length > 0 ? carouselProxiedUrls : src ? [src] : []
-  const defaultBlur =
-    blurDataURL ?? (imageAspect === "square" ? squareShimmer : portraitShimmer)
   const aspectClass =
     imageAspect === "square" ? "aspect-square" : "aspect-[3/4]"
 
@@ -211,8 +202,6 @@ export function ListingTile({
       aspectClass={aspectClass}
       imageAspect={imageAspect}
       linkLayoutUnified={linkLayout === "unified"}
-      useBlurPlaceholder={useBlurPlaceholder}
-      blurDataURL={defaultBlur}
       imageFit={imageFit}
       imageClassName={imageClassName}
       imageGrayscale={imageGrayscale}
