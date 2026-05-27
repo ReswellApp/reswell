@@ -1,6 +1,7 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
+import { ListingTileSkeleton } from "@/components/listing-tile-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 
 /**
@@ -22,9 +23,7 @@ function ListingDetailBottomStripSkeleton({
       <div className="flex w-full min-w-0 gap-3 overflow-x-auto overflow-y-visible pb-2 pl-4 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 sm:pl-6 lg:pl-8 [&::-webkit-scrollbar]:hidden">
         {Array.from({ length: tileCount }, (_, i) => (
           <div key={i} className="w-[42vw] shrink-0 sm:w-52 lg:w-56">
-            <Skeleton className="aspect-[3/4] w-full rounded-2xl border border-neutral-200/80 dark:border-neutral-700/80" />
-            <Skeleton className="mt-3 h-4 w-full max-w-[min(100%,14rem)]" />
-            <Skeleton className="mt-2 h-4 w-24" />
+            <ListingTileSkeleton layout="homeScroll" index={i} />
           </div>
         ))}
       </div>

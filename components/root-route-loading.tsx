@@ -1,8 +1,10 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { BoardsBrowsePageSkeleton } from "@/components/boards-browse-page-skeleton"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
+import { ListingTileScrollRowSkeleton } from "@/components/listing-tile-skeleton"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
 import { cn } from "@/lib/utils"
 
@@ -37,15 +39,7 @@ function HomeLoadingSkeleton() {
       </section>
       <div className="container mx-auto px-4 py-12 sm:py-16">
         <div className="skeleton mb-8 h-9 w-72 max-w-[85%]" />
-        <div className="flex gap-3 overflow-hidden pb-1 sm:gap-4">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="w-[42vw] shrink-0 sm:w-40 md:w-44">
-              <div className="skeleton aspect-[3/4] w-full !rounded-xl" />
-              <div className="skeleton mt-3 h-4 w-full" />
-              <div className="skeleton mt-2 h-4 w-[70%]" />
-            </div>
-          ))}
-        </div>
+        <ListingTileScrollRowSkeleton count={8} />
       </div>
     </div>
   )
@@ -61,6 +55,9 @@ export function RootRouteLoading() {
   }
   if (pathname?.startsWith("/sell")) {
     return <SellFlowRouteSkeleton />
+  }
+  if (pathname === "/boards") {
+    return <BoardsBrowsePageSkeleton />
   }
   return <RouteTransitionMark variant="overlay" />
 }

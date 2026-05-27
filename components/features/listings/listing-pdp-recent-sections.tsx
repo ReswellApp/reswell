@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useLayoutEffect, useState } from "react"
+import { ListingTileSkeleton } from "@/components/listing-tile-skeleton"
 import { listingDetailHorizontalStripBleedClassName } from "@/components/features/home/home-listing-scroll-row"
 import {
   HomePeerListingScrollTile,
@@ -13,8 +14,6 @@ import {
   readRecentSurfboardListingIds,
 } from "@/lib/utils/recent-viewed-surfboards-storage"
 import { Skeleton } from "@/components/ui/skeleton"
-import { listingProductCardClassName } from "@/lib/listing-card-styles"
-import { homeUniformScrollBodyClass } from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
 
 function pdpRecentToHomePeerListing(
@@ -111,7 +110,6 @@ function PdpRecentStripSkeleton({
   titleSkeletonClass: string
   tileCount: number
 }) {
-  const sparse = tileCount <= 2
   return (
     <section
       className="min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70"
@@ -122,35 +120,13 @@ function PdpRecentStripSkeleton({
       <div className="mb-8">
         <Skeleton className={cn("h-9", titleClass)} />
       </div>
-      <div className={listingDetailHorizontalStripBleedClassName}>
-        <div
-          className={cn(
-            "flex gap-3 px-4 pb-2 sm:gap-4 sm:px-6 lg:px-8",
-            sparse
-              ? cn("w-full flex-row items-stretch", tileCount === 1 && "justify-center")
-              : "w-full flex-nowrap overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] sm:overflow-x-visible [&::-webkit-scrollbar]:hidden",
-          )}
-        >
-          {Array.from({ length: tileCount }, (_, i) => (
-            <div
-              key={i}
-              className={pdpRecentStripTileWrapClass(tileCount, tileCount <= 2)}
-            >
-              <div className={cn(listingProductCardClassName, "flex min-h-0 min-w-0 flex-1 flex-col")}>
-                <Skeleton className="aspect-[3/4] w-full min-h-[112px] shrink-0 rounded-none sm:min-h-[128px]" />
-                <div className={cn(homeUniformScrollBodyClass, "gap-1.5")}>
-                  <Skeleton className="h-4 w-full max-w-[min(100%,14rem)]" />
-                  <Skeleton className="h-3 w-24" />
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <Skeleton className="h-6 w-20" />
-                    <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PdpRecentHorizontalStrip tileCount={tileCount}>
+        {Array.from({ length: tileCount }, (_, i) => (
+          <div key={i} className={pdpRecentStripTileWrapClass(tileCount, tileCount <= 2)}>
+            <ListingTileSkeleton layout="homeScroll" index={i} />
+          </div>
+        ))}
+      </PdpRecentHorizontalStrip>
     </section>
   )
 }

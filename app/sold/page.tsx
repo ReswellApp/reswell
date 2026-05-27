@@ -7,6 +7,8 @@ import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { RecentlySoldPageClient, type SoldFeedListing } from "./sold-page-client"
+import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 const SOLD_LIMIT = 40
@@ -113,12 +115,18 @@ export default function SoldPage() {
     <main className="flex-1">
       <Suspense
         fallback={
-          <div className="border-b border-border bg-background">
-            <div className="container mx-auto py-8">
-              <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-              <div className="mt-2 h-4 w-72 animate-pulse rounded bg-muted" />
-            </div>
-          </div>
+          <>
+            <section className="border-b border-border bg-background">
+              <div className="container mx-auto py-8">
+                <Skeleton className="h-8 w-48 max-w-[85%]" />
+                <Skeleton className="mt-2 h-4 w-72 max-w-full" />
+              </div>
+            </section>
+            <section className="container mx-auto py-6">
+              <Skeleton className="mb-6 h-12 w-full max-w-xl mx-auto rounded-lg" />
+              <ListingTileGridSkeleton count={10} ariaLabel="Loading recently sold surfboards" />
+            </section>
+          </>
         }
       >
         <SoldPageData />

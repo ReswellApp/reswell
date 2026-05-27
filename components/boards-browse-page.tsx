@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -578,22 +578,7 @@ export async function BoardsBrowsePage(props: {
             initialCondition={searchParams.condition ?? "all"}
             initialSort={searchParams.sort ?? BOARDS_BROWSE_DEFAULT_SORT}
           >
-            <Suspense
-              fallback={
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {Array.from({ length: 10 }).map((_, i) => (
-                    <Card key={i} className="overflow-hidden">
-                      <div className="aspect-[3/4] w-full skeleton" />
-                      <CardContent className="p-3 space-y-2">
-                        <div className="h-3.5 skeleton" style={{ width: `${60 + (i % 3) * 15}%` }} />
-                        <div className="h-3 skeleton" style={{ width: `${40 + (i % 4) * 10}%` }} />
-                        <div className="h-5 w-16 skeleton" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              }
-            >
+            <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
               <BoardListings searchParams={searchParams} />
             </Suspense>
           </BoardsBrowseClient>

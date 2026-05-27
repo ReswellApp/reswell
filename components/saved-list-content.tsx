@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ListingTileGridSkeleton } from '@/components/listing-tile-skeleton'
 import { Heart, MapPin } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { getPublicSellerDisplayName } from '@/lib/listing-labels'
@@ -98,18 +99,7 @@ export function SavedListContent() {
       <p className="text-muted-foreground mb-6">Your collection of favorite gear and boards</p>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="overflow-hidden animate-pulse">
-              <div className="aspect-[3/4] w-full bg-muted" />
-              <CardContent className="p-3 space-y-2">
-                <div className="h-4 bg-muted rounded w-3/4" />
-                <div className="h-6 bg-muted rounded w-1/4" />
-                <div className="h-3 bg-muted rounded w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <ListingTileGridSkeleton count={6} footerTrailingLines={2} ariaLabel="Loading favorites" />
       ) : favorites.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
