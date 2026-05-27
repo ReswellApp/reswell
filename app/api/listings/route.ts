@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { revalidateBoardsBrowseCatalog } from '@/lib/cache/revalidate-boards-browse-catalog'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { syncListingToGoogleMerchantBestEffort } from '@/lib/services/googleMerchantSync'
 import { slugify } from '@/lib/slugify'
@@ -225,6 +226,10 @@ export async function POST(request: NextRequest) {
     photoUrl: photoUrl || null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+
+  if (section === 'surfboards') {
+    revalidateBoardsBrowseCatalog()
+  }
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }

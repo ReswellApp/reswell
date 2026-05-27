@@ -3,6 +3,7 @@ import {
   deleteListingDocument,
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
+import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import {
   fetchListingImageUrlsForListingIds,
@@ -161,6 +162,8 @@ export async function endSellerListing(
 
     void syncListingToGoogleMerchantBestEffort(supabase, listingId)
 
+    revalidateBoardsBrowseCatalog()
+
     return { ok: true, mode: "archive" }
   }
 
@@ -184,6 +187,7 @@ export async function endSellerListing(
         // ES optional
       }
       void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+      revalidateBoardsBrowseCatalog()
       return {
         ok: true,
         mode: "archive",
@@ -206,6 +210,8 @@ export async function endSellerListing(
   } catch {
     // best-effort cleanup after DB delete
   }
+
+  revalidateBoardsBrowseCatalog()
 
   return { ok: true, mode: "delete" }
 }

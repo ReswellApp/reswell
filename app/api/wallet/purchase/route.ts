@@ -12,6 +12,7 @@ import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-m
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -231,6 +232,8 @@ export async function POST(request: NextRequest) {
     console.error("[wallet/purchase] listing update:", listingErr)
     return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
   }
+
+  revalidateBoardsBrowseCatalog()
 
   void syncListingToGoogleMerchantBestEffort(serviceSupabase, listing.id)
 

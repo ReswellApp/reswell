@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 
 /**
@@ -22,6 +23,8 @@ export async function relistAfterRefund(
     })
     return
   }
+
+  revalidateBoardsBrowseCatalog()
 
   void syncListingToGoogleMerchantBestEffort(supabase, listingId)
 }

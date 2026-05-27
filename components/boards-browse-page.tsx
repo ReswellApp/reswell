@@ -14,14 +14,23 @@ import {
 import { createClient } from "@/lib/supabase/server"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
-import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
+import { getBoardsBrowseCategoryTypePageCached } from "@/lib/cache/boards-browse-catalog"
 import { Users } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
 import {
-  boardTypeForDbFromBrowseParam,
+  BOARDS_BROWSE_PAGE_SIZE,
+  buildSurfboardBrowseBaseQuery,
+  compareBoardBrowseRows,
+  fetchNearestSurfboardsWithinRadius,
+  LOCATION_FALLBACK_RADIUS_MI,
+  LOCATION_FALLBACK_WIDE_RADIUS_MI,
+  suppressedBrowseRank,
+  type BoardBrowseListingRow,
+  type SurfboardBrowseListingsQuery,
+} from "@/lib/db/boards-browse-listings"
+import {
   boardsBrowseBoardTypeLabel,
   boardsBrowseHeroSubtext,
   BOARDS_BROWSE_DEFAULT_SORT,
@@ -30,369 +39,19 @@ import {
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
 import {
   boardDimensionBrowseFieldsFromSearchParams,
-  boardDimensionBrowseIlikeTokens,
   appendBoardDimensionBrowseParams,
-  type BoardDimensionBrowseFields,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { isUuidString } from "@/lib/utils/isUuid"
-import type { PostgrestClientOptions, PostgrestFilterBuilder } from "@supabase/postgrest-js"
-
-/**
- * Explicit chain type so `async function` return is not inferred as `PostgrestSingleResponse`
- * (PostgREST builders are `PromiseLike` their own HTTP result).
- */
-type SurfboardBrowseListingsQuery = PostgrestFilterBuilder<
-  PostgrestClientOptions,
-  // Generated `Database` type is not wired for this client; keep builder chain loose.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any,
-  Record<string, unknown>,
-  Record<string, unknown>[],
-  unknown,
-  unknown,
-  unknown
->
-
-type BoardBrowseListingRow = {
-  id: string
-  slug: string | null
-  user_id: string
-  title: string
-  price: number | string
-  status: string
-  created_at?: string
-  latitude?: number | null
-  longitude?: number | null
-  local_pickup?: boolean | null
-  shipping_available?: boolean | null
-  listing_images?: ListingImageForCard[] | null
-  categories?: { name?: string | null } | null | { name?: string | null }[] | null
-  board_type?: string | null
-  condition?: string | null
-  suppressed_on_boards_browse?: boolean | null
-}
-
-function suppressedBrowseRank(row: BoardBrowseListingRow): number {
-  return row.suppressed_on_boards_browse === true ? 1 : 0
-}
-
-function compareBoardBrowseRows(
-  a: BoardBrowseListingRow,
-  b: BoardBrowseListingRow,
-  sort: string,
-): number {
-  const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
-  if (supDiff !== 0) return supDiff
-
-  const pa = Number(a.price ?? 0)
-  const pb = Number(b.price ?? 0)
-  const ta = new Date(a.created_at ?? 0).getTime()
-  const tb = new Date(b.created_at ?? 0).getTime()
-  if (sort === "price-low") return pa - pb
-  if (sort === "price-high") return pb - pa
-  if (sort === "price-newest") {
-    const priceDiff = pb - pa
-    if (priceDiff !== 0) return priceDiff
-  }
-  return tb - ta
-}
-
-function haversineMi(
-  lat1: number,
-  lon1: number,
-  lat2: number | null | undefined,
-  lon2: number | null | undefined,
-): number {
-  if (lat2 == null || lon2 == null) return Infinity
-  const R = 3959
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
-
-function escapePostgrestIlikeFragment(fragment: string): string {
-  return fragment.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-}
-
-function ilikeContainsPattern(fragment: string): string {
-  return `"%${escapePostgrestIlikeFragment(fragment)}%"`
-}
-
-const SURFBOARD_BROWSE_LISTING_SELECT = `
-  *,
-  listing_images (url, thumbnail_url, is_primary),
-  categories (name),
-  profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
-`
-
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
-
-/** Narrow listings to a lat/lng window (~miles) before other filters that use `.or()`. */
-function geoBoundingBoxFiltersMiles(lat: number, lng: number, radiusMiles: number) {
-  const pad = 1.08
-  const mi = radiusMiles * pad
-  const dLat = mi / 69
-  const cosLat = Math.cos((lat * Math.PI) / 180)
-  const dLng = mi / (69 * Math.max(Math.abs(cosLat), 0.15))
-  return { minLat: lat - dLat, maxLat: lat + dLat, minLng: lng - dLng, maxLng: lng + dLng }
-}
-
-/** Shared keyword, type, condition, price, sort, location, and pagination filters for /boards. */
-async function buildSurfboardBrowseBaseQuery(
-  supabase: SupabaseServerClient,
-  params: {
-    boardType: string
-    condition: string
-    query: string
-    brand?: string
-    model?: string
-    brandId?: string
-    brandModelId?: string
-    dimensionFields?: BoardDimensionBrowseFields
-    /** Legacy `dimensions=` query param (single substring). */
-    legacyDimensions?: string
-    minPrice?: number
-    maxPrice?: number
-    geoBbox?: { lat: number; lng: number; radiusMiles: number }
-    /**
-     * Apply pagination before the keyword `.or()` so `.range()` is always on a full
-     * PostgrestFilterBuilder (some chains lose `.range` / URL access after `.or()`).
-     */
-    rangeBeforeKeywordOr?: { from: number; to: number }
-    /**
-     * Paginated /boards SQL path (non–in-memory geo). Applied after sort orders, before
-     * location text and keyword `.or()` — same rationale as `rangeBeforeKeywordOr`.
-     */
-    pagedRange?: { from: number; to: number }
-    /**
-     * Geo / nearest paths later call `.range()`; keyword search uses `.or()`. On some
-     * Supabase+PostgREST chains, `.order()` after `.or()` is missing — set this to apply
-     * `created_at` desc before the keyword `.or()` so the builder stays consistent.
-     */
-    prependCreatedAtOrder?: boolean
-    /**
-     * Sort for the paginated SQL path only (omitted for in-memory geo / nearest browsing).
-     * Applied before location text filters and keyword `.or()` so `.order()` is never
-     * chained after an `.or()`.
-     */
-    pagedSort?: string
-    /**
-     * City/state text narrow; must run after `.order()` and before keyword `.or()` so the
-     * client chain does not lose `.order` / `.range` after `.or()`.
-     */
-    locationTextFilter?: string
-    /** When true, sort admin-suppressed surfboards last (requires DB column). */
-    useSuppressionSort?: boolean
-  },
-): Promise<SurfboardBrowseListingsQuery> {
-  let dbQuery = supabase
-    .from("listings")
-    .select(SURFBOARD_BROWSE_LISTING_SELECT, { count: "exact" })
-    .eq("status", "active")
-    .eq("section", "surfboards")
-    .eq("hidden_from_site", false)
-
-  if (params.boardType !== "all") {
-    const dbBoardType = boardTypeForDbFromBrowseParam(params.boardType)
-    if (dbBoardType) {
-      dbQuery = dbQuery.eq("board_type", dbBoardType)
-    }
-  }
-
-  if (params.condition !== "all") {
-    dbQuery = dbQuery.eq("condition", params.condition)
-  }
-
-  if (params.minPrice != null && !Number.isNaN(params.minPrice) && params.minPrice >= 0) {
-    dbQuery = dbQuery.gte("price", params.minPrice)
-  }
-  if (params.maxPrice != null && !Number.isNaN(params.maxPrice) && params.maxPrice >= 0) {
-    dbQuery = dbQuery.lte("price", params.maxPrice)
-  }
-
-  if (params.prependCreatedAtOrder) {
-    if (params.useSuppressionSort) {
-      dbQuery = dbQuery.order("suppressed_on_boards_browse", { ascending: true })
-    }
-    dbQuery = dbQuery.order("created_at", { ascending: false })
-  }
-
-  if (params.geoBbox) {
-    const { minLat, maxLat, minLng, maxLng } = geoBoundingBoxFiltersMiles(
-      params.geoBbox.lat,
-      params.geoBbox.lng,
-      params.geoBbox.radiusMiles,
-    )
-    dbQuery = dbQuery
-      .gte("latitude", minLat)
-      .lte("latitude", maxLat)
-      .gte("longitude", minLng)
-      .lte("longitude", maxLng)
-  }
-
-  if (params.rangeBeforeKeywordOr) {
-    dbQuery = dbQuery.range(params.rangeBeforeKeywordOr.from, params.rangeBeforeKeywordOr.to)
-  }
-
-  if (params.pagedSort) {
-    if (params.useSuppressionSort) {
-      dbQuery = dbQuery.order("suppressed_on_boards_browse", { ascending: true })
-    }
-    const s = params.pagedSort
-    if (s === "price-low") {
-      dbQuery = dbQuery.order("price", { ascending: true })
-    } else if (s === "price-high") {
-      dbQuery = dbQuery.order("price", { ascending: false, nullsFirst: false })
-    } else if (s === "price-newest") {
-      dbQuery = dbQuery
-        .order("price", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false })
-    } else {
-      dbQuery = dbQuery.order("created_at", { ascending: false })
-    }
-  }
-
-  if (params.pagedRange) {
-    dbQuery = dbQuery.range(params.pagedRange.from, params.pagedRange.to)
-  }
-
-  const loc = params.locationTextFilter?.trim()
-  if (loc) {
-    dbQuery = applyListingsLocationTextFilter(dbQuery, loc)
-  }
-
-  const brandModelIdFilter = params.brandModelId?.trim()
-  const brandIdFilter = params.brandId?.trim()
-
-  if (brandModelIdFilter && isUuidString(brandModelIdFilter)) {
-    dbQuery = dbQuery.eq("brand_model_id", brandModelIdFilter)
-  } else if (brandIdFilter && isUuidString(brandIdFilter)) {
-    dbQuery = dbQuery.eq("brand_id", brandIdFilter)
-  } else {
-    const brandFilter = params.brand?.trim()
-    if (brandFilter) {
-      dbQuery = dbQuery.ilike("brand", `%${brandFilter}%`)
-    }
-    const modelFilter = params.model?.trim()
-    if (modelFilter) {
-      const pat = ilikeContainsPattern(modelFilter)
-      dbQuery = dbQuery.or(`model.ilike.${pat},title.ilike.${pat}`)
-    }
-  }
-
-  const dimensionTokens = boardDimensionBrowseIlikeTokens(
-    params.dimensionFields ??
-      boardDimensionBrowseFieldsFromSearchParams({
-        legacyDimensions: params.legacyDimensions,
-      }),
-  )
-  for (const token of dimensionTokens) {
-    dbQuery = dbQuery.ilike("dimensions", `%${token}%`)
-  }
-
-  if (params.query) {
-    const escaped = params.query.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-    const pattern = `"%${escaped}%"`
-    const { data: matchingCats } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("board", true)
-      .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
-    const categoryIds = (matchingCats ?? []).map((c) => c.id)
-    const orParts = [
-      `title.ilike.${pattern}`,
-      `description.ilike.${pattern}`,
-      `brand.ilike.${pattern}`,
-      `fins_setup.ilike.${pattern}`,
-      `tail_shape.ilike.${pattern}`,
-    ]
-    if (categoryIds.length > 0) orParts.push(`category_id.in.(${categoryIds.join(",")})`)
-    dbQuery = dbQuery.or(orParts.join(","))
-  }
-
-  return dbQuery
-}
-
-const LOCATION_FALLBACK_RADIUS_MI = 100
-const LOCATION_FALLBACK_WIDE_RADIUS_MI = 2200
-
-/**
- * Geodistance search: no city/state text filter — uses listing lat/lng only.
- * Results sorted nearest-first; capped at `radiusCapMi` miles from anchor.
- */
-async function fetchNearestSurfboardsWithinRadius(params: {
-  supabase: SupabaseServerClient
-  anchorLat: number
-  anchorLng: number
-  radiusCapMi: number
-  boardType: string
-  condition: string
-  query: string
-  brand?: string
-  model?: string
-  brandId?: string
-  brandModelId?: string
-  dimensionFields?: BoardDimensionBrowseFields
-  legacyDimensions?: string
-  minPrice?: number
-  maxPrice?: number
-  offset: number
-  limit: number
-  maxFetch: number
-  useSuppressionSort?: boolean
-}) {
-  let dbQuery = (await buildSurfboardBrowseBaseQuery(params.supabase, {
-    boardType: params.boardType,
-    condition: params.condition,
-    query: params.query,
-    brand: params.brand,
-    model: params.model,
-    brandId: params.brandId,
-    brandModelId: params.brandModelId,
-    dimensionFields: params.dimensionFields,
-    legacyDimensions: params.legacyDimensions,
-    minPrice: params.minPrice,
-    maxPrice: params.maxPrice,
-    useSuppressionSort: params.useSuppressionSort,
-    geoBbox: {
-      lat: params.anchorLat,
-      lng: params.anchorLng,
-      radiusMiles: params.radiusCapMi,
-    },
-    rangeBeforeKeywordOr: { from: 0, to: params.maxFetch - 1 },
-    prependCreatedAtOrder: true,
-  })) as unknown as SurfboardBrowseListingsQuery
-
-  const { data: rawBoards } = await dbQuery
-
-  type Row = BoardBrowseListingRow & { _distance: number }
-
-  let rows: Row[] = (rawBoards || []).map((b) => {
-    const row = b as BoardBrowseListingRow
-    return {
-      ...row,
-      _distance: haversineMi(params.anchorLat, params.anchorLng, row.latitude, row.longitude),
-    }
-  })
-  rows = rows.filter((b) => b._distance <= params.radiusCapMi)
-  rows.sort((a, b) => a._distance - b._distance)
-  const totalPages =
-    rows.length === 0 ? 0 : Math.max(1, Math.ceil(rows.length / params.limit))
-  const boards = rows.slice(params.offset, params.offset + params.limit)
-  return { boards, totalPages }
-}
+import { haversineMi } from "@/lib/db/boards-browse-listings"
 
 async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearchParams }) {
   const supabase = await createClient()
-  const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
+  const page = parseInt(searchParams.page || "1")
+  const limit = BOARDS_BROWSE_PAGE_SIZE
+  const offset = (page - 1) * limit
+
+  const cachedCategoryPage = await getBoardsBrowseCategoryTypePageCached(searchParams)
 
   const boardType = searchParams.type || "all"
   const condition = searchParams.condition || "all"
@@ -417,9 +76,6 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
   const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
   const lat = searchParams.lat ? Number(searchParams.lat) : undefined
   const lng = searchParams.lng ? Number(searchParams.lng) : undefined
-  const page = parseInt(searchParams.page || "1")
-  const limit = 30
-  const offset = (page - 1) * limit
   const geoBrowseMaxRows = 500
 
   const hasLatLng = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)
@@ -429,118 +85,127 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
 
   const useGeocodedAnchor = hasLatLng && (filterByRadius || isNearestSort)
 
-  let listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-    boardType,
-    condition,
-    query,
-    brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
-    model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
-    brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
-    brandModelId: brandModelIdForQuery,
-    dimensionFields,
-    minPrice,
-    maxPrice,
-    useSuppressionSort,
-    geoBbox:
-      filterByRadius && hasLatLng
-        ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
-        : undefined,
-    rangeBeforeKeywordOr:
-      filterByRadius || isNearestSort
-        ? { from: 0, to: geoBrowseMaxRows - 1 }
-        : undefined,
-    prependCreatedAtOrder: filterByRadius || isNearestSort,
-    pagedSort: filterByRadius || isNearestSort ? undefined : sort,
-    pagedRange:
-      filterByRadius || isNearestSort
-        ? undefined
-        : { from: offset, to: offset + limit - 1 },
-    locationTextFilter:
-      location.trim() && !useGeocodedAnchor ? location : undefined,
-  })) as unknown as SurfboardBrowseListingsQuery
-
-  /**
-   * When the user has a geocoded point and is searching by distance (radius or nearest),
-   * the anchor is lat/lng — do not also require `city`/`state` to match the geocoder label,
-   * or valid nearby listings are dropped before distance runs.
-   */
   let boards: Awaited<ReturnType<ReturnType<typeof supabase.from>["select"]>>["data"]
   let totalPages: number
 
-  if (filterByRadius || isNearestSort) {
-    const geoChain = listingsChain
-    const { data: rawBoards } = await geoChain
-    type GeoListingRow = BoardBrowseListingRow & { _distance: number }
-    let withDistance: GeoListingRow[] = (rawBoards || []).map((b) => {
-      const row = b as BoardBrowseListingRow
-      return {
-        ...row,
-        _distance: haversineMi(lat!, lng!, row.latitude, row.longitude),
-      }
-    })
-    if (filterByRadius) {
-      withDistance = withDistance.filter((b) => b._distance <= radiusMi!)
-    }
-    if (isNearestSort) {
-      withDistance.sort((a, b) => {
-        const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
-        if (supDiff !== 0) return supDiff
-        return a._distance - b._distance
-      })
-    } else {
-      withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
-    }
-    totalPages = Math.ceil(withDistance.length / limit)
-    boards = withDistance.slice(offset, offset + limit)
+  if (cachedCategoryPage) {
+    boards = cachedCategoryPage.boards
+    totalPages = cachedCategoryPage.totalPages
   } else {
-    let { data: rawBoards, count, error } = await listingsChain
+    const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
 
-    if (error && useSuppressionSort) {
-      console.error("BoardListings browse query (suppression sort):", error.message)
-      listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-        boardType,
-        condition,
-        query,
-        brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
-        model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
-        brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
-        brandModelId: brandModelIdForQuery,
-        dimensionFields,
-        minPrice,
-        maxPrice,
-        useSuppressionSort: false,
-        geoBbox:
-          filterByRadius && hasLatLng
-            ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
-            : undefined,
-        rangeBeforeKeywordOr:
-          filterByRadius || isNearestSort
-            ? { from: 0, to: geoBrowseMaxRows - 1 }
-            : undefined,
-        prependCreatedAtOrder: filterByRadius || isNearestSort,
-        pagedSort: filterByRadius || isNearestSort ? undefined : sort,
-        pagedRange:
-          filterByRadius || isNearestSort
-            ? undefined
-            : { from: offset, to: offset + limit - 1 },
-        locationTextFilter:
-          location.trim() && !useGeocodedAnchor ? location : undefined,
-      })) as unknown as SurfboardBrowseListingsQuery
-      ;({ data: rawBoards, count, error } = await listingsChain)
+    let listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
+      boardType,
+      condition,
+      query,
+      brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
+      model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+      brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+      brandModelId: brandModelIdForQuery,
+      dimensionFields,
+      minPrice,
+      maxPrice,
+      useSuppressionSort,
+      geoBbox:
+        filterByRadius && hasLatLng
+          ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
+          : undefined,
+      rangeBeforeKeywordOr:
+        filterByRadius || isNearestSort
+          ? { from: 0, to: geoBrowseMaxRows - 1 }
+          : undefined,
+      prependCreatedAtOrder: filterByRadius || isNearestSort,
+      pagedSort: filterByRadius || isNearestSort ? undefined : sort,
+      pagedRange:
+        filterByRadius || isNearestSort
+          ? undefined
+          : { from: offset, to: offset + limit - 1 },
+      locationTextFilter:
+        location.trim() && !useGeocodedAnchor ? location : undefined,
+    })) as unknown as SurfboardBrowseListingsQuery
+
+    /**
+     * When the user has a geocoded point and is searching by distance (radius or nearest),
+     * the anchor is lat/lng — do not also require `city`/`state` to match the geocoder label,
+     * or valid nearby listings are dropped before distance runs.
+     */
+    if (filterByRadius || isNearestSort) {
+      const geoChain = listingsChain
+      const { data: rawBoards } = await geoChain
+      type GeoListingRow = BoardBrowseListingRow & { _distance: number }
+      let withDistance: GeoListingRow[] = (rawBoards || []).map((b) => {
+        const row = b as BoardBrowseListingRow
+        return {
+          ...row,
+          _distance: haversineMi(lat!, lng!, row.latitude, row.longitude),
+        }
+      })
+      if (filterByRadius) {
+        withDistance = withDistance.filter((b) => b._distance <= radiusMi!)
+      }
+      if (isNearestSort) {
+        withDistance.sort((a, b) => {
+          const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
+          if (supDiff !== 0) return supDiff
+          return a._distance - b._distance
+        })
+      } else {
+        withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
+      }
+      totalPages = Math.ceil(withDistance.length / limit)
+      boards = withDistance.slice(offset, offset + limit)
+    } else {
+      let { data: rawBoards, count, error } = await listingsChain
+
+      if (error && useSuppressionSort) {
+        console.error("BoardListings browse query (suppression sort):", error.message)
+        listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
+          boardType,
+          condition,
+          query,
+          brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
+          model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+          brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+          brandModelId: brandModelIdForQuery,
+          dimensionFields,
+          minPrice,
+          maxPrice,
+          useSuppressionSort: false,
+          geoBbox:
+            filterByRadius && hasLatLng
+              ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
+              : undefined,
+          rangeBeforeKeywordOr:
+            filterByRadius || isNearestSort
+              ? { from: 0, to: geoBrowseMaxRows - 1 }
+              : undefined,
+          prependCreatedAtOrder: filterByRadius || isNearestSort,
+          pagedSort: filterByRadius || isNearestSort ? undefined : sort,
+          pagedRange:
+            filterByRadius || isNearestSort
+              ? undefined
+              : { from: offset, to: offset + limit - 1 },
+          locationTextFilter:
+            location.trim() && !useGeocodedAnchor ? location : undefined,
+        })) as unknown as SurfboardBrowseListingsQuery
+        ;({ data: rawBoards, count, error } = await listingsChain)
+      }
+
+      if (error) {
+        console.error("BoardListings browse query:", error.message)
+      }
+
+      boards = rawBoards
+
+      totalPages = Math.ceil((count || 0) / limit)
     }
-
-    if (error) {
-      console.error("BoardListings browse query:", error.message)
-    }
-
-    boards = rawBoards
-
-    totalPages = Math.ceil((count || 0) / limit)
   }
 
   let locationFallbackNotice: string | null = null
 
-  if (!boards || boards.length === 0) {
+  if (!cachedCategoryPage && (!boards || boards.length === 0)) {
+    const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
+
     let anchorLat: number | undefined = hasLatLng ? lat! : undefined
     let anchorLng: number | undefined = hasLatLng ? lng! : undefined
 

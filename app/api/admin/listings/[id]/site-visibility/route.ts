@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { setListingSiteVisibility } from "@/lib/services/listingSiteVisibility"
@@ -84,6 +85,7 @@ export async function PATCH(
   }
 
   revalidatePath("/boards")
+  revalidateBoardsBrowseCatalog()
   revalidatePath("/sold")
   revalidatePath("/search")
   revalidatePath("/shop")

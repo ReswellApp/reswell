@@ -1,8 +1,7 @@
 /**
- * Next.js prefetches `<Link>` targets in the viewport, so navigations to `/boards` often complete
- * before `loading.tsx` can paint. Disable prefetch for the surfboards browse routes so the
- * Reswell loading UI can show on click.
+ * Prefetch is enabled for `/boards` category views — listing grids are cached hourly
+ * (`boards-browse` tag) so navigations between nav pills stay fast.
  */
-export function boardsBrowseLinkPrefetch(href: string): boolean | undefined {
-  return href === "/boards" || href.startsWith("/boards?") ? false : undefined
+export function boardsBrowseLinkPrefetch(_href: string): boolean | undefined {
+  return undefined
 }
