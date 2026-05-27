@@ -46,6 +46,9 @@ export type SoldFeedListing = {
 export interface RecentlySoldPageClientProps {
   soldListings: SoldFeedListing[]
   soldStats: { count: number; gmvFormatted: string }
+  /** When set via `/sold?brandSlug=`, shown in the page header. */
+  brandFilterName?: string | null
+  brandUnknown?: boolean
 }
 
 function soldRelativeLabel(iso: string): string {
@@ -147,16 +150,30 @@ function SoldFeedGrid({ listings }: { listings: SoldFeedListing[] }) {
 export function RecentlySoldPageClient({
   soldListings,
   soldStats,
+  brandFilterName = null,
+  brandUnknown = false,
 }: RecentlySoldPageClientProps) {
   return (
     <>
       <section className="border-b border-border bg-background">
         <div className="container mx-auto py-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Recently sold
+            {brandUnknown ? (
+              "Brand not found"
+            ) : brandFilterName ? (
+              <>Recently sold — {brandFilterName}</>
+            ) : (
+              "Recently sold"
+            )}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Surfboards that found new homes on Reswell
+            {brandUnknown ? (
+              <>That brand slug is not in our directory.</>
+            ) : brandFilterName ? (
+              <>Sold surfboards and gear linked to {brandFilterName} on Reswell.</>
+            ) : (
+              <>Surfboards that found new homes on Reswell</>
+            )}
           </p>
         </div>
       </section>

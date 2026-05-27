@@ -9,3 +9,21 @@ export function brandKeywordSearchHref(brandDisplayName: string): string {
   params.set("q", q)
   return `/search?${params.toString()}`
 }
+
+/** Active listings for a directory brand (`/search?brandSlug=`). */
+export function brandActiveListingsBrowseHref(brand: { slug: string }): string {
+  const slug = brand.slug.trim()
+  if (!slug) return "/search"
+  const params = new URLSearchParams()
+  params.set("brandSlug", slug)
+  return `/search?${params.toString()}`
+}
+
+/** Sold listings for a directory brand (`/sold?brandSlug=`). */
+export function brandSoldListingsBrowseHref(brand: { slug: string }): string {
+  const slug = brand.slug.trim()
+  if (!slug) return "/sold"
+  const params = new URLSearchParams()
+  params.set("brandSlug", slug)
+  return `/sold?${params.toString()}`
+}

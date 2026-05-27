@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
-import { privatePageMetadata } from "@/lib/site-metadata"
+import { pageSeoMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import { findListingByParam } from "@/lib/listing-query"
 import {
@@ -14,6 +14,32 @@ import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
+import { UnavailableListingLandingPage } from "@/components/features/listings/unavailable-listing-landing-page"
+import { buildUnavailableListingLanding } from "@/lib/services/unavailableListingLanding"
+import {
+  UNAVAILABLE_LISTING_CONTEXT_SELECT,
+  type UnavailableListingContextRow,
+} from "@/lib/db/unavailable-listing-landing"
+
+function unavailableListingMetadata(listingParam: string): Metadata {
+  return pageSeoMetadata({
+    title: "This board is no longer available — Reswell",
+    description: "Check out related surfboards on Reswell.",
+    path: `/l/${listingParam}`,
+  })
+}
+
+async function loadUnavailableListingContext(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  listingParam: string,
+): Promise<UnavailableListingContextRow | null> {
+  const { listing } = await findListingByParam(supabase, listingParam, {
+    select: UNAVAILABLE_LISTING_CONTEXT_SELECT,
+    section: undefined,
+    includeHiddenListings: true,
+  })
+  return listing as UnavailableListingContextRow | null
+}
 
 export async function generateMetadata(props: {
   params: Promise<{ listing: string }>
@@ -30,20 +56,12 @@ export async function generateMetadata(props: {
     listing = live.listing
   }
   if (!listing) {
-    return privatePageMetadata({
-      title: "Listing — Reswell",
-      description: "This surfboard listing is unavailable or no longer on Reswell.",
-      path: `/l/${listingParam}`,
-    })
+    return unavailableListingMetadata(listingParam)
   }
   if (listing.hidden_from_site) {
     const supabase = await createClient()
     if (!(await canViewHiddenListing(supabase, listing))) {
-      return privatePageMetadata({
-        title: "Listing — Reswell",
-        description: "This listing is hidden from the public marketplace.",
-        path: `/l/${listingParam}`,
-      })
+      return unavailableListingMetadata(listingParam)
     }
   }
   if (listing.section === "new") {
@@ -59,8 +77,9 @@ export default async function ListingDetailPage(props: {
 }) {
   const { listing: listingParam } = await props.params
   let { listing, redirectSlug } = await getCachedPublicListingForRoute(listingParam)
+  const supabase = await createClient()
+
   if (!listing) {
-    const supabase = await createClient()
     const live = await findListingByParam(supabase, listingParam, {
       select: LISTING_ROUTE_SHELL_SELECT,
       section: undefined,
@@ -71,12 +90,15 @@ export default async function ListingDetailPage(props: {
   }
 
   if (!listing) {
-    notFound()
+    const landing = await buildUnavailableListingLanding(supabase, listingParam)
+    return <UnavailableListingLandingPage landing={landing} />
   }
 
-  const supabase = await createClient()
-  if (!(await canViewHiddenListing(supabase, listing))) {
-    notFound()
+  const canViewHidden = await canViewHiddenListing(supabase, listing)
+  if (!canViewHidden) {
+    const context = await loadUnavailableListingContext(supabase, listingParam)
+    const landing = await buildUnavailableListingLanding(supabase, listingParam, context)
+    return <UnavailableListingLandingPage landing={landing} />
   }
 
   if (redirectSlug) {

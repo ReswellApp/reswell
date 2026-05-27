@@ -1,12 +1,17 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ExternalLink, MapPin } from "lucide-react"
-import { BRANDS_BASE, brandKeywordSearchHref } from "@/lib/brands/routes"
+import {
+  BRANDS_BASE,
+  brandActiveListingsBrowseHref,
+  brandKeywordSearchHref,
+  brandSoldListingsBrowseHref,
+} from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { Button } from "@/components/ui/button"
 import type { RecentListing } from "@/components/recent-feed-client"
-import { RecentFeedClient } from "@/components/recent-feed-client"
+import { BrandMarketplaceListingsPreview } from "@/components/brands/brand-marketplace-listings-preview"
 
 /**
  * Brand detail — directory fields from `public.brands`; CTAs use keyword `/search?q={name}`;
@@ -118,36 +123,15 @@ export function BrandProfileView({
           aria-label="Listings"
         >
           <div className="container mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-            {brandListingsPreview.length > 0 ? (
-              <>
-                <RecentFeedClient
-                  listings={brandListingsPreview}
-                  favoritedListingIds={favoritedListingIds}
-                  isLoggedIn={isLoggedIn}
-                  viewerUserId={viewerUserId}
-                />
-                <div className="mt-8 flex justify-center sm:justify-end">
-                  <Button asChild variant="outline" className="rounded-full px-6">
-                    <Link href={brandKeywordSearchHref(brand.name)}>View all listings</Link>
-                  </Button>
-                </div>
-              </>
-            ) : null}
-
-            {brandSoldListingsPreview.length > 0 ? (
-              <div className={brandListingsPreview.length > 0 ? "mt-14" : undefined}>
-                <h2 className="mb-6 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                  Recently sold
-                </h2>
-                <RecentFeedClient
-                  listings={brandSoldListingsPreview}
-                  favoritedListingIds={favoritedListingIds}
-                  isLoggedIn={isLoggedIn}
-                  viewerUserId={viewerUserId}
-                  soldPresentation
-                />
-              </div>
-            ) : null}
+            <BrandMarketplaceListingsPreview
+              liveListings={brandListingsPreview}
+              soldListings={brandSoldListingsPreview}
+              favoritedListingIds={favoritedListingIds}
+              isLoggedIn={isLoggedIn}
+              viewerUserId={viewerUserId}
+              viewAllActiveHref={brandActiveListingsBrowseHref(brand)}
+              viewSoldHref={brandSoldListingsBrowseHref(brand)}
+            />
           </div>
         </section>
       ) : null}

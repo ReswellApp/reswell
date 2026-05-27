@@ -18,6 +18,8 @@ export interface RecentListing {
   local_pickup?: boolean | null
   board_type?: string | null
   board_length?: string | null
+  /** Completion time for sold rows (from `listings.updated_at`). */
+  updated_at?: string | null
   listing_images?: { url: string; is_primary?: boolean; thumbnail_url?: string | null }[] | null
   profiles?: { display_name?: string | null; avatar_url?: string | null; location?: string | null; sales_count?: number; shop_verified?: boolean } | null
   categories?: { name?: string | null; slug?: string | null } | null

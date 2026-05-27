@@ -18,6 +18,7 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   board_type,
   dimensions,
   created_at,
+  updated_at,
   listing_images (url, is_primary),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
@@ -42,6 +43,7 @@ interface BrandMarketplaceListingRow {
   local_pickup?: boolean | null
   board_type?: string | null
   dimensions?: string | null
+  updated_at?: string | null
   listing_images?: RecentListing["listing_images"]
   profiles?: RecentListing["profiles"]
   categories?: RecentListing["categories"]
@@ -64,6 +66,7 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
     local_pickup: row.local_pickup,
     board_type: row.board_type,
     board_length: boardLength,
+    updated_at: row.updated_at ?? null,
     listing_images: row.listing_images,
     profiles: row.profiles,
     categories: row.categories,
