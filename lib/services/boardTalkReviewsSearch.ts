@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { getBrandBySlug } from "@/lib/brands/server"
 import {
   listBrandModelsWithBrandsForBrandIds,
+  searchBrandModelsForBrandId,
   searchBrandModelsWithBrandsForSuggest,
 } from "@/lib/db/brand-models"
 import { searchBrandsCatalogSuggestWithClient } from "@/lib/services/brandDirectorySearch"
@@ -65,4 +67,40 @@ export async function searchBoardTalkReviewsCatalogSuggest(
       modelSlug: slugify(row.name),
     })),
   }
+}
+
+export async function searchBoardTalkReviewBrandsSuggest(
+  supabase: SupabaseClient,
+  qRaw: string,
+): Promise<BoardTalkReviewsBrandSuggestRow[]> {
+  const q = qRaw.trim()
+  if (q.length < 1) return []
+
+  const brandRes = await searchBrandsCatalogSuggestWithClient(supabase, q)
+  return brandRes.rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+  }))
+}
+
+export async function searchBoardTalkReviewModelsForBrand(
+  supabase: SupabaseClient,
+  brandSlugRaw: string,
+  qRaw: string,
+): Promise<BoardTalkReviewsModelSuggestRow[]> {
+  const brandSlug = brandSlugRaw.trim()
+  if (!brandSlug) return []
+
+  const brand = await getBrandBySlug(supabase, brandSlug)
+  if (!brand) return []
+
+  const models = await searchBrandModelsForBrandId(supabase, brand.id, qRaw, 15)
+  return models.map((row) => ({
+    id: row.id,
+    name: row.name,
+    brandName: brand.name,
+    brandSlug: brand.slug,
+    modelSlug: slugify(row.name),
+  }))
 }

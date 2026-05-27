@@ -60,6 +60,41 @@ export async function listBrandModelsForPublicCatalogByBrandId(
   }))
 }
 
+/** Typeahead within one brand's catalog (`brand_models`). Empty query returns the first page alphabetically. */
+export async function searchBrandModelsForBrandId(
+  supabase: SupabaseClient,
+  brandId: string,
+  qRaw: string,
+  limit = 15,
+): Promise<{ id: string; name: string }[]> {
+  const q = qRaw.trim()
+  if (!q) {
+    const all = await listBrandModelsForPublicCatalogByBrandId(supabase, brandId)
+    return all.slice(0, limit)
+  }
+
+  const safe = escapeIlikeToken(q)
+  const pattern = q.length < 4 ? `${safe}%` : `%${safe}%`
+
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select("id, name")
+    .eq("brand_id", brandId)
+    .ilike("name", pattern)
+    .order("name", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("searchBrandModelsForBrandId:", error.message)
+    return []
+  }
+
+  return ((data ?? []) as { id: string; name: string }[]).map((r) => ({
+    id: r.id,
+    name: r.name.trim(),
+  }))
+}
+
 function escapeIlikeToken(q: string): string {
   return q.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
 }

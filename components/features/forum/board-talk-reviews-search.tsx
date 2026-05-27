@@ -23,6 +23,7 @@ type BoardTalkReviewsSearchProps = {
   onValueChange: (next: string) => void
   onCatalogFilterChange: (next: BoardTalkReviewsCatalogFilter) => void
   className?: string
+  placeholder?: string
 }
 
 type DropdownItem =
@@ -61,6 +62,7 @@ export function BoardTalkReviewsSearch({
   onValueChange,
   onCatalogFilterChange,
   className,
+  placeholder = "Search brand, model, or review…",
 }: BoardTalkReviewsSearchProps) {
   const [open, setOpen] = React.useState(false)
   const [results, setResults] = React.useState<BoardTalkReviewsSearchSuggestResult | null>(null)
@@ -360,7 +362,7 @@ export function BoardTalkReviewsSearch({
               setOpen(false)
             }
           }}
-          placeholder="Search brand, model, or review…"
+          placeholder={placeholder}
           aria-label="Search board reviews"
           aria-expanded={showDropdown}
           aria-controls={showDropdown ? listId : undefined}

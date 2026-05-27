@@ -18,6 +18,8 @@ import {
   BoardTalkReviewsSearch,
   type BoardTalkReviewsCatalogFilter,
 } from "@/components/features/forum/board-talk-reviews-search"
+import { BoardTalkReviewPhoto } from "@/components/features/forum/board-talk-review-photo"
+import { useBoardTalkReviewsUi } from "@/components/features/forum/board-talk-reviews-ui-context"
 import { ratingStarFilledClassName, ratingStarEmptyClassName } from "@/lib/rating-star-styles"
 import type { BoardTalkReviewItem } from "@/lib/services/boardTalkReviews"
 import { cn } from "@/lib/utils"
@@ -47,6 +49,7 @@ function ReviewStars({ rating }: { rating: number }) {
 }
 
 export function BoardTalkReviewsView({ reviews }: BoardTalkReviewsViewProps) {
+  const reviewsUi = useBoardTalkReviewsUi()
   const [query, setQuery] = useState("")
   const [catalogFilter, setCatalogFilter] = useState<BoardTalkReviewsCatalogFilter>({
     brandSlug: null,
@@ -171,6 +174,10 @@ export function BoardTalkReviewsView({ reviews }: BoardTalkReviewsViewProps) {
               >
                 Reset filters
               </Button>
+            ) : reviewsUi ? (
+              <Button variant="outline" className="mt-6" onClick={reviewsUi.openPostReview}>
+                Post the first review
+              </Button>
             ) : (
               <Button variant="outline" asChild className="mt-6">
                 <Link href="/brands">Browse brands</Link>
@@ -205,6 +212,11 @@ export function BoardTalkReviewsView({ reviews }: BoardTalkReviewsViewProps) {
                   </div>
                   {review.comment ? (
                     <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{review.comment}</p>
+                  ) : null}
+                  {review.photoFileName ? (
+                    <div className="mt-4">
+                      <BoardTalkReviewPhoto reviewId={review.id} fileName={review.photoFileName} />
+                    </div>
                   ) : null}
                   <div className="mt-5">
                     <Button variant="outline" size="sm" asChild>

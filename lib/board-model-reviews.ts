@@ -12,6 +12,7 @@ export type BoardModelReviewRow = {
   id: string
   rating: number
   comment: string | null
+  metadata: unknown | null
   created_at: string
   reviewer_id: string
   profiles: { display_name: string | null; avatar_url: string | null } | null
@@ -51,6 +52,7 @@ export async function listBoardModelReviews(
       id,
       rating,
       comment,
+      metadata,
       created_at,
       reviewer_id,
       profiles (display_name, avatar_url)

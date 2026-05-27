@@ -6,6 +6,7 @@ import {
   fetchRecentBoardModelReviews,
 } from "@/lib/db/board-model-reviews"
 import { slugify } from "@/lib/slugify"
+import { parseBoardReviewImageAttachment } from "@/lib/validations/board-review-attachment"
 
 export type BoardTalkReviewItem = {
   id: string
@@ -18,6 +19,7 @@ export type BoardTalkReviewItem = {
   authorName: string
   createdAt: string
   brandHref: string
+  photoFileName: string | null
 }
 
 function titleCaseSlug(slug: string): string {
@@ -60,6 +62,7 @@ export async function getBoardTalkReviewFeed(
     const modelName =
       modelNameByBrandAndSlug.get(`${row.brand_slug}:${row.model_slug}`) ??
       titleCaseSlug(row.model_slug)
+    const photoAttachment = parseBoardReviewImageAttachment(row.metadata)
 
     return {
       id: row.id,
@@ -72,6 +75,7 @@ export async function getBoardTalkReviewFeed(
       authorName: row.profiles?.display_name?.trim() || "Member",
       createdAt: row.created_at,
       brandHref: `/brands/${row.brand_slug}`,
+      photoFileName: photoAttachment?.file_name ?? null,
     }
   })
 }

@@ -1,10 +1,17 @@
 "use client"
 
 import Link from "next/link"
+import { useMemo, useState } from "react"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { BoardTalkNav, isBoardTalkHubPath } from "@/components/features/forum/board-talk-nav"
+import {
+  BoardTalkNav,
+  getBoardTalkTab,
+  isBoardTalkHubPath,
+} from "@/components/features/forum/board-talk-nav"
+import { BoardTalkPostReviewDialog } from "@/components/features/forum/board-talk-post-review-dialog"
+import { BoardTalkReviewsUiProvider } from "@/components/features/forum/board-talk-reviews-ui-context"
 import { cn } from "@/lib/utils"
 
 type BoardTalkShellProps = {
@@ -15,9 +22,22 @@ type BoardTalkShellProps = {
 export function BoardTalkShell({ userId, children }: BoardTalkShellProps) {
   const pathname = usePathname()
   const isHub = isBoardTalkHubPath(pathname)
+  const activeTab = getBoardTalkTab(pathname)
+  const isReviewsTab = activeTab === "reviews"
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
+
   const newPostHref = userId
     ? "/board-talk/new"
     : `/auth/login?redirect=${encodeURIComponent("/board-talk/new")}`
+
+  const postReviewLoginHref = `/auth/login?redirect=${encodeURIComponent("/board-talk/reviews")}`
+
+  const reviewsUi = useMemo(
+    () => ({
+      openPostReview: () => setReviewDialogOpen(true),
+    }),
+    [],
+  )
 
   return (
     <>
@@ -38,7 +58,22 @@ export function BoardTalkShell({ userId, children }: BoardTalkShellProps) {
               ) : null}
             </div>
             <div className="shrink-0 sm:pt-1">
-              {userId ? (
+              {isReviewsTab ? (
+                userId ? (
+                  <Button
+                    type="button"
+                    className="w-full min-h-touch sm:w-auto"
+                    onClick={() => setReviewDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Post review
+                  </Button>
+                ) : (
+                  <Button asChild variant="outline" className="w-full min-h-touch sm:w-auto">
+                    <Link href={postReviewLoginHref}>Log in to post a review</Link>
+                  </Button>
+                )
+              ) : userId ? (
                 <Button asChild className="w-full min-h-touch sm:w-auto">
                   <Link href={newPostHref}>
                     <Plus className="mr-2 h-4 w-4" />
@@ -55,7 +90,16 @@ export function BoardTalkShell({ userId, children }: BoardTalkShellProps) {
           <BoardTalkNav />
         </div>
       </header>
-      <div className={cn(isHub ? "mt-10 sm:mt-12" : "mt-8 sm:mt-10")}>{children}</div>
+      <BoardTalkReviewsUiProvider value={isReviewsTab ? reviewsUi : null}>
+        <div className={cn(isHub ? "mt-10 sm:mt-12" : "mt-8 sm:mt-10")}>{children}</div>
+      </BoardTalkReviewsUiProvider>
+      {isReviewsTab && userId ? (
+        <BoardTalkPostReviewDialog
+          userId={userId}
+          open={reviewDialogOpen}
+          onOpenChange={setReviewDialogOpen}
+        />
+      ) : null}
     </>
   )
 }

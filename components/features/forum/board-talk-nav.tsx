@@ -20,6 +20,10 @@ function tabFromPathname(pathname: string | null): BoardTalkTab | null {
   return null
 }
 
+export function getBoardTalkTab(pathname: string | null): BoardTalkTab | null {
+  return tabFromPathname(pathname)
+}
+
 export function isBoardTalkHubPath(pathname: string | null): boolean {
   return tabFromPathname(pathname) !== null
 }

@@ -19,6 +19,7 @@ export async function fetchRecentBoardModelReviews(
       model_slug,
       rating,
       comment,
+      metadata,
       created_at,
       reviewer_id,
       profiles (display_name, avatar_url)
