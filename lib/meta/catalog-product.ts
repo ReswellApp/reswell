@@ -3,7 +3,7 @@
  */
 
 import { listingDetailHref } from "@/lib/listing-href"
-import { listingHeroSlideSrc, listingTileCarouselImageUrls } from "@/lib/listing-image-display"
+import { primaryListingImageUrl } from "@/lib/listing-metadata"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 
@@ -85,25 +85,63 @@ function absoluteListingUrl(listing: MetaListingProductSource): string {
   return `${publicSiteOrigin()}${path}`
 }
 
-function absoluteImageUrl(relativeOrAbsolute: string): string {
-  if (/^https?:\/\//i.test(relativeOrAbsolute)) return relativeOrAbsolute
-  return absolutePublicMediaUrl(relativeOrAbsolute) ?? `${publicSiteOrigin()}${relativeOrAbsolute.startsWith("/") ? "" : "/"}${relativeOrAbsolute}`
+function absoluteCatalogImageUrl(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null
+  return absolutePublicMediaUrl(raw.trim()) ?? null
+}
+
+/** Raw storage URL from listing photos — direct public URLs Meta can crawl (not /media/listings proxy). */
+function listingImageRaw(listing: MetaListingProductSource): string | null {
+  const images = listing.listing_images ?? null
+  const normalized = images?.map((image) => ({
+    url: image.url,
+    is_primary: image.is_primary ?? undefined,
+    sort_order: image.sort_order ?? undefined,
+  }))
+  const primary = primaryListingImageUrl(normalized)
+  if (primary?.trim()) return primary.trim()
+  const first = images?.[0]
+  const thumb = first?.thumbnail_url?.trim()
+  if (thumb) return thumb
+  const url = first?.url?.trim()
+  return url || null
+}
+
+function orderedListingImageRaws(listing: MetaListingProductSource): string[] {
+  const images = listing.listing_images ?? []
+  if (images.length === 0) return []
+
+  const sorted = images.slice().sort(
+    (a, b) =>
+      (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
+      (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  )
+
+  const urls: string[] = []
+  for (const img of sorted) {
+    const full = img.url?.trim()
+    if (full) {
+      urls.push(full)
+      continue
+    }
+    const thumb = img.thumbnail_url?.trim()
+    if (thumb) urls.push(thumb)
+  }
+  return urls
 }
 
 function primaryImageLink(listing: MetaListingProductSource): string | null {
-  const relativeOrAbsolute = listingHeroSlideSrc(listing.listing_images)
-  if (!relativeOrAbsolute) return null
-  return absoluteImageUrl(relativeOrAbsolute)
+  return absoluteCatalogImageUrl(listingImageRaw(listing))
 }
 
 function additionalImageLinks(listing: MetaListingProductSource, primary: string): string | undefined {
-  const carousel = listingTileCarouselImageUrls(listing.listing_images)
-  const extras = carousel
-    .slice(1)
-    .map((url) => absoluteImageUrl(url))
-    .filter((url) => url !== primary)
-  if (extras.length === 0) return undefined
-  return extras.join(",")
+  const extras = orderedListingImageRaws(listing)
+    .map((raw) => absoluteCatalogImageUrl(raw))
+    .filter((url): url is string => Boolean(url) && url !== primary)
+
+  const unique = [...new Set(extras)]
+  if (unique.length === 0) return undefined
+  return unique.join(",")
 }
 
 function catalogDescription(listing: MetaListingProductSource): string {
