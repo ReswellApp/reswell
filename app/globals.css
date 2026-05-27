@@ -151,6 +151,9 @@
 .cat-link:hover {
   color: hsl(var(--foreground)) !important;
 }
+.cat-link.cat-link--active {
+  color: hsl(var(--foreground)) !important;
+}
 
 @layer base {
   :root {

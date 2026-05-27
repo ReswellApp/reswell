@@ -368,7 +368,9 @@ function HeaderDesktopCategoryBar({
                   href={item.href}
                   prefetch={boardsBrowseLinkPrefetch(item.href)}
                   className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
-                    boardBrowseNavItemIsActive(pathname, headerSearchParams, item.href) ? "font-medium" : ""
+                    boardBrowseNavItemIsActive(pathname, headerSearchParams, item.href)
+                      ? "cat-link--active font-medium"
+                      : ""
                   }`}
                 >
                   {item.name}
@@ -408,7 +410,7 @@ function HeaderDesktopCategoryBar({
                 key={item.href}
                 href={item.href}
                 className={`cat-link py-4 text-[15px] transition-colors duration-smooth ${
-                  active ? "font-medium" : ""
+                  active ? "cat-link--active font-medium" : ""
                 }`}
               >
                 {item.label}
@@ -1324,28 +1326,38 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Link>
             )}
             <nav className="flex flex-col gap-1 mb-6">
-              {boardShapeNav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  prefetch={boardsBrowseLinkPrefetch(item.href)}
-                  onClick={onMobileDrawerLinkClick}
-                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {boardShapeNav.map((item) => {
+                const active = boardBrowseNavItemIsActive(pathname, headerSearchParams, item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    prefetch={boardsBrowseLinkPrefetch(item.href)}
+                    onClick={onMobileDrawerLinkClick}
+                    className={`cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
+                      active ? "cat-link--active" : ""
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )
+              })}
               <hr className="my-2 border-border" />
-              {siteHeaderSecondaryNavLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onMobileDrawerLinkClick}
-                  className="cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {siteHeaderSecondaryNavLinks.map((item) => {
+                const active = siteHeaderSecondaryNavItemIsActive(pathname, item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onMobileDrawerLinkClick}
+                    className={`cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
+                      active ? "cat-link--active" : ""
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
               <hr className="my-2 border-border" />
               {(
                 [
