@@ -1,6 +1,11 @@
 "use client"
 
 import { FavoriteButton } from "@/components/favorite-button"
+import { cn } from "@/lib/utils"
+
+/** White circular chrome behind listing-tile hearts (size applied separately). */
+export const listingTileFavoriteButtonChromeClassName =
+  "rounded-full border border-neutral-200/90 bg-white/90 shadow-sm backdrop-blur-none hover:bg-white/90 hover:border-neutral-200/90 hover:shadow-sm hover:backdrop-blur-none group-hover/favorite:bg-white/90 group-hover/favorite:border-neutral-200/90 group-hover/favorite:shadow-sm group-hover/favorite:backdrop-blur-none focus-visible:bg-white/90 focus-visible:border-neutral-200/90 focus-visible:shadow-sm focus-visible:backdrop-blur-none dark:bg-white/90 dark:hover:bg-white/90 dark:group-hover/favorite:bg-white/90 dark:focus-visible:bg-white/90"
 
 interface FavoriteButtonCardOverlayProps {
   listingId: string
@@ -17,8 +22,10 @@ export function FavoriteButtonCardOverlay({
   onFavoritedChange,
 }: FavoriteButtonCardOverlayProps) {
   /** Slightly translucent white pill behind the heart; hover matches default (no blur ramp). */
-  const listingCardFavoriteButtonClassName =
-    "h-8 w-8 min-h-8 min-w-8 rounded-full border border-neutral-200/90 bg-white/90 shadow-sm backdrop-blur-none hover:bg-white/90 hover:border-neutral-200/90 hover:shadow-sm hover:backdrop-blur-none group-hover/favorite:bg-white/90 group-hover/favorite:border-neutral-200/90 group-hover/favorite:shadow-sm group-hover/favorite:backdrop-blur-none focus-visible:bg-white/90 focus-visible:border-neutral-200/90 focus-visible:shadow-sm focus-visible:backdrop-blur-none dark:bg-white/90 dark:hover:bg-white/90 dark:group-hover/favorite:bg-white/90 dark:focus-visible:bg-white/90"
+  const listingCardFavoriteButtonClassName = cn(
+    "h-8 w-8 min-h-8 min-w-8",
+    listingTileFavoriteButtonChromeClassName,
+  )
 
   return (
     <div

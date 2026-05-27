@@ -26,7 +26,7 @@ interface FavoriteButtonProps {
   /** Refetch server components after a successful toggle (e.g. PDP watchers count). */
   refreshAfterToggle?: boolean
   /**
-   * Listing-card overlays use heartIcon (#04070E); PDP and other surfaces stay default red.
+   * Listing tiles and PDP gallery use heartIcon (#04070E); other surfaces stay default red.
    */
   heartAccent?: "default" | "listingTile"
 }

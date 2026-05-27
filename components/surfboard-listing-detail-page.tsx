@@ -31,6 +31,8 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
+import { listingTileFavoriteButtonChromeClassName } from "@/components/favorite-button-card-overlay"
+import { cn } from "@/lib/utils"
 import {
   ListingSoldDetailNotice,
   ListingSoldOwnerNotice,
@@ -455,6 +457,11 @@ export async function SurfboardListingDetailPage({
                             initialFavorited={isFavorited}
                             isLoggedIn={!!user}
                             refreshAfterToggle
+                            heartAccent="listingTile"
+                            className={cn(
+                              "h-11 w-11 min-h-11 min-w-11",
+                              listingTileFavoriteButtonChromeClassName,
+                            )}
                           />
                         </div>
                       ) : null}
