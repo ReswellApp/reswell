@@ -1,6 +1,6 @@
 import { getGoogleAdsPurchaseConversionSendTo } from "@/lib/google-ads/config"
+import { purchaseConversionDedupKey } from "@/lib/google-ads/purchase-conversion-inline"
 
-const PURCHASE_DEDUP_STORAGE_PREFIX = "rw_google_ads_purchase_reported"
 const GTAG_WAIT_MS = 8_000
 const GTAG_POLL_MS = 50
 const CONVERSION_CALLBACK_TIMEOUT_MS = 2_000
@@ -12,7 +12,7 @@ declare global {
 }
 
 function purchaseDedupKey(orderId: string): string {
-  return `${PURCHASE_DEDUP_STORAGE_PREFIX}_${orderId.trim()}`
+  return purchaseConversionDedupKey(orderId)
 }
 
 export function hasReportedPurchaseConversion(orderId: string): boolean {

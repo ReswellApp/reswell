@@ -6,6 +6,7 @@ import { fetchBuyerOrderSuccessPayload } from "@/lib/order-success-payload"
 import { CheckoutOrderSuccess } from "@/components/checkout-order-success"
 import { CheckoutOrderSuccessPickup } from "@/components/checkout-order-success-pickup"
 import { GooglePurchaseConversionBeacon } from "@/components/google-ads/google-purchase-conversion-beacon"
+import { GooglePurchaseConversionScript } from "@/components/google-ads/google-purchase-conversion-script"
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -42,14 +43,17 @@ export default async function PurchaseSuccessPage(props: PageProps) {
     notFound()
   }
 
-  const conversionBeacon = (
-    <GooglePurchaseConversionBeacon orderId={payload.orderId} value={payload.total} />
+  const conversionTracking = (
+    <>
+      <GooglePurchaseConversionScript orderId={payload.orderId} value={payload.total} />
+      <GooglePurchaseConversionBeacon orderId={payload.orderId} value={payload.total} />
+    </>
   )
 
   if (payload.fulfillmentMethod === "pickup") {
     return (
       <>
-        {conversionBeacon}
+        {conversionTracking}
         <CheckoutOrderSuccessPickup data={payload} />
       </>
     )
@@ -57,7 +61,7 @@ export default async function PurchaseSuccessPage(props: PageProps) {
 
   return (
     <>
-      {conversionBeacon}
+      {conversionTracking}
       <CheckoutOrderSuccess data={payload} />
     </>
   )

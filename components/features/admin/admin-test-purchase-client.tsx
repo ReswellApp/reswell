@@ -237,6 +237,24 @@ export function AdminTestPurchaseClient() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Google Ads conversion</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>
+            Purchase conversions only fire when these Vercel env vars are set and the app is redeployed:
+          </p>
+          <ul className="list-disc pl-5 space-y-1 font-mono text-xs">
+            <li>NEXT_PUBLIC_GOOGLE_ADS_ID=AW-18062254229</li>
+            <li>NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_CONVERSION=AW-18062254229/FsjrCPnlwbAcEJXB4KRD</li>
+          </ul>
+          <p>
+            After deploy, use Tag Assistant on the success page URL while signed in as the buyer.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">What this does</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
