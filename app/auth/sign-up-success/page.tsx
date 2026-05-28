@@ -1,18 +1,37 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import { useEffect, useRef } from "react"
 import { Loader2 } from "lucide-react"
+import { reportSignUpConversion } from "@/lib/google-ads/sign-up-conversion"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
-/** Legacy URL; email confirmation is off — send users to the app. */
+/**
+ * Post-signup landing page: fires the Google Ads conversion, then sends the user into the app.
+ * OAuth, email confirm, and email/password signup all route here for reliable gtag delivery.
+ */
 export default function SignUpSuccessPage() {
-  const router = useRouter()
+  const searchParams = useSearchParams()
+  const startedRef = useRef(false)
+
   useEffect(() => {
-    router.replace("/dashboard")
-  }, [router])
+    if (startedRef.current) return
+    startedRef.current = true
+
+    const next = safeRedirectPath(searchParams.get("next"))
+
+    void (async () => {
+      await reportSignUpConversion({
+        gtagWaitMs: 15_000,
+        callbackTimeoutMs: 4_000,
+      })
+      window.location.replace(next)
+    })()
+  }, [searchParams])
+
   return (
     <div className="flex min-h-svh items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Redirecting" />
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Setting up your account" />
     </div>
   )
 }

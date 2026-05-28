@@ -1,8 +1,8 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
+import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
-import { appendSignUpConversionFlag } from "@/lib/google-ads/sign-up-conversion";
+import { buildSignUpSuccessRedirectPath } from "@/lib/google-ads/sign-up-success-path";
 import {
-  shouldTrackKlaviyoNewAccountForOAuthSession,
   trackKlaviyoNewAccountCreated,
 } from "@/lib/klaviyo/track-new-account-created";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.session?.user;
       let redirectPath = next;
-      if (u && shouldTrackKlaviyoNewAccountForOAuthSession(u)) {
-        redirectPath = appendSignUpConversionFlag(next);
+      if (u && isNewOAuthAccount(u)) {
+        redirectPath = buildSignUpSuccessRedirectPath(next);
         after(async () => {
           try {
             const hasServiceRole = Boolean(
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.user ?? data.session?.user;
       if (type === "signup" && u) {
-        const redirectPath = appendSignUpConversionFlag(otpNext);
+        const redirectPath = buildSignUpSuccessRedirectPath(otpNext);
         redirectResponse.headers.set("Location", `${origin}${redirectPath}`);
         after(async () => {
           try {

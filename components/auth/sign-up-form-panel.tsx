@@ -25,7 +25,7 @@ import {
 } from "@/lib/auth/auth-modal-shell-classes"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import { reportSignUpConversion } from "@/lib/google-ads/sign-up-conversion"
+import { buildSignUpSuccessRedirectPath } from "@/lib/google-ads/sign-up-success-path"
 import { validateDisplayName } from "@/lib/display-name-validation"
 
 export function SignUpFormPanel({
@@ -121,13 +121,12 @@ export function SignUpFormPanel({
         } catch {
           /* Klaviyo must not block signup */
         }
-        await reportSignUpConversion({ userId: signData.session.user.id })
         await supabase.auth.getSession()
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
         }
         onSignUpSuccess?.()
-        navigateAfterClientAuth(redirectTo, router)
+        window.location.assign(buildSignUpSuccessRedirectPath(redirectTo))
       } else {
         onSignUpSuccess?.()
         router.push(

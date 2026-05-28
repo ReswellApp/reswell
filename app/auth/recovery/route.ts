@@ -1,8 +1,6 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
-import {
-  shouldTrackKlaviyoNewAccountForOAuthSession,
-  trackKlaviyoNewAccountCreated,
-} from "@/lib/klaviyo/track-new-account-created"
+import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account"
+import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
 import { type NextRequest, NextResponse } from "next/server"
 
@@ -23,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && data.session) {
       const u = data.session.user
-      if (u && shouldTrackKlaviyoNewAccountForOAuthSession(u)) {
+      if (u && isNewOAuthAccount(u)) {
         await trackKlaviyoNewAccountCreated(u, { supabaseForProfile: supabase })
       }
       redirectResponse.headers.set("Cache-Control", "private, no-store")

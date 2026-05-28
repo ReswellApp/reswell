@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
+import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account"
 import { subscribeKlaviyoProfileEmailMarketing } from "@/lib/klaviyo/subscribe-profile-email-marketing"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
@@ -7,8 +8,6 @@ export type TrackKlaviyoNewAccountCreatedOptions = {
   /** When set, loads `profiles.display_name` for the event (session must be on this client). */
   supabaseForProfile?: SupabaseClient
 }
-
-const OAUTH_NEW_ACCOUNT_WINDOW_MS = 10 * 60 * 1000
 
 function parseFirstLastFromUser(user: User): {
   first_name: string
@@ -54,11 +53,10 @@ export function signupChannelFromUser(user: User): KlaviyoSignupChannel {
 }
 
 /**
- * OAuth (and similar) first session: `created_at` is fresh so we do not fire for returning users.
+ * OAuth (and similar) first session: no pre-existing account (see {@link isNewOAuthAccount}).
  */
 export function shouldTrackKlaviyoNewAccountForOAuthSession(user: User): boolean {
-  const created = new Date(user.created_at).getTime()
-  return Number.isFinite(created) && Date.now() - created < OAUTH_NEW_ACCOUNT_WINDOW_MS
+  return isNewOAuthAccount(user)
 }
 
 /**

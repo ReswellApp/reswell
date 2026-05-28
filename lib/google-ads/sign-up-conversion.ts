@@ -74,6 +74,10 @@ export type ReportSignUpConversionOptions = {
   userId?: string
   /** Optional callback after gtag acknowledges the event (Google snippet pattern). */
   onComplete?: () => void
+  /** How long to wait for gtag.js on slow connections (default 8s). */
+  gtagWaitMs?: number
+  /** How long to wait for Google's event_callback (default 2s). */
+  callbackTimeoutMs?: number
 }
 
 function fireSignUpConversionEvent(
@@ -106,11 +110,14 @@ export async function reportSignUpConversion(
   const userId = options?.userId?.trim()
   if (hasReportedSignUpConversion(userId)) return true
 
-  const gtag = await waitForGtag()
+  const gtag = await waitForGtag(options?.gtagWaitMs ?? GTAG_WAIT_MS)
   if (!gtag) return false
 
   if (hasReportedSignUpConversion(userId)) return true
   markSignUpConversionReported(userId)
+
+  const callbackTimeoutMs =
+    options?.callbackTimeoutMs ?? CONVERSION_CALLBACK_TIMEOUT_MS
 
   await new Promise<void>((resolve) => {
     let settled = false
@@ -125,7 +132,7 @@ export async function reportSignUpConversion(
       finish()
     })
 
-    window.setTimeout(finish, CONVERSION_CALLBACK_TIMEOUT_MS)
+    window.setTimeout(finish, callbackTimeoutMs)
   })
 
   return true
