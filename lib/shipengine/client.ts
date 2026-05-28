@@ -15,8 +15,14 @@ export async function shipEngineRequest(
   const base = getShipEngineApiBase().replace(/\/$/, "")
   const suffix = path.startsWith("/") ? path : `/${path}`
   const url = `${base}${suffix}`
+  const timeoutMs = 45_000
+  const signal =
+    init?.signal ??
+    (typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(timeoutMs) : undefined)
+
   return fetch(url, {
     ...init,
+    signal,
     headers: {
       "API-Key": key,
       "Content-Type": "application/json",

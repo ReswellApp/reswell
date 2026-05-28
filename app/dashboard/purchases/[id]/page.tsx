@@ -24,8 +24,9 @@ import {
   BuyerConfirmDelivery,
   BuyerPickupCode,
   DeliveryStatusBadge,
-  TrackingInfo,
 } from "@/components/order-actions"
+import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
+import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
@@ -36,8 +37,6 @@ import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
-import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
-import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -370,17 +369,16 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         <BuyerPickupCode pickupCode={order.pickup_code} deliveryStatus={order.delivery_status} />
       )}
 
-      {/* Tracking info from seller */}
+      {/* Live carrier tracking */}
       {!fulfillmentLocked && order.tracking_number && (
-        <TrackingInfo
+        <ReswellTrackingSection
+          orderId={order.id}
           trackingNumber={order.tracking_number}
           trackingCarrier={order.tracking_carrier}
-          deliveryStatus={order.delivery_status}
+          initialDetail={carrierTracking}
+          marketplaceDeliveryStatus={order.delivery_status}
+          variant="buyer"
         />
-      )}
-
-      {!fulfillmentLocked && carrierTracking && (
-        <CarrierTrackingPanel detail={carrierTracking} marketplaceDeliveryStatus={order.delivery_status} />
       )}
 
       <Card>

@@ -45,15 +45,14 @@ import {
   SellerRefundInProgressBanner,
   DeliveryStatusBadge,
   PayoutStatusBadge,
-  TrackingInfo,
 } from "@/components/order-actions"
+import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { getPreparedShippingLabelDownloadUrl } from "@/lib/db/orderShippingLabels"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
-import { CarrierTrackingPanel } from "@/components/carrier-tracking-panel"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
@@ -629,19 +628,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             <SellerPickupVerify orderId={sale.id} deliveryStatus={sale.delivery_status} />
           )}
 
-          {/* Saved tracking — visible to seller as soon as it is stored */}
           {sale.tracking_number && (
-            <TrackingInfo
+            <ReswellTrackingSection
+              orderId={sale.id}
               trackingNumber={sale.tracking_number}
               trackingCarrier={sale.tracking_carrier}
-              variant="seller"
-              deliveryStatus={sale.delivery_status}
-            />
-          )}
-
-          {carrierTracking && (
-            <CarrierTrackingPanel
-              detail={carrierTracking}
+              initialDetail={carrierTracking}
               marketplaceDeliveryStatus={sale.delivery_status}
               variant="seller"
             />

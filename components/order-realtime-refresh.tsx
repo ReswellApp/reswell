@@ -1,12 +1,42 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
+type OrderRefreshSnapshot = {
+  delivery_status: string | null
+  status: string | null
+  tracking_number: string | null
+  refunded_at: string | null
+}
+
+function snapshotFromRow(row: Record<string, unknown>): OrderRefreshSnapshot {
+  return {
+    delivery_status: typeof row.delivery_status === "string" ? row.delivery_status : null,
+    status: typeof row.status === "string" ? row.status : null,
+    tracking_number: typeof row.tracking_number === "string" ? row.tracking_number : null,
+    refunded_at: typeof row.refunded_at === "string" ? row.refunded_at : null,
+  }
+}
+
+function isCarrierTrackingOnlyUpdate(
+  prev: OrderRefreshSnapshot | null,
+  next: OrderRefreshSnapshot,
+): boolean {
+  if (!prev) return false
+  return (
+    prev.delivery_status === next.delivery_status &&
+    prev.status === next.status &&
+    prev.tracking_number === next.tracking_number &&
+    prev.refunded_at === next.refunded_at
+  )
+}
+
 /**
  * Revalidates the current route when a single order row changes (e.g. Stripe webhook sets refunded).
+ * Skips full-page refresh when only carrier tracking_detail was updated — the tracking panel polls locally.
  */
 export function OrderDetailRealtimeRefresh({
   orderId,
@@ -17,6 +47,7 @@ export function OrderDetailRealtimeRefresh({
   onUpdate?: () => void
 }) {
   const router = useRouter()
+  const snapshotRef = useRef<OrderRefreshSnapshot | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -32,7 +63,14 @@ export function OrderDetailRealtimeRefresh({
           table: "orders",
           filter: `id=eq.${orderId}`,
         },
-        () => {
+        (payload) => {
+          const row = payload.new as Record<string, unknown>
+          const next = snapshotFromRow(row)
+          const trackingOnly = isCarrierTrackingOnlyUpdate(snapshotRef.current, next)
+          snapshotRef.current = next
+
+          if (trackingOnly) return
+
           onUpdate?.()
           if (!onUpdate) {
             router.refresh()
