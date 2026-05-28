@@ -22,6 +22,7 @@ export const siteFooterNavLinks: {
     { name: "Purchase Protection", href: "/protection-policy" },
     { name: "Safety Tips", href: "/safety" },
     { name: "Shipping Guide", href: "/shipping" },
+    { name: "Shipping label estimator", href: "/shipping-estimator" },
     { name: "Contact Us", href: "/contact" },
   ],
   legal: [

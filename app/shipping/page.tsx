@@ -19,11 +19,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function ShippingGuideCards() {
   return (
     <>
-      <p className="text-muted-foreground mb-8 leading-relaxed">
+      <p className="text-muted-foreground mb-4 leading-relaxed">
         Sellers choose whether to offer shipping on each listing. For surfboards you can offer
         local pickup, shipping, or both. If you ship, you set a flat shipping price when you post
         the listing. This guide covers both sides, whether you&apos;re sending a board or waiting
         on one.
+      </p>
+      <p className="text-muted-foreground mb-8 leading-relaxed">
+        Planning ahead? Use our{" "}
+        <Link href="/shipping-estimator" className="font-medium text-primary underline underline-offset-4">
+          shipping label cost estimator
+        </Link>{" "}
+        to compare domestic carrier quotes by ZIP, weight, and packed dimensions before you list or
+        ship.
       </p>
 
       <section className="mb-8">
@@ -198,6 +206,13 @@ function ShippingGuideCards() {
               <li>
                 After a sale, the seller gets a shipping label to print and attach before handing
                 the board to the carrier.
+              </li>
+              <li>
+                Sellers can preview label costs with the{" "}
+                <Link href="/shipping-estimator" className="text-primary underline underline-offset-4">
+                  shipping label cost estimator
+                </Link>{" "}
+                while creating a listing or anytime before checkout.
               </li>
             </ul>
           </CardContent>

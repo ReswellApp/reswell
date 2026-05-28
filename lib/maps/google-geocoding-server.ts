@@ -4,6 +4,8 @@ import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-co
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
 const GEOCODE_JSON = "https://maps.googleapis.com/maps/api/geocode/json"
+/** Avoid blocking rate estimates when Google Geocoding is slow or misconfigured. */
+const GEOCODE_FETCH_TIMEOUT_MS = 6_000
 
 /** Prefer a server-only key with Geocoding API + IP restriction; falls back to the public browser key. */
 export function getGoogleGeocodingApiKey(): string | null {
@@ -28,7 +30,10 @@ async function fetchGeocodeJson(params: URLSearchParams): Promise<GeocodeJsonRes
   params.set("key", key)
   const url = `${GEOCODE_JSON}?${params.toString()}`
   try {
-    const res = await fetch(url, { next: { revalidate: 0 } })
+    const res = await fetch(url, {
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(GEOCODE_FETCH_TIMEOUT_MS),
+    })
     if (!res.ok) return null
     return (await res.json()) as GeocodeJsonResponse
   } catch {
