@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { SignUpWelcomePanel } from "@/components/auth/sign-up-welcome-panel"
 import { GoogleSignUpConversionBeacon } from "@/components/google-ads/google-sign-up-conversion-beacon"
-import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account"
+import {
+  GOOGLE_NEW_SIGNUP_COOKIE,
+  shouldShowGoogleSignUpWelcome,
+} from "@/lib/auth/google-sign-up-welcome"
 import { oauthWelcomeFirstName } from "@/lib/auth/oauth-welcome-name"
 import { isGoogleAuthUser } from "@/lib/auth/profile-completion"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import {
-  buildGoogleSignUpSuccessPath,
-} from "@/lib/google-ads/sign-up-success-path"
+import { buildGoogleSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 import { createClient } from "@/lib/supabase/server"
 
 type PageProps = {
@@ -33,7 +35,14 @@ export default async function GoogleSignUpSuccessPage({ searchParams }: PageProp
     )
   }
 
-  if (!isGoogleAuthUser(user) || !isNewOAuthAccount(user)) {
+  const cookieStore = await cookies()
+  const markedFromCallback =
+    cookieStore.get(GOOGLE_NEW_SIGNUP_COOKIE)?.value === "1"
+
+  if (
+    !isGoogleAuthUser(user) ||
+    (!markedFromCallback && !shouldShowGoogleSignUpWelcome(user))
+  ) {
     redirect(next)
   }
 
@@ -46,6 +55,7 @@ export default async function GoogleSignUpSuccessPage({ searchParams }: PageProp
         nextPath={next}
         firstName={firstName}
         subtitle="Your account is set up. Here is what you can do on Reswell."
+        clearGoogleNewSignupCookieOnContinue
       />
     </>
   )

@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { clearGoogleNewSignupCookie } from "@/lib/actions/clear-google-new-signup-cookie"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 
 const WELCOME_ITEMS = [
@@ -24,15 +25,27 @@ type SignUpWelcomePanelProps = {
   firstName?: string | null
   /** Shown under the headline — e.g. Google vs email sign-up. */
   subtitle: string
+  /** Clears the OAuth callback cookie before continuing into the app. */
+  clearGoogleNewSignupCookieOnContinue?: boolean
 }
 
 export function SignUpWelcomePanel({
   nextPath,
   firstName,
   subtitle,
+  clearGoogleNewSignupCookieOnContinue = false,
 }: SignUpWelcomePanelProps) {
   const router = useRouter()
   const headline = firstName ? `Welcome, ${firstName}!` : "Welcome to Reswell!"
+
+  const handleContinue = () => {
+    void (async () => {
+      if (clearGoogleNewSignupCookieOnContinue) {
+        await clearGoogleNewSignupCookie()
+      }
+      navigateAfterClientAuth(nextPath, router)
+    })()
+  }
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
@@ -60,7 +73,7 @@ export function SignUpWelcomePanel({
             <Button
               type="button"
               className="h-12 w-full rounded-full bg-listingHeart text-white hover:bg-[#2a4170]"
-              onClick={() => navigateAfterClientAuth(nextPath, router)}
+              onClick={handleContinue}
             >
               Start exploring
             </Button>

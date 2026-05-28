@@ -17,6 +17,7 @@ import {
   resolveGoogleProfileSetupRequired,
   type ProfileCompletionRow,
 } from "@/lib/auth/profile-completion"
+import { GOOGLE_SIGN_UP_SUCCESS_PATH } from "@/lib/google-ads/sign-up-success-path"
 import { ProfileCompletionFormFields } from "@/components/auth/profile-completion-form-fields"
 import {
   Dialog,
@@ -50,6 +51,7 @@ function ProfileCompletionRequiredDialogInner() {
   const evaluateSession = useCallback(
     async (sessionUser: User | null | undefined, accessToken?: string | null) => {
       if (pathname === COMPLETE_PROFILE_PATH) return
+      if (pathname === GOOGLE_SIGN_UP_SUCCESS_PATH) return
       if (profileSetupDismissedRef.current) return
 
       const recoveryActive =
@@ -118,6 +120,7 @@ function ProfileCompletionRequiredDialogInner() {
 
   useEffect(() => {
     if (pathname === COMPLETE_PROFILE_PATH) return
+    if (pathname === GOOGLE_SIGN_UP_SUCCESS_PATH) return
 
     let cancelled = false
 

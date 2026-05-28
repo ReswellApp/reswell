@@ -62,8 +62,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang={DEFAULT_LOCALE} className="overflow-x-clip" data-scroll-behavior="smooth">
-      <body className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}>
+    <html
+      lang={DEFAULT_LOCALE}
+      className="overflow-x-clip"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
+      <body
+        className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}
+        suppressHydrationWarning
+      >
         <AbortErrorSuppressor />
         <GoogleAdsGtag />
         <MetaPixel />

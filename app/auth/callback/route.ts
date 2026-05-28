@@ -1,10 +1,15 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
 import { isGoogleAuthUser } from "@/lib/auth/profile-completion";
-import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account";
+import {
+  GOOGLE_NEW_SIGNUP_COOKIE,
+  isNewOAuthAccount,
+  shouldShowGoogleSignUpWelcome,
+} from "@/lib/auth/google-sign-up-welcome";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import {
   buildEmailSignUpSuccessPath,
   buildGoogleSignUpSuccessPath,
+  GOOGLE_SIGN_UP_SUCCESS_PATH,
 } from "@/lib/google-ads/sign-up-success-path";
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
@@ -29,7 +34,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.session?.user;
       let redirectPath = next;
-      if (u && isGoogleAuthUser(u)) {
+      if (u && isGoogleAuthUser(u) && shouldShowGoogleSignUpWelcome(u)) {
         redirectPath = buildGoogleSignUpSuccessPath(next);
         if (isNewOAuthAccount(u)) {
           after(async () => {
@@ -51,6 +56,15 @@ export async function GET(request: NextRequest) {
         }
       }
       const finalResponse = NextResponse.redirect(`${origin}${redirectPath}`);
+      if (u && redirectPath.startsWith(GOOGLE_SIGN_UP_SUCCESS_PATH)) {
+        finalResponse.cookies.set(GOOGLE_NEW_SIGNUP_COOKIE, "1", {
+          path: "/",
+          maxAge: 60 * 30,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          httpOnly: true,
+        });
+      }
       redirectResponse.cookies.getAll().forEach((cookie) => {
         finalResponse.cookies.set({
           name: cookie.name,
