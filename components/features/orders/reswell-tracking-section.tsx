@@ -12,6 +12,10 @@ import {
   Truck,
 } from "lucide-react"
 import { toast } from "sonner"
+import {
+  trackingStatusLabel,
+  trackingStatusTone,
+} from "@/lib/shipping/carrier-status-display"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
 import { cn } from "@/lib/utils"
@@ -22,22 +26,6 @@ import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 
 const POLL_MS = 90_000
 const FETCH_TIMEOUT_MS = 35_000
-
-function trackingStatusLabel(detail: OrderTrackingDetail): string {
-  return (
-    detail.status_description?.trim() ||
-    detail.carrier_status_description?.trim() ||
-    "Tracking update"
-  )
-}
-
-function trackingStatusTone(statusCode: string | null | undefined): "default" | "success" | "warning" | "muted" {
-  const code = (statusCode ?? "").toUpperCase()
-  if (code === "DE") return "success"
-  if (code === "EX") return "warning"
-  if (code === "IT" || code === "AC" || code === "AT") return "default"
-  return "muted"
-}
 
 function formatEventLocation(event: NonNullable<OrderTrackingDetail["events"]>[number]): string | null {
   const cityState = [event.city_locality, event.state_province].filter(Boolean).join(", ")

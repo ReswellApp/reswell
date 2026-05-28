@@ -10,11 +10,11 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   ORDER_STATUS_LIST,
-  orderStatusBadgeVariant,
   orderStatusIsRefunded,
   orderStatusIsRefundInProgress,
-  orderStatusLabel,
 } from "@/lib/order-status"
+import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
+import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
@@ -47,6 +47,8 @@ type SaleRow = {
   amount: number | string
   seller_earnings: number | string
   status: string
+  delivery_status: string
+  tracking_number: string | null
   created_at: string
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
@@ -124,6 +126,8 @@ export default async function SalesPage() {
       amount,
       seller_earnings,
       status,
+      delivery_status,
+      tracking_number,
       created_at,
       shipping_address,
       fulfillment_method,
@@ -144,6 +148,25 @@ export default async function SalesPage() {
     .order("created_at", { ascending: false })
 
   const list = (sales ?? []) as unknown as SaleRow[]
+
+  const trackingOrderIds = list.filter((s) => s.tracking_number?.trim()).map((s) => s.id)
+  const trackingDetailByOrderId = new Map<string, ReturnType<typeof parseOrderTrackingDetail>>()
+  if (trackingOrderIds.length > 0) {
+    const { data: trackingRows } = await supabase
+      .from("orders")
+      .select("id, tracking_detail")
+      .in("id", trackingOrderIds)
+      .eq("seller_id", user.id)
+
+    for (const row of trackingRows ?? []) {
+      const detail = parseOrderTrackingDetail(
+        (row as { tracking_detail?: unknown }).tracking_detail,
+      )
+      if (detail) {
+        trackingDetailByOrderId.set((row as { id: string }).id, detail)
+      }
+    }
+  }
 
   const buyerIds = [...new Set(list.map((s) => s.buyer_id).filter(Boolean))]
   const { data: buyerProfiles } =
@@ -203,6 +226,12 @@ export default async function SalesPage() {
               ? buyerDisplay
               : `Buyer ${sale.buyer_id.slice(0, 8)}…`
           const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
+          const statusDisplay = resolveSaleCardStatusDisplay({
+            orderStatus: sale.status,
+            deliveryStatus: sale.delivery_status ?? "pending",
+            trackingNumber: sale.tracking_number,
+            trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
+          })
 
           return (
             <Link
@@ -230,15 +259,8 @@ export default async function SalesPage() {
                         <LocalDateTime iso={sale.created_at} dateStyle="medium" timeStyle="short" />
                       </CardDescription>
                     </div>
-                    <Badge
-                      variant={orderStatusBadgeVariant(sale.status)}
-                      className={
-                        orderStatusIsRefundInProgress(sale.status)
-                          ? "border-amber-500/40 text-amber-950 dark:text-amber-100"
-                          : undefined
-                      }
-                    >
-                      {orderStatusLabel(sale.status)}
+                    <Badge variant={statusDisplay.variant} className={statusDisplay.className}>
+                      {statusDisplay.label}
                     </Badge>
                   </div>
                 </CardHeader>

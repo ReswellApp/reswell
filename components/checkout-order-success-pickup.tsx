@@ -8,6 +8,10 @@ import { motion } from "motion/react"
 import { ArrowRight, Check, MessageSquare, Package, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
+import {
+  pickupCodeBannerLabelClassName,
+  pickupCodeBannerSurfaceClassName,
+} from "@/components/order-actions"
 
 function money(n: number) {
   return `$${n.toFixed(2)}`
@@ -108,10 +112,12 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="mb-8 overflow-hidden rounded-xl border border-amber-500/30 bg-amber-50/60 text-card-foreground shadow-sm dark:bg-amber-950/20"
+            className={`mb-8 overflow-hidden rounded-xl border text-card-foreground shadow-sm ${pickupCodeBannerSurfaceClassName}`}
           >
             <div className="p-6 text-center md:p-8">
-              <div className="mb-2 text-xs font-medium uppercase tracking-wider text-amber-700 dark:text-amber-300">
+              <div
+                className={`mb-2 text-xs font-medium uppercase tracking-wider ${pickupCodeBannerLabelClassName}`}
+              >
                 Your pickup code
               </div>
               <p className="py-2 text-4xl font-mono font-bold tracking-[0.3em] text-foreground md:text-5xl">

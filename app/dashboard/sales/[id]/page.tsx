@@ -25,12 +25,11 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   ORDER_STATUS_LIST,
-  orderStatusBadgeVariant,
   orderStatusIsRefunded,
   orderStatusIsRefundInProgress,
   orderStatusLocksDuringRefund,
-  orderStatusLabel,
 } from "@/lib/order-status"
+import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -290,6 +289,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     return Math.max(0, Math.round((itemPriceAmount - sellerEarningsAmount) * 100) / 100)
   })()
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
+  const statusDisplay = resolveSaleCardStatusDisplay({
+    orderStatus: sale.status,
+    deliveryStatus: sale.delivery_status,
+    trackingNumber: sale.tracking_number,
+    trackingDetail: carrierTracking,
+  })
 
   let adminPreparedLabelUrl: string | null = null
   adminPreparedLabelUrl = await getPreparedShippingLabelDownloadUrl(createServiceRoleClient(), id)
@@ -369,8 +374,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             <h1 className="text-2xl font-bold font-mono tracking-tight">
               #{orderNumber}
             </h1>
-            <Badge variant={orderStatusBadgeVariant(sale.status)} className="text-xs">
-              {orderStatusLabel(sale.status)}
+            <Badge
+              variant={statusDisplay.variant}
+              className={statusDisplay.className ? `text-xs ${statusDisplay.className}` : "text-xs"}
+            >
+              {statusDisplay.label}
             </Badge>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -751,8 +759,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Status</dt>
                   <dd>
-                    <Badge variant={orderStatusBadgeVariant(sale.status)} className="text-xs">
-                      {orderStatusLabel(sale.status)}
+                    <Badge
+                      variant={statusDisplay.variant}
+                      className={statusDisplay.className ? `text-xs ${statusDisplay.className}` : "text-xs"}
+                    >
+                      {statusDisplay.label}
                     </Badge>
                   </dd>
                 </div>

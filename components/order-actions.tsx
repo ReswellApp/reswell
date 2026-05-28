@@ -333,6 +333,12 @@ export function PayoutStatusBadge({ payout }: { payout: PayoutInfo | null }) {
 
 // ── Buyer: pickup code display ────────────────────────────────
 
+/** Footer blue (`listingHeart`) at low opacity — shared wherever the pickup code banner appears. */
+export const pickupCodeBannerSurfaceClassName =
+  "border-listingHeart/30 bg-listingHeart/[0.08] dark:bg-listingHeart/15"
+
+export const pickupCodeBannerLabelClassName = "text-listingHeart dark:text-listingHeart/90"
+
 export function BuyerPickupCode({
   pickupCode,
   deliveryStatus,
@@ -343,7 +349,7 @@ export function BuyerPickupCode({
   if (deliveryStatus === "picked_up") return null
 
   return (
-    <Card className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
+    <Card className={pickupCodeBannerSurfaceClassName}>
       <CardHeader>
         <CardTitle className="text-lg">Your pickup code</CardTitle>
         <CardDescription>
