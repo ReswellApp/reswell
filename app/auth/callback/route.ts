@@ -9,7 +9,6 @@ import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import {
   buildEmailSignUpSuccessPath,
   buildGoogleSignUpSuccessPath,
-  GOOGLE_SIGN_UP_SUCCESS_PATH,
 } from "@/lib/google-ads/sign-up-success-path";
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
@@ -34,29 +33,31 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.session?.user;
       let redirectPath = next;
-      if (u && isGoogleAuthUser(u) && shouldShowGoogleSignUpWelcome(u)) {
+      if (u && isGoogleAuthUser(u)) {
         redirectPath = buildGoogleSignUpSuccessPath(next);
-        if (isNewOAuthAccount(u)) {
-          after(async () => {
-            try {
-              const hasServiceRole = Boolean(
-                process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
-              );
-              if (hasServiceRole) {
-                await trackKlaviyoNewAccountCreated(u, {
-                  supabaseForProfile: createServiceRoleClient(),
-                });
-              } else {
-                await trackKlaviyoNewAccountCreated(u);
+        if (shouldShowGoogleSignUpWelcome(u)) {
+          if (isNewOAuthAccount(u)) {
+            after(async () => {
+              try {
+                const hasServiceRole = Boolean(
+                  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+                );
+                if (hasServiceRole) {
+                  await trackKlaviyoNewAccountCreated(u, {
+                    supabaseForProfile: createServiceRoleClient(),
+                  });
+                } else {
+                  await trackKlaviyoNewAccountCreated(u);
+                }
+              } catch (e) {
+                console.error("[auth/callback] Klaviyo new-account (OAuth) failed:", e);
               }
-            } catch (e) {
-              console.error("[auth/callback] Klaviyo new-account (OAuth) failed:", e);
-            }
-          });
+            });
+          }
         }
       }
       const finalResponse = NextResponse.redirect(`${origin}${redirectPath}`);
-      if (u && redirectPath.startsWith(GOOGLE_SIGN_UP_SUCCESS_PATH)) {
+      if (u && isGoogleAuthUser(u) && shouldShowGoogleSignUpWelcome(u)) {
         finalResponse.cookies.set(GOOGLE_NEW_SIGNUP_COOKIE, "1", {
           path: "/",
           maxAge: 60 * 30,

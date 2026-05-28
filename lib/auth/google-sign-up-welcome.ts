@@ -9,6 +9,9 @@ import {
 /** Set on OAuth callback so the welcome page can render before profile data exists. */
 export const GOOGLE_NEW_SIGNUP_COOKIE = "rw_google_new_signup"
 
+/** Set in sessionStorage after the user clicks through the welcome page. */
+export const GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY = "rw_google_welcome_completed"
+
 /** Max gap between account creation and first sign-in (same OAuth session). */
 const FIRST_SIGN_IN_MAX_DELTA_MS = 3 * 60 * 1000
 

@@ -19,8 +19,9 @@ export function createClient(): SupabaseClient {
   }
   browserClient = createBrowserClient(url, key, {
     auth: {
-      flowType: 'pkce',
-      detectSessionInUrl: true,
+      flowType: "pkce",
+      // PKCE exchange runs on `/auth/callback` (server). Client must not consume ?code= first.
+      detectSessionInUrl: false,
     },
   })
   return browserClient

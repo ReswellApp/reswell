@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { clearGoogleNewSignupCookie } from "@/lib/actions/clear-google-new-signup-cookie"
+import { GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY } from "@/lib/auth/google-sign-up-welcome"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 
 const WELCOME_ITEMS = [
@@ -41,6 +42,11 @@ export function SignUpWelcomePanel({
   const handleContinue = () => {
     void (async () => {
       if (clearGoogleNewSignupCookieOnContinue) {
+        try {
+          sessionStorage.setItem(GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY, "1")
+        } catch {
+          /* ignore */
+        }
         await clearGoogleNewSignupCookie()
       }
       navigateAfterClientAuth(nextPath, router)

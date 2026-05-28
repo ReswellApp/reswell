@@ -3,6 +3,17 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Supabase sometimes falls back to Site URL with ?code= on the homepage. Forward to
+  // `/auth/callback` so the server exchanges the PKCE code and can route new Google users
+  // to `/auth/google-sign-up-success`.
+  if (pathname !== "/auth/callback" && request.nextUrl.searchParams.has("code")) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/auth/callback"
+    return NextResponse.redirect(url)
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -50,7 +61,6 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
   /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
   const requiresAuth = pathnameRequiresAuthSession(pathname)
