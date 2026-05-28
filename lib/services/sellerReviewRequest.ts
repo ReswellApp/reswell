@@ -5,6 +5,7 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { trackKlaviyoReviewRequested } from "@/lib/klaviyo/track-review-requested"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
+import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import type { ReviewRequestMessagePayload } from "@/lib/validations/review-request-message-metadata"
 import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
 
@@ -104,6 +105,7 @@ export async function sendSellerReviewRequestForOrder(
       seller_id,
       status,
       delivery_status,
+      tracking_detail,
       listing_id,
       listings ( id, title ),
       order_items (
@@ -119,15 +121,19 @@ export async function sendSellerReviewRequestForOrder(
     return { ok: false, error: "Order not found." }
   }
 
-  const row = order as unknown as OrderRowForReviewRequest
+  const row = order as unknown as OrderRowForReviewRequest & { tracking_detail?: unknown }
   if (row.seller_id !== sellerUserId) {
     return { ok: false, error: "Only the seller for this order can request a review." }
   }
 
-  const gate = validateSellerReviewForOrder({
-    status: row.status,
-    delivery_status: row.delivery_status,
-  })
+  const trackingDetail = parseOrderTrackingDetail(row.tracking_detail)
+  const gate = validateSellerReviewForOrder(
+    {
+      status: row.status,
+      delivery_status: row.delivery_status,
+    },
+    trackingDetail,
+  )
   if (!gate.ok) {
     return { ok: false, error: gate.error }
   }

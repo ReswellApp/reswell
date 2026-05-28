@@ -37,7 +37,6 @@ import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import {
   SellerTrackingForm,
-  SellerConfirmShipmentButton,
   SellerPickupVerify,
   SellerRequestSupportButton,
   SellerRefundedBanner,
@@ -46,8 +45,9 @@ import {
   PayoutStatusBadge,
 } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
-import { getPreparedShippingLabelDownloadUrl } from "@/lib/db/orderShippingLabels"
+import { getLatestPreparedShippingLabelForOrder } from "@/lib/db/orderShippingLabels"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { orderHasAccessibleShippingLabelPdf } from "@/lib/services/resolveOrderShippingLabelPdf"
 import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
@@ -57,7 +57,9 @@ import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { sellerReviewRequestAlreadySentForOrder } from "@/lib/services/sellerReviewRequest"
 import { AskBuyerReviewButton } from "@/components/features/sales/ask-buyer-review-button"
+import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
 import { ReviewBuyerControls } from "@/components/review-buyer-controls"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -92,6 +94,8 @@ type OrderListingRow = {
   title: string
   slug?: string | null
   section: string
+  board_shipping_cost_mode?: string | null
+  shipping_price?: string | number | null
   listing_images: Array<{
     url: string
     thumbnail_url?: string | null
@@ -200,6 +204,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         title,
         slug,
         section,
+        board_shipping_cost_mode,
+        shipping_price,
         listing_images ( url, thumbnail_url, is_primary )
       ),
       order_items (
@@ -209,6 +215,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           title,
           slug,
           section,
+          board_shipping_cost_mode,
+          shipping_price,
           listing_images ( url, thumbnail_url, is_primary )
         )
       )
@@ -249,6 +257,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const fallbackListing = unwrapListing(sale.listings)
   const displayListings =
     linesFromPack.length > 0 ? linesFromPack : fallbackListing ? [fallbackListing] : []
+  const primaryListing =
+    displayListings.find((l) => l.id === sale.listing_id) ?? displayListings[0] ?? fallbackListing
+  const isReswellShippingOrder =
+    sale.fulfillment_method === "shipping" &&
+    primaryListing?.section === "surfboards" &&
+    effectiveBoardShippingMode(primaryListing) === "reswell"
 
   const title =
     displayListings.length > 1
@@ -289,15 +303,28 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     return Math.max(0, Math.round((itemPriceAmount - sellerEarningsAmount) * 100) / 100)
   })()
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
+  const serviceSupabase = createServiceRoleClient()
+  const hasPreparedShippingLabel = !!(await getLatestPreparedShippingLabelForOrder(
+    serviceSupabase,
+    id,
+  ))
+  const hasAccessibleShippingLabelPdf = await orderHasAccessibleShippingLabelPdf(serviceSupabase, {
+    orderId: id,
+    trackingNumber: sale.tracking_number,
+  })
+  const hasShippingTracking = !!sale.tracking_number?.trim()
+  const reswellLabelStillPreparing =
+    isReswellShippingOrder &&
+    sale.delivery_status === "pending" &&
+    !hasAccessibleShippingLabelPdf &&
+    !hasShippingTracking
   const statusDisplay = resolveSaleCardStatusDisplay({
     orderStatus: sale.status,
     deliveryStatus: sale.delivery_status,
     trackingNumber: sale.tracking_number,
     trackingDetail: carrierTracking,
+    hasPreparedShippingLabel: hasPreparedShippingLabel || (isReswellShippingOrder && hasShippingTracking),
   })
-
-  let adminPreparedLabelUrl: string | null = null
-  adminPreparedLabelUrl = await getPreparedShippingLabelDownloadUrl(createServiceRoleClient(), id)
 
   const convRow = await getConversationForBuyerSellerListing(
     supabase,
@@ -333,10 +360,13 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     sale.buyer_id,
   )
   const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
-  const buyerReviewGate = validateSellerReviewForOrder({
-    status: sale.status,
-    delivery_status: sale.delivery_status,
-  })
+  const buyerReviewGate = validateSellerReviewForOrder(
+    {
+      status: sale.status,
+      delivery_status: sale.delivery_status,
+    },
+    carrierTracking,
+  )
   const canAskBuyerForReview =
     buyerReviewGate.ok && !buyerReviewForOrder && Boolean(sale.buyer_id)
 
@@ -411,7 +441,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <DeliveryStatusBadge status={sale.delivery_status} />
+          {(!hasShippingTracking || isPickup) && (
+            <DeliveryStatusBadge status={sale.delivery_status} />
+          )}
           <PayoutStatusBadge payout={payoutRow} />
         </div>
       </div>
@@ -563,52 +595,51 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
+          {sale.fulfillment_method === "shipping" &&
+          (hasAccessibleShippingLabelPdf || (isReswellShippingOrder && hasShippingTracking)) ? (
+            <SellerPreparedShippingLabelCard orderId={sale.id} />
+          ) : null}
+
           {/* ── Seller actions ── */}
 
           {/* Tracking form for shipping sales */}
           {!fulfillmentLocked && sale.fulfillment_method === "shipping" && (
             <>
-              {adminPreparedLabelUrl && sale.delivery_status === "pending" ? (
-                <Card className="border-primary/30 bg-primary/[0.04]">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
+              {reswellLabelStillPreparing ? (
+                <Card className="border-primary/20 bg-primary/[0.02]">
+                  <CardContent className="flex items-start gap-3 p-5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                       <Truck className="h-4 w-4 text-primary" />
-                      Reswell prepared label
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Open or print this PDF, attach it to your package, then confirm shipment when you drop it off.
-                    </p>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-2">
-                    <Button size="sm" asChild>
-                      <a href={adminPreparedLabelUrl} target="_blank" rel="noreferrer">
-                        Open label PDF
-                      </a>
-                    </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Reswell is preparing your shipping label</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        After checkout, Reswell purchases the carrier label and adds tracking here
+                        automatically. Refresh this page in a moment if it has not appeared yet.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               ) : null}
-              <SellerTrackingForm
-                key={`${sale.tracking_number ?? ""}:${sale.tracking_carrier ?? ""}:${sale.delivery_status}`}
-                orderId={sale.id}
-                deliveryStatus={sale.delivery_status}
-                existingTrackingNumber={sale.tracking_number}
-                existingTrackingCarrier={sale.tracking_carrier}
-              />
-              <SellerConfirmShipmentButton
-                orderId={sale.id}
-                deliveryStatus={sale.delivery_status}
-                trackingNumber={sale.tracking_number}
-              />
+              {!isReswellShippingOrder ? (
+                <SellerTrackingForm
+                  key={`${sale.tracking_number ?? ""}:${sale.tracking_carrier ?? ""}:${sale.delivery_status}`}
+                  orderId={sale.id}
+                  deliveryStatus={sale.delivery_status}
+                  existingTrackingNumber={sale.tracking_number}
+                  existingTrackingCarrier={sale.tracking_carrier}
+                />
+              ) : null}
             </>
           )}
 
-          {/* Shipping label for surfboard shipments (self-purchase when Reswell did not prepare one) */}
+          {/* Self-purchase ShipEngine label (flat/free surfboard shipping only — not Reswell shipping) */}
           {!fulfillmentLocked &&
             sale.fulfillment_method === "shipping" &&
             displayListings.some((l) => l.section === "surfboards") &&
             sale.delivery_status === "pending" &&
-            !adminPreparedLabelUrl && (
+            !hasPreparedShippingLabel &&
+            !isReswellShippingOrder && (
               <Card>
                 <CardContent className="flex items-center justify-between gap-4 p-5">
                   <div className="flex items-center gap-3">

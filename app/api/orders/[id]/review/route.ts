@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/order-reviews"
 import { trackKlaviyoSellerReviewedBuyer } from "@/lib/klaviyo/track-seller-reviewed-buyer"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
+import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
 
 export const dynamic = "force-dynamic"
@@ -38,7 +39,7 @@ export async function POST(
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("id, buyer_id, seller_id, listing_id, status, delivery_status")
+    .select("id, buyer_id, seller_id, listing_id, status, delivery_status, tracking_detail")
     .eq("id", orderId)
     .maybeSingle()
 
@@ -52,7 +53,8 @@ export async function POST(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const gate = validateSellerReviewForOrder(order)
+  const trackingDetail = parseOrderTrackingDetail(order.tracking_detail)
+  const gate = validateSellerReviewForOrder(order, trackingDetail)
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: 400 })
   }

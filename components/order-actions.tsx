@@ -73,9 +73,7 @@ export function SellerTrackingForm({
         toast.error(data.error ?? "Could not add tracking")
         return
       }
-      toast.success(
-        "Tracking saved. The buyer can see it on their purchase. Confirm shipment when you drop the package off.",
-      )
+      toast.success("Tracking saved — the buyer can track this shipment on their purchase.")
       router.refresh()
     } catch {
       toast.error("Something went wrong")
@@ -94,9 +92,9 @@ export function SellerTrackingForm({
           Add tracking
         </CardTitle>
         <CardDescription className="text-xs">
-          Save your carrier tracking here — both you and the buyer can reference it on your order pages. When you drop
-          the package off, confirm shipment below; the buyer gets one message with tracking then. Payout stays on hold
-          until they confirm delivery and a Reswell admin approves your payout.
+          Save your carrier tracking here — both you and the buyer can reference it on your order pages. The buyer is
+          notified when tracking is saved. Payout stays on hold until they confirm delivery and a Reswell admin
+          approves your payout.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 pt-2">
@@ -113,63 +111,6 @@ export function SellerTrackingForm({
         <Button onClick={submit} disabled={busy} className="w-full gap-2">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
           Save tracking
-        </Button>
-      </CardContent>
-    </Card>
-  )
-}
-
-/** After Reswell or you added tracking while the order is still “pending”, confirm you handed the package to the carrier. */
-export function SellerConfirmShipmentButton({
-  orderId,
-  deliveryStatus,
-  trackingNumber,
-}: {
-  orderId: string
-  deliveryStatus: string
-  trackingNumber: string | null
-}) {
-  const router = useRouter()
-  const [busy, setBusy] = useState(false)
-
-  if (deliveryStatus !== "pending" || !trackingNumber?.trim()) return null
-
-  const submit = async () => {
-    setBusy(true)
-    try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/confirm-shipment`, {
-        method: "POST",
-      })
-      const data = (await res.json()) as { error?: string }
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not update order")
-        return
-      }
-      toast.success("Marked as shipped — buyer can track delivery.")
-      router.refresh()
-    } catch {
-      toast.error("Something went wrong")
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Card className="border-blue-200/80 bg-blue-50/80 dark:border-blue-900/50 dark:bg-blue-950/20">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          Ready to ship?
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Tracking is on this sale. When you’ve handed the package to the carrier, confirm so the buyer sees it as
-          shipped and delivery protection can start.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button onClick={submit} disabled={busy} className="w-full gap-2">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          I’ve shipped this order
         </Button>
       </CardContent>
     </Card>
@@ -571,16 +512,6 @@ export function TrackingInfo({
             <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
               The buyer can see this on their purchase page and in Messages. They also receive an email
               with the tracking number.
-            </p>
-          ) : isSeller ? (
-            <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
-              The buyer can already see this on their purchase page. Confirm shipment below when you’ve
-              handed the package to the carrier — they’ll get one message with tracking then.
-            </p>
-          ) : !isSeller && deliveryStatus === "pending" ? (
-            <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
-              The seller saved this tracking for your order. You’ll get a message when they confirm the
-              package was handed to the carrier.
             </p>
           ) : null}
         </div>

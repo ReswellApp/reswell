@@ -9,6 +9,7 @@ import {
 } from "@/lib/order-status"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import {
+  carrierTrackingDetailIsActionable,
   resolveCarrierStatusHeadline,
   trackingStatusTone,
 } from "@/lib/shipping/carrier-status-display"
@@ -18,6 +19,8 @@ export type SaleCardStatusDisplay = {
   variant: BadgeProps["variant"]
   className?: string
 }
+
+export const SHIPPING_LABEL_CREATED_STATUS = "Shipping label created" as const
 
 function truncateForBadge(label: string, maxLength = 44): string {
   const trimmed = label.trim()
@@ -42,16 +45,18 @@ function carrierBadgeDisplay(detail: OrderTrackingDetail): SaleCardStatusDisplay
 
 /**
  * Status shown on seller sale cards and headers.
- * Keeps refund/payment labels authoritative; replaces "Confirmed" with fulfillment
- * and carrier updates when tracking is active.
+ * Keeps refund/payment labels authoritative; live carrier tracking is the source of truth
+ * for shipped orders once ShipEngine scans are available.
  */
 export function resolveSaleCardStatusDisplay(params: {
   orderStatus: string
   deliveryStatus: string
   trackingNumber: string | null
   trackingDetail: OrderTrackingDetail | null
+  hasPreparedShippingLabel?: boolean
 }): SaleCardStatusDisplay {
-  const { orderStatus, deliveryStatus, trackingNumber, trackingDetail } = params
+  const { orderStatus, deliveryStatus, trackingNumber, trackingDetail, hasPreparedShippingLabel } =
+    params
 
   if (orderStatusIsRefundInProgress(orderStatus)) {
     return {
@@ -68,7 +73,7 @@ export function resolveSaleCardStatusDisplay(params: {
     }
   }
 
-  if (deliveryStatus === "delivered" || deliveryStatus === "picked_up") {
+  if (deliveryStatus === "picked_up") {
     return {
       label: deliveryStatusLabel(deliveryStatus),
       variant: deliveryStatusBadgeVariant(deliveryStatus),
@@ -77,8 +82,22 @@ export function resolveSaleCardStatusDisplay(params: {
 
   const hasTracking = !!trackingNumber?.trim()
 
-  if (hasTracking && trackingDetail) {
+  if (hasTracking && carrierTrackingDetailIsActionable(trackingDetail)) {
     return carrierBadgeDisplay(trackingDetail)
+  }
+
+  if (deliveryStatus === "delivered") {
+    return {
+      label: deliveryStatusLabel(deliveryStatus),
+      variant: deliveryStatusBadgeVariant(deliveryStatus),
+    }
+  }
+
+  if (hasTracking && deliveryStatus === "pending" && hasPreparedShippingLabel) {
+    return {
+      label: SHIPPING_LABEL_CREATED_STATUS,
+      variant: "secondary",
+    }
   }
 
   if (hasTracking && (deliveryStatus === "shipped" || deliveryStatus === "pickup_ready")) {

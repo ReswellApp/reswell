@@ -475,13 +475,14 @@ export const sellingHelpArticles: HelpArticle[] = [
                 ),
               },
               {
-                title: "Mark it shipped",
+                title: "Ship the board",
                 body: (
                   <>
-                    Enter the tracking number and carrier, then tap <strong>Submit tracking</strong>{" "}
-                    and <strong>I&apos;ve shipped this order</strong>. Ship within{" "}
-                    {SHIPPING_DEADLINE_DAYS} days of purchase confirmation or the order may be
-                    auto canceled and refunded.
+                    For Reswell shipping, Reswell purchases the cheapest ShipEngine label after checkout and adds
+                    tracking automatically. Print the label from your sale page, drop the package with the carrier,
+                    then tap <strong>I&apos;ve dropped this off with the carrier</strong>. For your own label, enter
+                    tracking with <strong>Save tracking</strong>. Ship within {SHIPPING_DEADLINE_DAYS} days of
+                    purchase confirmation or the order may be auto canceled and refunded.
                   </>
                 ),
               },

@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, ChevronRight } from "lucide-react"
+import { AboutFoundersSection } from "@/components/features/about/about-founders-section"
 import { FALLBACK_HOME_HERO_SLIDE_PATHS } from "@/components/hero-slideshow"
 import { Button } from "@/components/ui/button"
 import { portraitShimmer, shimmerDataUrl } from "@/lib/image-shimmer"
@@ -189,6 +190,8 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
           </div>
         </div>
       </section>
+
+      <AboutFoundersSection />
 
       <section className="border-b border-border/70 bg-muted/40">
         <div className="container mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">

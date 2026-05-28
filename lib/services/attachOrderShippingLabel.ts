@@ -6,8 +6,8 @@ import {
 import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
 
 /**
- * Persists a marketplace shipping label on the order (tracking only — not delivery_status shipped).
- * Used by post-checkout automation; does not post Messages (seller sees PDF on sale page).
+ * Persists a marketplace shipping label on the order and writes tracking to the order row.
+ * Does not mark the order shipped — the seller confirms drop-off separately.
  */
 export async function attachOrderShippingLabel(params: {
   supabase: SupabaseClient

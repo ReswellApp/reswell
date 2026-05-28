@@ -99,3 +99,29 @@ export async function getPreparedShippingLabelDownloadUrl(
 
   return null
 }
+
+/** Order ids that have a marketplace or admin-prepared label PDF on file. */
+export async function fetchOrderIdsWithPreparedShippingLabels(
+  supabase: SupabaseClient,
+  orderIds: string[],
+): Promise<Set<string>> {
+  const ids = [...new Set(orderIds.filter(Boolean))]
+  const prepared = new Set<string>()
+  if (ids.length === 0) return prepared
+
+  const [marketplaceRes, adminRes] = await Promise.all([
+    supabase.from("order_shipping_labels").select("order_id").in("order_id", ids),
+    supabase.from("order_admin_shipping_labels").select("order_id").in("order_id", ids),
+  ])
+
+  for (const row of marketplaceRes.data ?? []) {
+    const orderId = (row as { order_id?: string }).order_id
+    if (orderId) prepared.add(orderId)
+  }
+  for (const row of adminRes.data ?? []) {
+    const orderId = (row as { order_id?: string }).order_id
+    if (orderId) prepared.add(orderId)
+  }
+
+  return prepared
+}

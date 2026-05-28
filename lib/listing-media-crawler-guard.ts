@@ -8,6 +8,8 @@ const SOCIAL_PREVIEW_CRAWLER_UA_SUBSTRINGS = [
   "slackbot",
   "discordbot",
   "bingpreview",
+  "googlebot",
+  "googlebot-image",
 ] as const
 
 const BULK_MEDIA_CRAWLER_UA_SUBSTRINGS = [

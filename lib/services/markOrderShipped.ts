@@ -126,8 +126,8 @@ async function postOrderShippedNotification(
 }
 
 /**
- * Seller saves carrier tracking on a pending shipping order.
- * Does not change delivery_status or notify the buyer — use confirm-shipment for that.
+ * Seller saves carrier tracking on a pending shipping order (their own label / carrier).
+ * Marks the order shipped and notifies the buyer — not used for Reswell auto-label purchase.
  */
 export async function saveOrderTracking(
   supabase: SupabaseClient,
@@ -157,6 +157,7 @@ export async function saveOrderTracking(
     }
 
     if (result.ok && result.tracking_number?.trim()) {
+      await autoDispatchOrderIfTrackingReady(supabase, orderId, sellerUserId)
       return { ok: true }
     }
 
@@ -238,6 +239,8 @@ export async function saveOrderTracking(
     return { ok: false, error: "Failed to save tracking", status: 500 }
   }
 
+  await autoDispatchOrderIfTrackingReady(supabase, orderId, sellerUserId)
+
   return { ok: true }
 }
 
@@ -296,6 +299,44 @@ async function applyMarkOrderShippedWithTracking(
   )
 
   return { ok: true }
+}
+
+/**
+ * When tracking is on a pending shipping order, mark it shipped and notify the buyer.
+ * Used after Reswell auto-label purchase and when sellers save tracking manually.
+ */
+export async function autoDispatchOrderIfTrackingReady(
+  supabase: SupabaseClient,
+  orderId: string,
+  sellerUserId: string,
+): Promise<void> {
+  const { data: ord, error: fetchErr } = await supabase
+    .from("orders")
+    .select("id, buyer_id, listing_id, delivery_status, tracking_number")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (fetchErr || !ord) {
+    console.error("[autoDispatchOrderIfTrackingReady] order load:", fetchErr?.message ?? "not found")
+    return
+  }
+
+  if ((ord as { delivery_status: string }).delivery_status !== "pending") return
+  if (!(ord as { tracking_number: string | null }).tracking_number?.trim()) return
+
+  const result = await markOrderDispatchedBySeller(
+    supabase,
+    {
+      id: (ord as { id: string }).id,
+      buyer_id: (ord as { buyer_id: string }).buyer_id,
+      listing_id: (ord as { listing_id: string }).listing_id,
+    },
+    sellerUserId,
+  )
+
+  if (!result.ok) {
+    console.error("[autoDispatchOrderIfTrackingReady]", result.error)
+  }
 }
 
 /**

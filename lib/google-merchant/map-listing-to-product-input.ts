@@ -1,5 +1,6 @@
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import {
   getGoogleMerchantContentLanguage,
@@ -52,6 +53,14 @@ function mapCondition(condition: string | null | undefined): "NEW" | "USED" {
 }
 
 function absoluteImageLink(listing: GoogleMerchantListingRow, origin: string): string | null {
+  const list = listing.listing_images ?? []
+  const primary = list.find((i) => i.is_primary) || list[0]
+  const raw = primary?.url?.trim()
+  if (!raw) return null
+
+  const proxiedAbsolute = absoluteProxiedListingMediaUrl(raw)
+  if (proxiedAbsolute) return proxiedAbsolute
+
   const relativeOrAbsolute = listingHeroSlideSrc(listing.listing_images)
   if (!relativeOrAbsolute) return null
   if (/^https?:\/\//i.test(relativeOrAbsolute)) return relativeOrAbsolute

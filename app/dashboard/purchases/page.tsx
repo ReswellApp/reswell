@@ -19,6 +19,7 @@ import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
+import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 
@@ -48,6 +49,7 @@ type MarketplaceOrderRow = {
   amount: number | string
   status: string
   delivery_status: string
+  tracking_detail?: unknown
   created_at: string
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
@@ -129,6 +131,7 @@ export default async function PurchasesPage() {
       amount,
       status,
       delivery_status,
+      tracking_detail,
       created_at,
       shipping_address,
       fulfillment_method,
@@ -234,7 +237,9 @@ export default async function PurchasesPage() {
                 created_at: review.created_at,
               }
             : null
-          const canReviewSeller = !existingSellerReview && canSubmitSellerReview(row)
+          const canReviewSeller =
+            !existingSellerReview &&
+            canSubmitSellerReview(row, parseOrderTrackingDetail(row.tracking_detail))
           const showSellerReview = canReviewSeller || !!existingSellerReview
 
           return (

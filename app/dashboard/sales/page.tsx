@@ -14,6 +14,7 @@ import {
   orderStatusIsRefundInProgress,
 } from "@/lib/order-status"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
+import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingLabels"
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
@@ -149,6 +150,11 @@ export default async function SalesPage() {
 
   const list = (sales ?? []) as unknown as SaleRow[]
 
+  const preparedLabelOrderIds = await fetchOrderIdsWithPreparedShippingLabels(
+    supabase,
+    list.map((s) => s.id),
+  )
+
   const trackingOrderIds = list.filter((s) => s.tracking_number?.trim()).map((s) => s.id)
   const trackingDetailByOrderId = new Map<string, ReturnType<typeof parseOrderTrackingDetail>>()
   if (trackingOrderIds.length > 0) {
@@ -231,6 +237,7 @@ export default async function SalesPage() {
             deliveryStatus: sale.delivery_status ?? "pending",
             trackingNumber: sale.tracking_number,
             trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
+            hasPreparedShippingLabel: preparedLabelOrderIds.has(sale.id),
           })
 
           return (

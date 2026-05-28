@@ -268,7 +268,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
     : null
 
   const canSubmitSellerReviewForOrder =
-    !existingSellerReview && canSubmitSellerReview(order)
+    !existingSellerReview && canSubmitSellerReview(order, carrierTracking)
 
   const convRow = await getConversationForBuyerSellerListing(
     supabase,

@@ -28,6 +28,27 @@ export function resolveCarrierStatusHeadline(detail: OrderTrackingDetail): strin
   return trackingStatusLabel(detail)
 }
 
+/** True when ShipEngine tracking has enough data to drive marketplace status UI. */
+export function carrierTrackingDetailIsActionable(
+  detail: OrderTrackingDetail | null | undefined,
+): detail is OrderTrackingDetail {
+  if (!detail) return false
+  if (detail.status_code?.trim()) return true
+  if (detail.status_description?.trim()) return true
+  if (detail.carrier_status_description?.trim()) return true
+  return Boolean(detail.events?.some((event) => event.description?.trim()))
+}
+
+/** ShipEngine `DE` or an actual delivery timestamp means the shipment is complete. */
+export function carrierTrackingIndicatesDelivered(
+  detail: OrderTrackingDetail | null | undefined,
+): boolean {
+  if (!carrierTrackingDetailIsActionable(detail)) return false
+  const code = (detail.status_code ?? "").toUpperCase()
+  if (code === "DE") return true
+  return Boolean(detail.actual_delivery_date?.trim())
+}
+
 export function trackingStatusTone(
   statusCode: string | null | undefined,
 ): "default" | "success" | "warning" | "muted" {
