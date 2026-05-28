@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { formatCategory, LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
+import { absoluteUrl } from "@/lib/site-metadata"
 import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
 
 const BOARD_TYPE_LABELS: Record<string, string> = {
@@ -167,7 +167,7 @@ export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Pro
 
   const { getBoardsBrowseOgPayload } = await import("@/lib/boards-og-data")
   const ogPayload = await getBoardsBrowseOgPayload(sp.type)
-  const listingPhotoUrl = ogPayload.ok ? absolutePublicMediaUrl(ogPayload.photoUrl) : undefined
+  const listingPhotoUrl = ogPayload.ok ? ogPayload.photoUrl : undefined
 
   /** Prefer the real listing photo so link previews match inventory (layout no longer injects a default wave). */
   const shareImageUrl = listingPhotoUrl ?? generatedOgImageUrl

@@ -1,4 +1,6 @@
+import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
+import { pathnameSkipsAuthSessionRefresh } from '@/lib/auth/pathname-skips-auth-session-refresh'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -19,6 +21,16 @@ export async function updateSession(request: NextRequest) {
 
   // Skip Supabase auth when env vars are not configured (e.g. local viewing)
   if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.next({ request })
+  }
+
+  const requiresAuth = pathnameRequiresAuthSession(pathname)
+  const canSkipSessionRefresh =
+    !requiresAuth &&
+    pathnameSkipsAuthSessionRefresh(pathname) &&
+    !hasSupabaseAuthCookies(request.cookies.getAll())
+
+  if (canSkipSessionRefresh) {
     return NextResponse.next({ request })
   }
 
@@ -63,7 +75,6 @@ export async function updateSession(request: NextRequest) {
 
   /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
-  const requiresAuth = pathnameRequiresAuthSession(pathname)
 
   if (requiresAuth && !user) {
     const url = request.nextUrl.clone()

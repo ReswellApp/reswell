@@ -1,3 +1,5 @@
+import { absoluteUrl } from "@/lib/site-metadata"
+
 /** Same-origin listing photo proxy — see `app/media/listings/[...path]/route.ts`. */
 export const LISTING_MEDIA_PROXY_PATH_PREFIX = "/media/listings/" as const
 
@@ -41,8 +43,8 @@ export function listingStorageObjectPathFromUrl(url: string): string | null {
 }
 
 /**
- * Same-origin path served by `app/media/listings/[...path]/route.ts` so `next/image`
- * optimizer URLs hide the Supabase project host.
+ * Same-origin path served by `app/media/listings/[...path]/route.ts` so listing photos
+ * use `reswell.app/media/listings/...` instead of exposing the Supabase project host.
  */
 export function proxiedListingImageSrc(url: string | null | undefined): string {
   if (url == null) return ""
@@ -51,4 +53,12 @@ export function proxiedListingImageSrc(url: string | null | undefined): string {
   const path = listingStorageObjectPathFromUrl(t)
   if (!path) return t
   return `${LISTING_MEDIA_PROXY_PATH_PREFIX}${path}`
+}
+
+/** Absolute `https://reswell.app/media/listings/...` for OG tags, catalog feeds, and crawlers. */
+export function absoluteProxiedListingMediaUrl(url: string | null | undefined): string | undefined {
+  const proxied = proxiedListingImageSrc(url)
+  if (!proxied.trim()) return undefined
+  if (/^https?:\/\//i.test(proxied)) return proxied
+  return absoluteUrl(proxied)
 }

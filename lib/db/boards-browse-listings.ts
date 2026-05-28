@@ -350,7 +350,8 @@ function hasNonEmptyParam(value: string | undefined): boolean {
 }
 
 /**
- * Nav pill views only: `/boards` and `/boards?type=…` with default sort/filters and optional `page`.
+ * Nav pill views: `/boards` and `/boards?type=…` with optional condition, sort, and `page`
+ * — no search, brand, geo, dimension, or price filters.
  */
 export function isBoardsBrowseCategoryTypeView(sp: BoardsBrowseSearchParams): boolean {
   if (hasNonEmptyParam(sp.q)) return false
@@ -370,12 +371,6 @@ export function isBoardsBrowseCategoryTypeView(sp: BoardsBrowseSearchParams): bo
   if (hasNonEmptyParam(sp.dimThickness)) return false
   if (hasNonEmptyParam(sp.dimVolume)) return false
 
-  const condition = sp.condition || "all"
-  if (condition !== "all") return false
-
-  const sort = sp.sort || BOARDS_BROWSE_DEFAULT_SORT
-  if (sort !== BOARDS_BROWSE_DEFAULT_SORT) return false
-
   const page = parseInt(sp.page || "1", 10)
   if (!Number.isFinite(page) || page < 1) return false
 
@@ -384,12 +379,21 @@ export function isBoardsBrowseCategoryTypeView(sp: BoardsBrowseSearchParams): bo
 
 export function boardsBrowseCategoryTypeCacheKey(sp: BoardsBrowseSearchParams): {
   boardType: string
+  condition: string
+  sort: string
   page: number
 } {
   const normalizedType = normalizedBoardsBrowseTypeFromParam(sp.type)
   const boardType = normalizedType ?? "all"
+  const condition = sp.condition?.trim() || "all"
+  const sort = sp.sort || BOARDS_BROWSE_DEFAULT_SORT
   const page = parseInt(sp.page || "1", 10)
-  return { boardType, page: Number.isFinite(page) && page >= 1 ? page : 1 }
+  return {
+    boardType,
+    condition,
+    sort,
+    page: Number.isFinite(page) && page >= 1 ? page : 1,
+  }
 }
 
 export type BoardsBrowseCategoryTypePage = {
@@ -397,10 +401,10 @@ export type BoardsBrowseCategoryTypePage = {
   totalPages: number
 }
 
-/** Default newest sort, no filters — used by nav category pills and hourly cache. */
+/** Default sort, no text/geo/brand filters — used by nav category pills and hourly cache. */
 export async function fetchBoardsBrowseCategoryTypePage(
   supabase: SupabaseClient,
-  params: { boardType: string; page: number },
+  params: { boardType: string; condition: string; sort: string; page: number },
 ): Promise<BoardsBrowseCategoryTypePage> {
   const limit = BOARDS_BROWSE_PAGE_SIZE
   const offset = (params.page - 1) * limit
@@ -408,10 +412,10 @@ export async function fetchBoardsBrowseCategoryTypePage(
 
   let listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
     boardType: params.boardType,
-    condition: "all",
+    condition: params.condition,
     query: "",
     useSuppressionSort,
-    pagedSort: BOARDS_BROWSE_DEFAULT_SORT,
+    pagedSort: params.sort,
     pagedRange: { from: offset, to: offset + limit - 1 },
   })) as unknown as SurfboardBrowseListingsQuery
 
@@ -422,10 +426,10 @@ export async function fetchBoardsBrowseCategoryTypePage(
     useSuppressionSort = false
     listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
       boardType: params.boardType,
-      condition: "all",
+      condition: params.condition,
       query: "",
       useSuppressionSort: false,
-      pagedSort: BOARDS_BROWSE_DEFAULT_SORT,
+      pagedSort: params.sort,
       pagedRange: { from: offset, to: offset + limit - 1 },
     })) as unknown as SurfboardBrowseListingsQuery
     ;({ data: rawBoards, count, error } = await listingsChain)

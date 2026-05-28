@@ -27,6 +27,14 @@ interface ImageGalleryProps {
 
 const SWIPE_MIN_PX = 48
 
+function gallerySlideNearSelected(i: number, selected: number, total: number): boolean {
+  if (total <= 1) return true
+  if (i === selected) return true
+  if (i === (selected + 1) % total) return true
+  if (i === (selected - 1 + total) % total) return true
+  return false
+}
+
 export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -45,9 +53,17 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
     [images],
   )
 
-  // Load full listing photos once idle so arrow / thumbnail switches hit HTTP cache.
-  // Main + thumbnails use the same `/media/listings/...` URLs with `unoptimized`, so
-  // bytes are shared (unlike distinct `/_next/image?w=` variants per layout size).
+  const mountedHeroIndices = useMemo(() => {
+    if (images.length <= 1) return [0]
+    const indices = new Set<number>()
+    for (let i = 0; i < images.length; i += 1) {
+      if (gallerySlideNearSelected(i, selectedIndex, images.length)) indices.add(i)
+    }
+    return [...indices].sort((a, b) => a - b)
+  }, [images.length, selectedIndex])
+
+  // Warm only the active slide and its neighbors so gallery navigation stays snappy
+  // without requesting every photo on first paint.
   useEffect(() => {
     const urls = images
       .map((img) => proxiedListingImageSrc(img.url))
@@ -60,29 +76,14 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
       im.src = url
     }
 
-    // Neighbors of the first slide: many users hit “next” immediately.
-    if (urls.length > 1) warm(urls[1])
-    if (urls.length > 2) warm(urls[urls.length - 1])
-
-    let cancelled = false
-    const run = () => {
-      if (cancelled) return
-      for (const url of urls) {
-        warm(url)
-      }
+    const indices = new Set<number>([selectedIndex])
+    indices.add((selectedIndex + 1) % urls.length)
+    indices.add((selectedIndex - 1 + urls.length) % urls.length)
+    for (const i of indices) {
+      const url = urls[i]
+      if (url) warm(url)
     }
-
-    const useIdle = typeof requestIdleCallback !== "undefined"
-    const idleHandle = useIdle
-      ? requestIdleCallback(run, { timeout: 2200 })
-      : window.setTimeout(run, 180)
-
-    return () => {
-      cancelled = true
-      if (useIdle) cancelIdleCallback(idleHandle as number)
-      else window.clearTimeout(idleHandle)
-    }
-  }, [images])
+  }, [images, selectedIndex])
 
   if (images.length === 0) {
     return (
@@ -199,7 +200,9 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
             openLightbox()
           }}
         >
-          {images.map((image, i) => {
+          {mountedHeroIndices.map((i) => {
+            const image = images[i]
+            if (!image) return null
             const isSelected = i === selectedIndex
             return (
               <Image
@@ -212,8 +215,9 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
                   "absolute inset-0 object-cover object-center transition-opacity transition-duration-[420ms] ease-in-out",
                   isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
                 )}
-                priority={i === 0}
-                fetchPriority={i === 0 ? "high" : "auto"}
+                priority={i === 0 && selectedIndex === 0}
+                fetchPriority={isSelected ? "high" : "auto"}
+                loading={isSelected ? "eager" : "lazy"}
                 sizes="(max-width: 1024px) 100svw, 50svw"
                 placeholder="blur"
                 blurDataURL={portraitShimmer}
@@ -305,7 +309,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
                     alt={`${title} - Thumbnail ${index + 1}`}
                     fill
                     unoptimized
-                    loading="eager"
+                    loading={Math.abs(index - selectedIndex) <= 1 ? "eager" : "lazy"}
                     className="object-cover object-center"
                     sizes="64px"
                     placeholder="blur"

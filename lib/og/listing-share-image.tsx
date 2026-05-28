@@ -65,7 +65,7 @@ function ogSiteDomainLabel(): string {
 export async function listingShareImageResponse(opts: {
   title: string
   line2?: string
-  /** Public HTTPS URL (e.g. Supabase storage). */
+  /** Public HTTPS URL (same-origin `/media/listings/...` proxy or site asset). */
   photoUrl?: string | null
   sold?: boolean
 }) {

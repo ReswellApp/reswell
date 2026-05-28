@@ -16,10 +16,12 @@ export { isBoardsBrowseCategoryTypeView }
 
 async function loadBoardsBrowseCategoryTypePage(
   boardType: string,
+  condition: string,
+  sort: string,
   page: number,
 ): Promise<BoardsBrowseCategoryTypePage> {
   const supabase = createAnonSupabaseClient()
-  return fetchBoardsBrowseCategoryTypePage(supabase, { boardType, page })
+  return fetchBoardsBrowseCategoryTypePage(supabase, { boardType, condition, sort, page })
 }
 
 const getCachedBoardsBrowseCategoryTypePage = unstable_cache(
@@ -37,6 +39,6 @@ export async function getBoardsBrowseCategoryTypePageCached(
   if (!isBoardsBrowseCategoryTypeView(searchParams)) {
     return null
   }
-  const { boardType, page } = boardsBrowseCategoryTypeCacheKey(searchParams)
-  return getCachedBoardsBrowseCategoryTypePage(boardType, page)
+  const { boardType, condition, sort, page } = boardsBrowseCategoryTypeCacheKey(searchParams)
+  return getCachedBoardsBrowseCategoryTypePage(boardType, condition, sort, page)
 }

@@ -4,8 +4,8 @@
 
 import { listingDetailHref } from "@/lib/listing-href"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
+import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 
 export type MetaListingImage = {
   url?: string | null
@@ -87,10 +87,10 @@ function absoluteListingUrl(listing: MetaListingProductSource): string {
 
 function absoluteCatalogImageUrl(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null
-  return absolutePublicMediaUrl(raw.trim()) ?? null
+  return absoluteProxiedListingMediaUrl(raw.trim()) ?? null
 }
 
-/** Raw storage URL from listing photos — direct public URLs Meta can crawl (not /media/listings proxy). */
+/** Primary listing photo as same-origin `/media/listings/...` for Meta catalog crawlers. */
 function listingImageRaw(listing: MetaListingProductSource): string | null {
   const images = listing.listing_images ?? null
   const normalized = images?.map((image) => ({

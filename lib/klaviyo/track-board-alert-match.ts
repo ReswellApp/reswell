@@ -7,6 +7,7 @@
  * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Brand, Model.
  */
 
+import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 
@@ -47,7 +48,9 @@ export async function trackKlaviyoBoardAlertMatch(
       Title: payload.listingTitle,
       Price: Number.isFinite(priceNum) ? priceNum : payload.listingPrice,
       Listing_URL: payload.listingAbsoluteUrl,
-      photo_url: payload.listingPhotoUrl ?? "",
+      photo_url: payload.listingPhotoUrl
+        ? absoluteKlaviyoListingPhotoUrl(payload.listingPhotoUrl)
+        : "",
       Brand: payload.brand ?? "",
       Model: payload.model ?? "",
       Dimensions: payload.dimensions ?? "",

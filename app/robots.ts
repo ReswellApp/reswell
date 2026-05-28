@@ -10,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
       /** `/sell` disallow matches `/sellers` by prefix unless explicitly allowed (Google uses longest matching rule). */
       allow: ["/sellers", "/sellers/"],
       disallow: [
-        /** Listing photo proxy — not indexable; bots should use listing pages + og:image (Supabase URL). */
+        /** Listing photo proxy — not indexable; crawlers fetch images here for link previews and catalog feeds. */
         "/media/",
         "/admin",
         "/dashboard",

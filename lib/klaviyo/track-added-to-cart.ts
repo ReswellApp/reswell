@@ -6,6 +6,7 @@
 
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
 import {
+  absoluteKlaviyoListingPhotoUrl,
   klaviyoCommerceEventProperties,
   listingToKlaviyoEventCommerceItem,
 } from "@/lib/klaviyo/catalog-product"
@@ -63,7 +64,7 @@ export async function trackKlaviyoAddedToCart(
       listing_id: payload.listingId,
       Title: payload.title,
       Price: Number.isFinite(priceNum) ? priceNum : payload.price,
-      photo_url: payload.photoUrl ?? "",
+      photo_url: payload.photoUrl ? absoluteKlaviyoListingPhotoUrl(payload.photoUrl) : "",
       listing_url: listingUrl,
       checkout_url: checkoutUrl,
     },

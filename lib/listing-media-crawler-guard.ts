@@ -1,7 +1,16 @@
-const BULK_MEDIA_CRAWLER_UA_SUBSTRINGS = [
+/** Link-preview / catalog crawlers that must fetch `og:image` and feed `image_link` URLs. */
+const SOCIAL_PREVIEW_CRAWLER_UA_SUBSTRINGS = [
   "facebookexternalhit",
   "facebot",
   "meta-externalagent",
+  "twitterbot",
+  "linkedinbot",
+  "slackbot",
+  "discordbot",
+  "bingpreview",
+] as const
+
+const BULK_MEDIA_CRAWLER_UA_SUBSTRINGS = [
   "meta-webindexer",
   "bytespider",
   "petalbot",
@@ -10,8 +19,13 @@ const BULK_MEDIA_CRAWLER_UA_SUBSTRINGS = [
   "dotbot",
   "baiduspider",
   "yandexbot",
-  "bingpreview",
 ] as const
+
+export function isSocialPreviewMediaCrawler(userAgent: string | null | undefined): boolean {
+  if (!userAgent?.trim()) return false
+  const ua = userAgent.toLowerCase()
+  return SOCIAL_PREVIEW_CRAWLER_UA_SUBSTRINGS.some((needle) => ua.includes(needle))
+}
 
 export function isListingMediaBulkCrawler(userAgent: string | null | undefined): boolean {
   if (!userAgent?.trim()) return false
@@ -86,6 +100,9 @@ export type ListingMediaAccessDecision =
 
 export function evaluateListingMediaAccess(request: Request): ListingMediaAccessDecision {
   const userAgent = request.headers.get("user-agent")
+  if (isSocialPreviewMediaCrawler(userAgent)) {
+    return { allowed: true }
+  }
   if (isListingMediaBulkCrawler(userAgent)) {
     return { allowed: false, status: 403, message: "Forbidden" }
   }

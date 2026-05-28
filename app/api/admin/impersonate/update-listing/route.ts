@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import {
@@ -220,6 +221,7 @@ export async function PUT(request: NextRequest) {
 
   if (slug.trim()) {
     revalidatePath(`/l/${slug.trim()}`, "page")
+    revalidateListingPublicDetailCatalog()
   }
 
   return NextResponse.json({ success: true, slug, seller_display_name: sellerDisplayName })

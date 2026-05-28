@@ -1,7 +1,7 @@
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
-import { absolutePublicMediaUrl } from "@/lib/site-metadata"
+import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
 import { boardTypeForDbFromBrowseParam, boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 
 export type BoardsOgPayload =
@@ -53,7 +53,7 @@ export async function getBoardsBrowseOgPayload(typeParam: string | undefined): P
     return { ok: false }
   }
 
-  const photoUrl = absolutePublicMediaUrl(primaryListingImageUrl(row.listing_images))
+  const photoUrl = absoluteProxiedListingMediaUrl(primaryListingImageUrl(row.listing_images))
   const rawTitle = typeof row.title === "string" ? row.title.trim() : ""
   const displayTitle = capitalizeWords(rawTitle || "Surfboard")
 

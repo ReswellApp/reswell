@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { listingDetailPath } from "@/lib/listing-query"
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
-import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
+import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
+import { absoluteUrl } from "@/lib/site-metadata"
 
 export function primaryListingImageUrl(
   images:
@@ -49,8 +50,8 @@ export function buildListingShareSubtitle(
 /**
  * Shared SEO + Open Graph + Twitter metadata for marketplace listing detail pages.
  *
- * `og:image` / `twitter:image` use the listing’s primary photo URL (absolute https), matching
- * pre–dynamic-OG behavior. Listings without images fall back to the site brand asset.
+ * `og:image` / `twitter:image` use the listing’s primary photo via same-origin
+ * `/media/listings/...` proxy (absolute https). Listings without images fall back to the site brand asset.
  */
 export function metadataForListingDetail(
   listing: ListingMetaInput,
@@ -80,7 +81,7 @@ export function metadataForListingDetail(
   description = description.slice(0, 180)
 
   const rawListingImage = primaryListingImageUrl(listing.listing_images)
-  const listingImageAbs = absolutePublicMediaUrl(rawListingImage)
+  const listingImageAbs = absoluteProxiedListingMediaUrl(rawListingImage)
   const fallbackBrandImage = absoluteUrl("/og-image.jpg")
   const shareImageUrl = listingImageAbs ?? fallbackBrandImage
   const canonicalPath = listingDetailPath(listing)

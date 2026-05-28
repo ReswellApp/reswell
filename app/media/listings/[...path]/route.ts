@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { evaluateListingMediaAccess } from "@/lib/listing-media-crawler-guard"
+import { LISTING_MEDIA_CACHE_CONTROL } from "@/lib/listing-media-cache-control"
 import { isValidListingMediaObjectPath } from "@/lib/listing-media-proxy-path-validation"
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"
@@ -61,7 +62,7 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": ct,
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": LISTING_MEDIA_CACHE_CONTROL,
       },
     })
   }
@@ -71,7 +72,7 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": ct,
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": LISTING_MEDIA_CACHE_CONTROL,
     },
   })
 }

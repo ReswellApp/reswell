@@ -4,6 +4,7 @@ import Image from "next/image"
 import {
   Fragment,
   useCallback,
+  useMemo,
   useState,
   type MouseEventHandler,
   type ReactNode,
@@ -15,6 +16,14 @@ import { cn } from "@/lib/utils"
 
 const hoverRevealNav =
   "opacity-0 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 [@media(pointer:coarse)]:pointer-events-auto [@media(pointer:coarse)]:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100"
+
+function carouselSlideNearActive(i: number, active: number, total: number): boolean {
+  if (total <= 1) return true
+  if (i === active) return true
+  if (i === (active + 1) % total) return true
+  if (i === (active - 1 + total) % total) return true
+  return false
+}
 
 export interface ListingTileImageMediaProps {
   urls: string[]
@@ -50,6 +59,15 @@ export function ListingTileImageMedia({
   const count = urls.length
   const [index, setIndex] = useState(0)
   const [loadedByUrl, setLoadedByUrl] = useState<Record<string, true>>({})
+
+  const mountedSlideIndices = useMemo(() => {
+    if (count <= 1) return [0]
+    const indices = new Set<number>()
+    for (let i = 0; i < count; i += 1) {
+      if (carouselSlideNearActive(i, index, count)) indices.add(i)
+    }
+    return [...indices].sort((a, b) => a - b)
+  }, [count, index])
 
   const markImageLoaded = useCallback((url: string) => {
     setLoadedByUrl((prev) => (prev[url] ? prev : { ...prev, [url]: true }))
@@ -101,7 +119,9 @@ export function ListingTileImageMedia({
       )}
     >
       {hasImage ? (
-        urls.map((u, i) => {
+        mountedSlideIndices.map((i) => {
+          const u = urls[i]
+          if (!u) return null
           const active = i === index
           return (
             <Image
@@ -113,6 +133,7 @@ export function ListingTileImageMedia({
               quality={90}
               unoptimized={listingImageShouldBypassOptimization(u)}
               aria-hidden={!active}
+              loading={active ? "eager" : "lazy"}
               className={cn(
                 "absolute inset-0 transition-opacity duration-[280ms] ease-in-out",
                 active ? "z-[2] opacity-100" : "z-[1] opacity-0",
@@ -125,7 +146,7 @@ export function ListingTileImageMedia({
               style={objectStyle}
               onLoad={handleImageLoad(u)}
               onError={handleImageLoad(u)}
-              priority={i === 0}
+              priority={i === 0 && index === 0}
             />
           )
         })

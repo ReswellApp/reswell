@@ -14,6 +14,7 @@
  * @see https://developers.klaviyo.com/en/reference/create_event
  */
 
+import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 export type KlaviyoListingCreatedPayload = {
@@ -34,7 +35,6 @@ export async function trackKlaviyoListingCreated(
     listingId,
     title,
     price,
-    photoUrl,
   } = payload
 
   const priceNum = typeof price === "number" ? price : Number(price)
@@ -45,7 +45,7 @@ export async function trackKlaviyoListingCreated(
       Created: true,
       Title: title,
       Price: Number.isFinite(priceNum) ? priceNum : price,
-      photo_url: photoUrl ?? "",
+      photo_url: payload.photoUrl ? absoluteKlaviyoListingPhotoUrl(payload.photoUrl) : "",
       listing_id: listingId,
     },
     profile: {

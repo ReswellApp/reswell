@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
 import { listingDetailHref } from "@/lib/listing-href"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
@@ -29,6 +30,8 @@ function revalidateListingDetailPaths(listingId: string, slug?: string | null) {
   if (trimmed !== "") {
     revalidatePath(`/l/${listingId}`, "page")
   }
+
+  revalidateListingPublicDetailCatalog()
 }
 
 /**
