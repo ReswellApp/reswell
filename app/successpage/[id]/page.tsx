@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { fetchBuyerOrderSuccessPayload } from "@/lib/order-success-payload"
 import { CheckoutOrderSuccess } from "@/components/checkout-order-success"
 import { CheckoutOrderSuccessPickup } from "@/components/checkout-order-success-pickup"
+import { GooglePurchaseConversionBeacon } from "@/components/google-ads/google-purchase-conversion-beacon"
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -41,9 +42,23 @@ export default async function PurchaseSuccessPage(props: PageProps) {
     notFound()
   }
 
+  const conversionBeacon = (
+    <GooglePurchaseConversionBeacon orderId={payload.orderId} value={payload.total} />
+  )
+
   if (payload.fulfillmentMethod === "pickup") {
-    return <CheckoutOrderSuccessPickup data={payload} />
+    return (
+      <>
+        {conversionBeacon}
+        <CheckoutOrderSuccessPickup data={payload} />
+      </>
+    )
   }
 
-  return <CheckoutOrderSuccess data={payload} />
+  return (
+    <>
+      {conversionBeacon}
+      <CheckoutOrderSuccess data={payload} />
+    </>
+  )
 }
