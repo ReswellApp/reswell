@@ -1,5 +1,6 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { appendSignUpConversionFlag } from "@/lib/google-ads/sign-up-conversion"
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
 import { type NextRequest, NextResponse } from "next/server"
@@ -17,8 +18,12 @@ export async function GET(request: NextRequest) {
     | "invite"
     | null
   if (token_hash && type) {
-    const redirectPath =
+    let redirectPath =
       type === "recovery" ? passwordResetLandingPath() : safeRedirectPath(searchParams.get("next"))
+    const isSignupConfirmation = type === "signup" || type === "email"
+    if (isSignupConfirmation) {
+      redirectPath = appendSignUpConversionFlag(redirectPath)
+    }
     const redirectResponse = NextResponse.redirect(`${origin}${redirectPath}`)
     const supabase = createRouteHandlerSupabaseClient(
       request,
@@ -31,7 +36,6 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       const u = data.user ?? data.session?.user
-      const isSignupConfirmation = type === "signup" || type === "email"
       if (isSignupConfirmation && u) {
         await trackKlaviyoNewAccountCreated(u, {
           supabaseForProfile: supabase,

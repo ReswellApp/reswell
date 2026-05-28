@@ -1,5 +1,6 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
+import { appendSignUpConversionFlag } from "@/lib/google-ads/sign-up-conversion";
 import {
   shouldTrackKlaviyoNewAccountForOAuthSession,
   trackKlaviyoNewAccountCreated,
@@ -25,7 +26,9 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const u = data.session?.user;
+      let redirectPath = next;
       if (u && shouldTrackKlaviyoNewAccountForOAuthSession(u)) {
+        redirectPath = appendSignUpConversionFlag(next);
         after(async () => {
           try {
             const hasServiceRole = Boolean(
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
           }
         });
       }
-      const finalResponse = NextResponse.redirect(`${origin}${next}`);
+      const finalResponse = NextResponse.redirect(`${origin}${redirectPath}`);
       redirectResponse.cookies.getAll().forEach((cookie) => {
         finalResponse.cookies.set({
           name: cookie.name,
@@ -83,6 +86,8 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.user ?? data.session?.user;
       if (type === "signup" && u) {
+        const redirectPath = appendSignUpConversionFlag(otpNext);
+        redirectResponse.headers.set("Location", `${origin}${redirectPath}`);
         after(async () => {
           try {
             const hasServiceRole = Boolean(

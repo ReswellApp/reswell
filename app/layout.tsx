@@ -10,6 +10,7 @@ import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { DEFAULT_LOCALE } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
 import { GoogleAdsGtag } from '@/components/google-ads-gtag'
+import { GoogleAdsSignUpConversionTracker } from '@/components/google-ads-sign-up-conversion-tracker'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 import { MetaPixel } from '@/components/meta-pixel'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
@@ -71,6 +72,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <KlaviyoPageViewTracker />
             <MetaPixelPageViewTracker />
+            <GoogleAdsSignUpConversionTracker />
           </Suspense>
           <PresenceHeartbeatLoader />
           <SiteChrome>{children}</SiteChrome>
