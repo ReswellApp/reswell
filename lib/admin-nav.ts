@@ -42,6 +42,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/shipping',
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
+  '/admin/orders/test-purchase',
 ])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
@@ -88,6 +89,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Orders and shipping',
     items: [
       { href: '/admin/orders', label: 'Orders', icon: 'shoppingBag' },
+      { href: '/admin/orders/test-purchase', label: 'Test purchase', icon: 'shoppingBag' },
       { href: '/admin/shipping', label: 'Shipping', icon: 'truck' },
     ],
   },

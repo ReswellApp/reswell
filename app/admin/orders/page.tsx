@@ -111,6 +111,16 @@ export default function AdminOrdersPage() {
         <p className="text-muted-foreground">
           All marketplace orders. Click an order to view details and take admin actions (refund, cancel).
         </p>
+        <p className="mt-2 text-sm">
+          <Link
+            href="/admin/orders/test-purchase"
+            className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
+          >
+            Seed a test purchase
+          </Link>
+          {" "}
+          without Stripe to QA the success page and Google Ads purchase conversion.
+        </p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

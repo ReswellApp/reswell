@@ -22,7 +22,8 @@ export function AdminGuard({
         pathname === '/admin/users' ||
         pathname === '/admin/wallets' ||
         pathname === '/admin/settings' ||
-        pathname === '/admin/shipping'
+        pathname === '/admin/shipping' ||
+        pathname === '/admin/orders/test-purchase'
       ) {
         router.replace('/admin')
       }
