@@ -124,7 +124,7 @@ function HeaderAccountMenuInner({
         <DropdownMenuItem
           onSelect={(event) => {
             event.preventDefault()
-            onSignOut()
+            void onSignOut()
           }}
           className="text-foreground"
         >

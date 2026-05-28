@@ -32,6 +32,7 @@ import {
   Plus,
   ChevronDown,
   Clock,
+  LogOut,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
@@ -807,13 +808,18 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setMobileMenuOpen(false)
   }, [])
 
-  function handleSignOut() {
+  const handleSignOut = useCallback(async () => {
     setUser(null)
     setAuthLoaded(true)
+    setMobileMenuOpen(false)
     forceReleaseBodyScrollLock()
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Still leave the account — stale session is worse than a failed revoke.
+    }
     window.location.assign("/")
-    void supabase.auth.signOut().catch(() => {})
-  }
+  }, [supabase])
 
   const accountMenu =
     user ? (
@@ -1300,30 +1306,43 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Link>
             )}
             {user && authLoaded && (
-              <Link
-                href="/dashboard"
-                onClick={onMobileDrawerLinkClick}
-                className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
-              >
-                <Avatar className="h-12 w-12 shrink-0 border border-border">
-                  {profileAvatarUrl && !avatarImageFailed ? (
-                    <AvatarImage
-                      src={profileAvatarUrl}
-                      alt=""
-                      onLoadingStatusChange={(status) => {
-                        if (status === "error") setAvatarImageFailed(true)
-                      }}
-                    />
-                  ) : null}
-                  <AvatarFallback className="text-lg text-foreground">{resolvedInitial}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-foreground">
-                    {resolvedDisplayName}
-                  </p>
-                  <p className="truncate text-sm text-muted-foreground">{user.email}</p>
-                </div>
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={onMobileDrawerLinkClick}
+                  className="mb-3 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
+                >
+                  <Avatar className="h-12 w-12 shrink-0 border border-border">
+                    {profileAvatarUrl && !avatarImageFailed ? (
+                      <AvatarImage
+                        src={profileAvatarUrl}
+                        alt=""
+                        onLoadingStatusChange={(status) => {
+                          if (status === "error") setAvatarImageFailed(true)
+                        }}
+                      />
+                    ) : null}
+                    <AvatarFallback className="text-lg text-foreground">{resolvedInitial}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-foreground">
+                      {resolvedDisplayName}
+                    </p>
+                    <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                </Link>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mb-4 min-h-touch w-full justify-start text-base font-medium"
+                  onClick={() => {
+                    void handleSignOut()
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" aria-hidden />
+                  Sign Out
+                </Button>
+              </>
             )}
             <nav className="flex flex-col gap-1 mb-6">
               {boardShapeNav.map((item) => {

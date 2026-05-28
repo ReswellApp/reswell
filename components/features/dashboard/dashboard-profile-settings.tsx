@@ -237,8 +237,12 @@ export function DashboardProfileSettings() {
   }
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push("/")
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Still navigate home so the user is not stuck in an authenticated shell.
+    }
+    window.location.assign("/")
   }
 
   if (loading) {
