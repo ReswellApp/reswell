@@ -137,7 +137,11 @@ async function SoldPageData({ brandSlug }: { brandSlug: string | null }) {
           data: [] as Record<string, unknown>[] | null,
           error: null as { message: string } | null,
         })
-      : supabase.from("listings").select(soldSelect).in("id", orderedListingIds),
+      : supabase
+          .from("listings")
+          .select(soldSelect)
+          .in("id", orderedListingIds)
+          .eq("status", "sold"),
     getSoldFeedStats(),
   ])
 

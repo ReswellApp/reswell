@@ -244,7 +244,7 @@ export const getCachedHomeStableCatalog = unstable_cache(
 
 export const getCachedHomeRecentlySoldCatalog = unstable_cache(
   loadHomeRecentlySoldCatalogUncached,
-  ["home-recently-sold-catalog-v1"],
+  ["home-recently-sold-catalog-v2"],
   {
     revalidate: HOME_RECENTLY_SOLD_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_SOLD_CACHE_TAG],

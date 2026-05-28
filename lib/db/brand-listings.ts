@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
 
 const BRAND_MARKETPLACE_LISTING_SELECT = `
   id,
@@ -113,8 +114,8 @@ export async function listActiveListingsForBrand(
 }
 
 /**
- * Sold marketplace listings for a directory brand, newest completion first (`updated_at`).
- * Same brand linkage and sections as {@link listActiveListingsForBrand}; aligns with `/sold` visibility (`archived_at` null).
+ * Sold marketplace listings for a directory brand.
+ * Surfboards must still be sold with a confirmed checkout; shop (`new`) rows use sold status only.
  */
 export async function listRecentlySoldListingsForBrand(
   supabase: SupabaseClient,
@@ -123,6 +124,10 @@ export async function listRecentlySoldListingsForBrand(
 ): Promise<RecentListing[]> {
   const { limit, categoryId = null } = options
   const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
+
+  const { orderedListingIds: confirmedSurfboardIds, confirmedAtIsoByListingId } =
+    await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(supabase, 120)
+  const confirmedSurfboardSet = new Set(confirmedSurfboardIds)
 
   let q = supabase
     .from("listings")
@@ -138,7 +143,7 @@ export async function listRecentlySoldListingsForBrand(
   }
 
   q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
-  q = q.order("updated_at", { ascending: false }).limit(limit)
+  q = q.order("updated_at", { ascending: false }).limit(Math.min(limit * 4, 120))
 
   const { data, error } = await q
   if (error) {
@@ -146,5 +151,34 @@ export async function listRecentlySoldListingsForBrand(
     return []
   }
   if (!data?.length) return []
-  return (data as BrandMarketplaceListingRow[]).map(mapRowToRecentListing)
+
+  const rows = (data as BrandMarketplaceListingRow[]).filter((row) => {
+    if (row.section === "surfboards") {
+      return confirmedSurfboardSet.has(row.id)
+    }
+    return true
+  })
+
+  const surfboardsById = new Map(
+    rows.filter((row) => row.section === "surfboards").map((row) => [row.id, row]),
+  )
+  const shopRows = rows.filter((row) => row.section !== "surfboards")
+
+  const ordered: RecentListing[] = []
+
+  for (const id of confirmedSurfboardIds) {
+    const row = surfboardsById.get(id)
+    if (!row) continue
+    const mapped = mapRowToRecentListing(row)
+    const confirmedAt = confirmedAtIsoByListingId.get(id)
+    ordered.push(confirmedAt ? { ...mapped, updated_at: confirmedAt } : mapped)
+    if (ordered.length >= limit) return ordered
+  }
+
+  for (const row of shopRows) {
+    ordered.push(mapRowToRecentListing(row))
+    if (ordered.length >= limit) return ordered
+  }
+
+  return ordered
 }

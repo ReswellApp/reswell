@@ -2,7 +2,7 @@ import type Stripe from "stripe"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
-import { relistAfterRefund } from "@/lib/services/listingRelist"
+import { relistOrderListingsAfterRefund } from "@/lib/services/listingRelist"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
@@ -187,8 +187,8 @@ export async function syncMarketplaceOrderFromStripePaymentIntent(
     })
   }
 
-  if (fullyRefunded && order.listing_id) {
-    await relistAfterRefund(supabase, order.listing_id)
+  if (fullyRefunded) {
+    await relistOrderListingsAfterRefund(supabase, order.id)
   }
 
   return { ok: true, orderId: order.id, fullyRefunded }
@@ -360,7 +360,7 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
   if (existingTx) {
     const wasFullRefund = await syncOrderAndPayoutsFromStripeRefundState(supabase, order, pi, refundsList)
     if (wasFullRefund) {
-      await relistAfterRefund(supabase, order.listing_id)
+      await relistOrderListingsAfterRefund(supabase, order.id)
     }
     return
   }
@@ -370,7 +370,7 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     console.warn("[stripe refund webhook] zero/invalid seller_earnings — syncing order status only", { orderId: order.id })
     const wasFullRefund = await syncOrderAndPayoutsFromStripeRefundState(supabase, order, pi, refundsList)
     if (wasFullRefund) {
-      await relistAfterRefund(supabase, order.listing_id)
+      await relistOrderListingsAfterRefund(supabase, order.id)
     }
     return
   }
@@ -383,7 +383,7 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
     console.warn("[stripe refund webhook] zero clawback — syncing order status only", { refund: refund.id, orderId: order.id })
     const wasFullRefund = await syncOrderAndPayoutsFromStripeRefundState(supabase, order, pi, refundsList)
     if (wasFullRefund) {
-      await relistAfterRefund(supabase, order.listing_id)
+      await relistOrderListingsAfterRefund(supabase, order.id)
     }
     return
   }
@@ -483,7 +483,7 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
   }
 
   if (wasFullRefund) {
-    await relistAfterRefund(supabase, order.listing_id)
+    await relistOrderListingsAfterRefund(supabase, order.id)
   }
 }
 

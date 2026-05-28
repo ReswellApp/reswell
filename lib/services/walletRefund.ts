@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { relistAfterRefund } from "@/lib/services/listingRelist"
+import { relistOrderListingsAfterRefund } from "@/lib/services/listingRelist"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
@@ -74,7 +74,7 @@ export async function applyWalletOrderRefund(
   }
 
   // --- 5. Re-list ---
-  await relistAfterRefund(supabase, order.listing_id)
+  await relistOrderListingsAfterRefund(supabase, order.id)
 
   return { ok: true }
 }

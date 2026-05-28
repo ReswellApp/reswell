@@ -17,6 +17,14 @@ export function revalidateHomeRecentlySoldCatalog(): void {
   revalidatePath("/", "page")
 }
 
+/** Recently sold feeds after a listing leaves the sold state (e.g. refund relist). */
+export function revalidateRecentlySoldSurfaces(): void {
+  revalidateHomeRecentlySoldCatalog()
+  revalidatePath("/sold", "page")
+  revalidatePath("/sold", "layout")
+  revalidatePath("/listyoursurfboard", "page")
+}
+
 /** Admin CMS mutations — stable sections only; recently sold keeps its hourly TTL. */
 export function revalidateHomePublicCatalog(): void {
   revalidateHomeStableCatalog()
