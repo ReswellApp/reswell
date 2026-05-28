@@ -4,14 +4,13 @@ import {
   getGoogleAdsAwId,
   getGoogleAdsSignupConversionSendTo,
 } from '@/lib/google-ads/config'
-import { GOOGLE_ADS_SIGNUP_QUERY_PARAM } from '@/lib/google-ads/sign-up-conversion'
+import { GOOGLE_SIGN_UP_SUCCESS_PATH } from '@/lib/google-ads/sign-up-success-path'
 
 /**
  * Google Ads global site tag (gtag.js). Renders nothing unless NEXT_PUBLIC_GOOGLE_ADS_ID is set
  * to a valid AW-* measurement ID (see .env.example).
  *
- * When NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_CONVERSION is set, also fires the sign-up conversion on
- * first paint if the URL contains {@link GOOGLE_ADS_SIGNUP_QUERY_PARAM}=1 (OAuth / email confirm).
+ * Fires the sign-up conversion when the user lands on {@link GOOGLE_SIGN_UP_SUCCESS_PATH}.
  */
 export function GoogleAdsGtag() {
   const id = getGoogleAdsAwId()
@@ -22,8 +21,7 @@ export function GoogleAdsGtag() {
     ? `
 (function () {
   try {
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('${GOOGLE_ADS_SIGNUP_QUERY_PARAM}') !== '1') return;
+    if (window.location.pathname !== '${GOOGLE_SIGN_UP_SUCCESS_PATH}') return;
     var dedupKey = 'rw_google_ads_signup_reported';
     if (sessionStorage.getItem(dedupKey) === '1') return;
     sessionStorage.setItem(dedupKey, '1');

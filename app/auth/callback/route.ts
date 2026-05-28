@@ -1,10 +1,12 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
+import { isGoogleAuthUser } from "@/lib/auth/profile-completion";
 import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
-import { buildSignUpSuccessRedirectPath } from "@/lib/google-ads/sign-up-success-path";
 import {
-  trackKlaviyoNewAccountCreated,
-} from "@/lib/klaviyo/track-new-account-created";
+  buildEmailSignUpSuccessPath,
+  buildGoogleSignUpSuccessPath,
+} from "@/lib/google-ads/sign-up-success-path";
+import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse, after } from "next/server";
@@ -27,24 +29,26 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.session?.user;
       let redirectPath = next;
-      if (u && isNewOAuthAccount(u)) {
-        redirectPath = buildSignUpSuccessRedirectPath(next);
-        after(async () => {
-          try {
-            const hasServiceRole = Boolean(
-              process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
-            );
-            if (hasServiceRole) {
-              await trackKlaviyoNewAccountCreated(u, {
-                supabaseForProfile: createServiceRoleClient(),
-              });
-            } else {
-              await trackKlaviyoNewAccountCreated(u);
+      if (u && isGoogleAuthUser(u)) {
+        redirectPath = buildGoogleSignUpSuccessPath(next);
+        if (isNewOAuthAccount(u)) {
+          after(async () => {
+            try {
+              const hasServiceRole = Boolean(
+                process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+              );
+              if (hasServiceRole) {
+                await trackKlaviyoNewAccountCreated(u, {
+                  supabaseForProfile: createServiceRoleClient(),
+                });
+              } else {
+                await trackKlaviyoNewAccountCreated(u);
+              }
+            } catch (e) {
+              console.error("[auth/callback] Klaviyo new-account (OAuth) failed:", e);
             }
-          } catch (e) {
-            console.error("[auth/callback] Klaviyo new-account (OAuth) failed:", e);
-          }
-        });
+          });
+        }
       }
       const finalResponse = NextResponse.redirect(`${origin}${redirectPath}`);
       redirectResponse.cookies.getAll().forEach((cookie) => {
@@ -86,7 +90,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.user ?? data.session?.user;
       if (type === "signup" && u) {
-        const redirectPath = buildSignUpSuccessRedirectPath(otpNext);
+        const redirectPath = buildEmailSignUpSuccessPath(otpNext);
         redirectResponse.headers.set("Location", `${origin}${redirectPath}`);
         after(async () => {
           try {

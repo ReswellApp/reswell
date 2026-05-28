@@ -25,7 +25,7 @@ import {
 } from "@/lib/auth/auth-modal-shell-classes"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import { buildSignUpSuccessRedirectPath } from "@/lib/google-ads/sign-up-success-path"
+import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 import { validateDisplayName } from "@/lib/display-name-validation"
 
 export function SignUpFormPanel({
@@ -126,7 +126,7 @@ export function SignUpFormPanel({
           window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
         }
         onSignUpSuccess?.()
-        window.location.assign(buildSignUpSuccessRedirectPath(redirectTo))
+        window.location.assign(buildEmailSignUpSuccessPath(redirectTo))
       } else {
         onSignUpSuccess?.()
         router.push(

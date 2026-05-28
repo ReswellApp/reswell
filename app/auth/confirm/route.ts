@@ -1,6 +1,6 @@
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import { buildSignUpSuccessRedirectPath } from "@/lib/google-ads/sign-up-success-path"
+import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
 import { type NextRequest, NextResponse } from "next/server"
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     let redirectPath =
       type === "recovery" ? passwordResetLandingPath() : safeRedirectPath(searchParams.get("next"))
     if (isSignupConfirmation) {
-      redirectPath = buildSignUpSuccessRedirectPath(redirectPath)
+      redirectPath = buildEmailSignUpSuccessPath(redirectPath)
     }
     const redirectResponse = NextResponse.redirect(`${origin}${redirectPath}`)
     const supabase = createRouteHandlerSupabaseClient(

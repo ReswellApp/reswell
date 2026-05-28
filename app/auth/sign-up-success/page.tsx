@@ -1,37 +1,33 @@
-"use client"
-
-import { useSearchParams } from "next/navigation"
-import { useEffect, useRef } from "react"
-import { Loader2 } from "lucide-react"
-import { reportSignUpConversion } from "@/lib/google-ads/sign-up-conversion"
+import { redirect } from "next/navigation"
+import { SignUpWelcomePanel } from "@/components/auth/sign-up-welcome-panel"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
+import { createClient } from "@/lib/supabase/server"
 
-/**
- * Post-signup landing page: fires the Google Ads conversion, then sends the user into the app.
- * OAuth, email confirm, and email/password signup all route here for reliable gtag delivery.
- */
-export default function SignUpSuccessPage() {
-  const searchParams = useSearchParams()
-  const startedRef = useRef(false)
+type PageProps = {
+  searchParams: Promise<{ next?: string }>
+}
 
-  useEffect(() => {
-    if (startedRef.current) return
-    startedRef.current = true
+/** Email / password sign-up confirmation landing page. */
+export default async function SignUpSuccessPage({ searchParams }: PageProps) {
+  const { next: nextRaw } = await searchParams
+  const next = safeRedirectPath(nextRaw ?? null)
 
-    const next = safeRedirectPath(searchParams.get("next"))
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    void (async () => {
-      await reportSignUpConversion({
-        gtagWaitMs: 15_000,
-        callbackTimeoutMs: 4_000,
-      })
-      window.location.replace(next)
-    })()
-  }, [searchParams])
+  if (!user) {
+    redirect(
+      `/auth/login?redirect=${encodeURIComponent(buildEmailSignUpSuccessPath(next))}`,
+    )
+  }
 
   return (
-    <div className="flex min-h-svh items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Setting up your account" />
-    </div>
+    <SignUpWelcomePanel
+      nextPath={next}
+      subtitle="Your Reswell account is ready. Here is what you can do next."
+    />
   )
 }
