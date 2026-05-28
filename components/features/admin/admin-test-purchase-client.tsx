@@ -260,7 +260,10 @@ export function AdminTestPurchaseClient() {
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>Creates a confirmed order row with a fake Stripe reference (`admin_test_…`).</p>
           <p>Does not charge Stripe, debit wallets, mark the listing sold, or send Klaviyo events.</p>
-          <p>A held seller payout row is still created by the database trigger — treat these as QA orders only.</p>
+          <p>
+            Hidden from the seller&apos;s Sales and Earnings dashboards — no payout row, no lifetime earned
+            credit. The buyer account still sees it under Purchases for QA.
+          </p>
         </CardContent>
       </Card>
     </div>

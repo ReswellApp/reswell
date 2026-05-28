@@ -21,6 +21,7 @@ import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
@@ -145,6 +146,7 @@ export default async function SalesPage() {
     `
     )
     .eq("seller_id", user.id)
+    .eq(REAL_MARKETPLACE_SALES_FILTER.is_admin_test, false)
     .in("status", [...ORDER_STATUS_LIST])
     .order("created_at", { ascending: false })
 

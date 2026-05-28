@@ -18,6 +18,7 @@ export async function loadAdminPlatformPurchaseFees(): Promise<
       .from('orders')
       .select('platform_fee, amount, delivery_status')
       .eq('status', 'confirmed')
+      .eq('is_admin_test', false)
 
     if (ordersError) {
       return { ok: false, error: 'Could not load purchase fee totals.' }

@@ -1,13 +1,12 @@
 import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
+import { ADMIN_TEST_ORDER_STRIPE_PREFIX } from "@/lib/order-admin-test"
 import { generatePickupCode } from "@/lib/order-status"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { getSellerEarnings } from "@/lib/seller-fees"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-const TEST_PURCHASE_STRIPE_ID_PREFIX = "admin_test_"
 
 type ListingRef = { kind: "id" | "slug"; value: string }
 
@@ -237,7 +236,7 @@ export async function createAdminTestPurchase(
 
   const isPickup = fulfillment === "pickup"
   const orderId = randomUUID()
-  const stripeReference = `${TEST_PURCHASE_STRIPE_ID_PREFIX}${randomUUID()}`
+  const stripeReference = `${ADMIN_TEST_ORDER_STRIPE_PREFIX}${randomUUID()}`
 
   const { error: insertErr } = await serviceSupabase.from("orders").insert({
     id: orderId,
@@ -249,6 +248,7 @@ export async function createAdminTestPurchase(
     platform_fee: platformFee,
     seller_earnings: sellerEarnings,
     status: "confirmed",
+    is_admin_test: true,
     payment_method: "stripe",
     stripe_checkout_session_id: stripeReference,
     fulfillment_method: fulfillment,

@@ -21,7 +21,7 @@ function toUsd(n: string | number | null | undefined): number {
 
 /**
  * Aggregates the signed-in user's marketplace seller earnings from `orders`
- * (excludes fully refunded orders). Requires RPC `get_my_seller_earnings_totals`.
+ * (excludes admin test orders and fully refunded orders). Requires RPC `get_my_seller_earnings_totals`.
  */
 export async function getMySellerEarningsTotals(
   supabase: SupabaseClient,

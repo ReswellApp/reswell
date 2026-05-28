@@ -28,6 +28,7 @@ import { ORDER_STATUS_LIST } from "@/lib/order-status"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
+import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 
 export const metadata = privatePageMetadata({
   title: "Dashboard — Reswell",
@@ -114,6 +115,7 @@ export default async function DashboardPage() {
       .from("orders")
       .select("id", { count: "exact", head: true })
       .eq("seller_id", user.id)
+      .eq(REAL_MARKETPLACE_SALES_FILTER.is_admin_test, false)
       .in("status", orderStatuses),
     supabase
       .from("seller_follows")

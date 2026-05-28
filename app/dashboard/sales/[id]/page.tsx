@@ -46,6 +46,7 @@ import {
 } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { getLatestPreparedShippingLabelForOrder } from "@/lib/db/orderShippingLabels"
+import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { orderHasAccessibleShippingLabelPdf } from "@/lib/services/resolveOrderShippingLabelPdf"
 import {
@@ -224,6 +225,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     )
     .eq("id", id)
     .eq("seller_id", user.id)
+    .eq(REAL_MARKETPLACE_SALES_FILTER.is_admin_test, false)
     .in("status", [...ORDER_STATUS_LIST])
     .maybeSingle()
 
