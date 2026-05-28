@@ -4,12 +4,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef } from "react"
 import {
   GOOGLE_ADS_SIGNUP_QUERY_PARAM,
+  hasReportedSignUpConversion,
   reportSignUpConversion,
 } from "@/lib/google-ads/sign-up-conversion"
 
 /**
- * After OAuth or email-confirm signup, `/auth/callback` and `/auth/confirm` redirect with
- * `gads_signup=1`. This component fires the Google Ads conversion once and strips the param.
+ * Backup for OAuth / email-confirm signup: if the inline gtag snippet did not fire yet,
+ * retry here, then strip {@link GOOGLE_ADS_SIGNUP_QUERY_PARAM} from the URL.
  */
 export function GoogleAdsSignUpConversionTracker(): null {
   const searchParams = useSearchParams()
@@ -22,13 +23,18 @@ export function GoogleAdsSignUpConversionTracker(): null {
     if (searchParams?.get(GOOGLE_ADS_SIGNUP_QUERY_PARAM) !== "1") return
 
     handledRef.current = true
-    reportSignUpConversion()
 
-    const nextParams = new URLSearchParams(searchParams.toString())
-    nextParams.delete(GOOGLE_ADS_SIGNUP_QUERY_PARAM)
-    const qs = nextParams.toString()
-    const nextUrl = qs ? `${pathname}?${qs}` : pathname
-    router.replace(nextUrl, { scroll: false })
+    void (async () => {
+      if (!hasReportedSignUpConversion()) {
+        await reportSignUpConversion()
+      }
+
+      const nextParams = new URLSearchParams(searchParams.toString())
+      nextParams.delete(GOOGLE_ADS_SIGNUP_QUERY_PARAM)
+      const qs = nextParams.toString()
+      const nextUrl = qs ? `${pathname}?${qs}` : pathname
+      router.replace(nextUrl, { scroll: false })
+    })()
   }, [pathname, router, searchParams])
 
   return null

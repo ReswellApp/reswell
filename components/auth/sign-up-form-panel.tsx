@@ -121,7 +121,7 @@ export function SignUpFormPanel({
         } catch {
           /* Klaviyo must not block signup */
         }
-        reportSignUpConversion({ userId: signData.session.user.id })
+        await reportSignUpConversion({ userId: signData.session.user.id })
         await supabase.auth.getSession()
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
