@@ -225,7 +225,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     )
     .eq("id", id)
     .eq("seller_id", user.id)
-    .eq(REAL_MARKETPLACE_SALES_FILTER.is_admin_test, false)
+    .match(REAL_MARKETPLACE_SALES_FILTER)
     .in("status", [...ORDER_STATUS_LIST])
     .maybeSingle()
 

@@ -146,9 +146,20 @@ export default async function SalesPage() {
     `
     )
     .eq("seller_id", user.id)
-    .eq(REAL_MARKETPLACE_SALES_FILTER.is_admin_test, false)
+    .match(REAL_MARKETPLACE_SALES_FILTER)
     .in("status", [...ORDER_STATUS_LIST])
     .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[dashboard/sales] orders query failed", {
+      userId: user.id,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      timestamp: new Date().toISOString(),
+    })
+  }
 
   const list = (sales ?? []) as unknown as SaleRow[]
 
@@ -198,11 +209,14 @@ export default async function SalesPage() {
       </div>
 
       {error && (
-        <p className="text-sm text-destructive">
-          Could not load sales. If you recently deployed, run{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/030_purchases_fulfillment_seller_policy.sql</code>{" "}
-          in Supabase so sellers can read purchase rows.
-        </p>
+        <div className="space-y-1 text-sm text-destructive">
+          <p>Could not load sales. Please try again, or contact support if this persists.</p>
+          <p className="text-xs text-muted-foreground">
+            Error {error.code ? `${error.code}: ` : ""}
+            {error.message}
+            {error.hint ? ` — ${error.hint}` : ""}
+          </p>
+        </div>
       )}
 
       {!error && list.length === 0 && (

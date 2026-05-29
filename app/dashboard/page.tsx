@@ -115,7 +115,7 @@ export default async function DashboardPage() {
       .from("orders")
       .select("id", { count: "exact", head: true })
       .eq("seller_id", user.id)
-      .eq(REAL_MARKETPLACE_SALES_FILTER.is_admin_test, false)
+      .match(REAL_MARKETPLACE_SALES_FILTER)
       .in("status", orderStatuses),
     supabase
       .from("seller_follows")
