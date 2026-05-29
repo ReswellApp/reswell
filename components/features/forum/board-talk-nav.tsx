@@ -4,18 +4,16 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-export type BoardTalkTab = "forums" | "whats-new" | "reviews"
+export type BoardTalkTab = "forums" | "reviews"
 
 const BOARD_TALK_TABS: { id: BoardTalkTab; label: string; href: string }[] = [
   { id: "forums", label: "Forums", href: "/board-talk" },
-  { id: "whats-new", label: "What's New", href: "/board-talk/whats-new" },
   { id: "reviews", label: "Board Reviews", href: "/board-talk/reviews" },
 ]
 
 function tabFromPathname(pathname: string | null): BoardTalkTab | null {
   if (!pathname) return null
   if (pathname === "/board-talk" || pathname === "/board-talk/") return "forums"
-  if (pathname.startsWith("/board-talk/whats-new")) return "whats-new"
   if (pathname.startsWith("/board-talk/reviews")) return "reviews"
   return null
 }

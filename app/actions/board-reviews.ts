@@ -21,7 +21,6 @@ export async function submitBoardModelReview(input: SubmitBoardModelReviewInput)
 
   if ("success" in result && result.success) {
     revalidatePath("/board-talk/reviews")
-    revalidatePath("/board-talk/whats-new")
     return { success: true as const }
   }
 
