@@ -19,6 +19,23 @@ export function primaryListingImageUrl(
   return url || undefined
 }
 
+/**
+ * The listing's first photo by gallery order (`sort_order` ascending), ignoring the
+ * `is_primary` flag. Used for share previews so the social card always matches the
+ * listing's leading image.
+ */
+export function firstListingImageUrl(
+  images:
+    | Array<{ url?: string | null; sort_order?: number }>
+    | null
+    | undefined,
+): string | undefined {
+  if (!images?.length) return undefined
+  const sorted = images.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const url = sorted[0]?.url?.trim()
+  return url || undefined
+}
+
 export type ListingMetaInput = {
   id: string
   slug?: string | null
@@ -81,8 +98,9 @@ export function buildListingShareSubtitle(
 /**
  * Shared SEO + Open Graph + Twitter metadata for marketplace listing detail pages.
  *
- * `og:image` / `twitter:image` use the listing’s primary photo via same-origin
- * `/media/listings/...` proxy (absolute https). Listings without images fall back to the site brand asset.
+ * `og:image` / `twitter:image` always use the listing’s first photo (by gallery
+ * `sort_order`) via same-origin `/media/listings/...` proxy (absolute https).
+ * Listings without images fall back to the site brand asset.
  */
 export function metadataForListingDetail(
   listing: ListingMetaInput,
@@ -111,7 +129,7 @@ export function metadataForListingDetail(
   }
   description = description.slice(0, 180)
 
-  const rawListingImage = primaryListingImageUrl(listing.listing_images)
+  const rawListingImage = firstListingImageUrl(listing.listing_images)
   const listingImageAbs = absoluteProxiedListingMediaUrl(rawListingImage)
   const fallbackBrandImage = absoluteUrl("/og-image.jpg")
   const shareImageUrl = listingImageAbs ?? fallbackBrandImage
