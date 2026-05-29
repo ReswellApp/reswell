@@ -2,13 +2,20 @@
 
 import { revalidatePath } from "next/cache"
 import {
+  addCrmContactTagService,
+  assignCrmContactService,
+  bulkDeleteCrmContactsService,
+  bulkUpdateCrmContactsService,
   createCrmBoardInterestService,
   createCrmContactFromProfileService,
   createCrmExternalContactService,
+  createCrmTagService,
   deleteCrmBoardInterestService,
   deleteCrmContactService,
+  deleteCrmTagService,
   logCrmInteractionService,
   markCrmContactedService,
+  removeCrmContactTagService,
   updateCrmBoardInterestService,
   updateCrmContactService,
 } from "@/lib/services/crm"
@@ -42,6 +49,55 @@ export async function updateCrmContactAction(raw: unknown) {
 
 export async function deleteCrmContactAction(raw: unknown) {
   const result = await deleteCrmContactService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return { success: true as const }
+}
+
+export async function assignCrmContactAction(raw: unknown) {
+  const result = await assignCrmContactService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return { success: true as const }
+}
+
+export async function createCrmTagAction(raw: unknown) {
+  const result = await createCrmTagService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return { success: true as const, tagId: result.tagId }
+}
+
+export async function deleteCrmTagAction(raw: unknown) {
+  const result = await deleteCrmTagService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return { success: true as const }
+}
+
+export async function addCrmContactTagAction(raw: unknown) {
+  const result = await addCrmContactTagService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return { success: true as const }
+}
+
+export async function removeCrmContactTagAction(raw: unknown) {
+  const result = await removeCrmContactTagService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return { success: true as const }
+}
+
+export async function bulkUpdateCrmContactsAction(raw: unknown) {
+  const result = await bulkUpdateCrmContactsService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return { success: true as const }
+}
+
+export async function bulkDeleteCrmContactsAction(raw: unknown) {
+  const result = await bulkDeleteCrmContactsService(raw)
   if ("error" in result) return { error: result.error }
   revalidateCrm()
   return { success: true as const }

@@ -36,15 +36,11 @@ import {
 import { AddressForm } from './shipping-address-form'
 import { RATE_SEED_LISTINGS } from './rate-seed-listings'
 
-const inputClass =
-  'h-11 rounded-xl border-border/60 bg-background/90 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-[border-color,box-shadow] focus-visible:border-foreground/25 focus-visible:ring-2 focus-visible:ring-foreground/[0.06]'
-const selectTriggerClass = 'h-11 rounded-xl border-border/60 bg-background/90 shadow-sm'
-const surfaceCard =
-  'rounded-[1.35rem] border border-border/50 bg-card shadow-[0_2px_32px_-18px_rgba(0,0,0,0.12)]'
-const shipTableShell =
-  'overflow-hidden rounded-2xl border border-border/50 bg-background/50 shadow-[inset_0_1px_0_rgba(0,0,0,0.03)]'
-const shipTh =
-  'bg-muted/35 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground h-11'
+const inputClass = 'h-11 rounded-xl'
+const selectTriggerClass = 'h-11 rounded-xl'
+const surfaceCard = 'rounded-2xl border border-border bg-card'
+const shipTableShell = 'overflow-hidden rounded-xl border border-border bg-card'
+const shipTh = 'text-[11px] font-semibold uppercase tracking-wider text-muted-foreground h-11'
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v != null && typeof v === 'object' && !Array.isArray(v)
@@ -327,12 +323,12 @@ function ListingRateDiagnostic({
       <Button
         type="button"
         size="sm"
-        className="h-10 rounded-full px-5 text-[13px] font-medium shadow-sm"
+        className="h-10 px-5 text-[13px] font-medium"
         onClick={() => void submit()}
         disabled={busy}
       >
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        <span className={busy ? 'ml-2' : ''}>Rate listing</span>
+        {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        Rate listing
       </Button>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -455,7 +451,7 @@ function ListingRateDiagnostic({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="mt-3 h-9 rounded-full border-amber-400/50 bg-background px-4 text-[13px] font-medium"
+                      className="mt-3 h-9 rounded-xl border-amber-400/50 bg-background px-4 text-[13px] font-medium"
                       onClick={() => onApplyToCalculator(extracted)}
                     >
                       Load these dims into the calculator above
@@ -762,13 +758,13 @@ export function ShippingRateCalculator({
 
   if (carrierIds.length === 0) {
     return (
-      <Card className={`${surfaceCard} border-dashed`}>
+      <Card className="rounded-2xl border-dashed border-border bg-card">
         <CardHeader className="space-y-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-muted/50 ring-1 ring-border/50">
-            <Scale className="h-5 w-5 text-foreground/70" strokeWidth={1.5} />
-          </div>
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+            <Scale className="h-4 w-4" aria-hidden />
+          </span>
           <CardTitle className="text-lg font-semibold tracking-tight">Rate calculator</CardTitle>
-          <CardDescription className="text-[15px] leading-relaxed">
+          <CardDescription className="text-sm">
             No carrier accounts found. Connect carriers in the ShipEngine dashboard, then refresh.
           </CardDescription>
         </CardHeader>
@@ -781,12 +777,12 @@ export function ShippingRateCalculator({
       <Card className={surfaceCard}>
         <CardHeader className="space-y-3 pb-2">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/30 ring-1 ring-border/40">
-              <Scale className="h-5 w-5 text-foreground/75" strokeWidth={1.5} />
-            </div>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+              <Scale className="h-4 w-4" aria-hidden />
+            </span>
             <div className="space-y-1">
               <CardTitle className="text-lg font-semibold tracking-tight">Rate calculator</CardTitle>
-              <CardDescription className="text-[15px] leading-relaxed">
+              <CardDescription className="text-sm">
                 Live quotes from your carriers. ShipEngine marks best value / cheapest / fastest when available.{' '}
                 <Link
                   href="https://www.shipengine.com/docs/rates/"
@@ -803,7 +799,7 @@ export function ShippingRateCalculator({
         <CardContent className="space-y-8 pt-2">
           <div>
             <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Carriers
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -811,7 +807,7 @@ export function ShippingRateCalculator({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 rounded-full border-border/60 px-4 text-[13px] font-medium"
+                  className="h-9 rounded-xl px-4 text-[13px] font-medium"
                   onClick={selectAllCarriers}
                 >
                   Select all
@@ -820,7 +816,7 @@ export function ShippingRateCalculator({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 rounded-full border-border/60 px-4 text-[13px] font-medium"
+                  className="h-9 rounded-xl px-4 text-[13px] font-medium"
                   onClick={clearCarriers}
                 >
                   Clear
@@ -856,7 +852,7 @@ export function ShippingRateCalculator({
 
           <div className="space-y-3">
             <div className="flex flex-col gap-1">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Sample routes
               </h3>
               <p className="text-[12px] leading-relaxed text-muted-foreground">
@@ -886,7 +882,7 @@ export function ShippingRateCalculator({
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4 rounded-2xl border border-border/40 bg-muted/15 p-4 sm:p-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Ship from
               </h3>
               <AddressForm
@@ -898,7 +894,7 @@ export function ShippingRateCalculator({
               />
             </div>
             <div className="space-y-4 rounded-2xl border border-border/40 bg-muted/15 p-4 sm:p-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Ship to
               </h3>
               <AddressForm
@@ -1012,18 +1008,18 @@ export function ShippingRateCalculator({
 
           <Button
             type="button"
-            className="h-11 rounded-full px-8 text-[15px] font-medium shadow-md transition-all hover:shadow-lg"
+            className="h-11 px-8 text-[15px] font-medium"
             onClick={() => void handleSingleCalculate()}
             disabled={singleBusy}
           >
-            {singleBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            <span className={singleBusy ? 'ml-2' : ''}>Get rates</span>
+            {singleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Get rates
           </Button>
 
           {sortedRates.length > 0 ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-end justify-between gap-2">
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Results · {sortedRates.length} options
                 </h3>
                 <p className="text-[12px] text-muted-foreground">
@@ -1131,7 +1127,7 @@ export function ShippingRateCalculator({
       <Card className={surfaceCard}>
         <CardHeader className="space-y-2 pb-2">
           <CardTitle className="text-lg font-semibold tracking-tight">Compare package sizes</CardTitle>
-          <CardDescription className="text-[15px] leading-relaxed">
+          <CardDescription className="text-sm">
             Same origin, destination, and carriers — one rates request per row. Useful for boards, boxes, or gear.
           </CardDescription>
         </CardHeader>
@@ -1243,7 +1239,7 @@ export function ShippingRateCalculator({
               type="button"
               variant="outline"
               size="sm"
-              className="h-10 rounded-full border-border/60 px-4 text-[13px] font-medium"
+              className="h-10 rounded-xl px-4 text-[13px] font-medium"
               onClick={() => setCompareRows((r) => [...r, newCompareRow()])}
             >
               Add row
@@ -1252,19 +1248,19 @@ export function ShippingRateCalculator({
               type="button"
               variant="outline"
               size="sm"
-              className="h-10 rounded-full border-border/60 px-4 text-[13px] font-medium"
+              className="h-10 rounded-xl px-4 text-[13px] font-medium"
               onClick={pushCurrentPackageToCompare}
             >
               From calculator
             </Button>
             <Button
               type="button"
-              className="h-10 rounded-full px-6 text-[14px] font-medium shadow-sm"
+              className="h-10 px-6 text-[14px] font-medium"
               onClick={() => void handleCompare()}
               disabled={compareBusy}
             >
-              {compareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              <span className={compareBusy ? 'ml-2' : ''}>Compare all</span>
+              {compareBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Compare all
             </Button>
           </div>
 
@@ -1403,7 +1399,7 @@ export function ShippingRateCalculator({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-10 rounded-full border-border/60 px-4 text-[13px] font-medium"
+                  className="h-10 rounded-xl px-4 text-[13px] font-medium"
                   onClick={() => {
                     try {
                       const w = Number(weight)

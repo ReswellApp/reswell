@@ -6,16 +6,23 @@ import { z } from "zod"
 
 const querySchema = z.object({
   status: z.enum(["all", "confirmed", "refunding", "refunded", "pending"]).optional().default("all"),
+  payment: z.enum(["all", "stripe", "reswell_bucks"]).optional().default("all"),
+  test: z.enum(["all", "real", "test"]).optional().default("all"),
   q: z.string().optional(),
+  sort: z.enum(["created_at", "amount"]).optional().default("created_at"),
+  dir: z.enum(["asc", "desc"]).optional().default("desc"),
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),
   offset: z.coerce.number().int().min(0).optional().default(0),
 })
 
+type PartyLabel = { display_name: string | null; email: string | null; avatar_url: string | null }
+
 /**
  * GET /api/admin/orders
  *
- * Paginated order list for admin / support staff. Supports status filter and text search
- * (order_num or full order id as UUID).
+ * Paginated order list for admin / support staff. Supports status + payment filters, text search
+ * (order_num or full order id as UUID), and sort by date or amount. Buyer/seller labels are
+ * batch-resolved (single query — no N+1).
  */
 export async function GET(request: NextRequest) {
   const gate = await requireAdminOrEmployee()
@@ -29,20 +36,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid params" }, { status: 400 })
   }
 
-  const { status, q, limit, offset } = parsed.data
+  const { status, payment, test, q, sort, dir, limit, offset } = parsed.data
   const serviceSupabase = createServiceRoleClient()
 
   let query = serviceSupabase
     .from("orders")
     .select(
-      "id, order_num, status, amount, payment_method, fulfillment_method, created_at, refunded_at, buyer_id, seller_id",
+      "id, order_num, status, amount, payment_method, fulfillment_method, created_at, refunded_at, buyer_id, seller_id, is_admin_test",
       { count: "exact" },
     )
-    .order("created_at", { ascending: false })
+    .order(sort, { ascending: dir === "asc" })
     .range(offset, offset + limit - 1)
 
   if (status !== "all") {
     query = query.eq("status", status)
+  }
+
+  if (payment !== "all") {
+    query = query.eq("payment_method", payment)
+  }
+
+  if (test === "test") {
+    query = query.eq("is_admin_test", true)
+  } else if (test === "real") {
+    query = query.eq("is_admin_test", false)
   }
 
   if (q?.trim()) {
@@ -72,5 +89,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Could not load orders" }, { status: 500 })
   }
 
-  return NextResponse.json({ data: data ?? [], total: count ?? 0 })
+  const rows = data ?? []
+
+  // Batch-resolve buyer/seller labels in a single query to avoid N+1.
+  const partyIds = Array.from(
+    new Set(
+      rows.flatMap((r) => [r.buyer_id, r.seller_id]).filter((id): id is string => typeof id === "string" && !!id),
+    ),
+  )
+
+  const partyById = new Map<string, PartyLabel>()
+  if (partyIds.length > 0) {
+    const { data: profiles } = await serviceSupabase
+      .from("profiles")
+      .select("id, display_name, email, avatar_url")
+      .in("id", partyIds)
+    for (const p of profiles ?? []) {
+      partyById.set(p.id as string, {
+        display_name: (p.display_name as string | null) ?? null,
+        email: (p.email as string | null) ?? null,
+        avatar_url: (p.avatar_url as string | null) ?? null,
+      })
+    }
+  }
+
+  const enriched = rows.map((r) => ({
+    ...r,
+    buyer: partyById.get(r.buyer_id) ?? null,
+    seller: partyById.get(r.seller_id) ?? null,
+  }))
+
+  return NextResponse.json({ data: enriched, total: count ?? 0 })
 }

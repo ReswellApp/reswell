@@ -4,6 +4,7 @@ import type {
   CrmContactSource,
   CrmContactStatus,
   CrmInteractionType,
+  CrmTagColor,
 } from "@/lib/db/crm"
 
 export const CRM_STATUS_LABEL: Record<CrmContactStatus, string> = {
@@ -87,6 +88,54 @@ export function crmInterestStatusBadgeClass(status: CrmBoardInterestStatus): str
     default:
       return ""
   }
+}
+
+export const CRM_TAG_COLOR_OPTIONS: CrmTagColor[] = [
+  "slate",
+  "teal",
+  "sky",
+  "violet",
+  "amber",
+  "rose",
+  "emerald",
+  "indigo",
+  "orange",
+  "pink",
+]
+
+const CRM_TAG_COLOR_CLASS: Record<CrmTagColor, string> = {
+  slate: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200",
+  teal: "border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900 dark:bg-teal-950 dark:text-teal-200",
+  sky: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200",
+  violet: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-200",
+  amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200",
+  rose: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200",
+  emerald:
+    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200",
+  indigo: "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200",
+  orange: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-200",
+  pink: "border-pink-200 bg-pink-50 text-pink-700 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-200",
+}
+
+const CRM_TAG_DOT_CLASS: Record<CrmTagColor, string> = {
+  slate: "bg-slate-400",
+  teal: "bg-teal-500",
+  sky: "bg-sky-500",
+  violet: "bg-violet-500",
+  amber: "bg-amber-500",
+  rose: "bg-rose-500",
+  emerald: "bg-emerald-500",
+  indigo: "bg-indigo-500",
+  orange: "bg-orange-500",
+  pink: "bg-pink-500",
+}
+
+export function crmTagBadgeClass(color: CrmTagColor): string {
+  return CRM_TAG_COLOR_CLASS[color] ?? CRM_TAG_COLOR_CLASS.slate
+}
+
+export function crmTagDotClass(color: CrmTagColor): string {
+  return CRM_TAG_DOT_CLASS[color] ?? CRM_TAG_DOT_CLASS.slate
 }
 
 export function formatCurrency(value: number | null | undefined): string {

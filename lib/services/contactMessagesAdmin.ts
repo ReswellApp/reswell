@@ -1,11 +1,13 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import {
+  bulkUpdateContactMessageRows,
   getContactMessageRowById,
   updateContactMessageRow,
   type ContactMessageSupportStatus,
 } from "@/lib/db/contactMessages"
 import { ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
 import {
+  bulkUpdateContactMessagesAdminSchema,
   updateContactMessageAdminSchema,
   type UpdateContactMessageAdminInput,
 } from "@/lib/validations/contactMessagesAdmin"
@@ -114,6 +116,49 @@ export async function updateContactMessageAdminService(
         })
       }
     }
+  }
+
+  return { success: true }
+}
+
+/**
+ * Bulk status change for the support inbox. Performs a single update query and
+ * intentionally skips the per-ticket member notifications that the single-row
+ * `updateContactMessageAdminService` sends — bulk triage is an internal workflow
+ * action, so members are not pinged for each ticket.
+ */
+export async function bulkUpdateContactMessagesAdminService(
+  raw: unknown,
+): Promise<{ success: true } | { error: string }> {
+  const parsed = bulkUpdateContactMessagesAdminSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { error: "Invalid input" }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { error: "Unauthorized" }
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin, is_employee")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+    return { error: "Forbidden" }
+  }
+
+  const { error } = await bulkUpdateContactMessageRows(supabase, parsed.data.ids, {
+    support_status: parsed.data.support_status,
+  })
+  if (error) {
+    console.error("bulkUpdateContactMessagesAdminService", error)
+    return { error: "Failed to update tickets" }
   }
 
   return { success: true }

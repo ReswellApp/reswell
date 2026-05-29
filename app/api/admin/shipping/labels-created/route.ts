@@ -8,6 +8,13 @@ import { z } from "zod"
 const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
+  source: z
+    .enum(["shipengine_checkout_lane", "manual_label_upload", "manual_tracking_buyer"])
+    .optional(),
+  carrier: z.string().trim().max(120).optional(),
+  q: z.string().trim().max(160).optional(),
+  date_from: z.string().datetime().optional(),
+  date_to: z.string().datetime().optional(),
 })
 
 export const dynamic = "force-dynamic"
@@ -27,7 +34,17 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient()
-  const { data: rows, total, error } = await listOrderAdminShippingLabels(supabase, parsed.data)
+  const { data: rows, total, error } = await listOrderAdminShippingLabels(supabase, {
+    limit: parsed.data.limit,
+    offset: parsed.data.offset,
+    filters: {
+      source: parsed.data.source ?? null,
+      carrier: parsed.data.carrier ?? null,
+      search: parsed.data.q ?? null,
+      dateFrom: parsed.data.date_from ?? null,
+      dateTo: parsed.data.date_to ?? null,
+    },
+  })
   if (error) {
     console.error("[admin labels-created list]", error)
     return NextResponse.json({ error: "Could not load labels" }, { status: 500 })

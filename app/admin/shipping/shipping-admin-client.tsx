@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -18,15 +17,73 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { ExternalLink, Loader2, RefreshCw, Ship, Truck } from 'lucide-react'
+import {
+  ExternalLink,
+  Loader2,
+  Package,
+  RefreshCw,
+  Ship,
+  TrendingUp,
+  TriangleAlert,
+  Truck,
+  Wallet,
+  Warehouse,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import type { AdminShippingStats } from '@/lib/services/adminShippingStats'
 import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
 import { AdminFailedLabelsTab } from './admin-failed-labels-tab'
 import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
 import { ShippingRateCalculator } from './rate-calculator'
+import { ShippingAnalytics } from './shipping-analytics'
 import { NavUnreadCountBadge } from '@/components/nav-unread-count-badge'
 
 type ApiSlice = { ok: boolean; status: number; data: unknown }
+
+const STAT_ACCENT: Record<'neutral' | 'emerald' | 'amber' | 'sky' | 'violet' | 'rose', string> = {
+  neutral: 'bg-secondary text-foreground',
+  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+  violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  rose: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+}
+
+function StatTile({
+  icon: Icon,
+  accent,
+  label,
+  value,
+  hint,
+}: {
+  icon: LucideIcon
+  accent: keyof typeof STAT_ACCENT
+  label: string
+  value: string
+  hint?: string
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/15 hover:shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', STAT_ACCENT[accent])}>
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+      </div>
+      <p className="mt-3 text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground">{value}</p>
+      {hint ? <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
+  )
+}
+
+function usd(n: number): string {
+  return n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+}
+
+const tabTriggerClass =
+  'inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium text-muted-foreground transition-all data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground disabled:opacity-40'
 
 type OverviewPayload =
   | {
@@ -101,9 +158,9 @@ function JsonPreview({ value }: { value: unknown }) {
   )
 }
 
-const shipTableShell = 'rounded-2xl border border-border/50 overflow-hidden bg-background/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+const shipTableShell = 'overflow-hidden rounded-xl border border-border bg-card'
 const shipTableHead =
-  'bg-muted/40 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground h-11'
+  'text-[11px] font-semibold uppercase tracking-wider text-muted-foreground h-11'
 
 export function AdminShippingClient() {
   const router = useRouter()
@@ -111,6 +168,7 @@ export function AdminShippingClient() {
   const tabFromUrl = searchParams.get('tab')
   const initialTab =
     tabFromUrl === 'failed-labels' ||
+    tabFromUrl === 'analytics' ||
     tabFromUrl === 'validate' ||
     tabFromUrl === 'rates' ||
     tabFromUrl === 'create' ||
@@ -121,6 +179,7 @@ export function AdminShippingClient() {
   const [activeTab, setActiveTab] = useState(initialTab)
   const [failedLabelCount, setFailedLabelCount] = useState(0)
   const [overview, setOverview] = useState<OverviewPayload | null>(null)
+  const [stats, setStats] = useState<AdminShippingStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const initialLoadDoneRef = useRef(false)
@@ -142,6 +201,22 @@ export function AdminShippingClient() {
       /* ignore — tab fetch will surface errors */
     }
   }, [])
+
+  const loadStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/shipping/stats', { credentials: 'include' })
+      const body = (await res.json()) as { data?: AdminShippingStats; error?: string }
+      if (res.ok && body.data) {
+        setStats(body.data)
+      }
+    } catch {
+      /* ignore — analytics tab surfaces its own errors */
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadStats()
+  }, [loadStats])
 
   useEffect(() => {
     void refreshFailedCount()
@@ -171,6 +246,7 @@ export function AdminShippingClient() {
 
   const handleFailureQueueChanged = () => {
     void refreshFailedCount()
+    void loadStats()
     router.refresh()
   }
 
@@ -242,174 +318,176 @@ export function AdminShippingClient() {
   }
 
   const configured = overview && 'configured' in overview && overview.configured
+  const carrierCount = configured && overview.configured && overview.carriers.ok
+    ? carriersList(overview.carriers.data).length
+    : null
+  const warehouseCount = configured && overview.configured && overview.warehouses.ok
+    ? warehousesList(overview.warehouses.data).length
+    : null
+
+  const handleRefresh = () => {
+    void load({ silent: false })
+    void loadStats()
+    void refreshFailedCount()
+  }
+
+  const marginPositive = (stats?.cost.marginUsd ?? 0) >= 0
 
   return (
-    <div className="mx-auto max-w-5xl w-full space-y-10 pb-12 antialiased selection:bg-foreground/10">
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Admin · Shipping
-          </p>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/40 shadow-inner ring-1 ring-border/50">
-              <Truck className="h-6 w-6 text-foreground/80" strokeWidth={1.5} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-[2rem] sm:leading-tight">
-                Shipping
-              </h1>
-              <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-                ShipEngine tools for carriers, rates, and labels.{' '}
-                <a
-                  href="https://www.shipengine.com/docs/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-foreground/80 underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
-                >
-                  Documentation
-                  <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-                </a>
-                <span className="text-muted-foreground/80">
-                  {' '}
-                  — use sandbox keys when testing; live keys can bill carriers.
-                </span>
-              </p>
-            </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Shipping</h1>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                configured
+                  ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400'
+                  : 'border-border bg-card text-muted-foreground',
+              )}
+            >
+              <Ship className="h-3.5 w-3.5" />
+              {loading && !overview
+                ? 'Connecting…'
+                : configured
+                  ? 'ShipEngine connected'
+                  : 'ShipEngine not configured'}
+            </span>
+            {failedLabelCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/5 px-2.5 py-1 text-[11px] font-medium text-rose-600 dark:text-rose-400">
+                <TriangleAlert className="h-3.5 w-3.5" />
+                {failedLabelCount} need{failedLabelCount === 1 ? 's' : ''} a label
+              </span>
+            ) : null}
           </div>
+          <p className="text-sm text-muted-foreground">
+            Carriers, rates, labels, and fulfillment analytics powered by ShipEngine.{' '}
+            <a
+              href="https://www.shipengine.com/docs/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-foreground/80 underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
+            >
+              Docs
+              <ExternalLink className="h-3 w-3 opacity-70" />
+            </a>
+          </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-10 shrink-0 rounded-full border-border/60 px-5 text-[13px] font-medium shadow-sm transition-all hover:bg-muted/60 hover:shadow"
-          onClick={() => void load({ silent: false })}
-          disabled={loading || refreshing}
-        >
-          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" strokeWidth={1.5} />}
-          <span className="ml-2">Refresh</span>
+        <Button variant="outline" disabled={loading || refreshing} onClick={handleRefresh}>
+          <RefreshCw className={cn('mr-2 h-4 w-4', refreshing && 'animate-spin')} />
+          Refresh
         </Button>
-      </header>
+      </div>
 
-      {loading && !overview ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin text-foreground/40" />
-          Connecting to ShipEngine…
-        </div>
-      ) : null}
+      {/* KPI strip */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <StatTile
+          icon={Package}
+          accent="sky"
+          label="Labels · 30d"
+          value={stats ? stats.totals.labelsInWindow.toLocaleString() : '—'}
+          hint={stats ? `${stats.totals.labelsAllTime.toLocaleString()} all time` : 'Loading…'}
+        />
+        <StatTile
+          icon={Wallet}
+          accent="violet"
+          label="Spend · 30d"
+          value={stats ? usd(stats.totals.spendInWindowUsd) : '—'}
+          hint={stats ? `${stats.cost.labelsWithCost} with cost` : undefined}
+        />
+        <StatTile
+          icon={TrendingUp}
+          accent={marginPositive ? 'emerald' : 'rose'}
+          label="Margin · 30d"
+          value={stats ? usd(stats.cost.marginUsd) : '—'}
+          hint={stats ? `${stats.cost.reconciledOrders} reconciled` : undefined}
+        />
+        <StatTile
+          icon={TriangleAlert}
+          accent={failedLabelCount > 0 ? 'rose' : 'neutral'}
+          label="Open failures"
+          value={(stats?.totals.openFailures ?? failedLabelCount).toLocaleString()}
+          hint={stats ? `${stats.totals.resolvedFailures} resolved` : undefined}
+        />
+        <StatTile
+          icon={Truck}
+          accent="amber"
+          label="Carriers"
+          value={carrierCount != null ? String(carrierCount) : '—'}
+          hint="Connected accounts"
+        />
+        <StatTile
+          icon={Warehouse}
+          accent="neutral"
+          label="Warehouses"
+          value={warehouseCount != null ? String(warehouseCount) : '—'}
+          hint="Ship-from locations"
+        />
+      </div>
 
       {overview && !overview.configured ? (
-        <Alert className="rounded-2xl border-border/50 bg-muted/20 shadow-sm">
-          <Ship className="h-4 w-4 text-foreground/70" strokeWidth={1.5} />
+        <Alert className="rounded-2xl border-border bg-card">
+          <Ship className="h-4 w-4 text-muted-foreground" />
           <AlertTitle className="font-semibold tracking-tight">ShipEngine not configured</AlertTitle>
-          <AlertDescription className="text-[15px] leading-relaxed">
-            {overview.message ?? 'Set SHIPENGINE_API_KEY on the server (see .env.example).'}
+          <AlertDescription className="text-sm text-muted-foreground">
+            {overview.message ?? 'Set SHIPENGINE_API_KEY on the server (see .env.example).'} Analytics and the
+            failed-label queue still work from Reswell&apos;s own data.
           </AlertDescription>
         </Alert>
       ) : null}
 
-      {configured && overview.configured ? (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="group relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-card via-card to-muted/15 p-6 shadow-[0_2px_24px_-16px_rgba(0,0,0,0.12)] transition-shadow duration-300 hover:shadow-md">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Carriers</p>
-            <p className="mt-3 text-4xl font-semibold tabular-nums tracking-tight text-foreground">
-              {overview.carriers.ok ? carriersList(overview.carriers.data).length : '—'}
-            </p>
-            <p className="mt-1 text-[13px] text-muted-foreground">Connected accounts</p>
-            {!overview.carriers.ok ? (
-              <Badge variant="destructive" className="mt-2 rounded-full">
-                HTTP {overview.carriers.status}
-              </Badge>
-            ) : null}
-          </div>
-          <div className="group relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-card via-card to-muted/15 p-6 shadow-[0_2px_24px_-16px_rgba(0,0,0,0.12)] transition-shadow duration-300 hover:shadow-md">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Warehouses</p>
-            <p className="mt-3 text-4xl font-semibold tabular-nums tracking-tight text-foreground">
-              {overview.warehouses.ok ? warehousesList(overview.warehouses.data).length : '—'}
-            </p>
-            <p className="mt-1 text-[13px] text-muted-foreground">Ship-from locations</p>
-            {!overview.warehouses.ok ? (
-              <Badge variant="destructive" className="mt-2 rounded-full">
-                HTTP {overview.warehouses.status}
-              </Badge>
-            ) : null}
-          </div>
-          <div className="group relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-card via-card to-muted/15 p-6 shadow-[0_2px_24px_-16px_rgba(0,0,0,0.12)] transition-shadow duration-300 hover:shadow-md">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Labels</p>
-            <p className="mt-3 text-4xl font-semibold tabular-nums tracking-tight text-foreground">
-              {overview.labels.ok ? labelsList(overview.labels.data).length : '—'}
-            </p>
-            <p className="mt-1 text-[13px] text-muted-foreground">Recent (latest 25)</p>
-            {!overview.labels.ok ? (
-              <Badge variant="destructive" className="mt-2 rounded-full">
-                HTTP {overview.labels.status}
-              </Badge>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
       {!loading && overview ? (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="flex h-auto min-h-11 w-full flex-wrap items-center justify-start gap-1 rounded-full border border-border/50 bg-muted/35 p-1.5 backdrop-blur-sm sm:w-fit">
-            <TabsTrigger
-              value="failed-labels"
-              className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
-            >
-              <span className="flex items-center gap-2">
-                Failed labels
-                <NavUnreadCountBadge count={failedLabelCount} />
-              </span>
+          <TabsList className="flex h-auto w-full flex-wrap items-center justify-start gap-1 rounded-2xl border border-border bg-card p-1.5">
+            <TabsTrigger value="analytics" className={tabTriggerClass}>
+              <TrendingUp className="h-4 w-4" />
+              Analytics
             </TabsTrigger>
-            <TabsTrigger
-              value="overview"
-              className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
-              disabled={!configured}
-            >
+            <TabsTrigger value="failed-labels" className={tabTriggerClass}>
+              <TriangleAlert className="h-4 w-4" />
+              Failed labels
+              <NavUnreadCountBadge count={failedLabelCount} />
+            </TabsTrigger>
+            <TabsTrigger value="overview" className={tabTriggerClass} disabled={!configured}>
+              <Ship className="h-4 w-4" />
               Overview
             </TabsTrigger>
-            <TabsTrigger
-              value="validate"
-              className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
-              disabled={!configured}
-            >
+            <TabsTrigger value="validate" className={tabTriggerClass} disabled={!configured}>
               Validate
             </TabsTrigger>
-            <TabsTrigger
-              value="rates"
-              className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
-              disabled={!configured}
-            >
+            <TabsTrigger value="rates" className={tabTriggerClass} disabled={!configured}>
               Rates
             </TabsTrigger>
-            <TabsTrigger
-              value="create"
-              className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
-              disabled={!configured}
-            >
+            <TabsTrigger value="create" className={tabTriggerClass} disabled={!configured}>
               Order label
             </TabsTrigger>
-            <TabsTrigger
-              value="labels-created"
-              className="rounded-full px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:hover:text-foreground/80"
-              disabled={!configured}
-            >
+            <TabsTrigger value="labels-created" className={tabTriggerClass} disabled={!configured}>
               Labels created
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="failed-labels" className="page-enter mt-8">
+          <TabsContent value="failed-labels" className="page-enter mt-6">
             <AdminFailedLabelsTab
-              onOpenCountChange={setFailedLabelCount}
+              onOpenCountChange={(c) => {
+                setFailedLabelCount(c)
+              }}
               onResolved={handleFailureQueueChanged}
             />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="page-enter mt-6">
+            <ShippingAnalytics stats={stats} onRefresh={loadStats} />
           </TabsContent>
 
           {configured && overview.configured ? (
           <>
           <TabsContent value="overview" className="page-enter mt-8 space-y-6">
-            <Card className="rounded-3xl border-border/50 shadow-[0_2px_32px_-18px_rgba(0,0,0,0.12)]">
+            <Card className="rounded-2xl border-border bg-card">
               <CardHeader className="space-y-1 pb-2">
                 <CardTitle className="text-lg font-semibold tracking-tight">Carriers</CardTitle>
-                <CardDescription className="text-[15px] leading-relaxed">
+                <CardDescription className="text-sm">
                   Use <code className="rounded-md bg-muted/80 px-1.5 py-0.5 text-[12px] font-mono">carrier_id</code> in
                   rate and label calls.{' '}
                   <Link
@@ -452,10 +530,10 @@ export function AdminShippingClient() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-3xl border-border/50 shadow-[0_2px_32px_-18px_rgba(0,0,0,0.12)]">
+            <Card className="rounded-2xl border-border bg-card">
               <CardHeader className="space-y-1 pb-2">
                 <CardTitle className="text-lg font-semibold tracking-tight">Warehouses</CardTitle>
-                <CardDescription className="text-[15px] leading-relaxed">
+                <CardDescription className="text-sm">
                   Default ship-from locations in ShipEngine
                 </CardDescription>
               </CardHeader>
@@ -492,10 +570,10 @@ export function AdminShippingClient() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-3xl border-border/50 shadow-[0_2px_32px_-18px_rgba(0,0,0,0.12)]">
+            <Card className="rounded-2xl border-border bg-card">
               <CardHeader className="space-y-1 pb-2">
                 <CardTitle className="text-lg font-semibold tracking-tight">Recent labels</CardTitle>
-                <CardDescription className="text-[15px] leading-relaxed">
+                <CardDescription className="text-sm">
                   Tracking and downloads when available.{' '}
                   <Link
                     href="https://www.shipengine.com/docs/labels/"
@@ -544,9 +622,9 @@ export function AdminShippingClient() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="validate" className="page-enter mt-8 space-y-5">
-            <div className="rounded-3xl border border-border/50 bg-muted/10 p-5 shadow-sm sm:p-6">
-              <p className="text-[15px] leading-relaxed text-muted-foreground">
+          <TabsContent value="validate" className="page-enter mt-6 space-y-5">
+            <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+              <p className="text-sm text-muted-foreground">
                 Validates one or more addresses (JSON array).{' '}
                 <Link
                   href="https://www.shipengine.com/docs/addresses/validation/"
@@ -557,34 +635,33 @@ export function AdminShippingClient() {
                   Address validation
                 </Link>
               </p>
-              <Separator className="my-5 bg-border/60" />
+              <Separator className="my-5 bg-border" />
               <Textarea
                 value={addrJson}
                 onChange={(e) => setAddrJson(e.target.value)}
-                className="min-h-[220px] rounded-2xl border-border/60 bg-background/80 font-mono text-[12px] leading-relaxed shadow-inner"
+                className="min-h-[220px] rounded-xl border-border bg-background font-mono text-[12px] leading-relaxed"
               />
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button
                   disabled={addrBusy}
-                  className="h-11 rounded-full px-6 font-medium shadow-sm"
                   onClick={() =>
                     void postAction('validate_address', addrJson, setAddrBusy, setAddrResult)
                   }
                 >
-                  {addrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  <span className={addrBusy ? 'ml-2' : ''}>Run validation</span>
+                  {addrBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Run validation
                 </Button>
               </div>
             </div>
             {addrResult != null ? <JsonPreview value={addrResult} /> : null}
           </TabsContent>
 
-          <TabsContent value="rates" className="page-enter mt-8">
+          <TabsContent value="rates" className="page-enter mt-6">
             <ShippingRateCalculator carriers={carriersList(overview.carriers.data)} />
           </TabsContent>
 
-          <TabsContent value="create" className="page-enter mt-8 space-y-6">
-            <p className="text-[15px] leading-relaxed text-muted-foreground px-0.5">
+          <TabsContent value="create" className="page-enter mt-6 space-y-6">
+            <p className="text-sm text-muted-foreground px-0.5">
               Uses the listing’s packed dimensions and seller locality from checkout, the buyer’s ship-to on the
               order, and the same cheapest-carrier selection as peer checkout. Paste an admin order URL or search.
               Buying a label does not mark the order shipped — the seller still ships the package.{' '}
@@ -600,18 +677,18 @@ export function AdminShippingClient() {
             <AdminOrderLabelPurchase />
           </TabsContent>
 
-          <TabsContent value="labels-created" className="page-enter mt-8">
+          <TabsContent value="labels-created" className="page-enter mt-6">
             <AdminLabelsCreatedTab />
           </TabsContent>
           </>
           ) : (
-            <TabsContent value="overview" className="page-enter mt-8">
-              <Alert className="rounded-2xl border-border/50 bg-muted/20 shadow-sm">
-                <Ship className="h-4 w-4 text-foreground/70" strokeWidth={1.5} />
+            <TabsContent value="overview" className="page-enter mt-6">
+              <Alert className="rounded-2xl border-border bg-card">
+                <Ship className="h-4 w-4 text-muted-foreground" />
                 <AlertTitle className="font-semibold tracking-tight">ShipEngine tools unavailable</AlertTitle>
-                <AlertDescription className="text-[15px] leading-relaxed">
-                  Configure SHIPENGINE_API_KEY to use overview, rates, and label tools. Failed label queue above
-                  still works for orders that need manual labels.
+                <AlertDescription className="text-sm text-muted-foreground">
+                  Configure SHIPENGINE_API_KEY to use overview, rates, and label tools. Analytics and the failed
+                  label queue still work from Reswell&apos;s own data.
                 </AlertDescription>
               </Alert>
             </TabsContent>

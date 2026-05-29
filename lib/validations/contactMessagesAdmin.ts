@@ -14,3 +14,12 @@ export const updateContactMessageAdminSchema = z.object({
 })
 
 export type UpdateContactMessageAdminInput = z.infer<typeof updateContactMessageAdminSchema>
+
+export const bulkUpdateContactMessagesAdminSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, "Select at least one ticket").max(500),
+  support_status: contactMessageSupportStatusSchema,
+})
+
+export type BulkUpdateContactMessagesAdminInput = z.infer<
+  typeof bulkUpdateContactMessagesAdminSchema
+>

@@ -15,7 +15,17 @@ export type AdminShippingLabelListRow = {
   tracking_number: string | null
   tracking_carrier: string | null
   shipengine_rate_id: string | null
+  label_cost_usd: number | null
+  label_cost_currency: string | null
   created_at: string
+}
+
+export type AdminShippingLabelFilters = {
+  source?: AdminShippingLabelSource | null
+  carrier?: string | null
+  search?: string | null
+  dateFrom?: string | null
+  dateTo?: string | null
 }
 
 export async function insertOrderAdminShippingLabel(
@@ -29,6 +39,8 @@ export async function insertOrderAdminShippingLabel(
     tracking_number?: string | null
     tracking_carrier?: string | null
     shipengine_rate_id?: string | null
+    label_cost_usd?: number | null
+    label_cost_currency?: string | null
   },
 ): Promise<{ error: Error | null }> {
   const { error } = await supabase.from("order_admin_shipping_labels").insert({
@@ -40,6 +52,8 @@ export async function insertOrderAdminShippingLabel(
     tracking_number: row.tracking_number ?? null,
     tracking_carrier: row.tracking_carrier ?? null,
     shipengine_rate_id: row.shipengine_rate_id ?? null,
+    label_cost_usd: row.label_cost_usd ?? null,
+    label_cost_currency: row.label_cost_currency ?? null,
   })
   if (!error) return { error: null }
   const parts = [error.message, error.hint, error.details, error.code].filter(
@@ -50,11 +64,32 @@ export async function insertOrderAdminShippingLabel(
 
 export async function listOrderAdminShippingLabels(
   supabase: SupabaseClient,
-  opts: { limit: number; offset: number },
+  opts: { limit: number; offset: number; filters?: AdminShippingLabelFilters },
 ): Promise<{ data: AdminShippingLabelListRow[]; total: number; error: Error | null }> {
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("order_admin_shipping_labels")
     .select("*", { count: "exact" })
+
+  const f = opts.filters
+  if (f?.source) query = query.eq("source", f.source)
+  if (f?.carrier && f.carrier.trim()) {
+    query = query.ilike("tracking_carrier", `%${f.carrier.trim()}%`)
+  }
+  if (f?.search && f.search.trim()) {
+    const raw = f.search.trim()
+    const uuid = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0]
+    if (uuid) {
+      // order_id is a uuid column — ilike would error, so match exactly.
+      query = query.eq("order_id", uuid.toLowerCase())
+    } else {
+      const term = raw.replace(/[%,]/g, "")
+      query = query.ilike("tracking_number", `%${term}%`)
+    }
+  }
+  if (f?.dateFrom) query = query.gte("created_at", f.dateFrom)
+  if (f?.dateTo) query = query.lte("created_at", f.dateTo)
+
+  const { data, error, count } = await query
     .order("created_at", { ascending: false })
     .range(opts.offset, opts.offset + opts.limit - 1)
 
@@ -66,6 +101,75 @@ export async function listOrderAdminShippingLabels(
     total: count ?? 0,
     error: null,
   }
+}
+
+export type AdminShippingLabelStatsRow = {
+  source: AdminShippingLabelSource
+  tracking_carrier: string | null
+  label_cost_usd: number | null
+  order_id: string
+  created_at: string
+}
+
+/**
+ * Pulls a bounded recent window of label rows for in-memory aggregation
+ * (source mix, carrier mix, daily volume, spend). Capped so the dashboard
+ * stays fast even as the table grows.
+ */
+export async function dbGetRecentShippingLabelsForStats(
+  supabase: SupabaseClient,
+  opts: { sinceIso: string; cap: number },
+): Promise<{ data: AdminShippingLabelStatsRow[]; error: Error | null }> {
+  const { data, error } = await supabase
+    .from("order_admin_shipping_labels")
+    .select("source, tracking_carrier, label_cost_usd, order_id, created_at")
+    .gte("created_at", opts.sinceIso)
+    .order("created_at", { ascending: false })
+    .limit(opts.cap)
+
+  if (error) {
+    return { data: [], error: new Error(error.message) }
+  }
+  return { data: (data ?? []) as AdminShippingLabelStatsRow[], error: null }
+}
+
+/** All-time count of admin shipping label rows (cheap head count). */
+export async function dbCountAllShippingLabels(
+  supabase: SupabaseClient,
+): Promise<{ count: number; error: Error | null }> {
+  const { count, error } = await supabase
+    .from("order_admin_shipping_labels")
+    .select("*", { count: "exact", head: true })
+
+  if (error) {
+    return { count: 0, error: new Error(error.message) }
+  }
+  return { count: count ?? 0, error: null }
+}
+
+/** Buyer-paid shipping amounts keyed by order id, for cost reconciliation. */
+export async function dbGetOrderShippingAmounts(
+  supabase: SupabaseClient,
+  orderIds: string[],
+): Promise<{ data: Map<string, number>; error: Error | null }> {
+  const ids = [...new Set(orderIds)].filter(Boolean)
+  const out = new Map<string, number>()
+  if (ids.length === 0) return { data: out, error: null }
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, shipping_amount")
+    .in("id", ids)
+
+  if (error) {
+    return { data: out, error: new Error(error.message) }
+  }
+  for (const row of data ?? []) {
+    const r = row as { id: string; shipping_amount: string | number | null }
+    const amount = Number(r.shipping_amount)
+    out.set(r.id, Number.isFinite(amount) ? amount : 0)
+  }
+  return { data: out, error: null }
 }
 
 export async function getLatestStoredLabelPathForOrder(

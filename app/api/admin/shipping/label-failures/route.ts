@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/brands/admin-server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
   dismissOpenOrderShippingLabelFailure,
+  dismissOpenOrderShippingLabelFailures,
   listOpenOrderShippingLabelFailures,
 } from "@/lib/db/orderShippingLabelFailures"
 import { z } from "zod"
@@ -13,10 +14,15 @@ const querySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 })
 
-const postSchema = z.object({
-  order_id: z.string().uuid(),
-  action: z.enum(["dismiss"]),
-})
+const postSchema = z
+  .object({
+    order_id: z.string().uuid().optional(),
+    order_ids: z.array(z.string().uuid()).min(1).max(100).optional(),
+    action: z.enum(["dismiss"]),
+  })
+  .refine((v) => Boolean(v.order_id) || Boolean(v.order_ids?.length), {
+    message: "order_id or order_ids is required",
+  })
 
 export const dynamic = "force-dynamic"
 
@@ -162,9 +168,22 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient()
+
+  if (parsed.data.order_ids?.length) {
+    const result = await dismissOpenOrderShippingLabelFailures(
+      supabase,
+      parsed.data.order_ids,
+      gate.ctx.user.id,
+    )
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
+    return NextResponse.json({ success: true, dismissed: result.dismissed })
+  }
+
   const result = await dismissOpenOrderShippingLabelFailure(
     supabase,
-    parsed.data.order_id,
+    parsed.data.order_id as string,
     gate.ctx.user.id,
   )
 
@@ -172,5 +191,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: 404 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, dismissed: 1 })
 }

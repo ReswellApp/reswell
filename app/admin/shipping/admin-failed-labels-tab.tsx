@@ -22,10 +22,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ExternalLink, Loader2, Printer, RefreshCw, TriangleAlert, X } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Download, ExternalLink, Loader2, Printer, RefreshCw, TriangleAlert, X } from "lucide-react"
 import { toast } from "sonner"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
 import { LocalDateTime } from "@/components/ui/local-datetime"
+import { downloadFailuresCsv } from "./shipping-export"
 
 type FailureRow = {
   id: string
@@ -75,6 +84,10 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null)
+  const [stageFilter, setStageFilter] = useState<string>("all")
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null)
   const [labelReadyOpen, setLabelReadyOpen] = useState(false)
   const [labelReady, setLabelReady] = useState<{
     labelUrl: string | null
@@ -101,6 +114,7 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
       const nextRows = body.data ?? []
       setRows(nextRows)
       setTotal(body.total ?? nextRows.length)
+      setSelected(new Set())
       onOpenCountChange?.(body.openCount ?? nextRows.length)
     } catch {
       toast.error("Could not load failed labels")
@@ -183,6 +197,93 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
     }
   }
 
+  const stagesPresent = [...new Set(rows.map((r) => r.failure_stage))]
+  const visibleRows = stageFilter === "all" ? rows : rows.filter((r) => r.failure_stage === stageFilter)
+  const visibleIds = visibleRows.map((r) => r.order_id)
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id))
+  const selectedRows = rows.filter((r) => selected.has(r.order_id))
+
+  const toggleRow = (orderId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(orderId)) next.delete(orderId)
+      else next.add(orderId)
+      return next
+    })
+  }
+
+  const toggleAllVisible = () => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (allVisibleSelected) {
+        for (const id of visibleIds) next.delete(id)
+      } else {
+        for (const id of visibleIds) next.add(id)
+      }
+      return next
+    })
+  }
+
+  const bulkDismiss = async () => {
+    const ids = selectedRows.map((r) => r.order_id)
+    if (ids.length === 0) return
+    if (typeof window !== "undefined" && !window.confirm(`Dismiss ${ids.length} failed label(s)?`)) {
+      return
+    }
+    setBulkBusy(true)
+    try {
+      const res = await fetch("/api/admin/shipping/label-failures", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_ids: ids, action: "dismiss" }),
+      })
+      const body = (await res.json()) as { dismissed?: number; error?: string }
+      if (!res.ok) {
+        toast.error(body.error ?? "Could not dismiss failures")
+        return
+      }
+      toast.success(`Dismissed ${body.dismissed ?? ids.length} failure(s)`)
+      await load({ silent: false })
+      onResolved?.()
+    } catch {
+      toast.error("Could not dismiss failures")
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  const bulkCreate = async () => {
+    const targets = selectedRows
+    if (targets.length === 0) return
+    setBulkBusy(true)
+    setBulkProgress({ done: 0, total: targets.length })
+    let ok = 0
+    let failed = 0
+    for (let i = 0; i < targets.length; i += 1) {
+      const row = targets[i]
+      try {
+        const res = await fetch("/api/admin/shipping/order-label", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_id: row.order_id, action: "purchase_checkout_lane" }),
+        })
+        if (res.ok) ok += 1
+        else failed += 1
+      } catch {
+        failed += 1
+      }
+      setBulkProgress({ done: i + 1, total: targets.length })
+    }
+    setBulkBusy(false)
+    setBulkProgress(null)
+    if (ok > 0) toast.success(`Created ${ok} label(s)`)
+    if (failed > 0) toast.error(`${failed} label(s) failed — review the remaining rows`)
+    await load({ silent: false })
+    onResolved?.()
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -191,22 +292,92 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
             <h2 className="text-lg font-semibold tracking-tight">Failed label purchases</h2>
             <NavUnreadCountBadge count={total} />
           </div>
-          <p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Orders where automated Reswell shipping label purchase failed after checkout. Create a label
             here to attach it to the seller&apos;s sale page, or dismiss if handled another way.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full"
-          onClick={() => void load({ silent: false })}
-          disabled={loading || refreshing}
-        >
-          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          <span className="ml-2">Refresh</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {stagesPresent.length > 1 ? (
+            <Select value={stageFilter} onValueChange={setStageFilter}>
+              <SelectTrigger className="h-9 w-[180px] rounded-full text-sm">
+                <SelectValue placeholder="All stages" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All stages</SelectItem>
+                {stagesPresent.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {stageLabel(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full gap-2"
+            onClick={() => downloadFailuresCsv(rows)}
+            disabled={rows.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            onClick={() => void load({ silent: false })}
+            disabled={loading || refreshing}
+          >
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            <span className="ml-2">Refresh</span>
+          </Button>
+        </div>
       </div>
+
+      {selected.size > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-muted/40 px-3 py-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setSelected(new Set())}
+            aria-label="Clear selection"
+            disabled={bulkBusy}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium tabular-nums">{selected.size} selected</span>
+          {bulkBusy && bulkProgress ? (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {bulkProgress.done}/{bulkProgress.total}
+            </span>
+          ) : null}
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              className="rounded-full gap-1.5"
+              onClick={() => void bulkCreate()}
+              disabled={bulkBusy}
+            >
+              <Printer className="h-4 w-4" />
+              Create labels
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full gap-1.5 text-muted-foreground"
+              onClick={() => void bulkDismiss()}
+              disabled={bulkBusy}
+            >
+              <X className="h-3.5 w-3.5" />
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {total > 0 ? (
         <Alert className="rounded-2xl border-destructive/30 bg-destructive/[0.04]">
@@ -221,7 +392,7 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
         </Alert>
       ) : null}
 
-      <Card className="rounded-3xl border-border/50 shadow-[0_2px_32px_-18px_rgba(0,0,0,0.12)]">
+      <Card className="rounded-2xl border-border bg-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold">Open failures</CardTitle>
           <CardDescription>
@@ -241,6 +412,14 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
               <Table>
                 <TableHeader>
                   <TableRow className="border-border/40 hover:bg-transparent">
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allVisibleSelected}
+                        onCheckedChange={toggleAllVisible}
+                        aria-label="Select all"
+                        disabled={bulkBusy || visibleIds.length === 0}
+                      />
+                    </TableHead>
                     <TableHead className="text-[11px] font-semibold uppercase tracking-[0.08em]">
                       Order
                     </TableHead>
@@ -259,10 +438,18 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row) => {
+                  {visibleRows.map((row) => {
                     const busy = busyOrderId === row.order_id
                     return (
-                      <TableRow key={row.id}>
+                      <TableRow key={row.id} data-state={selected.has(row.order_id) ? "selected" : undefined}>
+                        <TableCell className="align-top">
+                          <Checkbox
+                            checked={selected.has(row.order_id)}
+                            onCheckedChange={() => toggleRow(row.order_id)}
+                            aria-label={`Select order ${row.orderDisplayNum}`}
+                            disabled={bulkBusy}
+                          />
+                        </TableCell>
                         <TableCell className="align-top">
                           <div className="space-y-1">
                             <Link
@@ -306,7 +493,7 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
                             <Button
                               size="sm"
                               className="rounded-full"
-                              disabled={busy}
+                              disabled={busy || bulkBusy}
                               onClick={() => void createLabel(row)}
                             >
                               {busy ? (
@@ -320,7 +507,7 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
                               variant="ghost"
                               size="sm"
                               className="rounded-full text-muted-foreground"
-                              disabled={busy}
+                              disabled={busy || bulkBusy}
                               onClick={() => void dismiss(row)}
                             >
                               <X className="h-3.5 w-3.5" />

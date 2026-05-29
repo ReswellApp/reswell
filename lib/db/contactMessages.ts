@@ -108,3 +108,17 @@ export async function updateContactMessageRow(
   }
   return { error: null }
 }
+
+/** Single-query bulk status update — no per-ticket member notifications. */
+export async function bulkUpdateContactMessageRows(
+  supabase: SupabaseClient,
+  ids: string[],
+  patch: { support_status: ContactMessageSupportStatus },
+): Promise<{ error: string | null }> {
+  if (ids.length === 0) return { error: null }
+  const { error } = await supabase
+    .from("contact_messages")
+    .update({ support_status: patch.support_status })
+    .in("id", ids)
+  return { error: error?.message ?? null }
+}

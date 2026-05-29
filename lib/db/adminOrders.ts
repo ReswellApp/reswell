@@ -36,6 +36,53 @@ function num(v: string | number | null | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
+export type AdminOrderStatusCounts = {
+  total: number
+  confirmed: number
+  pending: number
+  refunding: number
+  refunded: number
+}
+
+const ORDER_STATUS_KEYS = ["confirmed", "pending", "refunding", "refunded"] as const
+
+/**
+ * Count orders per status using cheap `head: true` count queries (no row transfer).
+ * Scales to large order tables without loading data.
+ */
+export async function dbGetAdminOrderStatusCounts(
+  supabase: SupabaseClient,
+): Promise<{ data: AdminOrderStatusCounts | null; error: PostgrestError | null }> {
+  const totalRes = await supabase.from("orders").select("*", { count: "exact", head: true })
+  if (totalRes.error) {
+    return { data: null, error: totalRes.error }
+  }
+
+  const statusResults = await Promise.all(
+    ORDER_STATUS_KEYS.map((status) =>
+      supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", status),
+    ),
+  )
+
+  const counts: AdminOrderStatusCounts = {
+    total: totalRes.count ?? 0,
+    confirmed: 0,
+    pending: 0,
+    refunding: 0,
+    refunded: 0,
+  }
+
+  for (let i = 0; i < ORDER_STATUS_KEYS.length; i++) {
+    const res = statusResults[i]
+    if (res.error) {
+      return { data: null, error: res.error }
+    }
+    counts[ORDER_STATUS_KEYS[i]] = res.count ?? 0
+  }
+
+  return { data: counts, error: null }
+}
+
 /** PostgREST rejects the whole row if the select lists a column missing from cache/DB (PGRST204). */
 export function isPostgrestSchemaStaleError(err: Pick<PostgrestError, "code" | "message">): boolean {
   const msg = err.message ?? ""

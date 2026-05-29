@@ -1,22 +1,35 @@
 import { createClient } from "@/lib/supabase/server"
 import {
+  addCrmContactTagRow,
+  bulkDeleteCrmContactRows,
+  bulkUpdateCrmContactRows,
   deleteCrmBoardInterestRow,
   deleteCrmContactRow,
+  deleteCrmTagRow,
   getCrmContactByProfileId,
   insertCrmBoardInterest,
   insertCrmContact,
   insertCrmInteraction,
+  insertCrmTag,
+  removeCrmContactTagRow,
   updateCrmBoardInterestRow,
   updateCrmContactRow,
 } from "@/lib/db/crm"
 import {
+  addCrmContactTagSchema,
+  assignCrmContactSchema,
+  bulkDeleteCrmContactsSchema,
+  bulkUpdateCrmContactsSchema,
   createCrmBoardInterestSchema,
   createCrmContactFromProfileSchema,
   createCrmExternalContactSchema,
+  createCrmTagSchema,
   deleteCrmBoardInterestSchema,
   deleteCrmContactSchema,
+  deleteCrmTagSchema,
   logCrmInteractionSchema,
   markCrmContactedSchema,
+  removeCrmContactTagSchema,
   updateCrmBoardInterestSchema,
   updateCrmContactSchema,
 } from "@/lib/validations/crm"
@@ -139,9 +152,89 @@ export async function updateCrmContactService(raw: unknown): Promise<ServiceSucc
   if (parsed.data.priority !== undefined) patch.priority = parsed.data.priority
   if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes
   if (parsed.data.nextFollowUpAt !== undefined) patch.next_follow_up_at = parsed.data.nextFollowUpAt
+  if (parsed.data.assignedTo !== undefined) patch.assigned_to = parsed.data.assignedTo
 
   const supabase = await createClient()
   const result = await updateCrmContactRow(supabase, parsed.data.contactId, patch)
+  if (result.error) return { error: result.error }
+  return { success: true }
+}
+
+export async function assignCrmContactService(raw: unknown): Promise<ServiceSuccess | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = assignCrmContactSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid assignment" }
+
+  const supabase = await createClient()
+  const result = await updateCrmContactRow(supabase, parsed.data.contactId, {
+    assigned_to: parsed.data.assignedTo,
+  })
+  if (result.error) return { error: result.error }
+  return { success: true }
+}
+
+export async function createCrmTagService(raw: unknown): Promise<(ServiceSuccess & { tagId: string }) | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = createCrmTagSchema.safeParse(raw)
+  if (!parsed.success) {
+    const msg = parsed.error.flatten().fieldErrors.name?.[0] ?? "Invalid tag"
+    return { error: msg }
+  }
+
+  const supabase = await createClient()
+  const result = await insertCrmTag(supabase, {
+    name: parsed.data.name,
+    color: parsed.data.color,
+    created_by: auth.userId,
+  })
+  if (result.error || !result.data) {
+    const message = result.error?.toLowerCase().includes("duplicate")
+      ? "A tag with that name already exists"
+      : result.error ?? "Could not create tag"
+    return { error: message }
+  }
+  return { success: true, tagId: result.data.id }
+}
+
+export async function deleteCrmTagService(raw: unknown): Promise<ServiceSuccess | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = deleteCrmTagSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid tag" }
+
+  const supabase = await createClient()
+  const result = await deleteCrmTagRow(supabase, parsed.data.tagId)
+  if (result.error) return { error: result.error }
+  return { success: true }
+}
+
+export async function addCrmContactTagService(raw: unknown): Promise<ServiceSuccess | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = addCrmContactTagSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid tag assignment" }
+
+  const supabase = await createClient()
+  const result = await addCrmContactTagRow(supabase, parsed.data.contactId, parsed.data.tagId)
+  if (result.error) return { error: result.error }
+  return { success: true }
+}
+
+export async function removeCrmContactTagService(raw: unknown): Promise<ServiceSuccess | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = removeCrmContactTagSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid tag assignment" }
+
+  const supabase = await createClient()
+  const result = await removeCrmContactTagRow(supabase, parsed.data.contactId, parsed.data.tagId)
   if (result.error) return { error: result.error }
   return { success: true }
 }
@@ -159,6 +252,45 @@ export async function deleteCrmContactService(raw: unknown): Promise<ServiceSucc
   return { success: true }
 }
 
+export async function bulkUpdateCrmContactsService(
+  raw: unknown,
+): Promise<ServiceSuccess | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = bulkUpdateCrmContactsSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid bulk update" }
+
+  const patch: Partial<{
+    status: typeof parsed.data.status
+    priority: typeof parsed.data.priority
+    last_contacted_at: string
+  }> = {}
+  if (parsed.data.status !== undefined) patch.status = parsed.data.status
+  if (parsed.data.priority !== undefined) patch.priority = parsed.data.priority
+  if (parsed.data.markContacted) patch.last_contacted_at = new Date().toISOString()
+
+  const supabase = await createClient()
+  const result = await bulkUpdateCrmContactRows(supabase, parsed.data.contactIds, patch)
+  if (result.error) return { error: result.error }
+  return { success: true }
+}
+
+export async function bulkDeleteCrmContactsService(
+  raw: unknown,
+): Promise<ServiceSuccess | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = bulkDeleteCrmContactsSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid selection" }
+
+  const supabase = await createClient()
+  const result = await bulkDeleteCrmContactRows(supabase, parsed.data.contactIds)
+  if (result.error) return { error: result.error }
+  return { success: true }
+}
+
 export async function createCrmBoardInterestService(
   raw: unknown,
 ): Promise<ServiceSuccess | ServiceError> {
@@ -171,6 +303,7 @@ export async function createCrmBoardInterestService(
     const msg =
       flat.listingId?.[0] ??
       flat.brandModelId?.[0] ??
+      flat.brandId?.[0] ??
       flat.customDescription?.[0] ??
       "Invalid board interest"
     return { error: msg }
@@ -182,6 +315,7 @@ export async function createCrmBoardInterestService(
     interest_type: parsed.data.interestType,
     listing_id: parsed.data.listingId ?? null,
     brand_model_id: parsed.data.brandModelId ?? null,
+    brand_id: parsed.data.brandId ?? null,
     custom_description: parsed.data.customDescription ?? null,
     brand: parsed.data.brand ?? null,
     model: parsed.data.model ?? null,

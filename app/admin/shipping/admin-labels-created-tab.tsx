@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,9 +14,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ExternalLink, Loader2, MessageSquare, RefreshCw, Search, Upload } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Download, ExternalLink, Loader2, MessageSquare, RefreshCw, Search, Upload, X } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { toast } from "sonner"
+import { downloadLabelsCreatedCsv } from "./shipping-export"
 
 type LabelsCreatedRow = {
   id: string
@@ -28,10 +36,38 @@ type LabelsCreatedRow = {
   tracking_number: string | null
   tracking_carrier: string | null
   shipengine_rate_id: string | null
+  label_cost_usd: number | null
+  label_cost_currency: string | null
   created_at: string
   orderDisplayNum: string
   buyer: { display_name: string | null; email: string | null }
   seller: { display_name: string | null; email: string | null }
+}
+
+type LabelFilters = {
+  source: string
+  carrier: string
+  search: string
+  dateFrom: string
+  dateTo: string
+}
+
+const EMPTY_FILTERS: LabelFilters = {
+  source: "all",
+  carrier: "",
+  search: "",
+  dateFrom: "",
+  dateTo: "",
+}
+
+function buildLabelsQuery(filters: LabelFilters): string {
+  const params = new URLSearchParams({ limit: "50" })
+  if (filters.source && filters.source !== "all") params.set("source", filters.source)
+  if (filters.carrier.trim()) params.set("carrier", filters.carrier.trim())
+  if (filters.search.trim()) params.set("q", filters.search.trim())
+  if (filters.dateFrom) params.set("date_from", new Date(`${filters.dateFrom}T00:00:00`).toISOString())
+  if (filters.dateTo) params.set("date_to", new Date(`${filters.dateTo}T23:59:59`).toISOString())
+  return params.toString()
 }
 
 const ORDER_UUID_RE =
@@ -77,6 +113,15 @@ export function AdminLabelsCreatedTab() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [filters, setFilters] = useState<LabelFilters>(EMPTY_FILTERS)
+  const filtersRef = useRef<LabelFilters>(EMPTY_FILTERS)
+  filtersRef.current = filters
+  const filtersActive =
+    filters.source !== "all" ||
+    filters.carrier.trim().length > 0 ||
+    filters.search.trim().length > 0 ||
+    filters.dateFrom.length > 0 ||
+    filters.dateTo.length > 0
 
   const [uploadOrderRaw, setUploadOrderRaw] = useState("")
   const [uploadFile, setUploadFile] = useState<File | null>(null)
@@ -102,7 +147,7 @@ export function AdminLabelsCreatedTab() {
     if (!opts?.silent) setLoading(true)
     else setRefreshing(true)
     try {
-      const res = await fetch("/api/admin/shipping/labels-created?limit=50", {
+      const res = await fetch(`/api/admin/shipping/labels-created?${buildLabelsQuery(filtersRef.current)}`, {
         credentials: "include",
       })
       const body = (await res.json()) as { data?: LabelsCreatedRow[]; total?: number; error?: string }
@@ -341,7 +386,7 @@ export function AdminLabelsCreatedTab() {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[15px] leading-relaxed text-muted-foreground max-w-2xl">
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Reswell-purchased and manually uploaded labels registry. Use upload or tracking only when the main
           flow fails — both attach to the order and notify the seller / buyer as appropriate.
         </p>
@@ -358,7 +403,7 @@ export function AdminLabelsCreatedTab() {
         </Button>
       </div>
 
-      <Card className="rounded-3xl border-border/50">
+      <Card className="rounded-2xl border-border bg-card">
         <CardHeader>
           <CardTitle className="text-base">Fetch label from ShipEngine</CardTitle>
           <CardDescription>
@@ -513,7 +558,7 @@ export function AdminLabelsCreatedTab() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-3xl border-border/50 border-destructive/20">
+      <Card className="rounded-2xl border-destructive/30 bg-card">
         <CardHeader>
           <CardTitle className="text-base">Void label / refund (ShipEngine)</CardTitle>
           <CardDescription>
@@ -560,7 +605,7 @@ export function AdminLabelsCreatedTab() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="rounded-3xl border-border/50">
+        <Card className="rounded-2xl border-border bg-card">
           <CardHeader>
             <CardTitle className="text-base">Upload label PDF</CardTitle>
             <CardDescription>
@@ -601,7 +646,7 @@ export function AdminLabelsCreatedTab() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-border/50">
+        <Card className="rounded-2xl border-border bg-card">
           <CardHeader>
             <CardTitle className="text-base">Add tracking for buyer</CardTitle>
             <CardDescription>
@@ -653,18 +698,125 @@ export function AdminLabelsCreatedTab() {
         </Card>
       </div>
 
-      <Card className="rounded-3xl border-border/50 overflow-hidden">
+      <Card className="rounded-2xl border-border bg-card overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Labels created</CardTitle>
-          <CardDescription>
-            {total > 0 ? (
-              <>
-                Showing {rows.length} of {total} — newest first.
-              </>
-            ) : (
-              "No rows yet."
-            )}
-          </CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg">Labels created</CardTitle>
+              <CardDescription>
+                {total > 0 ? (
+                  <>
+                    Showing {rows.length} of {total} — newest first.
+                  </>
+                ) : (
+                  "No rows yet."
+                )}
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full gap-2 shrink-0"
+              onClick={() => downloadLabelsCreatedCsv(rows)}
+              disabled={rows.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+            <Select
+              value={filters.source}
+              onValueChange={(v) => {
+                const next = { ...filtersRef.current, source: v }
+                filtersRef.current = next
+                setFilters(next)
+                void load({ silent: true })
+              }}
+            >
+              <SelectTrigger className="h-9 rounded-xl text-sm lg:col-span-2">
+                <SelectValue placeholder="All sources" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All sources</SelectItem>
+                <SelectItem value="shipengine_checkout_lane">ShipEngine (checkout)</SelectItem>
+                <SelectItem value="manual_label_upload">Manual PDF</SelectItem>
+                <SelectItem value="manual_tracking_buyer">Manual tracking</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Carrier"
+              value={filters.carrier}
+              onChange={(e) => setFilters((f) => ({ ...f, carrier: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void load({ silent: true })
+              }}
+              className="h-9 rounded-xl text-sm"
+            />
+            <Input
+              placeholder="Search order / tracking"
+              value={filters.search}
+              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void load({ silent: true })
+              }}
+              className="h-9 rounded-xl text-sm"
+            />
+            <Input
+              type="date"
+              aria-label="From date"
+              value={filters.dateFrom}
+              onChange={(e) => {
+                const next = { ...filtersRef.current, dateFrom: e.target.value }
+                filtersRef.current = next
+                setFilters(next)
+                void load({ silent: true })
+              }}
+              className="h-9 rounded-xl text-sm"
+            />
+            <Input
+              type="date"
+              aria-label="To date"
+              value={filters.dateTo}
+              onChange={(e) => {
+                const next = { ...filtersRef.current, dateTo: e.target.value }
+                filtersRef.current = next
+                setFilters(next)
+                void load({ silent: true })
+              }}
+              className="h-9 rounded-xl text-sm"
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="rounded-full gap-1.5"
+              onClick={() => void load({ silent: true })}
+            >
+              <Search className="h-3.5 w-3.5" />
+              Apply
+            </Button>
+            {filtersActive ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="rounded-full gap-1.5 text-muted-foreground"
+                onClick={() => {
+                  setFilters(EMPTY_FILTERS)
+                  filtersRef.current = EMPTY_FILTERS
+                  void load({ silent: true })
+                }}
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear
+              </Button>
+            ) : null}
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
           {loading ? (
@@ -697,6 +849,9 @@ export function AdminLabelsCreatedTab() {
                     <TableHead className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">
                       Tracking
                     </TableHead>
+                    <TableHead className="whitespace-nowrap text-right text-xs font-semibold uppercase tracking-wide">
+                      Cost
+                    </TableHead>
                     <TableHead className="text-right text-xs font-semibold uppercase tracking-wide">Admin</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -719,6 +874,11 @@ export function AdminLabelsCreatedTab() {
                       <TableCell className="text-sm">{sourceLabel(r.source)}</TableCell>
                       <TableCell className="font-mono text-xs max-w-[160px] truncate">
                         {r.tracking_number?.trim() || "—"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {r.label_cost_usd != null
+                          ? `$${Number(r.label_cost_usd).toFixed(2)}`
+                          : "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" className="rounded-full h-8 px-2 gap-1" asChild>

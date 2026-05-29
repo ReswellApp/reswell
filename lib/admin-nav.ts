@@ -22,6 +22,7 @@ export type AdminNavIconKey =
   | 'target'
   | 'contactRound'
   | 'search'
+  | 'wrench'
 
 export interface AdminNavItemConfig {
   href: string
@@ -42,6 +43,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/settings',
   '/admin/seo',
   '/admin/shipping',
+  '/admin/tools',
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
   '/admin/orders/test-purchase',
@@ -57,7 +59,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
-      { href: '/admin/settings', label: 'Settings', icon: 'settings' },
     ],
   },
   {
@@ -94,6 +95,14 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/orders', label: 'Orders', icon: 'shoppingBag' },
       { href: '/admin/orders/test-purchase', label: 'Test purchase', icon: 'shoppingBag' },
       { href: '/admin/shipping', label: 'Shipping', icon: 'truck' },
+    ],
+  },
+  {
+    id: 'admin-tools',
+    label: 'Admin tools',
+    items: [
+      { href: '/admin/tools', label: 'Admin tools', icon: 'wrench' },
+      { href: '/admin/settings', label: 'Settings', icon: 'settings' },
     ],
   },
 ]

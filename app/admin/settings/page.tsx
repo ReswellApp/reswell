@@ -1,31 +1,213 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Info, LayoutDashboard, Package, Users, Settings, ArrowRight, Shield, UserCog, Loader2, Search, RefreshCw, Activity } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  Activity,
+  ArrowUpRight,
+  ContactRound,
+  Crown,
+  FolderTree,
+  LayoutDashboard,
+  LineChart,
+  Layers,
+  Loader2,
+  MessageSquare,
+  Package,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings,
+  Shield,
+  ShieldCheck,
+  ShoppingBag,
+  Tag,
+  Target,
+  Trash2,
+  Truck,
+  UserCog,
+  Users,
+  Wallet,
+  Waves,
+  Wrench,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
-
-const capabilities = [
-  { title: 'Overview', description: 'Site stats, listings by section, recent activity', href: '/admin', icon: LayoutDashboard },
-  { title: 'Live', description: 'Signed-in users active on the site in the last few minutes', href: '/admin/live', icon: Activity },
-  { title: 'Listings', description: 'Search, filter, view, remove, restore, or permanently delete any listing; add listings on behalf of users', href: '/admin/listings', icon: Package },
-  { title: 'Users', description: 'View all accounts, grant or revoke admin or employee access', href: '/admin/users', icon: Users },
-  { title: 'Settings', description: 'This page', href: '/admin/settings', icon: Settings },
-] as const
 
 interface ProfileRole {
   id: string
   email: string | null
   display_name: string | null
+  avatar_url: string | null
   is_admin: boolean
   is_employee: boolean
+}
+
+interface CapabilityItem {
+  href: string
+  label: string
+  description: string
+  icon: LucideIcon
+}
+
+interface CapabilityGroup {
+  id: string
+  label: string
+  items: CapabilityItem[]
+}
+
+const CAPABILITY_GROUPS: CapabilityGroup[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    items: [
+      { href: '/admin', label: 'Overview', description: 'Site stats & recent activity', icon: LayoutDashboard },
+      { href: '/admin/listings', label: 'Listings', description: 'Search, moderate, restore', icon: Package },
+      { href: '/admin/seo', label: 'SEO', description: 'Page metadata & sitemaps', icon: Search },
+      { href: '/admin/users', label: 'Users', description: 'Accounts, roles & access', icon: Users },
+      { href: '/admin/wallets', label: 'Wallets', description: 'Balances & payouts', icon: Wallet },
+    ],
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    items: [
+      { href: '/admin/live', label: 'Live', description: 'Active users right now', icon: Activity },
+      { href: '/admin/used-board-market-dashboard', label: 'Used board market', description: 'Resale market trends', icon: Waves },
+      { href: '/admin/catalog-overview', label: 'Brand catalog', description: 'Explore brand catalog', icon: FolderTree },
+      { href: '/admin/search-analytics', label: 'Search analytics', description: 'Query & result insights', icon: LineChart },
+      { href: '/admin/reswell-goals', label: 'Reswell goals', description: 'Track platform goals', icon: Target },
+      { href: '/admin/listings/board-catalog-data', label: 'Board data', description: 'User listing board data', icon: Layers },
+    ],
+  },
+  {
+    id: 'customer-service',
+    label: 'Customer service',
+    items: [
+      { href: '/admin/crm', label: 'CRM', description: 'Customer relationships', icon: ContactRound },
+      { href: '/admin/contact-messages', label: 'Support inbox', description: 'Contact form messages', icon: MessageSquare },
+      { href: '/admin/messages', label: 'Marketplace messages', description: 'Buyer/seller threads', icon: MessageSquare },
+      { href: '/admin/fraud-messages', label: 'Fraud messages', description: 'Flagged conversations', icon: Shield },
+      { href: '/admin/listings/brand-requests', label: 'Brand requests', description: 'Brand & model requests', icon: Tag },
+    ],
+  },
+  {
+    id: 'orders-shipping',
+    label: 'Orders & shipping',
+    items: [
+      { href: '/admin/orders', label: 'Orders', description: 'All marketplace orders', icon: ShoppingBag },
+      { href: '/admin/orders/test-purchase', label: 'Test purchase', description: 'Run a test checkout', icon: ShoppingBag },
+      { href: '/admin/shipping', label: 'Shipping', description: 'Carriers & rates', icon: Truck },
+    ],
+  },
+  {
+    id: 'admin-tools',
+    label: 'Admin tools',
+    items: [
+      { href: '/admin/tools', label: 'Admin tools', description: 'Search, cache & lifecycle jobs', icon: Wrench },
+    ],
+  },
+]
+
+interface ReindexSummary {
+  indexed?: number
+  errors?: number
+  brandsIndexed?: number
+  brandErrors?: number
+  sellersIndexed?: number
+  sellersRemoved?: number
+  sellerErrors?: number
+}
+
+function userInitials(name: string | null, email: string | null): string {
+  const base = (name?.trim() || email?.trim() || '?').replace(/@.*/, '')
+  const parts = base.split(/[\s._-]+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+interface StatTileProps {
+  icon: LucideIcon
+  accent: 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet'
+  label: string
+  value: string
+  hint?: string
+}
+
+const STAT_ACCENT: Record<StatTileProps['accent'], string> = {
+  neutral: 'bg-secondary text-foreground',
+  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+  violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+}
+
+function StatTile({ icon: Icon, accent, label, value, hint }: StatTileProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/15 hover:shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', STAT_ACCENT[accent])}>
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+      </div>
+      <p className="mt-3 text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground">
+        {value}
+      </p>
+      {hint ? <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
+  )
+}
+
+function RoleRow({
+  profile,
+  protectedRow,
+  onRevoke,
+}: {
+  profile: ProfileRole
+  protectedRow: boolean
+  onRevoke: () => void
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-[11px] font-semibold text-foreground ring-1 ring-border">
+        {userInitials(profile.display_name, profile.email)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
+          {profile.display_name || `User ${profile.id.slice(0, 8)}`}
+          {protectedRow ? (
+            <Badge variant="secondary" className="gap-1 px-1.5 py-0 text-[10px]">
+              <Crown className="h-3 w-3" /> Super
+            </Badge>
+          ) : null}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">{profile.email ?? '—'}</p>
+      </div>
+      {protectedRow ? (
+        <span className="text-xs text-muted-foreground">Protected</span>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 text-muted-foreground hover:text-destructive"
+          onClick={onRevoke}
+        >
+          <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Revoke
+        </Button>
+      )}
+    </div>
+  )
 }
 
 export default function AdminSettingsPage() {
@@ -35,31 +217,32 @@ export default function AdminSettingsPage() {
   const [grantingAdmin, setGrantingAdmin] = useState(false)
   const [grantingEmployee, setGrantingEmployee] = useState(false)
   const [reindexing, setReindexing] = useState(false)
+  const [reindexSummary, setReindexSummary] = useState<ReindexSummary | null>(null)
   const [admins, setAdmins] = useState<ProfileRole[]>([])
   const [employees, setEmployees] = useState<ProfileRole[]>([])
   const [loadingRoles, setLoadingRoles] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    void supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentEmail(user?.email ?? null)
     })
+    void loadRoles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    async function load() {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, is_admin, is_employee')
-        .or('is_admin.eq.true,is_employee.eq.true')
-      if (data) {
-        setAdmins(data.filter((p) => p.is_admin))
-        setEmployees(data.filter((p) => p.is_employee && !p.is_admin))
-      }
-      setLoadingRoles(false)
+  async function loadRoles() {
+    setLoadingRoles(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, email, display_name, avatar_url, is_admin, is_employee')
+      .or('is_admin.eq.true,is_employee.eq.true')
+    if (data) {
+      setAdmins(data.filter((p) => p.is_admin))
+      setEmployees(data.filter((p) => p.is_employee && !p.is_admin))
     }
-    load()
-  }, [])
+    setLoadingRoles(false)
+  }
 
   const isSuperAdmin = currentEmail?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
 
@@ -72,7 +255,7 @@ export default function AdminSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), role, grant: true }),
       })
-      const data = await res.json()
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
       if (!res.ok) {
         toast.error(data.error || 'Failed to grant role')
         return
@@ -80,14 +263,9 @@ export default function AdminSettingsPage() {
       toast.success(role === 'admin' ? 'Admin access granted' : 'Employee access granted')
       if (role === 'admin') setAdminEmail('')
       else setEmployeeEmail('')
-      const { data: list } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, is_admin, is_employee')
-        .or('is_admin.eq.true,is_employee.eq.true')
-      if (list) {
-        setAdmins(list.filter((p) => p.is_admin))
-        setEmployees(list.filter((p) => p.is_employee && !p.is_admin))
-      }
+      await loadRoles()
+    } catch {
+      toast.error('Failed to grant role')
     } finally {
       setGranting(false)
     }
@@ -107,19 +285,12 @@ export default function AdminSettingsPage() {
         body: JSON.stringify({ email, role, grant: false }),
       })
       if (!res.ok) {
-        const data = await res.json()
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
         toast.error(data.error || 'Failed to revoke')
         return
       }
       toast.success(role === 'admin' ? 'Admin access removed' : 'Employee access removed')
-      const { data: list } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, is_admin, is_employee')
-        .or('is_admin.eq.true,is_employee.eq.true')
-      if (list) {
-        setAdmins(list.filter((p) => p.is_admin))
-        setEmployees(list.filter((p) => p.is_employee && !p.is_admin))
-      }
+      await loadRoles()
     } catch {
       toast.error('Failed to revoke')
     }
@@ -128,195 +299,286 @@ export default function AdminSettingsPage() {
   async function reindexSearch() {
     setReindexing(true)
     try {
-      const res = await fetch('/api/search/reindex', {
-        method: 'POST',
-        credentials: 'include',
-      })
-      const data = await res.json().catch(() => ({}))
+      const res = await fetch('/api/search/reindex', { method: 'POST', credentials: 'include' })
+      const data = (await res.json().catch(() => ({}))) as ReindexSummary & { error?: string }
       if (!res.ok) {
-        const msg = data?.error || `Reindex failed (${res.status})`
-        toast.error(msg)
+        toast.error(data?.error || `Reindex failed (${res.status})`)
         return
       }
+      setReindexSummary(data)
       const brandsPart =
-        typeof data.brandsIndexed === "number"
-          ? `, ${data.brandsIndexed} brands in directory index${data.brandErrors ? ` (${data.brandErrors} brand errors)` : ""}`
-          : ""
+        typeof data.brandsIndexed === 'number'
+          ? `, ${data.brandsIndexed} brands${data.brandErrors ? ` (${data.brandErrors} errors)` : ''}`
+          : ''
       const sellersPart =
-        typeof data.sellersIndexed === "number"
-          ? `, ${data.sellersIndexed} sellers in directory index${
-              data.sellersRemoved ? ` (${data.sellersRemoved} removed)` : ""
-            }${data.sellerErrors ? ` (${data.sellerErrors} seller errors)` : ""}`
-          : ""
+        typeof data.sellersIndexed === 'number'
+          ? `, ${data.sellersIndexed} sellers${data.sellersRemoved ? ` (${data.sellersRemoved} removed)` : ''}${
+              data.sellerErrors ? ` (${data.sellerErrors} errors)` : ''
+            }`
+          : ''
       toast.success(
-        `Reindex complete: ${data.indexed} listings indexed${data.errors ? `, ${data.errors} listing errors` : ""}${brandsPart}${sellersPart}`,
+        `Reindex complete: ${data.indexed} listings${data.errors ? `, ${data.errors} errors` : ''}${brandsPart}${sellersPart}`,
       )
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Reindex failed'
-      toast.error(msg)
+      toast.error(e instanceof Error ? e.message : 'Reindex failed')
     } finally {
       setReindexing(false)
     }
   }
 
+  const stats = useMemo(
+    () => ({
+      admins: admins.length,
+      employees: employees.length,
+      staff: admins.length + employees.length,
+    }),
+    [admins, employees],
+  )
+
+  const totalAreas = useMemo(
+    () => CAPABILITY_GROUPS.reduce((sum, g) => sum + g.items.length, 0),
+    [],
+  )
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Admin Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Super-admin configuration and marketplace controls
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Settings</h1>
+            <Badge
+              variant="secondary"
+              className={cn(
+                'gap-1',
+                isSuperAdmin && 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+              )}
+            >
+              {isSuperAdmin ? <Crown className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+              {isSuperAdmin ? 'Super admin' : 'Admin'}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Manage team access, platform tools, and jump to every admin workspace.
+          </p>
+        </div>
+        <Button type="button" variant="outline" disabled={reindexing} onClick={() => void reindexSearch()} className="shrink-0">
+          <RefreshCw className={cn('mr-2 h-4 w-4', reindexing && 'animate-spin')} />
+          Reindex search
+        </Button>
       </div>
 
-      {isSuperAdmin && (
-        <>
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Shield className="h-5 w-5 text-primary" />
-                Add admin
-              </CardTitle>
-              <p className="text-sm text-muted-foreground font-normal">
-                Full access: Overview, Listings, Users, Settings. Can grant or revoke admin and employee.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <Label htmlFor="admin-email" className="sr-only">Email</Label>
-                <Input
-                  id="admin-email"
-                  type="email"
-                  placeholder="user@example.com"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  className="max-w-xs"
-                />
-                <Button
-                  onClick={() => adminEmail.trim() && grantRole(adminEmail.trim(), 'admin')}
-                  disabled={grantingAdmin || !adminEmail.trim()}
-                >
-                  {grantingAdmin ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Grant admin'}
-                </Button>
-              </div>
-              {!loadingRoles && admins.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-2">Current admins</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {admins.map((p) => (
-                      <li key={p.id} className="flex items-center justify-between gap-2">
-                        <span>{p.display_name || `User ${p.id.slice(0, 8)}`}{p.email && ` (${p.email})`}</span>
-                        {p.email?.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase() && (
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => revokeRole(p.id, 'admin')}>
-                            Revoke
-                          </Button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* KPI strip */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile icon={Shield} accent="sky" label="Admins" value={loadingRoles ? '—' : String(stats.admins)} hint="Full access" />
+        <StatTile icon={UserCog} accent="violet" label="Employees" value={loadingRoles ? '—' : String(stats.employees)} hint="Limited access" />
+        <StatTile icon={Users} accent="emerald" label="Total staff" value={loadingRoles ? '—' : String(stats.staff)} hint="With elevated access" />
+        <StatTile icon={Settings} accent="neutral" label="Admin areas" value={String(totalAreas)} hint="Workspaces available" />
+      </div>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <UserCog className="h-5 w-5 text-primary" />
-                Add employee
-              </CardTitle>
-              <p className="text-sm text-muted-foreground font-normal">
-                Limited access: Overview and Listings only. Cannot manage users or settings.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <Label htmlFor="employee-email" className="sr-only">Email</Label>
-                <Input
-                  id="employee-email"
-                  type="email"
-                  placeholder="user@example.com"
-                  value={employeeEmail}
-                  onChange={(e) => setEmployeeEmail(e.target.value)}
-                  className="max-w-xs"
-                />
-                <Button
-                  variant="secondary"
-                  onClick={() => employeeEmail.trim() && grantRole(employeeEmail.trim(), 'employee')}
-                  disabled={grantingEmployee || !employeeEmail.trim()}
-                >
-                  {grantingEmployee ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Grant employee'}
-                </Button>
-              </div>
-              {!loadingRoles && employees.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-2">Current employees</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {employees.map((p) => (
-                      <li key={p.id} className="flex items-center justify-between gap-2">
-                        <span>{p.display_name || `User ${p.id.slice(0, 8)}`}{p.email && ` (${p.email})`}</span>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => revokeRole(p.id, 'employee')}>
-                          Revoke
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
+      {/* Access control (super admin only) */}
+      {isSuperAdmin ? (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Access control</h2>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* Admins card */}
+            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+              <div className="border-b border-border p-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                    <Shield className="h-4 w-4" />
+                  </span>
+                  <h3 className="font-semibold text-foreground">Admins</h3>
+                  <Badge variant="outline" className="ml-auto tabular-nums">{stats.admins}</Badge>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Full access to every workspace. Can grant or revoke admin and employee roles.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Input
+                    type="email"
+                    placeholder="user@example.com"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && adminEmail.trim()) void grantRole(adminEmail.trim(), 'admin')
+                    }}
+                    className="h-9 flex-1"
+                  />
+                  <Button
+                    onClick={() => adminEmail.trim() && void grantRole(adminEmail.trim(), 'admin')}
+                    disabled={grantingAdmin || !adminEmail.trim()}
+                    className="h-9"
+                  >
+                    {grantingAdmin ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
+                    {grantingAdmin ? '' : 'Grant'}
+                  </Button>
+                </div>
+              </div>
+              <div className="divide-y divide-border">
+                {loadingRoles ? (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">Loading…</div>
+                ) : admins.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">No admins yet.</div>
+                ) : (
+                  admins.map((p) => (
+                    <RoleRow
+                      key={p.id}
+                      profile={p}
+                      protectedRow={p.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()}
+                      onRevoke={() => void revokeRole(p.id, 'admin')}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Employees card */}
+            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+              <div className="border-b border-border p-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                    <UserCog className="h-4 w-4" />
+                  </span>
+                  <h3 className="font-semibold text-foreground">Employees</h3>
+                  <Badge variant="outline" className="ml-auto tabular-nums">{stats.employees}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Limited access to Overview and Listings. Cannot manage users or settings.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Input
+                    type="email"
+                    placeholder="user@example.com"
+                    value={employeeEmail}
+                    onChange={(e) => setEmployeeEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && employeeEmail.trim()) void grantRole(employeeEmail.trim(), 'employee')
+                    }}
+                    className="h-9 flex-1"
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => employeeEmail.trim() && void grantRole(employeeEmail.trim(), 'employee')}
+                    disabled={grantingEmployee || !employeeEmail.trim()}
+                    className="h-9"
+                  >
+                    {grantingEmployee ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
+                    {grantingEmployee ? '' : 'Grant'}
+                  </Button>
+                </div>
+              </div>
+              <div className="divide-y divide-border">
+                {loadingRoles ? (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">Loading…</div>
+                ) : employees.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">No employees yet.</div>
+                ) : (
+                  employees.map((p) => (
+                    <RoleRow
+                      key={p.id}
+                      profile={p}
+                      protectedRow={false}
+                      onRevoke={() => void revokeRole(p.id, 'employee')}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+            <Crown className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-foreground">Role management is super-admin only</p>
+            <p className="text-xs text-muted-foreground">
+              Granting or revoking admin and employee access is restricted to the super admin.
+            </p>
+          </div>
+        </div>
       )}
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Search className="h-5 w-5 text-primary" />
-            Search index (Elasticsearch)
-          </CardTitle>
-          <p className="text-sm text-muted-foreground font-normal">
-            Rebuild listing search and the brand directory index used for sell-form and nav brand typeahead. Use after adding
-            Elasticsearch, or if results seem stale.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <Button
-            variant="outline"
-            onClick={reindexSearch}
-            disabled={reindexing}
-          >
-            {reindexing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {reindexing ? 'Reindexing…' : 'Reindex search'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Info className="h-5 w-5 text-primary" />
-            What you can do
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-3">
-            {capabilities.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex items-start gap-3 rounded-lg border border-transparent p-3 transition-colors hover:bg-muted/50 hover:border-border"
-                >
-                  <item.icon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground">{item.title}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">{item.description}</p>
+      {/* Platform tools */}
+      <section className="space-y-3">
+        <h2 className="px-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Platform tools</h2>
+        <div className="overflow-hidden rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Search className="h-4 w-4" />
+              </span>
+              <div>
+                <h3 className="font-semibold text-foreground">Search index (Elasticsearch)</h3>
+                <p className="mt-0.5 max-w-xl text-xs text-muted-foreground">
+                  Rebuild listing search plus the brand &amp; seller directory indexes used by the sell-form and
+                  nav typeahead. Run after deploying Elasticsearch or if results look stale.
+                </p>
+                {reindexSummary ? (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <Badge variant="secondary" className="tabular-nums">{reindexSummary.indexed ?? 0} listings</Badge>
+                    {typeof reindexSummary.brandsIndexed === 'number' ? (
+                      <Badge variant="secondary" className="tabular-nums">{reindexSummary.brandsIndexed} brands</Badge>
+                    ) : null}
+                    {typeof reindexSummary.sellersIndexed === 'number' ? (
+                      <Badge variant="secondary" className="tabular-nums">{reindexSummary.sellersIndexed} sellers</Badge>
+                    ) : null}
+                    {reindexSummary.errors ? (
+                      <Badge variant="outline" className="border-rose-500/30 text-rose-600 tabular-nums dark:text-rose-400">
+                        {reindexSummary.errors} errors
+                      </Badge>
+                    ) : null}
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+                ) : null}
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => void reindexSearch()}
+              disabled={reindexing}
+              className="shrink-0"
+            >
+              {reindexing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              {reindexing ? 'Reindexing…' : 'Reindex search'}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick navigation */}
+      <section className="space-y-4">
+        <h2 className="px-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Admin workspaces</h2>
+        {CAPABILITY_GROUPS.map((group) => (
+          <div key={group.id} className="space-y-2">
+            <p className="px-1 text-xs font-medium text-muted-foreground">{group.label}</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {group.items.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/15 hover:shadow-sm"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-foreground">{item.label}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{item.description}</span>
+                    </span>
+                    <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground" />
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </section>
     </div>
   )
 }

@@ -268,6 +268,8 @@ export async function POST(request: NextRequest) {
       trackingNumber: purchased.result.trackingNumber,
       trackingCarrier: purchased.result.trackingCarrier,
       shipengineRateId: rateId,
+      labelCostUsd: purchased.result.costAmount,
+      labelCostCurrency: purchased.result.costCurrency,
     })
 
     if (!attached.ok) {

@@ -10,15 +10,22 @@ import {
   listCrmBoardInterestsForContact,
   listCrmContacts,
   listCrmInteractionsForContact,
+  listCrmStaff,
+  listCrmTags,
   type CrmBoardInterestWithEmbeds,
   type CrmContactPriority,
   type CrmContactSource,
   type CrmContactStatus,
   type CrmContactWithProfile,
   type CrmInteractionWithAuthor,
+  type CrmStaffMember,
   type CrmStats,
+  type CrmTagRow,
 } from "@/lib/db/crm"
 import {
+  assignCrmContactAction,
+  bulkDeleteCrmContactsAction,
+  bulkUpdateCrmContactsAction,
   createCrmBoardInterestAction,
   createCrmContactFromProfileAction,
   createCrmExternalContactAction,
@@ -39,11 +46,25 @@ import {
   crmInterestStatusBadgeClass,
   crmPriorityBadgeClass,
   crmStatusBadgeClass,
+  crmTagDotClass,
   formatCurrency,
 } from "@/components/features/admin/crm/crm-labels"
+import { CrmAnalytics } from "@/components/features/admin/crm/crm-analytics"
+import { CrmBoardView } from "@/components/features/admin/crm/crm-board-view"
+import { CrmBulkBar } from "@/components/features/admin/crm/crm-bulk-bar"
+import {
+  CRM_DEFAULT_FILTERS,
+  CRM_SEGMENTS,
+  activeSegmentId,
+  type CrmFilterState,
+} from "@/components/features/admin/crm/crm-segments"
+import { downloadContactsCsv } from "@/components/features/admin/crm/crm-export"
+import { CrmTagChips, CrmTagEditor } from "@/components/features/admin/crm/crm-tag-editor"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
@@ -101,18 +122,23 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   CalendarClock,
   Check,
   ChevronsUpDown,
+  Columns3,
+  Download,
   ExternalLink,
   Flame,
+  LayoutGrid,
   Loader2,
   Mail,
   MessageSquarePlus,
   Phone,
   Plus,
   Search,
-  Sparkles,
   Trash2,
   UserPlus,
   Users,
@@ -144,6 +170,13 @@ type CatalogModelHit = {
   id: string
   name: string
   brandName: string | null
+}
+
+type BrandSearchHit = {
+  id: string
+  name: string
+  slug: string | null
+  logo_url: string | null
 }
 
 function initials(name: string): string {
@@ -191,16 +224,101 @@ function StatCard({
   )
 }
 
+type CrmSortKey = "updated" | "name" | "status" | "priority" | "last_contacted" | "next_follow_up"
+type CrmSortState = { key: CrmSortKey; dir: "asc" | "desc" }
+
+const STATUS_ORDER: Record<CrmContactStatus, number> = {
+  lead: 0,
+  prospect: 1,
+  active: 2,
+  customer: 3,
+  inactive: 4,
+}
+const PRIORITY_ORDER: Record<CrmContactPriority, number> = { low: 0, medium: 1, high: 2 }
+
+function timeValue(value: string | null): number {
+  if (!value) return 0
+  const t = new Date(value).getTime()
+  return Number.isFinite(t) ? t : 0
+}
+
+function sortContacts(rows: CrmContactWithProfile[], sort: CrmSortState): CrmContactWithProfile[] {
+  const sorted = [...rows].sort((a, b) => {
+    let cmp = 0
+    switch (sort.key) {
+      case "name":
+        cmp = crmContactDisplayName(a).localeCompare(crmContactDisplayName(b))
+        break
+      case "status":
+        cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+        break
+      case "priority":
+        cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+        break
+      case "last_contacted":
+        cmp = timeValue(a.last_contacted_at) - timeValue(b.last_contacted_at)
+        break
+      case "next_follow_up":
+        cmp = timeValue(a.next_follow_up_at) - timeValue(b.next_follow_up_at)
+        break
+      default:
+        cmp = timeValue(a.updated_at) - timeValue(b.updated_at)
+    }
+    return sort.dir === "asc" ? cmp : -cmp
+  })
+  return sorted
+}
+
+function SortHeader({
+  label,
+  columnKey,
+  sort,
+  onSort,
+  className,
+}: {
+  label: string
+  columnKey: CrmSortKey
+  sort: CrmSortState
+  onSort: (key: CrmSortKey) => void
+  className?: string
+}) {
+  const active = sort.key === columnKey
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(columnKey)}
+        className="inline-flex items-center gap-1 font-medium transition-colors hover:text-foreground"
+      >
+        {label}
+        {active ? (
+          sort.dir === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+        )}
+      </button>
+    </TableHead>
+  )
+}
+
 export function CrmAdminClient() {
   const supabase = useMemo(() => createClient(), [])
   const [loading, setLoading] = useState(true)
   const [contacts, setContacts] = useState<CrmContactWithProfile[]>([])
   const [stats, setStats] = useState<CrmStats | null>(null)
+  const [staff, setStaff] = useState<CrmStaffMember[]>([])
+  const [tags, setTags] = useState<CrmTagRow[]>([])
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<CrmContactStatus | "all">("all")
-  const [priorityFilter, setPriorityFilter] = useState<CrmContactPriority | "all">("all")
-  const [sourceFilter, setSourceFilter] = useState<CrmContactSource | "all">("all")
-  const [followUpOnly, setFollowUpOnly] = useState(false)
+  const [filters, setFilters] = useState<CrmFilterState>(CRM_DEFAULT_FILTERS)
+  const [view, setView] = useState<"table" | "board">("table")
+  const [sort, setSort] = useState<CrmSortState>({ key: "updated", dir: "desc" })
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [addContactOpen, setAddContactOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -210,36 +328,111 @@ export function CrmAdminClient() {
     [contacts, selectedContactId],
   )
 
-  const loadContacts = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [rows, statRows] = await Promise.all([
-        listCrmContacts(supabase, {
-          search,
-          status: statusFilter,
-          priority: priorityFilter,
-          source: sourceFilter,
-        }),
-        getCrmStats(supabase),
-      ])
-      setContacts(rows)
-      setStats(statRows)
-    } catch (err) {
-      if (isAbortError(err)) return
-      console.error("CrmAdminClient.loadContacts:", err)
-    } finally {
-      setLoading(false)
-    }
-  }, [supabase, search, statusFilter, priorityFilter, sourceFilter, followUpOnly])
+  useEffect(() => {
+    const saved = window.localStorage.getItem("crm:view")
+    if (saved === "board" || saved === "table") setView(saved)
+  }, [])
+
+  const changeView = useCallback((next: "table" | "board") => {
+    setView(next)
+    window.localStorage.setItem("crm:view", next)
+  }, [])
+
+  const updateFilter = useCallback((patch: Partial<CrmFilterState>) => {
+    setFilters((prev) => ({ ...prev, ...patch }))
+  }, [])
+
+  const loadContacts = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!opts?.silent) setLoading(true)
+      try {
+        const [rows, statRows] = await Promise.all([
+          listCrmContacts(supabase, {
+            search,
+            status: filters.status,
+            priority: filters.priority,
+            source: filters.source,
+            assignedTo: filters.assignedTo,
+          }),
+          getCrmStats(supabase),
+        ])
+        setContacts(rows)
+        setStats(statRows)
+      } catch (err) {
+        if (isAbortError(err)) return
+        console.error("CrmAdminClient.loadContacts:", err)
+      } finally {
+        if (!opts?.silent) setLoading(false)
+      }
+    },
+    [supabase, search, filters.status, filters.priority, filters.source, filters.assignedTo],
+  )
 
   useEffect(() => {
     void loadContacts()
   }, [loadContacts])
 
+  const loadMeta = useCallback(async () => {
+    try {
+      const [staffRows, tagRows] = await Promise.all([listCrmStaff(supabase), listCrmTags(supabase)])
+      setStaff(staffRows)
+      setTags(tagRows)
+    } catch (err) {
+      if (isAbortError(err)) return
+      console.error("CrmAdminClient.loadMeta:", err)
+    }
+  }, [supabase])
+
+  useEffect(() => {
+    void loadMeta()
+  }, [loadMeta])
+
   const filteredContacts = useMemo(() => {
-    if (!followUpOnly) return contacts
-    return contacts.filter((c) => contactNeedsFollowUp(c))
-  }, [contacts, followUpOnly])
+    let rows = contacts
+    if (filters.followUpOnly) rows = rows.filter((c) => contactNeedsFollowUp(c))
+    if (filters.createdWithinDays != null) {
+      const cutoff = Date.now() - filters.createdWithinDays * 86_400_000
+      rows = rows.filter((c) => timeValue(c.created_at) >= cutoff)
+    }
+    if (filters.tagId != null) {
+      rows = rows.filter((c) => c.tags.some((t) => t.id === filters.tagId))
+    }
+    return sortContacts(rows, sort)
+  }, [contacts, filters.followUpOnly, filters.createdWithinDays, filters.tagId, sort])
+
+  const visibleIds = useMemo(() => filteredContacts.map((c) => c.id), [filteredContacts])
+  const selectedVisibleCount = useMemo(
+    () => visibleIds.filter((id) => selectedIds.has(id)).length,
+    [visibleIds, selectedIds],
+  )
+  const allVisibleSelected = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (visibleIds.every((id) => next.has(id))) {
+        visibleIds.forEach((id) => next.delete(id))
+      } else {
+        visibleIds.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }, [visibleIds])
+
+  const toggleSelectOne = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const handleSort = useCallback((key: CrmSortKey) => {
+    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }))
+  }, [])
 
   const refreshAfterMutation = useCallback(() => {
     startTransition(() => {
@@ -247,25 +440,125 @@ export function CrmAdminClient() {
     })
   }, [loadContacts])
 
+  const moveContacts = useCallback(
+    async (contactIds: string[], status: CrmContactStatus) => {
+      if (contactIds.length === 0) return
+      const idSet = new Set(contactIds)
+      setContacts((prev) => prev.map((c) => (idSet.has(c.id) ? { ...c, status } : c)))
+      if (contactIds.length > 1) clearSelection()
+      try {
+        const result =
+          contactIds.length === 1
+            ? await updateCrmContactAction({ contactId: contactIds[0], status })
+            : await bulkUpdateCrmContactsAction({ contactIds, status })
+        if ("error" in result) {
+          toast.error(result.error)
+          void loadContacts({ silent: true })
+          return
+        }
+        void loadContacts({ silent: true })
+      } catch (err) {
+        if (isAbortError(err)) return
+        console.error("CrmAdminClient.moveContacts:", err)
+        toast.error("Could not move contact")
+        void loadContacts({ silent: true })
+      }
+    },
+    [loadContacts, clearSelection],
+  )
+
+  const runBulkUpdate = useCallback(
+    async (patch: { status?: CrmContactStatus; priority?: CrmContactPriority; markContacted?: boolean }) => {
+      const ids = Array.from(selectedIds)
+      if (ids.length === 0) return
+      setBulkBusy(true)
+      try {
+        const result = await bulkUpdateCrmContactsAction({ contactIds: ids, ...patch })
+        if ("error" in result) {
+          toast.error(result.error)
+          return
+        }
+        toast.success(`${ids.length} contact${ids.length === 1 ? "" : "s"} updated`)
+        clearSelection()
+        await loadContacts({ silent: true })
+      } catch (err) {
+        if (isAbortError(err)) return
+        console.error("CrmAdminClient.runBulkUpdate:", err)
+        toast.error("Bulk update failed")
+      } finally {
+        setBulkBusy(false)
+      }
+    },
+    [selectedIds, clearSelection, loadContacts],
+  )
+
+  const handleBulkDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    try {
+      const result = await bulkDeleteCrmContactsAction({ contactIds: ids })
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(`${ids.length} contact${ids.length === 1 ? "" : "s"} deleted`)
+      clearSelection()
+      setBulkDeleteOpen(false)
+      await loadContacts({ silent: true })
+    } catch (err) {
+      if (isAbortError(err)) return
+      console.error("CrmAdminClient.handleBulkDelete:", err)
+      toast.error("Bulk delete failed")
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [selectedIds, clearSelection, loadContacts])
+
+  const currentSegment = activeSegmentId(filters)
+  const hasContacts = contacts.length > 0
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-gradient-to-br from-teal-500 to-sky-600 p-2 text-white shadow-sm">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">CRM</h1>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight">CRM</h1>
           <p className="text-muted-foreground max-w-2xl">
             Track surfboard shoppers, log touchpoints, and manage board interests — from Reswell profiles or
             external leads.
           </p>
         </div>
-        <Button onClick={() => setAddContactOpen(true)} className="shrink-0">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add contact
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <ToggleGroup
+            type="single"
+            value={view}
+            onValueChange={(v) => {
+              if (v === "table" || v === "board") changeView(v)
+            }}
+            variant="outline"
+            size="sm"
+            className="gap-0 rounded-md border"
+          >
+            <ToggleGroupItem value="table" aria-label="Table view" className="rounded-r-none border-0">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="board" aria-label="Board view" className="rounded-l-none border-0">
+              <Columns3 className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <Button
+            variant="outline"
+            onClick={() => downloadContactsCsv(filteredContacts)}
+            disabled={filteredContacts.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <Button onClick={() => setAddContactOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add contact
+          </Button>
+        </div>
       </div>
 
       {stats ? (
@@ -301,6 +594,34 @@ export function CrmAdminClient() {
         </div>
       ) : null}
 
+      {stats ? <CrmAnalytics stats={stats} /> : null}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {CRM_SEGMENTS.map((segment) => {
+          const Icon = segment.icon
+          const active = currentSegment === segment.id
+          return (
+            <button
+              key={segment.id}
+              type="button"
+              onClick={() => {
+                setFilters(segment.filters)
+                clearSelection()
+              }}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                active
+                  ? "border-teal-500 bg-teal-500 text-white shadow-sm"
+                  : "border-border bg-background text-muted-foreground hover:bg-muted",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {segment.label}
+            </button>
+          )
+        })}
+      </div>
+
       <Card className="border shadow-sm">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">Pipeline</CardTitle>
@@ -318,7 +639,10 @@ export function CrmAdminClient() {
               />
             </div>
             <div className="flex flex-wrap gap-2">
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as CrmContactStatus | "all")}>
+              <Select
+                value={filters.status}
+                onValueChange={(v) => updateFilter({ status: v as CrmContactStatus | "all" })}
+              >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -332,8 +656,8 @@ export function CrmAdminClient() {
                 </SelectContent>
               </Select>
               <Select
-                value={priorityFilter}
-                onValueChange={(v) => setPriorityFilter(v as CrmContactPriority | "all")}
+                value={filters.priority}
+                onValueChange={(v) => updateFilter({ priority: v as CrmContactPriority | "all" })}
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Priority" />
@@ -347,7 +671,10 @@ export function CrmAdminClient() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as CrmContactSource | "all")}>
+              <Select
+                value={filters.source}
+                onValueChange={(v) => updateFilter({ source: v as CrmContactSource | "all" })}
+              >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Source" />
                 </SelectTrigger>
@@ -360,8 +687,50 @@ export function CrmAdminClient() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select
+                value={filters.assignedTo}
+                onValueChange={(v) => updateFilter({ assignedTo: v as CrmFilterState["assignedTo"] })}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Owner" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All owners</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {staff.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.display_name ?? "Staff"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {tags.length > 0 ? (
+                <Select
+                  value={filters.tagId ?? "all"}
+                  onValueChange={(v) => updateFilter({ tagId: v === "all" ? null : v })}
+                >
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All tags</SelectItem>
+                    {tags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className={cn("h-2 w-2 rounded-full", crmTagDotClass(tag.color))} />
+                          {tag.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
               <div className="flex items-center gap-2 rounded-md border px-3 py-2">
-                <Switch id="follow-up-only" checked={followUpOnly} onCheckedChange={setFollowUpOnly} />
+                <Switch
+                  id="follow-up-only"
+                  checked={filters.followUpOnly}
+                  onCheckedChange={(checked) => updateFilter({ followUpOnly: checked })}
+                />
                 <Label htmlFor="follow-up-only" className="text-sm font-normal whitespace-nowrap cursor-pointer">
                   Follow-up due
                 </Label>
@@ -369,12 +738,24 @@ export function CrmAdminClient() {
             </div>
           </div>
 
+          {selectedIds.size > 0 ? (
+            <CrmBulkBar
+              count={selectedIds.size}
+              isPending={bulkBusy}
+              onClear={clearSelection}
+              onSetStatus={(status) => void runBulkUpdate({ status })}
+              onSetPriority={(priority) => void runBulkUpdate({ priority })}
+              onMarkContacted={() => void runBulkUpdate({ markContacted: true })}
+              onDelete={() => setBulkDeleteOpen(true)}
+            />
+          ) : null}
+
           {loading ? (
             <div className="flex flex-col items-center justify-center gap-2 py-16 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin" />
               <p className="text-sm">Loading contacts…</p>
             </div>
-          ) : filteredContacts.length === 0 ? (
+          ) : !hasContacts ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-16 text-center">
               <Users className="h-10 w-10 text-muted-foreground/60" />
               <div>
@@ -388,17 +769,47 @@ export function CrmAdminClient() {
                 Add your first contact
               </Button>
             </div>
+          ) : view === "board" ? (
+            <CrmBoardView
+              contacts={filteredContacts}
+              selectedIds={selectedIds}
+              onMove={moveContacts}
+              onSelect={setSelectedContactId}
+              onToggleSelect={toggleSelectOne}
+            />
+          ) : filteredContacts.length === 0 ? (
+            <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
+              No contacts match your filters.
+            </div>
           ) : (
             <div className="rounded-md border overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead>Contact</TableHead>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allVisibleSelected}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
+                    <SortHeader label="Contact" columnKey="name" sort={sort} onSort={handleSort} />
                     <TableHead>Source</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Last contacted</TableHead>
-                    <TableHead>Next follow-up</TableHead>
+                    <SortHeader label="Status" columnKey="status" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Priority" columnKey="priority" sort={sort} onSort={handleSort} />
+                    <TableHead>Owner</TableHead>
+                    <SortHeader
+                      label="Last contacted"
+                      columnKey="last_contacted"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortHeader
+                      label="Next follow-up"
+                      columnKey="next_follow_up"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -406,12 +817,21 @@ export function CrmAdminClient() {
                     const name = crmContactDisplayName(contact)
                     const avatarUrl = contact.profile?.avatar_url
                     const needsFollowUp = contactNeedsFollowUp(contact)
+                    const isSelected = selectedIds.has(contact.id)
                     return (
                       <TableRow
                         key={contact.id}
+                        data-state={isSelected ? "selected" : undefined}
                         className="cursor-pointer"
                         onClick={() => setSelectedContactId(contact.id)}
                       >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelectOne(contact.id)}
+                            aria-label={`Select ${name}`}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
@@ -423,6 +843,9 @@ export function CrmAdminClient() {
                               <p className="text-xs text-muted-foreground truncate">
                                 {contact.email ?? contact.profile?.email ?? "No email"}
                               </p>
+                              {contact.tags.length > 0 ? (
+                                <CrmTagChips tags={contact.tags} max={3} className="mt-1" />
+                              ) : null}
                             </div>
                             {needsFollowUp ? (
                               <Badge variant="outline" className="ml-auto shrink-0 border-amber-300 text-amber-700">
@@ -453,6 +876,25 @@ export function CrmAdminClient() {
                           >
                             {CRM_PRIORITY_LABEL[contact.priority]}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          {contact.assignee ? (
+                            <span className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                {contact.assignee.avatar_url ? (
+                                  <AvatarImage src={contact.assignee.avatar_url} alt="" />
+                                ) : null}
+                                <AvatarFallback className="text-[9px]">
+                                  {initials(contact.assignee.display_name ?? "?")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+                                {contact.assignee.display_name ?? "Staff"}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {contact.last_contacted_at
@@ -492,9 +934,38 @@ export function CrmAdminClient() {
           if (!open) setSelectedContactId(null)
         }}
         supabase={supabase}
+        staff={staff}
+        allTags={tags}
+        onTagsChanged={() => void loadMeta()}
         onMutated={refreshAfterMutation}
         isPending={isPending}
       />
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} contact{selectedIds.size === 1 ? "" : "s"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the selected contacts and all their board interests and activity history. This cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault()
+                void handleBulkDelete()
+              }}
+              disabled={bulkBusy}
+            >
+              {bulkBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -720,6 +1191,9 @@ function ContactDetailSheet({
   open,
   onOpenChange,
   supabase,
+  staff,
+  allTags,
+  onTagsChanged,
   onMutated,
   isPending,
 }: {
@@ -727,6 +1201,9 @@ function ContactDetailSheet({
   open: boolean
   onOpenChange: (open: boolean) => void
   supabase: ReturnType<typeof createClient>
+  staff: CrmStaffMember[]
+  allTags: CrmTagRow[]
+  onTagsChanged: () => void
   onMutated: () => void
   isPending: boolean
 }) {
@@ -737,6 +1214,7 @@ function ContactDetailSheet({
   const [logInteractionOpen, setLogInteractionOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [assigning, setAssigning] = useState(false)
 
   const [editStatus, setEditStatus] = useState<CrmContactStatus>("lead")
   const [editPriority, setEditPriority] = useState<CrmContactPriority>("medium")
@@ -835,6 +1313,28 @@ function ContactDetailSheet({
       if (isAbortError(err)) return
       console.error("ContactDetailSheet.handleDelete:", err)
       toast.error("Could not delete contact")
+    }
+  }
+
+  async function handleAssign(value: string) {
+    setAssigning(true)
+    try {
+      const result = await assignCrmContactAction({
+        contactId: contact!.id,
+        assignedTo: value === "unassigned" ? null : value,
+      })
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      toast.success("Owner updated")
+      onMutated()
+    } catch (err) {
+      if (isAbortError(err)) return
+      console.error("ContactDetailSheet.handleAssign:", err)
+      toast.error("Could not assign owner")
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -945,13 +1445,46 @@ function ContactDetailSheet({
                 </div>
               </div>
 
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="next-follow-up">Next follow-up</Label>
+                  <Input
+                    id="next-follow-up"
+                    type="datetime-local"
+                    value={editNextFollowUp}
+                    onChange={(e) => setEditNextFollowUp(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Owner</Label>
+                  <Select
+                    value={contact.assigned_to ?? "unassigned"}
+                    onValueChange={(v) => void handleAssign(v)}
+                    disabled={assigning}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {staff.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.display_name ?? "Staff"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="next-follow-up">Next follow-up</Label>
-                <Input
-                  id="next-follow-up"
-                  type="datetime-local"
-                  value={editNextFollowUp}
-                  onChange={(e) => setEditNextFollowUp(e.target.value)}
+                <Label>Tags</Label>
+                <CrmTagEditor
+                  contactId={contact.id}
+                  allTags={allTags}
+                  contactTags={contact.tags}
+                  onMutated={onMutated}
+                  onTagsChanged={onTagsChanged}
                 />
               </div>
 
@@ -1180,6 +1713,16 @@ function BoardInterestCard({
                 <ExternalLink className="h-3 w-3" />
               </Link>
             ) : null}
+            {interest.interest_type === "catalog_brand" && interest.brand_catalog?.slug ? (
+              <Link
+                href={`/brands/${interest.brand_catalog.slug}`}
+                target="_blank"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                View brand
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            ) : null}
           </div>
           <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground" onClick={() => void handleDelete()}>
             <Trash2 className="h-4 w-4" />
@@ -1218,7 +1761,9 @@ function AddBoardInterestDialog({
   supabase: ReturnType<typeof createClient>
   onSuccess: () => void
 }) {
-  const [interestType, setInterestType] = useState<"listing" | "catalog_model" | "custom">("custom")
+  const [interestType, setInterestType] = useState<
+    "listing" | "catalog_model" | "catalog_brand" | "custom"
+  >("custom")
   const [listingQuery, setListingQuery] = useState("")
   const [listingHits, setListingHits] = useState<ListingSearchHit[]>([])
   const [selectedListing, setSelectedListing] = useState<ListingSearchHit | null>(null)
@@ -1228,6 +1773,11 @@ function AddBoardInterestDialog({
   const [modelHits, setModelHits] = useState<CatalogModelHit[]>([])
   const [selectedModel, setSelectedModel] = useState<CatalogModelHit | null>(null)
   const [modelPopoverOpen, setModelPopoverOpen] = useState(false)
+
+  const [brandQuery, setBrandQuery] = useState("")
+  const [brandHits, setBrandHits] = useState<BrandSearchHit[]>([])
+  const [selectedBrandHit, setSelectedBrandHit] = useState<BrandSearchHit | null>(null)
+  const [brandPopoverOpen, setBrandPopoverOpen] = useState(false)
 
   const [customDescription, setCustomDescription] = useState("")
   const [brand, setBrand] = useState("")
@@ -1243,6 +1793,8 @@ function AddBoardInterestDialog({
       setInterestType("custom")
       setSelectedListing(null)
       setSelectedModel(null)
+      setSelectedBrandHit(null)
+      setBrandQuery("")
       setCustomDescription("")
       setBrand("")
       setModel("")
@@ -1315,6 +1867,31 @@ function AddBoardInterestDialog({
     }
   }, [interestType, modelQuery, supabase])
 
+  useEffect(() => {
+    if (interestType !== "catalog_brand") {
+      setBrandHits([])
+      return
+    }
+    let cancelled = false
+    const q = brandQuery.trim().replace(/[%_]/g, "")
+    const run = async () => {
+      try {
+        let request = supabase.from("brands").select("id, name, slug, logo_url").order("name").limit(20)
+        if (q.length >= 1) request = request.ilike("name", `%${q}%`)
+        const { data } = await request
+        if (!cancelled) setBrandHits((data ?? []) as BrandSearchHit[])
+      } catch (err) {
+        if (cancelled || isAbortError(err)) return
+        console.error("AddBoardInterestDialog brand search:", err)
+        setBrandHits([])
+      }
+    }
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [interestType, brandQuery, supabase])
+
   async function handleSubmit() {
     setSubmitting(true)
     try {
@@ -1323,6 +1900,7 @@ function AddBoardInterestDialog({
         interestType,
         listingId: selectedListing?.id,
         brandModelId: selectedModel?.id,
+        brandId: selectedBrandHit?.id,
         customDescription: customDescription || undefined,
         brand: brand || undefined,
         model: model || undefined,
@@ -1351,10 +1929,12 @@ function AddBoardInterestDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add board interest</DialogTitle>
-          <DialogDescription>Track a specific listing, catalog model, or free-form board request.</DialogDescription>
+          <DialogDescription>
+            Track a specific listing, catalog brand, catalog model, or free-form board request.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="space-y-2">
             <Label>Type</Label>
             <Select value={interestType} onValueChange={(v) => setInterestType(v as typeof interestType)}>
@@ -1364,6 +1944,7 @@ function AddBoardInterestDialog({
               <SelectContent>
                 <SelectItem value="custom">Custom request</SelectItem>
                 <SelectItem value="listing">Marketplace listing</SelectItem>
+                <SelectItem value="catalog_brand">Catalog brand</SelectItem>
                 <SelectItem value="catalog_model">Catalog model</SelectItem>
               </SelectContent>
             </Select>
@@ -1372,17 +1953,17 @@ function AddBoardInterestDialog({
           {interestType === "listing" ? (
             <Popover open={listingPopoverOpen} onOpenChange={setListingPopoverOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-between font-normal">
+                <Button variant="outline" className="w-full min-w-0 justify-between font-normal">
                   {selectedListing ? (
-                    <span className="truncate">
+                    <span className="min-w-0 truncate">
                       {[selectedListing.brand, selectedListing.model, selectedListing.dimensions]
                         .filter(Boolean)
                         .join(" · ") || selectedListing.title}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">Search listings…</span>
+                    <span className="truncate text-muted-foreground">Search listings…</span>
                   )}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
@@ -1414,18 +1995,54 @@ function AddBoardInterestDialog({
             </Popover>
           ) : null}
 
+          {interestType === "catalog_brand" ? (
+            <Popover open={brandPopoverOpen} onOpenChange={setBrandPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full min-w-0 justify-between font-normal">
+                  {selectedBrandHit ? (
+                    <span className="min-w-0 truncate">{selectedBrandHit.name}</span>
+                  ) : (
+                    <span className="truncate text-muted-foreground">Search brands…</span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                <Command shouldFilter={false}>
+                  <CommandInput value={brandQuery} onValueChange={setBrandQuery} placeholder="Brand name…" />
+                  <CommandList>
+                    <CommandEmpty>No brands</CommandEmpty>
+                    <CommandGroup>
+                      {brandHits.map((hit) => (
+                        <CommandItem
+                          key={hit.id}
+                          onSelect={() => {
+                            setSelectedBrandHit(hit)
+                            setBrandPopoverOpen(false)
+                          }}
+                        >
+                          {hit.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          ) : null}
+
           {interestType === "catalog_model" ? (
             <Popover open={modelPopoverOpen} onOpenChange={setModelPopoverOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-between font-normal">
+                <Button variant="outline" className="w-full min-w-0 justify-between font-normal">
                   {selectedModel ? (
-                    <span className="truncate">
+                    <span className="min-w-0 truncate">
                       {[selectedModel.brandName, selectedModel.name].filter(Boolean).join(" ")}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">Search catalog models…</span>
+                    <span className="truncate text-muted-foreground">Search catalog models…</span>
                   )}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">

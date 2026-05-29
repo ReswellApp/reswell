@@ -154,6 +154,23 @@ export type PurchasedShipEngineLabelResult = {
   labelUrl: string | null
   trackingNumber: string
   trackingCarrier: string
+  costAmount: number | null
+  costCurrency: string | null
+}
+
+/** ShipEngine returns the carrier charge as shipment_cost { amount, currency }. */
+function pickLabelCost(label: Record<string, unknown>): {
+  amount: number | null
+  currency: string | null
+} {
+  const cost = asRecord(label.shipment_cost)
+  if (!cost) return { amount: null, currency: null }
+  const amount = typeof cost.amount === "number" ? cost.amount : Number(cost.amount)
+  const currency = typeof cost.currency === "string" ? cost.currency.toUpperCase() : null
+  return {
+    amount: Number.isFinite(amount) ? amount : null,
+    currency,
+  }
 }
 
 function pickLabelPdfUrl(label: Record<string, unknown>): string | null {
@@ -295,12 +312,16 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
     }
   }
 
+  const cost = pickLabelCost(label)
+
   return {
     ok: true,
     result: {
       labelUrl: pickLabelPdfUrl(label),
       trackingNumber,
       trackingCarrier: pickTrackingCarrierLabel(label),
+      costAmount: cost.amount,
+      costCurrency: cost.currency,
     },
   }
 }

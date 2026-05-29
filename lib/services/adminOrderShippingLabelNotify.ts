@@ -27,6 +27,8 @@ export async function attachAdminShippingLabelToOrder(params: {
   trackingNumber: string | null
   trackingCarrier: string | null
   shipengineRateId?: string | null
+  labelCostUsd?: number | null
+  labelCostCurrency?: string | null
 }): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const u = params.order
   const track = params.trackingNumber?.trim() || null
@@ -41,6 +43,8 @@ export async function attachAdminShippingLabelToOrder(params: {
     tracking_number: track,
     tracking_carrier: car,
     shipengine_rate_id: params.shipengineRateId ?? null,
+    label_cost_usd: params.labelCostUsd ?? null,
+    label_cost_currency: params.labelCostCurrency ?? null,
   })
   if (ins.error) {
     console.error("[attachAdminShippingLabelToOrder] insert label row:", ins.error)

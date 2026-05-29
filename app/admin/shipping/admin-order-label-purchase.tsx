@@ -250,18 +250,18 @@ export function AdminOrderLabelPurchase() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-border/50 bg-muted/10 p-5 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="space-y-2">
-          <Label htmlFor="admin-order-lookup" className="text-[15px] font-medium text-foreground">
+          <Label htmlFor="admin-order-lookup" className="text-sm font-medium text-foreground">
             Order
           </Label>
-          <p className="text-[14px] leading-relaxed text-muted-foreground">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             Paste an order URL from <span className="text-foreground/90">/admin/orders/…</span>, paste the order
             UUID, or search by order number. Only <span className="text-foreground/90">shipping</span> orders are
             listed.
           </p>
           {orderId ? (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/50 bg-background px-4 py-3">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
               <div className="min-w-0">
                 {overview ? (
                   <>
@@ -283,7 +283,7 @@ export function AdminOrderLabelPurchase() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="rounded-full shrink-0 gap-1.5"
+                className="shrink-0 gap-1.5 rounded-xl"
                 onClick={() => clearOrder()}
               >
                 <X className="h-3.5 w-3.5" />
@@ -296,7 +296,7 @@ export function AdminOrderLabelPurchase() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="admin-order-lookup"
-                  className="h-11 rounded-2xl border-border/60 pl-9"
+                  className="h-11 rounded-xl pl-9"
                   placeholder="Search order #, or paste URL / UUID…"
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
@@ -320,7 +320,7 @@ export function AdminOrderLabelPurchase() {
           )}
           {!orderId && searchHits.length > 0 ? (
             <div
-              className="mt-2 max-h-56 overflow-auto rounded-2xl border border-border/50 bg-background shadow-sm"
+              className="mt-2 max-h-56 overflow-auto rounded-xl border border-border bg-background shadow-sm"
               role="listbox"
             >
               {searchHits.map((row) => {
@@ -356,33 +356,35 @@ export function AdminOrderLabelPurchase() {
           Choose a shipping order to buy a label using checkout dimensions and the cheapest carrier on that lane.
         </p>
       ) : loading ? (
-        <Card className="rounded-3xl border-border/50">
+        <Card className="rounded-2xl border-border bg-card">
           <CardContent className="flex items-center gap-2 py-10 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
             Loading order…
           </CardContent>
         </Card>
       ) : !overview ? null : (
-        <Card className="rounded-3xl border-primary/25 shadow-[0_2px_32px_-18px_rgba(0,0,0,0.12)]">
+        <Card className="rounded-2xl border-border bg-card">
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Truck className="h-5 w-5" />
-                  Buy label (checkout lane)
-                </CardTitle>
-                <CardDescription className="mt-1.5">
-                  #{overview.order.displayOrderNum} · {overview.order.listingTitle}
-                </CardDescription>
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                  <Truck className="h-4 w-4" aria-hidden />
+                </span>
+                <div className="space-y-1">
+                  <CardTitle className="text-lg">Buy label (checkout lane)</CardTitle>
+                  <CardDescription>
+                    #{overview.order.displayOrderNum} · {overview.order.listingTitle}
+                  </CardDescription>
+                </div>
               </div>
-              <Button variant="outline" size="sm" className="rounded-full shrink-0" asChild>
+              <Button variant="outline" size="sm" className="shrink-0 rounded-xl" asChild>
                 <Link href={`/admin/orders/${overview.order.id}`}>Admin order</Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {!overview.eligible && (
-              <Alert className="rounded-2xl">
+              <Alert className="rounded-xl">
                 <AlertTitle>Not available</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc pl-4 space-y-1">
@@ -395,7 +397,7 @@ export function AdminOrderLabelPurchase() {
             )}
 
             {overview.eligible && !overview.shipEngineConfigured && (
-              <Alert className="rounded-2xl">
+              <Alert className="rounded-xl">
                 <AlertTitle>ShipEngine not configured</AlertTitle>
                 <AlertDescription>
                   Set <code className="text-xs">SHIPENGINE_API_KEY</code> on the server.
@@ -405,7 +407,7 @@ export function AdminOrderLabelPurchase() {
 
             {overview.eligible && overview.shipEngineConfigured && (
               <>
-                <div className="rounded-2xl border border-border/50 bg-muted/30 px-4 py-3 text-sm space-y-2">
+                <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm space-y-2">
                   <p>
                     <span className="text-muted-foreground">Buyer paid shipping:</span>{" "}
                     <span className="font-medium tabular-nums text-foreground">
@@ -435,7 +437,7 @@ export function AdminOrderLabelPurchase() {
 
                 <Button
                   type="button"
-                  className="rounded-full h-11 px-6"
+                  className="h-11 px-6"
                   onClick={() => void buyCheckoutLane()}
                   disabled={purchaseBusy || !overview.autoLabelParcel.ok}
                 >
@@ -481,7 +483,7 @@ export function AdminOrderLabelPurchase() {
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-stretch">
               <Button
                 type="button"
-                className="rounded-full flex-1 gap-2"
+                className="flex-1 gap-2 rounded-xl"
                 onClick={() => openLabelPdf(labelReady.labelUrl as string)}
               >
                 <ExternalLink className="h-4 w-4" />
@@ -490,7 +492,7 @@ export function AdminOrderLabelPurchase() {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full flex-1 gap-2"
+                className="flex-1 gap-2 rounded-xl"
                 onClick={() => void downloadLabelPdf(labelReady.labelUrl as string, labelReady.orderDisplayNum)}
               >
                 <Download className="h-4 w-4" />
@@ -507,7 +509,7 @@ export function AdminOrderLabelPurchase() {
             <Button
               type="button"
               variant="secondary"
-              className="rounded-full"
+              className="rounded-xl"
               onClick={() => {
                 setLabelReadyOpen(false)
                 setLabelReady(null)

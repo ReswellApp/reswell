@@ -3,7 +3,19 @@ import { z } from "zod"
 export const crmContactStatusSchema = z.enum(["lead", "prospect", "active", "customer", "inactive"])
 export const crmContactPrioritySchema = z.enum(["low", "medium", "high"])
 export const crmContactSourceSchema = z.enum(["profile", "external"])
-export const crmBoardInterestTypeSchema = z.enum(["listing", "catalog_model", "custom"])
+export const crmBoardInterestTypeSchema = z.enum(["listing", "catalog_model", "catalog_brand", "custom"])
+export const crmTagColorSchema = z.enum([
+  "slate",
+  "teal",
+  "sky",
+  "violet",
+  "amber",
+  "rose",
+  "emerald",
+  "indigo",
+  "orange",
+  "pink",
+])
 export const crmBoardInterestStatusSchema = z.enum([
   "interested",
   "contacted",
@@ -68,10 +80,50 @@ export const updateCrmContactSchema = z.object({
   priority: crmContactPrioritySchema.optional(),
   notes: z.union([z.string().trim().max(5000), z.null()]).optional(),
   nextFollowUpAt: z.union([z.string().datetime({ offset: true }), z.null()]).optional(),
+  assignedTo: z.union([z.string().uuid(), z.null()]).optional(),
+})
+
+export const assignCrmContactSchema = z.object({
+  contactId: z.string().uuid(),
+  assignedTo: z.union([z.string().uuid(), z.null()]),
+})
+
+export const createCrmTagSchema = z.object({
+  name: z.string().trim().min(1, "Tag name is required").max(40),
+  color: crmTagColorSchema.optional().default("slate"),
+})
+
+export const deleteCrmTagSchema = z.object({
+  tagId: z.string().uuid(),
+})
+
+export const addCrmContactTagSchema = z.object({
+  contactId: z.string().uuid(),
+  tagId: z.string().uuid(),
+})
+
+export const removeCrmContactTagSchema = z.object({
+  contactId: z.string().uuid(),
+  tagId: z.string().uuid(),
 })
 
 export const deleteCrmContactSchema = z.object({
   contactId: z.string().uuid(),
+})
+
+export const bulkUpdateCrmContactsSchema = z
+  .object({
+    contactIds: z.array(z.string().uuid()).min(1, "Select at least one contact").max(500),
+    status: crmContactStatusSchema.optional(),
+    priority: crmContactPrioritySchema.optional(),
+    markContacted: z.boolean().optional(),
+  })
+  .refine((data) => data.status != null || data.priority != null || data.markContacted === true, {
+    message: "Nothing to update",
+  })
+
+export const bulkDeleteCrmContactsSchema = z.object({
+  contactIds: z.array(z.string().uuid()).min(1, "Select at least one contact").max(500),
 })
 
 export const createCrmBoardInterestSchema = z
@@ -80,6 +132,7 @@ export const createCrmBoardInterestSchema = z
     interestType: crmBoardInterestTypeSchema,
     listingId: z.string().uuid().optional(),
     brandModelId: z.string().uuid().optional(),
+    brandId: z.string().uuid().optional(),
     customDescription: optionalText,
     brand: optionalText,
     model: optionalText,
@@ -95,6 +148,9 @@ export const createCrmBoardInterestSchema = z
     }
     if (data.interestType === "catalog_model" && !data.brandModelId) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Select a catalog model", path: ["brandModelId"] })
+    }
+    if (data.interestType === "catalog_brand" && !data.brandId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Select a brand", path: ["brandId"] })
     }
     if (data.interestType === "custom" && !data.customDescription?.trim()) {
       ctx.addIssue({

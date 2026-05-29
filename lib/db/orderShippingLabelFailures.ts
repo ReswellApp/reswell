@@ -139,6 +139,36 @@ export async function dismissOpenOrderShippingLabelFailure(
   return { ok: true }
 }
 
+/** Bulk-dismiss open failures for several orders at once. Returns how many rows were dismissed. */
+export async function dismissOpenOrderShippingLabelFailures(
+  supabase: SupabaseClient,
+  orderIds: string[],
+  dismissedBy: string,
+): Promise<{ ok: true; dismissed: number } | { ok: false; error: string }> {
+  const ids = [...new Set(orderIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) {
+    return { ok: false, error: "No orders provided" }
+  }
+
+  const { data, error } = await supabase
+    .from("order_shipping_label_failures")
+    .update({
+      status: "dismissed",
+      resolved_at: new Date().toISOString(),
+      resolved_by: dismissedBy,
+      updated_at: new Date().toISOString(),
+    })
+    .in("order_id", ids)
+    .eq("status", "open")
+    .select("id")
+
+  if (error) {
+    console.error("[dismissOpenOrderShippingLabelFailures]", error.message)
+    return { ok: false, error: "Could not dismiss failures" }
+  }
+  return { ok: true, dismissed: data?.length ?? 0 }
+}
+
 export async function countOpenOrderShippingLabelFailures(
   supabase: SupabaseClient,
 ): Promise<number> {
@@ -152,6 +182,76 @@ export async function countOpenOrderShippingLabelFailures(
     return 0
   }
   return count ?? 0
+}
+
+export const SHIPPING_LABEL_FAILURE_STAGES: OrderShippingLabelFailureStage[] = [
+  "shipengine_not_configured",
+  "incomplete_address",
+  "rate_quote",
+  "rate_id",
+  "label_purchase",
+  "attach_label",
+]
+
+export type ShippingLabelFailureStats = {
+  open: number
+  resolved: number
+  dismissed: number
+  openByStage: Record<OrderShippingLabelFailureStage, number>
+}
+
+async function countFailuresByStatus(
+  supabase: SupabaseClient,
+  status: OrderShippingLabelFailureStatus,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("order_shipping_label_failures")
+    .select("*", { count: "exact", head: true })
+    .eq("status", status)
+  if (error) {
+    console.error("[countFailuresByStatus]", status, error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
+/** Status + open-stage breakdown for the shipping analytics dashboard (count-only queries). */
+export async function dbGetShippingLabelFailureStats(
+  supabase: SupabaseClient,
+): Promise<{ data: ShippingLabelFailureStats; error: Error | null }> {
+  const openByStage = {
+    shipengine_not_configured: 0,
+    incomplete_address: 0,
+    rate_quote: 0,
+    rate_id: 0,
+    label_purchase: 0,
+    attach_label: 0,
+  } as Record<OrderShippingLabelFailureStage, number>
+
+  const [open, resolved, dismissed] = await Promise.all([
+    countFailuresByStatus(supabase, "open"),
+    countFailuresByStatus(supabase, "resolved"),
+    countFailuresByStatus(supabase, "dismissed"),
+  ])
+
+  const { data: openRows, error } = await supabase
+    .from("order_shipping_label_failures")
+    .select("failure_stage")
+    .eq("status", "open")
+    .limit(2000)
+
+  if (error) {
+    return { data: { open, resolved, dismissed, openByStage }, error: new Error(error.message) }
+  }
+
+  for (const row of openRows ?? []) {
+    const stage = (row as { failure_stage?: string }).failure_stage
+    if (stage && stage in openByStage) {
+      openByStage[stage as OrderShippingLabelFailureStage] += 1
+    }
+  }
+
+  return { data: { open, resolved, dismissed, openByStage }, error: null }
 }
 
 export async function listOpenOrderShippingLabelFailures(

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import {
+  bulkUpdateContactMessagesAdminService,
   ensureSupportTicketThreadAdminService,
   sendSupportTicketAdminReplyService,
   updateContactMessageAdminService,
@@ -9,6 +10,15 @@ import {
 
 export async function updateContactMessageAdminAction(raw: unknown) {
   const result = await updateContactMessageAdminService(raw)
+  if ("error" in result) {
+    return { error: result.error as string }
+  }
+  revalidatePath("/admin/contact-messages")
+  return { success: true as const }
+}
+
+export async function bulkUpdateContactMessagesAdminAction(raw: unknown) {
+  const result = await bulkUpdateContactMessagesAdminService(raw)
   if ("error" in result) {
     return { error: result.error as string }
   }

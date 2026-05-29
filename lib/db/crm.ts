@@ -3,9 +3,35 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 export type CrmContactStatus = "lead" | "prospect" | "active" | "customer" | "inactive"
 export type CrmContactPriority = "low" | "medium" | "high"
 export type CrmContactSource = "profile" | "external"
-export type CrmBoardInterestType = "listing" | "catalog_model" | "custom"
+export type CrmBoardInterestType = "listing" | "catalog_model" | "catalog_brand" | "custom"
 export type CrmBoardInterestStatus = "interested" | "contacted" | "matched" | "fulfilled" | "lost"
 export type CrmInteractionType = "call" | "email" | "text" | "in_person" | "note" | "other"
+export type CrmTagColor =
+  | "slate"
+  | "teal"
+  | "sky"
+  | "violet"
+  | "amber"
+  | "rose"
+  | "emerald"
+  | "indigo"
+  | "orange"
+  | "pink"
+
+export type CrmTagRow = {
+  id: string
+  name: string
+  color: CrmTagColor
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export type CrmStaffMember = {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+}
 
 export type CrmContactRow = {
   id: string
@@ -33,8 +59,16 @@ export type CrmContactProfileEmbed = {
   email: string | null
 }
 
+export type CrmContactOwnerEmbed = {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+}
+
 export type CrmContactWithProfile = CrmContactRow & {
   profile: CrmContactProfileEmbed | null
+  assignee: CrmContactOwnerEmbed | null
+  tags: CrmTagRow[]
 }
 
 export type CrmBoardInterestRow = {
@@ -43,6 +77,7 @@ export type CrmBoardInterestRow = {
   interest_type: CrmBoardInterestType
   listing_id: string | null
   brand_model_id: string | null
+  brand_id: string | null
   custom_description: string | null
   brand: string | null
   model: string | null
@@ -72,9 +107,17 @@ export type CrmBoardInterestCatalogEmbed = {
   brands: { name: string } | null
 }
 
+export type CrmBoardInterestBrandEmbed = {
+  id: string
+  name: string
+  slug: string | null
+  logo_url: string | null
+}
+
 export type CrmBoardInterestWithEmbeds = CrmBoardInterestRow & {
   listing: CrmBoardInterestListingEmbed | null
   brand_model: CrmBoardInterestCatalogEmbed | null
+  brand_catalog: CrmBoardInterestBrandEmbed | null
 }
 
 export type CrmInteractionRow = {
@@ -94,12 +137,14 @@ export type CrmInteractionWithAuthor = CrmInteractionRow & {
 export const CRM_CONTACT_SELECT =
   "id, profile_id, first_name, last_name, email, phone, source, status, priority, notes, last_contacted_at, next_follow_up_at, assigned_to, created_by, created_at, updated_at"
 
-export const CRM_CONTACT_WITH_PROFILE_SELECT = `${CRM_CONTACT_SELECT}, profile:profiles!crm_contacts_profile_id_fkey (display_name, avatar_url, seller_slug, email)`
+export const CRM_CONTACT_WITH_PROFILE_SELECT = `${CRM_CONTACT_SELECT}, profile:profiles!crm_contacts_profile_id_fkey (display_name, avatar_url, seller_slug, email), assignee:profiles!crm_contacts_assigned_to_fkey (id, display_name, avatar_url), tags:crm_contact_tags (tag:crm_tags (id, name, color, created_by, created_at, updated_at))`
 
 export const CRM_BOARD_INTEREST_SELECT =
-  "id, contact_id, interest_type, listing_id, brand_model_id, custom_description, brand, model, dimensions, budget_min, budget_max, status, notes, created_at, updated_at"
+  "id, contact_id, interest_type, listing_id, brand_model_id, brand_id, custom_description, brand, model, dimensions, budget_min, budget_max, status, notes, created_at, updated_at"
 
-export const CRM_BOARD_INTEREST_WITH_EMBEDS_SELECT = `${CRM_BOARD_INTEREST_SELECT}, listing:listings (id, title, brand, model, dimensions, price, slug, status), brand_model:brand_models (id, name, brands (name))`
+export const CRM_BOARD_INTEREST_WITH_EMBEDS_SELECT = `${CRM_BOARD_INTEREST_SELECT}, listing:listings (id, title, brand, model, dimensions, price, slug, status), brand_model:brand_models (id, name, brands (name)), brand_catalog:brands (id, name, slug, logo_url)`
+
+export const CRM_TAG_SELECT = "id, name, color, created_by, created_at, updated_at"
 
 export const CRM_INTERACTION_SELECT =
   "id, contact_id, interaction_type, subject, notes, created_by, created_at"
@@ -133,6 +178,17 @@ export function normalizeCrmContactRow(raw: Record<string, unknown>): CrmContact
   }
 }
 
+export function normalizeCrmTagRow(raw: Record<string, unknown>): CrmTagRow {
+  return {
+    id: String(raw.id),
+    name: String(raw.name ?? ""),
+    color: (raw.color as CrmTagColor) ?? "slate",
+    created_by: String(raw.created_by ?? ""),
+    created_at: String(raw.created_at ?? ""),
+    updated_at: String(raw.updated_at ?? raw.created_at ?? ""),
+  }
+}
+
 export function normalizeCrmContactWithProfile(raw: Record<string, unknown>): CrmContactWithProfile {
   const base = normalizeCrmContactRow(raw)
   const profileRaw = raw.profile
@@ -146,7 +202,32 @@ export function normalizeCrmContactWithProfile(raw: Record<string, unknown>): Cr
       email: p.email == null ? null : String(p.email),
     }
   }
-  return { ...base, profile }
+
+  const assigneeRaw = raw.assignee
+  let assignee: CrmContactOwnerEmbed | null = null
+  if (assigneeRaw && typeof assigneeRaw === "object" && !Array.isArray(assigneeRaw)) {
+    const a = assigneeRaw as Record<string, unknown>
+    assignee = {
+      id: String(a.id),
+      display_name: a.display_name == null ? null : String(a.display_name),
+      avatar_url: a.avatar_url == null ? null : String(a.avatar_url),
+    }
+  }
+
+  const tags: CrmTagRow[] = []
+  if (Array.isArray(raw.tags)) {
+    for (const link of raw.tags) {
+      if (link && typeof link === "object") {
+        const tagRaw = (link as Record<string, unknown>).tag
+        if (tagRaw && typeof tagRaw === "object" && !Array.isArray(tagRaw)) {
+          tags.push(normalizeCrmTagRow(tagRaw as Record<string, unknown>))
+        }
+      }
+    }
+  }
+  tags.sort((a, b) => a.name.localeCompare(b.name))
+
+  return { ...base, profile, assignee, tags }
 }
 
 export function normalizeCrmBoardInterestRow(raw: Record<string, unknown>): CrmBoardInterestRow {
@@ -156,6 +237,7 @@ export function normalizeCrmBoardInterestRow(raw: Record<string, unknown>): CrmB
     interest_type: raw.interest_type as CrmBoardInterestType,
     listing_id: raw.listing_id == null ? null : String(raw.listing_id),
     brand_model_id: raw.brand_model_id == null ? null : String(raw.brand_model_id),
+    brand_id: raw.brand_id == null ? null : String(raw.brand_id),
     custom_description:
       raw.custom_description == null || raw.custom_description === ""
         ? null
@@ -203,7 +285,17 @@ export function normalizeCrmBoardInterestWithEmbeds(
       brands,
     }
   }
-  return { ...base, listing, brand_model }
+  let brand_catalog: CrmBoardInterestBrandEmbed | null = null
+  if (raw.brand_catalog && typeof raw.brand_catalog === "object" && !Array.isArray(raw.brand_catalog)) {
+    const b = raw.brand_catalog as Record<string, unknown>
+    brand_catalog = {
+      id: String(b.id),
+      name: String(b.name ?? ""),
+      slug: b.slug == null ? null : String(b.slug),
+      logo_url: b.logo_url == null ? null : String(b.logo_url),
+    }
+  }
+  return { ...base, listing, brand_model, brand_catalog }
 }
 
 export function normalizeCrmInteractionRow(raw: Record<string, unknown>): CrmInteractionRow {
@@ -244,6 +336,9 @@ export function crmBoardInterestLabel(interest: CrmBoardInterestWithEmbeds): str
     const brand = interest.brand_model.brands?.name
     return [brand, interest.brand_model.name].filter(Boolean).join(" ")
   }
+  if (interest.interest_type === "catalog_brand" && interest.brand_catalog) {
+    return interest.brand_catalog.name || "Brand"
+  }
   return interest.custom_description ?? "Custom board interest"
 }
 
@@ -254,6 +349,7 @@ export async function listCrmContacts(
     status?: CrmContactStatus | "all"
     priority?: CrmContactPriority | "all"
     source?: CrmContactSource | "all"
+    assignedTo?: string | "all" | "unassigned"
   },
 ): Promise<CrmContactWithProfile[]> {
   let query = supabase
@@ -263,6 +359,13 @@ export async function listCrmContacts(
 
   if (args?.status && args.status !== "all") {
     query = query.eq("status", args.status)
+  }
+  if (args?.assignedTo && args.assignedTo !== "all") {
+    if (args.assignedTo === "unassigned") {
+      query = query.is("assigned_to", null)
+    } else {
+      query = query.eq("assigned_to", args.assignedTo)
+    }
   }
   if (args?.priority && args.priority !== "all") {
     query = query.eq("priority", args.priority)
@@ -380,6 +483,25 @@ export async function deleteCrmContactRow(
   return { error: error?.message ?? null }
 }
 
+export async function bulkUpdateCrmContactRows(
+  supabase: SupabaseClient,
+  ids: string[],
+  patch: Partial<Pick<CrmContactRow, "status" | "priority" | "last_contacted_at" | "next_follow_up_at">>,
+): Promise<{ error: string | null }> {
+  if (ids.length === 0) return { error: null }
+  const { error } = await supabase.from("crm_contacts").update(patch).in("id", ids)
+  return { error: error?.message ?? null }
+}
+
+export async function bulkDeleteCrmContactRows(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<{ error: string | null }> {
+  if (ids.length === 0) return { error: null }
+  const { error } = await supabase.from("crm_contacts").delete().in("id", ids)
+  return { error: error?.message ?? null }
+}
+
 export async function insertCrmBoardInterest(
   supabase: SupabaseClient,
   row: Omit<CrmBoardInterestRow, "id" | "created_at" | "updated_at">,
@@ -430,6 +552,76 @@ export async function insertCrmInteraction(
   return { data: normalizeCrmInteractionRow(data as Record<string, unknown>), error: null }
 }
 
+export async function listCrmTags(supabase: SupabaseClient): Promise<CrmTagRow[]> {
+  const { data, error } = await supabase.from("crm_tags").select(CRM_TAG_SELECT).order("name")
+  if (error) {
+    console.error("listCrmTags:", error.message)
+    return []
+  }
+  return (data ?? []).map((row) => normalizeCrmTagRow(row as Record<string, unknown>))
+}
+
+export async function insertCrmTag(
+  supabase: SupabaseClient,
+  row: { name: string; color: CrmTagColor; created_by: string },
+): Promise<{ data: CrmTagRow | null; error: string | null }> {
+  const { data, error } = await supabase.from("crm_tags").insert(row).select(CRM_TAG_SELECT).single()
+  if (error) return { data: null, error: error.message }
+  return { data: normalizeCrmTagRow(data as Record<string, unknown>), error: null }
+}
+
+export async function deleteCrmTagRow(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.from("crm_tags").delete().eq("id", id)
+  return { error: error?.message ?? null }
+}
+
+export async function addCrmContactTagRow(
+  supabase: SupabaseClient,
+  contactId: string,
+  tagId: string,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from("crm_contact_tags")
+    .upsert({ contact_id: contactId, tag_id: tagId }, { onConflict: "contact_id,tag_id", ignoreDuplicates: true })
+  return { error: error?.message ?? null }
+}
+
+export async function removeCrmContactTagRow(
+  supabase: SupabaseClient,
+  contactId: string,
+  tagId: string,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from("crm_contact_tags")
+    .delete()
+    .eq("contact_id", contactId)
+    .eq("tag_id", tagId)
+  return { error: error?.message ?? null }
+}
+
+export async function listCrmStaff(supabase: SupabaseClient): Promise<CrmStaffMember[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, avatar_url")
+    .or("is_admin.eq.true,is_employee.eq.true")
+    .order("display_name", { nullsFirst: false })
+  if (error) {
+    console.error("listCrmStaff:", error.message)
+    return []
+  }
+  return (data ?? []).map((row) => {
+    const r = row as Record<string, unknown>
+    return {
+      id: String(r.id),
+      display_name: r.display_name == null ? null : String(r.display_name),
+      avatar_url: r.avatar_url == null ? null : String(r.avatar_url),
+    }
+  })
+}
+
 export async function getCrmContactByProfileId(
   supabase: SupabaseClient,
   profileId: string,
@@ -449,16 +641,19 @@ export type CrmStats = {
   needsFollowUp: number
   highPriority: number
   activeInterests: number
+  pipelineValue: number
+  statusCounts: Record<CrmContactStatus, number>
+  sourceCounts: Record<CrmContactSource, number>
 }
 
 export async function getCrmStats(supabase: SupabaseClient): Promise<CrmStats> {
   const now = new Date().toISOString()
 
   const [contactsRes, interestsRes] = await Promise.all([
-    supabase.from("crm_contacts").select("id, priority, status, next_follow_up_at, last_contacted_at"),
+    supabase.from("crm_contacts").select("id, priority, status, source, next_follow_up_at, last_contacted_at"),
     supabase
       .from("crm_board_interests")
-      .select("id", { count: "exact", head: true })
+      .select("id, budget_min, budget_max")
       .in("status", ["interested", "contacted", "matched"]),
   ])
 
@@ -472,7 +667,36 @@ export async function getCrmStats(supabase: SupabaseClient): Promise<CrmStats> {
   const highPriority = contacts.filter(
     (c) => c.priority === "high" && c.status !== "inactive" && c.status !== "customer",
   ).length
-  const activeInterests = interestsRes.count ?? 0
 
-  return { totalContacts, needsFollowUp, highPriority, activeInterests }
+  const statusCounts: Record<CrmContactStatus, number> = {
+    lead: 0,
+    prospect: 0,
+    active: 0,
+    customer: 0,
+    inactive: 0,
+  }
+  const sourceCounts: Record<CrmContactSource, number> = { profile: 0, external: 0 }
+  for (const c of contacts) {
+    const status = (c.status as CrmContactStatus) ?? "lead"
+    if (status in statusCounts) statusCounts[status] += 1
+    const source = c.source === "profile" ? "profile" : "external"
+    sourceCounts[source] += 1
+  }
+
+  const interests = interestsRes.data ?? []
+  const activeInterests = interests.length
+  const pipelineValue = interests.reduce((sum, interest) => {
+    const value = parseNumber(interest.budget_max) ?? parseNumber(interest.budget_min) ?? 0
+    return sum + value
+  }, 0)
+
+  return {
+    totalContacts,
+    needsFollowUp,
+    highPriority,
+    activeInterests,
+    pipelineValue,
+    statusCounts,
+    sourceCounts,
+  }
 }
