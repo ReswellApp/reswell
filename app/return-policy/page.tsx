@@ -1,13 +1,10 @@
 import Link from "next/link"
 import { Undo2 } from "lucide-react"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata = pageSeoMetadata({
-  title: "Return Policy — Reswell",
-  description:
-    "United States return policy for Reswell: defective and non-defective returns, 7-day window, no exchanges, refund timing, labels, and eligibility.",
-  path: "/return-policy",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("return-policy")
+}
 
 export default function ReturnPolicyPage() {
   const lastUpdated = new Date().toLocaleDateString("en-US", {

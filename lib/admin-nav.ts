@@ -21,6 +21,7 @@ export type AdminNavIconKey =
   | 'settings'
   | 'target'
   | 'contactRound'
+  | 'search'
 
 export interface AdminNavItemConfig {
   href: string
@@ -39,6 +40,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/users',
   '/admin/wallets',
   '/admin/settings',
+  '/admin/seo',
   '/admin/shipping',
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
@@ -52,6 +54,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin', label: 'Overview', icon: 'layoutDashboard' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
+      { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
       { href: '/admin/settings', label: 'Settings', icon: 'settings' },

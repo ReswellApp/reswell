@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Target,
   ContactRound,
+  Search,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,7 @@ const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   settings: Settings,
   target: Target,
   contactRound: ContactRound,
+  search: Search,
 }
 
 function isNavActive(pathname: string, href: string): boolean {

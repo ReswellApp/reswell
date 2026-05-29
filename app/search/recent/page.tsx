@@ -1,5 +1,5 @@
 import { SearchPageView } from "../search-page-view"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 interface SearchParams {
   category?: string
@@ -7,12 +7,9 @@ interface SearchParams {
 
 export const dynamic = "force-dynamic"
 
-export const metadata = pageSeoMetadata({
-  title: "Recently listed surfboards | Reswell",
-  description:
-    "Browse the latest surfboard listings on Reswell — a curated feed from active sellers.",
-  path: "/search/recent",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("search-recent")
+}
 
 export default async function SearchRecentPage(props: {
   searchParams: Promise<SearchParams>

@@ -1,14 +1,11 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Store } from "lucide-react"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata = pageSeoMetadata({
-  title: "What is Reswell, Reswell",
-  description:
-    "Reswell is the peer to peer marketplace for surfers: buy and sell surfboards and gear, with checkout, messaging, shipping tools, and Purchase Protection.",
-  path: "/what-is-reswell",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("what-is-reswell")
+}
 
 export default function WhatIsReswellPage() {
   return (

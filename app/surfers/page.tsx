@@ -4,15 +4,13 @@ import { SurfersExplorer } from "@/components/surfers/surfers-explorer"
 import { SurfersListAdminBar } from "@/components/surfers/surfers-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listSurfers } from "@/lib/surfers/server"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const revalidate = 3600
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Surfers directory — Reswell",
-  description: "Explore surfer profiles on Reswell — stories, bios, and links to discover gear on the marketplace.",
-  path: "/surfers",
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("surfers")
+}
 
 export default async function SurfersPage() {
   const supabase = await createClient()

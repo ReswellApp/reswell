@@ -2,14 +2,11 @@ import type { Metadata } from "next"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
 import { createClient } from "@/lib/supabase/server"
 import { formatCategory } from "@/lib/listing-labels"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "New surf gear — Reswell Shop",
-  description:
-    "Buy new marketplace inventory from sellers on Reswell — checkout, messaging, and buyer protection in one place.",
-  path: "/shop",
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("shop")
+}
 
 export default async function ShopPage() {
   const supabase = await createClient()

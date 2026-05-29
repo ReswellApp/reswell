@@ -1,14 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { JamboardsLanding } from "@/components/features/marketing/jamboards-landing"
 import { getBoardTalkThreadPreviews } from "@/lib/services/forumThreads"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata = pageSeoMetadata({
-  title: "Jamboards Alternative — Reswell community",
-  description:
-    "Jamboards Alternative is where surfers connect on Reswell — browse Board Talk conversations, share stoke, and jump into community discussions.",
-  path: "/jamboards",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("jamboards")
+}
 
 export const dynamic = "force-dynamic"
 

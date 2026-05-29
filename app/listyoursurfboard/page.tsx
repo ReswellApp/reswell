@@ -4,14 +4,11 @@ import { createClient } from "@/lib/supabase/server"
 import { loadHomeFeaturedSurfboardRows } from "@/lib/services/homeFeaturedPeerSections"
 import { loadHomeHeroSlideUrls } from "@/lib/services/homeHeroSlides"
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata = pageSeoMetadata({
-  title: "List your surfboard | Reswell",
-  description:
-    "List your surfboard on Reswell — reach surfers locally and nationwide with photos, messaging, and secure checkout. Free to post.",
-  path: "/listyoursurfboard",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("listyoursurfboard")
+}
 
 export const dynamic = "force-dynamic"
 

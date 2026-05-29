@@ -17,18 +17,15 @@ import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
 import { SellersDirectoryAdminBar } from "@/components/sellers/sellers-directory-admin-bar"
 import { SellersDirectorySearch } from "@/components/sellers/sellers-directory-search"
 import { listSellersDirectoryDemotedProfileIdsOrdered } from "@/lib/db/sellers-directory-demotions"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg"
 const THUMB_PER_SELLER = 6
 const LISTINGS_FETCH_CAP = 4000
 
-export const metadata = pageSeoMetadata({
-  title: "Surf sellers — Reswell",
-  description:
-    "Browse local surf sellers on Reswell — shop profiles, verified shops, and peer listings near you.",
-  path: "/sellers",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("sellers")
+}
 
 type ListingThumb = {
   id: string

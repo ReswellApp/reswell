@@ -2,15 +2,12 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContactForm } from "./contact-form"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { cn } from "@/lib/utils"
 
-export const metadata = pageSeoMetadata({
-  title: "Contact — Reswell",
-  description:
-    "Reach Reswell support by email or through this page. Quick replies, private handling, and help with your account, purchases, and safety.",
-  path: "/contact",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("contact")
+}
 
 const trustPoints = [
   {

@@ -3,16 +3,13 @@ import { ReadingHub } from "@/components/field-notes/reading-hub"
 import { createClient } from "@/lib/supabase/server"
 import { listPublishedArticlesForSite } from "@/lib/services/blogPublic"
 import { resolveBlogAdminAccess } from "@/lib/services/blogAdminGate"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const dynamic = "force-dynamic"
 
-export const metadata = pageSeoMetadata({
-  title: "Blog — Reswell",
-  description:
-    "Stories and practical guides from Reswell on gear, culture, and the marketplace, for buyers and sellers.",
-  path: "/blog",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("blog")
+}
 
 export default async function BlogPage() {
   const supabase = await createClient()

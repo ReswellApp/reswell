@@ -2,13 +2,11 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { BoardTalkReviewsView } from "@/components/features/forum/board-talk-reviews-view"
 import { getBoardTalkReviewFeed } from "@/lib/services/boardTalkReviews"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Board Reviews — Board Talk · Reswell",
-  description: "Community ratings and reviews for surfboard models in the Reswell catalog.",
-  path: "/board-talk/reviews",
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("board-talk-reviews")
+}
 
 export default async function BoardTalkReviewsPage() {
   const supabase = await createClient()

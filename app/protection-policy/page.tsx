@@ -11,7 +11,7 @@ import {
   ShoppingBag,
   Store,
 } from 'lucide-react'
-import { pageSeoMetadata } from '@/lib/site-metadata'
+import { resolvePageMetadata } from '@/lib/seo/resolve-page-seo'
 import {
   reswellProtectionAccentClassName,
   reswellProtectionBorderAndBg,
@@ -19,12 +19,9 @@ import {
   reswellProtectionSellerBorderAndBg,
 } from '@/lib/reswell-protection-surface'
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: 'Purchase Protection — Reswell',
-  description:
-    'Purchase Protection for buyers and sellers on Reswell: buyer refunds for covered problems on eligible purchases; sellers are not charged extra for protection — policy, exclusions, and claims.',
-  path: '/protection-policy',
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata('protection-policy')
+}
 
 function Section({
   icon: Icon,

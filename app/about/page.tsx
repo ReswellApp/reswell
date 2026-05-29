@@ -4,14 +4,11 @@ import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatCompactCount } from "@/lib/format-compact-count"
 import { formatGmv } from "@/lib/format-gmv"
 import { loadHomeHeroSlideUrls } from "@/lib/services/homeHeroSlides"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata = pageSeoMetadata({
-  title: "About Reswell",
-  description:
-    "Reswell is the peer to peer marketplace built for surfers. Buy and sell boards and gear with checkout, messaging, shipping tools, and Purchase Protection.",
-  path: "/about",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("about")
+}
 
 async function loadAboutPageData() {
   const supabase = await createClient()

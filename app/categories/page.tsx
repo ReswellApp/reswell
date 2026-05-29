@@ -4,16 +4,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { advancedCategorySections } from "@/lib/site-category-directory"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const revalidate = 3600
 
-export const metadata = pageSeoMetadata({
-  title: "Browse categories — Reswell",
-  description:
-    "Browse surfboard categories on Reswell — explore shapes and jump into live peer-to-peer listings from local sellers.",
-  path: "/categories",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("categories")
+}
 
 export default function CategoriesPage() {
   return (

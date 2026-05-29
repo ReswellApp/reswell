@@ -3,14 +3,11 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getReswellPlatformReviewByUserId } from "@/lib/db/reswellPlatformReviews"
 import { RateReswellForm } from "@/components/features/reswell/rate-reswell-form"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Rate Reswell",
-  description: "Share your experience with Reswell. Tell us what you think and help improve the marketplace.",
-  path: "/ratereswell",
-  robots: { index: true, follow: true },
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("ratereswell")
+}
 
 function splitStoredReviewContent(description: string): { title: string; body: string } {
   const trimmed = description.trim()

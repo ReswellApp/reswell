@@ -1,12 +1,10 @@
 import Link from "next/link"
 import { Cookie } from "lucide-react"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata = pageSeoMetadata({
-  title: "Cookie Policy — Reswell",
-  description: "How Reswell uses cookies and similar technologies on the site.",
-  path: "/cookies",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("cookies")
+}
 
 export default function CookiePolicyPage() {
   return (

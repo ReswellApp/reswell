@@ -2,18 +2,14 @@ import Link from "next/link"
 import { FaqJsonLd } from "@/components/features/faq/faq-json-ld"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CircleHelp } from "lucide-react"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { MARKETPLACE_FEE_PERCENT, SELLER_SHARE_PERCENT } from "@/lib/seller-fees"
 
 export const revalidate = 86400
 
-export const metadata = pageSeoMetadata({
-  title: "FAQ — Reswell",
-  description:
-    "Frequently asked questions about buying, selling, fees, shipping, messages, and Purchase Protection on Reswell.",
-  path: "/faq",
-  robots: { index: true, follow: true },
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("faq")
+}
 
 type Faq = {
   question: string

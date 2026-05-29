@@ -30,18 +30,15 @@ import {
   marketingCtaBannerPanelClassName,
   marketingCtaBannerTitleClassName,
 } from "@/components/marketing-cta-banners"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import {
   getCachedHomeRecentlySoldCatalog,
   getCachedHomeStableCatalog,
 } from "@/lib/cache/home-public-catalog"
 
-export const metadata = pageSeoMetadata({
-  title: "Reswell — Buy & sell surfboards",
-  description:
-    "Peer-to-peer surfboard marketplace: list your board, browse local listings and sellers that offer shipping, and shop new items from verified sellers.",
-  path: "/",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("home")
+}
 
 /** Page ISR matches recently sold strip TTL; stable sections use a longer `unstable_cache` TTL. */
 export const revalidate = 3600

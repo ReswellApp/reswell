@@ -1,14 +1,12 @@
 import type { Metadata } from "next"
 import { CollectionsPressSection } from "@/components/collections/collections-press-section"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const revalidate = 120
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Collections — Reswell",
-  description: "Editorial features, press, and surf stories on Reswell.",
-  path: "/collections",
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("collections")
+}
 
 export default function CollectionsPage() {
   return (

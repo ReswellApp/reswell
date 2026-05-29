@@ -22,6 +22,7 @@ export function AdminGuard({
         pathname === '/admin/users' ||
         pathname === '/admin/wallets' ||
         pathname === '/admin/settings' ||
+        pathname === '/admin/seo' ||
         pathname === '/admin/shipping' ||
         pathname === '/admin/orders/test-purchase'
       ) {

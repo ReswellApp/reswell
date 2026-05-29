@@ -4,15 +4,13 @@ import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const revalidate = 3600
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Surf brands directory — Reswell",
-  description: "Explore shapers and surfboard brands on Reswell — profiles from our catalog.",
-  path: "/brands",
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("brands")
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i

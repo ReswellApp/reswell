@@ -5,14 +5,11 @@ import {
   getReswellPlatformReviews,
 } from "@/lib/db/reswellPlatformReviews"
 import { ReswellReviewsPageView } from "@/components/features/reswell/reswell-reviews-page-view"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Reswell Reviews",
-  description: "Read what surfers and sellers say about buying and selling on Reswell.",
-  path: "/reswellreviews",
-  robots: { index: true, follow: true },
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("reswellreviews")
+}
 
 export default async function ReswellReviewsPage() {
   const supabase = await createClient()

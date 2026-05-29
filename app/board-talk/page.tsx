@@ -2,13 +2,11 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { BoardTalkForumsView } from "@/components/features/forum/board-talk-forums-view"
 import { getBoardTalkForumThreads } from "@/lib/services/forumThreads"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Board Talk — Reswell",
-  description: "Community posts, Q&A, and surfboard discussions — join the conversation.",
-  path: "/board-talk",
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("board-talk")
+}
 
 export default async function BoardTalkForumsPage({
   searchParams,

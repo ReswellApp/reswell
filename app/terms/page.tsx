@@ -1,13 +1,11 @@
 import Link from "next/link"
 import { FileText } from "lucide-react"
 import { MARKETPLACE_FEE_PERCENT, SELLER_SHARE_PERCENT } from "@/lib/seller-fees"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const metadata = pageSeoMetadata({
-  title: "Terms of Service — Reswell",
-  description: "Rules and guidelines for buying, selling, and using the Reswell surfboard marketplace.",
-  path: "/terms",
-})
+export async function generateMetadata() {
+  return resolvePageMetadata("terms")
+}
 
 export default function TermsOfServicePage() {
   return (

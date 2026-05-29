@@ -154,8 +154,33 @@ export function boardsBrowseIndexableSnapshot(sp: BoardsBrowseSearchParams): {
   return { title, description, canonicalUrl: canonical.toString() }
 }
 
+/**
+ * True when extra content filters are applied — those permutations are not individually
+ * editable in the SEO panel, so we keep the auto-generated title/description for them.
+ */
+function boardsBrowseHasContentFilters(sp: BoardsBrowseSearchParams): boolean {
+  return Boolean(
+    (sp.condition && sp.condition !== "all") ||
+      sp.location ||
+      sp.q ||
+      sp.brand ||
+      sp.brandId ||
+      sp.model ||
+      sp.brandModelId ||
+      sp.dimensions ||
+      sp.dimLength ||
+      sp.dimWidth ||
+      sp.dimThickness ||
+      sp.dimVolume ||
+      sp.minPrice ||
+      sp.maxPrice ||
+      sp.radius,
+  )
+}
+
 export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Promise<Metadata> {
-  const { title, description, canonicalUrl } = boardsBrowseIndexableSnapshot(sp)
+  const { title: baseTitle, description: baseDescription, canonicalUrl } =
+    boardsBrowseIndexableSnapshot(sp)
   const browseType = normalizedBoardsBrowseTypeFromParam(sp.type)
   const typeLabel =
     browseType ? BOARD_TYPE_LABELS[browseType] ?? "Surfboards" : "Surfboards"
@@ -170,15 +195,37 @@ export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Pro
   const listingPhotoUrl = ogPayload.ok ? ogPayload.photoUrl : undefined
 
   /** Prefer the real listing photo so link previews match inventory (layout no longer injects a default wave). */
-  const shareImageUrl = listingPhotoUrl ?? generatedOgImageUrl
+  let shareImageUrl = listingPhotoUrl ?? generatedOgImageUrl
+  let title = baseTitle
+  let description = baseDescription
+  let robotsIndex = true
+  let robotsFollow = true
+
+  // Apply admin SEO-panel overrides for the clean boards hub / type variations.
+  if (!boardsBrowseHasContentFilters(sp)) {
+    const overrideKey = browseType ? `boards:type=${browseType}` : "boards"
+    const { getManagedPage } = await import("@/lib/seo/managed-pages")
+    if (getManagedPage(overrideKey)) {
+      const { getPageSeoOverride } = await import("@/lib/seo/resolve-page-seo")
+      const ov = await getPageSeoOverride(overrideKey)
+      if (ov.title?.trim()) title = ov.title.trim()
+      if (ov.description?.trim()) description = ov.description.trim()
+      const overrideImage = ov.ogImageUrl?.trim()
+      if (overrideImage) shareImageUrl = overrideImage
+      if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
+      if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
+    }
+  }
+
+  const useGeneratedImageSize = !listingPhotoUrl && shareImageUrl === generatedOgImageUrl
 
   return {
     title,
     description,
     robots: {
-      index: true,
-      follow: true,
-      googleBot: { index: true, follow: true },
+      index: robotsIndex,
+      follow: robotsFollow,
+      googleBot: { index: robotsIndex, follow: robotsFollow },
     },
     alternates: { canonical: canonicalUrl },
     openGraph: {
@@ -189,8 +236,8 @@ export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Pro
       images: [
         {
           url: shareImageUrl,
-          width: listingPhotoUrl ? undefined : STANDARD_OG_SIZE.width,
-          height: listingPhotoUrl ? undefined : STANDARD_OG_SIZE.height,
+          width: useGeneratedImageSize ? STANDARD_OG_SIZE.width : undefined,
+          height: useGeneratedImageSize ? STANDARD_OG_SIZE.height : undefined,
           alt: ogPayload.ok ? ogPayload.title : `${typeLabel} on Reswell`,
         },
       ],

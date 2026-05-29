@@ -12,16 +12,13 @@ import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentlySoldPageClient, type SoldFeedListing } from "./sold-page-client"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 const SOLD_LIMIT = 40
 
-export const metadata: Metadata = pageSeoMetadata({
-  title: "Recently sold surfboards | Reswell",
-  description:
-    "See surfboards that recently sold on Reswell — live marketplace activity and completed sales.",
-  path: "/sold",
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata("sold")
+}
 
 function mapSoldRow(
   row: Record<string, unknown>,
