@@ -1,7 +1,12 @@
 import { updateSession } from '@/lib/supabase/proxy'
 import { type NextRequest } from 'next/server'
+import { resolveSeoRedirect } from '@/lib/seo/edge-redirects'
 
 export async function proxy(request: NextRequest) {
+  // Admin-managed 301/302 redirects short-circuit before any session work.
+  const redirect = await resolveSeoRedirect(request)
+  if (redirect) return redirect
+
   return await updateSession(request)
 }
 

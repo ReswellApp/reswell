@@ -5,9 +5,13 @@ import { Loader2, RotateCcw, Save, Search } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { EMPTY_OVERRIDE, isOverrideEmpty, type ManagedPageSeoItem, type PageSeoOverrideValues } from "@/lib/seo/types"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SeoPageList } from "./seo-page-list"
 import { SeoEditor } from "./seo-editor"
+import { SeoTemplateEditor } from "./seo-template-editor"
 import { SeoHealthOverview } from "./seo-health-overview"
+import { RedirectsManager } from "./redirects-manager"
+import { CrawlingManager } from "./crawling-manager"
 import { summarizeSeoHealth } from "./seo-scoring"
 
 interface SeoAdminClientProps {
@@ -89,6 +93,17 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
     }
   }
 
+  function handleRestored(snapshot: PageSeoOverrideValues) {
+    if (!selected) return
+    const restored = cloneOverride(snapshot)
+    setItems((prev) =>
+      prev.map((it) =>
+        it.key === selected.key ? { ...it, override: restored, customized: !isOverrideEmpty(restored) } : it,
+      ),
+    )
+    setDrafts((prev) => ({ ...prev, [selected.key]: cloneOverride(restored) }))
+  }
+
   async function handleReset() {
     if (!selected) return
     setBusy(true)
@@ -111,10 +126,17 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
   const customizedCount = items.filter((it) => it.customized).length
 
   return (
-    <div className="space-y-4">
-      <SeoHealthOverview summary={healthSummary} onSelectPage={handleSelect} />
+    <Tabs defaultValue="metadata" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="metadata">Page metadata</TabsTrigger>
+        <TabsTrigger value="redirects">Redirects</TabsTrigger>
+        <TabsTrigger value="crawling">Crawling</TabsTrigger>
+      </TabsList>
 
-      <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <TabsContent value="metadata" className="space-y-4">
+        <SeoHealthOverview summary={healthSummary} onSelectPage={handleSelect} />
+
+        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
       <div className="rounded-lg border border-border lg:h-[calc(100vh-9rem)] lg:sticky lg:top-4">
         <SeoPageList
           items={items}
@@ -154,7 +176,17 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
                 </Button>
               </div>
             </div>
-            <SeoEditor item={selected} draft={draft} onChange={handleChange} siteOrigin={siteOrigin} />
+            {selected.kind === "dynamic" ? (
+              <SeoTemplateEditor item={selected} draft={draft} onChange={handleChange} siteOrigin={siteOrigin} />
+            ) : (
+              <SeoEditor
+                item={selected}
+                draft={draft}
+                onChange={handleChange}
+                onRestored={handleRestored}
+                siteOrigin={siteOrigin}
+              />
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 py-24 text-muted-foreground">
@@ -163,7 +195,16 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
           </div>
         )}
       </div>
-      </div>
-    </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="redirects">
+        <RedirectsManager />
+      </TabsContent>
+
+      <TabsContent value="crawling">
+        <CrawlingManager siteOrigin={siteOrigin} />
+      </TabsContent>
+    </Tabs>
   )
 }

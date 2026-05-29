@@ -7,6 +7,7 @@ import { fetchSurferSlugPathsForSitemap } from "@/lib/db/sitemap-surfers"
 import { fetchPublishedBlogPostSitemapEntries } from "@/lib/db/sitemap-blog-posts-published"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
 export type { SitemapUrlEntry } from "@/lib/sitemap/types"
@@ -198,10 +199,17 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...blogPages,
   ]
 
+  // Drop any managed page the admin flipped to no-index in the SEO panel.
+  const noindexPaths = await getNoindexManagedPaths()
+
   const seen = new Set<string>()
   const deduped: SitemapUrlEntry[] = []
   for (const entry of merged) {
     if (seen.has(entry.url)) continue
+    if (noindexPaths.size > 0) {
+      const pathname = entry.url.slice(BASE.length).split("?")[0].replace(/\/+$/, "") || "/"
+      if (noindexPaths.has(pathname)) continue
+    }
     seen.add(entry.url)
     deduped.push(entry)
   }

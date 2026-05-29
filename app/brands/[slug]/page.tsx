@@ -5,6 +5,7 @@ import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
 import { absoluteUrl } from "@/lib/site-metadata"
+import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 
 export const revalidate = 3600
 
@@ -23,10 +24,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!brand) {
     return { title: "Brand — Reswell" }
   }
-  const title = `${brand.name} · Surf brand — Reswell`
-  const description =
+  const fallbackTitle = `${brand.name} · Surf brand — Reswell`
+  const fallbackDescription =
     brand.short_description?.trim() ||
     `Explore ${brand.name} on Reswell — models, stories, and where to find their boards.`
+  const seo = await resolveDynamicSeo(
+    "type:brand",
+    { name: brand.name, tagline: brand.short_description?.trim() || undefined },
+    { title: fallbackTitle, description: fallbackDescription },
+  )
+  const title = seo.title
+  const description = seo.description
   const path = `/brands/${brand.slug}`
   const url = absoluteUrl(path)
   const logo = brand.logo_url?.trim()

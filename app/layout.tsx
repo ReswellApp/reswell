@@ -14,6 +14,8 @@ import { GoogleSignUpWelcomeRedirect } from '@/components/auth/google-sign-up-we
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 import { MetaPixel } from '@/components/meta-pixel'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
+import { JsonLd } from '@/components/seo/json-ld'
+import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
 
 import './globals.css'
 
@@ -73,6 +75,7 @@ export default function RootLayout({
         className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}
         suppressHydrationWarning
       >
+        <JsonLd data={[organizationSchema(publicSiteOrigin()), webSiteSchema(publicSiteOrigin())]} />
         <AbortErrorSuppressor />
         <GoogleAdsGtag />
         <MetaPixel />

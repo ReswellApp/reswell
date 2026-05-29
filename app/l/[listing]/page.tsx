@@ -9,7 +9,7 @@ import {
   LISTING_META_SELECT,
   LISTING_ROUTE_SHELL_SELECT,
 } from "@/lib/listing-detail-cache"
-import { metadataForListingDetail } from "@/lib/listing-metadata"
+import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata"
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
@@ -67,9 +67,9 @@ export async function generateMetadata(props: {
   if (listing.section === "new") {
     const price = Number(listing.price)
     const pricePrefix = Number.isFinite(price) ? `$${price.toFixed(2)}` : undefined
-    return metadataForListingDetail({ ...listing, section: "new" as const }, { pricePrefix })
+    return resolveListingDetailMetadata({ ...listing, section: "new" as const }, { pricePrefix })
   }
-  return metadataForListingDetail(listing)
+  return resolveListingDetailMetadata(listing)
 }
 
 export default async function ListingDetailPage(props: {

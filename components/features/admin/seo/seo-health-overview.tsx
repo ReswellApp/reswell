@@ -70,11 +70,12 @@ export function SeoHealthOverview({ summary, onSelectPage }: SeoHealthOverviewPr
           </div>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
           <Stat value={summary.needsAttention} label="Pages need attention" tone="warn" />
           <Stat value={summary.missingDescription} label="Missing description" tone="danger" />
           <Stat value={summary.missingShareImage} label="No share image" tone="warn" />
           <Stat value={summary.noindex} label="Set to no-index" tone="danger" />
+          <Stat value={summary.duplicatePageCount} label="Duplicate metadata" tone="danger" />
         </div>
       </div>
 
@@ -97,6 +98,38 @@ export function SeoHealthOverview({ summary, onSelectPage }: SeoHealthOverviewPr
               </button>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {summary.duplicateGroups.length > 0 ? (
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Duplicate titles &amp; descriptions
+          </p>
+          <ul className="space-y-2">
+            {summary.duplicateGroups.map((group, i) => (
+              <li key={`${group.field}-${i}`} className="rounded-lg border border-border bg-secondary/30 p-2.5">
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-medium capitalize text-foreground">{group.field}</span> shared by{" "}
+                  {group.pages.length} pages:{" "}
+                  <span className="text-foreground/80">“{group.value.slice(0, 80)}{group.value.length > 80 ? "…" : ""}”</span>
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {group.pages.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => onSelectPage(p.key)}
+                      className="group inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] text-foreground transition-colors hover:bg-secondary"
+                    >
+                      {p.label}
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" aria-hidden />
+                    </button>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       ) : null}
     </div>

@@ -14,12 +14,17 @@ import { SeoImageField } from "./seo-image-field"
 import { SerpPreview } from "./serp-preview"
 import { SocialPreview } from "./social-preview"
 import { SeoScore } from "./seo-score"
+import { SeoSearchInsights } from "./seo-search-insights"
+import { SeoAiSuggest } from "./seo-ai-suggest"
+import { SeoHistory } from "./seo-history"
 import { scorePageSeo, SEO_LIMITS } from "./seo-scoring"
+import { structuredDataTemplate } from "@/lib/seo/structured-data"
 
 interface SeoEditorProps {
   item: ManagedPageSeoItem
   draft: PageSeoOverrideValues
   onChange: (patch: Partial<PageSeoOverrideValues>) => void
+  onRestored: (snapshot: PageSeoOverrideValues) => void
   siteOrigin: string
 }
 
@@ -69,7 +74,7 @@ function structuredDataText(value: unknown): string {
   }
 }
 
-export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps) {
+export function SeoEditor({ item, draft, onChange, onRestored, siteOrigin }: SeoEditorProps) {
   const effective = computeEffectivePageSeo(item.defaults, draft)
   const score = scorePageSeo(effective)
   const text = (v: string | null | undefined) => v ?? ""
@@ -106,6 +111,23 @@ export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps)
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 pt-2">
+            <div className="flex items-center justify-between rounded-lg border border-dashed border-border bg-secondary/30 px-3 py-2">
+              <p className="text-[11px] text-muted-foreground">
+                Let AI draft a title &amp; description for this page.
+              </p>
+              <SeoAiSuggest
+                pageKey={item.key}
+                currentTitle={effective.title}
+                currentDescription={effective.description}
+                keywords={draft.keywords ?? undefined}
+                onApply={({ title, description }) =>
+                  onChange({
+                    ...(title ? { title } : {}),
+                    ...(description ? { description } : {}),
+                  })
+                }
+              />
+            </div>
             <FieldCounter
               id="seo-title"
               label="Meta title"
@@ -228,6 +250,19 @@ export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps)
                 </button>
               ) : null}
             </div>
+            <div className="flex flex-wrap gap-1.5">
+              <span className="self-center text-[11px] text-muted-foreground">Insert template:</span>
+              {(["organization", "website", "breadcrumb", "faq", "product"] as const).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => onChange({ structuredData: structuredDataTemplate(kind, siteOrigin) })}
+                  className="rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-[11px] capitalize text-foreground transition-colors hover:bg-secondary"
+                >
+                  {kind}
+                </button>
+              ))}
+            </div>
             <Textarea
               id="structured-data"
               rows={12}
@@ -237,8 +272,8 @@ export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps)
               className="font-mono text-xs"
             />
             <p className="text-[11px] text-muted-foreground">
-              Optional JSON-LD. Validated and saved with this page as the source for its
-              structured-data block.
+              Optional JSON-LD, rendered into this page&apos;s head for rich results. Site-wide
+              Organization and search-box schema is already emitted automatically.
             </p>
           </TabsContent>
         </Tabs>
@@ -267,6 +302,12 @@ export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps)
         </div>
         <div className="rounded-lg border border-border p-4">
           <SeoScore result={score} />
+        </div>
+        <div className="rounded-lg border border-border p-4">
+          <SeoSearchInsights pageKey={item.key} />
+        </div>
+        <div className="rounded-lg border border-border p-4">
+          <SeoHistory pageKey={item.key} onRestored={onRestored} />
         </div>
       </aside>
     </div>

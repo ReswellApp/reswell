@@ -1,6 +1,8 @@
 "use client"
 
 import { Globe } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { PIXEL_LIMITS, titlePx, descriptionPx } from "./measure-text"
 
 interface SerpPreviewProps {
   title: string
@@ -10,13 +12,18 @@ interface SerpPreviewProps {
   siteOrigin: string
 }
 
-const TITLE_MAX = 60
-const DESC_MAX = 160
-
-function truncate(text: string, max: number): string {
+/** Truncate text so its rendered width fits `maxPx`, then add an ellipsis. */
+function truncateByPx(text: string, maxPx: number, measure: (t: string) => number): string {
   const t = text.trim()
-  if (t.length <= max) return t
-  return `${t.slice(0, max).trimEnd()}…`
+  if (measure(t) <= maxPx) return t
+  let lo = 0
+  let hi = t.length
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2)
+    if (measure(`${t.slice(0, mid)}…`) <= maxPx) lo = mid
+    else hi = mid - 1
+  }
+  return `${t.slice(0, lo).trimEnd()}…`
 }
 
 /** Renders a path/absolute URL as a Google-style breadcrumb (origin › segment › segment). */
@@ -40,6 +47,11 @@ export function SerpPreview({ title, description, url, siteOrigin }: SerpPreview
   const displayTitle = title.trim() || "Untitled page"
   const displayDesc = description.trim() || "No meta description set."
 
+  const titleWidth = titlePx(displayTitle)
+  const descWidth = descriptionPx(displayDesc)
+  const titleOver = titleWidth > PIXEL_LIMITS.title
+  const descOver = descWidth > PIXEL_LIMITS.description
+
   return (
     <div className="rounded-lg border border-border bg-white p-4 font-sans dark:bg-zinc-950">
       <div className="flex items-center gap-2">
@@ -52,11 +64,19 @@ export function SerpPreview({ title, description, url, siteOrigin }: SerpPreview
         </div>
       </div>
       <p className="mt-1 truncate text-[18px] leading-6 text-[#1a0dab] dark:text-[#8ab4f8]">
-        {truncate(displayTitle, TITLE_MAX)}
+        {truncateByPx(displayTitle, PIXEL_LIMITS.title, titlePx)}
       </p>
       <p className="mt-0.5 line-clamp-2 text-[13px] leading-5 text-[#4d5156] dark:text-zinc-400">
-        {truncate(displayDesc, DESC_MAX)}
+        {truncateByPx(displayDesc, PIXEL_LIMITS.description, descriptionPx)}
       </p>
+      <div className="mt-2 flex items-center gap-3 border-t border-border pt-1.5 text-[10px] tabular-nums text-muted-foreground">
+        <span className={cn(titleOver && "font-medium text-destructive")}>
+          Title {titleWidth}px / {PIXEL_LIMITS.title}px{titleOver ? " · truncated" : ""}
+        </span>
+        <span className={cn(descOver && "font-medium text-destructive")}>
+          Desc {descWidth}px / {PIXEL_LIMITS.description}px{descOver ? " · truncated" : ""}
+        </span>
+      </div>
     </div>
   )
 }

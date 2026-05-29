@@ -26,10 +26,41 @@ export type ListingMetaInput = {
   description?: string | null
   status?: string | null
   section: string
+  price?: number | string | null
+  brand?: string | null
+  model?: string | null
+  condition?: string | null
+  city?: string | null
+  state?: string | null
   listing_images?:
     | Array<{ url?: string | null; is_primary?: boolean; sort_order?: number }>
     | null
   categories?: { name?: string | null; slug?: string | null } | Array<{ name?: string | null; slug?: string | null }> | null
+}
+
+/** Token values for the `type:listing` SEO template. */
+export function listingTemplateVars(
+  listing: ListingMetaInput,
+  options?: { pricePrefix?: string },
+): Record<string, string | undefined> {
+  const cat = listing.categories
+  const catRow = cat && (Array.isArray(cat) ? cat[0] : cat)
+  const categoryLabel = catRow?.name ? formatCategory(catRow.name) : undefined
+  const price = typeof listing.price === "number" ? listing.price : Number.parseFloat(String(listing.price ?? ""))
+  const priceLabel = options?.pricePrefix || (Number.isFinite(price) ? `$${price.toFixed(0)}` : undefined)
+  const location =
+    listing.city && listing.state
+      ? `${listing.city}, ${listing.state}`
+      : listing.city || listing.state || undefined
+  return {
+    title: listing.title?.trim() ? capitalizeWords(listing.title.trim()) : undefined,
+    brand: listing.brand?.trim() || undefined,
+    model: listing.model?.trim() || undefined,
+    category: categoryLabel,
+    price: priceLabel,
+    condition: listing.condition?.trim() || undefined,
+    location,
+  }
 }
 
 /** Short subtitle for OG images (category, optional shop price). */

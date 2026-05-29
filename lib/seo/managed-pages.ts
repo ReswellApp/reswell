@@ -13,6 +13,7 @@ export type ManagedPageGroupId =
   | "content"
   | "trust"
   | "marketing"
+  | "dynamic"
 
 export interface ManagedPageGroup {
   id: ManagedPageGroupId
@@ -26,6 +27,7 @@ export const MANAGED_PAGE_GROUPS: ManagedPageGroup[] = [
   { id: "content", label: "Content & community", description: "Editorial, forum, and help." },
   { id: "trust", label: "Trust & legal", description: "Policies buyers and sellers check." },
   { id: "marketing", label: "Marketing & growth", description: "Landing and conversion pages." },
+  { id: "dynamic", label: "Dynamic page types", description: "Templates applied to every listing, brand, and seller." },
 ]
 
 export interface ManagedPageDefaults {

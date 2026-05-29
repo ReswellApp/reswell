@@ -31,6 +31,7 @@ import {
   marketingCtaBannerTitleClassName,
 } from "@/components/marketing-cta-banners"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
+import { PageStructuredData } from "@/components/seo/page-structured-data"
 import {
   getCachedHomeRecentlySoldCatalog,
   getCachedHomeStableCatalog,
@@ -89,6 +90,7 @@ export default async function HomePage() {
 
   return (
       <main className="flex-1">
+        <PageStructuredData pageKey="home" />
         {/* CLS-FIX: min-height + svh keeps the hero band stable while the slideshow loads. */}
         <section className="relative flex min-h-[max(19.5rem,51svh)] items-center overflow-hidden sm:min-h-[max(21.5rem,51svh)] md:min-h-[max(34rem,min(72svh,42rem))]">
           <HeroSlideshow

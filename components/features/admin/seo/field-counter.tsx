@@ -21,6 +21,7 @@ interface FieldCounterProps {
   /** When true, shows a reset-to-default control. */
   overridden?: boolean
   onReset?: () => void
+  onFocus?: () => void
   mono?: boolean
 }
 
@@ -42,6 +43,7 @@ export function FieldCounter({
   band,
   overridden,
   onReset,
+  onFocus,
   mono,
 }: FieldCounterProps) {
   const length = value.length
@@ -79,6 +81,7 @@ export function FieldCounter({
           rows={rows}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={onFocus}
           className={cn(mono && "font-mono text-xs")}
         />
       ) : (
@@ -87,6 +90,7 @@ export function FieldCounter({
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={onFocus}
           className={cn(mono && "font-mono text-xs")}
         />
       )}

@@ -1,7 +1,8 @@
 import { z } from "zod"
 import { managedPageKeys } from "@/lib/seo/managed-pages"
+import { dynamicPageTypeKeys } from "@/lib/seo/dynamic-page-types"
 
-const MANAGED_KEYS = new Set(managedPageKeys())
+const MANAGED_KEYS = new Set([...managedPageKeys(), ...dynamicPageTypeKeys()])
 
 /** Empty string / undefined -> undefined; otherwise trimmed text capped at `max`. */
 function optionalText(max: number) {

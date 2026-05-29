@@ -3,14 +3,14 @@ import type { Metadata } from "next"
 import { unstable_cache } from "next/cache"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { absoluteUrl } from "@/lib/site-metadata"
-import { getManagedPage } from "@/lib/seo/managed-pages"
+import { getManagedPage, MANAGED_PAGES } from "@/lib/seo/managed-pages"
 import {
   computeEffectivePageSeo,
   EMPTY_OVERRIDE,
   type EffectivePageSeo,
   type PageSeoOverrideValues,
 } from "@/lib/seo/types"
-import { getPageSeoOverrideByKey } from "@/lib/db/page-seo"
+import { getPageSeoOverrideByKey, listPageSeoOverrides } from "@/lib/db/page-seo"
 import { mapOverrideRowToValues } from "@/lib/seo/map-override-row"
 import { PAGE_SEO_CACHE_TAG } from "@/lib/seo/page-seo-cache"
 
@@ -34,12 +34,20 @@ const getCachedOverrideValues = unstable_cache(
   { tags: [PAGE_SEO_CACHE_TAG], revalidate: 300 },
 )
 
+/** Branded auto-generated OG image (next/og) for pages without a custom share image. */
+function autoOgImageUrl(eff: EffectivePageSeo): string {
+  const params = new URLSearchParams({ title: eff.ogTitle.slice(0, 120) })
+  if (eff.description) params.set("subtitle", eff.description.slice(0, 120))
+  return absoluteUrl(`/api/og?${params.toString()}`)
+}
+
 function effectiveToMetadata(eff: EffectivePageSeo): Metadata {
   const canonicalIsAbsolute = /^https?:\/\//i.test(eff.canonical)
   const ogUrl = canonicalIsAbsolute ? eff.canonical : absoluteUrl(eff.canonical)
 
-  const ogImages = eff.ogImageUrl ? [{ url: eff.ogImageUrl }] : undefined
-  const twitterImages = eff.twitterImageUrl ? [eff.twitterImageUrl] : undefined
+  const resolvedOgImage = eff.ogImageUrl || autoOgImageUrl(eff)
+  const ogImages = [{ url: resolvedOgImage, width: 1200, height: 630 }]
+  const twitterImages = [eff.twitterImageUrl || resolvedOgImage]
 
   return {
     title: eff.title,
@@ -56,13 +64,13 @@ function effectiveToMetadata(eff: EffectivePageSeo): Metadata {
       description: eff.ogDescription,
       type: eff.ogType,
       url: ogUrl,
-      ...(ogImages ? { images: ogImages } : {}),
+      images: ogImages,
     },
     twitter: {
       card: eff.twitterCard,
       title: eff.twitterTitle,
       description: eff.twitterDescription,
-      ...(twitterImages ? { images: twitterImages } : {}),
+      images: twitterImages,
     },
   }
 }
@@ -93,4 +101,36 @@ export async function resolveEffectivePageSeo(pageKey: string): Promise<Effectiv
 /** Cached override values for a managed page (used to merge into dynamic metadata helpers). */
 export async function getPageSeoOverride(pageKey: string): Promise<PageSeoOverrideValues> {
   return getCachedOverrideValues(pageKey)
+}
+
+/**
+ * Normalized paths (e.g. `/faq`) of managed pages the admin has flipped to no-index.
+ * Used to drop them from the sitemap so we never advertise URLs we ask Google not to index.
+ */
+const getCachedNoindexManagedPaths = unstable_cache(
+  async (): Promise<string[]> => {
+    try {
+      const supabase = createServiceRoleClient()
+      const rows = await listPageSeoOverrides(supabase)
+      const noindexKeys = new Set(
+        rows.filter((r) => r.robots_index === false).map((r) => r.page_key),
+      )
+      const paths: string[] = []
+      for (const page of MANAGED_PAGES) {
+        if (noindexKeys.has(page.key)) {
+          paths.push(page.defaults.path.split("?")[0].replace(/\/+$/, "") || "/")
+        }
+      }
+      return paths
+    } catch (error) {
+      console.error("getCachedNoindexManagedPaths:", error instanceof Error ? error.message : error)
+      return []
+    }
+  },
+  ["page-seo-noindex-paths"],
+  { tags: [PAGE_SEO_CACHE_TAG], revalidate: 300 },
+)
+
+export async function getNoindexManagedPaths(): Promise<Set<string>> {
+  return new Set(await getCachedNoindexManagedPaths())
 }

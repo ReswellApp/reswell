@@ -1,0 +1,63 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { DEFAULT_SEO_SETTINGS, type SeoSettingsValues } from "@/lib/seo/seo-settings-cache"
+
+export interface SeoSettingsRow {
+  id: string
+  discourage_all_crawlers: boolean
+  extra_disallow: string[] | null
+  extra_allow: string[] | null
+  crawl_delay: number | null
+  extra_sitemaps: string[] | null
+  updated_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type SeoSettingsWriteColumns = {
+  discourage_all_crawlers: boolean
+  extra_disallow: string[]
+  extra_allow: string[]
+  crawl_delay: number | null
+  extra_sitemaps: string[]
+}
+
+export function mapSeoSettingsRow(row: SeoSettingsRow | null): SeoSettingsValues {
+  if (!row) return DEFAULT_SEO_SETTINGS
+  return {
+    discourageAllCrawlers: row.discourage_all_crawlers,
+    extraDisallow: row.extra_disallow ?? [],
+    extraAllow: row.extra_allow ?? [],
+    crawlDelay: row.crawl_delay,
+    extraSitemaps: row.extra_sitemaps ?? [],
+  }
+}
+
+export async function getSeoSettingsRow(supabase: SupabaseClient): Promise<SeoSettingsRow | null> {
+  const { data, error } = await supabase
+    .from("seo_settings")
+    .select("*")
+    .eq("id", "global")
+    .maybeSingle()
+
+  if (error) {
+    console.error("getSeoSettingsRow:", error.message)
+    return null
+  }
+  return (data as SeoSettingsRow | null) ?? null
+}
+
+export async function upsertSeoSettings(
+  supabase: SupabaseClient,
+  cols: SeoSettingsWriteColumns,
+  updatedBy: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase
+    .from("seo_settings")
+    .upsert({ id: "global", updated_by: updatedBy, ...cols }, { onConflict: "id" })
+
+  if (error) {
+    console.error("upsertSeoSettings:", error.message)
+    return { ok: false, error: error.message || "Could not save settings" }
+  }
+  return { ok: true }
+}

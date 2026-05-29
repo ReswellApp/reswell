@@ -101,6 +101,13 @@ export function computeEffectivePageSeo(
   }
 }
 
+/** Variable available to a dynamic page-type template (mirrors DynamicTemplateVar). */
+export interface ManagedPageTemplateVar {
+  token: string
+  label: string
+  sample: string
+}
+
 /** One row in the admin SEO panel: a managed page plus its current override (if any). */
 export interface ManagedPageSeoItem {
   key: string
@@ -112,6 +119,10 @@ export interface ManagedPageSeoItem {
   override: PageSeoOverrideValues
   /** True when at least one override field is set. */
   customized: boolean
+  /** "dynamic" items are template-based page families (listings, brands, sellers). */
+  kind?: "page" | "dynamic"
+  /** Template variables, present only for dynamic items. */
+  templateVars?: ManagedPageTemplateVar[]
 }
 
 /** True when no override field is set (page is fully on defaults). */

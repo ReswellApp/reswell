@@ -115,6 +115,41 @@ export interface SeoHealthSummary {
   noindex: number
   /** Up to a handful of the lowest-scoring pages, worst first. */
   weakestPages: { key: string; label: string; score: number }[]
+  /** Pages sharing an identical title or description (cannibalization risk). */
+  duplicateGroups: DuplicateGroup[]
+  /** Total pages involved in any duplicate group. */
+  duplicatePageCount: number
+}
+
+export interface DuplicateGroup {
+  field: "title" | "description"
+  value: string
+  pages: { key: string; label: string }[]
+}
+
+/** Group indexable pages that share a normalized title or description. */
+function findDuplicates(
+  rows: { key: string; label: string; title: string; description: string; indexable: boolean }[],
+): DuplicateGroup[] {
+  const groups: DuplicateGroup[] = []
+  for (const field of ["title", "description"] as const) {
+    const byValue = new Map<string, { display: string; pages: { key: string; label: string }[] }>()
+    for (const row of rows) {
+      if (!row.indexable) continue
+      const raw = row[field].trim()
+      if (!raw) continue
+      const norm = raw.toLowerCase().replace(/\s+/g, " ")
+      const entry = byValue.get(norm) ?? { display: raw, pages: [] }
+      entry.pages.push({ key: row.key, label: row.label })
+      byValue.set(norm, entry)
+    }
+    for (const entry of byValue.values()) {
+      if (entry.pages.length > 1) {
+        groups.push({ field, value: entry.display, pages: entry.pages })
+      }
+    }
+  }
+  return groups
 }
 
 /**
@@ -132,6 +167,25 @@ export function summarizeSeoHealth(items: ManagedPageSeoItem[]): SeoHealthSummar
       missingShareImage: 0,
       noindex: 0,
       weakestPages: [],
+      duplicateGroups: [],
+      duplicatePageCount: 0,
+    }
+  }
+
+  // Dynamic page-type templates aren't individual pages — exclude from the site average.
+  const pages = items.filter((it) => it.kind !== "dynamic")
+  if (pages.length === 0) {
+    return {
+      score: 0,
+      grade: "D",
+      pageCount: 0,
+      needsAttention: 0,
+      missingDescription: 0,
+      missingShareImage: 0,
+      noindex: 0,
+      weakestPages: [],
+      duplicateGroups: [],
+      duplicatePageCount: 0,
     }
   }
 
@@ -141,8 +195,9 @@ export function summarizeSeoHealth(items: ManagedPageSeoItem[]): SeoHealthSummar
   let missingShareImage = 0
   let noindex = 0
   const scored: { key: string; label: string; score: number }[] = []
+  const dupRows: { key: string; label: string; title: string; description: string; indexable: boolean }[] = []
 
-  for (const item of items) {
+  for (const item of pages) {
     const eff = computeEffectivePageSeo(item.defaults, item.override)
     const { score } = scorePageSeo(eff)
     total += score
@@ -151,9 +206,21 @@ export function summarizeSeoHealth(items: ManagedPageSeoItem[]): SeoHealthSummar
     if (!eff.description.trim()) missingDescription += 1
     if (!eff.ogImageUrl) missingShareImage += 1
     if (!eff.robotsIndex) noindex += 1
+    dupRows.push({
+      key: item.key,
+      label: item.label,
+      title: eff.title,
+      description: eff.description,
+      indexable: eff.robotsIndex,
+    })
   }
 
-  const score = Math.round(total / items.length)
+  const duplicateGroups = findDuplicates(dupRows)
+  const duplicatePageCount = new Set(
+    duplicateGroups.flatMap((g) => g.pages.map((p) => p.key)),
+  ).size
+
+  const score = Math.round(total / pages.length)
   const weakestPages = scored
     .filter((p) => p.score < 90)
     .sort((a, b) => a.score - b.score)
@@ -162,11 +229,13 @@ export function summarizeSeoHealth(items: ManagedPageSeoItem[]): SeoHealthSummar
   return {
     score,
     grade: gradeForScore(score),
-    pageCount: items.length,
+    pageCount: pages.length,
     needsAttention,
     missingDescription,
     missingShareImage,
     noindex,
     weakestPages,
+    duplicateGroups,
+    duplicatePageCount,
   }
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -81,9 +82,8 @@ export async function generateMetadata({
     ? trimUrl(shop.shop_name) || trimUrl(shop.display_name) || "Seller"
     : trimUrl(shop.display_name) || "Seller"
 
-  const title = `${displayName} · Reswell`
-
   const loc = trimUrl(shop.shop_address) || trimUrl(shop.city)
+  const fallbackTitle = `${displayName} · Reswell`
   const descPrimary =
     trimUrl(shop.shop_description) ||
     trimUrl(shop.bio) ||
@@ -91,7 +91,13 @@ export async function generateMetadata({
       ? `${displayName} on Reswell${shop.shop_verified ? " · Verified seller" : ""}. ${loc}.`
       : `${displayName} on Reswell${shop.shop_verified ? " · Verified seller" : ""}. Shop surf gear and boards.`)
 
-  const description = descPrimary.slice(0, 180)
+  const seo = await resolveDynamicSeo(
+    "type:seller",
+    { name: displayName, location: loc || undefined },
+    { title: fallbackTitle, description: descPrimary.slice(0, 180) },
+  )
+  const title = seo.title
+  const description = seo.description
 
   const canonicalPath = `/sellers/${shop.seller_slug ?? slug}`
   const social = sellerSocialImage(shop)
