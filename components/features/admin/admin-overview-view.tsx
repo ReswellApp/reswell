@@ -4,19 +4,34 @@ import {
   Activity,
   ArrowRight,
   ArrowUpRight,
+  BadgePercent,
+  Boxes,
   Coins,
+  DollarSign,
+  Gauge,
+  Layers,
   MessageSquare,
   Package,
+  Receipt,
   ShieldCheck,
   ShoppingBag,
   Tag,
+  TrendingDown,
   TrendingUp,
+  Trophy,
   UserPlus,
   Users,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 import type { AdminPlatformPurchaseFees } from '@/lib/services/adminPlatformFees'
+import type {
+  AdminBusinessInsights,
+  AdminInsightsBrandRow,
+  AdminInsightsSectionRow,
+  AdminInsightsTopSeller,
+  TrendMetric,
+} from '@/lib/services/adminBusinessInsights'
 import type {
   AdminOverviewListingPreview,
   AdminOverviewOrderPreview,
@@ -27,6 +42,7 @@ import type {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminRevenueChart } from '@/components/features/admin/admin-revenue-chart'
 import { listingDetailHref } from '@/lib/listing-href'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
@@ -40,7 +56,7 @@ function formatUsd(amount: number): string {
 }
 
 function compactUsd(amount: number): string {
-  if (amount >= 10000) {
+  if (Math.abs(amount) >= 10000) {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -49,6 +65,10 @@ function compactUsd(amount: number): string {
     }).format(amount)
   }
   return formatUsd(amount)
+}
+
+function formatPct(value: number, digits = 1): string {
+  return `${value.toFixed(digits)}%`
 }
 
 function rel(dateIso: string): string {
@@ -104,6 +124,12 @@ function supportStatusBadgeVariant(
   }
 }
 
+function sectionLabel(section: string): string {
+  if (section === 'surfboards') return 'Used surfboards'
+  if (section === 'new') return 'New & retail'
+  return capitalizeWords(section.replace(/_/g, ' '))
+}
+
 type Accent = 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet'
 
 const ACCENT_CHIP: Record<Accent, string> = {
@@ -114,17 +140,55 @@ const ACCENT_CHIP: Record<Accent, string> = {
   violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
 }
 
-interface StatCardProps {
-  icon: ComponentType<{ className?: string }>
-  label: string
-  value: number | string
-  footnote: string
-  accent: Accent
-  delta?: number
-  deltaLabel?: string
+const SECTION_BAR: Record<string, string> = {
+  surfboards: 'bg-sky-500',
+  new: 'bg-violet-500',
+  unknown: 'bg-muted-foreground/40',
 }
 
-function StatCard({ icon: Icon, label, value, footnote, accent, delta, deltaLabel }: StatCardProps) {
+// --- Delta + KPI ---------------------------------------------------------
+
+/** Trend pill comparing a metric against the prior period. */
+function DeltaBadge({ delta, invert }: { delta: TrendMetric; invert?: boolean }) {
+  if (delta.deltaPct === null) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+        {delta.current > 0 ? 'New' : '—'}
+      </span>
+    )
+  }
+  const pct = delta.deltaPct
+  const positive = pct >= 0
+  const good = invert ? !positive : positive
+  const Icon = positive ? TrendingUp : TrendingDown
+  const magnitude = Math.abs(pct)
+  const text = `${positive ? '+' : '−'}${magnitude >= 10 ? magnitude.toFixed(0) : magnitude.toFixed(1)}%`
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold',
+        good
+          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+      )}
+    >
+      <Icon className="h-3 w-3" aria-hidden />
+      {text}
+    </span>
+  )
+}
+
+interface KpiCardProps {
+  icon: ComponentType<{ className?: string }>
+  accent: Accent
+  label: string
+  value: string
+  delta: TrendMetric
+  invertDelta?: boolean
+  footnote: string
+}
+
+function KpiCard({ icon: Icon, accent, label, value, delta, invertDelta, footnote }: KpiCardProps) {
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:border-foreground/15 hover:shadow-md">
       <div className="flex items-center justify-between">
@@ -136,13 +200,45 @@ function StatCard({ icon: Icon, label, value, footnote, accent, delta, deltaLabe
         </span>
       </div>
       <div className="mt-4 flex items-end gap-2">
-        <p className="text-3xl font-bold leading-none tabular-nums tracking-tight text-foreground">
+        <p className="text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground sm:text-[28px]">
           {value}
         </p>
-        {typeof delta === 'number' && delta > 0 ? (
-          <span className="mb-0.5 inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-            <TrendingUp className="h-3 w-3" aria-hidden />+{delta}
-            {deltaLabel ? <span className="font-medium text-emerald-600/70 dark:text-emerald-400/70">{deltaLabel}</span> : null}
+        <span className="mb-0.5">
+          <DeltaBadge delta={delta} invert={invertDelta} />
+        </span>
+      </div>
+      <p className="mt-1.5 text-xs text-muted-foreground">{footnote}</p>
+    </div>
+  )
+}
+
+interface SimpleStatProps {
+  icon: ComponentType<{ className?: string }>
+  accent: Accent
+  label: string
+  value: string | number
+  delta?: TrendMetric
+  footnote: string
+}
+
+function SimpleStat({ icon: Icon, accent, label, value, delta, footnote }: SimpleStatProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:border-foreground/15 hover:shadow-md">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', ACCENT_CHIP[accent])}>
+          <Icon className="h-[18px] w-[18px]" aria-hidden />
+        </span>
+      </div>
+      <div className="mt-4 flex items-end gap-2">
+        <p className="text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground sm:text-[28px]">
+          {value}
+        </p>
+        {delta ? (
+          <span className="mb-0.5">
+            <DeltaBadge delta={delta} />
           </span>
         ) : null}
       </div>
@@ -150,6 +246,44 @@ function StatCard({ icon: Icon, label, value, footnote, accent, delta, deltaLabe
     </div>
   )
 }
+
+interface RatioTileProps {
+  icon: ComponentType<{ className?: string }>
+  label: string
+  value: string
+  description: string
+  tone?: 'neutral' | 'good' | 'warn'
+}
+
+function RatioTile({ icon: Icon, label, value, description, tone = 'neutral' }: RatioTileProps) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+      <span
+        className={cn(
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+          tone === 'good'
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            : tone === 'warn'
+              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              : 'bg-secondary text-foreground',
+        )}
+      >
+        <Icon className="h-[18px] w-[18px]" aria-hidden />
+      </span>
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-2">
+          <p className="text-xl font-bold tabular-nums text-foreground">{value}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {label}
+          </p>
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+// --- Attention + feeds ---------------------------------------------------
 
 interface AttentionTileProps {
   href: string
@@ -301,7 +435,12 @@ function UserRow({ row, canLink }: { row: AdminOverviewUserPreview; canLink: boo
   )
 }
 
-function OrderRow({ row }: { row: AdminOverviewOrderPreview }) {
+type OrderPreview = Pick<
+  AdminOverviewOrderPreview,
+  'id' | 'order_num' | 'status' | 'amount' | 'created_at'
+>
+
+function OrderRow({ row }: { row: OrderPreview }) {
   return (
     <div className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
       <div className="min-w-0">
@@ -323,11 +462,101 @@ function OrderRow({ row }: { row: AdminOverviewOrderPreview }) {
   )
 }
 
+// --- Leaderboards --------------------------------------------------------
+
+function SellerRow({ seller, max, rank }: { seller: AdminInsightsTopSeller; max: number; rank: number }) {
+  const pct = max > 0 ? (seller.gmv / max) * 100 : 0
+  return (
+    <div className="-mx-2 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-secondary text-[11px] font-semibold tabular-nums text-muted-foreground">
+            {rank}
+          </span>
+          <Link
+            href={`/admin/users/${seller.id}`}
+            className="truncate font-medium text-foreground hover:underline"
+          >
+            {seller.name}
+          </Link>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold tabular-nums">{compactUsd(seller.gmv)}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {seller.orders} order{seller.orders === 1 ? '' : 's'}
+          </p>
+        </div>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function BrandRow({ brand, max, rank }: { brand: AdminInsightsBrandRow; max: number; rank: number }) {
+  const pct = max > 0 ? (brand.gmv / max) * 100 : 0
+  return (
+    <div className="-mx-2 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-secondary text-[11px] font-semibold tabular-nums text-muted-foreground">
+            {rank}
+          </span>
+          <span className="truncate font-medium text-foreground">{brand.brand}</span>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold tabular-nums">{compactUsd(brand.gmv)}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {brand.orders} sale{brand.orders === 1 ? '' : 's'}
+          </p>
+        </div>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-sky-500/70" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function SectionMix({ rows }: { rows: AdminInsightsSectionRow[] }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+        {rows.map((r) => (
+          <div
+            key={r.section}
+            className={cn('h-full first:rounded-l-full last:rounded-r-full', SECTION_BAR[r.section] ?? SECTION_BAR.unknown)}
+            style={{ width: `${r.share}%` }}
+            title={`${sectionLabel(r.section)} · ${formatPct(r.share, 0)}`}
+          />
+        ))}
+      </div>
+      <div className="space-y-2">
+        {rows.map((r) => (
+          <div key={r.section} className="flex items-center justify-between gap-3 text-sm">
+            <span className="flex items-center gap-2">
+              <span className={cn('h-2.5 w-2.5 rounded-full', SECTION_BAR[r.section] ?? SECTION_BAR.unknown)} />
+              <span className="text-foreground">{sectionLabel(r.section)}</span>
+            </span>
+            <span className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground">{formatPct(r.share, 0)}</span>
+              <span className="font-semibold tabular-nums">{compactUsd(r.gmv)}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export interface AdminOverviewViewProps {
   snapshot: AdminOverviewSnapshot
   isAdmin: boolean
   platformFees: AdminPlatformPurchaseFees | null
   platformFeesError: string | null
+  insights: AdminBusinessInsights | null
+  insightsError: string | null
 }
 
 export function AdminOverviewView({
@@ -335,15 +564,22 @@ export function AdminOverviewView({
   isAdmin,
   platformFees,
   platformFeesError,
+  insights,
+  insightsError,
 }: AdminOverviewViewProps) {
   const totalListings = snapshot.totals.listings || 1
   const surfPct = Math.round((snapshot.listingsBySection.surfboards / totalListings) * 100)
+  const periodLabel = insights ? `${insights.periodDays} days` : `${snapshot.periodDays} days`
 
   const attentionTotal =
     snapshot.attention.openSupportTickets +
     snapshot.attention.ordersPendingPayment +
     snapshot.attention.ordersConfirmedUnfulfilled +
     (isAdmin ? snapshot.attention.pendingBrandReviews : 0)
+
+  const ordersFeed: OrderPreview[] = insights ? insights.recentOrders : snapshot.previews.recentOrders
+  const maxSellerGmv = insights ? Math.max(0, ...insights.topSellers.map((s) => s.gmv)) : 0
+  const maxBrandGmv = insights ? Math.max(0, ...insights.topBrands.map((b) => b.gmv)) : 0
 
   return (
     <div className="space-y-8">
@@ -357,12 +593,13 @@ export function AdminOverviewView({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </span>
-              Last {snapshot.periodDays} days
+              Last {periodLabel}
             </span>
           </div>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Marketplace pulse, queues that need attention, and fresh activity — a quick read before you dive
-            into the tools.
+            {isAdmin
+              ? 'Marketplace performance, growth, and the queues that need attention — measured against the prior period.'
+              : 'Marketplace pulse, queues that need attention, and fresh activity.'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -377,7 +614,7 @@ export function AdminOverviewView({
           </Button>
           {isAdmin ? (
             <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/users">Users</Link>
+              <Link href="/admin/used-board-market-dashboard">Market data</Link>
             </Button>
           ) : null}
           <Button variant="default" size="sm" className="gap-1.5" asChild>
@@ -389,7 +626,7 @@ export function AdminOverviewView({
         </div>
       </div>
 
-      {snapshot.errors.length > 0 ? (
+      {snapshot.errors.length > 0 || insightsError ? (
         <Card className="border-destructive/40 bg-destructive/[0.06]">
           <CardHeader className="pb-2">
             <CardTitle className="font-headline text-base text-destructive">
@@ -401,6 +638,7 @@ export function AdminOverviewView({
           </CardHeader>
           <CardContent>
             <ul className="list-inside list-disc text-sm text-muted-foreground">
+              {insightsError ? <li>{insightsError}</li> : null}
               {snapshot.errors.slice(0, 6).map((e) => (
                 <li key={e}>{e}</li>
               ))}
@@ -409,39 +647,202 @@ export function AdminOverviewView({
         </Card>
       ) : null}
 
-      {/* KPI strip */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={Package}
-          accent="sky"
-          label="Catalog"
-          value={snapshot.totals.listings}
-          delta={snapshot.pulse.newListings}
-          footnote={`${snapshot.totals.activeListings} active · ${surfPct}% surfboards`}
-        />
-        <StatCard
-          icon={Users}
-          accent="violet"
-          label="Members"
-          value={snapshot.totals.users}
-          delta={snapshot.pulse.newUsers}
-          footnote="Registered profiles"
-        />
-        <StatCard
-          icon={ShoppingBag}
-          accent="emerald"
-          label="Paid orders"
-          value={snapshot.pulse.ordersConfirmedInPeriod}
-          footnote={`Confirmed in the last ${snapshot.periodDays} days`}
-        />
-        <StatCard
-          icon={MessageSquare}
-          accent="amber"
-          label="Support intake"
-          value={snapshot.pulse.newContactThreads}
-          footnote={`${snapshot.attention.openSupportTickets} still open in the inbox`}
-        />
-      </div>
+      {insights ? (
+        <>
+          {/* Financial KPIs */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              icon={DollarSign}
+              accent="emerald"
+              label="GMV"
+              value={compactUsd(insights.revenue.gmv.current)}
+              delta={insights.revenue.gmv}
+              footnote={`vs ${compactUsd(insights.revenue.gmv.previous)} prior ${insights.periodDays}d`}
+            />
+            <KpiCard
+              icon={Coins}
+              accent="sky"
+              label="Platform revenue"
+              value={compactUsd(insights.revenue.platformRevenue.current)}
+              delta={insights.revenue.platformRevenue}
+              footnote={
+                insights.takeRatePct != null
+                  ? `${formatPct(insights.takeRatePct)} effective take rate`
+                  : 'Fees on confirmed orders'
+              }
+            />
+            <KpiCard
+              icon={ShoppingBag}
+              accent="violet"
+              label="Paid orders"
+              value={String(insights.revenue.orders.current)}
+              delta={insights.revenue.orders}
+              footnote={`vs ${insights.revenue.orders.previous} prior ${insights.periodDays}d`}
+            />
+            <KpiCard
+              icon={Receipt}
+              accent="amber"
+              label="Avg order value"
+              value={compactUsd(insights.revenue.aov.current)}
+              delta={insights.revenue.aov}
+              footnote={`vs ${compactUsd(insights.revenue.aov.previous)} prior ${insights.periodDays}d`}
+            />
+          </div>
+
+          {/* Revenue trend */}
+          <AdminRevenueChart
+            data={insights.daily}
+            periodDays={insights.periodDays}
+            totalGmv={insights.revenue.gmv.current}
+            totalOrders={insights.revenue.orders.current}
+          />
+
+          {/* Lifetime context */}
+          {platformFees ? (
+            <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-card p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Lifetime GMV
+                </p>
+                <p className="mt-1.5 text-xl font-bold tabular-nums text-foreground">
+                  {compactUsd(platformFees.totalSaleVolume)}
+                </p>
+              </div>
+              <div className="bg-card p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Lifetime platform revenue
+                </p>
+                <p className="mt-1.5 text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {compactUsd(platformFees.totalFees)}
+                </p>
+              </div>
+              <div className="bg-card p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Paid orders (all-time)
+                </p>
+                <p className="mt-1.5 text-xl font-bold tabular-nums text-foreground">
+                  {platformFees.confirmedCount}
+                </p>
+              </div>
+              <div className="bg-card p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Fees realized (fulfilled)
+                </p>
+                <p className="mt-1.5 text-xl font-bold tabular-nums text-foreground">
+                  {compactUsd(platformFees.totalFeesFulfilled)}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {platformFees.fulfilledOrderCount} delivered or picked up
+                </p>
+              </div>
+            </div>
+          ) : platformFeesError ? (
+            <p className="text-sm text-muted-foreground">{platformFeesError}</p>
+          ) : null}
+
+          {/* Growth & supply */}
+          <section className="space-y-3">
+            <h2 className="font-headline text-lg font-semibold text-foreground">Growth &amp; supply</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <SimpleStat
+                icon={UserPlus}
+                accent="violet"
+                label="New members"
+                value={insights.growth.newMembers.current}
+                delta={insights.growth.newMembers}
+                footnote={`vs ${insights.growth.newMembers.previous} prior ${insights.periodDays}d`}
+              />
+              <SimpleStat
+                icon={Package}
+                accent="sky"
+                label="New listings"
+                value={insights.growth.newListings.current}
+                delta={insights.growth.newListings}
+                footnote={`vs ${insights.growth.newListings.previous} prior ${insights.periodDays}d`}
+              />
+              <SimpleStat
+                icon={Boxes}
+                accent="neutral"
+                label="Active listings"
+                value={insights.supply.activeListings}
+                footnote={`${insights.supply.activeSurfboards} active surfboards live`}
+              />
+              <SimpleStat
+                icon={Gauge}
+                accent="emerald"
+                label="Sell-through"
+                value={insights.supply.sellThroughPct != null ? formatPct(insights.supply.sellThroughPct, 0) : '—'}
+                footnote={`${insights.supply.soldInPeriod} sold vs active board supply`}
+              />
+            </div>
+          </section>
+
+          {/* Business health */}
+          <section className="space-y-3">
+            <h2 className="font-headline text-lg font-semibold text-foreground">Business health</h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <RatioTile
+                icon={BadgePercent}
+                label="Take rate"
+                value={insights.takeRatePct != null ? formatPct(insights.takeRatePct) : '—'}
+                description="Platform fees ÷ item GMV"
+                tone="good"
+              />
+              <RatioTile
+                icon={Receipt}
+                label="Refund rate"
+                value={formatPct(insights.refundRatePct)}
+                description={`${insights.refundCount} refunded in period`}
+                tone={insights.refundRatePct >= 5 ? 'warn' : 'neutral'}
+              />
+              <RatioTile
+                icon={Tag}
+                label="Offer acceptance"
+                value={
+                  insights.offers.acceptanceRatePct != null
+                    ? formatPct(insights.offers.acceptanceRatePct, 0)
+                    : '—'
+                }
+                description={`${insights.offers.accepted} accepted of ${insights.offers.created.current} offers`}
+              />
+            </div>
+          </section>
+        </>
+      ) : (
+        /* Employee fallback: counts only (no service-role insights) */
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SimpleStat
+              icon={Package}
+              accent="sky"
+              label="Catalog"
+              value={snapshot.totals.listings}
+              footnote={`${snapshot.totals.activeListings} active · ${surfPct}% surfboards`}
+            />
+            <SimpleStat
+              icon={Users}
+              accent="violet"
+              label="Members"
+              value={snapshot.totals.users}
+              footnote="Registered profiles"
+            />
+            <SimpleStat
+              icon={ShoppingBag}
+              accent="emerald"
+              label="Paid orders"
+              value={snapshot.pulse.ordersConfirmedInPeriod}
+              footnote={`Confirmed in the last ${snapshot.periodDays} days`}
+            />
+            <SimpleStat
+              icon={MessageSquare}
+              accent="amber"
+              label="Support intake"
+              value={snapshot.pulse.newContactThreads}
+              footnote={`${snapshot.attention.openSupportTickets} still open in the inbox`}
+            />
+          </div>
+        </>
+      )}
 
       {/* Needs attention */}
       <section className="space-y-3">
@@ -488,68 +889,56 @@ export function AdminOverviewView({
         </div>
       </section>
 
-      {/* Platform revenue */}
-      {isAdmin && (platformFeesError || platformFees) ? (
-        <Card className="overflow-hidden border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.07] via-card to-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2.5 font-headline text-base sm:text-lg">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Coins className="h-[18px] w-[18px]" aria-hidden />
-              </span>
-              Platform fee revenue
-              <Badge variant="secondary" className="ml-0.5 text-[10px]">
-                7%
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Card payments settle on the platform Stripe account at checkout. Seller earnings credit after
-              fulfillment. Figures use confirmed orders and listing currency.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {platformFeesError ? (
-              <p className="text-sm text-muted-foreground">{platformFeesError}</p>
-            ) : platformFees ? (
-              <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
-                <div className="bg-card p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    7% fee · all paid
-                  </p>
-                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {compactUsd(platformFees.totalFees)}
-                  </p>
-                </div>
-                <div className="bg-card p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    7% fee · fulfilled
-                  </p>
-                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-foreground">
-                    {compactUsd(platformFees.totalFeesFulfilled)}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {platformFees.fulfilledOrderCount} delivered or picked up
-                  </p>
-                </div>
-                <div className="bg-card p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Paid orders
-                  </p>
-                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-foreground">
-                    {platformFees.confirmedCount}
-                  </p>
-                </div>
-                <div className="bg-card p-4">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Gross sale volume
-                  </p>
-                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-foreground">
-                    {compactUsd(platformFees.totalSaleVolume)}
-                  </p>
-                </div>
+      {/* Leaderboards */}
+      {insights ? (
+        <div className="grid items-start gap-6 lg:grid-cols-3">
+          <FeedCard
+            icon={Trophy}
+            accent="emerald"
+            title="Top sellers"
+            description={`By GMV · last ${insights.periodDays} days`}
+          >
+            {insights.topSellers.length === 0 ? (
+              <EmptyState label="No sales in this window." />
+            ) : (
+              <div className="divide-y divide-border">
+                {insights.topSellers.map((s, i) => (
+                  <SellerRow key={s.id} seller={s} max={maxSellerGmv} rank={i + 1} />
+                ))}
               </div>
-            ) : null}
-          </CardContent>
-        </Card>
+            )}
+          </FeedCard>
+
+          <FeedCard
+            icon={Tag}
+            accent="sky"
+            title="Top brands"
+            description={`By GMV · last ${insights.periodDays} days`}
+          >
+            {insights.topBrands.length === 0 ? (
+              <EmptyState label="No sales in this window." />
+            ) : (
+              <div className="divide-y divide-border">
+                {insights.topBrands.map((b, i) => (
+                  <BrandRow key={b.brand} brand={b} max={maxBrandGmv} rank={i + 1} />
+                ))}
+              </div>
+            )}
+          </FeedCard>
+
+          <FeedCard
+            icon={Layers}
+            accent="violet"
+            title="Revenue by section"
+            description={`GMV split · last ${insights.periodDays} days`}
+          >
+            {insights.sectionMix.length === 0 ? (
+              <EmptyState label="No sales in this window." />
+            ) : (
+              <SectionMix rows={insights.sectionMix} />
+            )}
+          </FeedCard>
+        </div>
       ) : null}
 
       {/* Activity feeds */}
@@ -582,11 +971,11 @@ export function AdminOverviewView({
             href="/admin/orders"
             actionLabel="All"
           >
-            {snapshot.previews.recentOrders.length === 0 ? (
+            {ordersFeed.length === 0 ? (
               <EmptyState label="No orders yet." />
             ) : (
               <div className="divide-y divide-border">
-                {snapshot.previews.recentOrders.map((o) => (
+                {ordersFeed.map((o) => (
                   <OrderRow key={o.id} row={o} />
                 ))}
               </div>

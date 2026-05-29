@@ -1,6 +1,7 @@
 import { AdminOverviewView } from '@/components/features/admin/admin-overview-view'
 import { fetchAdminOverviewSnapshot } from '@/lib/db/adminOverview'
 import { loadAdminPlatformPurchaseFees } from '@/lib/services/adminPlatformFees'
+import { loadAdminBusinessInsights } from '@/lib/services/adminBusinessInsights'
 import { privatePageMetadata } from '@/lib/site-metadata'
 import { createClient } from '@/lib/supabase/server'
 
@@ -27,14 +28,24 @@ export default async function AdminDashboard() {
     ? loadAdminPlatformPurchaseFees()
     : Promise.resolve(null)
 
-  const [snapshot, feesResult] = await Promise.all([
+  type InsightsOutcome = Awaited<ReturnType<typeof loadAdminBusinessInsights>>
+  const insightsPromise: Promise<InsightsOutcome | null> = isAdmin
+    ? loadAdminBusinessInsights()
+    : Promise.resolve(null)
+
+  const [snapshot, feesResult, insightsResult] = await Promise.all([
     fetchAdminOverviewSnapshot(supabase, { includeBrandRequestQueries: isAdmin }),
     feesPromise,
+    insightsPromise,
   ])
 
   const platformFees = feesResult && feesResult.ok ? feesResult.data : null
   const platformFeesError =
     isAdmin && feesResult && !feesResult.ok ? feesResult.error : null
+
+  const insights = insightsResult && insightsResult.ok ? insightsResult.data : null
+  const insightsError =
+    isAdmin && insightsResult && !insightsResult.ok ? insightsResult.error : null
 
   return (
     <AdminOverviewView
@@ -42,6 +53,8 @@ export default async function AdminDashboard() {
       isAdmin={isAdmin}
       platformFees={platformFees}
       platformFeesError={platformFeesError}
+      insights={insights}
+      insightsError={insightsError}
     />
   )
 }
