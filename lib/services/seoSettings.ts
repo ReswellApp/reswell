@@ -21,6 +21,8 @@ export async function saveSeoSettingsService(
       extra_allow: input.extraAllow,
       crawl_delay: input.crawlDelay,
       extra_sitemaps: input.extraSitemaps,
+      favicon_url: input.faviconUrl,
+      apple_icon_url: input.appleIconUrl,
     },
     updatedBy,
   )

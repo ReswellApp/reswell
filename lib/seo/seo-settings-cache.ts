@@ -7,6 +7,10 @@ export interface SeoSettingsValues {
   extraAllow: string[]
   crawlDelay: number | null
   extraSitemaps: string[]
+  /** Site-wide favicon URL (public). Null falls back to the framework/browser default. */
+  faviconUrl: string | null
+  /** Apple touch icon URL (180×180 PNG recommended). */
+  appleIconUrl: string | null
 }
 
 export const DEFAULT_SEO_SETTINGS: SeoSettingsValues = {
@@ -15,4 +19,6 @@ export const DEFAULT_SEO_SETTINGS: SeoSettingsValues = {
   extraAllow: [],
   crawlDelay: null,
   extraSitemaps: [],
+  faviconUrl: null,
+  appleIconUrl: null,
 }

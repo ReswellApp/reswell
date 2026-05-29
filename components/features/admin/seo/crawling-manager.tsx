@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { SeoFaviconField } from "./seo-favicon-field"
 
 interface SeoSettings {
   discourageAllCrawlers: boolean
@@ -15,6 +16,8 @@ interface SeoSettings {
   extraAllow: string[]
   crawlDelay: number | null
   extraSitemaps: string[]
+  faviconUrl: string | null
+  appleIconUrl: string | null
 }
 
 const SITEMAPS = [
@@ -74,6 +77,8 @@ export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
           extraDisallow: linesToList(disallow),
           extraAllow: linesToList(allow),
           extraSitemaps: linesToList(sitemaps),
+          faviconUrl: settings.faviconUrl,
+          appleIconUrl: settings.appleIconUrl,
         }),
       })
       if (!res.ok) throw new Error("Could not save settings")
@@ -180,6 +185,27 @@ export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
       </div>
 
       <div className="space-y-4">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-sm font-semibold text-foreground">Site icon / favicon</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Shown in browser tabs, bookmarks, and search results. Applies across the whole site.
+          </p>
+          <div className="mt-3 space-y-4">
+            <SeoFaviconField
+              label="Favicon"
+              helpText="Square PNG, SVG, or ICO. 512×512 PNG recommended."
+              value={settings.faviconUrl ?? ""}
+              onChange={(url) => setSettings({ ...settings, faviconUrl: url })}
+            />
+            <SeoFaviconField
+              label="Apple touch icon (optional)"
+              helpText="180×180 PNG, used when saved to an iPhone/iPad home screen."
+              value={settings.appleIconUrl ?? ""}
+              onChange={(url) => setSettings({ ...settings, appleIconUrl: url })}
+            />
+          </div>
+        </div>
+
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-foreground">Sitemaps</p>

@@ -8,6 +8,8 @@ export interface SeoSettingsRow {
   extra_allow: string[] | null
   crawl_delay: number | null
   extra_sitemaps: string[] | null
+  favicon_url: string | null
+  apple_icon_url: string | null
   updated_by: string | null
   created_at: string
   updated_at: string
@@ -19,6 +21,8 @@ export type SeoSettingsWriteColumns = {
   extra_allow: string[]
   crawl_delay: number | null
   extra_sitemaps: string[]
+  favicon_url: string | null
+  apple_icon_url: string | null
 }
 
 export function mapSeoSettingsRow(row: SeoSettingsRow | null): SeoSettingsValues {
@@ -29,6 +33,8 @@ export function mapSeoSettingsRow(row: SeoSettingsRow | null): SeoSettingsValues
     extraAllow: row.extra_allow ?? [],
     crawlDelay: row.crawl_delay,
     extraSitemaps: row.extra_sitemaps ?? [],
+    faviconUrl: row.favicon_url,
+    appleIconUrl: row.apple_icon_url,
   }
 }
 

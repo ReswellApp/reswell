@@ -36,6 +36,8 @@ export async function PUT(request: Request) {
 
   revalidateTag(SEO_SETTINGS_CACHE_TAG)
   revalidatePath("/robots.txt")
+  // Favicon/app icon live in the root layout metadata — refresh every route.
+  revalidatePath("/", "layout")
 
   return NextResponse.json({ data: { ok: true } }, { status: 200 })
 }

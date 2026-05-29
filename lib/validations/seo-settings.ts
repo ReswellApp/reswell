@@ -30,12 +30,22 @@ const urlList = z
     ),
   )
 
+const optionalImageUrl = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((v) => {
+    const t = (v ?? "").trim()
+    return t ? t : null
+  })
+  .refine((v) => v === null || /^https?:\/\//i.test(v), "Must be an http(s) URL")
+
 export const seoSettingsWriteSchema = z.object({
   discourageAllCrawlers: z.boolean(),
   extraDisallow: pathList,
   extraAllow: pathList,
   crawlDelay: z.number().int().min(0).max(60).nullable(),
   extraSitemaps: urlList,
+  faviconUrl: optionalImageUrl,
+  appleIconUrl: optionalImageUrl,
 })
 
 export type SeoSettingsWriteInput = z.infer<typeof seoSettingsWriteSchema>
