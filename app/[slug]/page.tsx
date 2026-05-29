@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { BoardsBrowsePage } from "@/components/boards-browse-page"
-import { metadataForBoardsBrowse, type BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
+import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
+import { metadataForBoardsBrowse } from "@/lib/seo/metadata-for-boards-browse"
 
 function flattenSearchParams(
   sp: Record<string, string | string[] | undefined>,

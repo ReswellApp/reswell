@@ -3,7 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { resetPageSeoOverrideService } from "@/lib/services/pageSeoAdmin"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { PAGE_SEO_CACHE_TAG } from "@/lib/seo/resolve-page-seo"
+import { PAGE_SEO_CACHE_TAG } from "@/lib/seo/page-seo-cache"
 
 export async function DELETE(
   _request: Request,

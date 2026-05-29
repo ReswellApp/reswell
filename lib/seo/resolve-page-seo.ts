@@ -10,34 +10,9 @@ import {
   type EffectivePageSeo,
   type PageSeoOverrideValues,
 } from "@/lib/seo/types"
-import {
-  getPageSeoOverrideByKey,
-  type PageSeoOverrideRow,
-} from "@/lib/db/page-seo"
-
-export const PAGE_SEO_CACHE_TAG = "page-seo"
-
-/** Map a stored row into the normalized override value shape. */
-export function mapOverrideRowToValues(row: PageSeoOverrideRow | null): PageSeoOverrideValues {
-  if (!row) return EMPTY_OVERRIDE
-  return {
-    title: row.title,
-    description: row.description,
-    keywords: row.keywords,
-    canonicalUrl: row.canonical_url,
-    robotsIndex: row.robots_index,
-    robotsFollow: row.robots_follow,
-    ogTitle: row.og_title,
-    ogDescription: row.og_description,
-    ogImageUrl: row.og_image_url,
-    ogType: row.og_type,
-    twitterCard: row.twitter_card,
-    twitterTitle: row.twitter_title,
-    twitterDescription: row.twitter_description,
-    twitterImageUrl: row.twitter_image_url,
-    structuredData: row.structured_data ?? null,
-  }
-}
+import { getPageSeoOverrideByKey } from "@/lib/db/page-seo"
+import { mapOverrideRowToValues } from "@/lib/seo/map-override-row"
+import { PAGE_SEO_CACHE_TAG } from "@/lib/seo/page-seo-cache"
 
 /**
  * Cached override lookup. Uses the service-role client (RLS only allows staff to read the

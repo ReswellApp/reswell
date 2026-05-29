@@ -7,7 +7,7 @@ import {
   savePageSeoOverrideService,
 } from "@/lib/services/pageSeoAdmin"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { PAGE_SEO_CACHE_TAG } from "@/lib/seo/resolve-page-seo"
+import { PAGE_SEO_CACHE_TAG } from "@/lib/seo/page-seo-cache"
 
 export async function GET() {
   const gate = await requireAdmin()

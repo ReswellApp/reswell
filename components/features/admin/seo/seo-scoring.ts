@@ -1,4 +1,4 @@
-import type { EffectivePageSeo } from "@/lib/seo/types"
+import { computeEffectivePageSeo, type EffectivePageSeo, type ManagedPageSeoItem } from "@/lib/seo/types"
 
 /** Recommended character ranges for search snippets (Google truncates near the upper bound). */
 export const SEO_LIMITS = {
@@ -34,7 +34,7 @@ export interface SeoScoreResult {
   issues: SeoIssue[]
 }
 
-function grade(score: number): SeoScoreResult["grade"] {
+export function gradeForScore(score: number): SeoScoreResult["grade"] {
   if (score >= 90) return "A"
   if (score >= 75) return "B"
   if (score >= 55) return "C"
@@ -100,5 +100,73 @@ export function scorePageSeo(eff: EffectivePageSeo): SeoScoreResult {
   const order: Record<SeoIssueLevel, number> = { error: 0, warn: 1, good: 2 }
   issues.sort((a, b) => order[a.level] - order[b.level])
 
-  return { score, grade: grade(score), issues }
+  return { score, grade: gradeForScore(score), issues }
+}
+
+export interface SeoHealthSummary {
+  /** Mean of every managed page's score, 0–100. */
+  score: number
+  grade: SeoScoreResult["grade"]
+  pageCount: number
+  /** Pages scoring below 75 (grade C or D). */
+  needsAttention: number
+  missingDescription: number
+  missingShareImage: number
+  noindex: number
+  /** Up to a handful of the lowest-scoring pages, worst first. */
+  weakestPages: { key: string; label: string; score: number }[]
+}
+
+/**
+ * Roll every managed page's effective SEO into one site-wide health summary.
+ * Pure: callers pass the current items (defaults merged with live drafts/overrides upstream).
+ */
+export function summarizeSeoHealth(items: ManagedPageSeoItem[]): SeoHealthSummary {
+  if (items.length === 0) {
+    return {
+      score: 0,
+      grade: "D",
+      pageCount: 0,
+      needsAttention: 0,
+      missingDescription: 0,
+      missingShareImage: 0,
+      noindex: 0,
+      weakestPages: [],
+    }
+  }
+
+  let total = 0
+  let needsAttention = 0
+  let missingDescription = 0
+  let missingShareImage = 0
+  let noindex = 0
+  const scored: { key: string; label: string; score: number }[] = []
+
+  for (const item of items) {
+    const eff = computeEffectivePageSeo(item.defaults, item.override)
+    const { score } = scorePageSeo(eff)
+    total += score
+    scored.push({ key: item.key, label: item.label, score })
+    if (score < 75) needsAttention += 1
+    if (!eff.description.trim()) missingDescription += 1
+    if (!eff.ogImageUrl) missingShareImage += 1
+    if (!eff.robotsIndex) noindex += 1
+  }
+
+  const score = Math.round(total / items.length)
+  const weakestPages = scored
+    .filter((p) => p.score < 90)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 4)
+
+  return {
+    score,
+    grade: gradeForScore(score),
+    pageCount: items.length,
+    needsAttention,
+    missingDescription,
+    missingShareImage,
+    noindex,
+    weakestPages,
+  }
 }

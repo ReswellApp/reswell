@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { EMPTY_OVERRIDE, isOverrideEmpty, type ManagedPageSeoItem, type PageSeoOverrideValues } from "@/lib/seo/types"
 import { SeoPageList } from "./seo-page-list"
 import { SeoEditor } from "./seo-editor"
+import { SeoHealthOverview } from "./seo-health-overview"
+import { summarizeSeoHealth } from "./seo-scoring"
 
 interface SeoAdminClientProps {
   initialItems: ManagedPageSeoItem[]
@@ -38,6 +40,15 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
   }, [items, drafts])
 
   const isDirty = selected ? dirtyKeys.has(selected.key) : false
+
+  // Site-wide health reflects live drafts so the score moves as you edit.
+  const healthSummary = useMemo(() => {
+    const effectiveItems = items.map((it) => {
+      const d = drafts[it.key]
+      return d ? { ...it, override: d } : it
+    })
+    return summarizeSeoHealth(effectiveItems)
+  }, [items, drafts])
 
   function handleSelect(key: string) {
     setSelectedKey(key)
@@ -100,7 +111,10 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
   const customizedCount = items.filter((it) => it.customized).length
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="space-y-4">
+      <SeoHealthOverview summary={healthSummary} onSelectPage={handleSelect} />
+
+      <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
       <div className="rounded-lg border border-border lg:h-[calc(100vh-9rem)] lg:sticky lg:top-4">
         <SeoPageList
           items={items}
@@ -148,6 +162,7 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
             <p className="text-sm">Select a page to edit its SEO.</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   )

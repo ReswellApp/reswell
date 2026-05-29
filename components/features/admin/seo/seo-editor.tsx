@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { computeEffectivePageSeo, type ManagedPageSeoItem, type PageSeoOverrideValues } from "@/lib/seo/types"
 import { FieldCounter } from "./field-counter"
+import { SeoImageField } from "./seo-image-field"
 import { SerpPreview } from "./serp-preview"
 import { SocialPreview } from "./social-preview"
 import { SeoScore } from "./seo-score"
@@ -189,16 +190,11 @@ export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps)
               overridden={!!draft.ogDescription}
               onReset={reset("ogDescription")}
             />
-            <FieldCounter
-              id="og-image"
-              label="Share image URL"
+            <SeoImageField
+              label="Share image"
+              helpText="Shown in link previews on Google, Facebook, iMessage, Slack, and X. 1200×630 recommended."
               value={text(draft.ogImageUrl)}
-              onChange={setText("ogImageUrl")}
-              placeholder="https://… (1200×630 recommended)"
-              helpText="Used for Open Graph + Twitter when no per-field Twitter image is set."
-              mono
-              overridden={!!draft.ogImageUrl}
-              onReset={reset("ogImageUrl")}
+              onChange={(url) => onChange({ ogImageUrl: url })}
             />
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">Open Graph type</Label>
@@ -214,49 +210,6 @@ export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps)
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-foreground">Twitter card</Label>
-              <div>
-                <Segmented
-                  value={draft.twitterCard}
-                  defaultLabel="Default (large)"
-                  options={[
-                    { value: "summary_large_image", label: "Large" },
-                    { value: "summary", label: "Summary" },
-                  ]}
-                  onChange={(v) => onChange({ twitterCard: v })}
-                />
-              </div>
-            </div>
-            <FieldCounter
-              id="tw-title"
-              label="Twitter title (optional)"
-              value={text(draft.twitterTitle)}
-              onChange={setText("twitterTitle")}
-              placeholder={effective.ogTitle}
-              overridden={!!draft.twitterTitle}
-              onReset={reset("twitterTitle")}
-            />
-            <FieldCounter
-              id="tw-description"
-              label="Twitter description (optional)"
-              value={text(draft.twitterDescription)}
-              onChange={setText("twitterDescription")}
-              placeholder={effective.ogDescription}
-              multiline
-              overridden={!!draft.twitterDescription}
-              onReset={reset("twitterDescription")}
-            />
-            <FieldCounter
-              id="tw-image"
-              label="Twitter image URL (optional)"
-              value={text(draft.twitterImageUrl)}
-              onChange={setText("twitterImageUrl")}
-              placeholder="Falls back to the share image"
-              mono
-              overridden={!!draft.twitterImageUrl}
-              onReset={reset("twitterImageUrl")}
-            />
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-2 pt-2">
@@ -309,7 +262,7 @@ export function SeoEditor({ item, draft, onChange, siteOrigin }: SeoEditorProps)
             imageUrl={effective.ogImageUrl}
             url={effective.canonical}
             siteOrigin={siteOrigin}
-            card={effective.twitterCard}
+            card="summary_large_image"
           />
         </div>
         <div className="rounded-lg border border-border p-4">

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { MANAGED_PAGES, getManagedPage } from "@/lib/seo/managed-pages"
 import { isOverrideEmpty, type ManagedPageSeoItem } from "@/lib/seo/types"
-import { mapOverrideRowToValues } from "@/lib/seo/resolve-page-seo"
+import { mapOverrideRowToValues } from "@/lib/seo/map-override-row"
 import {
   deletePageSeoOverride,
   listPageSeoOverrides,
