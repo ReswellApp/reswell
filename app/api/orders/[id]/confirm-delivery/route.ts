@@ -3,8 +3,8 @@ import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerL
 import { NextRequest, NextResponse } from "next/server"
 
 /**
- * Buyer marks the shipment received. Does not credit the seller wallet — a full admin must
- * release earnings from the admin order page after verifying delivery.
+ * Buyer marks the shipment received (manual-tracking orders only).
+ * Reswell shipping with carrier tracking completes from ShipEngine delivery + 24h hold.
  */
 export async function POST(
   _request: NextRequest,

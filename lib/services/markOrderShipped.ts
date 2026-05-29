@@ -85,7 +85,7 @@ async function postOrderShippedNotification(
     carrier ? `Carrier: ${carrier}` : null,
     `Tracking #: ${trackingNumber}`,
     "",
-    "Funds stay on hold until the buyer confirms delivery on Reswell and a Reswell admin approves your payout.",
+    "Funds stay on hold until the carrier reports delivery on Reswell tracking, then release automatically after a 24-hour review window.",
   ]
     .filter((l) => l !== null)
     .join("\n")

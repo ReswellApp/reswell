@@ -18,7 +18,9 @@ export function CarrierTrackingPanel(props: {
     "Tracking update"
   const sub = detail.carrier_status_description?.trim()
   const showCarrierDeliveredNote =
-    detail.status_code === "DE" && marketplaceDeliveryStatus === "shipped"
+    detail.status_code === "DE" &&
+    marketplaceDeliveryStatus !== "delivered" &&
+    marketplaceDeliveryStatus !== "picked_up"
 
   return (
     <Card className="border-primary/20">
@@ -34,13 +36,13 @@ export function CarrierTrackingPanel(props: {
               {marketplaceDeliveryStatus !== "delivered" ? (
                 variant === "seller" ? (
                   <>
-                    The buyer confirms delivery on Reswell to complete the order. A Reswell admin then approves your
-                    payout — it is not released automatically.
+                    When the carrier reports delivery, Reswell releases your payout automatically after a 24-hour
+                    review window.
                   </>
                 ) : (
                   <>
-                    When your board arrives, use <span className="font-medium text-foreground">Confirm delivery</span>{" "}
-                    on Reswell to finish the order.
+                    When the carrier reports delivery, Reswell completes your order from live tracking — no separate
+                    confirmation needed.
                   </>
                 )
               ) : null}
@@ -66,13 +68,13 @@ export function CarrierTrackingPanel(props: {
           <p className="text-xs text-muted-foreground rounded-lg border border-border/80 bg-muted/30 px-3 py-2 leading-relaxed">
             {variant === "seller" ? (
               <>
-                The carrier may show delivered. The buyer still confirms on Reswell before the sale completes; then a
-                Reswell admin approves your payout.
+                The carrier reports delivery. Reswell uses carrier tracking as the source of truth — your payout
+                releases automatically 24 hours after delivery.
               </>
             ) : (
               <>
-                The carrier may show this shipment as delivered. On Reswell, your purchase stays open until you confirm —
-                so you can inspect your board first.
+                The carrier reports delivery. Reswell completes your order from carrier tracking — no separate
+                confirmation needed.
               </>
             )}
           </p>

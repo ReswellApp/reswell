@@ -237,8 +237,8 @@ export function BuyerConfirmDelivery({
           Confirm delivery
         </CardTitle>
         <CardDescription>
-          Received your item? Confirm so we know it was delivered. A Reswell admin still must approve payout to the
-          seller after review — confirming here does not release funds by itself.
+          Received your item? Confirm so we know it was delivered. Seller payout timing follows Reswell
+          carrier tracking when available — this button is for orders without live Reswell tracking.
         </CardDescription>
       </CardHeader>
       <CardContent>

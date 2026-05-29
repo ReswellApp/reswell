@@ -175,7 +175,7 @@ export function ReswellTrackingSection(props: {
   }, [loadTracking])
 
   useEffect(() => {
-    if (marketplaceDeliveryStatus !== "shipped") return
+    if (marketplaceDeliveryStatus === "delivered" || marketplaceDeliveryStatus === "picked_up") return
 
     const id = window.setInterval(() => {
       void loadTracking({ silent: true })
@@ -187,7 +187,9 @@ export function ReswellTrackingSection(props: {
   const sub = detail?.carrier_status_description?.trim()
   const tone = trackingStatusTone(detail?.status_code)
   const showCarrierDeliveredNote =
-    detail?.status_code === "DE" && marketplaceDeliveryStatus === "shipped"
+    detail?.status_code === "DE" &&
+    marketplaceDeliveryStatus !== "delivered" &&
+    marketplaceDeliveryStatus !== "picked_up"
   const events = detail?.events ?? []
 
   const copyTracking = async () => {
@@ -275,13 +277,13 @@ export function ReswellTrackingSection(props: {
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" aria-hidden />
                 {variant === "seller" ? (
                   <>
-                    The carrier may show delivered. The buyer still confirms on Reswell before the sale completes;
-                    then a Reswell admin approves your payout.
+                    The carrier reports this shipment as delivered. Reswell uses carrier tracking as the source of
+                    truth — your payout releases automatically 24 hours after delivery.
                   </>
                 ) : (
                   <>
-                    The carrier may show this shipment as delivered. On Reswell, your purchase stays open until you
-                    confirm — so you can inspect your board first.
+                    The carrier reports this shipment as delivered. Reswell marks your order complete from carrier
+                    tracking — no separate confirmation needed.
                   </>
                 )}
               </p>

@@ -360,8 +360,8 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <p>
             Verification must be complete and you need available (ready) balance in your wallet.
-            Pending earnings from recent sales may still be held until the buyer confirms delivery or
-            pickup. See{" "}
+            Pending earnings from recent sales may still be held until carrier delivery is confirmed on
+            Reswell tracking (plus a 24-hour review window) or pickup is verified. See{" "}
             {helpLink("/help/selling/how-long-to-get-paid", "How long does it take to get paid?")}.
           </p>
         ),
@@ -542,10 +542,9 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <BulletList
             items={[
-              <>Shipped orders: tracking not added yet, or buyer has not confirmed delivery.</>,
+              <>Shipped orders: tracking not added yet, or carrier has not reported delivery (Reswell releases earnings 24 hours after carrier delivery).</>,
               <>Pickup orders: pickup code not verified.</>,
               <>An open Purchase Protection claim or refund on the order.</>,
-              <>Admin review on certain payout releases (shown on the sale page).</>,
             ]}
           />
         ),

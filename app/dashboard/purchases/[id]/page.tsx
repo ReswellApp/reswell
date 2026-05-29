@@ -360,7 +360,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       />
 
       {/* Buyer action: confirm delivery for shipped purchases (hidden when refunded) */}
-      {!fulfillmentLocked && (
+      {!fulfillmentLocked && !order.tracking_number?.trim() && (
         <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
       )}
 

@@ -11,6 +11,7 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
+import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import { createClient } from "@/lib/supabase/client"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
@@ -146,6 +147,12 @@ export default function AdminOrderDetailPage() {
   const canRefund = payload.capabilities.canRefund
   const canReleaseShippingSellerEarnings =
     payload.capabilities.canReleaseShippingSellerEarnings
+  const showLegacyManualPayoutRelease =
+    canReleaseShippingSellerEarnings &&
+    o.payout?.status === "held" &&
+    o.payout.hold_reason !== "awaiting_carrier_settlement" &&
+    (o.payout.hold_reason === "awaiting_manual_release" ||
+      (o.delivery_status === "delivered" && !o.carrier_delivered_at))
   const displayNum = formatOrderNumForCustomer(o.order_num, o.id)
 
   async function releaseShippingSellerEarnings() {
@@ -276,6 +283,22 @@ export default function AdminOrderDetailPage() {
                   <p className="text-muted-foreground">Tracking</p>
                   <p className="font-mono text-xs break-all">{o.tracking_number ?? "—"}</p>
                 </div>
+                {o.carrier_delivered_at && (
+                  <div>
+                    <p className="text-muted-foreground">Carrier delivered</p>
+                    <p className="font-medium">
+                      {format(new Date(o.carrier_delivered_at), "MMM d, yyyy HH:mm")}
+                    </p>
+                  </div>
+                )}
+                {o.carrier_delivered_at && o.payout?.status === "held" && (
+                  <div>
+                    <p className="text-muted-foreground">Auto payout release</p>
+                    <p className="font-medium">
+                      {format(carrierDeliveryPayoutEligibleAt(new Date(o.carrier_delivered_at)), "MMM d, yyyy HH:mm")}
+                    </p>
+                  </div>
+                )}
                 {o.payout && (
                   <div className="sm:col-span-2 space-y-3">
                     <div>
@@ -296,19 +319,25 @@ export default function AdminOrderDetailPage() {
                     {o.payout.status === "pending" && !o.payout.released_at && (
                       <p className="text-xs text-amber-950 dark:text-amber-100 leading-relaxed rounded-md border border-amber-500/30 bg-amber-500/[0.08] px-3 py-2">
                         Payout row looks inconsistent (pending without a release timestamp). Apply the latest
-                        database migrations or ask engineering to repair this order&apos;s{" "}
-                        <span className="font-mono">payouts</span> row — funds should stay on hold until an admin
-                        approves.
+                        database migrations — the hourly job or an admin legacy release should repair this row.
                       </p>
                     )}
-                    {o.payout.status === "held" && canReleaseShippingSellerEarnings && (
+                    {o.payout.status === "held" &&
+                      o.payout.hold_reason === "awaiting_carrier_settlement" &&
+                      o.carrier_delivered_at && (
+                      <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                        <span className="font-medium text-foreground">Carrier delivery confirmed. </span>
+                        Seller earnings release automatically 24 hours after the carrier delivery timestamp (
+                        {format(carrierDeliveryPayoutEligibleAt(new Date(o.carrier_delivered_at)), "MMM d, yyyy HH:mm")}
+                        ).
+                      </p>
+                    )}
+                    {showLegacyManualPayoutRelease && (
                       <div className="rounded-md border border-primary/25 bg-primary/[0.04] px-3 py-3 space-y-2">
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                          <span className="font-medium text-foreground">Release funds to the seller: </span>
-                          after you verify delivery, use the button below. This credits the seller&apos;s Reswell wallet
-                          (moves net earnings from <span className="font-medium text-foreground">hold</span> to{" "}
-                          <span className="font-medium text-foreground">available</span>).{" "}
-                          Buyer confirmation alone does not do this.
+                          <span className="font-medium text-foreground">Legacy manual release: </span>
+                          this order does not use carrier auto-payout. After verifying delivery, use the button below
+                          to credit the seller&apos;s wallet.
                         </p>
                         <Button
                           type="button"
@@ -326,6 +355,15 @@ export default function AdminOrderDetailPage() {
                           Approve payout to seller
                         </Button>
                       </div>
+                    )}
+                    {o.payout.status === "held" &&
+                      !showLegacyManualPayoutRelease &&
+                      canReleaseShippingSellerEarnings &&
+                      o.payout.hold_reason !== "awaiting_carrier_settlement" && (
+                      <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/60 pt-3">
+                        Payout is on hold. Carrier-tracked Reswell shipping orders release automatically 24 hours
+                        after ShipEngine reports delivery.
+                      </p>
                     )}
                     {o.payout.status === "held" && !canReleaseShippingSellerEarnings && (
                       <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/60 pt-3">
@@ -356,7 +394,7 @@ export default function AdminOrderDetailPage() {
 
           {(o.status === "confirmed" || o.status === "refunding") &&
             !canRefund &&
-            !(o.fulfillment_method === "shipping" && canReleaseShippingSellerEarnings && o.payout?.status === "held") && (
+            !showLegacyManualPayoutRelease && (
             <div className="border-t border-border/60 pt-4">
               <p className="text-muted-foreground text-sm">
                 Only a full admin can issue refunds. Employees can review this order and escalate.

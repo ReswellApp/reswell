@@ -4,6 +4,7 @@ import {
   type OrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
 import type { ShipEngineTrackWebhookPayload } from "@/lib/validations/shipengine-track-webhook"
+import { persistOrderCarrierTrackingSnapshot } from "@/lib/services/persistOrderCarrierTracking"
 
 function normalizeTrackingNumber(value: string): string {
   return value.trim()
@@ -16,8 +17,8 @@ function buildDetail(payload: ShipEngineTrackWebhookPayload): OrderTrackingDetai
 }
 
 /**
- * Persists latest carrier tracking snapshot on matching orders (by tracking number).
- * Does not settle payouts — admins release seller earnings manually after verifying delivery.
+ * Persists latest carrier tracking on matching orders (by tracking number),
+ * syncs marketplace delivery from ShipEngine, and auto-releases payouts after the 24h hold.
  */
 export async function applyShipEngineTrackWebhook(
   payload: ShipEngineTrackWebhookPayload,
@@ -36,24 +37,25 @@ export async function applyShipEngineTrackWebhook(
   const supabase = createServiceRoleClient()
   const { data: rows, error } = await supabase
     .from("orders")
-    .update({
-      tracking_detail: detail,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("tracking_number", trackingNumber)
     .select("id")
+    .eq("tracking_number", trackingNumber)
 
   if (error) {
-    console.error("[applyShipEngineTrackWebhook] update", error)
-    return { ok: false, error: "Database update failed" }
+    console.error("[applyShipEngineTrackWebhook] lookup", error)
+    return { ok: false, error: "Database lookup failed" }
   }
 
-  const n = rows?.length ?? 0
-  if (n === 0) {
+  const orderIds = (rows ?? []).map((r) => (r as { id: string }).id)
+  if (orderIds.length === 0) {
     console.info("[applyShipEngineTrackWebhook] no order for tracking_number", {
       trackingNumber: trackingNumber.slice(0, 8) + "…",
     })
+    return { ok: true, matched: 0 }
   }
 
-  return { ok: true, matched: n }
+  for (const orderId of orderIds) {
+    await persistOrderCarrierTrackingSnapshot(supabase, orderId, detail)
+  }
+
+  return { ok: true, matched: orderIds.length }
 }

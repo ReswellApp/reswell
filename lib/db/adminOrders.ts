@@ -26,7 +26,8 @@ export type AdminOrderDetail = {
   stripe_checkout_session_id: string | null
   delivery_status: string | null
   tracking_number: string | null
-  /** Matching payouts row when present — shipping uses held → pending manual release pipeline. */
+  carrier_delivered_at: string | null
+  /** Matching payouts row when present — shipping uses held → pending after carrier delivery + 24h hold. */
   payout: { status: string; hold_reason: string | null; released_at: string | null } | null
 }
 
@@ -44,7 +45,8 @@ export function isPostgrestSchemaStaleError(err: Pick<PostgrestError, "code" | "
     msg.includes("schema cache") ||
     msg.includes("Could not find the ") ||
     msg.includes("Could not find column") ||
-    msg.includes("released_at")
+    msg.includes("released_at") ||
+    msg.includes("carrier_delivered_at")
   )
 }
 
@@ -58,7 +60,7 @@ export async function getOrderDetailForAdmin(
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, order_num, status, amount, shipping_amount, platform_fee, seller_earnings, payment_method, fulfillment_method, delivery_status, tracking_number, created_at, refunded_at, buyer_id, seller_id, listing_id, stripe_checkout_session_id",
+      "id, order_num, status, amount, shipping_amount, platform_fee, seller_earnings, payment_method, fulfillment_method, delivery_status, tracking_number, carrier_delivered_at, created_at, refunded_at, buyer_id, seller_id, listing_id, stripe_checkout_session_id",
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -113,6 +115,7 @@ export async function getOrderDetailForAdmin(
   const ordMeta = order as {
     delivery_status?: string | null
     tracking_number?: string | null
+    carrier_delivered_at?: string | null
   }
 
   return {
@@ -129,6 +132,10 @@ export async function getOrderDetailForAdmin(
       fulfillment_method: (order.fulfillment_method as string | null) ?? null,
       delivery_status: (ordMeta.delivery_status as string | null) ?? null,
       tracking_number: (ordMeta.tracking_number as string | null) ?? null,
+      carrier_delivered_at:
+        typeof ordMeta.carrier_delivered_at === "string" && ordMeta.carrier_delivered_at
+          ? ordMeta.carrier_delivered_at
+          : null,
       payout,
       created_at: order.created_at as string,
       refunded_at: (order.refunded_at as string | null) ?? null,

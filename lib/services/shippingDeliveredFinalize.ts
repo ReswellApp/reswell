@@ -6,9 +6,9 @@ export type ShippingDeliveredFinalizeResult =
   | { ok: false; error: string }
 
 /**
- * Shipped orders only: ensures `delivery_status` is `delivered`, payout moves held → pending,
+ * Shipping orders: ensures `delivery_status` is `delivered`, payout moves held → pending,
  * and seller wallet credit runs (idempotent RPC).
- * Invoked from admin “Approve payout” after delivery is verified (buyer confirmation is informational only).
+ * Used after the 24h carrier-delivery hold and for legacy admin overrides.
  */
 export async function markShippingDeliveredAndReleaseSellerEarnings(
   orderId: string,
@@ -23,7 +23,7 @@ export async function markShippingDeliveredAndReleaseSellerEarnings(
 
   const { data: row, error: fetchErr } = await svc
     .from("orders")
-    .select("id, status, fulfillment_method, delivery_status")
+    .select("id, status, fulfillment_method, delivery_status, carrier_delivered_at")
     .eq("id", orderId)
     .maybeSingle()
 
@@ -36,6 +36,7 @@ export async function markShippingDeliveredAndReleaseSellerEarnings(
     status: string
     fulfillment_method: string | null
     delivery_status: string
+    carrier_delivered_at: string | null
   }
 
   if (order.status !== "confirmed") {
@@ -45,25 +46,28 @@ export async function markShippingDeliveredAndReleaseSellerEarnings(
     return { ok: false, error: "Not a shipped order" }
   }
 
-  if (order.delivery_status !== "shipped" && order.delivery_status !== "delivered") {
-    return {
-      ok: false,
-      error:
-        order.delivery_status === "pending"
-          ? "Order must be shipped before delivery can finalize"
-          : "Invalid fulfillment state",
-    }
-  }
-
   const nowIso = new Date().toISOString()
   let transitionedToDelivered = false
 
-  if (order.delivery_status === "shipped") {
+  if (order.delivery_status !== "delivered") {
+    if (
+      order.delivery_status !== "shipped" &&
+      !(order.delivery_status === "pending" && order.carrier_delivered_at)
+    ) {
+      return {
+        ok: false,
+        error:
+          order.delivery_status === "pending"
+            ? "Order must be shipped before delivery can finalize"
+            : "Invalid fulfillment state",
+      }
+    }
+
     const { data: patched, error: updErr } = await svc
       .from("orders")
       .update({ delivery_status: "delivered", updated_at: nowIso })
       .eq("id", orderId)
-      .eq("delivery_status", "shipped")
+      .in("delivery_status", ["shipped", "pending"])
       .select("id")
       .maybeSingle()
 
@@ -86,6 +90,21 @@ export async function markShippingDeliveredAndReleaseSellerEarnings(
       }
     }
   }
+
+  // Repair legacy rows stuck as pending without released_at.
+  await svc
+    .from("payouts")
+    .update({
+      status: "held",
+      hold_reason: order.carrier_delivered_at
+        ? "awaiting_carrier_settlement"
+        : "awaiting_manual_release",
+      released_at: null,
+      updated_at: nowIso,
+    })
+    .eq("order_id", orderId)
+    .eq("status", "pending")
+    .is("released_at", null)
 
   const { error: payErr } = await svc
     .from("payouts")

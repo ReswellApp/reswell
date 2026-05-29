@@ -229,14 +229,15 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
       {
         key: "transit",
         title: "In transit",
-        description: "Watch tracking for delivery updates.",
+        description: "Watch Reswell tracking for live carrier scans.",
         state: shipped && !delivered ? "current" : shipped ? "done" : "upcoming",
       },
       {
-        key: "confirm",
-        title: "Confirm delivery",
-        description:
-          "When your board arrives, confirm here so we know it was delivered. Reswell will review and a team member can approve payout to the seller — it is not released automatically.",
+        key: "delivered",
+        title: "Delivered",
+        description: hasTrack
+          ? "When the carrier reports delivery, Reswell completes your order and releases the seller payout after a 24-hour review window."
+          : "When your board arrives, confirm delivery to complete the order.",
         state: delivered ? "done" : shipped ? "current" : "upcoming",
       },
     ]
