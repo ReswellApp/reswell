@@ -1,18 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { listingDetailHref } from '@/lib/listing-href'
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { proxiedListingImageSrc } from '@/lib/listing-media-proxy-url'
 import { setImpersonation } from '@/lib/impersonation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -32,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -41,14 +42,69 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { MoreVertical, Eye, EyeOff, Trash2, Flag, Package, RotateCcw, Pencil, Tag, Layers } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Boxes,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  Eye,
+  EyeOff,
+  Flag,
+  Layers,
+  MoreVertical,
+  Package,
+  Pencil,
+  RotateCcw,
+  Tag,
+  Trash2,
+  TrendingUp,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { cn } from '@/lib/utils'
 import { getAdminSession } from '@/app/actions/account'
 
 function normalizeCategoryId(id: string | undefined | null): string {
   return (id ?? '').trim().toLowerCase()
+}
+
+function formatUsd(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount)
+}
+
+function compactUsd(amount: number): string {
+  if (Math.abs(amount) >= 10000) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount)
+  }
+  return formatUsd(amount)
+}
+
+function compactNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    notation: value >= 10000 ? 'compact' : 'standard',
+    maximumFractionDigits: 1,
+  }).format(value)
+}
+
+function sellerInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 interface Listing {
@@ -78,6 +134,89 @@ interface CategoryOption {
   board: boolean
 }
 
+type SortKey = 'created_at' | 'price' | 'views' | 'title'
+type SortDir = 'asc' | 'desc'
+
+const STATUS_META: Record<string, { label: string; dot: string; badge: string }> = {
+  active: {
+    label: 'Active',
+    dot: 'bg-emerald-500',
+    badge: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  },
+  sold: {
+    label: 'Sold',
+    dot: 'bg-sky-500',
+    badge: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400',
+  },
+  pending: {
+    label: 'Pending',
+    dot: 'bg-amber-500',
+    badge: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  },
+  pending_sale: {
+    label: 'Pending sale',
+    dot: 'bg-violet-500',
+    badge: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400',
+  },
+  draft: {
+    label: 'Draft',
+    dot: 'bg-muted-foreground/50',
+    badge: 'border-border bg-muted text-muted-foreground',
+  },
+  removed: {
+    label: 'Removed',
+    dot: 'bg-rose-500',
+    badge: 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400',
+  },
+}
+
+function statusMeta(status: string) {
+  return (
+    STATUS_META[status] ?? {
+      label: capitalizeWords(status.replace(/_/g, ' ')),
+      dot: 'bg-muted-foreground/50',
+      badge: 'border-border bg-muted text-muted-foreground',
+    }
+  )
+}
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100]
+
+interface StatTileProps {
+  icon: typeof Package
+  accent: 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet'
+  label: string
+  value: string
+  hint?: string
+}
+
+const STAT_ACCENT: Record<StatTileProps['accent'], string> = {
+  neutral: 'bg-secondary text-foreground',
+  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+  violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+}
+
+function StatTile({ icon: Icon, accent, label, value, hint }: StatTileProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/15 hover:shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', STAT_ACCENT[accent])}>
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+      </div>
+      <p className="mt-3 text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground">
+        {value}
+      </p>
+      {hint ? <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
+  )
+}
+
 export default function AdminListingsPage() {
   const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
@@ -85,6 +224,13 @@ export default function AdminListingsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
+  const [visibilityFilter, setVisibilityFilter] = useState('all')
+  const [sortKey, setSortKey] = useState<SortKey>('created_at')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [categoryDialogListing, setCategoryDialogListing] = useState<Listing | null>(null)
   const [categoryPick, setCategoryPick] = useState('')
@@ -94,8 +240,9 @@ export default function AdminListingsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchListings()
-  }, [statusFilter, sectionFilter])
+    void fetchListings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -108,6 +255,11 @@ export default function AdminListingsPage() {
       cancelled = true
     }
   }, [])
+
+  // Reset to first page whenever the working set changes.
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, statusFilter, sectionFilter, visibilityFilter, pageSize, sortKey, sortDir])
 
   useEffect(() => {
     if (!categoryDialogListing) {
@@ -137,7 +289,7 @@ export default function AdminListingsPage() {
           setDialogCategoryRows([])
           return
         }
-        let rows = [...(json.categories ?? [])]
+        const rows = [...(json.categories ?? [])]
         const targetId = listing.category_id.trim().toLowerCase()
         const hasCurrent = rows.some((r) => r.id.trim().toLowerCase() === targetId)
         if (!hasCurrent) {
@@ -149,11 +301,8 @@ export default function AdminListingsPage() {
         }
         rows.sort((a, b) => a.name.localeCompare(b.name))
         setDialogCategoryRows(rows)
-        const target = listing.category_id.trim().toLowerCase()
-        const match = rows.find((r) => r.id.trim().toLowerCase() === target)
-        if (match) {
-          setCategoryPick(match.id)
-        }
+        const match = rows.find((r) => r.id.trim().toLowerCase() === targetId)
+        if (match) setCategoryPick(match.id)
       })
       .catch(() => {
         if (!cancelled) {
@@ -171,22 +320,15 @@ export default function AdminListingsPage() {
   }, [categoryDialogListing])
 
   async function fetchListings() {
-    const params = new URLSearchParams()
-    if (statusFilter !== 'all') params.set('status', statusFilter)
-    if (sectionFilter !== 'all') params.set('section', sectionFilter)
-
+    setLoading(true)
     try {
-      const res = await fetch(`/api/admin/listings?${params.toString()}`, {
-        credentials: 'include',
-      })
+      const res = await fetch('/api/admin/listings', { credentials: 'include' })
       const json = (await res.json()) as { listings?: Listing[]; error?: string }
-
       if (!res.ok) {
         toast.error(typeof json.error === 'string' ? json.error : 'Failed to load listings')
         setListings([])
         return
       }
-
       setListings(json.listings ?? [])
     } catch {
       toast.error('Failed to load listings')
@@ -197,53 +339,77 @@ export default function AdminListingsPage() {
   }
 
   async function updateListingStatus(id: string, newStatus: string) {
-    const { error } = await supabase
-      .from('listings')
-      .update({ status: newStatus })
-      .eq('id', id)
-
+    const { error } = await supabase.from('listings').update({ status: newStatus }).eq('id', id)
     if (!error) {
-      setListings(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l))
+      setListings((prev) => prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l)))
       toast.success(`Listing marked as ${newStatus}`)
     } else {
       toast.error('Failed to update listing')
     }
   }
 
+  async function setVisibilityRequest(id: string, hidden: boolean): Promise<boolean> {
+    const res = await fetch(`/api/admin/listings/${encodeURIComponent(id)}/site-visibility`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hidden_from_site: hidden }),
+    })
+    return res.ok
+  }
+
   async function toggleSiteVisibility(listing: Listing) {
     const next = !Boolean(listing.hidden_from_site)
-    const res = await fetch(
-      `/api/admin/listings/${encodeURIComponent(listing.id)}/site-visibility`,
-      {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hidden_from_site: next }),
-      },
-    )
-    if (res.ok) {
+    const ok = await setVisibilityRequest(listing.id, next)
+    if (ok) {
       setListings((prev) =>
         prev.map((l) => (l.id === listing.id ? { ...l, hidden_from_site: next } : l)),
       )
       toast.success(next ? 'Hidden from site' : 'Visible on site again')
     } else {
-      const data = await res.json().catch(() => ({ error: 'Failed to update' }))
-      toast.error(typeof data.error === 'string' ? data.error : 'Failed to update visibility')
+      toast.error('Failed to update visibility')
     }
   }
 
-  async function deleteListing(id: string) {
-    if (!confirm('Permanently delete this listing? This cannot be undone.')) return
+  async function deleteListingRequest(id: string): Promise<{ ok: boolean; error?: string }> {
     const res = await fetch(`/api/admin/listings?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
       credentials: 'include',
     })
-    if (res.ok) {
-      setListings(prev => prev.filter(l => l.id !== id))
+    if (res.ok) return { ok: true }
+    const data = await res.json().catch(() => ({ error: 'Failed to delete listing' }))
+    return { ok: false, error: typeof data.error === 'string' ? data.error : 'Failed to delete' }
+  }
+
+  async function deleteListing(id: string) {
+    if (!confirm('Permanently delete this listing? This cannot be undone.')) return
+    const result = await deleteListingRequest(id)
+    if (result.ok) {
+      setListings((prev) => prev.filter((l) => l.id !== id))
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
       toast.success('Listing deleted')
     } else {
-      const data = await res.json().catch(() => ({ error: 'Failed to delete listing' }))
-      toast.error(data.error || 'Failed to delete listing')
+      toast.error(result.error ?? 'Failed to delete listing')
+    }
+  }
+
+  async function editListing(listing: Listing) {
+    const displayName = listing.profiles?.display_name || 'User'
+    const email = listing.profiles?.email || null
+    const res = await fetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: listing.user_id, displayName, email }),
+    })
+    if (res.ok) {
+      setImpersonation({ userId: listing.user_id, displayName, email })
+      router.push(`/sell?edit=${listing.id}`)
+    } else {
+      toast.error('Failed to start impersonation for editing')
     }
   }
 
@@ -283,11 +449,7 @@ export default function AdminListingsPage() {
       setListings((prev) =>
         prev.map((l) =>
           l.id === categoryDialogListing.id
-            ? {
-                ...l,
-                category_id: categoryPick.trim(),
-                categories: { name: label },
-              }
+            ? { ...l, category_id: categoryPick.trim(), categories: { name: label } }
             : l,
         ),
       )
@@ -298,116 +460,363 @@ export default function AdminListingsPage() {
     }
   }
 
-  async function editListing(listing: Listing) {
-    const displayName = listing.profiles?.display_name || 'User'
-    const email = listing.profiles?.email || null
-    const res = await fetch('/api/admin/impersonate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: listing.user_id, displayName, email }),
+  // --- Derived data ------------------------------------------------------
+
+  const stats = useMemo(() => {
+    let active = 0
+    let sold = 0
+    let hidden = 0
+    let inventoryValue = 0
+    let views = 0
+    for (const l of listings) {
+      if (l.status === 'active') {
+        active += 1
+        inventoryValue += Number(l.price) || 0
+      }
+      if (l.status === 'sold') sold += 1
+      if (l.hidden_from_site) hidden += 1
+      views += Number(l.views) || 0
+    }
+    return { total: listings.length, active, sold, hidden, inventoryValue, views }
+  }, [listings])
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    const result = listings.filter((listing) => {
+      if (statusFilter !== 'all' && listing.status !== statusFilter) return false
+      if (sectionFilter !== 'all' && listing.section !== sectionFilter) return false
+      if (visibilityFilter === 'hidden' && !listing.hidden_from_site) return false
+      if (visibilityFilter === 'visible' && listing.hidden_from_site) return false
+      if (!q) return true
+      const brand = (listing.brand ?? '').toLowerCase()
+      const model = (listing.model ?? '').toLowerCase()
+      return (
+        listing.title.toLowerCase().includes(q) ||
+        (listing.profiles?.display_name?.toLowerCase().includes(q) ?? false) ||
+        (listing.profiles?.email?.toLowerCase().includes(q) ?? false) ||
+        brand.includes(q) ||
+        model.includes(q)
+      )
     })
-    if (res.ok) {
-      setImpersonation({ userId: listing.user_id, displayName, email })
-      router.push(`/sell?edit=${listing.id}`)
+
+    const dir = sortDir === 'asc' ? 1 : -1
+    result.sort((a, b) => {
+      switch (sortKey) {
+        case 'price':
+          return (Number(a.price) - Number(b.price)) * dir
+        case 'views':
+          return (Number(a.views) - Number(b.views)) * dir
+        case 'title':
+          return a.title.localeCompare(b.title) * dir
+        case 'created_at':
+        default:
+          return (
+            (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir
+          )
+      }
+    })
+    return result
+  }, [listings, searchQuery, statusFilter, sectionFilter, visibilityFilter, sortKey, sortDir])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const pageStart = (currentPage - 1) * pageSize
+  const pageRows = filtered.slice(pageStart, pageStart + pageSize)
+
+  const pageIds = pageRows.map((l) => l.id)
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+  const somePageSelected = pageIds.some((id) => selectedIds.has(id))
+
+  function toggleSelectAllOnPage() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (allPageSelected) {
+        pageIds.forEach((id) => next.delete(id))
+      } else {
+        pageIds.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
-      toast.error('Failed to start impersonation for editing')
+      setSortKey(key)
+      setSortDir(key === 'title' ? 'asc' : 'desc')
     }
   }
 
-  const filteredListings = listings.filter((listing) => {
-    const q = searchQuery.toLowerCase()
-    if (!q) return true
-    const brand = (listing.brand ?? "").toLowerCase()
-    const model = (listing.model ?? "").toLowerCase()
-    return (
-      listing.title.toLowerCase().includes(q) ||
-      listing.profiles?.display_name?.toLowerCase().includes(q) ||
-      brand.includes(q) ||
-      model.includes(q)
-    )
-  })
+  const selectedListings = useMemo(
+    () => listings.filter((l) => selectedIds.has(l.id)),
+    [listings, selectedIds],
+  )
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-      case 'sold': return 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-      case 'pending': return 'bg-neutral-50 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
-      case 'removed': return 'bg-neutral-800 text-neutral-100 dark:bg-neutral-950 dark:text-neutral-100'
-      default: return 'bg-muted text-muted-foreground'
+  async function bulkSetVisibility(hidden: boolean) {
+    const targets = selectedListings.filter((l) => Boolean(l.hidden_from_site) !== hidden)
+    if (targets.length === 0) {
+      toast.info(hidden ? 'Selection already hidden' : 'Selection already visible')
+      return
     }
+    setBulkBusy(true)
+    const results = await Promise.all(targets.map((l) => setVisibilityRequest(l.id, hidden)))
+    const okIds = new Set(targets.filter((_, i) => results[i]).map((l) => l.id))
+    setListings((prev) =>
+      prev.map((l) => (okIds.has(l.id) ? { ...l, hidden_from_site: hidden } : l)),
+    )
+    const failed = results.filter((r) => !r).length
+    setBulkBusy(false)
+    if (failed === 0) toast.success(`${okIds.size} ${hidden ? 'hidden' : 'made visible'}`)
+    else toast.warning(`${okIds.size} updated, ${failed} failed`)
+  }
+
+  async function bulkSetStatus(status: string) {
+    if (selectedListings.length === 0) return
+    setBulkBusy(true)
+    const ids = selectedListings.map((l) => l.id)
+    const { error } = await supabase.from('listings').update({ status }).in('id', ids)
+    setBulkBusy(false)
+    if (error) {
+      toast.error('Failed to update selection')
+      return
+    }
+    const idSet = new Set(ids)
+    setListings((prev) => prev.map((l) => (idSet.has(l.id) ? { ...l, status } : l)))
+    toast.success(`${ids.length} marked as ${status}`)
+  }
+
+  async function bulkDelete() {
+    if (selectedListings.length === 0) return
+    if (
+      !confirm(
+        `Permanently delete ${selectedListings.length} listing${
+          selectedListings.length === 1 ? '' : 's'
+        }? This cannot be undone.`,
+      )
+    )
+      return
+    setBulkBusy(true)
+    const results = await Promise.all(selectedListings.map((l) => deleteListingRequest(l.id)))
+    const deletedIds = new Set(
+      selectedListings.filter((_, i) => results[i].ok).map((l) => l.id),
+    )
+    setListings((prev) => prev.filter((l) => !deletedIds.has(l.id)))
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      deletedIds.forEach((id) => next.delete(id))
+      return next
+    })
+    const failed = results.filter((r) => !r.ok).length
+    setBulkBusy(false)
+    if (failed === 0) toast.success(`${deletedIds.size} deleted`)
+    else toast.warning(`${deletedIds.size} deleted, ${failed} could not be removed (order history)`)
   }
 
   function getListingViewHref(section: string, id: string, slug?: string | null) {
     return listingDetailHref({ id, slug, section })
   }
 
+  function SortHeader({ label, sortKey: key, className }: { label: string; sortKey: SortKey; className?: string }) {
+    const active = sortKey === key
+    const Icon = !active ? ArrowUpDown : sortDir === 'asc' ? ArrowUp : ArrowDown
+    return (
+      <button
+        type="button"
+        onClick={() => toggleSort(key)}
+        className={cn(
+          'inline-flex items-center gap-1 text-left font-medium transition-colors hover:text-foreground',
+          active ? 'text-foreground' : 'text-muted-foreground',
+          className,
+        )}
+      >
+        {label}
+        <Icon className="h-3.5 w-3.5" aria-hidden />
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Manage Listings</h1>
-          <p className="text-muted-foreground">View and moderate all marketplace listings</p>
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Listings</h1>
+            <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
+              {loading ? 'Loading…' : `${stats.total} total`}
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Search, moderate, and bulk-manage every listing across the marketplace.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {isAdminUser ? (
             <Button variant="outline" asChild>
               <Link href="/admin/listings/brand-requests">
-                <Tag className="h-4 w-4 mr-2" />
-                Brand & model requests
+                <Tag className="mr-2 h-4 w-4" />
+                Brand &amp; model requests
               </Link>
             </Button>
           ) : null}
           <Button asChild>
             <Link href="/admin/listings/add">
-              <Package className="h-4 w-4 mr-2" />
+              <Package className="mr-2 h-4 w-4" />
               Add listing (for user)
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <SiteSearchBar
-              className="flex-1 md:min-w-0"
-              onSubmit={(e) => {
-                e.preventDefault()
-              }}
-            >
-              <Input
-                placeholder="Search by title, seller, brand, or model..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={siteSearchInputClassName()}
-              />
-            </SiteSearchBar>
+      {/* KPI strip */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <StatTile icon={Boxes} accent="neutral" label="Total" value={compactNumber(stats.total)} />
+        <StatTile
+          icon={Package}
+          accent="emerald"
+          label="Active"
+          value={compactNumber(stats.active)}
+          hint={stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}% of catalog` : undefined}
+        />
+        <StatTile icon={Tag} accent="sky" label="Sold" value={compactNumber(stats.sold)} />
+        <StatTile
+          icon={EyeOff}
+          accent="amber"
+          label="Hidden"
+          value={compactNumber(stats.hidden)}
+          hint="From site"
+        />
+        <StatTile
+          icon={DollarSign}
+          accent="violet"
+          label="Active value"
+          value={compactUsd(stats.inventoryValue)}
+          hint="Live inventory"
+        />
+        <StatTile icon={TrendingUp} accent="neutral" label="Total views" value={compactNumber(stats.views)} />
+      </div>
+
+      {/* Toolbar */}
+      <div className="rounded-2xl border border-border bg-card p-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <SiteSearchBar
+            className="flex-1 lg:min-w-0"
+            onSubmit={(e) => e.preventDefault()}
+          >
+            <Input
+              placeholder="Search by title, seller, email, brand, or model…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={siteSearchInputClassName()}
+            />
+          </SiteSearchBar>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:shrink-0">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-40">
+              <SelectTrigger className="lg:w-36">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="sold">Sold</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="pending_sale">Pending sale</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="removed">Removed</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sectionFilter} onValueChange={setSectionFilter}>
-              <SelectTrigger className="w-full md:w-40">
+              <SelectTrigger className="lg:w-36">
                 <SelectValue placeholder="Section" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Sections</SelectItem>
+                <SelectItem value="all">All sections</SelectItem>
                 <SelectItem value="surfboards">Surfboards</SelectItem>
+                <SelectItem value="new">New &amp; retail</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
+              <SelectTrigger className="lg:w-36">
+                <SelectValue placeholder="Visibility" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All visibility</SelectItem>
+                <SelectItem value="visible">Visible</SelectItem>
+                <SelectItem value="hidden">Hidden</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={`${sortKey}:${sortDir}`}
+              onValueChange={(v) => {
+                const [k, d] = v.split(':') as [SortKey, SortDir]
+                setSortKey(k)
+                setSortDir(d)
+              }}
+            >
+              <SelectTrigger className="lg:w-40">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at:desc">Newest first</SelectItem>
+                <SelectItem value="created_at:asc">Oldest first</SelectItem>
+                <SelectItem value="price:desc">Price: high → low</SelectItem>
+                <SelectItem value="price:asc">Price: low → high</SelectItem>
+                <SelectItem value="views:desc">Most viewed</SelectItem>
+                <SelectItem value="title:asc">Title A → Z</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        {!loading && filtered.length !== listings.length ? (
+          <p className="mt-2 px-1 text-xs text-muted-foreground">
+            {filtered.length} match{filtered.length === 1 ? '' : 'es'} of {listings.length} listings
+          </p>
+        ) : null}
+      </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 ? (
+        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-foreground/15 bg-card/95 p-2.5 pl-4 shadow-md backdrop-blur supports-[backdrop-filter]:bg-card/80">
+          <span className="text-sm font-medium tabular-nums text-foreground">
+            {selectedIds.size} selected
+          </span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" disabled={bulkBusy} onClick={() => void bulkSetVisibility(false)}>
+              <Eye className="mr-1.5 h-4 w-4" /> Show
+            </Button>
+            <Button variant="outline" size="sm" disabled={bulkBusy} onClick={() => void bulkSetVisibility(true)}>
+              <EyeOff className="mr-1.5 h-4 w-4" /> Hide
+            </Button>
+            <Button variant="outline" size="sm" disabled={bulkBusy} onClick={() => void bulkSetStatus('removed')}>
+              <Flag className="mr-1.5 h-4 w-4" /> Remove
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={bulkBusy}
+              className="text-destructive hover:text-destructive"
+              onClick={() => void bulkDelete()}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+            </Button>
+            <Button variant="ghost" size="sm" disabled={bulkBusy} onClick={() => setSelectedIds(new Set())}>
+              <X className="mr-1.5 h-4 w-4" /> Clear
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Category dialog */}
       <Dialog
         open={categoryDialogListing !== null}
         onOpenChange={(open) => {
@@ -420,7 +829,7 @@ export default function AdminListingsPage() {
           </DialogHeader>
           {categoryDialogListing ? (
             <div className="space-y-3 py-1">
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <p className="line-clamp-2 text-sm text-muted-foreground">
                 {capitalizeWords(categoryDialogListing.title)}
               </p>
               <Select
@@ -430,9 +839,7 @@ export default function AdminListingsPage() {
               >
                 <SelectTrigger>
                   <SelectValue
-                    placeholder={
-                      dialogCategoriesLoading ? 'Loading categories…' : 'Select category'
-                    }
+                    placeholder={dialogCategoriesLoading ? 'Loading categories…' : 'Select category'}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -458,7 +865,7 @@ export default function AdminListingsPage() {
             <Button
               type="button"
               variant="default"
-              className="min-w-[5.5rem] shrink-0 disabled:opacity-100 disabled:bg-muted disabled:text-foreground disabled:border disabled:border-border"
+              className="min-w-[5.5rem] shrink-0 disabled:border disabled:border-border disabled:bg-muted disabled:text-foreground disabled:opacity-100"
               onClick={() => void saveListingCategory()}
               disabled={
                 categorySaving ||
@@ -474,96 +881,180 @@ export default function AdminListingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Listings Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-8 text-center">
-              <Package className="h-8 w-8 animate-pulse text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">Loading listings...</p>
-            </div>
-          ) : filteredListings.length === 0 ? (
-            <div className="p-8 text-center">
-              <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">No listings found</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Listing</TableHead>
-                  <TableHead>Seller</TableHead>
-                  <TableHead>Section</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredListings.map((listing) => (
-                  <TableRow key={listing.id}>
+      {/* Table */}
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        {loading ? (
+          <div className="divide-y divide-border">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 p-4">
+                <div className="h-12 w-12 shrink-0 animate-pulse rounded-lg bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-1/3 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-1/4 animate-pulse rounded bg-muted" />
+                </div>
+                <div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+              <Package className="h-6 w-6 text-muted-foreground" />
+            </span>
+            <p className="mt-3 font-medium text-foreground">No listings found</p>
+            <p className="text-sm text-muted-foreground">
+              {listings.length === 0
+                ? 'There are no listings yet.'
+                : 'Try adjusting your search or filters.'}
+            </p>
+            {listings.length > 0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setSearchQuery('')
+                  setStatusFilter('all')
+                  setSectionFilter('all')
+                  setVisibilityFilter('all')
+                }}
+              >
+                Reset filters
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-10 pl-4">
+                  <Checkbox
+                    checked={allPageSelected}
+                    onCheckedChange={toggleSelectAllOnPage}
+                    aria-label="Select all on page"
+                    className={cn(!allPageSelected && somePageSelected && 'opacity-70')}
+                  />
+                </TableHead>
+                <TableHead>
+                  <SortHeader label="Listing" sortKey="title" />
+                </TableHead>
+                <TableHead>Seller</TableHead>
+                <TableHead>Section</TableHead>
+                <TableHead>Brand / model</TableHead>
+                <TableHead className="text-right">
+                  <SortHeader label="Price" sortKey="price" className="ml-auto" />
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">
+                  <SortHeader label="Views" sortKey="views" className="ml-auto" />
+                </TableHead>
+                <TableHead>
+                  <SortHeader label="Date" sortKey="created_at" />
+                </TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageRows.map((listing) => {
+                const meta = statusMeta(listing.status)
+                const selected = selectedIds.has(listing.id)
+                return (
+                  <TableRow key={listing.id} data-state={selected ? 'selected' : undefined}>
+                    <TableCell className="pl-4">
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={() => toggleSelect(listing.id)}
+                        aria-label={`Select ${listing.title}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="relative w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
+                        <Link
+                          href={getListingViewHref(listing.section, listing.id, listing.slug)}
+                          className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border"
+                        >
                           {listing.listing_images?.[0]?.url ? (
                             <Image
-                              src={proxiedListingImageSrc(listing.listing_images[0].url) || "/placeholder.svg"}
+                              src={proxiedListingImageSrc(listing.listing_images[0].url) || '/placeholder.svg'}
                               alt=""
                               fill
-                              className="object-cover object-center"
+                              sizes="48px"
+                              className="object-cover object-center transition-transform duration-200 group-hover:scale-110"
                               unoptimized
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
+                            <div className="flex h-full w-full items-center justify-center">
                               <Package className="h-4 w-4 text-muted-foreground" />
                             </div>
                           )}
-                        </div>
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span className="font-medium text-foreground line-clamp-1 max-w-[200px]">
-                            {capitalizeWords(listing.title)}
+                        </Link>
+                        <div className="flex min-w-0 flex-col">
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              href={getListingViewHref(listing.section, listing.id, listing.slug)}
+                              className="line-clamp-1 max-w-[240px] font-medium text-foreground hover:underline"
+                            >
+                              {capitalizeWords(listing.title)}
+                            </Link>
+                            {listing.hidden_from_site ? (
+                              <span title="Hidden from site">
+                                <EyeOff className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-hidden />
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="line-clamp-1 max-w-[240px] text-xs text-muted-foreground">
+                            {listing.categories?.name ?? 'Uncategorized'}
                           </span>
-                          {listing.hidden_from_site ? (
-                            <Badge variant="secondary" className="shrink-0 text-[10px] font-normal">
-                              Hidden from site
-                            </Badge>
-                          ) : null}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {listing.profiles?.display_name || 'Unknown'}
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">
+                          {sellerInitials(listing.profiles?.display_name || '?')}
+                        </span>
+                        <span className="line-clamp-1 max-w-[120px] text-sm text-foreground">
+                          {listing.profiles?.display_name || 'Unknown'}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">
-                        {listing.section}
+                        {listing.section === 'new' ? 'New' : listing.section}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground max-w-[140px]">
-                      <span className="line-clamp-2 text-sm">
-                        {listing.categories?.name ?? '—'}
+                    <TableCell className="max-w-[160px]">
+                      <span className="line-clamp-1 text-sm text-foreground">
+                        {listing.brand?.trim() || '—'}
+                      </span>
+                      <span className="line-clamp-1 text-xs text-muted-foreground">
+                        {listing.model?.trim() || ''}
                       </span>
                     </TableCell>
-                    <TableCell className="text-muted-foreground max-w-[120px]">
-                      <span className="line-clamp-2 text-sm">{listing.brand?.trim() || '—'}</span>
+                    <TableCell className="text-right font-semibold tabular-nums text-foreground">
+                      {formatUsd(Number(listing.price) || 0)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground max-w-[140px]">
-                      <span className="line-clamp-2 text-sm">{listing.model?.trim() || '—'}</span>
-                    </TableCell>
-                    <TableCell className="font-semibold text-black dark:text-white">${listing.price}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(listing.status)}>
-                        {listing.status}
-                      </Badge>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                          meta.badge,
+                        )}
+                      >
+                        <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+                        {meta.label}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{listing.views}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(listing.created_at), 'MMM d, yyyy')}
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      {compactNumber(Number(listing.views) || 0)}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-foreground">
+                        {format(new Date(listing.created_at), 'MMM d, yyyy')}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -575,11 +1066,11 @@ export default function AdminListingsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link href={getListingViewHref(listing.section, listing.id, listing.slug)}>
-                              <Eye className="h-4 w-4 mr-2" /> View
+                              <Eye className="mr-2 h-4 w-4" /> View
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => editListing(listing)}>
-                            <Pencil className="h-4 w-4 mr-2" /> Edit Listing
+                            <Pencil className="mr-2 h-4 w-4" /> Edit listing
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -587,60 +1078,112 @@ export default function AdminListingsPage() {
                               setCategoryDialogListing(listing)
                             }}
                           >
-                            <Layers className="h-4 w-4 mr-2" /> Change category
+                            <Layers className="mr-2 h-4 w-4" /> Change category
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleSiteVisibility(listing)}>
                             {listing.hidden_from_site ? (
                               <>
-                                <Eye className="h-4 w-4 mr-2" /> Show on site
+                                <Eye className="mr-2 h-4 w-4" /> Show on site
                               </>
                             ) : (
                               <>
-                                <EyeOff className="h-4 w-4 mr-2" /> Hide from site
+                                <EyeOff className="mr-2 h-4 w-4" /> Hide from site
                               </>
                             )}
                           </DropdownMenuItem>
-                          {listing.status === 'active' && (
+                          <DropdownMenuSeparator />
+                          {listing.status === 'active' ? (
                             <DropdownMenuItem onClick={() => updateListingStatus(listing.id, 'removed')}>
-                              <Flag className="h-4 w-4 mr-2" /> Remove
+                              <Flag className="mr-2 h-4 w-4" /> Remove
                             </DropdownMenuItem>
-                          )}
-                          {listing.status === 'removed' && (
+                          ) : null}
+                          {listing.status === 'removed' ? (
                             <DropdownMenuItem onClick={() => updateListingStatus(listing.id, 'active')}>
-                              Restore
+                              <RotateCcw className="mr-2 h-4 w-4" /> Restore
                             </DropdownMenuItem>
-                          )}
-                          {listing.status === 'sold' && (
+                          ) : null}
+                          {listing.status === 'sold' ? (
                             <DropdownMenuItem
                               onClick={() => {
                                 if (
                                   !confirm(
-                                    'Make this listing live again? It was marked sold—only do this if the sale was reversed or was a mistake.'
+                                    'Make this listing live again? It was marked sold—only do this if the sale was reversed or was a mistake.',
                                   )
                                 )
                                   return
                                 updateListingStatus(listing.id, 'active')
                               }}
                             >
-                              <RotateCcw className="h-4 w-4 mr-2" /> Reactivate (make live)
+                              <RotateCcw className="mr-2 h-4 w-4" /> Reactivate (make live)
                             </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem 
+                          ) : null}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => deleteListing(listing.id)}
                           >
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                )
+              })}
+            </TableBody>
+          </Table>
+        )}
+
+        {/* Pagination */}
+        {!loading && filtered.length > 0 ? (
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-border px-4 py-3 sm:flex-row">
+            <p className="text-xs text-muted-foreground">
+              Showing{' '}
+              <span className="font-medium tabular-nums text-foreground">
+                {pageStart + 1}–{Math.min(pageStart + pageSize, filtered.length)}
+              </span>{' '}
+              of <span className="font-medium tabular-nums text-foreground">{filtered.length}</span>
+            </p>
+            <div className="flex items-center gap-3">
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n} per page
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-2 text-xs tabular-nums text-muted-foreground">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
