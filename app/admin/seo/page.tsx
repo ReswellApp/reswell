@@ -2,6 +2,7 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { createClient } from "@/lib/supabase/server"
 import { listManagedPageSeoService } from "@/lib/services/pageSeoAdmin"
+import { getSeoSettingsService } from "@/lib/services/seoSettings"
 import { SeoAdminClient } from "@/components/features/admin/seo/seo-admin-client"
 
 export const metadata = privatePageMetadata({
@@ -12,7 +13,10 @@ export const metadata = privatePageMetadata({
 
 export default async function AdminSeoPage() {
   const supabase = await createClient()
-  const items = await listManagedPageSeoService(supabase)
+  const [items, settings] = await Promise.all([
+    listManagedPageSeoService(supabase),
+    getSeoSettingsService(supabase),
+  ])
 
   return (
     <div className="space-y-4">
@@ -23,7 +27,11 @@ export default async function AdminSeoPage() {
           the page defaults instantly — clear a page to fall back.
         </p>
       </div>
-      <SeoAdminClient initialItems={items} siteOrigin={publicSiteOrigin()} />
+      <SeoAdminClient
+        initialItems={items}
+        siteOrigin={publicSiteOrigin()}
+        initialFaviconUrl={settings.faviconUrl}
+      />
     </div>
   )
 }

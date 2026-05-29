@@ -1,13 +1,16 @@
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import Link from 'next/link'
 import {
+  Activity,
   ArrowRight,
+  ArrowUpRight,
   Coins,
   MessageSquare,
   Package,
+  ShieldCheck,
   ShoppingBag,
-  Sparkles,
   Tag,
+  TrendingUp,
   UserPlus,
   Users,
 } from 'lucide-react'
@@ -24,13 +27,28 @@ import type {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { listingDetailHref } from '@/lib/listing-href'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
 
 function formatUsd(amount: number): string {
-  return `$${amount.toFixed(2)}`
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+function compactUsd(amount: number): string {
+  if (amount >= 10000) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount)
+  }
+  return formatUsd(amount)
 }
 
 function rel(dateIso: string): string {
@@ -51,14 +69,23 @@ function orderStatusBadgeVariant(
   switch (status) {
     case 'confirmed':
       return 'secondary'
-    case 'refunding':
-      return 'outline'
     case 'refunded':
       return 'destructive'
-    case 'pending':
-      return 'outline'
     default:
       return 'outline'
+  }
+}
+
+function supportStatusLabel(status: AdminOverviewSupportPreview['support_status']): string {
+  switch (status) {
+    case 'new':
+      return 'New'
+    case 'triaged':
+      return 'Triaged'
+    case 'ticket_created':
+      return 'Ticket linked'
+    default:
+      return 'Resolved'
   }
 }
 
@@ -72,66 +99,148 @@ function supportStatusBadgeVariant(
       return 'secondary'
     case 'ticket_created':
       return 'default'
-    case 'resolved':
-      return 'outline'
     default:
-      return 'secondary'
+      return 'outline'
   }
 }
 
-interface PulseMetricProps {
-  icon: ComponentType<{ className?: string }>
-  label: string
-  value: number
-  footnote?: string
+type Accent = 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet'
+
+const ACCENT_CHIP: Record<Accent, string> = {
+  neutral: 'bg-secondary text-foreground',
+  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+  violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
 }
 
-function PulseMetric({ icon: Icon, label, value, footnote }: PulseMetricProps) {
+interface StatCardProps {
+  icon: ComponentType<{ className?: string }>
+  label: string
+  value: number | string
+  footnote: string
+  accent: Accent
+  delta?: number
+  deltaLabel?: string
+}
+
+function StatCard({ icon: Icon, label, value, footnote, accent, delta, deltaLabel }: StatCardProps) {
   return (
-    <Card className="shadow-none">
-      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium leading-snug text-muted-foreground">{label}</CardTitle>
-        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+    <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 transition-all duration-200 hover:border-foreground/15 hover:shadow-md">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', ACCENT_CHIP[accent])}>
+          <Icon className="h-[18px] w-[18px]" aria-hidden />
+        </span>
+      </div>
+      <div className="mt-4 flex items-end gap-2">
+        <p className="text-3xl font-bold leading-none tabular-nums tracking-tight text-foreground">
+          {value}
+        </p>
+        {typeof delta === 'number' && delta > 0 ? (
+          <span className="mb-0.5 inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+            <TrendingUp className="h-3 w-3" aria-hidden />+{delta}
+            {deltaLabel ? <span className="font-medium text-emerald-600/70 dark:text-emerald-400/70">{deltaLabel}</span> : null}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-1.5 text-xs text-muted-foreground">{footnote}</p>
+    </div>
+  )
+}
+
+interface AttentionTileProps {
+  href: string
+  label: string
+  value: number
+  description: string
+}
+
+function AttentionTile({ href, label, value, description }: AttentionTileProps) {
+  const warn = value > 0
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'group flex flex-col rounded-2xl border p-4 transition-all duration-200',
+        warn
+          ? 'border-amber-500/40 bg-amber-500/[0.06] hover:border-amber-500/60 hover:shadow-sm'
+          : 'border-border bg-card hover:border-foreground/15 hover:shadow-sm',
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <ArrowUpRight
+          className="h-4 w-4 shrink-0 -translate-y-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+          aria-hidden
+        />
+      </div>
+      <p
+        className={cn(
+          'mt-3 text-2xl font-bold leading-none tabular-nums',
+          warn ? 'text-amber-700 dark:text-amber-400' : 'text-foreground',
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
+    </Link>
+  )
+}
+
+interface FeedCardProps {
+  icon: ComponentType<{ className?: string }>
+  accent: Accent
+  title: string
+  description: string
+  href?: string
+  actionLabel?: string
+  children: ReactNode
+}
+
+function FeedCard({ icon: Icon, accent, title, description, href, actionLabel, children }: FeedCardProps) {
+  return (
+    <Card className="flex flex-col">
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div className="flex items-start gap-3">
+          <span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', ACCENT_CHIP[accent])}>
+            <Icon className="h-[18px] w-[18px]" aria-hidden />
+          </span>
+          <div>
+            <CardTitle className="font-headline text-base font-semibold">{title}</CardTitle>
+            <CardDescription className="mt-0.5">{description}</CardDescription>
+          </div>
+        </div>
+        {href && actionLabel ? (
+          <Button variant="ghost" size="sm" className="shrink-0 gap-1 text-muted-foreground" asChild>
+            <Link href={href}>
+              {actionLabel} <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </Button>
+        ) : null}
       </CardHeader>
-      <CardContent className="space-y-1">
-        <p className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">{value}</p>
-        {footnote ? <p className="text-xs text-muted-foreground">{footnote}</p> : null}
-      </CardContent>
+      <CardContent className="flex-1 pt-0">{children}</CardContent>
     </Card>
   )
 }
 
-interface AttentionMetricProps {
-  label: string
-  value: number
-  description: string
-  warn?: boolean
-}
-
-function AttentionMetric({ label, value, description, warn }: AttentionMetricProps) {
-  return (
-    <div
-      className={cn(
-        'rounded-xl border bg-card p-4 transition-colors',
-        warn && value > 0 ? 'border-amber-500/35 bg-amber-500/[0.06]' : 'border-border',
-      )}
-    >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-    </div>
-  )
+function EmptyState({ label }: { label: string }) {
+  return <p className="py-8 text-center text-sm text-muted-foreground">{label}</p>
 }
 
 function ListingRow({ listing }: { listing: AdminOverviewListingPreview }) {
   const href = listingDetailHref({ id: listing.id, slug: listing.slug, section: listing.section })
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-border py-3 last:border-0 last:pb-0 first:pt-0">
+    <div className="-mx-2 flex items-start justify-between gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
       <div className="min-w-0 flex-1">
         <Link href={href} className="font-medium text-foreground hover:underline">
           {capitalizeWords(listing.title)}
         </Link>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {listing.seller_display_name ?? 'Unknown'} · {listing.section} · {rel(listing.created_at)}
         </p>
       </div>
@@ -147,29 +256,23 @@ function ListingRow({ listing }: { listing: AdminOverviewListingPreview }) {
 
 function SupportRow({ row }: { row: AdminOverviewSupportPreview }) {
   return (
-    <div className="flex flex-col gap-1 border-b border-border py-3 last:border-0 last:pb-0 first:pt-0">
+    <div className="-mx-2 flex flex-col gap-1 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-foreground">{row.name}</span>
         <Badge variant={supportStatusBadgeVariant(row.support_status)} className="text-[10px]">
-          {row.support_status === 'new'
-            ? 'New'
-            : row.support_status === 'triaged'
-              ? 'Triaged'
-              : row.support_status === 'ticket_created'
-                ? 'Ticket linked'
-                : 'Resolved'}
+          {supportStatusLabel(row.support_status)}
         </Badge>
         <Badge variant="outline" className="text-[10px]">
           {supportChannelLabel(row.source)}
         </Badge>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="truncate text-xs text-muted-foreground">
         {row.email} · {rel(row.created_at)}
       </p>
       {row.subject ? (
-        <p className="text-sm text-foreground line-clamp-2">{row.subject}</p>
+        <p className="line-clamp-2 text-sm text-foreground">{row.subject}</p>
       ) : (
-        <p className="text-sm text-muted-foreground italic">No subject</p>
+        <p className="text-sm italic text-muted-foreground">No subject</p>
       )}
     </div>
   )
@@ -180,15 +283,15 @@ function UserRow({ row, canLink }: { row: AdminOverviewUserPreview; canLink: boo
   const inner = (
     <>
       <p className="font-medium text-foreground">{label}</p>
-      <p className="text-xs text-muted-foreground">
-        {row.email ?? row.id.slice(0, 8)}… · {rel(row.created_at)}
+      <p className="truncate text-xs text-muted-foreground">
+        {row.email ?? `${row.id.slice(0, 8)}…`} · {rel(row.created_at)}
       </p>
     </>
   )
   return (
-    <div className="border-b border-border py-3 last:border-0 last:pb-0 first:pt-0">
+    <div className="-mx-2 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
       {canLink ? (
-        <Link href={`/admin/users/${row.id}`} className="block hover:underline">
+        <Link href={`/admin/users/${row.id}`} className="block">
           {inner}
         </Link>
       ) : (
@@ -200,9 +303,12 @@ function UserRow({ row, canLink }: { row: AdminOverviewUserPreview; canLink: boo
 
 function OrderRow({ row }: { row: AdminOverviewOrderPreview }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0 last:pb-0 first:pt-0">
+    <div className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
       <div className="min-w-0">
-        <Link href={`/admin/orders/${row.id}`} className="font-mono text-sm font-medium hover:underline">
+        <Link
+          href={`/admin/orders/${row.id}`}
+          className="font-mono text-sm font-medium hover:underline"
+        >
           #{row.order_num ?? row.id.slice(0, 8)}
         </Link>
         <p className="text-xs text-muted-foreground">{rel(row.created_at)}</p>
@@ -233,15 +339,33 @@ export function AdminOverviewView({
   const totalListings = snapshot.totals.listings || 1
   const surfPct = Math.round((snapshot.listingsBySection.surfboards / totalListings) * 100)
 
+  const attentionTotal =
+    snapshot.attention.openSupportTickets +
+    snapshot.attention.ordersPendingPayment +
+    snapshot.attention.ordersConfirmedUnfulfilled +
+    (isAdmin ? snapshot.attention.pendingBrandReviews : 0)
+
   return (
-    <div className="space-y-10">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Overview</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          Marketplace pulse, queues that need attention, and fresh activity — optimized for a quick read before
-          you dive into tools.
-        </p>
-        <div className="flex flex-wrap gap-2 pt-1">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Overview</h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </span>
+              Last {snapshot.periodDays} days
+            </span>
+          </div>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Marketplace pulse, queues that need attention, and fresh activity — a quick read before you dive
+            into the tools.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/contact-messages">Support inbox</Link>
           </Button>
@@ -256,8 +380,11 @@ export function AdminOverviewView({
               <Link href="/admin/users">Users</Link>
             </Button>
           ) : null}
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/admin/live">Live</Link>
+          <Button variant="default" size="sm" className="gap-1.5" asChild>
+            <Link href="/admin/live">
+              <Activity className="h-4 w-4" aria-hidden />
+              Live
+            </Link>
           </Button>
         </div>
       </div>
@@ -265,7 +392,9 @@ export function AdminOverviewView({
       {snapshot.errors.length > 0 ? (
         <Card className="border-destructive/40 bg-destructive/[0.06]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base text-destructive">Some metrics did not load</CardTitle>
+            <CardTitle className="font-headline text-base text-destructive">
+              Some metrics did not load
+            </CardTitle>
             <CardDescription>
               Operations tools still work; retry later or check Supabase logs if this persists.
             </CardDescription>
@@ -280,125 +409,97 @@ export function AdminOverviewView({
         </Card>
       ) : null}
 
-      {/* Totals */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Catalog</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{snapshot.totals.listings}</p>
-            <p className="text-xs text-muted-foreground">{snapshot.totals.activeListings} active right now</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Members</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{snapshot.totals.users}</p>
-            <p className="text-xs text-muted-foreground">Registered profiles</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Surfboards</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Section listings</span>
-              <span className="font-medium tabular-nums">{snapshot.listingsBySection.surfboards}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Share of total catalog</p>
-            <div className="pt-1">
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-neutral-600 dark:bg-neutral-400"
-                  style={{ width: `${surfPct}%` }}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI strip */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={Package}
+          accent="sky"
+          label="Catalog"
+          value={snapshot.totals.listings}
+          delta={snapshot.pulse.newListings}
+          footnote={`${snapshot.totals.activeListings} active · ${surfPct}% surfboards`}
+        />
+        <StatCard
+          icon={Users}
+          accent="violet"
+          label="Members"
+          value={snapshot.totals.users}
+          delta={snapshot.pulse.newUsers}
+          footnote="Registered profiles"
+        />
+        <StatCard
+          icon={ShoppingBag}
+          accent="emerald"
+          label="Paid orders"
+          value={snapshot.pulse.ordersConfirmedInPeriod}
+          footnote={`Confirmed in the last ${snapshot.periodDays} days`}
+        />
+        <StatCard
+          icon={MessageSquare}
+          accent="amber"
+          label="Support intake"
+          value={snapshot.pulse.newContactThreads}
+          footnote={`${snapshot.attention.openSupportTickets} still open in the inbox`}
+        />
       </div>
 
-      {/* Pulse */}
+      {/* Needs attention */}
       <section className="space-y-3">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Last {snapshot.periodDays} days</h2>
-            <p className="text-sm text-muted-foreground">
-              New activity across listings, members, support intake, and checkout.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-headline text-lg font-semibold text-foreground">Needs attention</h2>
+          {attentionTotal === 0 ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <ShieldCheck className="h-4 w-4" aria-hidden />
+              All queues clear
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {attentionTotal} item{attentionTotal === 1 ? '' : 's'} across queues
+            </span>
+          )}
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <PulseMetric
-            icon={Sparkles}
-            label="New listings"
-            value={snapshot.pulse.newListings}
-            footnote="Created in period"
-          />
-          <PulseMetric
-            icon={UserPlus}
-            label="New members"
-            value={snapshot.pulse.newUsers}
-            footnote="Profiles created"
-          />
-          <PulseMetric
-            icon={MessageSquare}
-            label="Support threads"
-            value={snapshot.pulse.newContactThreads}
-            footnote="Inbox + Messages intake"
-          />
-          <PulseMetric
-            icon={ShoppingBag}
-            label="Paid orders"
-            value={snapshot.pulse.ordersConfirmedInPeriod}
-            footnote="Confirmed in period"
-          />
-        </div>
-      </section>
-
-      {/* Attention */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">Needs attention</h2>
-        <div className={cn('grid gap-3', isAdmin ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3')}>
-          <AttentionMetric
-            label="Open support tickets"
+        <div className={cn('grid gap-3 sm:grid-cols-2', isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3')}>
+          <AttentionTile
+            href="/admin/contact-messages"
+            label="Open support"
             value={snapshot.attention.openSupportTickets}
             description="Still marked New in the inbox"
-            warn
           />
-          <AttentionMetric
+          <AttentionTile
+            href="/admin/orders"
             label="Pending checkout"
             value={snapshot.attention.ordersPendingPayment}
             description="Orders awaiting payment"
-            warn
           />
-          <AttentionMetric
-            label="Fulfillment in progress"
+          <AttentionTile
+            href="/admin/orders"
+            label="Fulfillment"
             value={snapshot.attention.ordersConfirmedUnfulfilled}
-            description="Paid, not delivered or picked up yet"
-            warn
+            description="Paid, not delivered or picked up"
           />
           {isAdmin ? (
-            <AttentionMetric
+            <AttentionTile
+              href="/admin/listings/brand-requests"
               label="Brand requests"
               value={snapshot.attention.pendingBrandReviews}
               description="Awaiting catalog review"
-              warn
             />
           ) : null}
         </div>
       </section>
 
+      {/* Platform revenue */}
       {isAdmin && (platformFeesError || platformFees) ? (
-        <Card className="border-primary/25 bg-primary/[0.04]">
+        <Card className="overflow-hidden border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.07] via-card to-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Coins className="h-5 w-5 text-primary" aria-hidden />
-              Platform fee revenue (7%)
+            <CardTitle className="flex items-center gap-2.5 font-headline text-base sm:text-lg">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Coins className="h-[18px] w-[18px]" aria-hidden />
+              </span>
+              Platform fee revenue
+              <Badge variant="secondary" className="ml-0.5 text-[10px]">
+                7%
+              </Badge>
             </CardTitle>
             <CardDescription>
               Card payments settle on the platform Stripe account at checkout. Seller earnings credit after
@@ -409,40 +510,40 @@ export function AdminOverviewView({
             {platformFeesError ? (
               <p className="text-sm text-muted-foreground">{platformFeesError}</p>
             ) : platformFees ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    7% fee (all paid orders)
+              <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+                <div className="bg-card p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    7% fee · all paid
                   </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    {formatUsd(platformFees.totalFees)}
+                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {compactUsd(platformFees.totalFees)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    7% fee (fulfillment complete)
+                <div className="bg-card p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    7% fee · fulfilled
                   </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    {formatUsd(platformFees.totalFeesFulfilled)}
+                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-foreground">
+                    {compactUsd(platformFees.totalFeesFulfilled)}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {platformFees.fulfilledOrderCount} orders delivered or picked up
+                    {platformFees.fulfilledOrderCount} delivered or picked up
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="bg-card p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     Paid orders
                   </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-foreground">
                     {platformFees.confirmedCount}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="bg-card p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     Gross sale volume
                   </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    {formatUsd(platformFees.totalSaleVolume)}
+                  <p className="mt-1.5 text-2xl font-bold tabular-nums text-foreground">
+                    {compactUsd(platformFees.totalSaleVolume)}
                   </p>
                 </div>
               </div>
@@ -451,166 +552,155 @@ export function AdminOverviewView({
         </Card>
       ) : null}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="space-y-8">
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Package className="h-5 w-5" aria-hidden />
-                  Latest listings
-                </CardTitle>
-                <CardDescription>Newest across the marketplace</CardDescription>
+      {/* Activity feeds */}
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <FeedCard
+            icon={Package}
+            accent="sky"
+            title="Latest listings"
+            description="Newest across the marketplace"
+            href="/admin/listings"
+            actionLabel="All"
+          >
+            {snapshot.previews.recentListings.length === 0 ? (
+              <EmptyState label="No listings yet." />
+            ) : (
+              <div className="divide-y divide-border">
+                {snapshot.previews.recentListings.map((l) => (
+                  <ListingRow key={l.id} listing={l} />
+                ))}
               </div>
-              <Button variant="ghost" size="sm" className="shrink-0 gap-1" asChild>
-                <Link href="/admin/listings">
-                  All <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {snapshot.previews.recentListings.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">No listings yet.</p>
-              ) : (
-                snapshot.previews.recentListings.map((l) => <ListingRow key={l.id} listing={l} />)
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </FeedCard>
 
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ShoppingBag className="h-5 w-5" aria-hidden />
-                  Recent orders
-                </CardTitle>
-                <CardDescription>Latest checkout activity</CardDescription>
+          <FeedCard
+            icon={ShoppingBag}
+            accent="emerald"
+            title="Recent orders"
+            description="Latest checkout activity"
+            href="/admin/orders"
+            actionLabel="All"
+          >
+            {snapshot.previews.recentOrders.length === 0 ? (
+              <EmptyState label="No orders yet." />
+            ) : (
+              <div className="divide-y divide-border">
+                {snapshot.previews.recentOrders.map((o) => (
+                  <OrderRow key={o.id} row={o} />
+                ))}
               </div>
-              <Button variant="ghost" size="sm" className="shrink-0 gap-1" asChild>
-                <Link href="/admin/orders">
-                  All <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {snapshot.previews.recentOrders.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">No orders yet.</p>
-              ) : (
-                snapshot.previews.recentOrders.map((o) => <OrderRow key={o.id} row={o} />)
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </FeedCard>
         </div>
 
-        <div className="space-y-8">
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <MessageSquare className="h-5 w-5" aria-hidden />
-                  Support inbox
-                </CardTitle>
-                <CardDescription>Most recent tickets by created date</CardDescription>
+        <div className="space-y-6">
+          <FeedCard
+            icon={MessageSquare}
+            accent="amber"
+            title="Support inbox"
+            description="Most recent tickets by created date"
+            href="/admin/contact-messages"
+            actionLabel="Inbox"
+          >
+            {snapshot.previews.recentSupportTickets.length === 0 ? (
+              <EmptyState label="No tickets yet." />
+            ) : (
+              <div className="divide-y divide-border">
+                {snapshot.previews.recentSupportTickets.map((r) => (
+                  <SupportRow key={r.id} row={r} />
+                ))}
               </div>
-              <Button variant="ghost" size="sm" className="shrink-0 gap-1" asChild>
-                <Link href="/admin/contact-messages">
-                  Inbox <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {snapshot.previews.recentSupportTickets.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">No tickets yet.</p>
-              ) : (
-                snapshot.previews.recentSupportTickets.map((r) => <SupportRow key={r.id} row={r} />)
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </FeedCard>
 
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Users className="h-5 w-5" aria-hidden />
-                  New members
-                </CardTitle>
-                <CardDescription>Latest profiles (by signup)</CardDescription>
-              </div>
-              {isAdmin ? (
-                <Button variant="ghost" size="sm" className="shrink-0 gap-1" asChild>
-                  <Link href="/admin/users">
-                    Users <ArrowRight className="h-4 w-4" aria-hidden />
-                  </Link>
-                </Button>
-              ) : null}
-            </CardHeader>
-            <CardContent className="pt-0">
-              {!isAdmin ? (
-                <p className="border-b border-border pb-3 text-xs text-muted-foreground">
-                  User administration is limited to full admins. Counts above still reflect overall signups.
-                </p>
-              ) : null}
-              {snapshot.previews.recentUsers.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">No users yet.</p>
-              ) : (
-                snapshot.previews.recentUsers.map((u) => (
+          <FeedCard
+            icon={UserPlus}
+            accent="violet"
+            title="New members"
+            description="Latest profiles by signup"
+            href={isAdmin ? '/admin/users' : undefined}
+            actionLabel={isAdmin ? 'Users' : undefined}
+          >
+            {!isAdmin ? (
+              <p className="mb-2 rounded-lg border border-border bg-muted/40 p-2.5 text-xs text-muted-foreground">
+                User administration is limited to full admins. Counts above still reflect overall signups.
+              </p>
+            ) : null}
+            {snapshot.previews.recentUsers.length === 0 ? (
+              <EmptyState label="No users yet." />
+            ) : (
+              <div className="divide-y divide-border">
+                {snapshot.previews.recentUsers.map((u) => (
                   <UserRow key={u.id} row={u} canLink={isAdmin} />
-                ))
-              )}
-            </CardContent>
-          </Card>
+                ))}
+              </div>
+            )}
+          </FeedCard>
 
           {isAdmin ? (
-            <Card>
-              <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Tag className="h-5 w-5" aria-hidden />
-                    Pending brand requests
-                  </CardTitle>
-                  <CardDescription>Queued catalog submissions</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" className="shrink-0 gap-1" asChild>
-                  <Link href="/admin/listings/brand-requests">
-                    Queue <ArrowRight className="h-4 w-4" aria-hidden />
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {snapshot.previews.pendingBrandRequests.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">No pending requests.</p>
-                ) : (
-                  snapshot.previews.pendingBrandRequests.map((b) => (
-                    <div key={b.id} className="border-b border-border py-3 last:border-0 last:pb-0 first:pt-0">
+            <FeedCard
+              icon={Tag}
+              accent="neutral"
+              title="Pending brand requests"
+              description="Queued catalog submissions"
+              href="/admin/listings/brand-requests"
+              actionLabel="Queue"
+            >
+              {snapshot.previews.pendingBrandRequests.length === 0 ? (
+                <EmptyState label="No pending requests." />
+              ) : (
+                <div className="divide-y divide-border">
+                  {snapshot.previews.pendingBrandRequests.map((b) => (
+                    <div
+                      key={b.id}
+                      className="-mx-2 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50"
+                    >
                       <p className="font-medium text-foreground">{b.requested_name}</p>
                       <p className="text-xs text-muted-foreground">{rel(b.created_at)}</p>
                     </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+                  ))}
+                </div>
+              )}
+            </FeedCard>
           ) : null}
         </div>
       </div>
 
-      <Separator />
-
-      <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-        <Link href="/admin/search-analytics" className="hover:text-foreground hover:underline">
-          Search analytics
-        </Link>
-        <Link href="/admin/catalog-overview" className="hover:text-foreground hover:underline">
-          Brand catalog explorer
-        </Link>
-        <Link href="/admin/used-board-market-dashboard" className="hover:text-foreground hover:underline">
-          Used board market
-        </Link>
-        {isAdmin ? (
-          <Link href="/admin/shipping" className="hover:text-foreground hover:underline">
-            Shipping tools
+      {/* Tools footer */}
+      <div className="rounded-2xl border border-border bg-muted/30 px-5 py-4">
+        <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          More tools
+        </p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <Link
+            href="/admin/search-analytics"
+            className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
+          >
+            Search analytics
           </Link>
-        ) : null}
-      </footer>
+          <Link
+            href="/admin/catalog-overview"
+            className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
+          >
+            Brand catalog explorer
+          </Link>
+          <Link
+            href="/admin/used-board-market-dashboard"
+            className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
+          >
+            Used board market
+          </Link>
+          {isAdmin ? (
+            <Link
+              href="/admin/shipping"
+              className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
+            >
+              Shipping tools
+            </Link>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

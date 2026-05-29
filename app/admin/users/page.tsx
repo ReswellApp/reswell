@@ -69,22 +69,26 @@ export default function AdminUsersPage() {
     fetchUsers()
   }, [])
 
+  async function fetchReswellSellerIds(): Promise<Set<string>> {
+    try {
+      const res = await fetch('/api/admin/users/reswell-seller')
+      if (res.ok) {
+        const json = (await res.json()) as { data?: { profileIds?: string[] } }
+        return new Set(json.data?.profileIds ?? [])
+      }
+    } catch {
+      // Non-fatal: list still loads without Reswell Seller badges
+    }
+    return new Set<string>()
+  }
+
   async function fetchUsers() {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false })
 
-    let reswellSellerIds = new Set<string>()
-    try {
-      const res = await fetch('/api/admin/users/reswell-seller')
-      if (res.ok) {
-        const json = (await res.json()) as { data?: { profileIds?: string[] } }
-        reswellSellerIds = new Set(json.data?.profileIds ?? [])
-      }
-    } catch {
-      // Non-fatal: list still loads without Reswell Seller badges
-    }
+    const reswellSellerIds = await fetchReswellSellerIds()
 
     if (!error && data) {
       // Get listings count for each user
@@ -151,9 +155,19 @@ export default function AdminUsersPage() {
         return
       }
 
+      // Reconcile against the authoritative persisted state so the badge
+      // reflects what actually saved, not just an optimistic guess.
+      const reswellSellerIds = await fetchReswellSellerIds()
+      const persisted = reswellSellerIds.has(userId)
       setUsers(prev =>
-        prev.map(u => (u.id === userId ? { ...u, is_reswell_seller: nextStatus } : u)),
+        prev.map(u => (u.id === userId ? { ...u, is_reswell_seller: persisted } : u)),
       )
+
+      if (persisted !== nextStatus) {
+        toast.error('Could not save Reswell Seller status. Please try again.')
+        return
+      }
+
       toast.success(
         nextStatus ? 'Reswell Seller access granted (0% marketplace fee)' : 'Reswell Seller access removed',
       )

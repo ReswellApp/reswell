@@ -26,6 +26,7 @@ interface SeoEditorProps {
   onChange: (patch: Partial<PageSeoOverrideValues>) => void
   onRestored: (snapshot: PageSeoOverrideValues) => void
   siteOrigin: string
+  faviconUrl?: string | null
 }
 
 function Segmented<T extends string>(props: {
@@ -74,7 +75,7 @@ function structuredDataText(value: unknown): string {
   }
 }
 
-export function SeoEditor({ item, draft, onChange, onRestored, siteOrigin }: SeoEditorProps) {
+export function SeoEditor({ item, draft, onChange, onRestored, siteOrigin, faviconUrl }: SeoEditorProps) {
   const effective = computeEffectivePageSeo(item.defaults, draft)
   const score = scorePageSeo(effective)
   const text = (v: string | null | undefined) => v ?? ""
@@ -287,6 +288,7 @@ export function SeoEditor({ item, draft, onChange, onRestored, siteOrigin }: Seo
             description={effective.description}
             url={effective.canonical}
             siteOrigin={siteOrigin}
+            faviconUrl={faviconUrl}
           />
         </div>
         <div className="space-y-2">

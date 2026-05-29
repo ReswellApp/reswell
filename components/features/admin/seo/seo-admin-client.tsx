@@ -17,18 +17,20 @@ import { summarizeSeoHealth } from "./seo-scoring"
 interface SeoAdminClientProps {
   initialItems: ManagedPageSeoItem[]
   siteOrigin: string
+  initialFaviconUrl?: string | null
 }
 
 function cloneOverride(o: PageSeoOverrideValues): PageSeoOverrideValues {
   return JSON.parse(JSON.stringify(o)) as PageSeoOverrideValues
 }
 
-export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps) {
+export function SeoAdminClient({ initialItems, siteOrigin, initialFaviconUrl = null }: SeoAdminClientProps) {
   const [items, setItems] = useState<ManagedPageSeoItem[]>(initialItems)
   const [drafts, setDrafts] = useState<Record<string, PageSeoOverrideValues>>({})
   const [selectedKey, setSelectedKey] = useState<string | null>(initialItems[0]?.key ?? null)
   const [query, setQuery] = useState("")
   const [busy, setBusy] = useState(false)
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(initialFaviconUrl)
 
   const itemByKey = useMemo(() => new Map(items.map((it) => [it.key, it])), [items])
   const selected = selectedKey ? itemByKey.get(selectedKey) ?? null : null
@@ -177,7 +179,13 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
               </div>
             </div>
             {selected.kind === "dynamic" ? (
-              <SeoTemplateEditor item={selected} draft={draft} onChange={handleChange} siteOrigin={siteOrigin} />
+              <SeoTemplateEditor
+                item={selected}
+                draft={draft}
+                onChange={handleChange}
+                siteOrigin={siteOrigin}
+                faviconUrl={faviconUrl}
+              />
             ) : (
               <SeoEditor
                 item={selected}
@@ -185,6 +193,7 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
                 onChange={handleChange}
                 onRestored={handleRestored}
                 siteOrigin={siteOrigin}
+                faviconUrl={faviconUrl}
               />
             )}
           </div>
@@ -203,7 +212,7 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
       </TabsContent>
 
       <TabsContent value="crawling">
-        <CrawlingManager siteOrigin={siteOrigin} />
+        <CrawlingManager siteOrigin={siteOrigin} onFaviconChange={setFaviconUrl} />
       </TabsContent>
     </Tabs>
   )

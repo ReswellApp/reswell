@@ -2,7 +2,11 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { getPageSearchPerformance, isSearchConsoleConfigured } from "@/lib/services/searchConsole"
+import {
+  getPageSearchPerformance,
+  getSearchConsoleSetupHint,
+  isSearchConsoleConfigured,
+} from "@/lib/services/searchConsole"
 
 const schema = z.object({ pageKey: z.string().min(1) })
 
@@ -19,7 +23,12 @@ export async function POST(request: Request) {
 
     if (!isSearchConsoleConfigured()) {
       return NextResponse.json(
-        { data: { configured: false, reason: "Search Console is not connected." } },
+        {
+          data: {
+            configured: false,
+            reason: getSearchConsoleSetupHint() || "Search Console is not connected.",
+          },
+        },
         { status: 200 },
       )
     }

@@ -7,7 +7,8 @@
     "build": "next build",
     "analyze": "ANALYZE=true next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "env:pull": "vercel env pull .env.local --yes && vercel env pull .env.production.local --environment=production --yes && node scripts/sync-search-console-env.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",

@@ -92,9 +92,8 @@ export function SeoSearchInsights({ pageKey }: { pageKey: string }) {
         </div>
       ) : data && !data.configured ? (
         <p className="rounded-md border border-dashed border-border px-3 py-3 text-[11px] text-muted-foreground">
-          {data.reason} Set <code className="text-foreground/70">GOOGLE_SEARCH_CONSOLE_SITE_URL</code> and{" "}
-          <code className="text-foreground/70">GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON</code> to see
-          clicks, impressions, and ranking queries here.
+          {data.reason ||
+            "Search Console is not connected. Set GOOGLE_SEARCH_CONSOLE_SITE_URL and GCP Workload Identity (GCP_* vars) or a service account JSON, then restart the dev server."}
         </p>
       ) : (
         <p className="text-[11px] text-muted-foreground">

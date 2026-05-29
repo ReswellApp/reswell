@@ -1,4 +1,5 @@
-import { GoogleAuth } from "google-auth-library"
+import { getVercelOidcToken } from "@vercel/oidc"
+import { ExternalAccountClient, GoogleAuth } from "google-auth-library"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 
 /**
@@ -6,8 +7,15 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
  * gracefully and returns an "unconfigured" result when credentials/property are not set, so the
  * admin SEO panel works with or without it.
  *
+ * Auth resolves in this order (matching lib/google-merchant/auth.ts):
+ * 1. Workload Identity Federation via Vercel OIDC — shared GCP_* vars below.
+ * 2. Inline service-account JSON.
+ * 3. Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS).
+ *
  * Env:
  * - GOOGLE_SEARCH_CONSOLE_SITE_URL          property, e.g. `sc-domain:reswell.app` or `https://reswell.app/`
+ * - WIF: GCP_PROJECT_NUMBER, GCP_SERVICE_ACCOUNT_EMAIL, GCP_WORKLOAD_IDENTITY_POOL_ID,
+ *        GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID (the impersonated SA must have read access to the property)
  * - GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON  service-account JSON (read access to the property)
  *   (falls back to GOOGLE_APPLICATION_CREDENTIALS if that's how the runtime is configured)
  */
@@ -34,32 +42,137 @@ export interface SearchConsoleUnconfigured {
 
 export type SearchConsoleResult = PageSearchPerformance | SearchConsoleUnconfigured
 
+type AccessTokenClient = {
+  getAccessToken(): Promise<{ token?: string | null }>
+}
+
+function envValue(key: string): string | null {
+  const v = process.env[key]?.trim()
+  return v || null
+}
+
 function siteUrl(): string | null {
-  return process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || null
+  return envValue("GOOGLE_SEARCH_CONSOLE_SITE_URL")
+}
+
+function isWorkloadIdentityConfigured(): boolean {
+  return Boolean(
+    process.env.GCP_PROJECT_NUMBER?.trim() &&
+      process.env.GCP_SERVICE_ACCOUNT_EMAIL?.trim() &&
+      process.env.GCP_WORKLOAD_IDENTITY_POOL_ID?.trim() &&
+      process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID?.trim(),
+  )
 }
 
 export function isSearchConsoleConfigured(): boolean {
-  const hasAuth =
-    Boolean(process.env.GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON?.trim()) ||
-    Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim())
-  return Boolean(siteUrl()) && hasAuth
+  return getSearchConsoleConfigGap().length === 0
 }
 
-let authClientPromise: Promise<{ getAccessToken(): Promise<{ token?: string | null }> }> | null = null
+const GCP_WIF_KEYS = [
+  "GCP_PROJECT_NUMBER",
+  "GCP_SERVICE_ACCOUNT_EMAIL",
+  "GCP_WORKLOAD_IDENTITY_POOL_ID",
+  "GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID",
+] as const
 
-function getAuthClient() {
-  if (!authClientPromise) {
-    const rawJson = process.env.GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON?.trim()
-    let credentials: Record<string, unknown> | undefined
-    if (rawJson) {
-      try {
-        credentials = JSON.parse(rawJson) as Record<string, unknown>
-      } catch {
-        throw new Error("GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON is not valid JSON")
-      }
+function isEnvEmpty(key: string): boolean {
+  return key in process.env && !envValue(key)
+}
+
+/** Env keys still missing for Search Console (empty when fully configured). */
+export function getSearchConsoleConfigGap(): string[] {
+  const missing: string[] = []
+
+  if (!siteUrl()) {
+    missing.push(
+      isEnvEmpty("GOOGLE_SEARCH_CONSOLE_SITE_URL")
+        ? "GOOGLE_SEARCH_CONSOLE_SITE_URL (set but empty — use sc-domain:reswell.app or your URL-prefix property)"
+        : "GOOGLE_SEARCH_CONSOLE_SITE_URL",
+    )
+  }
+
+  const hasAuth =
+    isWorkloadIdentityConfigured() ||
+    Boolean(envValue("GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON")) ||
+    Boolean(envValue("GOOGLE_APPLICATION_CREDENTIALS"))
+
+  if (!hasAuth) {
+    const emptyWif = GCP_WIF_KEYS.filter(isEnvEmpty)
+    if (emptyWif.length > 0) {
+      missing.push(
+        `${emptyWif.join(", ")} (empty in .env.local — Vercel encrypts these; use \`vercel dev\` or paste values from the Vercel dashboard)`,
+      )
+    } else {
+      missing.push(
+        "GCP_PROJECT_NUMBER, GCP_SERVICE_ACCOUNT_EMAIL, GCP_WORKLOAD_IDENTITY_POOL_ID, GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID (WIF) or GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON",
+      )
     }
-    const auth = new GoogleAuth({ credentials, scopes: [SEARCH_CONSOLE_SCOPE] })
-    authClientPromise = auth.getClient()
+  }
+
+  return missing
+}
+
+export function getSearchConsoleSetupHint(): string {
+  const gap = getSearchConsoleConfigGap()
+  if (gap.length === 0) return ""
+  return `${gap.join("; ")}. Restart the dev server after updating env.`
+}
+
+let authClientPromise: Promise<AccessTokenClient> | null = null
+
+function createWorkloadIdentityClient(): AccessTokenClient {
+  const projectNumber = process.env.GCP_PROJECT_NUMBER?.trim()
+  const serviceAccountEmail = process.env.GCP_SERVICE_ACCOUNT_EMAIL?.trim()
+  const poolId = process.env.GCP_WORKLOAD_IDENTITY_POOL_ID?.trim()
+  const providerId = process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID?.trim()
+
+  if (!projectNumber || !serviceAccountEmail || !poolId || !providerId) {
+    throw new Error(
+      "Workload Identity Federation requires GCP_PROJECT_NUMBER, GCP_SERVICE_ACCOUNT_EMAIL, GCP_WORKLOAD_IDENTITY_POOL_ID, and GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID",
+    )
+  }
+
+  const client = ExternalAccountClient.fromJSON({
+    type: "external_account",
+    audience: `//iam.googleapis.com/projects/${projectNumber}/locations/global/workloadIdentityPools/${poolId}/providers/${providerId}`,
+    subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+    token_url: "https://sts.googleapis.com/v1/token",
+    service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccountEmail}:generateAccessToken`,
+    scopes: [SEARCH_CONSOLE_SCOPE],
+    subject_token_supplier: {
+      getSubjectToken: async () => getVercelOidcToken(),
+    },
+  })
+
+  if (!client) {
+    throw new Error("Failed to create ExternalAccountClient for Workload Identity Federation")
+  }
+
+  return client
+}
+
+function createAuthClient(): Promise<AccessTokenClient> {
+  if (isWorkloadIdentityConfigured()) {
+    return Promise.resolve(createWorkloadIdentityClient())
+  }
+
+  const rawJson = process.env.GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON?.trim()
+  let credentials: Record<string, unknown> | undefined
+  if (rawJson) {
+    try {
+      credentials = JSON.parse(rawJson) as Record<string, unknown>
+    } catch {
+      throw new Error("GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON is not valid JSON")
+    }
+  }
+
+  const auth = new GoogleAuth({ credentials, scopes: [SEARCH_CONSOLE_SCOPE] })
+  return auth.getClient()
+}
+
+function getAuthClient(): Promise<AccessTokenClient> {
+  if (!authClientPromise) {
+    authClientPromise = createAuthClient()
   }
   return authClientPromise
 }
@@ -118,7 +231,11 @@ export async function getPageSearchPerformance(
 ): Promise<SearchConsoleResult> {
   const property = siteUrl()
   if (!isSearchConsoleConfigured() || !property) {
-    return { configured: false, reason: "Search Console is not connected." }
+    const hint = getSearchConsoleSetupHint()
+    return {
+      configured: false,
+      reason: hint || "Search Console is not connected.",
+    }
   }
 
   const days = options?.days ?? 28

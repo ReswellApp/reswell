@@ -18,6 +18,7 @@ interface SeoTemplateEditorProps {
   draft: PageSeoOverrideValues
   onChange: (patch: Partial<PageSeoOverrideValues>) => void
   siteOrigin: string
+  faviconUrl?: string | null
 }
 
 /**
@@ -25,7 +26,7 @@ interface SeoTemplateEditorProps {
  * with {token} variables; the live preview substitutes example values so the admin sees a
  * realistic snippet.
  */
-export function SeoTemplateEditor({ item, draft, onChange, siteOrigin }: SeoTemplateEditorProps) {
+export function SeoTemplateEditor({ item, draft, onChange, siteOrigin, faviconUrl }: SeoTemplateEditorProps) {
   const vars = item.templateVars ?? []
   const sampleVars: Record<string, string> = Object.fromEntries(vars.map((v) => [v.token, v.sample]))
 
@@ -151,6 +152,7 @@ export function SeoTemplateEditor({ item, draft, onChange, siteOrigin }: SeoTemp
             description={previewDesc}
             url={item.defaults.path}
             siteOrigin={siteOrigin}
+            faviconUrl={faviconUrl}
           />
         </div>
         <div className="space-y-2">

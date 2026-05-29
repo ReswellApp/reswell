@@ -33,7 +33,13 @@ function linesToList(value: string): string[] {
     .filter(Boolean)
 }
 
-export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
+export function CrawlingManager({
+  siteOrigin,
+  onFaviconChange,
+}: {
+  siteOrigin: string
+  onFaviconChange?: (url: string | null) => void
+}) {
   const [settings, setSettings] = useState<SeoSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -55,6 +61,7 @@ export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
           setDisallow(s.extraDisallow.join("\n"))
           setAllow(s.extraAllow.join("\n"))
           setSitemaps(s.extraSitemaps.join("\n"))
+          onFaviconChange?.(s.faviconUrl)
         }
       })
       .catch(() => {})
@@ -62,7 +69,7 @@ export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
     return () => {
       active = false
     }
-  }, [])
+  }, [onFaviconChange])
 
   async function save() {
     if (!settings) return
@@ -82,6 +89,7 @@ export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
         }),
       })
       if (!res.ok) throw new Error("Could not save settings")
+      onFaviconChange?.(settings.faviconUrl)
       toast.success("Crawling settings saved")
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save settings")
@@ -195,7 +203,10 @@ export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
               label="Favicon"
               helpText="Square PNG, SVG, or ICO. 512×512 PNG recommended."
               value={settings.faviconUrl ?? ""}
-              onChange={(url) => setSettings({ ...settings, faviconUrl: url })}
+              onChange={(url) => {
+                setSettings({ ...settings, faviconUrl: url })
+                onFaviconChange?.(url)
+              }}
             />
             <SeoFaviconField
               label="Apple touch icon (optional)"

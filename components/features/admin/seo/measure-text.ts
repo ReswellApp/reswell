@@ -19,12 +19,14 @@ export const PIXEL_LIMITS = {
   description: 990,
 } as const
 
+/** SSR + initial client hydration — must match on server and first client paint. */
+export function approximateTextPx(text: string, fontPx: number): number {
+  return Math.round(text.length * fontPx * 0.5)
+}
+
 export function measureTextPx(text: string, fontPx: number): number {
   const c = getCtx()
-  if (!c) {
-    // SSR fallback: rough average glyph width.
-    return Math.round(text.length * fontPx * 0.5)
-  }
+  if (!c) return approximateTextPx(text, fontPx)
   c.font = `${fontPx}px Arial, sans-serif`
   return Math.round(c.measureText(text).width)
 }
