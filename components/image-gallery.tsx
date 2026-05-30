@@ -27,6 +27,25 @@ interface ImageGalleryProps {
 
 const SWIPE_MIN_PX = 48
 
+/** Browser-cache full listing photos (same URLs as hero + lightbox). */
+function warmListingImageSrc(url: string): void {
+  if (!url || url === "/placeholder.svg") return
+  const im = new window.Image()
+  im.decoding = "async"
+  im.src = url
+}
+
+function warmHeroSlideNeighbors(urls: string[], activeIndex: number): void {
+  if (urls.length <= 1) return
+  const indices = new Set<number>([activeIndex])
+  indices.add((activeIndex + 1) % urls.length)
+  indices.add((activeIndex - 1 + urls.length) % urls.length)
+  for (const i of indices) {
+    const url = urls[i]
+    if (url) warmListingImageSrc(url)
+  }
+}
+
 function gallerySlideNearSelected(i: number, selected: number, total: number): boolean {
   if (total <= 1) return true
   if (i === selected) return true
@@ -53,6 +72,14 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
     [images],
   )
 
+  const galleryUrls = useMemo(
+    () => proxiedUrls.filter((u) => u && u !== "/placeholder.svg"),
+    [proxiedUrls],
+  )
+
+  /** Stable primitive — never pass `images`/`proxiedUrls` arrays as effect deps (fixed length). */
+  const galleryUrlsKey = useMemo(() => galleryUrls.join("|"), [galleryUrls])
+
   const mountedHeroIndices = useMemo(() => {
     if (images.length <= 1) return [0]
     const indices = new Set<number>()
@@ -62,28 +89,10 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
     return [...indices].sort((a, b) => a - b)
   }, [images.length, selectedIndex])
 
-  // Warm only the active slide and its neighbors so gallery navigation stays snappy
-  // without requesting every photo on first paint.
+  // Hero: warm active slide + neighbors. Lightbox warms all slides in openLightbox / onOpenChange.
   useEffect(() => {
-    const urls = images
-      .map((img) => proxiedListingImageSrc(img.url))
-      .filter((u): u is string => Boolean(u))
-    if (urls.length <= 1) return
-
-    const warm = (url: string) => {
-      const im = new window.Image()
-      im.decoding = "async"
-      im.src = url
-    }
-
-    const indices = new Set<number>([selectedIndex])
-    indices.add((selectedIndex + 1) % urls.length)
-    indices.add((selectedIndex - 1 + urls.length) % urls.length)
-    for (const i of indices) {
-      const url = urls[i]
-      if (url) warm(url)
-    }
-  }, [images, selectedIndex])
+    warmHeroSlideNeighbors(galleryUrls, selectedIndex)
+  }, [galleryUrlsKey, selectedIndex])
 
   if (images.length === 0) {
     return (
@@ -105,6 +114,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   }
 
   function openLightbox() {
+    for (const url of proxiedUrls) warmListingImageSrc(url)
     setLightboxIndex(selectedIndex)
     setLightboxOpen(true)
   }
@@ -120,7 +130,10 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
         open={lightboxOpen}
         onOpenChange={(o) => {
           setLightboxOpen(o)
-          if (o) return
+          if (o) {
+            for (const url of proxiedUrls) warmListingImageSrc(url)
+            return
+          }
           setSelectedIndex(lightboxIndex)
         }}
         proxiedUrls={proxiedUrls}

@@ -194,7 +194,6 @@ export function ListingImageLightbox({
                     )}
                   >
                   <TransformWrapper
-                    key={`${index}-${src}`}
                     ref={pinchRef}
                     initialScale={1}
                     minScale={1}
@@ -223,6 +222,7 @@ export function ListingImageLightbox({
                       contentClass="!relative !h-full !w-full max-md:!h-fit max-md:!w-fit max-md:!max-h-full max-md:!max-w-full"
                     >
                       <Image
+                        key={src}
                         src={src}
                         alt={`${title} — full size ${index + 1}`}
                         width={2400}
