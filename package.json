@@ -64,6 +64,8 @@
     "embla-carousel-react": "8.5.1",
     "google-auth-library": "^10.6.2",
     "heic-convert": "^2.1.0",
+    "heic-to": "^1.5.2",
+    "heic2any": "^0.0.4",
     "input-otp": "1.4.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",

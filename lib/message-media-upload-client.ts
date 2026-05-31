@@ -3,10 +3,10 @@ import {
   type MarketplaceMessageImageAttachment,
   type MarketplaceMessageVideoAttachment,
 } from "@/lib/validations/marketplace-message-attachment"
+import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import {
   assertMessageImageOriginalSize,
   assertMessageVideoOriginalSize,
-  browserCanDecodeImage,
   isMessageVideoFile,
   messageVideoExtensionForMime,
   normalizeMessageVideoMimeType,
@@ -17,40 +17,6 @@ import { uploadStorageObjectWithProgress } from "@/lib/supabase/storage-upload-x
 function displayFileName(raw: string, fallbackExt: string): string {
   const base = raw.replace(/^.*[/\\]/, "").trim() || `attachment.${fallbackExt}`
   return base.replace(/[^\w.\- ()[\]]+/g, "_").slice(0, 200)
-}
-
-async function convertViaServer(file: File): Promise<File> {
-  const form = new FormData()
-  form.append("file", file)
-  const res = await fetch("/api/convert-image", { method: "POST", body: form })
-  const ct = res.headers.get("content-type") || ""
-  if (!res.ok) {
-    let msg = "Server could not convert this image to JPEG"
-    try {
-      if (ct.includes("application/json")) {
-        const j = (await res.json()) as { error?: string }
-        if (j?.error) msg = j.error
-      } else {
-        const t = await res.text()
-        if (t) msg = t.slice(0, 240)
-      }
-    } catch {
-      /* ignore */
-    }
-    throw new Error(msg)
-  }
-  if (!ct.includes("image/jpeg")) {
-    throw new Error("Server did not return a JPEG image")
-  }
-  const blob = await res.blob()
-  const base = file.name.replace(/\.[^.]+$/i, "") || "image"
-  return new File([blob], `${base}.jpg`, { type: "image/jpeg" })
-}
-
-async function toJpegIfUnsupported(file: File): Promise<File> {
-  assertMessageImageOriginalSize(file)
-  if (await browserCanDecodeImage(file)) return file
-  return convertViaServer(file)
 }
 
 export type UploadedMessageImageAttachment = {
@@ -105,7 +71,8 @@ export async function uploadMessageMediaFile(opts: {
     }
   }
 
-  const source = await toJpegIfUnsupported(file)
+  assertMessageImageOriginalSize(file)
+  const source = await ensureBrowserDecodableImageFile(file)
   const prepared = await prepareMessageImageFromFile(source)
   const objectId = crypto.randomUUID()
   const pathInBucket = `${conversationId}/${objectId}.${prepared.ext}`

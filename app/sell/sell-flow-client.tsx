@@ -102,10 +102,10 @@ import type { IndexBoardModelSelection } from "@/components/index-board-model-co
 import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
   assertListingOriginalSize,
-  browserCanDecodeImage as pipelineCanDecodeImage,
   prepareListingImagePairFromFile,
   type PreparedListingImagePair,
 } from "@/lib/listing-image-pipeline"
+import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
@@ -446,6 +446,35 @@ type ListingPhotoSlot = {
   dropSourceFileAfterUpload?: boolean
   /** Bumps when re-processing the same slot so stale async work does not apply. */
   prepareSeq?: number
+}
+
+const LISTING_PHOTO_FILE_EXT_RE = /\.(heic|heif|jpe?g|png|webp|gif|avif|tif?f)$/i
+
+function isListingPhotoFile(file: File): boolean {
+  const mime = (file.type || "").toLowerCase()
+  if (mime.startsWith("image/")) return true
+  return LISTING_PHOTO_FILE_EXT_RE.test(file.name)
+}
+
+function filesFromDataTransfer(dt: DataTransfer): File[] {
+  const fromList = Array.from(dt.files ?? []).filter(isListingPhotoFile)
+  if (fromList.length) return fromList
+  const out: File[] = []
+  for (const item of Array.from(dt.items ?? [])) {
+    if (item.kind !== "file") continue
+    const file = item.getAsFile()
+    if (file && isListingPhotoFile(file)) out.push(file)
+  }
+  return out
+}
+
+function isOsFileDragEvent(e: React.DragEvent): boolean {
+  const types = Array.from(e.dataTransfer.types ?? [])
+  return (
+    types.includes("Files") ||
+    types.includes("public.file-url") ||
+    types.includes("application/x-moz-file")
+  )
 }
 
 /**
@@ -860,6 +889,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload)
   }, [loading])
   const [images, setImages] = useState<ListingPhotoSlot[]>([])
+  const [photosFileDragActive, setPhotosFileDragActive] = useState(false)
+  const photosFileDragDepthRef = useRef(0)
   const imagesRef = useRef<ListingPhotoSlot[]>([])
   /** Authoritative prepare generation per slot — `imagesRef` can lag behind `setState` during re-runs. */
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
@@ -1597,37 +1628,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     return (latestListingPhotoPrepareSeqRef.current.get(clientId) ?? 0) === prepareSeq
   }
 
-  async function convertViaServer(file: File): Promise<File> {
-    const form = new FormData()
-    form.append("file", file)
-    const res = await fetch("/api/convert-image", { method: "POST", body: form })
-    const ct = res.headers.get("content-type") || ""
-    if (!res.ok) {
-      let msg = "Server could not convert this image to JPEG"
-      try {
-        if (ct.includes("application/json")) {
-          const j = (await res.json()) as { error?: string }
-          if (j?.error) msg = j.error
-        } else {
-          const t = await res.text()
-          if (t) msg = t.slice(0, 240)
-        }
-      } catch { /* ignore */ }
-      throw new Error(msg)
-    }
-    if (!ct.includes("image/jpeg")) {
-      throw new Error("Server did not return a JPEG image")
-    }
-    const blob = await res.blob()
-    const base = file.name.replace(/\.[^.]+$/i, "") || "image"
-    return new File([blob], `${base}.jpg`, { type: "image/jpeg" })
-  }
-
-  async function toJpegIfUnsupported(file: File): Promise<File> {
-    if (await pipelineCanDecodeImage(file)) return file
-    return convertViaServer(file)
-  }
-
   async function optimizeAndUploadSlot(slot: ListingPhotoSlot) {
     const clientId = slot.clientId
     const previewUrl = slot.previewUrl
@@ -1639,7 +1639,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (!prepared) {
         const src = slot.sourceFile
         if (!src) return
-        const file = await toJpegIfUnsupported(src)
+        const file = await ensureBrowserDecodableImageFile(src)
         prepared = await prepareListingImagePairFromFile(file, {
           rotate180: Boolean(slot.userRotate180),
         })
@@ -1898,36 +1898,90 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     })()
   }
 
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files) return
-    const newFiles = Array.from(e.target.files)
-    if (images.length + newFiles.length > 12) {
-      toast.error("Maximum 12 photos allowed. You have " + images.length + ".")
-      e.target.value = ""
+  function addListingPhotoFiles(incoming: File[]) {
+    const imageFiles = incoming.filter(isListingPhotoFile)
+    if (!imageFiles.length) {
+      toast.error("Drop one or more image files (JPEG, PNG, HEIC, etc.).")
       return
     }
-    for (const originalFile of newFiles) {
+
+    const currentCount = imagesRef.current.length
+    if (currentCount >= 12) {
+      toast.error("Maximum 12 photos allowed.")
+      return
+    }
+
+    const room = 12 - currentCount
+    const toAdd = imageFiles.slice(0, room)
+    if (imageFiles.length > room) {
+      toast.error(
+        `Only ${room} more photo${room === 1 ? "" : "s"} can be added (12 max).`,
+      )
+    }
+
+    const newSlots: ListingPhotoSlot[] = []
+    for (const originalFile of toAdd) {
       try {
         assertListingOriginalSize(originalFile)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "File too large")
         continue
       }
-      const clientId = crypto.randomUUID()
-      const previewUrl = URL.createObjectURL(originalFile)
-      const slot: ListingPhotoSlot = {
-        clientId,
-        previewUrl,
+      newSlots.push({
+        clientId: crypto.randomUUID(),
+        previewUrl: URL.createObjectURL(originalFile),
         optimizePhase: "running",
         uploadPhase: "idle",
         progressFull: 0,
         progressThumb: 0,
         sourceFile: originalFile,
-      }
-      setImages((prev) => [...prev, slot])
+      })
+    }
+
+    if (!newSlots.length) return
+
+    setImages((prev) => [...prev, ...newSlots])
+    for (const slot of newSlots) {
       void optimizeAndUploadSlot(slot)
     }
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files) return
+    addListingPhotoFiles(Array.from(e.target.files))
     e.target.value = ""
+  }
+
+  function handlePhotosFileDragEnter(e: React.DragEvent) {
+    if (!isOsFileDragEvent(e)) return
+    e.preventDefault()
+    photosFileDragDepthRef.current += 1
+    setPhotosFileDragActive(true)
+  }
+
+  function handlePhotosFileDragLeave(e: React.DragEvent) {
+    if (!isOsFileDragEvent(e)) return
+    e.preventDefault()
+    photosFileDragDepthRef.current -= 1
+    if (photosFileDragDepthRef.current <= 0) {
+      photosFileDragDepthRef.current = 0
+      setPhotosFileDragActive(false)
+    }
+  }
+
+  function handlePhotosFileDragOver(e: React.DragEvent) {
+    if (!isOsFileDragEvent(e)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "copy"
+  }
+
+  function handlePhotosFileDrop(e: React.DragEvent) {
+    if (!isOsFileDragEvent(e)) return
+    e.preventDefault()
+    e.stopPropagation()
+    photosFileDragDepthRef.current = 0
+    setPhotosFileDragActive(false)
+    addListingPhotoFiles(filesFromDataTransfer(e.dataTransfer))
   }
 
   function removeImage(index: number) {
@@ -2875,9 +2929,29 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Photos</h3>
                     <p className="text-xs text-muted-foreground/45">
-                      Drag photos to reorder — the first is your main image.
+                      Drop images from Finder to add them. Drag tiles to reorder — the first is your main image.
                     </p>
                   <Label className="sr-only">Listing photos</Label>
+                  <div
+                    className={cn(
+                      "relative rounded-lg transition-shadow",
+                      photosFileDragActive && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                    )}
+                    onDragEnter={handlePhotosFileDragEnter}
+                    onDragLeave={handlePhotosFileDragLeave}
+                    onDragOver={handlePhotosFileDragOver}
+                    onDrop={handlePhotosFileDrop}
+                  >
+                  {photosFileDragActive ? (
+                    <div
+                      className="pointer-events-none absolute inset-0 z-[70] flex items-center justify-center rounded-lg bg-primary/10"
+                      aria-hidden
+                    >
+                      <p className="rounded-md bg-background/90 px-3 py-1.5 text-sm font-medium text-primary shadow-sm">
+                        Drop photos to add
+                      </p>
+                    </div>
+                  ) : null}
                   <DndContext
                     sensors={photoDragSensors}
                     collisionDetection={closestCenter}
@@ -2923,6 +2997,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     )}
                   </div>
                   </DndContext>
+                  </div>
                   <p className="text-xs text-muted-foreground/45 space-y-1">
                     <span className="block">Thank you for listing on Reswell.</span>
                     <span className="inline-flex flex-wrap items-center gap-1">
