@@ -16,6 +16,7 @@ type ListYourSurfboardSellCtaProps = {
   variant?: ButtonProps["variant"]
   className?: string
   showArrow?: boolean
+  tabIndex?: number
 }
 
 export function ListYourSurfboardSellCta({
@@ -25,6 +26,7 @@ export function ListYourSurfboardSellCta({
   variant = "default",
   className,
   showArrow = true,
+  tabIndex,
 }: ListYourSurfboardSellCtaProps) {
   const openSignIn = useSignInGate()
 
@@ -33,7 +35,7 @@ export function ListYourSurfboardSellCta({
   if (userId) {
     return (
       <Button size={size} variant={variant} className={className} asChild>
-        <Link href={LIST_YOUR_SURFBOARD_SELL_HREF}>
+        <Link href={LIST_YOUR_SURFBOARD_SELL_HREF} tabIndex={tabIndex}>
           {children}
           {showArrow ? <ArrowRight className={arrowClassName} aria-hidden /> : null}
         </Link>
@@ -47,6 +49,7 @@ export function ListYourSurfboardSellCta({
       variant={variant}
       className={className}
       type="button"
+      tabIndex={tabIndex}
       onClick={() => openSignIn(LIST_YOUR_SURFBOARD_SELL_HREF)}
     >
       {children}
