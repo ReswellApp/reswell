@@ -1,12 +1,6 @@
 import Script from 'next/script'
 
-const META_PIXEL_ID_PATTERN = /^\d{10,20}$/
-
-function getMetaPixelId(): string | null {
-  const raw = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
-  if (!raw || !META_PIXEL_ID_PATTERN.test(raw)) return null
-  return raw
-}
+import { getMetaPixelId } from '@/lib/meta/pixel-config'
 
 /**
  * Meta (Facebook) Pixel base snippet. Renders nothing unless NEXT_PUBLIC_META_PIXEL_ID is set

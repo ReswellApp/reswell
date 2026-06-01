@@ -8,6 +8,7 @@ import type * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import { addCartItem } from "@/app/actions/cart"
+import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
@@ -75,6 +76,7 @@ export function ListingDetailPeerPurchaseActions({
         toast.error(r.error ?? "Could not add to cart")
         return
       }
+      trackMetaAddToCart({ contentId: listingId, value: r.value, contentName: r.contentName })
       setCartAdded(true)
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       window.setTimeout(() => setCartAdded(false), 2000)

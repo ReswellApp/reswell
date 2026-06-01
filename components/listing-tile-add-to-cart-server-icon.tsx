@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { addCartItem } from "@/app/actions/cart"
+import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
@@ -74,6 +75,7 @@ export function ListingTileAddToCartServerIcon({
         toast.error(r.error ?? "Could not save to cart")
         return
       }
+      trackMetaAddToCart({ contentId: listingId, value: r.value, contentName: r.contentName })
       setAdded(true)
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       window.setTimeout(() => setAdded(false), 1600)

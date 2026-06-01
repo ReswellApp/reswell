@@ -7,6 +7,7 @@ import { CheckoutOrderSuccess } from "@/components/checkout-order-success"
 import { CheckoutOrderSuccessPickup } from "@/components/checkout-order-success-pickup"
 import { GooglePurchaseConversionBeacon } from "@/components/google-ads/google-purchase-conversion-beacon"
 import { GooglePurchaseConversionScript } from "@/components/google-ads/google-purchase-conversion-script"
+import { MetaPurchaseEventScript } from "@/components/meta/meta-purchase-event-script"
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -47,6 +48,13 @@ export default async function PurchaseSuccessPage(props: PageProps) {
     <>
       <GooglePurchaseConversionScript orderId={payload.orderId} value={payload.total} />
       <GooglePurchaseConversionBeacon orderId={payload.orderId} value={payload.total} />
+      <MetaPurchaseEventScript
+        orderId={payload.orderId}
+        value={payload.total}
+        contentIds={payload.orderLines
+          .map((line) => line.listingId)
+          .filter((id): id is string => Boolean(id))}
+      />
     </>
   )
 

@@ -74,7 +74,15 @@ async function assertListingEligibleForCart(
   return { ok: true, listing }
 }
 
-export async function addCartItem(listingId: string): Promise<{ ok: boolean; error: string | null }> {
+export type AddCartItemResult = {
+  ok: boolean
+  error: string | null
+  /** Listing price in USD, returned so the client can fire Meta Pixel AddToCart with a value. */
+  value?: number
+  contentName?: string
+}
+
+export async function addCartItem(listingId: string): Promise<AddCartItemResult> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -122,6 +130,8 @@ export async function addCartItem(listingId: string): Promise<{ ok: boolean; err
         .maybeSingle(),
     ])
 
+  let value: number | undefined
+  let contentName: string | undefined
   if (listingRow) {
     const photoUrl =
       (firstImage?.thumbnail_url &&
@@ -132,15 +142,17 @@ export async function addCartItem(listingId: string): Promise<{ ok: boolean; err
       (typeof profileRow?.email === "string" && profileRow.email.trim()
         ? profileRow.email.trim()
         : null) || user.email?.trim() || null
+    const price =
+      typeof listingRow.price === "number" ? listingRow.price : Number(listingRow.price)
+    if (Number.isFinite(price) && price > 0) value = price
+    const title = String(listingRow.title ?? "").trim()
+    if (title) contentName = title
     void trackKlaviyoAddedToCart({
       buyerUserId: user.id,
       buyerEmail,
       listingId: listingRow.id,
       title: String(listingRow.title ?? ""),
-      price:
-        typeof listingRow.price === "number"
-          ? listingRow.price
-          : Number(listingRow.price),
+      price,
       slug: listingRow.slug ?? null,
       section: String(listingRow.section ?? "surfboards"),
       photoUrl,
@@ -150,7 +162,7 @@ export async function addCartItem(listingId: string): Promise<{ ok: boolean; err
   revalidatePath("/cart")
   const pathSlug = listingRow?.slug?.trim()
   revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
-  return { ok: true, error: null }
+  return { ok: true, error: null, value, contentName }
 }
 
 export async function removeCartItem(listingId: string): Promise<{ ok: boolean; error: string | null }> {
