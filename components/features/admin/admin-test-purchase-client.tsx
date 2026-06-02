@@ -223,9 +223,7 @@ export function AdminTestPurchaseClient() {
             <p className="text-xs font-mono text-muted-foreground break-all">{result.orderId}</p>
             <div className="flex flex-wrap gap-2">
               <Button asChild>
-                <Link href={result.successPagePath} target="_blank" rel="noreferrer">
-                  Open success page
-                </Link>
+                <Link href={result.successPagePath}>Open success page</Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link href={`/admin/orders/${result.orderId}`}>View in admin</Link>
