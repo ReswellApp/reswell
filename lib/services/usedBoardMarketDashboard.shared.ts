@@ -74,6 +74,12 @@ export type DashboardKpis = {
   medianAskingPriceActive: number | null
   sellThroughInRange: number | null
   refundedCountInRange: number
+  /** Median age (days) of active inventory at snapshot time. */
+  medianInventoryAgeDays: number | null
+  /** Active listings older than 90 days. */
+  staleInventoryCount: number
+  /** Mean of sale ÷ asking-price across confirmed orders with a known ask. */
+  avgSaleToAskRatio: number | null
 }
 
 export type DashboardSeriesPoint = {
@@ -160,6 +166,63 @@ export type DashboardVariantCoverage = {
   topModels: { modelName: string; count: number; avgSoldPrice: number | null }[]
 }
 
+export type DashboardDistributionBucket = {
+  label: string
+  count: number
+  share: number
+}
+
+/** Sale-vs-asking-price (negotiation) intelligence over confirmed orders. */
+export type DashboardPriceRealization = {
+  sampleSize: number
+  /** Mean of sale ÷ ask (1.0 = sold at ask). */
+  avgSaleToAskRatio: number | null
+  medianSaleToAskRatio: number | null
+  /** Mean discount off ask, as a fraction (0.08 = sold 8% under ask). */
+  avgDiscountPct: number | null
+  /** Share of sales that closed at or above the asking price. */
+  soldAtOrAboveAskShare: number | null
+  buckets: DashboardDistributionBucket[]
+  byCondition: {
+    condition: string
+    conditionLabel: string
+    sampleSize: number
+    avgDiscountPct: number | null
+    avgSaleToAskRatio: number | null
+  }[]
+}
+
+/** Age profile of currently-active inventory. */
+export type DashboardInventoryAging = {
+  activeCount: number
+  medianAgeDays: number | null
+  avgAgeDays: number | null
+  staleCount: number
+  staleShare: number | null
+  buckets: DashboardDistributionBucket[]
+}
+
+export type DashboardSellerRow = {
+  sellerId: string
+  displayName: string | null
+  soldInRange: number
+  grossVolumeInRange: number
+  avgSalePriceInRange: number | null
+}
+
+export type DashboardChannelRow = {
+  key: string
+  label: string
+  count: number
+  grossVolume: number
+  share: number
+}
+
+export type DashboardChannelMix = {
+  fulfillment: DashboardChannelRow[]
+  payment: DashboardChannelRow[]
+}
+
 export type DashboardViewingScope = {
   /** "Channel Islands Surfboards" / "Channel Islands · Happy Everyday" / "All used surfboards". */
   primaryLabel: string
@@ -205,6 +268,16 @@ export type UsedBoardMarketDashboard = {
   conditionRows: DashboardConditionRow[]
   locationRows: DashboardLocationRow[]
   priceDistribution: DashboardPriceBucketRow[]
+  /** Sale-vs-ask negotiation intelligence. */
+  priceRealization: DashboardPriceRealization
+  /** Age profile of active inventory. */
+  inventoryAging: DashboardInventoryAging
+  /** Histogram of days-to-sell for confirmed orders. */
+  daysToSellDistribution: DashboardDistributionBucket[]
+  /** Top sellers by gross volume in range. */
+  topSellers: DashboardSellerRow[]
+  /** Fulfillment & payment method breakdowns. */
+  channelMix: DashboardChannelMix
   soldHistory: DashboardSoldHistoryRow[]
   variantCoverage: DashboardVariantCoverage
   /** Empty until sales-event/promotion data is wired up. */

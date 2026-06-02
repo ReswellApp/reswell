@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import {
   finBoxesDisplayName,
+  finPlugsDisplayName,
   materialDisplayName,
 } from "@/lib/utils/brand-model-dimensions"
 import {
@@ -12,21 +13,27 @@ import {
 import {
   DASHBOARD_RANGE_OPTIONS,
   type DashboardBoardTypeRow,
+  type DashboardChannelMix,
+  type DashboardChannelRow,
   type DashboardConditionRow,
   type DashboardDimension,
+  type DashboardDistributionBucket,
   type DashboardFilterOptions,
   type DashboardFilters,
   type DashboardGroupedRow,
+  type DashboardInventoryAging,
   type DashboardKpis,
   type DashboardLocationRow,
   type DashboardPriceBucketRow,
+  type DashboardPriceRealization,
+  type DashboardSellerRow,
   type DashboardSeriesPoint,
   type DashboardSoldHistoryRow,
   type DashboardVariantCoverage,
   type DashboardViewingScope,
   type UsedBoardMarketDashboard,
 } from "@/lib/services/usedBoardMarketDashboard.shared"
-import type { BrandModelVariantMaterial, FinBoxesType } from "@/lib/validations/brand-model-variants"
+import type { BrandModelVariantMaterial, FinBoxesType, FinBoxType } from "@/lib/validations/brand-model-variants"
 import { slugify } from "@/lib/slugify"
 
 /**
@@ -154,13 +161,9 @@ function conditionLabel(condition: string | null | undefined): string {
 }
 
 function finBoxLabel(fin: string | null | undefined): string {
-  if (!fin) return "Fins —"
-  const v = fin.trim().toLowerCase()
+  const v = fin?.trim()
   if (!v) return "Fins —"
-  if (v === "fcs") return "FCS"
-  if (v === "futures") return "Futures"
-  if (v === "single_fin") return "Single fin"
-  return v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  return finPlugsDisplayName(v as FinBoxType)
 }
 
 function variantSyntheticKey(snap: SnapshotRow): string {
@@ -550,11 +553,13 @@ export async function getUsedBoardMarketDashboardService(
   const refundedOrders = currentOrders.filter(
     (o) => o.status === "refunded" || o.status === "refunding",
   )
+  const nowMs = now.getTime()
   const kpis = computeKpis({
     activeListings,
     newListingsRows: newListingsCurrentRows,
     confirmedOrders,
     refundedCount: refundedOrders.length,
+    nowMs,
   })
 
   const prevConfirmedOrders = previousOrders.filter((o) => o.status === "confirmed")
@@ -570,6 +575,7 @@ export async function getUsedBoardMarketDashboardService(
       refundedCount: previousOrders.filter(
         (o) => o.status === "refunded" || o.status === "refunding",
       ).length,
+      nowMs,
     })
   }
 
@@ -621,6 +627,11 @@ export async function getUsedBoardMarketDashboardService(
   const conditionRows = aggregateByCondition({ activeListings, confirmedOrders })
   const locationRows = aggregateByLocation({ activeListings, confirmedOrders })
   const priceDistribution = bucketSoldPrices(confirmedOrders)
+  const priceRealization = computePriceRealization(confirmedOrders)
+  const inventoryAging = computeInventoryAging(activeListings, nowMs)
+  const daysToSellDistribution = computeDaysToSellDistribution(confirmedOrders)
+  const topSellers = computeTopSellers(confirmedOrders, profileById)
+  const channelMix = computeChannelMix(confirmedOrders)
   const soldHistory = buildSoldHistory(currentOrders, profileById, snapshotByListingId)
 
   // ------------------------------------------------------ cascading filter options
@@ -663,6 +674,11 @@ export async function getUsedBoardMarketDashboardService(
     conditionRows,
     locationRows,
     priceDistribution,
+    priceRealization,
+    inventoryAging,
+    daysToSellDistribution,
+    topSellers,
+    channelMix,
     soldHistory,
     variantCoverage,
     salesEventsStub: {
@@ -733,6 +749,7 @@ function computeKpis(args: {
   newListingsRows: { price: number | string | null; created_at: string; status: string | null }[]
   confirmedOrders: OrderJoinedRow[]
   refundedCount: number
+  nowMs: number
 }): DashboardKpis {
   const askingPrices = args.activeListings
     .map((l) => toNumber(l.price))
@@ -759,6 +776,30 @@ function computeKpis(args: {
     }
   }
 
+  // Inventory age (active listings only)
+  const ageDays: number[] = []
+  let staleInventoryCount = 0
+  for (const l of args.activeListings) {
+    const createdMs = new Date(l.created_at).getTime()
+    if (!Number.isFinite(createdMs)) continue
+    const age = (args.nowMs - createdMs) / (1000 * 60 * 60 * 24)
+    if (age >= 0) {
+      ageDays.push(age)
+      if (age > 90) staleInventoryCount += 1
+    }
+  }
+
+  // Sale ÷ ask ratio across confirmed orders with a known asking price
+  const saleToAskRatios: number[] = []
+  for (const o of args.confirmedOrders) {
+    const listing = pickFirstJoined(o.listings)
+    const ask = toNumber(listing?.price ?? null)
+    const sale = toNumber(o.amount)
+    if (ask != null && ask > 0 && sale != null && sale >= 0) {
+      saleToAskRatios.push(sale / ask)
+    }
+  }
+
   const totalSoldInRange = args.confirmedOrders.length
   const totalActiveInventory = args.activeListings.length
   const sellThroughDenom = totalSoldInRange + totalActiveInventory
@@ -776,6 +817,9 @@ function computeKpis(args: {
     medianAskingPriceActive: median(askingPrices),
     sellThroughInRange: sellThrough,
     refundedCountInRange: args.refundedCount,
+    medianInventoryAgeDays: median(ageDays),
+    staleInventoryCount,
+    avgSaleToAskRatio: avg(saleToAskRatios),
   }
 }
 
@@ -1134,6 +1178,236 @@ function bucketSoldPrices(orders: OrderJoinedRow[]): DashboardPriceBucketRow[] {
     count: counts[i],
     share: total > 0 ? counts[i] / total : 0,
   }))
+}
+
+// ---------------------------------------------------------------------------
+// Price realization (sale vs ask)
+// ---------------------------------------------------------------------------
+
+const DISCOUNT_BUCKETS: { label: string; test: (d: number) => boolean }[] = [
+  { label: "Sold over ask", test: (d) => d <= -0.02 },
+  { label: "At ask (±2%)", test: (d) => d > -0.02 && d < 0.02 },
+  { label: "1–5% under", test: (d) => d >= 0.02 && d < 0.05 },
+  { label: "5–10% under", test: (d) => d >= 0.05 && d < 0.1 },
+  { label: "10–20% under", test: (d) => d >= 0.1 && d < 0.2 },
+  { label: "20%+ under", test: (d) => d >= 0.2 },
+]
+
+function buildDistribution(values: number[], specs: { label: string; test: (v: number) => boolean }[]): DashboardDistributionBucket[] {
+  const counts = specs.map(() => 0)
+  let total = 0
+  for (const v of values) {
+    for (let i = 0; i < specs.length; i++) {
+      if (specs[i].test(v)) {
+        counts[i] += 1
+        total += 1
+        break
+      }
+    }
+  }
+  return specs.map((s, i) => ({
+    label: s.label,
+    count: counts[i],
+    share: total > 0 ? counts[i] / total : 0,
+  }))
+}
+
+function computePriceRealization(confirmedOrders: OrderJoinedRow[]): DashboardPriceRealization {
+  const ratios: number[] = []
+  const discounts: number[] = []
+  let atOrAboveAsk = 0
+  const byCond = new Map<string, { ratios: number[]; discounts: number[] }>()
+
+  for (const o of confirmedOrders) {
+    const listing = pickFirstJoined(o.listings)
+    const ask = toNumber(listing?.price ?? null)
+    const sale = toNumber(o.amount)
+    if (ask == null || ask <= 0 || sale == null || sale < 0) continue
+    const ratio = sale / ask
+    const discount = 1 - ratio
+    ratios.push(ratio)
+    discounts.push(discount)
+    if (ratio >= 0.98) atOrAboveAsk += 1
+    const condKey = (listing?.condition ?? "").trim().toLowerCase() || "unknown"
+    const bucket = byCond.get(condKey) ?? { ratios: [], discounts: [] }
+    bucket.ratios.push(ratio)
+    bucket.discounts.push(discount)
+    byCond.set(condKey, bucket)
+  }
+
+  const buckets = buildDistribution(
+    discounts,
+    DISCOUNT_BUCKETS.map((b) => ({ label: b.label, test: b.test })),
+  )
+
+  const byCondition = Array.from(byCond.entries())
+    .map(([condition, b]) => ({
+      condition,
+      conditionLabel: conditionLabel(condition),
+      sampleSize: b.ratios.length,
+      avgDiscountPct: avg(b.discounts),
+      avgSaleToAskRatio: avg(b.ratios),
+    }))
+    .sort((a, b) => {
+      const ai = (CONDITION_ORDER as readonly string[]).indexOf(a.condition as ConditionKey)
+      const bi = (CONDITION_ORDER as readonly string[]).indexOf(b.condition as ConditionKey)
+      if (ai === -1 && bi === -1) return b.sampleSize - a.sampleSize
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+
+  return {
+    sampleSize: ratios.length,
+    avgSaleToAskRatio: avg(ratios),
+    medianSaleToAskRatio: median(ratios),
+    avgDiscountPct: avg(discounts),
+    soldAtOrAboveAskShare: ratios.length > 0 ? atOrAboveAsk / ratios.length : null,
+    buckets,
+    byCondition,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inventory aging
+// ---------------------------------------------------------------------------
+
+const AGE_BUCKETS: { label: string; test: (d: number) => boolean }[] = [
+  { label: "≤ 7 days", test: (d) => d <= 7 },
+  { label: "8–30 days", test: (d) => d > 7 && d <= 30 },
+  { label: "31–60 days", test: (d) => d > 30 && d <= 60 },
+  { label: "61–90 days", test: (d) => d > 60 && d <= 90 },
+  { label: "90+ days", test: (d) => d > 90 },
+]
+
+function computeInventoryAging(activeListings: ListingRow[], nowMs: number): DashboardInventoryAging {
+  const ages: number[] = []
+  let staleCount = 0
+  for (const l of activeListings) {
+    const createdMs = new Date(l.created_at).getTime()
+    if (!Number.isFinite(createdMs)) continue
+    const age = (nowMs - createdMs) / (1000 * 60 * 60 * 24)
+    if (age < 0) continue
+    ages.push(age)
+    if (age > 90) staleCount += 1
+  }
+  return {
+    activeCount: ages.length,
+    medianAgeDays: median(ages),
+    avgAgeDays: avg(ages),
+    staleCount,
+    staleShare: ages.length > 0 ? staleCount / ages.length : null,
+    buckets: buildDistribution(ages, AGE_BUCKETS),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Days-to-sell distribution
+// ---------------------------------------------------------------------------
+
+const DAYS_TO_SELL_BUCKETS: { label: string; test: (d: number) => boolean }[] = [
+  { label: "≤ 7 days", test: (d) => d <= 7 },
+  { label: "8–14 days", test: (d) => d > 7 && d <= 14 },
+  { label: "15–30 days", test: (d) => d > 14 && d <= 30 },
+  { label: "31–60 days", test: (d) => d > 30 && d <= 60 },
+  { label: "61–90 days", test: (d) => d > 60 && d <= 90 },
+  { label: "90+ days", test: (d) => d > 90 },
+]
+
+function computeDaysToSellDistribution(confirmedOrders: OrderJoinedRow[]): DashboardDistributionBucket[] {
+  const days: number[] = []
+  for (const o of confirmedOrders) {
+    const listing = pickFirstJoined(o.listings)
+    if (!listing?.created_at) continue
+    const diffMs = new Date(o.created_at).getTime() - new Date(listing.created_at).getTime()
+    if (Number.isFinite(diffMs) && diffMs >= 0) days.push(diffMs / (1000 * 60 * 60 * 24))
+  }
+  return buildDistribution(days, DAYS_TO_SELL_BUCKETS)
+}
+
+// ---------------------------------------------------------------------------
+// Seller leaderboard
+// ---------------------------------------------------------------------------
+
+function computeTopSellers(
+  confirmedOrders: OrderJoinedRow[],
+  profileById: Map<string, ProfileLite>,
+): DashboardSellerRow[] {
+  const buckets = new Map<string, { sales: number[] }>()
+  for (const o of confirmedOrders) {
+    if (!o.seller_id) continue
+    const sale = toNumber(o.amount)
+    const b = buckets.get(o.seller_id) ?? { sales: [] }
+    if (sale != null && sale >= 0) b.sales.push(sale)
+    else b.sales.push(0)
+    buckets.set(o.seller_id, b)
+  }
+  return Array.from(buckets.entries())
+    .map(([sellerId, b]) => ({
+      sellerId,
+      displayName: profileById.get(sellerId)?.display_name ?? null,
+      soldInRange: b.sales.length,
+      grossVolumeInRange: b.sales.reduce((s, v) => s + v, 0),
+      avgSalePriceInRange: avg(b.sales),
+    }))
+    .sort((a, b) => b.grossVolumeInRange - a.grossVolumeInRange || b.soldInRange - a.soldInRange)
+    .slice(0, 10)
+}
+
+// ---------------------------------------------------------------------------
+// Fulfillment & payment channel mix
+// ---------------------------------------------------------------------------
+
+function channelLabel(kind: "fulfillment" | "payment", raw: string | null | undefined): string {
+  const v = (raw ?? "").trim().toLowerCase()
+  if (!v) return "Unspecified"
+  const fulfillment: Record<string, string> = {
+    shipping: "Shipping",
+    ship: "Shipping",
+    local_pickup: "Local pickup",
+    pickup: "Local pickup",
+    local: "Local pickup",
+    delivery: "Local delivery",
+  }
+  const payment: Record<string, string> = {
+    card: "Card",
+    stripe: "Card",
+    apple_pay: "Apple Pay",
+    google_pay: "Google Pay",
+    paypal: "PayPal",
+    cash: "Cash",
+  }
+  const map = kind === "fulfillment" ? fulfillment : payment
+  return map[v] ?? v.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function computeChannelMix(confirmedOrders: OrderJoinedRow[]): DashboardChannelMix {
+  function build(getter: (o: OrderJoinedRow) => string | null | undefined, kind: "fulfillment" | "payment"): DashboardChannelRow[] {
+    const buckets = new Map<string, { count: number; gross: number }>()
+    let total = 0
+    for (const o of confirmedOrders) {
+      const key = (getter(o) ?? "").trim().toLowerCase() || "__unspecified"
+      const b = buckets.get(key) ?? { count: 0, gross: 0 }
+      b.count += 1
+      const amt = toNumber(o.amount)
+      if (amt != null && amt >= 0) b.gross += amt
+      buckets.set(key, b)
+      total += 1
+    }
+    return Array.from(buckets.entries())
+      .map(([key, b]) => ({
+        key,
+        label: channelLabel(kind, key === "__unspecified" ? "" : key),
+        count: b.count,
+        grossVolume: b.gross,
+        share: total > 0 ? b.count / total : 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+  }
+  return {
+    fulfillment: build((o) => o.fulfillment_method, "fulfillment"),
+    payment: build((o) => o.payment_method, "payment"),
+  }
 }
 
 // ---------------------------------------------------------------------------

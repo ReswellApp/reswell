@@ -1,4 +1,11 @@
 import { formatCondition } from "@/lib/listing-labels"
+import {
+  CONSTRUCTION_OPTIONS,
+  FACET_PARAM_KEYS,
+  FIN_SETUP_OPTIONS,
+  FIN_SYSTEM_OPTIONS,
+  facetOptionLabel,
+} from "@/lib/boards-browse-facets"
 import type {
   BrandModelVariantCondition,
   BrandModelVariantMaterial,
@@ -40,51 +47,33 @@ export function formatBrandModelDimensionLabel(row: {
   return dims || v
 }
 
-function finPlugsDisplayName(f: FinBoxType): string {
-  if (f === "futures") return "Futures"
-  if (f === "fcs") return "FCS"
-  return "Single fin"
+/** Fin system / plug routing label (shares the marketplace "Fin System" facet labels). */
+export function finPlugsDisplayName(f: FinBoxType): string {
+  return facetOptionLabel(FACET_PARAM_KEYS.finSystem, f)
 }
 
+/** Fin setup / layout label (shares the marketplace "Fin Setup" facet labels). */
 export function finBoxesDisplayName(boxes: FinBoxesType): string {
-  switch (boxes) {
-    case "five_fin":
-      return "Five fin"
-    case "thruster":
-      return "Thruster"
-    case "quad":
-      return "Quad"
-    case "single_fin":
-      return "Single fin"
-    case "two_plus_one":
-      return "2+1"
-    case "twin":
-      return "Twin"
-    case "twinzer":
-      return "Twinzer"
-    default:
-      return boxes
-  }
+  return facetOptionLabel(FACET_PARAM_KEYS.finSetup, boxes)
 }
 
+/** Board construction label (shares the marketplace "Board Construction" facet labels). */
 export function materialDisplayName(material: BrandModelVariantMaterial): string {
-  return material === "eps" ? "EPS" : "PU"
+  return facetOptionLabel(FACET_PARAM_KEYS.construction, material)
 }
 
-export const FIN_BOXES_ADMIN_OPTIONS: readonly { value: FinBoxesType; label: string }[] = [
-  { value: "five_fin", label: "Five fin" },
-  { value: "thruster", label: "Thruster" },
-  { value: "quad", label: "Quad" },
-  { value: "single_fin", label: "Single fin" },
-  { value: "two_plus_one", label: "2+1" },
-  { value: "twin", label: "Twin" },
-  { value: "twinzer", label: "Twinzer" },
-] as const
+/**
+ * Admin select option lists for catalog variants — sourced from the same facet definitions
+ * the marketplace filters use, so the modals stay in lockstep with the browse vocabulary.
+ */
+export const FIN_BOX_TYPE_ADMIN_OPTIONS: readonly { value: FinBoxType; label: string }[] =
+  FIN_SYSTEM_OPTIONS.map((o) => ({ value: o.value as FinBoxType, label: o.label }))
 
-export const VARIANT_MATERIAL_ADMIN_OPTIONS: readonly { value: BrandModelVariantMaterial; label: string }[] = [
-  { value: "pu", label: "PU" },
-  { value: "eps", label: "EPS" },
-] as const
+export const FIN_BOXES_ADMIN_OPTIONS: readonly { value: FinBoxesType; label: string }[] =
+  FIN_SETUP_OPTIONS.map((o) => ({ value: o.value as FinBoxesType, label: o.label }))
+
+export const VARIANT_MATERIAL_ADMIN_OPTIONS: readonly { value: BrandModelVariantMaterial; label: string }[] =
+  CONSTRUCTION_OPTIONS.map((o) => ({ value: o.value as BrandModelVariantMaterial, label: o.label }))
 
 /** Full variant line: dims · fin plugs · fin boxes · PU/EPS foam · condition. */
 export function formatBrandModelVariantLabel(row: {

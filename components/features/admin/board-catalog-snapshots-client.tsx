@@ -2,9 +2,24 @@
 
 import Image from "next/image"
 import Link from "next/link"
+import type { ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { format } from "date-fns"
-import { Check, ImagePlus, Loader2, MoreHorizontal, PlusCircle, Search, Trash2, X } from "lucide-react"
+import {
+  Check,
+  CheckCircle2,
+  CircleDashed,
+  ImagePlus,
+  Layers,
+  Link2,
+  Loader2,
+  MoreHorizontal,
+  PlusCircle,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { createClient } from "@/lib/supabase/client"
@@ -15,8 +30,19 @@ import {
   type BrandModelVariantCondition,
   type BrandModelVariantMaterial,
   type FinBoxesType,
+  type FinBoxType,
 } from "@/lib/validations/brand-model-variants"
-import { finBoxTypeFromListingFinsSetup } from "@/lib/utils/fins-setup-to-fin-box"
+import {
+  finBoxTypeFromListingFinSystem,
+  finBoxTypeFromListingFinsSetup,
+  finBoxesLayoutFromListingFinsSetup,
+  variantMaterialFromListingConstruction,
+} from "@/lib/utils/fins-setup-to-fin-box"
+import {
+  FACET_PARAM_KEYS,
+  facetOptionLabel,
+} from "@/lib/boards-browse-facets"
+import { parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
 import {
   formatBoardType,
   formatCondition,
@@ -27,6 +53,7 @@ import {
 import { buildBoardCatalogDimensionLabelsFromListingRow } from "@/lib/utils/listing-board-catalog-snapshot"
 import {
   FIN_BOXES_ADMIN_OPTIONS,
+  FIN_BOX_TYPE_ADMIN_OPTIONS,
   VARIANT_MATERIAL_ADMIN_OPTIONS,
 } from "@/lib/utils/brand-model-dimensions"
 
@@ -305,6 +332,14 @@ function listingHref(slug: string | null | undefined): string {
   return s ? `/l/${encodeURIComponent(s)}` : ""
 }
 
+/** Prefer `listings.fin_system` for the catalog plug type; fall back to the legacy fins_setup sniff. */
+function prefillFinBoxTypeFromListing(
+  lg: UserListingBoardModelDataListingEmbed | null | undefined,
+): FinBoxType {
+  if (lg?.fin_system?.trim()) return finBoxTypeFromListingFinSystem(lg.fin_system)
+  return finBoxTypeFromListingFinsSetup(lg?.fins_setup ?? null)
+}
+
 function coalesceSnapshotThenListing(
   snapshot: string | null | undefined,
   fromListing: string | undefined,
@@ -410,6 +445,141 @@ function snapshotRowMatchesSearch(r: SnapshotAdminRowApi, rawQuery: string): boo
   return tokens.every((tok) => hay.includes(tok))
 }
 
+type BoardCatalogSortKey =
+  | "updated_desc"
+  | "updated_asc"
+  | "price_desc"
+  | "price_asc"
+  | "sold_desc"
+  | "brand_asc"
+  | "title_asc"
+  | "priority_desc"
+  | "status_open"
+
+const BOARD_CATALOG_SORT_OPTIONS: { value: BoardCatalogSortKey; label: string }[] = [
+  { value: "updated_desc", label: "Listing updated · newest" },
+  { value: "updated_asc", label: "Listing updated · oldest" },
+  { value: "price_desc", label: "Price · high to low" },
+  { value: "price_asc", label: "Price · low to high" },
+  { value: "sold_desc", label: "Sold price · high to low" },
+  { value: "brand_asc", label: "Brand · A to Z" },
+  { value: "title_asc", label: "Title · A to Z" },
+  { value: "priority_desc", label: "Priority · high first" },
+  { value: "status_open", label: "Status · open first" },
+]
+
+const PRIORITY_RANK: Record<BoardCatalogSnapshotPriority, number> = {
+  high: 3,
+  medium: 2,
+  low: 1,
+}
+
+function snapshotUpdatedAtMs(r: SnapshotAdminRowApi): number {
+  const iso = r.listings?.updated_at?.trim()
+  if (!iso) return 0
+  const t = Date.parse(iso)
+  return Number.isFinite(t) ? t : 0
+}
+
+function snapshotListingPriceNum(r: SnapshotAdminRowApi): number {
+  return Number.isFinite(r.listing_price) ? r.listing_price : 0
+}
+
+function snapshotSoldPriceNum(r: SnapshotAdminRowApi): number | null {
+  if (r.sold_price == null) return null
+  const n = Number(r.sold_price)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Total ordering for the admin table. Returns negative when `a` should come before `b`. */
+function compareSnapshotRows(
+  a: SnapshotAdminRowApi,
+  b: SnapshotAdminRowApi,
+  key: BoardCatalogSortKey,
+  priorities: Record<string, BoardCatalogSnapshotPriority>,
+): number {
+  switch (key) {
+    case "updated_desc":
+      return snapshotUpdatedAtMs(b) - snapshotUpdatedAtMs(a)
+    case "updated_asc":
+      return snapshotUpdatedAtMs(a) - snapshotUpdatedAtMs(b)
+    case "price_desc":
+      return snapshotListingPriceNum(b) - snapshotListingPriceNum(a)
+    case "price_asc":
+      return snapshotListingPriceNum(a) - snapshotListingPriceNum(b)
+    case "sold_desc": {
+      // Rows without a sold price sink to the bottom regardless of direction.
+      const av = snapshotSoldPriceNum(a)
+      const bv = snapshotSoldPriceNum(b)
+      if (av == null && bv == null) return 0
+      if (av == null) return 1
+      if (bv == null) return -1
+      return bv - av
+    }
+    case "brand_asc": {
+      const an = a.brands?.name?.trim() || a.listings?.brand?.trim() || ""
+      const bn = b.brands?.name?.trim() || b.listings?.brand?.trim() || ""
+      if (!an && bn) return 1
+      if (an && !bn) return -1
+      return an.localeCompare(bn)
+    }
+    case "title_asc": {
+      const at = a.listings?.title?.trim() || ""
+      const bt = b.listings?.title?.trim() || ""
+      if (!at && bt) return 1
+      if (at && !bt) return -1
+      return at.localeCompare(bt)
+    }
+    case "priority_desc": {
+      const ap = priorities[a.id] ? PRIORITY_RANK[priorities[a.id]] : 0
+      const bp = priorities[b.id] ? PRIORITY_RANK[priorities[b.id]] : 0
+      return bp - ap
+    }
+    case "status_open": {
+      const ao = a.converted_brand_model_variant_id ? 1 : 0
+      const bo = b.converted_brand_model_variant_id ? 1 : 0
+      return ao - bo
+    }
+    default:
+      return 0
+  }
+}
+
+type BoardCatalogStatAccent = "slate" | "blue" | "emerald" | "amber"
+
+function BoardCatalogStatCard({
+  label,
+  value,
+  subtitle,
+  icon,
+  accent = "slate",
+}: {
+  label: string
+  value: string
+  subtitle: string
+  icon: ReactNode
+  accent?: BoardCatalogStatAccent
+}) {
+  const accentClasses: Record<BoardCatalogStatAccent, string> = {
+    slate: "text-slate-400",
+    blue: "text-blue-600",
+    emerald: "text-emerald-600",
+    amber: "text-amber-600",
+  }
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-5">
+      <div className="mb-2 flex items-center gap-2">
+        <span className={cn("shrink-0", accentClasses[accent])} aria-hidden>
+          {icon}
+        </span>
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</span>
+      </div>
+      <div className="text-2xl font-bold tabular-nums text-slate-900">{value}</div>
+      <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+    </div>
+  )
+}
+
 export function BoardCatalogSnapshotsClient() {
   const [pendingOnly, setPendingOnly] = useState(true)
   const [rows, setRows] = useState<SnapshotAdminRowApi[]>([])
@@ -426,6 +596,8 @@ export function BoardCatalogSnapshotsClient() {
   const [tablePrefsHydrated, setTablePrefsHydrated] = useState(false)
   const [dismissConfirmId, setDismissConfirmId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [sortKey, setSortKey] = useState<BoardCatalogSortKey>("updated_desc")
+  const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null)
 
   useEffect(() => {
     setPriorities(loadBoardCatalogSnapshotPriorities())
@@ -476,10 +648,16 @@ export function BoardCatalogSnapshotsClient() {
     return visibleRows.filter((r) => priorities[r.id] === priorityFilter)
   }, [visibleRows, priorities, priorityFilter])
 
-  const displayRows = useMemo(
-    () => priorityFilteredRows.filter((r) => snapshotRowMatchesSearch(r, searchQuery)),
-    [priorityFilteredRows, searchQuery],
-  )
+  const displayRows = useMemo(() => {
+    const filtered = priorityFilteredRows.filter((r) => snapshotRowMatchesSearch(r, searchQuery))
+    return [...filtered].sort((a, b) => {
+      const primary = compareSnapshotRows(a, b, sortKey, priorities)
+      if (primary !== 0) return primary
+      const at = a.listings?.title?.trim() || ""
+      const bt = b.listings?.title?.trim() || ""
+      return at.localeCompare(bt) || a.id.localeCompare(b.id)
+    })
+  }, [priorityFilteredRows, searchQuery, sortKey, priorities])
 
   const confirmRemoveRowFromTable = useCallback(() => {
     if (!dismissConfirmId) return
@@ -513,6 +691,7 @@ export function BoardCatalogSnapshotsClient() {
       }
       setRows(Array.isArray(data.data.rows) ? data.data.rows : [])
       setTotal(Number(data.data.total) || 0)
+      setLastLoadedAt(new Date())
     } finally {
       setLoading(false)
     }
@@ -524,50 +703,138 @@ export function BoardCatalogSnapshotsClient() {
 
   const hiddenDismissCount = rows.length - visibleRows.length
 
+  const stats = useMemo(() => {
+    let converted = 0
+    let needsBrand = 0
+    for (const r of rows) {
+      if (r.converted_brand_model_variant_id) {
+        converted++
+      } else if (!r.brand_id?.trim()) {
+        needsBrand++
+      }
+    }
+    return {
+      loaded: rows.length,
+      converted,
+      open: rows.length - converted,
+      needsBrand,
+    }
+  }, [rows])
+
   return (
-    <div className="w-full min-w-0 max-w-full space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-xl space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">User Listings Board Data</h1>
-          <p className="text-muted-foreground text-sm">
-            Aggregated surfboard listing fields from sellers ({total} matching). Use{" "}
-            <span className="font-medium text-foreground">Convert</span> to add a normalized row under{" "}
-            <Link href={`${BRANDS_BASE}`} className="text-primary underline-offset-2 hover:underline">
-              brand models → variants
-            </Link>
-            . Rows without a linked catalog brand can use{" "}
-            <span className="font-medium text-foreground">Attach brand</span> first.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant={pendingOnly ? "secondary" : "outline"}
-            onClick={() => setPendingOnly(!pendingOnly)}
-          >
-            {pendingOnly ? "Showing not converted only" : "Showing all snapshots"}
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/admin/listings">Back</Link>
-          </Button>
-          <Button type="button" variant="outline" onClick={() => void load()} disabled={loading}>
-            Refresh
-          </Button>
+    <div className="w-full min-w-0 max-w-full space-y-6 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:border-border dark:bg-transparent">
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 px-5 py-5 sm:px-6 sm:py-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl font-semibold text-slate-900">User Listings Board Data</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Aggregated surfboard listing fields from sellers. Use{" "}
+              <span className="font-medium text-slate-700">Convert</span> to add a normalized row under{" "}
+              <Link href={`${BRANDS_BASE}`} className="font-medium text-blue-700 underline-offset-4 hover:underline">
+                brand models → variants
+              </Link>
+              . Rows without a linked catalog brand can use{" "}
+              <span className="font-medium text-slate-700">Attach brand</span> first.
+            </p>
+          </div>
+          <div className="flex flex-col items-stretch gap-3 lg:items-end">
+            <div className="flex items-center gap-3 lg:justify-end">
+              <div className="text-right text-sm">
+                <div className="text-xs text-slate-500">
+                  {loading ? (
+                    <span className="inline-flex items-center gap-1.5 text-blue-600">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                    </span>
+                  ) : (
+                    "Last updated"
+                  )}
+                </div>
+                <div className="font-medium text-slate-700">
+                  {lastLoadedAt ? format(lastLoadedAt, "MMM d, yyyy h:mm a") : "—"}
+                </div>
+              </div>
+              <span
+                className={cn(
+                  "h-2 w-2 shrink-0 animate-pulse rounded-full",
+                  loading ? "bg-blue-500" : "bg-emerald-500",
+                )}
+                aria-hidden
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <Button
+                type="button"
+                variant={pendingOnly ? "secondary" : "outline"}
+                size="sm"
+                className="h-9 border-slate-200 bg-white"
+                onClick={() => setPendingOnly(!pendingOnly)}
+              >
+                {pendingOnly ? "Not converted only" : "All snapshots"}
+              </Button>
+              <Button variant="outline" size="sm" className="h-9 border-slate-200 bg-white" asChild>
+                <Link href="/admin/listings">Back</Link>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 border-slate-200 bg-white"
+                onClick={() => void load()}
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <span className="ml-2">Refresh</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
       {!loading && rows.length > 0 ? (
-        <div className="border-border bg-muted/20 flex flex-col gap-3 rounded-lg border px-3 py-2.5 lg:flex-row lg:flex-wrap lg:items-end">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <BoardCatalogStatCard
+            label="Snapshots loaded"
+            value={stats.loaded.toLocaleString()}
+            subtitle={`of ${total.toLocaleString()} matching`}
+            icon={<Layers className="h-4 w-4" />}
+            accent="blue"
+          />
+          <BoardCatalogStatCard
+            label="Not converted"
+            value={stats.open.toLocaleString()}
+            subtitle="Open for triage"
+            icon={<CircleDashed className="h-4 w-4" />}
+            accent="amber"
+          />
+          <BoardCatalogStatCard
+            label="Converted"
+            value={stats.converted.toLocaleString()}
+            subtitle="Linked to catalog variant"
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            accent="emerald"
+          />
+          <BoardCatalogStatCard
+            label="Needs brand link"
+            value={stats.needsBrand.toLocaleString()}
+            subtitle="Attach a catalog brand first"
+            icon={<Link2 className="h-4 w-4" />}
+            accent="slate"
+          />
+        </div>
+      ) : null}
+
+      {!loading && rows.length > 0 ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm lg:flex-row lg:flex-wrap lg:items-end">
           <div className="flex min-w-[min(100%,18rem)] flex-1 flex-col gap-1.5">
             <Label
               htmlFor="board-catalog-search"
-              className="text-muted-foreground text-xs font-medium uppercase tracking-wide"
+              className="text-[11px] font-medium uppercase tracking-wide text-slate-500"
             >
               Search
             </Label>
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                 aria-hidden
               />
               <Input
@@ -577,14 +844,14 @@ export function BoardCatalogSnapshotsClient() {
                 placeholder="Title, brand, model, dims, slug…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 pr-9 pl-9"
+                className="h-9 border-slate-200 bg-white pl-9 pr-9"
               />
               {searchQuery.trim() ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0.5 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-0.5 top-1/2 h-8 w-8 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                   aria-label="Clear search"
                   onClick={() => setSearchQuery("")}
                 >
@@ -593,8 +860,28 @@ export function BoardCatalogSnapshotsClient() {
               ) : null}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 lg:border-border lg:border-l lg:pl-4">
-            <span className="text-muted-foreground shrink-0 text-xs font-medium uppercase tracking-wide">
+          <div className="flex flex-col gap-1.5 lg:border-l lg:border-slate-200 lg:pl-4">
+            <Label
+              htmlFor="board-catalog-sort"
+              className="text-[11px] font-medium uppercase tracking-wide text-slate-500"
+            >
+              Sort by
+            </Label>
+            <Select value={sortKey} onValueChange={(v) => setSortKey(v as BoardCatalogSortKey)}>
+              <SelectTrigger id="board-catalog-sort" className="h-9 w-[210px] border-slate-200 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {BOARD_CATALOG_SORT_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:border-l lg:border-slate-200 lg:pl-4">
+            <span className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-slate-500">
               Priority filter
             </span>
             <div className="flex flex-wrap gap-2">
@@ -602,7 +889,7 @@ export function BoardCatalogSnapshotsClient() {
                 type="button"
                 variant={priorityFilter === "all" ? "secondary" : "outline"}
                 size="sm"
-                className="h-8"
+                className={cn("h-8", priorityFilter !== "all" && "border-slate-200 bg-white")}
                 onClick={() => setPriorityFilter("all")}
               >
                 All
@@ -613,7 +900,10 @@ export function BoardCatalogSnapshotsClient() {
                   type="button"
                   variant={priorityFilter === p ? "secondary" : "outline"}
                   size="sm"
-                  className={cn("h-8", priorityFilter === p && snapshotPriorityBadgeClass(p))}
+                  className={cn(
+                    "h-8",
+                    priorityFilter === p ? snapshotPriorityBadgeClass(p) : "border-slate-200 bg-white",
+                  )}
                   onClick={() => setPriorityFilter(p)}
                 >
                   {PRIORITY_LABEL[p]}
@@ -621,49 +911,66 @@ export function BoardCatalogSnapshotsClient() {
               ))}
             </div>
           </div>
-          <span className="text-muted-foreground lg:ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-slate-500 lg:ml-auto">
             <span>
               Showing {displayRows.length} of {priorityFilteredRows.length}
               {hiddenDismissCount > 0 ? (
-                <span className="text-muted-foreground/90"> ({hiddenDismissCount} hidden)</span>
+                <span className="text-slate-400"> ({hiddenDismissCount} hidden)</span>
               ) : null}
             </span>
-          </span>
+            {hiddenDismissCount > 0 ? (
+              <button
+                type="button"
+                className="font-medium text-blue-700 underline-offset-4 hover:underline"
+                onClick={() => restoreDismissedRows()}
+              >
+                Show hidden
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading…
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-20 text-sm text-slate-500 shadow-sm">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading board catalog data…
         </div>
       ) : rows.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No rows yet.</p>
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center text-sm text-slate-500 shadow-sm">
+          No snapshot rows yet.
+        </div>
       ) : visibleRows.length === 0 ? (
-        <div className="border-border bg-muted/15 space-y-3 rounded-lg border px-4 py-4">
-          <p className="text-muted-foreground text-sm">
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+          <p className="text-sm text-slate-500">
             Every snapshot row is hidden from this view. Rows you remove stay hidden until you restore them (stored in
             this browser only).
           </p>
-          <Button type="button" variant="outline" size="sm" onClick={() => restoreDismissedRows()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-slate-200 bg-white"
+            onClick={() => restoreDismissedRows()}
+          >
             Show hidden rows
           </Button>
         </div>
       ) : priorityFilteredRows.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-500 shadow-sm">
           No snapshots match this priority
           {priorityFilter !== "all" ? ` (${PRIORITY_LABEL[priorityFilter]})` : ""}. Choose{" "}
           <button
             type="button"
-            className="text-primary font-medium underline-offset-2 hover:underline"
+            className="font-medium text-blue-700 underline-offset-4 hover:underline"
             onClick={() => setPriorityFilter("all")}
           >
             All
           </button>{" "}
           to see every row.
-        </p>
+        </div>
       ) : displayRows.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-500 shadow-sm">
           No listings match your search
           {searchQuery.trim() ? (
             <>
@@ -674,34 +981,50 @@ export function BoardCatalogSnapshotsClient() {
           .{" "}
           <button
             type="button"
-            className="text-primary font-medium underline-offset-2 hover:underline"
+            className="font-medium text-blue-700 underline-offset-4 hover:underline"
             onClick={() => setSearchQuery("")}
           >
             Clear search
           </button>
           {" "}
           or adjust keywords.
-        </p>
+        </div>
       ) : (
-        <div className="bg-card border-border w-full min-w-0 max-w-full rounded-lg border shadow-sm">
+        <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <Table className="w-full max-w-full table-fixed">
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[12%] whitespace-nowrap px-2 py-2 text-left text-xs font-semibold">
+              <TableRow className="border-b border-slate-200 bg-slate-50 hover:bg-slate-50">
+                <TableHead className="w-[12%] whitespace-nowrap px-2 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Listing upd.
                 </TableHead>
-                <TableHead className="w-[20%] px-2 py-2 text-xs font-semibold">Listing</TableHead>
-                <TableHead className="w-[11%] px-2 py-2 text-xs font-semibold">Brand</TableHead>
-                <TableHead className="w-[12%] px-2 py-2 text-xs font-semibold" title="Model label">
+                <TableHead className="w-[20%] px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Listing
+                </TableHead>
+                <TableHead className="w-[11%] px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Brand
+                </TableHead>
+                <TableHead
+                  className="w-[12%] px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  title="Model label"
+                >
                   Model
                 </TableHead>
-                <TableHead className="w-[10%] px-2 py-2 text-xs font-semibold" title="Dimensions">
+                <TableHead
+                  className="w-[10%] px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  title="Dimensions"
+                >
                   Dims
                 </TableHead>
-                <TableHead className="w-[7%] px-2 py-2 text-xs font-semibold">Price</TableHead>
-                <TableHead className="w-[7%] px-2 py-2 text-xs font-semibold">Sold</TableHead>
-                <TableHead className="w-[7%] px-2 py-2 text-xs font-semibold">Status</TableHead>
-                <TableHead className="w-[14%] px-2 py-2 text-right text-xs font-semibold">
+                <TableHead className="w-[7%] px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Price
+                </TableHead>
+                <TableHead className="w-[7%] px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Sold
+                </TableHead>
+                <TableHead className="w-[7%] px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Status
+                </TableHead>
+                <TableHead className="w-[14%] px-2 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Actions
                 </TableHead>
               </TableRow>
@@ -710,11 +1033,11 @@ export function BoardCatalogSnapshotsClient() {
               {displayRows.map((r) => {
                 const rowPriority = priorities[r.id]
                 return (
-                <TableRow key={r.id} className="align-top">
-                  <TableCell className="w-[12%] overflow-hidden px-2 py-2 align-top text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                <TableRow key={r.id} className="border-b border-slate-100 align-top last:border-0 hover:bg-slate-50/60">
+                  <TableCell className="w-[12%] overflow-hidden whitespace-nowrap px-2 py-2.5 align-top text-xs tabular-nums text-slate-500">
                     {listingUpdatedLabel(r.listings?.updated_at)}
                   </TableCell>
-                  <TableCell className="max-w-0 px-2 py-2 align-top">
+                  <TableCell className="max-w-0 px-2 py-2.5 align-top">
                     {(() => {
                       const lg = r.listings
                       const slug = lg && typeof lg.slug === "string" ? lg.slug : null
@@ -723,14 +1046,14 @@ export function BoardCatalogSnapshotsClient() {
                       return href ? (
                         <Link
                           href={href}
-                          className="text-primary block max-w-full truncate text-sm font-medium leading-snug hover:underline"
+                          className="block max-w-full truncate text-sm font-medium leading-snug text-blue-700 underline-offset-4 hover:underline"
                           title={title}
                         >
                           {title}
                         </Link>
                       ) : (
                         <span
-                          className="block max-w-full truncate text-sm font-medium leading-snug"
+                          className="block max-w-full truncate text-sm font-medium leading-snug text-slate-800"
                           title={title}
                         >
                           {title}
@@ -738,7 +1061,7 @@ export function BoardCatalogSnapshotsClient() {
                       )
                     })()}
                   </TableCell>
-                  <TableCell className="max-w-0 px-2 py-2 align-top text-sm">
+                  <TableCell className="max-w-0 px-2 py-2.5 align-top text-sm">
                     {(() => {
                       const b = r.brands?.name?.trim()
                       const slug = r.brands?.slug?.trim()
@@ -746,30 +1069,30 @@ export function BoardCatalogSnapshotsClient() {
                       return slug ? (
                         <Link
                           href={`${BRANDS_BASE}/${encodeURIComponent(slug)}`}
-                          className="block max-w-full truncate hover:underline"
+                          className="block max-w-full truncate text-slate-700 underline-offset-4 hover:underline"
                           title={label}
                         >
                           {label}
                         </Link>
                       ) : (
-                        <span className="text-muted-foreground block max-w-full truncate" title={label}>
+                        <span className="block max-w-full truncate text-slate-400" title={label}>
                           {label}
                         </span>
                       )
                     })()}
                   </TableCell>
-                  <TableCell className="max-w-0 px-2 py-2 align-top text-sm leading-snug">
+                  <TableCell className="max-w-0 px-2 py-2.5 align-top text-sm leading-snug">
                     {(() => {
                       const label = r.model_name?.trim()
                       const bt = r.listings?.board_type?.trim()
                       return (
                         <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="truncate font-medium" title={label || undefined}>
+                          <span className="truncate font-medium text-slate-800" title={label || undefined}>
                             {label || "—"}
                           </span>
                           {bt ? (
                             <span
-                              className="text-muted-foreground truncate text-[11px]"
+                              className="truncate text-[11px] text-slate-500"
                               title={`${formatBoardType(bt)}${!label ? " · no index label" : ""}`}
                             >
                               {formatBoardType(bt)}
@@ -777,7 +1100,7 @@ export function BoardCatalogSnapshotsClient() {
                             </span>
                           ) : !label ? (
                             <span
-                              className="text-muted-foreground truncate text-[11px]"
+                              className="truncate text-[11px] text-slate-500"
                               title="No model index on listing — use Convert to add catalog model"
                             >
                               No index label
@@ -787,7 +1110,7 @@ export function BoardCatalogSnapshotsClient() {
                       )
                     })()}
                   </TableCell>
-                  <TableCell className="max-w-0 px-2 py-2 align-top text-xs leading-snug text-muted-foreground">
+                  <TableCell className="max-w-0 px-2 py-2.5 align-top text-xs leading-snug text-slate-500">
                     <span
                       className="line-clamp-2 break-words [overflow-wrap:anywhere]"
                       title={dimsSummaryFromSnapshotRow(r)}
@@ -795,20 +1118,24 @@ export function BoardCatalogSnapshotsClient() {
                       {dimsSummaryFromSnapshotRow(r)}
                     </span>
                   </TableCell>
-                  <TableCell className="max-w-0 px-2 py-2 align-top text-sm tabular-nums whitespace-nowrap">
+                  <TableCell className="max-w-0 whitespace-nowrap px-2 py-2.5 align-top text-sm tabular-nums text-slate-800">
                     ${r.listing_price.toFixed(2)}
                   </TableCell>
-                  <TableCell className="max-w-0 px-2 py-2 align-top text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                  <TableCell className="max-w-0 whitespace-nowrap px-2 py-2.5 align-top text-xs tabular-nums text-slate-500">
                     {r.sold_price != null ? `$${Number(r.sold_price).toFixed(2)}` : "—"}
                   </TableCell>
-                  <TableCell className="max-w-0 px-2 py-2 align-top text-xs whitespace-nowrap">
+                  <TableCell className="max-w-0 whitespace-nowrap px-2 py-2.5 align-top text-xs">
                     {r.converted_brand_model_variant_id ? (
-                      <span className="text-emerald-600">Converted</span>
+                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                        Converted
+                      </span>
                     ) : (
-                      <span className="text-muted-foreground">Open</span>
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                        Open
+                      </span>
                     )}
                   </TableCell>
-                  <TableCell className="w-[14%] px-2 py-2 align-top">
+                  <TableCell className="w-[14%] px-2 py-2.5 align-top">
                     <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5">
                       <div className="flex items-start justify-end gap-1.5">
                         {rowPriority ? (
@@ -821,7 +1148,7 @@ export function BoardCatalogSnapshotsClient() {
                             {PRIORITY_LABEL[rowPriority]}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground shrink-0 text-[10px] uppercase tracking-wide">
+                          <span className="shrink-0 text-[10px] uppercase tracking-wide text-slate-400">
                             —
                           </span>
                         )}
@@ -1236,8 +1563,8 @@ export function ConvertCatalogSnapshotDialog({
   const [widthLabel, setWidthLabel] = useState("")
   const [thicknessLabel, setThicknessLabel] = useState("")
   const [volumeLabel, setVolumeLabel] = useState("")
-  const [finBox, setFinBox] = useState<"futures" | "fcs" | "single_fin">(() =>
-    finBoxTypeFromListingFinsSetup(row.listings?.fins_setup ?? null),
+  const [finBox, setFinBox] = useState<FinBoxType>(() =>
+    prefillFinBoxTypeFromListing(row.listings),
   )
   const [finBoxesLayout, setFinBoxesLayout] = useState<FinBoxesType>(
     BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
@@ -1306,10 +1633,13 @@ export function ConvertCatalogSnapshotDialog({
     setWidthLabel(dims.width_label)
     setThicknessLabel(dims.thickness_label)
     setVolumeLabel(dims.volume_label)
-    const finsRaw = lg?.fins_setup?.trim() || null
-    setFinBox(finBoxTypeFromListingFinsSetup(finsRaw))
-    setFinBoxesLayout(BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES)
-    setVariantMaterial(BRAND_MODEL_VARIANT_DEFAULT_MATERIAL)
+    setFinBox(prefillFinBoxTypeFromListing(lg))
+    setFinBoxesLayout(
+      finBoxesLayoutFromListingFinsSetup(lg?.fins_setup) ?? BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES,
+    )
+    setVariantMaterial(
+      variantMaterialFromListingConstruction(lg?.construction) ?? BRAND_MODEL_VARIANT_DEFAULT_MATERIAL,
+    )
 
     let nextCondition = row.condition as BrandModelVariantCondition
     if (lg?.condition?.trim()) {
@@ -1493,6 +1823,18 @@ export function ConvertCatalogSnapshotDialog({
           (m) => m.name.trim().toLowerCase() === newModelTrimmed.toLowerCase(),
         ) ?? null
       : null
+
+  const listingConstructionLabel = row.listings?.construction?.trim()
+    ? facetOptionLabel(FACET_PARAM_KEYS.construction, row.listings.construction.trim())
+    : "—"
+  const listingFinSystemLabel = row.listings?.fin_system?.trim()
+    ? facetOptionLabel(FACET_PARAM_KEYS.finSystem, row.listings.fin_system.trim())
+    : "—"
+  const listingFinSetupLabel = (() => {
+    const slugs = parseFinsSetupFromStorage(row.listings?.fins_setup)
+    if (slugs.length === 0) return "—"
+    return slugs.map((s) => facetOptionLabel(FACET_PARAM_KEYS.finSetup, s)).join(", ")
+  })()
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -1842,20 +2184,22 @@ export function ConvertCatalogSnapshotDialog({
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
-                <Label>Fin plugs</Label>
-                <Select value={finBox} onValueChange={(v) => setFinBox(v as typeof finBox)}>
+                <Label>Fin system</Label>
+                <Select value={finBox} onValueChange={(v) => setFinBox(v as FinBoxType)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="futures">Futures</SelectItem>
-                    <SelectItem value="fcs">FCS II</SelectItem>
-                    <SelectItem value="single_fin">Single fin</SelectItem>
+                  <SelectContent className="max-h-72">
+                    {FIN_BOX_TYPE_ADMIN_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Fin boxes</Label>
+                <Label>Fin setup</Label>
                 <Select
                   value={finBoxesLayout}
                   onValueChange={(v) => setFinBoxesLayout(v as FinBoxesType)}
@@ -1873,7 +2217,7 @@ export function ConvertCatalogSnapshotDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Material</Label>
+                <Label>Board construction</Label>
                 <Select
                   value={variantMaterial}
                   onValueChange={(v) => setVariantMaterial(v as BrandModelVariantMaterial)}
@@ -1881,7 +2225,7 @@ export function ConvertCatalogSnapshotDialog({
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-72">
                     {VARIANT_MATERIAL_ADMIN_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
@@ -2015,13 +2359,29 @@ export function ConvertCatalogSnapshotDialog({
               </p>
             </div>
 
-            <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Prefilled condition / fins (listing when present):&nbsp;
-              <span className="text-foreground">{formatCondition(condition)}</span> · fins_setup:&nbsp;
-              <span className="text-foreground">
-                {row.listings?.fins_setup?.trim() || "—"}
-              </span>
-            </p>
+            <div className="border-border bg-muted/25 space-y-1 rounded-md border px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="text-foreground text-[11px] font-medium uppercase tracking-wide">
+                Prefilled from listing
+              </p>
+              <p className="flex flex-wrap gap-x-3 gap-y-0.5">
+                <span>
+                  Condition: <span className="text-foreground">{formatCondition(condition)}</span>
+                </span>
+                <span>
+                  Construction: <span className="text-foreground">{listingConstructionLabel}</span>
+                </span>
+                <span>
+                  Fin setup: <span className="text-foreground">{listingFinSetupLabel}</span>
+                </span>
+                <span>
+                  Fin type: <span className="text-foreground">{listingFinSystemLabel}</span>
+                </span>
+              </p>
+              <p className="text-muted-foreground/90">
+                Adjust the Fin system, Fin setup, Board construction, and Condition selects above before saving —
+                those values are what get stored on the catalog variant.
+              </p>
+            </div>
           </div>
         )}
 

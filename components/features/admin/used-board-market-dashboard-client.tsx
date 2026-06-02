@@ -52,6 +52,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   DASHBOARD_RANGE_OPTIONS,
   type DashboardDimension,
@@ -508,61 +509,91 @@ export function UsedBoardMarketDashboardClient() {
             </div>
           ) : null}
 
-          <KpiGrid
-            kpis={data.kpis}
-            prevKpis={data.prevKpis}
-            rangeLabel={rangeLabel}
-            seriesNewListings={seriesNewListings}
-            seriesSold={seriesSold}
-            seriesGross={seriesGross}
-          />
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-slate-100">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="supply" className="data-[state=active]:bg-slate-100">
+                Supply
+              </TabsTrigger>
+              <TabsTrigger value="pricing" className="data-[state=active]:bg-slate-100">
+                Pricing
+              </TabsTrigger>
+              <TabsTrigger value="sales" className="data-[state=active]:bg-slate-100">
+                Sales
+              </TabsTrigger>
+              <TabsTrigger value="catalog" className="data-[state=active]:bg-slate-100">
+                Catalog &amp; geo
+              </TabsTrigger>
+            </TabsList>
 
-          <MarketTrendsCard series={series} rangeLabel={rangeLabel} />
+            <TabsContent value="overview" className="mt-6 space-y-6">
+              <KpiGrid
+                kpis={data.kpis}
+                prevKpis={data.prevKpis}
+                rangeLabel={rangeLabel}
+                seriesNewListings={seriesNewListings}
+                seriesSold={seriesSold}
+                seriesGross={seriesGross}
+              />
+              <MarketTrendsCard series={series} rangeLabel={rangeLabel} />
+            </TabsContent>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <InventoryByBoardTypeCard rows={data.boardTypeRows} />
-            <InventoryByConditionCard rows={data.conditionRows} />
-          </div>
+            <TabsContent value="supply" className="mt-6 space-y-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <InventoryByBoardTypeCard rows={data.boardTypeRows} />
+                <InventoryByConditionCard rows={data.conditionRows} />
+              </div>
+              <TopByInventoryCard
+                rows={data.groupedTopByInventory}
+                dimension={data.dimension}
+              />
+              <InventoryAgingCard aging={data.inventoryAging} />
+            </TabsContent>
 
-          <TopByInventoryCard
-            rows={data.groupedTopByInventory}
-            dimension={data.dimension}
-          />
+            <TabsContent value="pricing" className="mt-6 space-y-6">
+              <PriceDistributionCard distribution={data.priceDistribution} rangeLabel={rangeLabel} />
+              <PriceRealizationCard realization={data.priceRealization} rangeLabel={rangeLabel} />
+              <ConditionPricingCard rows={data.conditionRows} rangeLabel={rangeLabel} />
+              <GroupPricingTable
+                rows={data.groupedPricingTable}
+                dimension={data.dimension}
+                rangeLabel={rangeLabel}
+              />
+            </TabsContent>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <BestSellersCard
-              rows={data.groupedBestSellers}
-              dimension={data.dimension}
-              rangeLabel={rangeLabel}
-            />
-            <SlowestMovingCard
-              rows={data.groupedSlowestMoving}
-              dimension={data.dimension}
-              rangeLabel={rangeLabel}
-            />
-          </div>
+            <TabsContent value="sales" className="mt-6 space-y-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <BestSellersCard
+                  rows={data.groupedBestSellers}
+                  dimension={data.dimension}
+                  rangeLabel={rangeLabel}
+                />
+                <SlowestMovingCard
+                  rows={data.groupedSlowestMoving}
+                  dimension={data.dimension}
+                  rangeLabel={rangeLabel}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <DaysToSellDistributionCard distribution={data.daysToSellDistribution} rangeLabel={rangeLabel} />
+                <SellerLeaderboardCard rows={data.topSellers} rangeLabel={rangeLabel} />
+              </div>
+              <ChannelMixCard channelMix={data.channelMix} />
+              <SoldHistoryTable
+                rows={data.soldHistory}
+                rangeLabel={rangeLabel}
+                totalInRange={data.kpis.totalSoldInRange}
+              />
+            </TabsContent>
 
-          <PriceDistributionCard distribution={data.priceDistribution} rangeLabel={rangeLabel} />
-
-          <GroupPricingTable
-            rows={data.groupedPricingTable}
-            dimension={data.dimension}
-            rangeLabel={rangeLabel}
-          />
-
-          <ConditionPricingCard rows={data.conditionRows} rangeLabel={rangeLabel} />
-
-          <LocationPerformanceCard rows={data.locationRows} rangeLabel={rangeLabel} />
-
-          <SoldHistoryTable
-            rows={data.soldHistory}
-            rangeLabel={rangeLabel}
-            totalInRange={data.kpis.totalSoldInRange}
-          />
-
-          <VariantCoverageCard coverage={data.variantCoverage} dimension={data.dimension} />
-
-          <SalesEventsStubCard message={data.salesEventsStub.message} />
+            <TabsContent value="catalog" className="mt-6 space-y-6">
+              <LocationPerformanceCard rows={data.locationRows} rangeLabel={rangeLabel} />
+              <VariantCoverageCard coverage={data.variantCoverage} dimension={data.dimension} />
+              <SalesEventsStubCard message={data.salesEventsStub.message} />
+            </TabsContent>
+          </Tabs>
 
           <Separator className="bg-slate-200" />
 
@@ -993,6 +1024,11 @@ function KpiGrid(props: {
     kpis.avgDaysToSellInRange,
     prevKpis?.avgDaysToSellInRange,
   )
+  const saleToAskChange = changeFor(kpis.avgSaleToAskRatio, prevKpis?.avgSaleToAskRatio)
+  const inventoryAgeChange = inverseChangeFor(
+    kpis.medianInventoryAgeDays,
+    prevKpis?.medianInventoryAgeDays,
+  )
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -1069,6 +1105,24 @@ function KpiGrid(props: {
         changeType={sellThroughChange.changeType}
         subtitle="Sold ÷ (active + sold)"
         icon={<Sparkles className="h-4 w-4" />}
+        accent="amber"
+      />
+      <KpiCard
+        label="Sale vs ask"
+        value={formatPercent(kpis.avgSaleToAskRatio)}
+        change={saleToAskChange.change}
+        changeType={saleToAskChange.changeType}
+        subtitle="Avg sale ÷ asking price"
+        icon={<Tag className="h-4 w-4" />}
+        accent="violet"
+      />
+      <KpiCard
+        label="Median inventory age"
+        value={formatDays(kpis.medianInventoryAgeDays)}
+        change={inventoryAgeChange.change}
+        changeType={inventoryAgeChange.changeType}
+        subtitle={`${formatNumber(kpis.staleInventoryCount)} stale (90d+)`}
+        icon={<Timer className="h-4 w-4" />}
         accent="amber"
       />
     </div>
@@ -2181,6 +2235,330 @@ function SalesEventsStubCard({ message }: { message: string }) {
         icon={<Sparkles className="h-4 w-4" />}
       />
       <p className="text-sm text-slate-600">{message}</p>
+    </SectionCard>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Distribution mini-bar (shared by aging / days-to-sell / discount cards)
+// ---------------------------------------------------------------------------
+
+function DistributionBars({
+  data,
+  color,
+  unit,
+}: {
+  data: { label: string; count: number; share: number }[]
+  color: string
+  unit: string
+}) {
+  const hasData = data.some((d) => d.count > 0)
+  if (!hasData) return <EmptyState>No data for this scope.</EmptyState>
+  return (
+    <div className="h-[240px] w-full">
+      <ChartContainer config={{ count: { label: unit, color } }} className="h-full w-full">
+        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+          <XAxis dataKey="label" tick={{ fill: "#64748B", fontSize: 11 }} tickLine={false} axisLine={false} interval={0} />
+          <YAxis tick={{ fill: "#64748B", fontSize: 11 }} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
+          <ChartTooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.[0]) return null
+              const row = payload[0].payload as { label: string; count: number; share: number }
+              return (
+                <div className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white shadow-xl">
+                  <p className="font-medium">{row.label}</p>
+                  <p className="mt-1 tabular-nums text-slate-300">
+                    {row.count} {unit} · {(row.share * 100).toFixed(1)}%
+                  </p>
+                </div>
+              )
+            }}
+          />
+          <Bar dataKey="count" fill={color} radius={[4, 4, 0, 0]}>
+            {data.map((d) => (
+              <Cell key={d.label} fill={color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ChartContainer>
+    </div>
+  )
+}
+
+function StatPill({ label, value, tone = "slate" }: { label: string; value: string; tone?: "slate" | "emerald" | "amber" | "rose" }) {
+  const tones: Record<typeof tone, string> = {
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
+  }
+  return (
+    <div className={cn("rounded-lg border px-3 py-2", tones[tone])}>
+      <p className="text-[11px] font-medium uppercase tracking-wide opacity-70">{label}</p>
+      <p className="mt-0.5 text-lg font-bold tabular-nums">{value}</p>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Price realization (sale vs ask)
+// ---------------------------------------------------------------------------
+
+function PriceRealizationCard({
+  realization,
+  rangeLabel,
+}: {
+  realization: UsedBoardMarketDashboard["priceRealization"]
+  rangeLabel: string
+}) {
+  const data = useMemo(() => realization.buckets.map((b) => ({ ...b })), [realization.buckets])
+  return (
+    <SectionCard>
+      <SectionHeader
+        title="Price realization (sale vs ask)"
+        description={`How close sale prices land to the asking price across ${rangeLabel.toLowerCase()}.`}
+        icon={<Tag className="h-4 w-4" />}
+      />
+      {realization.sampleSize === 0 ? (
+        <EmptyState>No sales with a known asking price for {rangeLabel.toLowerCase()}.</EmptyState>
+      ) : (
+        <>
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatPill label="Avg sale ÷ ask" value={formatPercent(realization.avgSaleToAskRatio)} />
+            <StatPill label="Median ratio" value={formatPercent(realization.medianSaleToAskRatio)} />
+            <StatPill
+              label="Avg discount"
+              value={realization.avgDiscountPct != null ? `${(realization.avgDiscountPct * 100).toFixed(1)}%` : "—"}
+              tone="amber"
+            />
+            <StatPill label="At/above ask" value={formatPercent(realization.soldAtOrAboveAskShare)} tone="emerald" />
+          </div>
+          <DistributionBars data={data} color="#8B5CF6" unit="sales" />
+          {realization.byCondition.length > 0 ? (
+            <div className="mt-5 overflow-hidden rounded-lg border border-slate-200">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2 font-medium">Condition</th>
+                    <th className="px-3 py-2 text-right font-medium">Sales</th>
+                    <th className="px-3 py-2 text-right font-medium">Avg discount</th>
+                    <th className="px-3 py-2 text-right font-medium">Sale ÷ ask</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {realization.byCondition.map((r) => (
+                    <tr key={r.condition} className="border-b border-slate-100 last:border-0">
+                      <td className="px-3 py-2 text-slate-700">{r.conditionLabel}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-slate-600">{formatNumber(r.sampleSize)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-slate-900">
+                        {r.avgDiscountPct != null ? `${(r.avgDiscountPct * 100).toFixed(1)}%` : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-slate-600">
+                        {formatPercent(r.avgSaleToAskRatio)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </>
+      )}
+    </SectionCard>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Inventory aging
+// ---------------------------------------------------------------------------
+
+function InventoryAgingCard({ aging }: { aging: UsedBoardMarketDashboard["inventoryAging"] }) {
+  const data = useMemo(() => aging.buckets.map((b) => ({ ...b })), [aging.buckets])
+  return (
+    <SectionCard>
+      <SectionHeader
+        title="Inventory aging"
+        description="How long active listings have been live — flag stale supply."
+        icon={<Package className="h-4 w-4" />}
+      />
+      {aging.activeCount === 0 ? (
+        <EmptyState>No active inventory in this scope.</EmptyState>
+      ) : (
+        <>
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            <StatPill label="Median age" value={formatDays(aging.medianAgeDays)} />
+            <StatPill label="Avg age" value={formatDays(aging.avgAgeDays)} />
+            <StatPill
+              label="Stale (90d+)"
+              value={`${formatNumber(aging.staleCount)} · ${formatPercent(aging.staleShare)}`}
+              tone={aging.staleShare != null && aging.staleShare > 0.25 ? "rose" : "slate"}
+            />
+          </div>
+          <DistributionBars data={data} color="#F59E0B" unit="listings" />
+        </>
+      )}
+    </SectionCard>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Days-to-sell distribution
+// ---------------------------------------------------------------------------
+
+function DaysToSellDistributionCard({
+  distribution,
+  rangeLabel,
+}: {
+  distribution: UsedBoardMarketDashboard["daysToSellDistribution"]
+  rangeLabel: string
+}) {
+  const data = useMemo(() => distribution.map((b) => ({ ...b })), [distribution])
+  return (
+    <SectionCard>
+      <SectionHeader
+        title="Days-to-sell distribution"
+        description={`Time from listing to checkout for confirmed orders · ${rangeLabel.toLowerCase()}.`}
+        icon={<Timer className="h-4 w-4" />}
+      />
+      <DistributionBars data={data} color="#14B8A6" unit="sales" />
+    </SectionCard>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Seller leaderboard
+// ---------------------------------------------------------------------------
+
+function SellerLeaderboardCard({
+  rows,
+  rangeLabel,
+}: {
+  rows: UsedBoardMarketDashboard["topSellers"]
+  rangeLabel: string
+}) {
+  const maxGross = rows.reduce((m, r) => Math.max(m, r.grossVolumeInRange), 0)
+  return (
+    <SectionCard>
+      <SectionHeader
+        title="Top sellers"
+        description={`Ranked by gross sales volume · ${rangeLabel.toLowerCase()}.`}
+        icon={<Wallet className="h-4 w-4" />}
+      />
+      {rows.length === 0 ? (
+        <EmptyState>No confirmed sales for {rangeLabel.toLowerCase()}.</EmptyState>
+      ) : (
+        <ol className="space-y-2">
+          {rows.map((r, i) => (
+            <li key={r.sellerId} className="flex items-center gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 tabular-nums">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <Link
+                    href={`/admin/users/${r.sellerId}`}
+                    className="truncate text-sm font-medium text-slate-900 underline-offset-4 hover:underline"
+                  >
+                    {r.displayName?.trim() || "Unknown seller"}
+                  </Link>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+                    {formatUsd(r.grossVolumeInRange, { compact: true })}
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-blue-500"
+                    style={{ width: `${maxGross > 0 ? (r.grossVolumeInRange / maxGross) * 100 : 0}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500 tabular-nums">
+                  {formatNumber(r.soldInRange)} sold · avg {formatUsd(r.avgSalePriceInRange)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </SectionCard>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Channel mix (fulfillment & payment)
+// ---------------------------------------------------------------------------
+
+function ChannelBreakdown({
+  title,
+  rows,
+  palette,
+}: {
+  title: string
+  rows: UsedBoardMarketDashboard["channelMix"]["fulfillment"]
+  palette: string[]
+}) {
+  const total = rows.reduce((s, r) => s + r.count, 0)
+  return (
+    <div>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
+      {total === 0 ? (
+        <EmptyState>No data.</EmptyState>
+      ) : (
+        <div className="flex items-center gap-4">
+          <div className="h-[140px] w-[140px] shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={rows.map((r) => ({ name: r.label, value: r.count }))}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={42}
+                  outerRadius={62}
+                  paddingAngle={2}
+                  stroke="none"
+                >
+                  {rows.map((_, i) => (
+                    <Cell key={i} fill={palette[i % palette.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip
+                  formatter={(v: number | string, name: string) => [`${v} (${((Number(v) / total) * 100).toFixed(0)}%)`, name]}
+                  contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <ul className="min-w-0 flex-1 space-y-1.5">
+            {rows.map((r, i) => (
+              <li key={r.key} className="flex items-center justify-between gap-2 text-xs">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: palette[i % palette.length] }} />
+                  <span className="truncate text-slate-600">{r.label}</span>
+                </span>
+                <span className="shrink-0 tabular-nums text-slate-500">
+                  {r.count} · {(r.share * 100).toFixed(0)}%
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ChannelMixCard({ channelMix }: { channelMix: UsedBoardMarketDashboard["channelMix"] }) {
+  return (
+    <SectionCard>
+      <SectionHeader
+        title="Fulfillment & payment mix"
+        description="How confirmed orders are fulfilled and paid for."
+        icon={<ShoppingBag className="h-4 w-4" />}
+      />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <ChannelBreakdown title="Fulfillment" rows={channelMix.fulfillment} palette={BOARD_TYPE_PALETTE} />
+        <ChannelBreakdown title="Payment" rows={channelMix.payment} palette={CONDITION_PALETTE} />
+      </div>
     </SectionCard>
   )
 }

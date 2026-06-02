@@ -49,8 +49,9 @@ import { BrandEditorDialog } from "@/components/brands/brand-editor-dialog"
 import { BrandModelEditorDialog } from "@/components/brands/brand-model-editor-dialog"
 import type { BrandCatalogBrandNode } from "@/lib/services/brandCatalogOverview"
 import type { BrandModelVariantRow } from "@/lib/db/brand-model-variants"
+import type { FinBoxType } from "@/lib/validations/brand-model-variants"
 import { BRANDS_BASE } from "@/lib/brands/routes"
-import { finBoxesDisplayName, materialDisplayName } from "@/lib/utils/brand-model-dimensions"
+import { finBoxesDisplayName, finPlugsDisplayName, materialDisplayName } from "@/lib/utils/brand-model-dimensions"
 import { formatCondition } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 
@@ -71,18 +72,21 @@ const CONDITION_PALETTE: Record<string, string> = {
 }
 
 const MATERIAL_PALETTE: Record<string, string> = {
-  pu: "#1E40AF",
-  eps: "#14B8A6",
+  pu_poly: "#1E40AF",
+  eps_epoxy: "#14B8A6",
+  carbon: "#0F172A",
+  other: "#94A3B8",
 }
+const MATERIAL_ORDER = ["eps_epoxy", "pu_poly", "carbon", "other"] as const
 
 const FIN_LAYOUT_ORDER = [
-  "five_fin",
+  "single",
+  "twin_only",
+  "twin",
   "thruster",
   "quad",
-  "single_fin",
-  "two_plus_one",
-  "twin",
-  "twinzer",
+  "five",
+  "other",
 ] as const
 const FIN_PALETTE = ["#1E40AF", "#0EA5E9", "#14B8A6", "#A855F7", "#F59E0B", "#EF4444", "#64748B"]
 
@@ -136,9 +140,7 @@ function formatPercent(value: number, digits = 0): string {
 }
 
 function finPlugsLabel(t: BrandModelVariantRow["fin_box_type"]): string {
-  if (t === "futures") return "Futures"
-  if (t === "fcs") return "FCS"
-  return "Single fin"
+  return finPlugsDisplayName(t as FinBoxType)
 }
 
 function isValidImg(src: string | null | undefined): src is string {
@@ -912,13 +914,11 @@ export function BrandCatalogOverviewClient(props: {
   }, [aggregate.condition])
 
   const materialData = useMemo<BarDatum[]>(() => {
-    return (["pu", "eps"] as const)
-      .filter((mt) => (aggregate.material[mt] ?? 0) > 0)
-      .map((mt) => ({
-        name: materialDisplayName(mt),
-        value: aggregate.material[mt] ?? 0,
-        fill: MATERIAL_PALETTE[mt] ?? "#94a3b8",
-      }))
+    return MATERIAL_ORDER.filter((mt) => (aggregate.material[mt] ?? 0) > 0).map((mt) => ({
+      name: materialDisplayName(mt),
+      value: aggregate.material[mt] ?? 0,
+      fill: MATERIAL_PALETTE[mt] ?? "#94a3b8",
+    }))
   }, [aggregate.material])
 
   const finData = useMemo<BarDatum[]>(() => {
@@ -1396,21 +1396,24 @@ export function BrandCatalogOverviewClient(props: {
               </SelectContent>
             </Select>
             <Select value={filters.material} onValueChange={(v) => patch({ material: v })}>
-              <SelectTrigger className="h-8 w-[120px] text-xs">
-                <SelectValue placeholder="Foam" />
+              <SelectTrigger className="h-8 w-[140px] text-xs">
+                <SelectValue placeholder="Construction" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>Any foam</SelectItem>
-                <SelectItem value="pu">PU</SelectItem>
-                <SelectItem value="eps">EPS</SelectItem>
+                <SelectItem value={ALL}>Any construction</SelectItem>
+                {MATERIAL_ORDER.map((mt) => (
+                  <SelectItem key={mt} value={mt}>
+                    {materialDisplayName(mt)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={filters.finLayout} onValueChange={(v) => patch({ finLayout: v })}>
               <SelectTrigger className="h-8 w-[140px] text-xs">
-                <SelectValue placeholder="Fin layout" />
+                <SelectValue placeholder="Fin setup" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>Any fin layout</SelectItem>
+                <SelectItem value={ALL}>Any fin setup</SelectItem>
                 {FIN_LAYOUT_ORDER.map((f) => (
                   <SelectItem key={f} value={f}>
                     {finBoxesDisplayName(f)}

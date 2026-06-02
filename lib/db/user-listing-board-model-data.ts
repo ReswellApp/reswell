@@ -49,6 +49,10 @@ export type UserListingBoardModelDataListingEmbed = {
   price: number | string | null
   condition: string | null
   fins_setup: string | null
+  /** Plug / box routing facet — `listings.fin_system` (futures / fcs_ii / single / …). */
+  fin_system: string | null
+  /** Board construction facet — `listings.construction` (eps_epoxy / pu_poly / carbon / …). */
+  construction: string | null
   description: string | null
   brand: string | null
   dimensions: string | null
@@ -56,7 +60,7 @@ export type UserListingBoardModelDataListingEmbed = {
   listing_images?: UserListingBoardModelDataListingImageEmbed[] | null
 }
 
-const LISTING_EMBED_FOR_ADMIN = `title, slug, status, board_type, price, condition, fins_setup, description, brand, dimensions, updated_at,
+const LISTING_EMBED_FOR_ADMIN = `title, slug, status, board_type, price, condition, fins_setup, fin_system, construction, description, brand, dimensions, updated_at,
   listing_images ( id, url, thumbnail_url, is_primary, sort_order )`
 
 function normalizeMoney(v: unknown): number | null {

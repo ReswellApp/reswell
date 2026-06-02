@@ -24,11 +24,16 @@ export async function GET(request: NextRequest) {
   }
 
   const raw = Object.fromEntries(request.nextUrl.searchParams)
+  const mode = raw.mode === "month" ? "month" : raw.mode === "window" ? "window" : "all"
   const parsed = searchTrendPeriodQuerySchema.safeParse({
-    mode: raw.mode === "month" ? "month" : "all",
+    mode,
     yearMonth:
       typeof raw.yearMonth === "string" && raw.yearMonth.trim() !== ""
         ? raw.yearMonth.trim()
+        : undefined,
+    windowDays:
+      typeof raw.windowDays === "string" && raw.windowDays.trim() !== ""
+        ? raw.windowDays.trim()
         : undefined,
   })
 
@@ -39,6 +44,7 @@ export async function GET(request: NextRequest) {
   const data = await getSearchTrendPeriodDetailService(
     parsed.data.mode,
     parsed.data.yearMonth,
+    parsed.data.windowDays,
   )
 
   return NextResponse.json({ data }, { status: 200 })

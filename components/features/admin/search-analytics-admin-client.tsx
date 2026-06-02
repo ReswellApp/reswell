@@ -27,13 +27,26 @@ import {
   YAxis,
   ZAxis,
 } from "recharts"
-import { Loader2, RefreshCw } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Lightbulb,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Zap,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -44,8 +57,13 @@ import {
 } from "@/components/ui/chart"
 import type {
   SearchAnalyticsDashboard,
+  SearchAnalyticsHeadline,
+  SearchInsight,
+  SearchInsightSeverity,
   SearchTrendPeriodDetailPayload,
+  SearchTrendPeriodMode,
 } from "@/lib/services/searchAnalytics"
+import { SEARCH_TREND_WINDOW_DAYS } from "@/lib/validations/search-analytics"
 import { cn } from "@/lib/utils"
 
 const RANGE_OPTIONS = [
@@ -56,6 +74,31 @@ const RANGE_OPTIONS = [
 ] as const
 
 type PeriodTrendSortKey = "velocity" | "recent" | "prior" | "query"
+
+/** Composite select value -> (mode, windowDays). Window options come first as the most intuitive. */
+type PeriodTrendChoice = {
+  value: string
+  label: string
+  group: "Rolling comparison" | "Fixed period"
+  mode: SearchTrendPeriodMode
+  windowDays?: number
+}
+
+const PERIOD_TREND_CHOICES: PeriodTrendChoice[] = [
+  ...SEARCH_TREND_WINDOW_DAYS.map(
+    (d): PeriodTrendChoice => ({
+      value: `window:${d}`,
+      label: `Last ${d} days vs prior ${d}`,
+      group: "Rolling comparison",
+      mode: "window",
+      windowDays: d,
+    }),
+  ),
+  { value: "month", label: "Specific calendar month", group: "Fixed period", mode: "month" },
+  { value: "all", label: "All time (later vs earlier half)", group: "Fixed period", mode: "all" },
+]
+
+const PERIOD_TREND_DEFAULT_WINDOW = 30
 
 const PERIOD_TREND_SORT_OPTIONS: { value: PeriodTrendSortKey; label: string }[] = [
   { value: "velocity", label: "Velocity (high → low)" },
@@ -507,6 +550,264 @@ function DashboardKPICard({
   )
 }
 
+// ---------------------------------------------------------------------------
+// PRO: "What matters" headline strip + Insights & recommended-actions panel
+// ---------------------------------------------------------------------------
+
+function fmtPct(n: number | null | undefined, digits = 0): string {
+  if (n == null || !Number.isFinite(n)) return "—"
+  return `${(n * 100).toFixed(digits)}%`
+}
+
+function HeadlineStrip({ headline }: { headline: SearchAnalyticsHeadline }) {
+  const momentum = headline.volumeMomentum
+  const items: {
+    label: string
+    value: string
+    hint: string
+    tone: "emerald" | "rose" | "amber" | "slate" | "blue"
+    icon: ReactNode
+  }[] = [
+    {
+      label: "Unmet demand",
+      value: headline.unmetDemandSearches.toLocaleString(),
+      hint: "Searches that hit zero results",
+      tone: headline.unmetDemandSearches > 0 ? "amber" : "emerald",
+      icon: <Zap className="h-4 w-4" />,
+    },
+    {
+      label: "Volume momentum",
+      value:
+        momentum == null
+          ? "—"
+          : `${momentum >= 0 ? "+" : "-"}${fmtPct(Math.abs(momentum))}`,
+      hint: "2nd half vs 1st half of range",
+      tone: momentum == null ? "slate" : momentum >= 0 ? "emerald" : "rose",
+      icon:
+        momentum != null && momentum < 0 ? (
+          <TrendingDown className="h-4 w-4" />
+        ) : (
+          <TrendingUp className="h-4 w-4" />
+        ),
+    },
+    {
+      label: "Typeahead use",
+      value: fmtPct(headline.typeaheadEngagementRate),
+      hint: "Searches ending in a suggestion click",
+      tone: "blue",
+      icon: <Sparkles className="h-4 w-4" />,
+    },
+    {
+      label: "DB fallback",
+      value: fmtPct(headline.databaseFallbackShare),
+      hint: "Served by database vs Elasticsearch",
+      tone:
+        headline.databaseFallbackShare != null && headline.databaseFallbackShare >= 0.25
+          ? "rose"
+          : "slate",
+      icon: <AlertTriangle className="h-4 w-4" />,
+    },
+  ]
+
+  const toneMap: Record<string, string> = {
+    emerald: "text-emerald-600 bg-emerald-50",
+    rose: "text-rose-600 bg-rose-50",
+    amber: "text-amber-600 bg-amber-50",
+    blue: "text-blue-600 bg-blue-50",
+    slate: "text-slate-600 bg-slate-100",
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {items.map((it) => (
+        <div
+          key={it.label}
+          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-lg",
+                toneMap[it.tone],
+              )}
+            >
+              {it.icon}
+            </span>
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              {it.label}
+            </span>
+          </div>
+          <div className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{it.value}</div>
+          <p className="mt-0.5 text-xs text-slate-500">{it.hint}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const SEVERITY_STYLES: Record<
+  SearchInsightSeverity,
+  { ring: string; chip: string; label: string; icon: ReactNode }
+> = {
+  critical: {
+    ring: "border-rose-200 bg-rose-50/40",
+    chip: "bg-rose-100 text-rose-700",
+    label: "Critical",
+    icon: <AlertTriangle className="h-4 w-4 text-rose-600" />,
+  },
+  warning: {
+    ring: "border-amber-200 bg-amber-50/40",
+    chip: "bg-amber-100 text-amber-700",
+    label: "Needs attention",
+    icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
+  },
+  opportunity: {
+    ring: "border-blue-200 bg-blue-50/40",
+    chip: "bg-blue-100 text-blue-700",
+    label: "Opportunity",
+    icon: <Lightbulb className="h-4 w-4 text-blue-600" />,
+  },
+  positive: {
+    ring: "border-emerald-200 bg-emerald-50/40",
+    chip: "bg-emerald-100 text-emerald-700",
+    label: "Healthy",
+    icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
+  },
+}
+
+function InsightCard({ insight }: { insight: SearchInsight }) {
+  const s = SEVERITY_STYLES[insight.severity]
+  return (
+    <div className={cn("rounded-xl border p-4 shadow-sm", s.ring)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          <span className="mt-0.5 shrink-0">{s.icon}</span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-sm font-semibold text-slate-900">{insight.title}</h4>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                  s.chip,
+                )}
+              >
+                {s.label}
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                {insight.category}
+              </span>
+            </div>
+            <p className="mt-1.5 text-sm text-slate-600">{insight.finding}</p>
+          </div>
+        </div>
+        {insight.metricValue ? (
+          <div className="shrink-0 text-right">
+            <div className="text-lg font-bold tabular-nums text-slate-900">
+              {insight.metricValue}
+            </div>
+            {insight.metricLabel ? (
+              <div className="text-[10px] uppercase tracking-wide text-slate-400">
+                {insight.metricLabel}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      {insight.examples && insight.examples.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {insight.examples.map((ex) => (
+            <span
+              key={ex}
+              className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-600"
+            >
+              {ex}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-3 flex items-start gap-2 rounded-lg bg-white/70 p-2.5 ring-1 ring-inset ring-slate-200/70">
+        <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+        <p className="text-sm text-slate-700">
+          <span className="font-semibold text-slate-900">Do this: </span>
+          {insight.action}
+        </p>
+      </div>
+
+      {insight.impact ? (
+        <p className="mt-2 pl-1 text-xs italic text-slate-500">{insight.impact}</p>
+      ) : null}
+    </div>
+  )
+}
+
+function TrendStatTile({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string
+  value: string
+  hint: string
+  tone: "violet" | "emerald" | "blue" | "amber"
+}) {
+  const toneMap: Record<string, string> = {
+    violet: "text-violet-600",
+    emerald: "text-emerald-600",
+    blue: "text-blue-600",
+    amber: "text-amber-600",
+  }
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</div>
+      <div className={cn("mt-1 text-2xl font-bold tabular-nums", toneMap[tone])}>{value}</div>
+      <p className="mt-0.5 truncate text-xs text-slate-500" title={hint}>
+        {hint}
+      </p>
+    </div>
+  )
+}
+
+function InsightsPanel({ insights }: { insights: SearchInsight[] }) {
+  const actionable = insights.filter((i) => i.severity !== "positive").length
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+            <Lightbulb className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Insights &amp; recommended actions</h3>
+            <p className="mt-0.5 text-sm text-slate-500">
+              Automated read of what the data is telling you — and the next step to take.
+            </p>
+          </div>
+        </div>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+          {actionable} action{actionable === 1 ? "" : "s"} to take
+        </span>
+      </div>
+      <div className="p-6">
+        {insights.length === 0 ? (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-6 text-sm text-emerald-700">
+            <CheckCircle2 className="h-4 w-4" />
+            Nothing needs attention right now — search demand and inventory look well matched.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {insights.map((insight) => (
+              <InsightCard key={insight.id} insight={insight} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function SearchAnalyticsAdminClient() {
   const [days, setDays] = useState<string>("14")
   const [data, setData] = useState<SearchAnalyticsDashboard | null>(null)
@@ -524,11 +825,26 @@ export function SearchAnalyticsAdminClient() {
     [periodRollingYm.rolling],
   )
 
-  const [periodTrendMode, setPeriodTrendMode] = useState<"all" | "month">("all")
+  const [periodTrendMode, setPeriodTrendMode] = useState<SearchTrendPeriodMode>("window")
+  const [periodTrendWindowDays, setPeriodTrendWindowDays] = useState<number>(
+    PERIOD_TREND_DEFAULT_WINDOW,
+  )
   const [periodTrendYearUtc, setPeriodTrendYearUtc] = useState(() =>
     splitYm(defaultUtcPriorMonthYm()).yStr)
   const [periodTrendMonthUtc, setPeriodTrendMonthUtc] = useState(() =>
     splitYm(defaultUtcPriorMonthYm()).mStr)
+
+  const periodTrendSelectValue =
+    periodTrendMode === "window" ? `window:${periodTrendWindowDays}` : periodTrendMode
+
+  const onPeriodTrendChange = useCallback((value: string) => {
+    const choice = PERIOD_TREND_CHOICES.find((c) => c.value === value)
+    if (!choice) return
+    setPeriodTrendMode(choice.mode)
+    if (choice.mode === "window" && choice.windowDays) {
+      setPeriodTrendWindowDays(choice.windowDays)
+    }
+  }, [])
 
   const [periodTrendSort, setPeriodTrendSort] = useState<PeriodTrendSortKey>("velocity")
   const [periodTrendPayload, setPeriodTrendPayload] =
@@ -599,7 +915,9 @@ export function SearchAnalyticsAdminClient() {
     const qs =
       periodTrendMode === "all"
         ? "mode=all"
-        : `mode=month&yearMonth=${encodeURIComponent(periodTrendMonthYm)}`
+        : periodTrendMode === "window"
+          ? `mode=window&windowDays=${periodTrendWindowDays}`
+          : `mode=month&yearMonth=${encodeURIComponent(periodTrendMonthYm)}`
 
     void (async () => {
       try {
@@ -633,7 +951,7 @@ export function SearchAnalyticsAdminClient() {
     return () => {
       cancelled = true
     }
-  }, [data?.configured, periodTrendMode, periodTrendMonthYm])
+  }, [data?.configured, periodTrendMode, periodTrendMonthYm, periodTrendWindowDays])
 
   const volumeWithMa = useMemo(
     () => movingAverageSeries(data?.volumeByDay ?? [], 3),
@@ -825,6 +1143,18 @@ export function SearchAnalyticsAdminClient() {
     }
     return copy
   }, [periodTrendPayload?.trendingQueries, periodTrendSort])
+
+  const periodTrendStats = useMemo(() => {
+    const rows = periodTrendPayload?.trendingQueries ?? []
+    const newEntrants = rows.filter((r) => r.previousCount === 0).length
+    const maxRecent = rows.reduce((m, r) => Math.max(m, r.recentCount), 0)
+    const recentVolume = rows.reduce((s, r) => s + r.recentCount, 0)
+    const topMover = rows.reduce<(typeof rows)[number] | null>(
+      (best, r) => (best == null || r.velocity > best.velocity ? r : best),
+      null,
+    )
+    return { count: rows.length, newEntrants, maxRecent, recentVolume, topMover }
+  }, [periodTrendPayload?.trendingQueries])
 
   const zeroSharePct =
     data?.zeroResultSearchShare != null
@@ -1027,6 +1357,10 @@ export function SearchAnalyticsAdminClient() {
               trend={kpiSpark}
             />
           </div>
+
+          <HeadlineStrip headline={data.headline} />
+
+          <InsightsPanel insights={data.insights} />
 
           <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
             <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -2112,16 +2446,22 @@ export function SearchAnalyticsAdminClient() {
 
           <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-sm">
+                  <TrendingUp className="h-5 w-5" />
+                </span>
+                <div>
                 <h3 className="text-lg font-semibold text-slate-900">
                   All‑time &amp; monthly trending detail
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Marketplace queries only · same momentum rules as the short-window table above.&nbsp;
+                  Marketplace queries only · momentum = recent volume vs the prior window.&nbsp;
                   <span className="text-slate-600">
                     {periodTrendMode === "all"
                       ? "All-time compares the later half of stored history versus the earlier half."
-                      : "Monthly compares that month to the immediately prior calendar month (UTC). Choose a Year, then Month."}
+                      : periodTrendMode === "window"
+                        ? `Comparing the last ${periodTrendWindowDays} days against the ${periodTrendWindowDays} days before that.`
+                        : "Compares the chosen calendar month to the immediately prior month (UTC)."}
                   </span>
                 </p>
                 {periodTrendPayload &&
@@ -2136,26 +2476,36 @@ export function SearchAnalyticsAdminClient() {
                     {periodTrendPayload.priorLabel}
                   </p>
                 ) : null}
+                </div>
               </div>
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
                 <div className="flex flex-col gap-1.5 sm:min-w-[200px]">
                   <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Period
                   </span>
-                  <Select
-                    value={periodTrendMode}
-                    onValueChange={(v) =>
-                      setPeriodTrendMode(v as "all" | "month")
-                    }
-                  >
-                    <SelectTrigger className="h-9 border-slate-200 bg-white sm:w-[220px]">
+                  <Select value={periodTrendSelectValue} onValueChange={onPeriodTrendChange}>
+                    <SelectTrigger className="h-9 border-slate-200 bg-white sm:w-[240px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">
-                        All time (later vs earlier half)
-                      </SelectItem>
-                      <SelectItem value="month">Calendar month</SelectItem>
+                      <SelectGroup>
+                        <SelectLabel>Rolling comparison</SelectLabel>
+                        {PERIOD_TREND_CHOICES.filter((c) => c.group === "Rolling comparison").map(
+                          (c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>Fixed period</SelectLabel>
+                        {PERIOD_TREND_CHOICES.filter((c) => c.group === "Fixed period").map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2246,33 +2596,126 @@ export function SearchAnalyticsAdminClient() {
                 after more searches accumulate.
               </p>
             ) : (
-              <div className="max-h-[440px] overflow-x-auto overflow-y-auto rounded-lg border border-slate-200">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 border-b border-slate-200 bg-slate-50">
-                    <tr className="text-left text-slate-500">
-                      <th className="p-2 font-medium">Query</th>
-                      <th className="p-2 text-right font-medium">Recent</th>
-                      <th className="p-2 text-right font-medium">Prior</th>
-                      <th className="p-2 text-right font-medium">v</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {periodTrendRowsSorted.map((row) => (
-                      <tr key={row.query} className="border-b border-slate-100 last:border-0">
-                        <td className="max-w-[200px] truncate p-2" title={row.query}>
-                          {row.query}
-                        </td>
-                        <td className="p-2 text-right tabular-nums">{row.recentCount}</td>
-                        <td className="p-2 text-right tabular-nums text-slate-500">
-                          {row.previousCount}
-                        </td>
-                        <td className="p-2 text-right font-medium tabular-nums">
-                          {row.velocity.toFixed(2)}
-                        </td>
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <TrendStatTile
+                    label="Rising queries"
+                    value={periodTrendStats.count.toLocaleString()}
+                    hint="Met the momentum threshold"
+                    tone="violet"
+                  />
+                  <TrendStatTile
+                    label="New entrants"
+                    value={periodTrendStats.newEntrants.toLocaleString()}
+                    hint="No volume in the prior window"
+                    tone="emerald"
+                  />
+                  <TrendStatTile
+                    label="Recent volume"
+                    value={periodTrendStats.recentVolume.toLocaleString()}
+                    hint="Searches across rising queries"
+                    tone="blue"
+                  />
+                  <TrendStatTile
+                    label="Top mover"
+                    value={periodTrendStats.topMover ? `${periodTrendStats.topMover.velocity.toFixed(1)}×` : "—"}
+                    hint={periodTrendStats.topMover ? truncateQuery(periodTrendStats.topMover.query, 22) : "No data"}
+                    tone="amber"
+                  />
+                </div>
+
+                <div className="max-h-[460px] overflow-x-auto overflow-y-auto rounded-xl border border-slate-200">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+                      <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th className="px-3 py-2.5 font-semibold">#</th>
+                        <th className="px-3 py-2.5 font-semibold">Query</th>
+                        <th className="px-3 py-2.5 font-semibold">Recent volume</th>
+                        <th className="px-3 py-2.5 text-right font-semibold">Prior</th>
+                        <th className="px-3 py-2.5 text-right font-semibold">Change</th>
+                        <th className="px-3 py-2.5 text-right font-semibold">Velocity</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {periodTrendRowsSorted.map((row, i) => {
+                        const delta = row.recentCount - row.previousCount
+                        const isNew = row.previousCount === 0
+                        const barPct =
+                          periodTrendStats.maxRecent > 0
+                            ? Math.max(4, (row.recentCount / periodTrendStats.maxRecent) * 100)
+                            : 0
+                        return (
+                          <tr
+                            key={row.query}
+                            className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/70"
+                          >
+                            <td className="px-3 py-2.5 tabular-nums text-slate-400">{i + 1}</td>
+                            <td className="px-3 py-2.5">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="max-w-[220px] truncate font-medium text-slate-800"
+                                  title={row.query}
+                                >
+                                  {row.query}
+                                </span>
+                                {isNew ? (
+                                  <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                                    New
+                                  </span>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                                    style={{ width: `${barPct}%` }}
+                                  />
+                                </div>
+                                <span className="w-8 tabular-nums text-slate-700">
+                                  {row.recentCount}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2.5 text-right tabular-nums text-slate-500">
+                              {row.previousCount}
+                            </td>
+                            <td className="px-3 py-2.5 text-right">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-0.5 tabular-nums font-medium",
+                                  delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-slate-400",
+                                )}
+                              >
+                                {delta > 0 ? (
+                                  <TrendingUp className="h-3 w-3" />
+                                ) : delta < 0 ? (
+                                  <TrendingDown className="h-3 w-3" />
+                                ) : null}
+                                {delta > 0 ? `+${delta}` : delta}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 text-right">
+                              <span
+                                className={cn(
+                                  "inline-block rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums",
+                                  row.velocity >= 5
+                                    ? "bg-fuchsia-100 text-fuchsia-700"
+                                    : row.velocity >= 2
+                                      ? "bg-violet-100 text-violet-700"
+                                      : "bg-slate-100 text-slate-600",
+                                )}
+                              >
+                                {row.velocity.toFixed(2)}×
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

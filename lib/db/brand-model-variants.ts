@@ -1,9 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { BrandModelVariantCondition, BrandModelVariantMaterial, FinBoxesType } from "@/lib/validations/brand-model-variants"
+import type {
+  BrandModelVariantCondition,
+  BrandModelVariantMaterial,
+  FinBoxesType,
+  FinBoxType,
+} from "@/lib/validations/brand-model-variants"
 
-export type FinBoxType = "futures" | "fcs" | "single_fin"
-
-export type { FinBoxesType }
+export type { FinBoxType, FinBoxesType }
 
 export type BrandModelVariantRow = {
   id: string

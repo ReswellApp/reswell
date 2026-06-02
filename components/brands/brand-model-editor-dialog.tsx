@@ -61,6 +61,7 @@ import { BrandCatalogImagePickButton } from "@/components/brands/brand-catalog-i
 import { BrandModelVariantsEditor } from "@/components/brands/brand-model-variants-editor"
 import {
   FIN_BOXES_ADMIN_OPTIONS,
+  FIN_BOX_TYPE_ADMIN_OPTIONS,
   VARIANT_MATERIAL_ADMIN_OPTIONS,
   formatBrandModelVariantLabel,
   parseOptionalPriceInput,
@@ -660,7 +661,7 @@ export function BrandModelEditorDialog({
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="create-fin" className="text-xs">
-                  Fin plugs
+                  Fin system
                 </Label>
                 <Select
                   value={createFinBoxType}
@@ -670,16 +671,18 @@ export function BrandModelEditorDialog({
                   <SelectTrigger id="create-fin" className="h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="futures">Futures</SelectItem>
-                    <SelectItem value="fcs">FCS</SelectItem>
-                    <SelectItem value="single_fin">Single fin</SelectItem>
+                  <SelectContent className="max-h-72">
+                    {FIN_BOX_TYPE_ADMIN_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="create-fboxes" className="text-xs">
-                  Fin boxes
+                  Fin setup
                 </Label>
                 <Select
                   value={createFinBoxes}
@@ -700,7 +703,7 @@ export function BrandModelEditorDialog({
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="create-foam" className="text-xs">
-                  Material
+                  Board construction
                 </Label>
                 <Select
                   value={createFoamMaterial}

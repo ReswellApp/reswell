@@ -7,29 +7,53 @@ export const adminOptionalDimLabelSchema = z.string().trim().max(80)
 
 const optionalDimLabel80 = adminOptionalDimLabelSchema
 
-export const finBoxTypeSchema = z.enum(["futures", "fcs", "single_fin"])
+/**
+ * Catalog variant vocab is kept 1:1 with the marketplace listing facets so the admin
+ * Convert + variant editors offer the exact same options as the pro browse filters.
+ * Labels live in `@/lib/boards-browse-facets` (FIN_SYSTEM_OPTIONS / FIN_SETUP_OPTIONS /
+ * CONSTRUCTION_OPTIONS); keep these value tuples in sync with that source of truth.
+ */
+
+/** Fin system / plug routing — mirrors `listings.fin_system`. */
+export const finBoxTypeSchema = z.enum([
+  "futures",
+  "fcs_ii",
+  "fcs_twin_tab",
+  "single",
+  "two_plus_one_futures",
+  "two_plus_one_fcs",
+  "glass_on",
+  "other",
+])
 
 export type FinBoxType = z.infer<typeof finBoxTypeSchema>
 
-/** Fin layout / routing (distinct from plug type / `fin_box_type`). */
+/** Fin setup / layout — mirrors `listings.fins_setup`. */
 export const finBoxesSchema = z.enum([
-  "five_fin",
+  "single",
+  "twin_only",
+  "twin",
   "thruster",
   "quad",
-  "single_fin",
-  "two_plus_one",
-  "twin",
-  "twinzer",
+  "five",
+  "other",
 ])
 
 export type FinBoxesType = z.infer<typeof finBoxesSchema>
 
-export const brandModelVariantMaterialSchema = z.enum(["pu", "eps"])
+/** Board construction — mirrors `listings.construction`. */
+export const brandModelVariantMaterialSchema = z.enum([
+  "eps_epoxy",
+  "pu_poly",
+  "carbon",
+  "other",
+])
 
 export type BrandModelVariantMaterial = z.infer<typeof brandModelVariantMaterialSchema>
 
+export const BRAND_MODEL_VARIANT_DEFAULT_FIN_BOX_TYPE: FinBoxType = "futures"
 export const BRAND_MODEL_VARIANT_DEFAULT_FIN_BOXES: FinBoxesType = "thruster"
-export const BRAND_MODEL_VARIANT_DEFAULT_MATERIAL: BrandModelVariantMaterial = "pu"
+export const BRAND_MODEL_VARIANT_DEFAULT_MATERIAL: BrandModelVariantMaterial = "pu_poly"
 
 /** Same value set as listings (sellable / browse) — see LISTING_CONDITION_LABELS. */
 export const brandModelVariantConditionSchema = z.enum([

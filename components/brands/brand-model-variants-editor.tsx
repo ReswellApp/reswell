@@ -28,6 +28,7 @@ import {
 } from "@/lib/validations/brand-model-variants"
 import {
   FIN_BOXES_ADMIN_OPTIONS,
+  FIN_BOX_TYPE_ADMIN_OPTIONS,
   VARIANT_MATERIAL_ADMIN_OPTIONS,
   formatBrandModelVariantLabel,
   parseOptionalPriceInput,
@@ -476,7 +477,7 @@ export function BrandModelVariantsEditor({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor={`var-fin-${brandModelId}`} className="text-xs">
-              Fin plugs (Futures / FCS)
+              Fin system
             </Label>
             <Select
               value={finBoxType}
@@ -486,16 +487,18 @@ export function BrandModelVariantsEditor({
               <SelectTrigger id={`var-fin-${brandModelId}`} className="h-9 text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="futures">Futures</SelectItem>
-                <SelectItem value="fcs">FCS</SelectItem>
-                <SelectItem value="single_fin">Single fin</SelectItem>
+              <SelectContent className="max-h-72">
+                {FIN_BOX_TYPE_ADMIN_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor={`var-fboxes-${brandModelId}`} className="text-xs">
-              Fin boxes
+              Fin setup
             </Label>
             <Select
               value={finBoxes}
@@ -516,7 +519,7 @@ export function BrandModelVariantsEditor({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor={`var-foam-${brandModelId}`} className="text-xs">
-              Material
+              Board construction
             </Label>
             <Select
               value={foamMaterial}
@@ -762,7 +765,7 @@ export function BrandModelVariantsEditor({
                             </div>
                             <div className="space-y-1 sm:col-span-2">
                               <Label htmlFor={`edit-fin-${d.id}`} className="text-[11px]">
-                                Fin plugs
+                                Fin system
                               </Label>
                               <Select
                                 value={editDraft.fin_box_type}
@@ -776,16 +779,18 @@ export function BrandModelVariantsEditor({
                                 <SelectTrigger id={`edit-fin-${d.id}`} className="h-8 text-sm">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="futures">Futures</SelectItem>
-                                  <SelectItem value="fcs">FCS</SelectItem>
-                                  <SelectItem value="single_fin">Single fin</SelectItem>
+                                <SelectContent className="max-h-72">
+                                  {FIN_BOX_TYPE_ADMIN_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
                             <div className="space-y-1 sm:col-span-2">
                               <Label htmlFor={`edit-fboxes-${d.id}`} className="text-[11px]">
-                                Fin boxes
+                                Fin setup
                               </Label>
                               <Select
                                 value={editDraft.fin_boxes}
@@ -810,7 +815,7 @@ export function BrandModelVariantsEditor({
                             </div>
                             <div className="space-y-1 sm:col-span-2">
                               <Label htmlFor={`edit-foam-${d.id}`} className="text-[11px]">
-                                Material
+                                Board construction
                               </Label>
                               <Select
                                 value={editDraft.material}

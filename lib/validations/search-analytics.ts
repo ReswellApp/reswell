@@ -1,14 +1,32 @@
 import { z } from "zod"
 
+/** Allowed rolling-window sizes (days) for the "window" trend mode. */
+export const SEARCH_TREND_WINDOW_DAYS = [7, 14, 30, 90] as const
+
 export const searchTrendPeriodQuerySchema = z
   .object({
-    mode: z.enum(["all", "month"]),
+    mode: z.enum(["all", "month", "window"]),
     yearMonth: z
       .string()
       .regex(/^\d{4}-\d{2}$/, "Must be yyyy-MM")
       .optional(),
+    windowDays: z.coerce
+      .number()
+      .int()
+      .refine((n) => (SEARCH_TREND_WINDOW_DAYS as readonly number[]).includes(n), {
+        message: "Unsupported window size",
+      })
+      .optional(),
   })
   .superRefine((val, ctx) => {
+    if (val.mode === "window" && !val.windowDays) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "windowDays is required when mode is window",
+        path: ["windowDays"],
+      })
+      return
+    }
     if (val.mode !== "month") return
     if (!val.yearMonth) {
       ctx.addIssue({
