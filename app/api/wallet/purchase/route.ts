@@ -6,6 +6,7 @@ import { getSellerEarnings, pendingSaleFeeClause } from "@/lib/seller-fees"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { generatePickupCode } from "@/lib/order-status"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
@@ -272,6 +273,14 @@ export async function POST(request: NextRequest) {
       amount: price,
       fulfillmentMethod: isPickup ? "pickup" : "shipping",
       paymentMethod: "reswell_bucks",
+    })
+
+    void trackMetaPurchaseServerEvent({
+      orderId: purchase.id,
+      buyerUserId: user.id,
+      buyerEmail: user.email ?? null,
+      value: price,
+      contentIds: [listing.id],
     })
   }
 

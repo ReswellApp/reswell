@@ -19,6 +19,7 @@ import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
@@ -681,6 +682,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     amount: chargedUsd,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     paymentMethod: "stripe",
+  })
+
+  void trackMetaPurchaseServerEvent({
+    orderId: purchase.id,
+    buyerUserId: buyerId,
+    buyerEmail,
+    value: chargedUsd,
+    contentIds: listingIdsOrdered,
   })
 
   if (!isPickup && fulfillmentMethod === "shipping") {

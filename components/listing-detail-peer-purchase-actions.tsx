@@ -76,7 +76,12 @@ export function ListingDetailPeerPurchaseActions({
         toast.error(r.error ?? "Could not add to cart")
         return
       }
-      trackMetaAddToCart({ contentId: listingId, value: r.value, contentName: r.contentName })
+      trackMetaAddToCart({
+        contentId: listingId,
+        value: r.value,
+        contentName: r.contentName,
+        eventId: r.metaEventId,
+      })
       setCartAdded(true)
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       window.setTimeout(() => setCartAdded(false), 2000)

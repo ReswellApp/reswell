@@ -75,7 +75,12 @@ export function ListingTileAddToCartServerIcon({
         toast.error(r.error ?? "Could not save to cart")
         return
       }
-      trackMetaAddToCart({ contentId: listingId, value: r.value, contentName: r.contentName })
+      trackMetaAddToCart({
+        contentId: listingId,
+        value: r.value,
+        contentName: r.contentName,
+        eventId: r.metaEventId,
+      })
       setAdded(true)
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       window.setTimeout(() => setAdded(false), 1600)

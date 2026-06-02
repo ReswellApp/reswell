@@ -1,4 +1,5 @@
 import { getMetaPixelId } from "@/lib/meta/pixel-config"
+import { metaPurchaseEventId } from "@/lib/meta/event-id"
 
 export const META_PURCHASE_DEDUP_PREFIX = "rw_meta_purchase_reported"
 
@@ -24,6 +25,7 @@ export function buildMetaPurchaseInlineScript(options: {
 
   const currency = (options.currency?.trim().toUpperCase() || "USD").replace(/'/g, "\\'")
   const dedupKey = metaPurchaseDedupKey(orderId).replace(/'/g, "\\'")
+  const eventId = metaPurchaseEventId(orderId).replace(/'/g, "\\'")
   const contentIds = (options.contentIds ?? [])
     .map((id) => String(id ?? "").trim())
     .filter(Boolean)
@@ -39,13 +41,15 @@ export function buildMetaPurchaseInlineScript(options: {
     var value = ${Math.round(value * 100) / 100};
     var currency = '${currency}';
     var contentIds = ${contentIdsJson};
+    var eventId = '${eventId}';
 
     function fire() {
       if (typeof fbq !== 'function') return false;
       sessionStorage.setItem(dedupKey, '1');
       var params = { value: value, currency: currency, content_type: 'product' };
       if (contentIds.length) params.content_ids = contentIds;
-      fbq('track', 'Purchase', params);
+      // eventID dedupes this browser event against the Conversions API Purchase.
+      fbq('track', 'Purchase', params, { eventID: eventId });
       return true;
     }
 

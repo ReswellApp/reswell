@@ -18,6 +18,8 @@ export type MetaProductEventParams = {
   value?: number | null
   currency?: string | null
   contentName?: string | null
+  /** Shared with the Conversions API event so Meta deduplicates the browser/server pair. */
+  eventId?: string | null
 }
 
 function buildProductParams(params: MetaProductEventParams): Record<string, unknown> {
@@ -39,17 +41,21 @@ function buildProductParams(params: MetaProductEventParams): Record<string, unkn
   return out
 }
 
-function track(event: string, params: Record<string, unknown>): void {
+function track(event: string, params: Record<string, unknown>, eventId?: string | null): void {
   if (typeof window === "undefined" || typeof window.fbq !== "function") return
-  window.fbq("track", event, params)
+  if (eventId?.trim()) {
+    window.fbq("track", event, params, { eventID: eventId.trim() })
+  } else {
+    window.fbq("track", event, params)
+  }
 }
 
 export function trackMetaViewContent(params: MetaProductEventParams): void {
   if (!params.contentId?.trim()) return
-  track("ViewContent", buildProductParams(params))
+  track("ViewContent", buildProductParams(params), params.eventId)
 }
 
 export function trackMetaAddToCart(params: MetaProductEventParams): void {
   if (!params.contentId?.trim()) return
-  track("AddToCart", buildProductParams(params))
+  track("AddToCart", buildProductParams(params), params.eventId)
 }

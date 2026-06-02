@@ -1,8 +1,10 @@
 "use server"
 
+import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
+import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 
 export type CartListingRow = {
@@ -80,6 +82,8 @@ export type AddCartItemResult = {
   /** Listing price in USD, returned so the client can fire Meta Pixel AddToCart with a value. */
   value?: number
   contentName?: string
+  /** Shared event id so the browser AddToCart dedupes against the Conversions API event. */
+  metaEventId?: string
 }
 
 export async function addCartItem(listingId: string): Promise<AddCartItemResult> {
@@ -96,6 +100,9 @@ export async function addCartItem(listingId: string): Promise<AddCartItemResult>
     return { ok: false, error: check.message }
   }
 
+  // Shared between the Conversions API event and the browser pixel so Meta dedupes them.
+  const metaEventId = randomUUID()
+
   const { error } = await supabase.from("cart_items").insert({
     profile_id: user.id,
     listing_id: listingId,
@@ -104,7 +111,14 @@ export async function addCartItem(listingId: string): Promise<AddCartItemResult>
   if (error) {
     if (error.code === "23505") {
       revalidatePath("/cart")
-      return { ok: true, error: null }
+      void trackMetaAddToCartServerEvent({
+        eventId: metaEventId,
+        listingId,
+        listingSection: check.listing.section,
+        buyerUserId: user.id,
+        buyerEmail: user.email ?? null,
+      })
+      return { ok: true, error: null, metaEventId }
     }
     return { ok: false, error: error.message }
   }
@@ -147,6 +161,15 @@ export async function addCartItem(listingId: string): Promise<AddCartItemResult>
     if (Number.isFinite(price) && price > 0) value = price
     const title = String(listingRow.title ?? "").trim()
     if (title) contentName = title
+    void trackMetaAddToCartServerEvent({
+      eventId: metaEventId,
+      listingId: listingRow.id,
+      listingSlug: listingRow.slug ?? null,
+      listingSection: String(listingRow.section ?? "surfboards"),
+      value,
+      buyerUserId: user.id,
+      buyerEmail: user.email ?? null,
+    })
     void trackKlaviyoAddedToCart({
       buyerUserId: user.id,
       buyerEmail,
@@ -162,7 +185,7 @@ export async function addCartItem(listingId: string): Promise<AddCartItemResult>
   revalidatePath("/cart")
   const pathSlug = listingRow?.slug?.trim()
   revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
-  return { ok: true, error: null, value, contentName }
+  return { ok: true, error: null, value, contentName, metaEventId }
 }
 
 export async function removeCartItem(listingId: string): Promise<{ ok: boolean; error: string | null }> {
