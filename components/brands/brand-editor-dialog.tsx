@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Boxes, Loader2, Pencil, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { slugifyBrandName } from "@/lib/brands/slug"
 import type { BrandRow } from "@/lib/brands/types"
@@ -10,14 +10,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { uploadBrandLogoFile } from "@/lib/brands/upload-brand-logo-client"
 import { BrandEditorFormFields } from "@/components/brands/brand-editor-form-fields"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 
 type Mode = "create" | "edit"
 
@@ -42,6 +35,7 @@ export function BrandEditorDialog({
   brand,
   createPrefill,
   onSaved,
+  redirectOnCreate = true,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -50,6 +44,8 @@ export function BrandEditorDialog({
   /** When set with mode create, form fields load from a pending `brand_requests` row. */
   createPrefill?: BrandCreatePrefillFromRequest | null
   onSaved?: () => void
+  /** Public /brands flow navigates to the new brand page; admin tools stay put and refresh. */
+  redirectOnCreate?: boolean
 }) {
   const router = useRouter()
   const [saving, setSaving] = React.useState(false)
@@ -148,9 +144,12 @@ export function BrandEditorDialog({
           toast.error(typeof json.error === "string" ? json.error : "Could not create brand")
           return
         }
+        toast.success("Brand created")
         onOpenChange(false)
         onSaved?.()
-        router.push(`${BRANDS_BASE}/${json.slug}`)
+        if (redirectOnCreate) {
+          router.push(`${BRANDS_BASE}/${json.slug}`)
+        }
         router.refresh()
         return
       }
@@ -196,42 +195,59 @@ export function BrandEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,800px)] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add brand" : "Edit brand"}</DialogTitle>
-          <DialogDescription>
-            {mode === "create" && createPrefill
-              ? "Prefilled from a seller brand request. Review, edit anything, then create to add the directory page and mark the request approved."
-              : mode === "create"
-                ? "Create a catalog entry. Slug becomes the URL path."
-                : "Changes apply immediately on save."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <BrandEditorFormFields
-            idPrefix="brand-editor"
-            slug={slug}
-            onSlugChange={setSlug}
-            name={name}
-            onNameChange={setName}
-            onNameBlur={onNameBlur}
-            shortDescription={shortDescription}
-            onShortDescriptionChange={setShortDescription}
-            websiteUrl={websiteUrl}
-            onWebsiteUrlChange={setWebsiteUrl}
-            logoUrl={logoUrl}
-            onLogoUrlChange={setLogoUrl}
-            logoFileInputRef={fileInputRef}
-            founderName={founderName}
-            onFounderNameChange={setFounderName}
-            leadShaperName={leadShaperName}
-            onLeadShaperNameChange={setLeadShaperName}
-            locationLabel={locationLabel}
-            onLocationLabelChange={setLocationLabel}
-            modelCount={modelCount}
-            onModelCountChange={setModelCount}
-          />
-          <DialogFooter className="gap-2 sm:gap-0">
+      <DialogContent className="flex max-h-[min(92vh,860px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+        {/* PRO header */}
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 px-6 py-5 text-white">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/80">
+            <Sparkles className="h-3 w-3" />
+            Pro · Catalog CMS
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white ring-1 ring-white/15">
+              {mode === "create" ? <Boxes className="h-5 w-5" /> : <Pencil className="h-5 w-5" />}
+            </span>
+            <div className="min-w-0">
+              <DialogTitle className="text-lg font-semibold tracking-tight text-white">
+                {mode === "create" ? "Add brand" : `Edit ${brand?.name ?? "brand"}`}
+              </DialogTitle>
+              <DialogDescription className="mt-0.5 text-sm text-slate-300">
+                {mode === "create" && createPrefill
+                  ? "Prefilled from a seller brand request — review, edit, then create."
+                  : mode === "create"
+                    ? "Create a catalog entry. The slug becomes the public URL path."
+                    : "Changes apply immediately on save."}
+              </DialogDescription>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/60 px-6 py-5">
+            <BrandEditorFormFields
+              idPrefix="brand-editor"
+              slug={slug}
+              onSlugChange={setSlug}
+              name={name}
+              onNameChange={setName}
+              onNameBlur={onNameBlur}
+              shortDescription={shortDescription}
+              onShortDescriptionChange={setShortDescription}
+              websiteUrl={websiteUrl}
+              onWebsiteUrlChange={setWebsiteUrl}
+              logoUrl={logoUrl}
+              onLogoUrlChange={setLogoUrl}
+              logoFileInputRef={fileInputRef}
+              founderName={founderName}
+              onFounderNameChange={setFounderName}
+              leadShaperName={leadShaperName}
+              onLeadShaperNameChange={setLeadShaperName}
+              locationLabel={locationLabel}
+              onLocationLabelChange={setLocationLabel}
+              modelCount={modelCount}
+              onModelCountChange={setModelCount}
+            />
+          </div>
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-white px-6 py-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel
             </Button>
@@ -242,12 +258,12 @@ export function BrandEditorDialog({
                   Saving…
                 </>
               ) : mode === "create" ? (
-                "Create"
+                "Create brand"
               ) : (
-                "Save"
+                "Save changes"
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

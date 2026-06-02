@@ -28,6 +28,7 @@ import {
   Layers,
   Link2,
   Package,
+  Plus,
   RefreshCw,
   Ruler,
   Search,
@@ -44,6 +45,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { BrandEditorDialog } from "@/components/brands/brand-editor-dialog"
+import { BrandModelEditorDialog } from "@/components/brands/brand-model-editor-dialog"
 import type { BrandCatalogBrandNode } from "@/lib/services/brandCatalogOverview"
 import type { BrandModelVariantRow } from "@/lib/db/brand-model-variants"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -791,6 +794,15 @@ export function BrandCatalogOverviewClient(props: {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<BrandSortKey>("variants")
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [brandDialogOpen, setBrandDialogOpen] = useState(false)
+  const [modelsDialogOpen, setModelsDialogOpen] = useState(false)
+
+  const brandOptions = useMemo(
+    () => nodes.map((n) => ({ id: n.brand.id, name: n.brand.name })),
+    [nodes],
+  )
+
+  const refreshData = useCallback(() => startRefresh(() => router.refresh()), [router, startRefresh])
 
   const deferredSearch = useDeferredValue(filters.search)
   const query = deferredSearch.trim().toLowerCase()
@@ -1102,61 +1114,62 @@ export function BrandCatalogOverviewClient(props: {
 
   return (
     <div className="w-full space-y-6">
-      {/* Hero */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white/80">
-              <Sparkles className="h-3 w-3" />
-              Pro · Catalog intelligence
+      {/* Header */}
+      <div className="space-y-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Brand catalog explorer
+              </h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Sparkles className="h-3 w-3" />
+                Pro
+              </span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Brand catalog explorer</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              Live hierarchy of <span className="font-medium text-white">brands</span> →{" "}
-              <span className="font-medium text-white">brand_models</span> →{" "}
-              <span className="font-medium text-white">brand_model_variants</span>. Search, filter, analyze coverage,
-              and export the entire catalog.
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Live hierarchy of <span className="font-medium text-foreground">brands</span> →{" "}
+              <span className="font-medium text-foreground">brand_models</span> →{" "}
+              <span className="font-medium text-foreground">brand_model_variants</span>. Search, filter, analyze
+              coverage, and export the entire catalog.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportCsv}
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-            >
-              <Download className="mr-1.5 h-4 w-4" />
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button size="sm" onClick={() => setBrandDialogOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              Add brand
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setModelsDialogOpen(true)} className="gap-1.5">
+              <Layers className="h-4 w-4" />
+              Add models
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCsv} className="gap-1.5">
+              <Download className="h-4 w-4" />
               Export CSV
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => startRefresh(() => router.refresh())}
-              disabled={refreshing}
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-            >
-              <RefreshCw className={cn("mr-1.5 h-4 w-4", refreshing && "animate-spin")} />
+            <Button variant="outline" size="sm" onClick={refreshData} disabled={refreshing} className="gap-1.5">
+              <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
               Refresh
             </Button>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <span className="flex items-center gap-2 text-slate-300">
-            <Boxes className="h-4 w-4 text-blue-300" />
-            <span className="font-semibold text-white tabular-nums">{formatNumber(stats.brands)}</span> brands
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <Boxes className="h-4 w-4 text-blue-600" />
+            <span className="font-semibold tabular-nums text-foreground">{formatNumber(stats.brands)}</span> brands
           </span>
-          <span className="flex items-center gap-2 text-slate-300">
-            <Layers className="h-4 w-4 text-sky-300" />
-            <span className="font-semibold text-white tabular-nums">{formatNumber(stats.models)}</span> models
+          <span className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-sky-600" />
+            <span className="font-semibold tabular-nums text-foreground">{formatNumber(stats.models)}</span> models
           </span>
-          <span className="flex items-center gap-2 text-slate-300">
-            <Package className="h-4 w-4 text-teal-300" />
-            <span className="font-semibold text-white tabular-nums">{formatNumber(stats.variants)}</span> variants
+          <span className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-teal-600" />
+            <span className="font-semibold tabular-nums text-foreground">{formatNumber(stats.variants)}</span> variants
           </span>
-          <span className="flex items-center gap-2 text-slate-300">
-            <DollarSign className="h-4 w-4 text-emerald-300" />
-            <span className="font-semibold text-white tabular-nums">
+          <span className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-emerald-600" />
+            <span className="font-semibold tabular-nums text-foreground">
               {formatUsd(aggregate.priceSum, { compact: true })}
             </span>{" "}
             catalog value
@@ -1466,9 +1479,26 @@ export function BrandCatalogOverviewClient(props: {
       )}
 
       <p className="pt-2 text-center text-xs text-slate-400">
-        Read-only snapshot · brands → brand_models → brand_model_variants · {formatNumber(stats.brands)} brands ·{" "}
+        Live snapshot · brands → brand_models → brand_model_variants · {formatNumber(stats.brands)} brands ·{" "}
         {formatNumber(stats.models)} models · {formatNumber(stats.variants)} variants
       </p>
+
+      <BrandEditorDialog
+        open={brandDialogOpen}
+        onOpenChange={setBrandDialogOpen}
+        mode="create"
+        brand={null}
+        redirectOnCreate={false}
+        onSaved={refreshData}
+      />
+      <BrandModelEditorDialog
+        open={modelsDialogOpen}
+        onOpenChange={(next) => {
+          setModelsDialogOpen(next)
+          if (!next) refreshData()
+        }}
+        brands={brandOptions}
+      />
     </div>
   )
 }

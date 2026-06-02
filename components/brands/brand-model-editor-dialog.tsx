@@ -12,6 +12,7 @@ import {
   Loader2,
   Package,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react"
@@ -460,19 +461,32 @@ export function BrandModelEditorDialog({
           }
         }}
       >
-        <div className="relative shrink-0 border-b border-border/60 bg-muted/25 px-4 pb-4 pt-12 sm:px-6 sm:pt-14">
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 px-4 pb-5 pt-12 text-white sm:px-6 sm:pt-14">
           <DialogHeader className="space-y-4 text-left">
             <div>
-              <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">Board models</DialogTitle>
-              <DialogDescription className="mt-2 max-w-2xl text-sm leading-relaxed">
-                Build your catalog per brand: add the model, then sizes and fin setups (Futures, FCS, or single fin).
-                Model names are unique within each brand.
-              </DialogDescription>
+              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/80">
+                <Sparkles className="h-3 w-3" />
+                Pro · Catalog CMS
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white ring-1 ring-white/15">
+                  <Layers className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <DialogTitle className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                    Board models
+                  </DialogTitle>
+                  <DialogDescription className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-300">
+                    Build the catalog per brand: add a model, then queue sizes and fin setups (Futures, FCS, or single
+                    fin). Model names are unique within each brand.
+                  </DialogDescription>
+                </div>
+              </div>
             </div>
             <div className="max-w-md space-y-2">
               <Label
                 htmlFor="brand-model-brand-trigger"
-                className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                className="text-[11px] font-semibold uppercase tracking-wider text-white/70"
               >
                 Brand
               </Label>
