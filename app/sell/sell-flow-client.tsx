@@ -173,8 +173,10 @@ import {
 } from "@/lib/utils/board-type-from-category-id"
 import {
   orderSurfboardSellCategoryOptions,
+  staticSellBoardCategoryOptions,
   SELL_BOARD_CATEGORY_UNSELECTED_LABEL,
   SELL_BOARD_CATEGORY_UNSELECTED_VALUE,
+  type SellCategoryOptionRow,
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
@@ -941,14 +943,16 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const prevBoardWidthRef = useRef<string | undefined>(undefined)
   const prevBoardThicknessRef = useRef<string | undefined>(undefined)
 
-  const [sellCategoryOptions, setSellCategoryOptions] = useState<
-    { value: string; label: string; board: boolean; slug?: string | null }[]
-  >([])
+  const [sellCategoryOptions, setSellCategoryOptions] = useState<SellCategoryOptionRow[]>([])
+  const [sellCategoriesLoaded, setSellCategoriesLoaded] = useState(false)
 
-  const boardCategoryOptions = useMemo(
-    () => orderSurfboardSellCategoryOptions(sellCategoryOptions.filter((c) => c.board === true)),
-    [sellCategoryOptions],
-  )
+  const boardCategoryOptions = useMemo(() => {
+    const ordered = orderSurfboardSellCategoryOptions(
+      sellCategoryOptions.filter((c) => c.board === true),
+    )
+    if (ordered.length > 0) return ordered
+    return orderSurfboardSellCategoryOptions(staticSellBoardCategoryOptions())
+  }, [sellCategoryOptions])
 
   const listingType = "board" as const
 
@@ -969,21 +973,29 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
   useEffect(() => {
     let cancelled = false
+    setSellCategoriesLoaded(false)
     void (async () => {
       const { data, error } = await supabase
         .from("categories")
         .select("id, name, board, slug")
         .eq("board", true)
       if (cancelled) return
-      if (error) return
+      if (error) {
+        console.warn("[sell] categories fetch failed:", error.message)
+        setSellCategoryOptions(staticSellBoardCategoryOptions())
+        setSellCategoriesLoaded(true)
+        return
+      }
+      const rows = (data ?? []).map((r) => ({
+        value: r.id,
+        label: r.name ?? "",
+        board: true as const,
+        slug: r.slug ?? null,
+      }))
       setSellCategoryOptions(
-        (data ?? []).map((r) => ({
-          value: r.id,
-          label: r.name ?? "",
-          board: true,
-          slug: r.slug ?? null,
-        })),
+        rows.length > 0 ? rows : staticSellBoardCategoryOptions(),
       )
+      setSellCategoriesLoaded(true)
     })()
     return () => {
       cancelled = true
@@ -3067,11 +3079,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
                           </SelectTrigger>
                           <SelectContent>
-                            {boardCategoryOptions.length === 0 ? (
+                            {!sellCategoriesLoaded ? (
                               <SelectItem value="__loading__" disabled>
-                                {sellCategoryOptions.length === 0
-                                  ? "Loading categories…"
-                                  : "No board categories found — add rows with board = true in public.categories."}
+                                Loading categories…
+                              </SelectItem>
+                            ) : boardCategoryOptions.length === 0 ? (
+                              <SelectItem value="__empty__" disabled>
+                                No board categories found — add rows with board = true in public.categories.
                               </SelectItem>
                             ) : (
                               <>

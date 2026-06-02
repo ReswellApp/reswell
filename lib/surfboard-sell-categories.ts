@@ -48,6 +48,16 @@ export type SellCategoryOptionRow = {
   slug?: string | null
 }
 
+/** Built-in surfboard shapes when `public.categories` cannot be loaded (matches `boardCategoryMap`). */
+export function staticSellBoardCategoryOptions(): SellCategoryOptionRow[] {
+  return SURFBOARD_SELL_CATEGORY_ORDER.map((key) => ({
+    value: boardCategoryMap[key] ?? "",
+    label: SURFBOARD_SELL_CATEGORY_LABELS[key],
+    board: true,
+    slug: SURFBOARD_SELL_CATEGORY_SLUG[key],
+  })).filter((row) => row.value.trim().length > 0)
+}
+
 /**
  * Surfboard-only rows for `/sell`: fixed order and labels; unknown board rows append at the end.
  */
