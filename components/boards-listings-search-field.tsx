@@ -11,6 +11,8 @@ export type BoardsListingsSearchFieldProps = {
   placeholder?: string
   inputClassName?: string
   className?: string
+  onFocus?: React.FocusEventHandler<HTMLInputElement>
+  onBlur?: React.FocusEventHandler<HTMLInputElement>
 }
 
 /**
@@ -24,6 +26,8 @@ export function BoardsListingsSearchField({
   placeholder = "Search title, details, brand…",
   inputClassName = "",
   className = "",
+  onFocus,
+  onBlur,
 }: BoardsListingsSearchFieldProps) {
   return (
     <div className={cn("w-full min-w-0", className)}>
@@ -32,6 +36,8 @@ export function BoardsListingsSearchField({
         name={name}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
+        onBlur={onBlur}
         placeholder={placeholder}
         autoComplete="off"
         className={inputClassName}
