@@ -11,16 +11,20 @@ export async function GET(request: Request) {
   const parsed = adminBoardsBrowseSuppressedSearchQuerySchema.safeParse({
     q: url.searchParams.get("q") ?? undefined,
     limit: url.searchParams.get("limit") ?? undefined,
+    offset: url.searchParams.get("offset") ?? undefined,
   })
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 })
   }
 
-  const hits = await searchSurfboardsForBoardsBrowseAdmin(
+  const { hits, total } = await searchSurfboardsForBoardsBrowseAdmin(
     gate.ctx.supabase,
     parsed.data.q ?? "",
-    parsed.data.limit ?? 20,
+    {
+      limit: parsed.data.limit ?? 50,
+      offset: parsed.data.offset ?? 0,
+    },
   )
 
-  return NextResponse.json({ data: { hits } }, { status: 200 })
+  return NextResponse.json({ data: { hits, total } }, { status: 200 })
 }

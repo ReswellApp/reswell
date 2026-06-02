@@ -4,7 +4,7 @@ import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowDownToLine, ExternalLink, Eye, EyeOff, Loader2, Plus, Search } from "lucide-react"
+import { ArrowDownToLine, ChevronDown, ChevronUp, ExternalLink, Eye, EyeOff, Loader2, Plus, Search, Star, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,11 +28,27 @@ type AdminListingRow = {
   primary_image_url: string | null
 }
 
+type TopPickRow = {
+  id: string
+  listing_id: string
+  sort_order: number
+  listing: {
+    id: string
+    slug: string
+    title: string
+    status: string | null
+    hidden_from_site: boolean | null
+    primary_image_url: string | null
+  }
+}
+
 const plusOutlineClass =
   "h-10 w-10 shrink-0 rounded-full border border-border bg-background shadow-sm hover:bg-muted/60"
 
 const SEARCH_DEBOUNCE_MS = 200
+const INVENTORY_PAGE_SIZE = 50
 const SUPPRESSED_API = "/api/admin/boards-browse-suppressed-listings"
+const TOP_PICKS_API = "/api/admin/boards-browse-top-picks"
 
 type BoardsBrowseAdminCuratorProps = {
   isAdmin: boolean
@@ -45,13 +61,39 @@ type BoardsBrowseAdminCuratorProps = {
 export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdminCuratorProps) {
   const router = useRouter()
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [topPicks, setTopPicks] = React.useState<TopPickRow[]>([])
+  const [loadingTopPicks, setLoadingTopPicks] = React.useState(false)
+  const [addingTopPickId, setAddingTopPickId] = React.useState<string | null>(null)
+  const [deletingTopPickRowId, setDeletingTopPickRowId] = React.useState<string | null>(null)
+  const [reorderingTopPicks, setReorderingTopPicks] = React.useState(false)
   const [suppressed, setSuppressed] = React.useState<AdminListingRow[]>([])
   const [loadingSuppressed, setLoadingSuppressed] = React.useState(false)
   const [siteToggleId, setSiteToggleId] = React.useState<string | null>(null)
   const [suppressToggleId, setSuppressToggleId] = React.useState<string | null>(null)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [searchHits, setSearchHits] = React.useState<AdminListingRow[]>([])
+  const [inventoryTotal, setInventoryTotal] = React.useState(0)
+  const [inventoryOffset, setInventoryOffset] = React.useState(0)
   const [searching, setSearching] = React.useState(false)
+  const [loadingMoreInventory, setLoadingMoreInventory] = React.useState(false)
+
+  const loadTopPicks = React.useCallback(async () => {
+    setLoadingTopPicks(true)
+    try {
+      const res = await fetch(TOP_PICKS_API, { credentials: "include" })
+      const json = (await res.json().catch(() => ({}))) as {
+        data?: { rows: TopPickRow[] }
+        error?: string
+      }
+      if (!res.ok) {
+        toast.error(typeof json.error === "string" ? json.error : "Could not load Top Picks")
+        return
+      }
+      setTopPicks(Array.isArray(json.data?.rows) ? json.data!.rows : [])
+    } finally {
+      setLoadingTopPicks(false)
+    }
+  }, [])
 
   const loadSuppressed = React.useCallback(async () => {
     setLoadingSuppressed(true)
@@ -71,42 +113,132 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     }
   }, [])
 
-  const runSearch = React.useCallback(async (q: string) => {
-    setSearching(true)
+  const runSearch = React.useCallback(async (q: string, offset = 0, append = false) => {
+    if (append) setLoadingMoreInventory(true)
+    else setSearching(true)
     try {
       const params = new URLSearchParams()
       if (q.trim()) params.set("q", q.trim())
-      params.set("limit", "20")
+      params.set("limit", String(INVENTORY_PAGE_SIZE))
+      params.set("offset", String(offset))
       const res = await fetch(`${SUPPRESSED_API}/search?${params.toString()}`, {
         credentials: "include",
       })
       const json = (await res.json().catch(() => ({}))) as {
-        data?: { hits: AdminListingRow[] }
+        data?: { hits: AdminListingRow[]; total?: number }
         error?: string
       }
       if (!res.ok) {
-        toast.error(typeof json.error === "string" ? json.error : "Search failed")
+        toast.error(typeof json.error === "string" ? json.error : "Could not load inventory")
         return
       }
-      setSearchHits(Array.isArray(json.data?.hits) ? json.data!.hits : [])
+      const hits = Array.isArray(json.data?.hits) ? json.data!.hits : []
+      const total = typeof json.data?.total === "number" ? json.data.total : hits.length
+      setInventoryTotal(total)
+      setInventoryOffset(offset + hits.length)
+      setSearchHits((prev) => (append ? [...prev, ...hits] : hits))
     } finally {
-      setSearching(false)
+      if (append) setLoadingMoreInventory(false)
+      else setSearching(false)
     }
   }, [])
 
   React.useEffect(() => {
     if (!dialogOpen) return
+    void loadTopPicks()
     void loadSuppressed()
     void runSearch("")
-  }, [dialogOpen, loadSuppressed, runSearch])
+  }, [dialogOpen, loadTopPicks, loadSuppressed, runSearch])
 
   React.useEffect(() => {
     if (!dialogOpen) return
     const handle = window.setTimeout(() => {
-      void runSearch(searchQuery)
+      void runSearch(searchQuery, 0, false)
     }, SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(handle)
   }, [dialogOpen, searchQuery, runSearch])
+
+  const hasMoreInventory = searchHits.length < inventoryTotal
+
+  const topPickListingIds = React.useMemo(
+    () => new Set(topPicks.map((row) => row.listing_id)),
+    [topPicks],
+  )
+
+  async function persistTopPickReorder(next: TopPickRow[]) {
+    setReorderingTopPicks(true)
+    try {
+      const res = await fetch(TOP_PICKS_API, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ordered_row_ids: next.map((r) => r.id) }),
+      })
+      const json = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(typeof json.error === "string" ? json.error : "Could not reorder Top Picks")
+        await loadTopPicks()
+        return
+      }
+      setTopPicks(next)
+      toast.success("Top Picks order updated")
+      router.refresh()
+    } finally {
+      setReorderingTopPicks(false)
+    }
+  }
+
+  async function moveTopPickRow(index: number, dir: -1 | 1) {
+    const j = index + dir
+    if (j < 0 || j >= topPicks.length) return
+    const next = topPicks.slice()
+    const tmp = next[index]!
+    next[index] = next[j]!
+    next[j] = tmp
+    await persistTopPickReorder(next)
+  }
+
+  async function onAddTopPick(listingId: string) {
+    setAddingTopPickId(listingId)
+    try {
+      const res = await fetch(TOP_PICKS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ listing_id: listingId }),
+      })
+      const json = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(typeof json.error === "string" ? json.error : "Could not add Top Pick")
+        return
+      }
+      toast.success("Added to Top Picks")
+      await loadTopPicks()
+      router.refresh()
+    } finally {
+      setAddingTopPickId(null)
+    }
+  }
+
+  async function onRemoveTopPick(rowId: string) {
+    setDeletingTopPickRowId(rowId)
+    try {
+      const res = await fetch(`${TOP_PICKS_API}/rows/${encodeURIComponent(rowId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const json = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(typeof json.error === "string" ? json.error : "Could not remove Top Pick")
+        return
+      }
+      toast.success("Removed from Top Picks")
+      setTopPicks((prev) => prev.filter((r) => r.id !== rowId))
+      router.refresh()
+    } finally {
+      setDeletingTopPickRowId(null)
+    }
+  }
 
   function patchLocalListing(listingId: string, patch: Partial<AdminListingRow>) {
     setSuppressed((prev) =>
@@ -219,6 +351,29 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     )
   }
 
+  function topPickButton(listingId: string, isTopPick: boolean, disabled?: boolean) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9"
+        title={isTopPick ? "Already a Top Pick" : "Add to Top Picks"}
+        aria-label={isTopPick ? "Already a Top Pick" : "Add to Top Picks"}
+        disabled={addingTopPickId === listingId || isTopPick || disabled}
+        onClick={() => void onAddTopPick(listingId)}
+      >
+        {addingTopPickId === listingId ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <Star
+            className={cn("h-4 w-4", isTopPick ? "fill-amber-500 text-amber-500" : "text-muted-foreground")}
+          />
+        )}
+      </Button>
+    )
+  }
+
   if (!isAdmin) return null
 
   return (
@@ -245,13 +400,118 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
           <DialogHeader className="shrink-0 min-w-0 text-left sm:text-left">
             <DialogTitle>/boards CMS</DialogTitle>
             <DialogDescription className="text-pretty [overflow-wrap:anywhere]">
-              Suppress listings to push them to the end of /boards results (they stay visible). Hide
-              from site removes them entirely. Use the down-arrow to suppress; crossed-out eye to
-              hide site-wide.
+              Curate Top Picks to pin the best listings at the top of /boards (default sort). Suppress
+              listings to push them to the end (they stay visible). Hide from site removes them
+              entirely.
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex min-w-0 flex-col gap-6">
+            <section className="flex min-w-0 flex-col gap-2">
+              <h3 className="text-sm font-semibold text-foreground">
+                Top Picks — show first ({topPicks.length})
+              </h3>
+              {loadingTopPicks ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : topPicks.length === 0 ? (
+                <p className="rounded-md border border-dashed border-border/80 bg-muted/20 px-3 py-4 text-xs text-muted-foreground">
+                  No Top Picks yet. Search below and use the star to pin listings at the top of /boards
+                  (all surfboard pages, filtered by board type when applicable).
+                </p>
+              ) : (
+                <div className="max-h-[min(220px,28vh)] min-w-0 overflow-y-auto overflow-x-hidden overscroll-y-contain">
+                  <ul className="min-w-0 space-y-2 pr-0.5">
+                    {topPicks.map((row, i) => (
+                      <li
+                        key={row.id}
+                        className="flex w-full min-w-0 max-w-full items-center gap-2 rounded-lg border border-border/80 bg-muted/20 p-2 sm:gap-3"
+                      >
+                        <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+                          {row.listing.primary_image_url ? (
+                            <Image
+                              src={row.listing.primary_image_url}
+                              alt=""
+                              fill
+                              sizes="80px"
+                              className="object-cover"
+                              unoptimized={row.listing.primary_image_url.startsWith("/")}
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                              No image
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <Link
+                            href={listingDetailHref({ slug: row.listing.slug, id: row.listing.id })}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group flex min-w-0 max-w-full items-start gap-1.5 text-sm font-medium text-foreground hover:text-foreground/80"
+                            title={row.listing.title}
+                          >
+                            <span className="line-clamp-2 min-w-0 break-words [overflow-wrap:anywhere]">
+                              {row.listing.title}
+                            </span>
+                            <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground/80" />
+                          </Link>
+                          {row.listing.status !== "active" || row.listing.hidden_from_site === true ? (
+                            <p className="mt-0.5 break-words text-[11px] text-amber-700 [overflow-wrap:anywhere] dark:text-amber-400">
+                              {row.listing.status !== "active"
+                                ? "Not active — won't appear on /boards."
+                                : "Hidden from site."}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            disabled={reorderingTopPicks || i <= 0}
+                            aria-label="Move up"
+                            onClick={() => void moveTopPickRow(i, -1)}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            disabled={reorderingTopPicks || i >= topPicks.length - 1}
+                            aria-label="Move down"
+                            onClick={() => void moveTopPickRow(i, 1)}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            title="Remove from Top Picks"
+                            aria-label="Remove from Top Picks"
+                            disabled={deletingTopPickRowId === row.id}
+                            onClick={() => void onRemoveTopPick(row.id)}
+                          >
+                            {deletingTopPickRowId === row.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+
             <section className="flex min-w-0 flex-col gap-2">
               <h3 className="text-sm font-semibold text-foreground">
                 Suppressed — show last ({suppressed.length})
@@ -295,15 +555,28 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
             </section>
 
             <section className="flex min-w-0 flex-col gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Search surfboards</h3>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Active inventory
+                  {inventoryTotal > 0 ? ` (${inventoryTotal.toLocaleString()})` : ""}
+                </h3>
+                {searchHits.length > 0 && inventoryTotal > searchHits.length ? (
+                  <span className="text-xs text-muted-foreground">
+                    Showing {searchHits.length.toLocaleString()} of {inventoryTotal.toLocaleString()}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                All active surfboards in inventory, newest first. Search by title to narrow the list.
+              </p>
               <div className="relative w-full min-w-0 max-w-full">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search surfboards by title…"
+                  placeholder="Search by title…"
                   className="w-full min-w-0 pl-9"
-                  aria-label="Search listings"
+                  aria-label="Search active surfboards"
                 />
               </div>
               {searching && searchHits.length === 0 ? (
@@ -312,7 +585,9 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                 </div>
               ) : searchHits.length === 0 ? (
                 <p className="rounded-md border border-dashed border-border/80 bg-muted/20 px-3 py-4 text-center text-xs text-muted-foreground">
-                  {searchQuery.trim() ? "No surfboards match that search." : "No surfboards yet."}
+                  {searchQuery.trim()
+                    ? "No active surfboards match that search."
+                    : "No active surfboards in inventory."}
                 </p>
               ) : (
                 <div className="max-h-[min(300px,40vh)] min-w-0 overflow-y-auto overflow-x-hidden overscroll-y-contain">
@@ -321,6 +596,7 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                       const hidden = hit.hidden_from_site === true
                       const inactive = hit.status !== "active"
                       const isSuppressed = hit.suppressed_on_boards_browse === true
+                      const isTopPick = topPickListingIds.has(hit.id)
                       return (
                         <ListingPickRow
                           key={hit.id}
@@ -332,12 +608,15 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                               ? "Not active."
                               : hidden
                                 ? "Hidden from site."
-                                : isSuppressed
-                                  ? "Suppressed — sorts last on /boards."
-                                  : null
+                                : isTopPick
+                                  ? "Top Pick — shows first on /boards."
+                                  : isSuppressed
+                                    ? "Suppressed — sorts last on /boards."
+                                    : null
                           }
                           extraActions={
                             <div className="flex shrink-0 items-center gap-0.5">
+                              {topPickButton(hit.id, isTopPick, inactive || hidden)}
                               {suppressButton(hit.id, isSuppressed, inactive || hidden)}
                               {siteHideButton(hit.id, hidden, inactive)}
                             </div>
@@ -348,6 +627,24 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                   </ul>
                 </div>
               )}
+              {hasMoreInventory ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={loadingMoreInventory || searching}
+                  onClick={() => void runSearch(searchQuery, inventoryOffset, true)}
+                >
+                  {loadingMoreInventory ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading…
+                    </>
+                  ) : (
+                    `Load more (${(inventoryTotal - searchHits.length).toLocaleString()} remaining)`
+                  )}
+                </Button>
+              ) : null}
             </section>
           </div>
         </DialogContent>

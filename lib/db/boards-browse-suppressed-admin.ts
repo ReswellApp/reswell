@@ -77,28 +77,33 @@ export async function listSuppressedSurfboardsForBoardsAdmin(
 export async function searchSurfboardsForBoardsBrowseAdmin(
   supabase: SupabaseClient,
   query: string,
-  limit = 20,
-): Promise<BoardsBrowseSuppressedAdminRow[]> {
+  opts?: { limit?: number; offset?: number },
+): Promise<{ hits: BoardsBrowseSuppressedAdminRow[]; total: number }> {
   const q = query.trim()
+  const limit = Math.min(Math.max(opts?.limit ?? 50, 1), 100)
+  const offset = Math.max(opts?.offset ?? 0, 0)
+
   let builder = supabase
     .from("listings")
-    .select(ADMIN_SURFBOARD_PICKER_SELECT)
+    .select(ADMIN_SURFBOARD_PICKER_SELECT, { count: "exact" })
     .eq("section", "surfboards")
+    .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(Math.min(Math.max(limit, 1), 50))
+    .range(offset, offset + limit - 1)
 
   if (q) {
     const like = `%${q.replace(/[%_]/g, (m) => `\\${m}`)}%`
     builder = builder.ilike("title", like)
   }
 
-  const { data, error } = await builder
+  const { data, error, count } = await builder
   if (error) {
     console.error("searchSurfboardsForBoardsBrowseAdmin:", error.message)
-    return []
+    return { hits: [], total: 0 }
   }
 
-  return (data ?? []).map((row) =>
-    mapPickerRow(row as Parameters<typeof mapPickerRow>[0]),
-  )
+  return {
+    hits: (data ?? []).map((row) => mapPickerRow(row as Parameters<typeof mapPickerRow>[0])),
+    total: count ?? 0,
+  }
 }

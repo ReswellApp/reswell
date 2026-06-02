@@ -74,7 +74,6 @@ import {
   AlertCircle,
   RefreshCw,
   RotateCw,
-  Sparkles,
   Heart,
   Zap,
 } from "lucide-react"
@@ -144,7 +143,11 @@ import {
   normalizeVolumeLitersInput,
   shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
-import { boardBrowseFacetFieldsForDb } from "@/lib/listing-facet-write"
+import {
+  boardBrowseFacetFieldsForDb,
+  finsSetupFieldForDb,
+} from "@/lib/listing-facet-write"
+import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
 import {
   listingDimensionsColumnFromSurfboardSellForm,
   parseListingDimensionsColumn,
@@ -155,6 +158,7 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
+import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import {
   SellSectionNav,
@@ -717,10 +721,20 @@ function shippingPriceToFormValue(v: unknown): string {
 function sellFormStateFromIdbSnapshot(
   snapshot: SellListingDraftFormSnapshot,
 ): ReturnType<typeof createInitialSellFormData> {
-  return {
+  const base = {
     ...createInitialSellFormData(),
     ...snapshot,
   } as ReturnType<typeof createInitialSellFormData>
+  return {
+    ...base,
+    boardFins: singleFinSetupSlugForForm(snapshot.boardFins),
+    boardFinSystem:
+      typeof snapshot.boardFinSystem === "string" ? snapshot.boardFinSystem : base.boardFinSystem,
+    boardConstruction:
+      typeof snapshot.boardConstruction === "string"
+        ? snapshot.boardConstruction
+        : base.boardConstruction,
+  }
 }
 
 function createInitialSellFormData() {
@@ -837,8 +851,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [loading, setLoading] = useState(false)
   const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
   const [submitStepIndex, setSubmitStepIndex] = useState(0)
-  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
-  const [descriptionGenerated, setDescriptionGenerated] = useState(false)
   const submitStepIndexRef = useRef(0)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -1181,7 +1193,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     setImages([])
     setRemovedImageIds([])
     setPublishPreview(null)
-    setDescriptionGenerated(false)
     void (async () => {
       const {
         data: { user },
@@ -1540,7 +1551,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         boardWidthInches: parsedDims?.boardWidthInches ?? "",
         boardThicknessInches: parsedDims?.boardThicknessInches ?? "",
         boardVolumeL: parsedDims?.boardVolumeL ?? "",
-        boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
+        boardFins: singleFinSetupSlugForForm(
+          (listing as { fins_setup?: string | null }).fins_setup,
+        ),
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardFinSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
         boardConstruction: (listing as { construction?: string | null }).construction ?? "",
@@ -2388,7 +2401,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           category_id: fd.category,
           board_type: fd.boardType,
           dimensions: dimensionsStored,
-          fins_setup: fd.boardFins ? fd.boardFins : null,
+          fins_setup: finsSetupFieldForDb(fd.boardFins),
           tail_shape: fd.boardTail ? fd.boardTail : null,
           ...boardBrowseFacetFieldsForDb(fd),
           latitude: boardLocationLat,
@@ -2540,7 +2553,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           category_id: fd.category,
           board_type: fd.boardType,
           dimensions: dimensionsStoredNew,
-          fins_setup: fd.boardFins ? fd.boardFins : null,
+          fins_setup: finsSetupFieldForDb(fd.boardFins),
           tail_shape: fd.boardTail ? fd.boardTail : null,
           ...boardBrowseFacetFieldsForDb(fd),
           latitude: boardLocationLat,
@@ -3374,6 +3387,22 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         </div>
                       </div>
 
+                      <SellBoardFacetFields
+                        boardFins={formData.boardFins}
+                        boardFinSystem={formData.boardFinSystem}
+                        boardConstruction={formData.boardConstruction}
+                        onBoardFinsChange={(value) =>
+                          setFormData((fd) => ({ ...fd, boardFins: value }))
+                        }
+                        onBoardFinSystemChange={(value) =>
+                          setFormData((fd) => ({ ...fd, boardFinSystem: value }))
+                        }
+                        onBoardConstructionChange={(value) =>
+                          setFormData((fd) => ({ ...fd, boardConstruction: value }))
+                        }
+                        disabled={editLoading}
+                      />
+
                       <p className="text-xs text-muted-foreground/45 pt-0.5">
                         Dimensions are optional. When you fill them in, surfers can compare your board more
                         confidently—often that helps listings move faster.
@@ -3388,141 +3417,21 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   <Label htmlFor="description">
                     Description *
                   </Label>
-                  <div className={cn(
-                    "relative rounded-md transition-all",
-                    isGeneratingDescription && "ring-2 ring-primary/40 ring-offset-1 animate-pulse",
-                  )}>
-                    <Textarea
-                      id="description"
-                      placeholder="Describe your board…"
-                      className="min-h-[120px] resize-none placeholder:text-muted-foreground/45"
-                      value={formData.description}
-                      onChange={(e) => {
-                        setFormData({ ...formData, description: e.target.value })
-                        setDescriptionGenerated(false)
-                      }}
-                      required
-                      disabled={isGeneratingDescription}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground/45">
-                      {formData.description.length} / 1000
-                    </span>
-                    {descriptionGenerated && (
-                      <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Description written — feel free to edit
-                      </span>
-                    )}
-                  </div>
+                  <Textarea
+                    id="description"
+                    placeholder="Describe your board…"
+                    className="min-h-[120px] resize-none placeholder:text-muted-foreground/45"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    required
+                  />
+                  <span className="text-xs text-muted-foreground/45">
+                    {formData.description.length} / 1000
+                  </span>
 
-                  <div className="space-y-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={isGeneratingDescription}
-                          onClick={async () => {
-                            if (formData.description.trim()) {
-                              if (!window.confirm("This will replace your current description. Continue?")) return
-                            }
-                            setIsGeneratingDescription(true)
-                            setDescriptionGenerated(false)
-                            setFormData((f) => ({ ...f, description: "" }))
-                            let fullText = ""
-                            let buffer = ""
-                            try {
-                              const listingData = {
-                                title: formData.title.trim(),
-                                brand: formData.brand || "",
-                                model:
-                                  formData.boardModelName.trim() ||
-                                  formData.boardIndexLabel ||
-                                  "",
-                                category: boardCategoryOptions.find((c) => c.value === formData.category)?.label || "",
-                                boardType: formData.boardType,
-                                condition: formData.condition,
-                                length: boardLengthFormatted,
-                                width: formData.boardWidthInches,
-                                thickness: formData.boardThicknessInches,
-                                volume: formData.boardVolumeL,
-                                price: formData.price,
-                                location: formData.locationDisplay || formData.locationCity || "",
-                              }
-                              const response = await fetch("/api/listings/generate-description", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ listingData }),
-                              })
-                              if (!response.ok) {
-                                const errBody = await response.json().catch(() => null) as {
-                                  error?: string
-                                } | null
-                                throw new Error(
-                                  errBody?.error ||
-                                    "Failed to generate description. Check that ANTHROPIC_API_KEY is set on the server.",
-                                )
-                              }
-                              const reader = response.body!.getReader()
-                              const decoder = new TextDecoder()
-                              while (true) {
-                                const { done, value } = await reader.read()
-                                if (done) break
-                                // Accumulate into buffer so lines split across chunks are reassembled
-                                buffer += decoder.decode(value, { stream: true })
-                                const lines = buffer.split("\n")
-                                // Keep the incomplete trailing line in the buffer
-                                buffer = lines.pop() ?? ""
-                                for (const line of lines) {
-                                  if (!line.startsWith("data: ")) continue
-                                  const raw = line.slice(6).trim()
-                                  if (raw === "[DONE]") continue
-                                  // Parse JSON separately so malformed lines are skipped but real errors propagate
-                                  let parsed: { text?: string; error?: string }
-                                  try {
-                                    parsed = JSON.parse(raw)
-                                  } catch {
-                                    continue
-                                  }
-                                  if (parsed.error) throw new Error(parsed.error)
-                                  if (parsed.text) {
-                                    fullText += parsed.text
-                                    setFormData((f) => ({ ...f, description: fullText }))
-                                  }
-                                }
-                              }
-                              if (fullText.length > 0) setDescriptionGenerated(true)
-                            } catch (err) {
-                              toast.error(err instanceof Error ? err.message : "Failed to generate description")
-                            } finally {
-                              setIsGeneratingDescription(false)
-                            }
-                          }}
-                          className="gap-1.5"
-                        >
-                          {isGeneratingDescription ? (
-                            <>
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Writing...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-3.5 w-3.5" />
-                              {formData.description.trim() ? "Rewrite description" : "Write description for me"}
-                            </>
-                          )}
-                        </Button>
-                        {formData.description.trim() && !isGeneratingDescription && (
-                          <span className="text-xs text-muted-foreground/45">
-                            Will replace your current description
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Quick add chips */}
-                      <div className="space-y-1.5">
+                  <div className="space-y-1.5">
                         <p className="text-xs text-muted-foreground/45">Quick add:</p>
                         <div className="flex flex-wrap gap-1.5">
                           {[
@@ -3556,9 +3465,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         </div>
                       </div>
                     </div>
-                </div>
                     </div>
-
                     </div>
                 </SellFormSection>
 

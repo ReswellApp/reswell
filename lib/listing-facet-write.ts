@@ -12,6 +12,7 @@ import {
   FIN_SYSTEM_OPTIONS,
   CONSTRUCTION_OPTIONS,
 } from "@/lib/boards-browse-facets"
+import { serializeFinsSetupTags } from "@/lib/listing-fin-setup-tags"
 
 const FIN_SYSTEM_SLUGS = new Set(FIN_SYSTEM_OPTIONS.map((o) => o.value))
 const CONSTRUCTION_SLUGS = new Set(CONSTRUCTION_OPTIONS.map((o) => o.value))
@@ -19,6 +20,8 @@ const CONSTRUCTION_SLUGS = new Set(CONSTRUCTION_OPTIONS.map((o) => o.value))
 export type BoardBrowseFacetWriteInput = {
   boardLength?: string
   boardVolumeL?: string
+  /** Single fin-setup slug from the sell form (serialized to comma-joined `fins_setup`). */
+  boardFins?: string
   boardFinSystem?: string
   boardConstruction?: string
 }
@@ -28,6 +31,12 @@ export type BoardBrowseFacetDbFields = {
   volume_liters: number | null
   fin_system: string | null
   construction: string | null
+}
+
+/** Maps sell-form fin setup slug to `listings.fins_setup` (validated comma-joined slugs). */
+export function finsSetupFieldForDb(boardFins: string | undefined): string | null {
+  const slug = boardFins?.trim() ?? ""
+  return serializeFinsSetupTags(slug ? [slug] : [])
 }
 
 export function boardBrowseFacetFieldsForDb(

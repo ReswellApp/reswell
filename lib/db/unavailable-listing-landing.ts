@@ -2,10 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   BOARDS_BROWSE_PAGE_SIZE,
   buildSurfboardBrowseBaseQuery,
+  fetchBoardsBrowseTopPicksPage,
   type BoardBrowseListingRow,
 } from "@/lib/db/boards-browse-listings"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
-import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
+import { BOARDS_BROWSE_NEWEST_SORT } from "@/lib/marketplace-slug-metadata"
 
 export const UNAVAILABLE_LISTING_CONTEXT_SELECT =
   "id, slug, title, section, status, hidden_from_site, brand, brand_id, board_type, user_id"
@@ -51,7 +52,7 @@ export async function fetchRelatedSurfboardsForUnavailableListing(
     brandId: brandId || undefined,
     brand: brandId ? undefined : brandLabel,
     useSuppressionSort,
-    pagedSort: BOARDS_BROWSE_DEFAULT_SORT,
+    pagedSort: BOARDS_BROWSE_NEWEST_SORT,
     pagedRange: { from: 0, to: limit + (opts.excludeListingId ? 4 : 0) },
   })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
 
@@ -65,7 +66,7 @@ export async function fetchRelatedSurfboardsForUnavailableListing(
         brandId: brandId || undefined,
         brand: brandId ? undefined : brandLabel,
         useSuppressionSort: false,
-        pagedSort: BOARDS_BROWSE_DEFAULT_SORT,
+        pagedSort: BOARDS_BROWSE_NEWEST_SORT,
         pagedRange: { from: 0, to: limit + (opts.excludeListingId ? 4 : 0) },
       })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
       const retry = await chain
@@ -86,7 +87,7 @@ export async function fetchRelatedSurfboardsForUnavailableListing(
     condition: "all",
     query: "",
     useSuppressionSort,
-    pagedSort: BOARDS_BROWSE_DEFAULT_SORT,
+    pagedSort: BOARDS_BROWSE_NEWEST_SORT,
     pagedRange: { from: 0, to: limit + (opts.excludeListingId ? 4 : 0) },
   })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
 
@@ -113,30 +114,11 @@ export async function fetchBoardsBrowsePreviewForUnavailableLanding(
   opts?: { pageSize?: number },
 ): Promise<BoardBrowseListingRow[]> {
   const pageSize = opts?.pageSize ?? BOARDS_BROWSE_PAGE_SIZE
-  const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
-
-  let chain = (await buildSurfboardBrowseBaseQuery(supabase, {
+  const { boards } = await fetchBoardsBrowseTopPicksPage(supabase, {
     boardType: "all",
     condition: "all",
     query: "",
-    useSuppressionSort,
-    pagedSort: BOARDS_BROWSE_DEFAULT_SORT,
-    pagedRange: { from: 0, to: pageSize - 1 },
-  })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
-
-  let { data, error } = await chain
-  if (error && useSuppressionSort) {
-    chain = (await buildSurfboardBrowseBaseQuery(supabase, {
-      boardType: "all",
-      condition: "all",
-      query: "",
-      useSuppressionSort: false,
-      pagedSort: BOARDS_BROWSE_DEFAULT_SORT,
-      pagedRange: { from: 0, to: pageSize - 1 },
-    })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
-    ;({ data, error } = await chain)
-  }
-
-  if (error || !data) return []
-  return data as BoardBrowseListingRow[]
+    page: 1,
+  })
+  return boards.slice(0, pageSize)
 }

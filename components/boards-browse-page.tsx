@@ -23,13 +23,17 @@ import {
   BOARDS_BROWSE_PAGE_SIZE,
   buildSurfboardBrowseBaseQuery,
   compareBoardBrowseRows,
+  compareBoardBrowseRowsTopPicks,
+  fetchBoardsBrowseTopPicksPage,
   fetchNearestSurfboardsWithinRadius,
+  isBoardsBrowseTopPicksSort,
   LOCATION_FALLBACK_RADIUS_MI,
   LOCATION_FALLBACK_WIDE_RADIUS_MI,
   suppressedBrowseRank,
   type BoardBrowseListingRow,
   type SurfboardBrowseListingsQuery,
 } from "@/lib/db/boards-browse-listings"
+import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import {
   boardsBrowseBoardTypeLabel,
   boardsBrowseHeroSubtext,
@@ -94,12 +98,32 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
 
   const useGeocodedAnchor = hasLatLng && (filterByRadius || isNearestSort)
 
+  const isTopPicksSort = isBoardsBrowseTopPicksSort(sort)
+
   let boards: Awaited<ReturnType<ReturnType<typeof supabase.from>["select"]>>["data"]
   let totalPages: number
 
   if (cachedCategoryPage) {
     boards = cachedCategoryPage.boards
     totalPages = cachedCategoryPage.totalPages
+  } else if (isTopPicksSort && !filterByRadius && !isNearestSort) {
+    const topPicksPage = await fetchBoardsBrowseTopPicksPage(supabase, {
+      boardType,
+      condition,
+      query,
+      brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
+      model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+      brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+      brandModelId: brandModelIdForQuery,
+      dimensionFields,
+      facets,
+      minPrice,
+      maxPrice,
+      locationTextFilter: location.trim() && !useGeocodedAnchor ? location : undefined,
+      page,
+    })
+    boards = topPicksPage.boards
+    totalPages = topPicksPage.totalPages
   } else {
     const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
 
@@ -159,6 +183,10 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
           if (supDiff !== 0) return supDiff
           return a._distance - b._distance
         })
+      } else if (isTopPicksSort) {
+        const curatedIds = await listBoardsBrowseTopPickListingIdsOrdered(supabase)
+        const curationIndex = new Map(curatedIds.map((id, index) => [id, index]))
+        withDistance.sort((a, b) => compareBoardBrowseRowsTopPicks(a, b, curationIndex))
       } else {
         withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
       }

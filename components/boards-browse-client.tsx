@@ -4,7 +4,7 @@ import { type ReactNode, Suspense, useEffect, useMemo, useState, useTransition }
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { BoardsBrowseFilterToolbar } from "@/components/boards-browse-filter-toolbar"
@@ -187,7 +187,7 @@ export function BoardsBrowseClient({ children, counts }: BoardsBrowseClientProps
         >
           <div className="flex items-center justify-between border-b px-4 py-3.5">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground">Filters</h2>
+              <SheetTitle className="text-base font-semibold text-foreground">Filters</SheetTitle>
               {state.activeCount > 0 ? (
                 <Badge variant="secondary" className="h-5 rounded-full px-2 text-[11px] tabular-nums">
                   {state.activeCount}

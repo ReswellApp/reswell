@@ -56,10 +56,13 @@ export function boardsBrowseBoardTypeLabel(type: string | undefined | null): str
 const BOARDS_CONDITION_LABELS = LISTING_CONDITION_LABELS
 
 /**
- * Default surfboards browse sort: most recently added first
- * (Query: `sort` omitted or `sort=newest`).
+ * Default surfboards browse sort: admin Top Picks first, then newest
+ * (Query: `sort` omitted or `sort=top-picks`).
  */
-export const BOARDS_BROWSE_DEFAULT_SORT = "newest" as const
+export const BOARDS_BROWSE_TOP_PICKS_SORT = "top-picks" as const
+export const BOARDS_BROWSE_DEFAULT_SORT = BOARDS_BROWSE_TOP_PICKS_SORT
+/** Secondary sort when browsing by recency explicitly. */
+export const BOARDS_BROWSE_NEWEST_SORT = "newest" as const
 
 export type BoardsBrowseSearchParams = {
   type?: string
