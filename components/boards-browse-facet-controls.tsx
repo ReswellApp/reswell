@@ -11,6 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { BoardsBrowseCatalogBrandModel } from "@/components/boards-browse-catalog-brand-model"
+import { BoardsBrowseLocationFilter } from "@/components/boards-browse-location-filter"
 import {
   BOARD_STYLE_OPTIONS,
   CONDITION_OPTIONS,
@@ -256,6 +257,7 @@ function BrandModelSection({ state }: { state: BoardsFilterState }) {
 }
 
 const SECTION_IDS = [
+  "location",
   "style",
   "length",
   "volume",
@@ -270,9 +272,11 @@ const SECTION_IDS = [
 export function BoardsBrowseFacetControls({
   state,
   counts,
+  locationListboxId,
 }: {
   state: BoardsFilterState
   counts: FacetCountsMap
+  locationListboxId: string
 }) {
   const { selections } = state
 
@@ -282,6 +286,10 @@ export function BoardsBrowseFacetControls({
       defaultValue={[...SECTION_IDS]}
       className="w-full"
     >
+      <FacetAccordionItem id="location" title="Location">
+        <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
+      </FacetAccordionItem>
+
       <FacetAccordionItem id="style" title="Board Style">
         <MultiSelectSection
           paramKey={FACET_PARAM_KEYS.style}

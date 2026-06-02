@@ -76,6 +76,20 @@ export function BoardsBrowseClient({ children, counts }: BoardsBrowseClientProps
         onRemove: () => state.setPriceRange(null, null),
       })
     }
+    if (state.location.trim()) {
+      out.push({
+        id: "location",
+        label: state.location.trim(),
+        onRemove: () => state.setLocationQuery(""),
+      })
+    }
+    if (state.radius !== "any") {
+      out.push({
+        id: "radius",
+        label: `${state.radius} mi`,
+        onRemove: () => state.setRadius(null),
+      })
+    }
     return out
   }, [state])
 
@@ -116,7 +130,11 @@ export function BoardsBrowseClient({ children, counts }: BoardsBrowseClientProps
                 </button>
               ) : null}
             </div>
-            <BoardsBrowseFacetControls state={state} counts={counts} />
+            <BoardsBrowseFacetControls
+              state={state}
+              counts={counts}
+              locationListboxId="boards-location-sidebar"
+            />
             <Separator className="my-4" />
             <Suspense fallback={null}>
               <BoardsSaveSearchPanel />
@@ -180,7 +198,11 @@ export function BoardsBrowseClient({ children, counts }: BoardsBrowseClientProps
 
           <ScrollArea className="min-h-0 flex-1">
             <div className="px-4 pb-4">
-              <BoardsBrowseFacetControls state={state} counts={counts} />
+              <BoardsBrowseFacetControls
+                state={state}
+                counts={counts}
+                locationListboxId="boards-location-drawer"
+              />
               <Separator className="my-4" />
               <Suspense fallback={null}>
                 <BoardsSaveSearchPanel />

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { MapPin, LocateFixed, SlidersHorizontal } from "lucide-react"
+import { SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -13,16 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { BoardsListingsSearchField } from "@/components/boards-listings-search-field"
-import { LocationInputSuggest } from "@/components/location-input-suggest"
 import {
   SiteSearchFormSubmitButton,
   SiteSearchShell,
   siteFilterSelectTriggerClassName,
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
-import { useToast } from "@/hooks/use-toast"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
-import { cn } from "@/lib/utils"
 
 export const boardSortOptions = [
   { value: BOARDS_BROWSE_DEFAULT_SORT, label: "Newest" },
@@ -30,18 +27,6 @@ export const boardSortOptions = [
   { value: "price-low", label: "Price: Low → High" },
   { value: "price-high", label: "Price: High → Low" },
 ]
-
-const BOARD_RADIUS_VALUES = ["25", "50", "100", "200"] as const
-
-export const boardRadiusOptions: { value: string; label: string }[] = [
-  { value: "any", label: "Radius" },
-  ...BOARD_RADIUS_VALUES.map((mi) => ({ value: mi, label: `${mi} mi` })),
-]
-
-function normalizeRadius(r: string | null): string {
-  const t = (r ?? "").trim()
-  return BOARD_RADIUS_VALUES.includes(t as (typeof BOARD_RADIUS_VALUES)[number]) ? t : "any"
-}
 
 const DEBOUNCE_MS = 380
 
@@ -54,7 +39,7 @@ type Props = {
   transitionStart?: (cb: () => void) => void
 }
 
-/** Slim browse toolbar: keyword search, location/radius, sort, plus the Filter triggers. */
+/** Slim browse toolbar: keyword search, sort, plus the Filter triggers. */
 export function BoardsBrowseFilterToolbar({
   resultCount,
   activeFilterCount,
@@ -66,24 +51,15 @@ export function BoardsBrowseFilterToolbar({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { toast } = useToast()
 
   const [q, setQ] = useState(searchParams.get("q") ?? "")
-  const [location, setLocation] = useState(searchParams.get("location") ?? "")
-  const [locationLoading, setLocationLoading] = useState(false)
-  const radius = normalizeRadius(searchParams.get("radius"))
   const sort = searchParams.get("sort") ?? BOARDS_BROWSE_DEFAULT_SORT
 
   const skipQDebounce = useRef(true)
-  const skipLocDebounce = useRef(true)
 
   useEffect(() => {
     setQ(searchParams.get("q") ?? "")
     skipQDebounce.current = true
-  }, [searchParams])
-  useEffect(() => {
-    setLocation(searchParams.get("location") ?? "")
-    skipLocDebounce.current = true
   }, [searchParams])
 
   const navigate = useCallback(
@@ -113,78 +89,13 @@ export function BoardsBrowseFilterToolbar({
     return () => clearTimeout(t)
   }, [q, navigate])
 
-  useEffect(() => {
-    if (skipLocDebounce.current) {
-      skipLocDebounce.current = false
-      return
-    }
-    const t = setTimeout(() => {
-      navigate((p) => {
-        if (location.trim()) {
-          p.set("location", location.trim())
-        } else {
-          p.delete("location")
-          p.delete("lat")
-          p.delete("lng")
-          p.delete("radius")
-        }
-      })
-    }, DEBOUNCE_MS)
-    return () => clearTimeout(t)
-  }, [location, navigate])
-
-  async function handleUseMyLocation() {
-    if (!navigator.geolocation) {
-      toast({
-        title: "Location not supported",
-        description: "Your browser doesn't support geolocation.",
-        variant: "destructive",
-      })
-      return
-    }
-    setLocationLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
-        let displayName = "My location"
-        try {
-          const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
-          if (res.ok) {
-            const { displayName: dn } = await res.json()
-            if (dn) displayName = dn as string
-          }
-        } catch {
-          /* keep default label */
-        }
-        skipLocDebounce.current = true
-        setLocation(displayName)
-        setLocationLoading(false)
-        navigate((p) => {
-          p.set("location", displayName)
-          p.set("lat", String(lat))
-          p.set("lng", String(lng))
-        })
-      },
-      () => {
-        toast({
-          title: "Location unavailable",
-          description: "Allow location access or enter a city or ZIP.",
-          variant: "destructive",
-        })
-        setLocationLoading(false)
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
-    )
-  }
-
   return (
     <form
       onSubmit={(e) => e.preventDefault()}
       className="flex w-full min-w-0 flex-col gap-3"
     >
-      <div className="mx-auto grid w-full max-w-3xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
-        <div className="col-start-1 row-start-1 flex shrink-0 items-center">
+      <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
+        <div className="flex shrink-0 items-center">
           <Button
             type="button"
             variant="outline"
@@ -217,7 +128,7 @@ export function BoardsBrowseFilterToolbar({
           </button>
         </div>
 
-        <div className="col-start-2 row-start-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <SiteSearchShell
             actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
           >
@@ -231,90 +142,32 @@ export function BoardsBrowseFilterToolbar({
           </SiteSearchShell>
         </div>
 
-        <div className="col-start-2 row-start-2 flex flex-wrap items-center justify-center gap-2">
-            <div className="relative w-full min-w-[12rem] max-w-[22rem] sm:w-[22rem] sm:flex-none">
-              <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <LocationInputSuggest
-                name="location"
-                placeholder="City or ZIP"
-                value={location}
-                onChange={(v) => {
-                  setLocation(v)
-                }}
-                onPickSuggestion={(place) => {
-                  skipLocDebounce.current = true
-                  setLocation(place.label)
-                  navigate((p) => {
-                    p.set("location", place.label)
-                    p.set("lat", String(place.lat))
-                    p.set("lng", String(place.lng))
-                  })
-                }}
-                listboxId="boards-location-suggest"
-                endSlot={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 shrink-0 rounded-full text-foreground hover:bg-muted"
-                    title="Use my location"
-                    aria-label="Use my location"
-                    disabled={locationLoading}
-                    onClick={handleUseMyLocation}
-                  >
-                    <LocateFixed className="h-4 w-4" />
-                  </Button>
-                }
-              />
-            </div>
-
-            <Select
-              name="radius"
-              value={radius}
-              onValueChange={(v) => navigate((p) => (v === "any" ? p.delete("radius") : p.set("radius", v)))}
-            >
-              <SelectTrigger
-                aria-label="Search radius (miles from location)"
-                className={cn(siteFilterSelectTriggerClassName(), "w-[8.5rem] shrink-0")}
-              >
-                <SelectValue placeholder="Radius" />
-              </SelectTrigger>
-              <SelectContent>
-                {boardRadiusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="w-[150px] shrink-0">
-              <Select
-                name="sort"
-                value={sort}
-                onValueChange={(v) =>
-                  navigate((p) => (v === BOARDS_BROWSE_DEFAULT_SORT ? p.delete("sort") : p.set("sort", v)))
-                }
-              >
-                <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent>
-                  {boardSortOptions.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {resultCount != null ? (
-              <span className="hidden w-full text-center text-sm text-muted-foreground sm:inline">
-                {resultCount.toLocaleString()} {resultCount === 1 ? "board" : "boards"}
-              </span>
-            ) : null}
+        <div className="w-[150px] shrink-0">
+          <Select
+            name="sort"
+            value={sort}
+            onValueChange={(v) =>
+              navigate((p) => (v === BOARDS_BROWSE_DEFAULT_SORT ? p.delete("sort") : p.set("sort", v)))
+            }
+          >
+            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              {boardSortOptions.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {resultCount != null ? (
+          <span className="hidden shrink-0 text-sm text-muted-foreground lg:inline">
+            {resultCount.toLocaleString()} {resultCount === 1 ? "board" : "boards"}
+          </span>
+        ) : null}
       </div>
     </form>
   )

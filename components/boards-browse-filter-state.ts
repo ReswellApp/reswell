@@ -8,6 +8,7 @@ import {
   hasAnyFacetSelection,
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
+import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 
 /** Params owned by the facet sidebar/drawer (reset together on "Clear all"). */
 const FACET_OWNED_KEYS = [
@@ -18,6 +19,10 @@ const FACET_OWNED_KEYS = [
   "brandModelId",
   "minPrice",
   "maxPrice",
+  "location",
+  "lat",
+  "lng",
+  "radius",
 ] as const
 
 type NavigateMutator = (params: URLSearchParams) => void
@@ -31,6 +36,8 @@ export type BoardsFilterState = {
   brandModelId: string
   minPrice: string
   maxPrice: string
+  location: string
+  radius: string
   /** Number of distinct active facet filters (for the "Filter" badge). */
   activeCount: number
   hasAnyActive: boolean
@@ -39,6 +46,9 @@ export type BoardsFilterState = {
   setBrand: (next: { brand: string; brandId?: string; model?: string; brandModelId?: string }) => void
   setModel: (next: { model: string; brandModelId?: string }) => void
   setPriceRange: (min: string | null, max: string | null) => void
+  setLocationQuery: (query: string) => void
+  setLocationCoords: (label: string, lat: number, lng: number) => void
+  setRadius: (value: string | null) => void
   clearKey: (key: string) => void
   clearAll: () => void
 }
@@ -84,6 +94,8 @@ export function useBoardsFilterState(
   const brandModelId = searchParams.get("brandModelId") ?? ""
   const minPrice = searchParams.get("minPrice") ?? ""
   const maxPrice = searchParams.get("maxPrice") ?? ""
+  const location = searchParams.get("location") ?? ""
+  const radius = normalizeBoardBrowseRadius(searchParams.get("radius"))
 
   const toggleMulti = useCallback(
     (key: string, value: string) => {
@@ -155,6 +167,42 @@ export function useBoardsFilterState(
     [navigate],
   )
 
+  const setLocationQuery = useCallback(
+    (query: string) => {
+      navigate((params) => {
+        if (query.trim()) params.set("location", query.trim())
+        else {
+          params.delete("location")
+          params.delete("lat")
+          params.delete("lng")
+          params.delete("radius")
+        }
+      })
+    },
+    [navigate],
+  )
+
+  const setLocationCoords = useCallback(
+    (label: string, lat: number, lng: number) => {
+      navigate((params) => {
+        params.set("location", label)
+        params.set("lat", String(lat))
+        params.set("lng", String(lng))
+      })
+    },
+    [navigate],
+  )
+
+  const setRadius = useCallback(
+    (value: string | null) => {
+      navigate((params) => {
+        if (value?.trim()) params.set("radius", value.trim())
+        else params.delete("radius")
+      })
+    },
+    [navigate],
+  )
+
   const clearKey = useCallback(
     (key: string) => {
       navigate((params) => params.delete(key))
@@ -180,8 +228,10 @@ export function useBoardsFilterState(
     if (brand.trim() || brandId.trim()) n += 1
     if (model.trim() || brandModelId.trim()) n += 1
     if (minPrice.trim() || maxPrice.trim()) n += 1
+    if (location.trim()) n += 1
+    if (radius !== "any") n += 1
     return n
-  }, [selections, brand, brandId, model, brandModelId, minPrice, maxPrice])
+  }, [selections, brand, brandId, model, brandModelId, minPrice, maxPrice, location, radius])
 
   return {
     searchParams,
@@ -192,15 +242,29 @@ export function useBoardsFilterState(
     brandModelId,
     minPrice,
     maxPrice,
+    location,
+    radius,
     activeCount,
     hasAnyActive:
       hasAnyFacetSelection(selections) ||
-      Boolean(brand.trim() || brandId.trim() || model.trim() || brandModelId.trim() || minPrice.trim() || maxPrice.trim()),
+      Boolean(
+        brand.trim() ||
+          brandId.trim() ||
+          model.trim() ||
+          brandModelId.trim() ||
+          minPrice.trim() ||
+          maxPrice.trim() ||
+          location.trim() ||
+          radius !== "any",
+      ),
     toggleMulti,
     setSingle,
     setBrand,
     setModel,
     setPriceRange,
+    setLocationQuery,
+    setLocationCoords,
+    setRadius,
     clearKey,
     clearAll,
   }
