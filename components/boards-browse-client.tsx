@@ -27,7 +27,7 @@ type ActiveChip = { id: string; label: string; onRemove: () => void }
 export function BoardsBrowseClient({ children, counts }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(true)
+  const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
   const state = useBoardsFilterState(startTransition)
 
   useEffect(() => {

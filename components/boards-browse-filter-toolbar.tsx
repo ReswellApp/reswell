@@ -44,7 +44,7 @@ export function BoardsBrowseFilterToolbar({
   resultCount,
   activeFilterCount,
   onOpenMobileFilters,
-  desktopFiltersOpen = true,
+  desktopFiltersOpen = false,
   onToggleDesktopFilters,
   transitionStart,
 }: Props) {
