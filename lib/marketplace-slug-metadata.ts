@@ -63,6 +63,7 @@ export const BOARDS_BROWSE_DEFAULT_SORT = "newest" as const
 
 export type BoardsBrowseSearchParams = {
   type?: string
+  /** Multi-select condition slugs (comma-separated). Legacy single value still honored. */
   condition?: string
   sort?: string
   q?: string
@@ -86,6 +87,13 @@ export type BoardsBrowseSearchParams = {
   radius?: string
   lat?: string
   lng?: string
+  /** Pro facet params (comma-separated slug lists). See `lib/boards-browse-facets.ts`. */
+  style?: string
+  fin?: string
+  finSystem?: string
+  construction?: string
+  length?: string
+  volume?: string
 }
 
 /** Canonical `type=` value for browse URLs, OG, and DB filters (legacy aliases → current slug). */

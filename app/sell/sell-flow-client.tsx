@@ -144,6 +144,7 @@ import {
   normalizeVolumeLitersInput,
   shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
+import { boardBrowseFacetFieldsForDb } from "@/lib/listing-facet-write"
 import {
   listingDimensionsColumnFromSurfboardSellForm,
   parseListingDimensionsColumn,
@@ -749,6 +750,8 @@ function createInitialSellFormData() {
     boardVolumeL: "",
     boardFins: "",
     boardTail: "",
+    boardFinSystem: "",
+    boardConstruction: "",
     boardBrandId: "",
     boardBrandModelId: "",
     boardIndexBrandSlug: "",
@@ -1539,6 +1542,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         boardVolumeL: parsedDims?.boardVolumeL ?? "",
         boardFins: (listing as { fins_setup?: string | null }).fins_setup ?? "",
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
+        boardFinSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
+        boardConstruction: (listing as { construction?: string | null }).construction ?? "",
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
         boardBrandModelId: loadedBrandModelId,
         boardIndexBrandSlug: loadedCatalogBrandSlug || brandSlugFromCatalogModel,
@@ -2385,6 +2390,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           dimensions: dimensionsStored,
           fins_setup: fd.boardFins ? fd.boardFins : null,
           tail_shape: fd.boardTail ? fd.boardTail : null,
+          ...boardBrowseFacetFieldsForDb(fd),
           latitude: boardLocationLat,
           longitude: boardLocationLng,
           city: boardLocationCity,
@@ -2536,6 +2542,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           dimensions: dimensionsStoredNew,
           fins_setup: fd.boardFins ? fd.boardFins : null,
           tail_shape: fd.boardTail ? fd.boardTail : null,
+          ...boardBrowseFacetFieldsForDb(fd),
           latitude: boardLocationLat,
           longitude: boardLocationLng,
           city: boardLocationCity,

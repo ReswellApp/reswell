@@ -1,6 +1,6 @@
 /**
  * Canonical category links for the /categories page and header dropdown.
- * Surfboard types match `components/boards-listings-filters` (`type` query param).
+ * Surfboard types match the board style facet in `lib/boards-browse-facets` (`type`/`style` query params).
  */
 
 import { BRANDS_BASE } from "@/lib/brands/routes"

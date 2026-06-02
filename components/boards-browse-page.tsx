@@ -41,6 +41,14 @@ import {
   boardDimensionBrowseFieldsFromSearchParams,
   appendBoardDimensionBrowseParams,
 } from "@/lib/utils/board-dimension-browse-filter"
+import {
+  facetSelectionsFromParams,
+  FACET_PARAM_KEYS,
+} from "@/lib/boards-browse-facets"
+import {
+  getBoardsBrowseFacetCounts,
+  facetCountsByParamKey,
+} from "@/lib/services/boardsBrowseFacetCounts"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
@@ -70,6 +78,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     dimVolume: searchParams.dimVolume,
     legacyDimensions: searchParams.dimensions,
   })
+  const facets = facetSelectionsFromParams(searchParams)
   const location = searchParams.location || ""
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
   const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
@@ -103,6 +112,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
       brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
       brandModelId: brandModelIdForQuery,
       dimensionFields,
+      facets,
       minPrice,
       maxPrice,
       useSuppressionSort,
@@ -168,6 +178,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
           brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
           brandModelId: brandModelIdForQuery,
           dimensionFields,
+          facets,
           minPrice,
           maxPrice,
           useSuppressionSort: false,
@@ -248,6 +259,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
           brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
           brandModelId: brandModelIdForQuery,
           dimensionFields,
+          facets,
           minPrice,
           maxPrice,
           offset,
@@ -324,6 +336,11 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
     if (searchParams.condition && searchParams.condition !== "all")
       params.set("condition", searchParams.condition)
+    for (const key of Object.values(FACET_PARAM_KEYS)) {
+      if (key === FACET_PARAM_KEYS.condition) continue
+      const val = searchParams[key]
+      if (typeof val === "string" && val.trim()) params.set(key, val.trim())
+    }
     if (searchParams.minPrice) params.set("minPrice", searchParams.minPrice)
     if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice)
     if (searchParams.radius) params.set("radius", searchParams.radius)
@@ -485,19 +502,6 @@ export async function BoardsBrowsePage(props: {
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
 
-  const brandIdParam = searchParams.brandId?.trim() ?? ""
-  const brandModelIdParam = searchParams.brandModelId?.trim() ?? ""
-  const browseInitialBrandId = brandIdParam && isUuidString(brandIdParam) ? brandIdParam : ""
-  const browseInitialBrandModelId =
-    brandModelIdParam && isUuidString(brandModelIdParam) ? brandModelIdParam : ""
-  const browseInitialDimensionFields = boardDimensionBrowseFieldsFromSearchParams({
-    dimLength: searchParams.dimLength,
-    dimWidth: searchParams.dimWidth,
-    dimThickness: searchParams.dimThickness,
-    dimVolume: searchParams.dimVolume,
-    legacyDimensions: searchParams.dimensions,
-  })
-
   const supabase = await createClient()
   const {
     data: { user },
@@ -511,6 +515,24 @@ export async function BoardsBrowsePage(props: {
       .maybeSingle()
     isAdmin = profile?.is_admin === true
   }
+
+  const browseFacetSelections = facetSelectionsFromParams(searchParams)
+  const facetCounts = facetCountsByParamKey(
+    await getBoardsBrowseFacetCounts(
+      supabase,
+      {
+        query: searchParams.q,
+        brand: searchParams.brand,
+        model: searchParams.model,
+        brandId: searchParams.brandId,
+        brandModelId: searchParams.brandModelId,
+        minPrice: searchParams.minPrice ? Number(searchParams.minPrice) : undefined,
+        maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
+        location: searchParams.location,
+      },
+      browseFacetSelections,
+    ),
+  )
 
   return (
     <main className="flex-1">
@@ -560,24 +582,7 @@ export async function BoardsBrowsePage(props: {
 
       <section className="pt-2 pb-4 min-w-0">
         <div className="container mx-auto min-w-0">
-          <BoardsBrowseClient
-            initialQ={searchParams.q ?? ""}
-            initialBrand={searchParams.brand ?? ""}
-            initialModel={searchParams.model ?? ""}
-            initialBrandId={browseInitialBrandId}
-            initialBrandModelId={browseInitialBrandModelId}
-            initialDimLength={browseInitialDimensionFields.boardLength}
-            initialDimWidth={browseInitialDimensionFields.boardWidthInches}
-            initialDimThickness={browseInitialDimensionFields.boardThicknessInches}
-            initialDimVolume={browseInitialDimensionFields.boardVolumeL}
-            initialMinPrice={searchParams.minPrice ?? ""}
-            initialMaxPrice={searchParams.maxPrice ?? ""}
-            initialLocation={searchParams.location ?? ""}
-            initialRadius={searchParams.radius ?? ""}
-            initialType={searchParams.type ?? "all"}
-            initialCondition={searchParams.condition ?? "all"}
-            initialSort={searchParams.sort ?? BOARDS_BROWSE_DEFAULT_SORT}
-          >
+          <BoardsBrowseClient counts={facetCounts}>
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
               <BoardListings searchParams={searchParams} />
             </Suspense>

@@ -15,6 +15,11 @@ import {
   type BoardDimensionBrowseFields,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { isUuidString } from "@/lib/utils/isUuid"
+import {
+  lengthBucketBySlug,
+  volumeBucketBySlug,
+  type BoardsBrowseFacetSelections,
+} from "@/lib/boards-browse-facets"
 
 /**
  * Explicit chain type so `async function` return is not inferred as `PostgrestSingleResponse`
@@ -58,7 +63,9 @@ export const SURFBOARD_BROWSE_LISTING_SELECT = `
   profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
 `
 
-export const BOARDS_BROWSE_PAGE_SIZE = 30
+// 40 keeps the last row full on the desktop grid (lg: 4 cols → 10 rows, xl: 5 cols → 8 rows)
+// so results extend down alongside the tall left filter sidebar.
+export const BOARDS_BROWSE_PAGE_SIZE = 40
 
 export const LOCATION_FALLBACK_RADIUS_MI = 100
 export const LOCATION_FALLBACK_WIDE_RADIUS_MI = 2200
@@ -116,6 +123,41 @@ function ilikeContainsPattern(fragment: string): string {
   return `"%${escapePostgrestIlikeFragment(fragment)}%"`
 }
 
+/** OR-group `and(col.gte.min,col.lt.max)` strings for selected numeric range buckets. */
+function numericBucketOrGroups(
+  column: string,
+  buckets: { min: number | null; max: number | null }[],
+): string | null {
+  const groups: string[] = []
+  for (const b of buckets) {
+    const parts: string[] = []
+    if (b.min != null) parts.push(`${column}.gte.${b.min}`)
+    if (b.max != null) parts.push(`${column}.lt.${b.max}`)
+    if (parts.length === 0) continue
+    groups.push(parts.length === 1 ? parts[0] : `and(${parts.join(",")})`)
+  }
+  return groups.length ? groups.join(",") : null
+}
+
+/**
+ * OR-group patterns matching an exact slug inside a comma-joined `fins_setup` value.
+ * Values are wrapped in double quotes because they contain commas (the or() delimiter).
+ * Boundary patterns avoid false positives between overlapping slugs (e.g. `twin` vs `twin_only`).
+ */
+function commaListMembershipOrGroups(column: string, slugs: string[]): string | null {
+  const groups: string[] = []
+  for (const slug of slugs) {
+    if (!/^[a-z0-9_]+$/.test(slug)) continue
+    groups.push(
+      `${column}.eq.${slug}`,
+      `${column}.ilike."${slug},%"`,
+      `${column}.ilike."%,${slug}"`,
+      `${column}.ilike."%,${slug},%"`,
+    )
+  }
+  return groups.length ? groups.join(",") : null
+}
+
 /** Narrow listings to a lat/lng window (~miles) before other filters that use `.or()`. */
 function geoBoundingBoxFiltersMiles(lat: number, lng: number, radiusMiles: number) {
   const pad = 1.08
@@ -140,6 +182,8 @@ export async function buildSurfboardBrowseBaseQuery(
     dimensionFields?: BoardDimensionBrowseFields
     /** Legacy `dimensions=` query param (single substring). */
     legacyDimensions?: string
+    /** Pro multi-select facets (board style, condition, fin setup/system, construction, length, volume). */
+    facets?: BoardsBrowseFacetSelections
     minPrice?: number
     maxPrice?: number
     geoBbox?: { lat: number; lng: number; radiusMiles: number }
@@ -158,15 +202,58 @@ export async function buildSurfboardBrowseBaseQuery(
     .eq("section", "surfboards")
     .eq("hidden_from_site", false)
 
-  if (params.boardType !== "all") {
+  const facets = params.facets
+  const styleDbTypes = Array.from(
+    new Set(
+      (facets?.styles ?? [])
+        .map((s) => boardTypeForDbFromBrowseParam(s))
+        .filter((v): v is string => Boolean(v)),
+    ),
+  )
+
+  if (styleDbTypes.length > 0) {
+    // Sidebar multi-select board style takes precedence over the single `type=` nav param.
+    dbQuery = dbQuery.in("board_type", styleDbTypes)
+  } else if (params.boardType !== "all") {
     const dbBoardType = boardTypeForDbFromBrowseParam(params.boardType)
     if (dbBoardType) {
       dbQuery = dbQuery.eq("board_type", dbBoardType)
     }
   }
 
-  if (params.condition !== "all") {
+  if (facets?.conditions && facets.conditions.length > 0) {
+    dbQuery = dbQuery.in("condition", facets.conditions)
+  } else if (params.condition !== "all") {
     dbQuery = dbQuery.eq("condition", params.condition)
+  }
+
+  if (facets?.finSystems && facets.finSystems.length > 0) {
+    dbQuery = dbQuery.in("fin_system", facets.finSystems)
+  }
+
+  if (facets?.constructions && facets.constructions.length > 0) {
+    dbQuery = dbQuery.in("construction", facets.constructions)
+  }
+
+  if (facets?.finSetups && facets.finSetups.length > 0) {
+    const finOr = commaListMembershipOrGroups("fins_setup", facets.finSetups)
+    if (finOr) dbQuery = dbQuery.or(finOr)
+  }
+
+  if (facets?.lengthBuckets && facets.lengthBuckets.length > 0) {
+    const buckets = facets.lengthBuckets
+      .map((slug) => lengthBucketBySlug(slug))
+      .filter((b): b is NonNullable<typeof b> => Boolean(b))
+    const lenOr = numericBucketOrGroups("length_total_inches", buckets)
+    if (lenOr) dbQuery = dbQuery.or(lenOr)
+  }
+
+  if (facets?.volumeBuckets && facets.volumeBuckets.length > 0) {
+    const buckets = facets.volumeBuckets
+      .map((slug) => volumeBucketBySlug(slug))
+      .filter((b): b is NonNullable<typeof b> => Boolean(b))
+    const volOr = numericBucketOrGroups("volume_liters", buckets)
+    if (volOr) dbQuery = dbQuery.or(volOr)
   }
 
   if (params.minPrice != null && !Number.isNaN(params.minPrice) && params.minPrice >= 0) {
@@ -297,6 +384,7 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
   brandModelId?: string
   dimensionFields?: BoardDimensionBrowseFields
   legacyDimensions?: string
+  facets?: BoardsBrowseFacetSelections
   minPrice?: number
   maxPrice?: number
   offset: number
@@ -314,6 +402,7 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
     brandModelId: params.brandModelId,
     dimensionFields: params.dimensionFields,
     legacyDimensions: params.legacyDimensions,
+    facets: params.facets,
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
     useSuppressionSort: params.useSuppressionSort,
@@ -370,6 +459,16 @@ export function isBoardsBrowseCategoryTypeView(sp: BoardsBrowseSearchParams): bo
   if (hasNonEmptyParam(sp.dimWidth)) return false
   if (hasNonEmptyParam(sp.dimThickness)) return false
   if (hasNonEmptyParam(sp.dimVolume)) return false
+
+  // Pro facet selections are never the cached nav-category view.
+  if (hasNonEmptyParam(sp.style)) return false
+  if (hasNonEmptyParam(sp.fin)) return false
+  if (hasNonEmptyParam(sp.finSystem)) return false
+  if (hasNonEmptyParam(sp.construction)) return false
+  if (hasNonEmptyParam(sp.length)) return false
+  if (hasNonEmptyParam(sp.volume)) return false
+  // Multi-select condition (comma list) is a facet, not the single-condition cache view.
+  if (sp.condition?.includes(",")) return false
 
   const page = parseInt(sp.page || "1", 10)
   if (!Number.isFinite(page) || page < 1) return false

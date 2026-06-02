@@ -71,6 +71,7 @@ import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { getReswellPlatformReviewSummary } from "@/lib/db/reswellPlatformReviews"
 import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
+import { isMetaCatalogEligibleListing } from "@/lib/meta/catalog-product"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -184,6 +185,7 @@ export async function SurfboardListingDetailPage({
 
   const isOwnListing = user?.id === board.user_id
   const isSold = board.status === "sold"
+  const metaCatalogEligible = isMetaCatalogEligibleListing(board)
 
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
@@ -366,11 +368,13 @@ export async function SurfboardListingDetailPage({
 
   return (
       <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
-        <MetaViewContentTracker
-          listingId={board.id}
-          value={listPriceNum}
-          contentName={listingTitle}
-        />
+        {metaCatalogEligible ? (
+          <MetaViewContentTracker
+            listingId={board.id}
+            value={listPriceNum}
+            contentName={listingTitle}
+          />
+        ) : null}
         <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
           <div className="mb-3 min-w-0 max-w-full pt-0.5 max-lg:mb-4 lg:mb-8">
             <Breadcrumb>
