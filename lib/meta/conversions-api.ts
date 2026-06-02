@@ -180,12 +180,15 @@ export async function sendMetaServerEvent(
     return { ok: false, status: 0, skipped: true, skipReason: "No user_data identifiers" }
   }
 
+  const eventTime = event.eventTime ?? Math.floor(Date.now() / 1000)
   const dataEntry: Record<string, unknown> = {
     event_name: event.eventName,
-    event_time: event.eventTime ?? Math.floor(Date.now() / 1000),
+    event_time: eventTime,
     event_id: event.eventId.trim(),
     action_source: event.actionSource ?? "website",
     user_data: userData,
+    // Mirrors the originating event so Meta can reconcile/dedupe even if signals shift.
+    original_event_data: { event_name: event.eventName, event_time: eventTime },
   }
   if (event.eventSourceUrl?.trim()) dataEntry.event_source_url = event.eventSourceUrl.trim()
 

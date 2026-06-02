@@ -281,6 +281,7 @@ export async function POST(request: NextRequest) {
       buyerEmail: user.email ?? null,
       value: price,
       contentIds: [listing.id],
+      includeBrowserSignals: true,
     })
   }
 

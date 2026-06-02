@@ -29,7 +29,27 @@ export function MetaViewContentTracker({
     if (now - last < DEDUPE_MS) return
     lastSentAt.set(listingId, now)
 
-    trackMetaViewContent({ contentId: listingId, value, currency, contentName })
+    // Shared id so the Conversions API ViewContent dedupes against this browser pixel event.
+    const eventId =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `vc_${listingId}_${now}`
+
+    trackMetaViewContent({ contentId: listingId, value, currency, contentName, eventId })
+
+    const numericValue = typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined
+    void fetch("/api/integrations/meta/view-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        listing_id: listingId,
+        event_id: eventId,
+        value: numericValue,
+        currency: currency?.toUpperCase(),
+        source_url: typeof window !== "undefined" ? window.location.href : undefined,
+      }),
+    }).catch(() => {})
   }, [listingId, value, currency, contentName])
 
   return null

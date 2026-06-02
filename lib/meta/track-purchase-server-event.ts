@@ -9,6 +9,7 @@
 import "server-only"
 
 import { isMetaCapiEnabled, sendMetaServerEvent } from "@/lib/meta/conversions-api"
+import { getMetaBrowserSignals } from "@/lib/meta/server-event-context"
 import { metaPurchaseEventId } from "@/lib/meta/event-id"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 
@@ -21,6 +22,12 @@ export type MetaPurchaseServerEventInput = {
   /** Listing UUIDs — aligned with the Meta catalog feed product ids. */
   contentIds: string[]
   numItems?: number
+  /**
+   * Set ONLY when this runs inside the buyer's own request (e.g. the wallet checkout route) so
+   * `_fbp`/`_fbc`/IP/client_user_agent come from the buyer's browser. Leave false for Stripe
+   * webhooks — there the request belongs to Stripe, not the buyer.
+   */
+  includeBrowserSignals?: boolean
 }
 
 export async function trackMetaPurchaseServerEvent(
@@ -34,8 +41,11 @@ export async function trackMetaPurchaseServerEvent(
   const value = typeof input.value === "number" ? input.value : Number(input.value)
   if (!Number.isFinite(value) || value <= 0) return
 
-  // Order completion can run from a Stripe webhook (no buyer browser context), so we rely on the
-  // hashed email + external id here. The deduped browser Purchase pixel supplies fbp/fbc/IP/UA.
+  // From a Stripe webhook there is no buyer browser context, so we rely on hashed email + external
+  // id and the deduped browser Purchase pixel supplies fbp/fbc/IP/UA. On the buyer's own request
+  // (wallet checkout) we attach those signals directly via `includeBrowserSignals`.
+  const signals = input.includeBrowserSignals ? await getMetaBrowserSignals() : {}
+
   await sendMetaServerEvent({
     eventName: "Purchase",
     eventId: metaPurchaseEventId(orderId),
@@ -43,6 +53,7 @@ export async function trackMetaPurchaseServerEvent(
     userData: {
       email: input.buyerEmail ?? null,
       externalId: input.buyerUserId ?? null,
+      ...signals,
     },
     customData: {
       value,
