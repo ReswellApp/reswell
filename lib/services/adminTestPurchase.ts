@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
+import { isMetaTestEventCodeConfigured } from "@/lib/meta/conversions-api"
+import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { ADMIN_TEST_ORDER_STRIPE_PREFIX } from "@/lib/order-admin-test"
 import { generatePickupCode } from "@/lib/order-status"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
@@ -260,6 +262,22 @@ export async function createAdminTestPurchase(
   if (insertErr) {
     console.error("[adminTestPurchase] order insert:", insertErr.message)
     return { ok: false, error: "Could not create test order", status: 500 }
+  }
+
+  // Fire the Meta Conversions API Purchase event so a single test order validates CAPI alongside
+  // the browser pixel that fires on /successpage/{orderId} (both share `purchase_{orderId}` and
+  // dedupe). Gated behind META_TEST_EVENT_CODE so a synthetic order can never count as a live
+  // conversion — it only routes to Events Manager → Test Events. `includeBrowserSignals` attaches
+  // the admin's own _fbp/_fbc/IP/UA from this request to mirror the paired browser event.
+  if (isMetaTestEventCodeConfigured()) {
+    void trackMetaPurchaseServerEvent({
+      orderId,
+      buyerUserId: buyerId,
+      buyerEmail: input.buyerEmail,
+      value: resolved.total,
+      contentIds: [listing.id],
+      includeBrowserSignals: true,
+    })
   }
 
   return {

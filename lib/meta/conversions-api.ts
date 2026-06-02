@@ -40,6 +40,15 @@ export function isMetaCapiEnabled(): boolean {
   return Boolean(getMetaPixelId() && getAccessToken())
 }
 
+/**
+ * True when `META_TEST_EVENT_CODE` is set. Callers that seed synthetic events (e.g. the admin
+ * test-purchase tool) gate on this so those events only ever route to Events Manager → Test
+ * Events and never count as live conversions.
+ */
+export function isMetaTestEventCodeConfigured(): boolean {
+  return Boolean(getTestEventCode())
+}
+
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex")
 }
