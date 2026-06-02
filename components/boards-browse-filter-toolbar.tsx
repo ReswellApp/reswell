@@ -183,39 +183,41 @@ export function BoardsBrowseFilterToolbar({
       onSubmit={(e) => e.preventDefault()}
       className="flex w-full min-w-0 flex-col gap-3"
     >
-      <div className="flex w-full min-w-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="shrink-0 gap-2 rounded-full md:hidden"
-          onClick={onOpenMobileFilters}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Filter
-          {activeFilterCount > 0 ? (
-            <Badge variant="secondary" className="h-5 rounded-full px-1.5 text-[11px] tabular-nums">
-              {activeFilterCount}
-            </Badge>
-          ) : null}
-        </Button>
+      <div className="mx-auto grid w-full max-w-3xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
+        <div className="col-start-1 row-start-1 flex shrink-0 items-center">
+          <Button
+            type="button"
+            variant="outline"
+            className="shrink-0 gap-2 rounded-full md:hidden"
+            onClick={onOpenMobileFilters}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filter
+            {activeFilterCount > 0 ? (
+              <Badge variant="secondary" className="h-5 rounded-full px-1.5 text-[11px] tabular-nums">
+                {activeFilterCount}
+              </Badge>
+            ) : null}
+          </Button>
 
-        <button
-          type="button"
-          aria-expanded={desktopFiltersOpen}
-          aria-label={desktopFiltersOpen ? "Hide filters" : "Show filters"}
-          onClick={onToggleDesktopFilters}
-          className="hidden shrink-0 items-center gap-2.5 rounded-md px-1 py-1 text-base font-semibold text-foreground transition-colors hover:text-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:inline-flex"
-        >
-          Filter
-          <SlidersHorizontal className="h-[18px] w-[18px] stroke-[1.75]" aria-hidden="true" />
-          {activeFilterCount > 0 ? (
-            <Badge variant="secondary" className="h-5 rounded-full px-1.5 text-[11px] tabular-nums">
-              {activeFilterCount}
-            </Badge>
-          ) : null}
-        </button>
+          <button
+            type="button"
+            aria-expanded={desktopFiltersOpen}
+            aria-label={desktopFiltersOpen ? "Hide filters" : "Show filters"}
+            onClick={onToggleDesktopFilters}
+            className="hidden shrink-0 items-center gap-2.5 rounded-md px-1 py-1 text-base font-semibold text-foreground transition-colors hover:text-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:inline-flex"
+          >
+            Filter
+            <SlidersHorizontal className="h-[18px] w-[18px] stroke-[1.75]" aria-hidden="true" />
+            {activeFilterCount > 0 ? (
+              <Badge variant="secondary" className="h-5 rounded-full px-1.5 text-[11px] tabular-nums">
+                {activeFilterCount}
+              </Badge>
+            ) : null}
+          </button>
+        </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="col-start-2 row-start-1 min-w-0">
           <SiteSearchShell
             actionSlot={<SiteSearchFormSubmitButton>Search</SiteSearchFormSubmitButton>}
           >
@@ -229,107 +231,90 @@ export function BoardsBrowseFilterToolbar({
           </SiteSearchShell>
         </div>
 
-        <div className="hidden w-[150px] shrink-0 sm:block">
-          <Select
-            name="sort"
-            value={sort}
-            onValueChange={(v) => navigate((p) => (v === BOARDS_BROWSE_DEFAULT_SORT ? p.delete("sort") : p.set("sort", v)))}
-          >
-            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              {boardSortOptions.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+        <div className="col-start-2 row-start-2 flex flex-wrap items-center justify-center gap-2">
+            <div className="relative w-full min-w-[12rem] max-w-[22rem] sm:w-[22rem] sm:flex-none">
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <LocationInputSuggest
+                name="location"
+                placeholder="City or ZIP"
+                value={location}
+                onChange={(v) => {
+                  setLocation(v)
+                }}
+                onPickSuggestion={(place) => {
+                  skipLocDebounce.current = true
+                  setLocation(place.label)
+                  navigate((p) => {
+                    p.set("location", place.label)
+                    p.set("lat", String(place.lat))
+                    p.set("lng", String(place.lng))
+                  })
+                }}
+                listboxId="boards-location-suggest"
+                endSlot={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 rounded-full text-foreground hover:bg-muted"
+                    title="Use my location"
+                    aria-label="Use my location"
+                    disabled={locationLoading}
+                    onClick={handleUseMyLocation}
+                  >
+                    <LocateFixed className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            </div>
 
-      <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
-        <div className="relative min-w-0 flex-1 sm:max-w-[22rem]">
-          <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <LocationInputSuggest
-            name="location"
-            placeholder="City or ZIP"
-            value={location}
-            onChange={(v) => {
-              setLocation(v)
-            }}
-            onPickSuggestion={(place) => {
-              skipLocDebounce.current = true
-              setLocation(place.label)
-              navigate((p) => {
-                p.set("location", place.label)
-                p.set("lat", String(place.lat))
-                p.set("lng", String(place.lng))
-              })
-            }}
-            listboxId="boards-location-suggest"
-            endSlot={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0 rounded-full text-foreground hover:bg-muted"
-                title="Use my location"
-                aria-label="Use my location"
-                disabled={locationLoading}
-                onClick={handleUseMyLocation}
+            <Select
+              name="radius"
+              value={radius}
+              onValueChange={(v) => navigate((p) => (v === "any" ? p.delete("radius") : p.set("radius", v)))}
+            >
+              <SelectTrigger
+                aria-label="Search radius (miles from location)"
+                className={cn(siteFilterSelectTriggerClassName(), "w-[8.5rem] shrink-0")}
               >
-                <LocateFixed className="h-4 w-4" />
-              </Button>
-            }
-          />
+                <SelectValue placeholder="Radius" />
+              </SelectTrigger>
+              <SelectContent>
+                {boardRadiusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="w-[150px] shrink-0">
+              <Select
+                name="sort"
+                value={sort}
+                onValueChange={(v) =>
+                  navigate((p) => (v === BOARDS_BROWSE_DEFAULT_SORT ? p.delete("sort") : p.set("sort", v)))
+                }
+              >
+                <SelectTrigger className={siteFilterSelectTriggerClassName()}>
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  {boardSortOptions.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {resultCount != null ? (
+              <span className="hidden w-full text-center text-sm text-muted-foreground sm:inline">
+                {resultCount.toLocaleString()} {resultCount === 1 ? "board" : "boards"}
+              </span>
+            ) : null}
         </div>
-
-        <Select
-          name="radius"
-          value={radius}
-          onValueChange={(v) => navigate((p) => (v === "any" ? p.delete("radius") : p.set("radius", v)))}
-        >
-          <SelectTrigger
-            aria-label="Search radius (miles from location)"
-            className={cn(siteFilterSelectTriggerClassName(), "w-[8.5rem] shrink-0")}
-          >
-            <SelectValue placeholder="Radius" />
-          </SelectTrigger>
-          <SelectContent>
-            {boardRadiusOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="w-[140px] shrink-0 sm:hidden">
-          <Select
-            name="sort-mobile"
-            value={sort}
-            onValueChange={(v) => navigate((p) => (v === BOARDS_BROWSE_DEFAULT_SORT ? p.delete("sort") : p.set("sort", v)))}
-          >
-            <SelectTrigger className={siteFilterSelectTriggerClassName()}>
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              {boardSortOptions.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {resultCount != null ? (
-          <span className="ml-auto hidden text-sm text-muted-foreground sm:inline">
-            {resultCount.toLocaleString()} {resultCount === 1 ? "board" : "boards"}
-          </span>
-        ) : null}
       </div>
     </form>
   )
