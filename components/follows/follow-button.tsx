@@ -27,6 +27,8 @@ interface FollowButtonProps {
   className?: string
   /** Stretch to match sibling outline buttons in a shared flex row (e.g. listing seller actions). */
   fillRow?: boolean
+  /** Compact marketplace tile styling (e.g. `/sellers` directory cards). */
+  appearance?: "default" | "directory"
 }
 
 export function FollowButton({
@@ -42,6 +44,7 @@ export function FollowButton({
   size = "default",
   className,
   fillRow = false,
+  appearance = "default",
 }: FollowButtonProps) {
   const [following, setFollowing] = useState(initialFollowing)
   const [followerCount, setFollowerCount] = useState(initialFollowerCount)
@@ -92,44 +95,66 @@ export function FollowButton({
   }
 
   const baseLabel = sellerCity ? `Follow — ${sellerCity}` : "Follow"
+  const isDirectory = appearance === "directory"
 
   return (
     <div className={cn("flex items-center gap-2", fillRow && "w-full min-w-0", className)}>
       <Button
-        variant={following ? "default" : "outline"}
+        variant={isDirectory ? "ghost" : following ? "default" : "outline"}
         size={size}
         onClick={handleClick}
         disabled={loading}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
         className={cn(
-          fillRow ? "min-h-touch w-full min-w-0 justify-center" : "min-w-[120px]",
+          isDirectory
+            ? "h-9 shrink-0 rounded-full px-5 text-sm font-bold shadow-none"
+            : fillRow
+              ? "min-h-touch w-full min-w-0 justify-center"
+              : "min-w-[120px]",
           "transition-all duration-150",
-          following && !hovering && "bg-foreground text-background hover:bg-foreground/90",
-          following && hovering && "bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground"
+          isDirectory &&
+            !following &&
+            "bg-[#e8eef9] text-[#3b5bdb] hover:bg-[#dce6f7] hover:text-[#364fc7]",
+          isDirectory &&
+            following &&
+            !hovering &&
+            "bg-[#dce6f7] text-[#364fc7] hover:bg-[#dce6f7]",
+          isDirectory &&
+            following &&
+            hovering &&
+            "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          !isDirectory &&
+            following &&
+            !hovering &&
+            "bg-foreground text-background hover:bg-foreground/90",
+          !isDirectory &&
+            following &&
+            hovering &&
+            "bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground",
         )}
       >
         {loading ? (
           <>
-            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            {following ? "Unfollowing…" : "Following…"}
+            {!isDirectory ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            {following ? "…" : isDirectory ? "Follow" : "Following…"}
           </>
         ) : following ? (
           hovering ? (
             <>
-              <UserMinus className="mr-1.5 h-4 w-4" />
-              Unfollow
+              {!isDirectory ? <UserMinus className="mr-1.5 h-4 w-4" /> : null}
+              {isDirectory ? "Unfollow" : "Unfollow"}
             </>
           ) : (
             <>
-              <UserCheck className="mr-1.5 h-4 w-4" />
+              {!isDirectory ? <UserCheck className="mr-1.5 h-4 w-4" /> : null}
               Following
             </>
           )
         ) : (
           <>
-            <UserPlus className="mr-1.5 h-4 w-4" />
-            {baseLabel}
+            {!isDirectory ? <UserPlus className="mr-1.5 h-4 w-4" /> : null}
+            {isDirectory ? "Follow" : baseLabel}
           </>
         )}
       </Button>

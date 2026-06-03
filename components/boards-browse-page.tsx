@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import {
   Breadcrumb,
@@ -41,14 +42,8 @@ import {
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
-import {
-  boardDimensionBrowseFieldsFromSearchParams,
-  appendBoardDimensionBrowseParams,
-} from "@/lib/utils/board-dimension-browse-filter"
-import {
-  facetSelectionsFromParams,
-  FACET_PARAM_KEYS,
-} from "@/lib/boards-browse-facets"
+import { boardDimensionBrowseFieldsFromSearchParams } from "@/lib/utils/board-dimension-browse-filter"
+import { facetSelectionsFromParams } from "@/lib/boards-browse-facets"
 import {
   getBoardsBrowseFacetCounts,
   facetCountsByParamKey,
@@ -57,9 +52,14 @@ import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
 
-async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearchParams }) {
+async function BoardListings({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<BoardsBrowseSearchParams>
+}) {
+  const searchParams = await searchParamsPromise
   const supabase = await createClient()
-  const page = parseInt(searchParams.page || "1")
+  const page = parseInt(searchParams.page || "1", 10)
   const limit = BOARDS_BROWSE_PAGE_SIZE
   const offset = (page - 1) * limit
 
@@ -350,36 +350,6 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
     }
   }
 
-  function pageUrl(pageNum: number) {
-    const params = new URLSearchParams()
-    if (searchParams.q) params.set("q", searchParams.q)
-    if (searchParams.brand?.trim()) params.set("brand", searchParams.brand.trim())
-    const pid = searchParams.brandId?.trim()
-    if (pid && isUuidString(pid)) params.set("brandId", pid)
-    if (searchParams.model?.trim()) params.set("model", searchParams.model.trim())
-    const pmid = searchParams.brandModelId?.trim()
-    if (pmid && isUuidString(pmid)) params.set("brandModelId", pmid)
-    appendBoardDimensionBrowseParams(params, dimensionFields)
-    if (searchParams.location) params.set("location", searchParams.location)
-    if (searchParams.type && searchParams.type !== "all") params.set("type", searchParams.type)
-    if (searchParams.condition && searchParams.condition !== "all")
-      params.set("condition", searchParams.condition)
-    for (const key of Object.values(FACET_PARAM_KEYS)) {
-      if (key === FACET_PARAM_KEYS.condition) continue
-      const val = searchParams[key]
-      if (typeof val === "string" && val.trim()) params.set(key, val.trim())
-    }
-    if (searchParams.minPrice) params.set("minPrice", searchParams.minPrice)
-    if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice)
-    if (searchParams.radius) params.set("radius", searchParams.radius)
-    if (searchParams.lat) params.set("lat", searchParams.lat)
-    if (searchParams.lng) params.set("lng", searchParams.lng)
-    if (searchParams.sort && searchParams.sort !== BOARDS_BROWSE_DEFAULT_SORT)
-      params.set("sort", searchParams.sort)
-    params.set("page", String(pageNum))
-    return `/boards?${params.toString()}`
-  }
-
   if (!boards || boards.length === 0) {
     return (
       <div className="text-center py-16">
@@ -447,23 +417,7 @@ async function BoardListings({ searchParams }: { searchParams: BoardsBrowseSearc
         ))}
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-8">
-          {page > 1 && (
-            <Button variant="outline" asChild>
-              <Link href={pageUrl(page - 1)}>Previous</Link>
-            </Button>
-          )}
-          <span className="flex items-center px-4 text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          {page < totalPages && (
-            <Button variant="outline" asChild>
-              <Link href={pageUrl(page + 1)}>Next</Link>
-            </Button>
-          )}
-        </div>
-      )}
+      <BoardsBrowsePagination page={page} totalPages={totalPages} />
     </>
   )
 }
@@ -612,7 +566,7 @@ export async function BoardsBrowsePage(props: {
         <div className="container mx-auto min-w-0">
           <BoardsBrowseClient counts={facetCounts}>
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
-              <BoardListings searchParams={searchParams} />
+              <BoardListings searchParams={props.searchParams} />
             </Suspense>
           </BoardsBrowseClient>
         </div>

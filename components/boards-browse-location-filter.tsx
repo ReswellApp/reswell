@@ -41,10 +41,12 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
       return
     }
     const t = setTimeout(() => {
+      const trimmed = location.trim()
+      if (trimmed === state.location.trim()) return
       state.setLocationQuery(location)
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [location, state.setLocationQuery])
+  }, [location, state.location, state.setLocationQuery])
 
   async function handleUseMyLocation() {
     if (!navigator.geolocation) {

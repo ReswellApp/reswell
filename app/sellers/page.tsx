@@ -1,41 +1,34 @@
 import Link from "next/link"
-import Image from "next/image"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
-import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { MapPin, Store, ArrowRight } from "lucide-react"
-import { VerifiedBadge } from "@/components/verified-badge"
-import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
-import { cn } from "@/lib/utils"
-import { wideShimmer } from "@/lib/image-shimmer"
-import { listingDetailHref } from "@/lib/listing-href"
-import { listingCardImageSrc } from "@/lib/listing-image-display"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { sellerProfileHref } from "@/lib/seller-slug"
+import { Store, Users } from "lucide-react"
 import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
 import { SellersDirectoryAdminBar } from "@/components/sellers/sellers-directory-admin-bar"
 import { SellersDirectorySearch } from "@/components/sellers/sellers-directory-search"
+import { SellersDirectoryGrid } from "@/components/sellers/sellers-directory-grid"
 import { listSellersDirectoryDemotedProfileIdsOrdered } from "@/lib/db/sellers-directory-demotions"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
+import {
+  buildInventoryCountBySeller,
+  orderSellersWithDemotions,
+} from "@/lib/sellers/directory-ranking"
+import {
+  deriveSellerDirectoryTileMeta,
+  summarizeSellerReviews,
+  type SellerListingForTileMeta,
+} from "@/lib/sellers/directory-tile-meta"
+import type { SellerDirectoryListingThumb } from "@/components/sellers/seller-directory-card"
 
-const PLACEHOLDER_IMAGE = "/placeholder.svg"
-const THUMB_PER_SELLER = 6
+const THUMB_PER_SELLER = 3
 const LISTINGS_FETCH_CAP = 4000
+
+type ListingDirectoryRow = SellerDirectoryListingThumb &
+  SellerListingForTileMeta & {
+    user_id: string
+  }
 
 export async function generateMetadata() {
   return resolvePageMetadata("sellers")
-}
-
-type ListingThumb = {
-  id: string
-  user_id: string
-  title: string
-  price: number | string | null
-  slug: string | null
-  section: string
-  created_at: string
-  listing_images: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
 }
 
 /**
@@ -83,22 +76,17 @@ export default async function SellersPage({
   for (const row of shopRows ?? []) sellerIdSet.add(row.id)
   for (const row of listingRows ?? []) sellerIdSet.add(row.user_id)
   const sellerIds = [...sellerIdSet]
+  const inventoryCountBySeller = buildInventoryCountBySeller(listingRows)
 
-  const shops =
+  const shopsRaw =
     sellerIds.length === 0
       ? []
       : await (async () => {
-          let query = supabase
-            .from("profiles")
-            .select(profilePublicFields)
-            .in("id", sellerIds)
-            .order("sales_count", { ascending: false })
-            .order("shop_verified", { ascending: false })
-            .order("created_at", { ascending: false })
+          let query = supabase.from("profiles").select(profilePublicFields).in("id", sellerIds)
 
           if (q) {
             query = query.or(
-              `shop_name.ilike.%${q}%,shop_description.ilike.%${q}%,display_name.ilike.%${q}%,city.ilike.%${q}%,shop_address.ilike.%${q}%`
+              `shop_name.ilike.%${q}%,shop_description.ilike.%${q}%,display_name.ilike.%${q}%,city.ilike.%${q}%,shop_address.ilike.%${q}%`,
             )
           }
 
@@ -111,93 +99,148 @@ export default async function SellersPage({
         })()
 
   const demotedOrder = await listSellersDirectoryDemotedProfileIdsOrdered(supabase)
-  const demotedSet = new Set(demotedOrder)
-  const demotedRank = new Map(demotedOrder.map((id, i) => [id, i]))
-  const orderedShops =
-    demotedOrder.length === 0
-      ? shops
-      : [...shops].sort((a, b) => {
-          const aDemoted = demotedSet.has(a.id)
-          const bDemoted = demotedSet.has(b.id)
-          if (aDemoted !== bDemoted) return aDemoted ? 1 : -1
-          if (aDemoted && bDemoted) {
-            return (demotedRank.get(a.id) ?? 0) - (demotedRank.get(b.id) ?? 0)
-          }
-          return 0
-        })
+  const orderedShops = orderSellersWithDemotions(shopsRaw, demotedOrder, (shop) => ({
+    id: shop.id,
+    sales_count: shop.sales_count,
+    inventoryCount: inventoryCountBySeller.get(shop.id) ?? 0,
+  }))
 
-  /** Up to THUMB_PER_SELLER most recent active listings per seller (by global recency pass). */
-  const thumbsBySeller = new Map<string, ListingThumb[]>()
-  if (orderedShops.length > 0 && sellerIds.length > 0) {
-    const { data: invRows, error: invError } = await supabase
-      .from("listings")
-      .select(
-        "id, user_id, title, price, slug, section, created_at, listing_images (url, thumbnail_url, is_primary)"
-      )
-      .in(
-        "user_id",
-        orderedShops.map((s) => s.id)
-      )
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
-      .is("archived_at", null)
-      .order("created_at", { ascending: false })
-      .limit(LISTINGS_FETCH_CAP)
+  /** Thumbnails + tile metadata from active listings (single pass). */
+  const thumbsBySeller = new Map<string, SellerDirectoryListingThumb[]>()
+  const listingsForMetaBySeller = new Map<string, SellerListingForTileMeta[]>()
 
-    if (invError) {
-      console.error("[sellers] inventory thumbnails:", invError)
-    } else {
-      for (const row of (invRows ?? []) as ListingThumb[]) {
-        const cur = thumbsBySeller.get(row.user_id) ?? []
-        if (cur.length >= THUMB_PER_SELLER) continue
+  const orderedSellerIds = orderedShops.map((s) => s.id)
+
+  const [{ data: invRows, error: invError }, { data: reviewRows }, { data: followRows }] =
+    await Promise.all([
+      orderedShops.length === 0
+        ? Promise.resolve({ data: [] as ListingDirectoryRow[], error: null })
+        : supabase
+            .from("listings")
+            .select(
+              "id, user_id, title, price, slug, section, created_at, state, shipping_available, board_shipping_cost_mode, shipping_price, listing_images (url, thumbnail_url, is_primary)",
+            )
+            .in("user_id", orderedSellerIds)
+            .eq("status", "active")
+            .eq("hidden_from_site", false)
+            .is("archived_at", null)
+            .order("created_at", { ascending: false })
+            .limit(LISTINGS_FETCH_CAP),
+      orderedShops.length === 0
+        ? Promise.resolve({ data: [] as { reviewed_id: string; rating: number }[] })
+        : supabase.from("reviews").select("reviewed_id, rating").in("reviewed_id", orderedSellerIds),
+      user && orderedShops.length > 0
+        ? authClient
+            .from("seller_follows")
+            .select("seller_id")
+            .eq("follower_id", user.id)
+            .in("seller_id", orderedSellerIds)
+        : Promise.resolve({ data: [] as { seller_id: string }[] }),
+    ])
+
+  if (invError) {
+    console.error("[sellers] inventory thumbnails:", invError)
+  } else {
+    for (const row of (invRows ?? []) as ListingDirectoryRow[]) {
+      const metaRow: SellerListingForTileMeta = {
+        state: row.state ?? null,
+        shipping_available: row.shipping_available ?? null,
+        board_shipping_cost_mode: row.board_shipping_cost_mode ?? null,
+        shipping_price: row.shipping_price ?? null,
+      }
+      const metaList = listingsForMetaBySeller.get(row.user_id) ?? []
+      metaList.push(metaRow)
+      listingsForMetaBySeller.set(row.user_id, metaList)
+
+      const cur = thumbsBySeller.get(row.user_id) ?? []
+      if (cur.length < THUMB_PER_SELLER) {
         cur.push(row)
         thumbsBySeller.set(row.user_id, cur)
       }
     }
   }
 
+  const reviewsBySeller = new Map<string, { rating: number }[]>()
+  for (const row of reviewRows ?? []) {
+    const list = reviewsBySeller.get(row.reviewed_id) ?? []
+    list.push({ rating: row.rating })
+    reviewsBySeller.set(row.reviewed_id, list)
+  }
+
+  const followingSet = new Set((followRows ?? []).map((row) => row.seller_id))
+
+  const gridItems = orderedShops.map((shop) => {
+    const { avgRating, reviewCount } = summarizeSellerReviews(reviewsBySeller.get(shop.id))
+    return {
+      shop,
+      thumbs: thumbsBySeller.get(shop.id) ?? [],
+      tileMeta: deriveSellerDirectoryTileMeta(listingsForMetaBySeller.get(shop.id) ?? []),
+      avgRating,
+      reviewCount,
+      initialFollowing: followingSet.has(shop.id),
+      isOwnProfile: user?.id === shop.id,
+    }
+  })
+
+  const totalInventory = orderedShops.reduce(
+    (sum, shop) => sum + (inventoryCountBySeller.get(shop.id) ?? 0),
+    0,
+  )
+
   return (
     <main className="flex-1">
-      <section className="border-b border-border/60 bg-offwhite py-10">
-        <div className="container relative mx-auto px-4">
-          <div className="absolute right-2 top-2 z-10 sm:right-4 sm:top-4">
+      <section className="border-b border-border/60 bg-offwhite py-10 sm:py-12">
+        <div className="container relative mx-auto px-4 sm:px-6">
+          <div className="absolute right-2 top-0 z-10 sm:right-4">
             <SellersDirectoryAdminBar />
           </div>
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Store className="h-5 w-5" aria-hidden />
+            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10">
+              <Store className="h-6 w-6" aria-hidden />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl text-balance">
-              Sellers
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground text-pretty sm:text-base">
-              Browse seller profiles and a sample of what they have listed right now.
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Reswell marketplace
             </p>
-            <SellersDirectorySearch
-              defaultValue={q || ""}
-              className="mx-auto mt-6 max-w-lg"
-            />
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
+              Meet the sellers
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground text-pretty sm:text-base">
+              Discover local shops and surfers with boards and gear listed now — ranked by sales and what they have in
+              stock.
+            </p>
+            {orderedShops.length > 0 ? (
+              <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
+                <Users className="h-3.5 w-3.5" aria-hidden />
+                {orderedShops.length} seller{orderedShops.length !== 1 ? "s" : ""}
+                {totalInventory > 0 ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    {totalInventory} active listing{totalInventory !== 1 ? "s" : ""}
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            <SellersDirectorySearch defaultValue={q || ""} className="mx-auto mt-7 max-w-lg" />
           </div>
         </div>
       </section>
 
-      <section className="py-10">
-        <div className="container mx-auto px-4">
+      <section className="py-10 sm:py-14">
+        <div className="container mx-auto max-w-6xl px-4 sm:px-6">
           {q ? (
-            <div className="mx-auto mb-6 flex max-w-3xl flex-wrap items-center justify-between gap-2">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm text-muted-foreground">
-                {orderedShops?.length || 0} seller{orderedShops?.length !== 1 ? "s" : ""} found
-                {q ? ` for “${q}”` : ""}
+                {orderedShops.length} seller{orderedShops.length !== 1 ? "s" : ""} found for “{q}”
               </p>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/sellers">Clear</Link>
+                <Link href="/sellers">Clear search</Link>
               </Button>
             </div>
           ) : null}
 
-          {!orderedShops || orderedShops.length === 0 ? (
-            <div className="mx-auto max-w-md py-14 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+          {orderedShops.length === 0 ? (
+            <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-16 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
                 <Store className="h-7 w-7 text-muted-foreground" aria-hidden />
               </div>
               <h2 className="text-lg font-semibold text-foreground">No sellers found</h2>
@@ -205,116 +248,13 @@ export default async function SellersPage({
                 {q ? "Try different search terms." : "Check back soon as more sellers join Reswell."}
               </p>
               {!q ? (
-                <Button className="mt-6" asChild>
+                <Button className="mt-6 rounded-full" asChild>
                   <Link href="/auth/sign-up">Join Reswell</Link>
                 </Button>
               ) : null}
             </div>
           ) : (
-            <div className="mx-auto flex max-w-3xl flex-col gap-5">
-              {orderedShops.map((shop) => {
-                const label = shop.shop_name?.trim() || shop.display_name || "Seller"
-                const thumbs = thumbsBySeller.get(shop.id) ?? []
-                return (
-                  <Card
-                    key={shop.id}
-                    className={cn(listingProductCardSolidClassName, "border-border/80")}
-                  >
-                    <CardContent className="p-0">
-                      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-                        <Link
-                          href={sellerProfileHref(shop)}
-                          className="flex min-w-0 flex-1 gap-3 rounded-lg outline-none ring-offset-background transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <Avatar className="h-14 w-14 shrink-0 border border-border">
-                            <AvatarImage src={shop.shop_logo_url || shop.avatar_url || ""} alt="" />
-                            <AvatarFallback className="bg-primary text-lg text-primary-foreground">
-                              {label.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="font-semibold text-foreground">{label}</span>
-                              {shop.shop_verified ? <VerifiedBadge size="md" /> : null}
-                            </div>
-                            {(shop.city || shop.shop_address) && (
-                              <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                                <span className="truncate">{shop.shop_address || shop.city}</span>
-                              </p>
-                            )}
-                            {shop.shop_description ? (
-                              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                                {shop.shop_description}
-                              </p>
-                            ) : null}
-                          </div>
-                        </Link>
-                        <Button variant="outline" size="sm" className="shrink-0 self-start" asChild>
-                          <Link href={sellerProfileHref(shop)}>
-                            Profile
-                            <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
-                          </Link>
-                        </Button>
-                      </div>
-
-                      {thumbs.length > 0 ? (
-                        <div className="border-t border-border/60 bg-muted/20 px-3 py-3">
-                          <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            Inventory
-                          </p>
-                          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                            {thumbs.map((listing) => {
-                              const href = listingDetailHref(listing)
-                              const src =
-                                listingCardImageSrc(listing.listing_images) || PLACEHOLDER_IMAGE
-                              const price =
-                                listing.price != null && listing.price !== ""
-                                  ? Number(listing.price).toFixed(0)
-                                  : null
-                              return (
-                                <li key={listing.id} className="min-w-0">
-                                  <Link
-                                    href={href}
-                                    className="group block overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm transition hover:border-primary/30 hover:shadow-md"
-                                  >
-                                    <div className="relative aspect-square w-full bg-muted">
-                                      <Image
-                                        src={src}
-                                        alt={listing.title}
-                                        fill
-                                        sizes="(max-width: 640px) 33vw, 120px"
-                                        className="object-cover transition group-hover:scale-[1.03]"
-                                        unoptimized={listingImageShouldBypassOptimization(src)}
-                                        placeholder="blur"
-                                        blurDataURL={wideShimmer}
-                                      />
-                                    </div>
-                                    {price ? (
-                                      <p className="truncate px-1.5 py-1 text-center text-[11px] font-semibold text-foreground">
-                                        ${price}
-                                      </p>
-                                    ) : (
-                                      <p className="truncate px-1.5 py-1 text-center text-[11px] text-muted-foreground">
-                                        View
-                                      </p>
-                                    )}
-                                  </Link>
-                                </li>
-                              )
-                            })}
-                          </ul>
-                        </div>
-                      ) : (
-                        <div className="border-t border-border/60 px-4 py-3 text-sm text-muted-foreground">
-                          No active listings right now.
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
+            <SellersDirectoryGrid items={gridItems} isLoggedIn={!!user} />
           )}
         </div>
       </section>

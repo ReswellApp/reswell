@@ -1,31 +1,14 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import Image from "next/image"
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { wideShimmer } from "@/lib/image-shimmer"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { capitalizeWords } from "@/lib/listing-labels"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import {
-  MapPin,
-  Phone,
-  Globe,
-  Star,
-  MessageSquare,
-  Calendar,
-  Package,
-} from "lucide-react"
-import { VerifiedBadge, verifiedSellerBadgeClassName } from "@/components/verified-badge"
-import { FollowButton } from "@/components/follows/follow-button"
+import { Star, Package } from "lucide-react"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
-import { listingDetailHref } from "@/lib/listing-href"
+import { SellerProfileHero } from "@/components/sellers/seller-profile-hero"
+import { FadeInSection } from "@/components/fade-in-section"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 import { absoluteUrl } from "@/lib/site-metadata"
@@ -321,143 +304,21 @@ export default async function SellerProfilePage({
 
   return (
       <main className="flex-1">
-        {/* Banner */}
-        <div className="relative h-40 sm:h-56 bg-offwhite overflow-hidden">
-          {shop.shop_banner_url && (
-            <Image
-              src={shop.shop_banner_url}
-              alt=""
-              fill
-              sizes="100vw"
-              className="object-cover"
-              placeholder="blur"
-              blurDataURL={wideShimmer}
-              priority
-            />
-          )}
-        </div>
+        <SellerProfileHero
+          shop={shop}
+          displayName={displayName}
+          isShop={isShop}
+          avgRating={avgRating}
+          reviewCount={reviewCount}
+          currentListingCount={currentListings.length}
+          followerCount={followerCount}
+          isFollowing={isFollowing}
+          isOwnProfile={isOwnProfile}
+          isLoggedIn={!!user}
+        />
 
-        {/* Profile Header */}
-        <div className="container mx-auto">
-          <div className="relative -mt-12 mb-8">
-            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-              <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                <AvatarImage
-                  src={
-                    (isShop ? shop.shop_logo_url : shop.avatar_url) || ""
-                  }
-                />
-                <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                  {displayName?.charAt(0).toUpperCase() || "S"}
-                </AvatarFallback>
-              </Avatar>
-
-              <div className="flex-1 pt-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-bold text-foreground">
-                    {displayName}
-                  </h1>
-                  {shop.shop_verified && (
-                    <Badge variant="outline" className={verifiedSellerBadgeClassName}>
-                      <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
-                      Verified Seller
-                    </Badge>
-                  )}
-                  {isShop && !shop.shop_verified && (
-                    <Badge variant="secondary">Seller</Badge>
-                  )}
-                </div>
-
-                {/* Stats row */}
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  {(shop.city || shop.shop_address) && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {shop.shop_address || shop.city}
-                    </span>
-                  )}
-                  {reviewCount > 0 && (
-                    <span
-                      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-foreground"
-                      role="img"
-                      aria-label={`Average ${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} review${reviewCount !== 1 ? "s" : ""}`}
-                    >
-                      <SellerRatingStarRow value={avgRating} size="sm" />
-                      <span className="tabular-nums font-medium text-foreground">
-                        {avgRating.toFixed(1)}
-                      </span>
-                      <span className="text-muted-foreground">
-                        ({reviewCount} review{reviewCount !== 1 ? "s" : ""})
-                      </span>
-                    </span>
-                  )}
-                  <span className="flex items-center gap-1">
-                    <Package className="h-3.5 w-3.5" />
-                    {totalListings} listing{totalListings !== 1 ? "s" : ""} total
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Joined{" "}
-                    {new Date(shop.created_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-
-                {/* Description */}
-                {(shop.shop_description || shop.bio) && (
-                  <p className="mt-3 text-sm text-muted-foreground max-w-2xl">
-                    {shop.shop_description || shop.bio}
-                  </p>
-                )}
-
-                {/* Follow + contact row */}
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <FollowButton
-                    sellerId={shop.id}
-                    sellerName={displayName ?? undefined}
-                    sellerSlug={shop.seller_slug || undefined}
-                    sellerCity={shop.city || undefined}
-                    initialFollowing={isFollowing}
-                    initialFollowerCount={followerCount}
-                    isLoggedIn={!!user}
-                    isOwnProfile={isOwnProfile}
-                    showCount={true}
-                  />
-
-                  {shop.shop_website && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={shop.shop_website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Globe className="mr-1.5 h-3.5 w-3.5" />
-                        Website
-                      </a>
-                    </Button>
-                  )}
-                  {shop.shop_phone && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={`tel:${shop.shop_phone}`}>
-                        <Phone className="mr-1.5 h-3.5 w-3.5" />
-                        {shop.shop_phone}
-                      </a>
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/messages?seller=${shop.id}`}>
-                      <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
-                      Contact
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Reviews — split into "as seller" (from buyers) and "as buyer" (from sellers). */}
+        <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+          <FadeInSection>
           <ReviewsSection
             heading="Reviews as a seller"
             emptyFallback={
@@ -476,23 +337,33 @@ export default async function SellerProfilePage({
               reviews={reviewsAsBuyer}
             />
           ) : null}
+          </FadeInSection>
 
-          <Separator />
-
-          {/* Current listings tabs */}
-          <div className="py-8">
+          <FadeInSection delay={80}>
+          <div className="border-t border-border/80 py-10 sm:py-12">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                Shop their listings
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {currentListings.length} active now
+                {totalListings !== currentListings.length
+                  ? ` · ${totalListings} total on profile`
+                  : null}
+              </p>
+            </div>
             <Tabs defaultValue="all">
-              <TabsList>
-                <TabsTrigger value="all">
-                  Current ({currentListings.length})
+              <TabsList className="h-auto flex-wrap gap-1 bg-muted/40 p-1">
+                <TabsTrigger value="all" className="rounded-full px-4">
+                  All ({currentListings.length})
                 </TabsTrigger>
                 {newListings.length > 0 && (
-                  <TabsTrigger value="new">
+                  <TabsTrigger value="new" className="rounded-full px-4">
                     New ({newListings.length})
                   </TabsTrigger>
                 )}
                 {boardListings.length > 0 && (
-                  <TabsTrigger value="boards">
+                  <TabsTrigger value="boards" className="rounded-full px-4">
                     Boards ({boardListings.length})
                   </TabsTrigger>
                 )}
@@ -521,14 +392,15 @@ export default async function SellerProfilePage({
               </TabsContent>
             </Tabs>
           </div>
+          </FadeInSection>
 
-          {/* Past / sold listings */}
           {pastListings.length > 0 && (
-            <div className="py-4 border-t border-border">
-              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Previous &amp; sold listings
-                <span className="text-xs font-normal text-muted-foreground">
+            <FadeInSection delay={120}>
+            <div className="border-t border-border/80 py-10 sm:py-12">
+              <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                <Package className="h-5 w-5 text-muted-foreground" aria-hidden />
+                Previous &amp; sold
+                <span className="text-sm font-normal text-muted-foreground">
                   ({pastListings.length})
                 </span>
               </h2>
@@ -538,6 +410,7 @@ export default async function SellerProfilePage({
                 viewerId={user?.id ?? null}
               />
             </div>
+            </FadeInSection>
           )}
         </div>
       </main>
@@ -565,21 +438,21 @@ function ReviewsSection({
   }>
 }) {
   return (
-    <div className="py-6">
-      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <Star className={cn("h-4 w-4", ratingStarFilledClassName)} strokeWidth={0} aria-hidden />
+    <div className="py-8 sm:py-10">
+      <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+        <Star className={cn("h-5 w-5", ratingStarFilledClassName)} strokeWidth={0} aria-hidden />
         {heading}
       </h2>
       {reviews.length > 0 ? (
-        <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
           {reviews.map((review) => {
             const rel = review.reviewer
             const reviewer = Array.isArray(rel) ? rel[0] : rel
             const reviewerLabel =
               reviewer?.display_name?.trim() || defaultReviewerLabel
             return (
-              <Card key={review.id}>
-                <CardContent className="py-3 px-4">
+              <Card key={review.id} className="border-border/80 shadow-soft">
+                <CardContent className="px-4 py-4">
                   <div className="flex items-center gap-2 text-sm mb-1 flex-wrap">
                     <span className="font-medium text-foreground">{reviewerLabel}</span>
                     <span className="text-muted-foreground">·</span>
@@ -626,9 +499,9 @@ function ListingGrid({
 }) {
   if (listings.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Package className="mx-auto h-10 w-10 text-muted-foreground" />
-        <p className="mt-2 text-muted-foreground">No listings in this category</p>
+      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 py-14 text-center">
+        <Package className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden />
+        <p className="mt-3 text-muted-foreground">No listings in this category yet.</p>
       </div>
     )
   }

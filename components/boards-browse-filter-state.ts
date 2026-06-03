@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useMemo } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useBoardsBrowseRouter } from "@/hooks/use-boards-browse-router"
 import {
   FACET_PARAM_KEYS,
   facetSelectionsFromParams,
@@ -56,23 +56,7 @@ export type BoardsFilterState = {
 export function useBoardsFilterState(
   transitionStart?: (cb: () => void) => void,
 ): BoardsFilterState {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  const navigate = useCallback(
-    (mutate: NavigateMutator) => {
-      const params = new URLSearchParams(searchParams.toString())
-      mutate(params)
-      params.delete("page")
-      const qs = params.toString()
-      const run = () =>
-        router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
-      if (transitionStart) transitionStart(run)
-      else run()
-    },
-    [pathname, router, searchParams, transitionStart],
-  )
+  const { navigate, searchParams } = useBoardsBrowseRouter(transitionStart)
 
   const selections = useMemo(
     () =>

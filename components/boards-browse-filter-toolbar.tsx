@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useBoardsBrowseRouter } from "@/hooks/use-boards-browse-router"
 import { SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -48,9 +48,7 @@ export function BoardsBrowseFilterToolbar({
   onToggleDesktopFilters,
   transitionStart,
 }: Props) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const { navigate, searchParams } = useBoardsBrowseRouter(transitionStart)
 
   const urlQ = searchParams.get("q") ?? ""
   const [q, setQ] = useState(urlQ)
@@ -82,31 +80,23 @@ export function BoardsBrowseFilterToolbar({
     })
   }, [urlQ])
 
-  const navigate = useCallback(
-    (mutate: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(searchParams.toString())
-      mutate(params)
-      params.delete("page")
-      const qs = params.toString()
-      const run = () => router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
-      if (transitionStart) transitionStart(run)
-      else run()
-    },
-    [pathname, router, searchParams, transitionStart],
-  )
-
-  const navigateRef = useRef(navigate)
-  navigateRef.current = navigate
+  const urlQRef = useRef(urlQ)
+  urlQRef.current = urlQ
 
   const commitSearch = useCallback((query: string) => {
     const trimmed = query.trim()
+    const current = urlQRef.current.trim()
+    if (trimmed === current) return
     skipQDebounce.current = true
     lastCommittedQRef.current = trimmed
-    navigateRef.current((p) => {
+    navigate((p) => {
       if (trimmed) p.set("q", trimmed)
       else p.delete("q")
     })
-  }, [])
+  }, [navigate])
+
+  const commitSearchRef = useRef(commitSearch)
+  commitSearchRef.current = commitSearch
 
   useEffect(() => {
     if (skipQDebounce.current) {
@@ -114,10 +104,10 @@ export function BoardsBrowseFilterToolbar({
       return
     }
     const t = setTimeout(() => {
-      commitSearch(qRef.current)
+      commitSearchRef.current(qRef.current)
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [q, commitSearch])
+  }, [q])
 
   const sortSelect = (
     <Select
@@ -164,7 +154,7 @@ export function BoardsBrowseFilterToolbar({
               }}
               onBlur={() => {
                 isFocusedRef.current = false
-                commitSearch(qRef.current)
+                commitSearchRef.current(qRef.current)
               }}
             />
           </SiteSearchShell>

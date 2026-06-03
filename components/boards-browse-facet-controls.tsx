@@ -130,6 +130,9 @@ function PriceSection({ state }: { state: BoardsFilterState }) {
   useEffect(() => setMax(state.maxPrice), [state.maxPrice])
 
   const commit = (nextMin: string, nextMax: string) => {
+    const normMin = nextMin.trim()
+    const normMax = nextMax.trim()
+    if (normMin === state.minPrice.trim() && normMax === state.maxPrice.trim()) return
     state.setPriceRange(nextMin || null, nextMax || null)
   }
 
